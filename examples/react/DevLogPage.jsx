@@ -8,8 +8,12 @@ import './DevLogPage.css';
 const ENTRIES_PER_PAGE = 10;
 
 function formatDate(dateStr) {
-  const [year, month, day] = dateStr.split('-');
-  const date = new Date(year, month - 1, day);
+  if (typeof dateStr !== 'string') return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return '';
+  const [year, month, day] = parts;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

@@ -19,8 +19,16 @@ export default defineConfig({
       'style-to-js',
     ],
   },
+  // Bind preview server to localhost only — the dev server has no auth and
+  // serves transformed source modules. Don't expose it to LAN by default.
+  // (npm audit flags moderate CVEs in dev-server CORS handling for any
+  // deployment that allows cross-origin reads; localhost-binding is
+  // defense-in-depth on top of vite's own patches.)
   server: {
+    host: 'localhost',
     port: 5173,
     open: true,
+    strictPort: false,
+    cors: false,
   },
 });

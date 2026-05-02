@@ -11,7 +11,18 @@ const isDemo = !owner || !repo;
 
 let realProjects = [];
 try {
-  realProjects = projectsRaw ? JSON.parse(projectsRaw) : [];
+  const parsed = projectsRaw ? JSON.parse(projectsRaw) : [];
+  // Schema-validate: must be array of {key, label?} where key matches a safe
+  // allowlist. Anything else gets dropped silently.
+  if (Array.isArray(parsed)) {
+    for (const p of parsed) {
+      if (!p || typeof p !== 'object') continue;
+      if (typeof p.key !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(p.key)) continue;
+      if (p.key.includes('..')) continue;
+      const label = typeof p.label === 'string' ? p.label : p.key;
+      realProjects.push({ key: p.key, label });
+    }
+  }
 } catch {
   realProjects = [];
 }

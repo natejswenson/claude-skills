@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn, execSync } from 'node:child_process';
+import { spawn, spawnSync, execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve, basename } from 'node:path';
@@ -7,6 +7,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import prompts from 'prompts';
 import kleur from 'kleur';
+
+const SHELL_METACHARS = /[;&|`$()<>{}*?!#~"\\\n\r]/;
 
 const require = createRequire(import.meta.url);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -29,9 +31,22 @@ function readPackageVersion() {
   return pkg.version;
 }
 
+// Runs a hardcoded shell command (no user input). Use tryExecArgs for any
+// command whose arguments include user-supplied values.
 function tryExec(cmd) {
   try {
     return execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
+  } catch {
+    return null;
+  }
+}
+
+// argv-style invocation; no shell, so user-supplied args cannot inject.
+function tryExecArgs(cmd, args) {
+  try {
+    const r = spawnSync(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+    if (r.status !== 0) return null;
+    return (r.stdout || '').trim();
   } catch {
     return null;
   }
@@ -76,7 +91,7 @@ function detectGitName() {
 }
 
 function detectProjectRemote(path) {
-  const url = tryExec(`git -C "${path}" remote get-url origin`);
+  const url = tryExecArgs('git', ['-C', path, 'remote', 'get-url', 'origin']);
   if (!url) return null;
   const m = url.match(/[:/]([^/:]+\/[^/]+?)(?:\.git)?$/);
   return m ? m[1] : null;
@@ -109,21 +124,25 @@ async function cmdInit() {
       name: 'gitAuthor',
       message: 'Your name (used to filter `git log --author`):',
       initial: defaults.gitAuthor,
-      validate: (v) => v.trim().length > 0 || 'Required',
+      validate: (v) => {
+        if (v.trim().length === 0) return 'Required';
+        if (SHELL_METACHARS.test(v)) return 'Invalid characters (no quotes, backticks, or shell metacharacters)';
+        return true;
+      },
     },
     {
       type: 'text',
       name: 'githubUser',
       message: 'Your GitHub username:',
       initial: defaults.githubUser,
-      validate: (v) => /^[a-z0-9-]+$/i.test(v.trim()) || 'Invalid username',
+      validate: (v) => /^[a-z0-9][a-z0-9-]*$/i.test(v.trim()) || 'Invalid username (must start with letter/digit, alphanumeric + hyphens only)',
     },
     {
       type: 'text',
       name: 'targetRepoName',
       message: 'Name of the repo where dev logs will be published:',
       initial: defaults.targetRepoName,
-      validate: (v) => /^[a-z0-9._-]+$/i.test(v.trim()) || 'Invalid repo name',
+      validate: (v) => /^[a-z0-9][a-z0-9._-]*$/i.test(v.trim()) || 'Invalid repo name (must start with letter/digit, no leading dash)',
     },
     {
       type: 'confirm',
@@ -143,21 +162,29 @@ async function cmdInit() {
         name: 'path',
         message: 'Project absolute path:',
         initial: cwd,
-        validate: (v) => existsSync(expandHome(v)) || 'Path does not exist',
+        validate: (v) => {
+          if (SHELL_METACHARS.test(v)) return 'Invalid characters (no quotes, backticks, or shell metacharacters)';
+          return existsSync(expandHome(v)) || 'Path does not exist';
+        },
       },
       {
         type: 'text',
         name: 'key',
         message: 'Project key (used as dev-log subdir name):',
         initial: (prev) => basename(expandHome(prev || cwd)),
-        validate: (v) => /^[a-z0-9._-]+$/i.test(v.trim()) || 'Invalid key',
+        validate: (v) => {
+          const t = v.trim();
+          if (!/^[a-z0-9][a-z0-9._-]*$/i.test(t)) return 'Invalid key (must start with letter/digit, alphanumeric + ._- only)';
+          if (t.includes('..')) return 'Invalid key (no `..`)';
+          return true;
+        },
       },
       {
         type: 'text',
         name: 'remote',
         message: 'Project GitHub remote (<owner>/<repo>):',
         initial: (_prev, values) => detectProjectRemote(expandHome(values.path)) || cwdRemote || `${answers.githubUser}/${basename(expandHome(values.path))}`,
-        validate: (v) => /^[\w.-]+\/[\w.-]+$/.test(v.trim()) || 'Expected <owner>/<repo>',
+        validate: (v) => /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i.test(v.trim()) || 'Expected <owner>/<repo>, no leading dash',
       },
     ], { onCancel: () => process.exit(1) });
   }
@@ -191,20 +218,19 @@ async function cmdInit() {
 
   log.info('');
 
-  const repoExists = tryExec(`gh repo view ${targetRepo} --json name`) !== null;
+  const repoExists = tryExecArgs('gh', ['repo', 'view', targetRepo, '--json', 'name']) !== null;
   if (repoExists) {
     log.warn(`Repo github.com/${targetRepo} already exists. Will use it as-is.`);
   } else {
     log.step(`Creating github.com/${targetRepo}...`);
-    try {
-      execSync(`gh repo create ${targetRepo} --public --description "Daily dev log" --add-readme`, {
-        stdio: 'inherit',
-      });
-      log.ok('Repo created');
-    } catch {
+    const r = spawnSync('gh', ['repo', 'create', targetRepo, '--public', '--description', 'Daily dev log', '--add-readme'], {
+      stdio: 'inherit',
+    });
+    if (r.status !== 0) {
       log.err('Failed to create repo. Check `gh` permissions.');
       process.exit(1);
     }
+    log.ok('Repo created');
   }
 
   if (!existsSync(CONFIG_DIR)) {

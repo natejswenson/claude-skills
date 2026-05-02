@@ -47,6 +47,25 @@ If the file does not exist or cannot be parsed, stop and tell the user:
 
 Validate that `targetRepo`, `gitAuthor`, `githubUser`, and `projects` (non-empty array) are all present. Each project must have `key`, `path`, and `remote`.
 
+### Step 0.5: SECURITY — validate config values before using them in shell commands
+
+**Critical:** every value below gets interpolated into shell commands. If any value contains shell metacharacters or breaks the expected shape, **STOP** and tell the user their config is malformed. Do not "fix" it — refuse to run.
+
+| Field | Required pattern |
+|---|---|
+| `targetRepo` | Matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*\/[a-zA-Z0-9][a-zA-Z0-9._-]*$` (owner/repo, no leading dash) |
+| `branch` (optional) | Matches `^[a-zA-Z0-9][a-zA-Z0-9._/-]*$` (no leading dash, no `..`); defaults to `main` |
+| `gitAuthor` | Must NOT contain any of: `;` `&` `|` `` ` `` `$` `(` `)` `<` `>` `{` `}` `*` `?` `!` `#` `~` `"` `\` newline, carriage return |
+| `githubUser` | Matches `^[a-zA-Z0-9][a-zA-Z0-9-]*$` |
+| `projects[].key` | Matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*$` AND must not contain `..` |
+| `projects[].path` | Must NOT contain shell metacharacters (same set as gitAuthor) AND must point to an existing directory |
+| `projects[].remote` | Same pattern as `targetRepo` |
+
+If any field fails validation, stop with:
+> Config field `<field>` failed security validation: `<value>`. Edit `~/.claude/skills/devlog/config.json` and retry.
+
+Once validated, the values are safe to interpolate into the shell commands below. Even so, **prefer `git -C <path>` form over `cd <path> && git ...`** (reduces shell-escape complexity) and **use the Write tool, not bash heredocs, when writing JSON or markdown files** (avoids accidentally re-injecting attacker-controlled content into shell).
+
 ## Step 1: Determine scope
 
 - If the user passed a project argument (e.g. `/devlog myproject`), filter `projects` to that one. If the key is not in the registry, list available keys and stop.
@@ -54,10 +73,10 @@ Validate that `targetRepo`, `gitAuthor`, `githubUser`, and `projects` (non-empty
 
 ## Step 2: Gather today's commits
 
-For each project in scope, run:
+For each project in scope, run (use `git -C` to avoid `cd` shell-composition):
 
 ```bash
-cd <project.path> && git log --author="<config.gitAuthor>" --since="midnight" --format="%H|%s|%D" --all
+git -C <project.path> log --author=<config.gitAuthor> --since=midnight --format=%H|%s|%D --all
 ```
 
 If no commits are found for a project, skip it. If no commits are found across all projects, inform the user and stop.
@@ -67,8 +86,8 @@ If no commits are found for a project, skip it. If no commits are found across a
 For each commit, check if it's on the `main` branch and if the remote is public:
 
 ```bash
-cd <project.path> && git remote get-url origin
-git branch --contains <hash> -r 2>/dev/null | grep -q 'origin/main'
+git -C <project.path> remote get-url origin
+git -C <project.path> branch --contains <hash> -r 2>/dev/null | grep -q 'origin/main'
 ```
 
 - If the remote URL matches `<project.remote>` (i.e. `github.com/<project.remote>` or the SSH equivalent) and the commit is on `origin/main`, it's a public commit — include a link using `https://github.com/<project.remote>/commit/<hash>`.
@@ -125,33 +144,38 @@ gh api repos/<config.targetRepo>/contents/<project.key>/YYYY-MM-DD.md --jq '.con
 
 ## Step 6: Push to GitHub
 
-Clone the repo once, write all project entries, then push:
+Clone the repo once, write all project entries, then push.
+
+**Important:** Claude Code's bash tool runs each invocation in a fresh shell — variables don't persist across calls. Use a single temp path you compute once and pass as an absolute path to every subsequent command. Do NOT rely on `$TMPDIR` or any other shell variable surviving between bash calls.
 
 ```bash
-# Clone to temp directory
-TMPDIR=$(mktemp -d)
-cd "$TMPDIR"
-git clone https://github.com/<config.targetRepo>.git
-cd $(basename <config.targetRepo>)
+# Step 6.1: create temp dir, capture absolute path (use this exact path
+# in every subsequent command — do not reference $TMPDIR after this call)
+mktemp -d
+# → record the printed path, e.g. /var/folders/.../tmp.abc123
 
-# For each project with commits:
-# - Create directory if needed: mkdir -p <project.key>/
-# - Write the entry file to <project.key>/YYYY-MM-DD.md
-# - Update <project.key>/manifest.json
-#   - Read manifest, add/update entry in entries array (newest first)
-#   - Entry object: { "date": "YYYY-MM-DD", "file": "YYYY-MM-DD.md", "title": "...", "summary": "..." }
-#   - If appending to existing entry, update title/summary only if changed
-#   - If manifest doesn't exist, create it as { "entries": [...] }
+# Step 6.2: clone (use --depth=1 to limit blast radius if remote is huge)
+git -C <abs-tmp-path> clone --depth=1 https://github.com/<config.targetRepo>.git
+```
 
-# Stage all changed project directories
-git add .
+Write entries and manifest using the **Write tool** (not bash heredocs — avoids re-injecting content into shell):
 
-# Single commit covering all projects
-git commit -m "devlog: add entries for YYYY-MM-DD"
-git push origin <config.branch || 'main'>
+- For each project with commits:
+  - Path: `<abs-tmp-path>/<repo-name>/<project.key>/YYYY-MM-DD.md`
+  - Path: `<abs-tmp-path>/<repo-name>/<project.key>/manifest.json` — read with the Read tool, mutate the entries array (newest first), write back
+  - Entry object: `{ "date": "YYYY-MM-DD", "file": "YYYY-MM-DD.md", "title": "...", "summary": "..." }`
+  - If appending to existing entry, update title/summary only if changed
+  - If manifest doesn't exist, create it as `{ "entries": [...] }`
 
-# Cleanup
-rm -rf "$TMPDIR"
+Then commit and push:
+
+```bash
+git -C <abs-tmp-path>/<repo-name> add .
+git -C <abs-tmp-path>/<repo-name> commit -m "devlog: add entries for YYYY-MM-DD"
+git -C <abs-tmp-path>/<repo-name> push origin <config.branch || 'main'>
+
+# Cleanup — pass the absolute path explicitly
+rm -rf <abs-tmp-path>
 ```
 
 ## Step 7: Confirm
