@@ -174,7 +174,7 @@ The README is the product. Single page, ordered for skim-first reading:
 
 ```
 # devlog
-[1-line pitch] [screenshot of natejswenson.io devlog page]
+[1-line pitch] [screenshot of natejswenson.com devlog page]
 
 ## Quick start
     npx @natjswenson/devlog init

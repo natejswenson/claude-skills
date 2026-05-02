@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/devlog",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Daily dev log generator — Claude Code skill + preview app for publishing git-based dev logs to your site",
   "license": "MIT",
   "author": "Nate Swenson",

@@ -9,7 +9,7 @@ A Claude Code skill that turns your daily git commits into a published dev log â
 
 ## Live example
 
-The skill is in production at [natejswenson.io/devlog](https://natejswenson.io/devlog), publishing entries to [github.com/natejswenson/daily-dev-log](https://github.com/natejswenson/daily-dev-log). What you see on that page is exactly what `npx @natjswenson/devlog preview` renders for you locally.
+The skill is in production at [natejswenson.com/devlog](https://natejswenson.com/devlog), publishing entries to [github.com/natejswenson/daily-dev-log](https://github.com/natejswenson/daily-dev-log). What you see on that page is exactly what `npx @natjswenson/devlog preview` renders for you locally.
 
 ## How it works
 
