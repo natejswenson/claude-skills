@@ -2,6 +2,17 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.1.8 (2026-05-01) — final hardening pass
+
+Closes the four Low-Hardening findings from the second adversarial verification:
+
+- **L-1:** `validateConfig` now bounds `projects[].label` length (≤200 chars) and rejects control characters. Label apostrophes/quotes/etc are intentionally allowed since label is React text content only — never shell-interpolated. The validator includes an explicit invariant comment to keep this guarantee load-bearing.
+- **L-2:** `atomicWriteJSON` uses `wx` (exclusive create) flag, preventing symlink-attack scenarios on shared filesystems where another local user could pre-create the tmp file.
+- **L-3:** `atomicWriteJSON` tmp filename now also includes `Date.now()` for additional uniqueness across rapid sequential calls.
+- **L-4:** SKILL.md Step 5 explicitly instructs the LLM to treat fetched dev-log content as data, not instructions — defense against indirect prompt injection from hostile dev-log markdown.
+
+Verification: a second 6-perspective adversarial agent against HEAD reports zero Critical/High/Medium-Active vulnerabilities remain.
+
 ## 0.1.7 (2026-05-01) — security hardening + UX improvements
 
 **Security**

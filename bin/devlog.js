@@ -78,9 +78,12 @@ function expandHome(p) {
 
 // Atomic write: write to sibling tmp file then rename.
 // Prevents readers from seeing a half-written config if process is killed mid-write.
+// Uses `wx` (exclusive create) flag to prevent symlink-attack on shared filesystems
+// — if an attacker pre-creates the tmp file, our write fails rather than following
+// the symlink to a sensitive target.
 function atomicWriteJSON(path, data) {
-  const tmp = path + '.tmp.' + process.pid;
-  writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
+  const tmp = path + '.tmp.' + process.pid + '.' + Date.now();
+  writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
   try {
     renameSync(tmp, path);
   } catch (e) {
@@ -127,8 +130,16 @@ function validateConfig(config) {
     if (!RE_OWNER_REPO.test(p.remote)) {
       throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
     }
-    if ('label' in p && typeof p.label !== 'string') {
-      throw new Error(`project.label must be a string if present`);
+    if ('label' in p) {
+      // Label is rendered as React text content only — never shell-interpolated,
+      // never used in URLs, never used as a filesystem path. React escapes all
+      // text content. Therefore: any string is safe. Apostrophes (e.g.
+      // "Mom I'm Bored") and unicode are legitimate label content.
+      // INVARIANT: if a future change makes label flow into shell or innerHTML,
+      // tighten this validation to SHELL_QUOTE_BREAK at the same time.
+      if (typeof p.label !== 'string') throw new Error(`project.label must be a string if present`);
+      if (p.label.length > 200) throw new Error(`project.label too long (max 200 chars)`);
+      if (/[\x00-\x1f]/.test(p.label)) throw new Error(`project.label contains control characters`);
     }
   }
   return config;
@@ -207,7 +218,11 @@ const VALIDATORS = {
   },
   ownerRepo: (v) => RE_OWNER_REPO.test(v.trim()) || 'Expected <owner>/<repo>, no leading dash, alphanumeric + ._- only',
   label: (v) => {
-    if (typeof v === 'string' && SHELL_QUOTE_BREAK.test(v)) return 'Label has shell metacharacters (cosmetic field, but kept clean defensively)';
+    // Label is React text content only — apostrophes and most punctuation are fine.
+    // Reject only control chars and overlong values.
+    if (typeof v !== 'string') return true; // optional field
+    if (v.length > 200) return 'Label too long (max 200 chars)';
+    if (/[\x00-\x1f]/.test(v)) return 'Label contains control characters';
     return true;
   },
 };
