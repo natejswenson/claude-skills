@@ -1,12 +1,15 @@
 # devlog
 
+[![npm](https://img.shields.io/npm/v/@natjswenson/devlog?color=blue)](https://www.npmjs.com/package/@natjswenson/devlog)
+[![license](https://img.shields.io/npm/l/@natjswenson/devlog)](./LICENSE)
+
 A Claude Code skill that turns your daily git commits into a published dev log — and a React example for displaying it on your site.
 
 > **Build in public, automatically.** Make commits like you always do. Run `/devlog`. Today's work shows up on your site as a narrative entry, not raw commit messages.
 
 ## Live example
 
-The skill is in production at [natejswenson.io/devlog](https://natejswenson.io/devlog), publishing entries to [github.com/natejswenson/daily-dev-log](https://github.com/natejswenson/daily-dev-log).
+The skill is in production at [natejswenson.io/devlog](https://natejswenson.io/devlog), publishing entries to [github.com/natejswenson/daily-dev-log](https://github.com/natejswenson/daily-dev-log). What you see on that page is exactly what `npx @natjswenson/devlog preview` renders for you locally.
 
 ## How it works
 
@@ -158,6 +161,22 @@ See [`config.example.json`](./config.example.json) for a complete template.
 - **Tweak the entry template:** edit `~/.claude/skills/devlog/SKILL.md` (Step 4 — generate the entry).
 - **Tweak the UI:** override the `--devlog-*` CSS variables in `examples/react/DevLogPage.css` to match your theme. Or build your own UI against the data contract above.
 - **Add more projects:** edit `~/.claude/skills/devlog/config.json` directly.
+
+## Troubleshooting
+
+**`sh: devlog: command not found` when running `npx`:** you're probably inside a checkout of this repo. The local `package.json` collides with the published name. Run `npx` from anywhere else (e.g. `cd ~ && npx @natjswenson/devlog ...`).
+
+**Init prompt shows `78` after the placeholder text:** that's an artifact of capturing terminal output (cursor save/restore escapes); in a real terminal you won't see it.
+
+**Preview is blank / no tabs / no entries:** check the browser console. If you see *"does not provide an export named …"* errors related to `react-dom/client`, `style-to-js`, or `react-markdown`, you're on a pre-0.1.3 release — upgrade with `npm cache clean --force && rm -rf ~/.npm/_npx && npx --yes @natjswenson/devlog@latest preview`.
+
+**`npm publish` (if you fork/republish your own copy) fails with 403:** npm requires 2FA or a granular access token with bypass-2FA enabled for write operations. Easiest path: enable 2FA, install an authenticator app, and pass `--otp=<code>` to `npm publish`.
+
+**Init can't find `gh`:** install via [cli.github.com](https://cli.github.com/) and run `gh auth login`.
+
+## Versioning
+
+Stable: see [npm](https://www.npmjs.com/package/@natjswenson/devlog). The package follows semver — bug fixes in patch releases (0.1.x), behavior changes in minor (0.x.0).
 
 ## License
 

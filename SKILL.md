@@ -14,22 +14,26 @@ Usage: `/devlog` (all configured projects) or `/devlog <project-key>` (single pr
 
 This skill is configuration-driven. All user-specific values (target repo, git author, project list) live in `~/.claude/skills/devlog/config.json`.
 
-Schema:
+Schema (required fields plus optional ones):
 
 ```json
 {
   "targetRepo": "<owner>/<repo>",
+  "branch": "main",
   "gitAuthor": "Your Name",
   "githubUser": "<your-github-username>",
   "projects": [
     {
       "key": "project-key",
+      "label": "Display Name",
       "path": "/absolute/path/to/project",
       "remote": "<owner>/<repo>"
     }
   ]
 }
 ```
+
+Optional fields: `branch` (defaults to `main`), `projects[].label` (defaults to `key`).
 
 ## Step 0: Load and validate config
 
@@ -144,7 +148,7 @@ git add .
 
 # Single commit covering all projects
 git commit -m "devlog: add entries for YYYY-MM-DD"
-git push origin main
+git push origin <config.branch || 'main'>
 
 # Cleanup
 rm -rf "$TMPDIR"
@@ -160,7 +164,7 @@ Dev log entries published for <Month Day, Year>
   Project: <project.key>
   Commits summarized: <count>
   Public commits linked: <count>
-  URL: https://github.com/<config.targetRepo>/blob/main/<project.key>/YYYY-MM-DD.md
+  URL: https://github.com/<config.targetRepo>/blob/<config.branch || 'main'>/<project.key>/YYYY-MM-DD.md
 ```
 
 ## Edge Cases
