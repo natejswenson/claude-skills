@@ -1,10 +1,12 @@
 {
   "targetRepo": "yourusername/daily-dev-log",
+  "branch": "main",
   "gitAuthor": "Your Name",
   "githubUser": "yourusername",
   "projects": [
     {
       "key": "midnight-side-quest",
+      "label": "Midnight Side Quest",
       "path": "/Users/yourusername/code/midnight-side-quest",
       "remote": "yourusername/midnight-side-quest"
     },

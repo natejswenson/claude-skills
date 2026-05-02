@@ -256,7 +256,8 @@ async function cmdPreview() {
     process.exit(1);
   }
 
-  const projects = (config.projects || []).map((p) => ({ key: p.key, label: p.key }));
+  const projects = (config.projects || []).map((p) => ({ key: p.key, label: p.label || p.key }));
+  const branch = config.branch || 'main';
 
   log.step(`Launching preview against github.com/${config.targetRepo}...`);
 
@@ -271,7 +272,7 @@ async function cmdPreview() {
       ...process.env,
       VITE_DEVLOG_OWNER: owner,
       VITE_DEVLOG_REPO: repo,
-      VITE_DEVLOG_BRANCH: 'main',
+      VITE_DEVLOG_BRANCH: branch,
       VITE_DEVLOG_PROJECTS: JSON.stringify(projects),
     },
   });

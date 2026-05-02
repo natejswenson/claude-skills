@@ -142,10 +142,12 @@ That's the entire contract.
 | Field | Type | Description |
 |---|---|---|
 | `targetRepo` | `"<owner>/<repo>"` | Repo where dev log entries are published. **You create this — `init` does it for you, or `gh repo create` manually.** |
+| `branch` | string (optional) | Branch in the dev-log repo. Defaults to `main`. |
 | `gitAuthor` | string | Used as `git log --author=...` to find your commits. |
 | `githubUser` | string | Your GitHub username (for constructing commit links). |
 | `projects` | array | One entry per project you want dev logs for. |
-| `projects[].key` | string | Subdirectory name in the dev-log repo + tab label on the UI. |
+| `projects[].key` | string | Subdirectory name in the dev-log repo. |
+| `projects[].label` | string (optional) | Display name for the project tab in the UI. Defaults to `key`. |
 | `projects[].path` | string | Local filesystem path to the project. |
 | `projects[].remote` | `"<owner>/<repo>"` | The project's GitHub remote, used to mark public commits and link them. |
 
