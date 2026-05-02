@@ -1,0 +1,12 @@
+{
+  "targetRepo": "yourusername/daily-dev-log",
+  "gitAuthor": "Your Name",
+  "githubUser": "yourusername",
+  "projects": [
+    {
+      "key": "myproject",
+      "path": "/Users/yourusername/code/myproject",
+      "remote": "yourusername/myproject"
+    }
+  ]
+}
