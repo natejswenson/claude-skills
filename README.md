@@ -17,7 +17,7 @@ The skill is in production at [natejswenson.io/devlog](https://natejswenson.io/d
 ## Quick start
 
 ```sh
-npx @natejswenson/devlog init
+npx @natjswenson/devlog init
 ```
 
 That command:
@@ -27,7 +27,7 @@ That command:
 
 Then:
 ```sh
-npx @natejswenson/devlog preview
+npx @natjswenson/devlog preview
 ```
 to see your dev log rendered locally.
 

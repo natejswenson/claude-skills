@@ -39,7 +39,7 @@ cat ~/.claude/skills/devlog/config.json
 
 If the file does not exist or cannot be parsed, stop and tell the user:
 
-> No devlog config found at `~/.claude/skills/devlog/config.json`. Run `npx @natejswenson/devlog init` to set up, or copy `config.example.json` from the devlog repo and fill it in manually.
+> No devlog config found at `~/.claude/skills/devlog/config.json`. Run `npx @natjswenson/devlog init` to set up, or copy `config.example.json` from the devlog repo and fill it in manually.
 
 Validate that `targetRepo`, `gitAuthor`, `githubUser`, and `projects` (non-empty array) are all present. Each project must have `key`, `path`, and `remote`.
 

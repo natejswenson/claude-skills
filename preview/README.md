@@ -5,7 +5,7 @@ Standalone Vite app that renders your published dev log locally.
 ## Run via CLI (recommended)
 
 ```sh
-npx @natejswenson/devlog preview
+npx @natjswenson/devlog preview
 ```
 
 The CLI reads `~/.claude/skills/devlog/config.json` and passes the values to Vite via env vars.

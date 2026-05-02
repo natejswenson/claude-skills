@@ -33,7 +33,7 @@ function DemoBanner() {
           You're looking at fake entries. Wipe this and point at your real dev log:
         </span>
       </div>
-      <pre className="demo-banner__code">npx @natejswenson/devlog init</pre>
+      <pre className="demo-banner__code">npx @natjswenson/devlog init</pre>
       <div className="demo-banner__small">
         Or set <code>VITE_DEVLOG_OWNER</code>, <code>VITE_DEVLOG_REPO</code>, <code>VITE_DEVLOG_PROJECTS</code> in <code>preview/.env.local</code> and restart vite.
       </div>
@@ -56,7 +56,7 @@ function NoProjectsScreen() {
   ]
 }`}</pre>
       <p>
-        Then run <code>npx @natejswenson/devlog preview</code> again, or set
+        Then run <code>npx @natjswenson/devlog preview</code> again, or set
         <code> VITE_DEVLOG_PROJECTS</code> directly in <code>preview/.env.local</code>.
       </p>
     </div>

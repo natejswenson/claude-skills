@@ -231,14 +231,14 @@ async function cmdInit() {
   log.info(`  1. ${config.projects.length === 0 ? 'Edit config.json to register projects' : '(Optional) edit config.json to register more projects'}`);
   log.info('  2. Make some commits in a registered project');
   log.info('  3. In Claude Code, run: /devlog');
-  log.info('  4. Preview locally: npx @natejswenson/devlog preview');
+  log.info('  4. Preview locally: npx @natjswenson/devlog preview');
   log.info('');
 }
 
 async function cmdPreview() {
   if (!existsSync(CONFIG_PATH)) {
     log.err(`No config found at ${CONFIG_PATH}`);
-    log.info('Run `npx @natejswenson/devlog init` first.');
+    log.info('Run `npx @natjswenson/devlog init` first.');
     process.exit(1);
   }
 
@@ -280,13 +280,13 @@ async function cmdPreview() {
 
 function printHelp() {
   console.log(`
-${kleur.bold('@natejswenson/devlog')} — daily dev log generator
+${kleur.bold('@natjswenson/devlog')} — daily dev log generator
 
 Usage:
-  npx @natejswenson/devlog init       Set up the skill, create your dev-log repo, write config
-  npx @natejswenson/devlog preview    Run a local preview of your published dev log
-  npx @natejswenson/devlog --help
-  npx @natejswenson/devlog --version
+  npx @natjswenson/devlog init       Set up the skill, create your dev-log repo, write config
+  npx @natjswenson/devlog preview    Run a local preview of your published dev log
+  npx @natjswenson/devlog --help
+  npx @natjswenson/devlog --version
 
 Docs: https://github.com/natejswenson/devlog
 `);

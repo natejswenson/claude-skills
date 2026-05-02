@@ -2,7 +2,7 @@
  * Demo mode for the preview app.
  *
  * When the user runs the preview without env vars (or without going through
- * `npx @natejswenson/devlog init`), we render fake entries against a
+ * `npx @natjswenson/devlog init`), we render fake entries against a
  * pretend GitHub URL. The real DevLogPage component does its normal thing;
  * a tiny fetch override intercepts requests to the demo URL and serves
  * canned data.
@@ -55,11 +55,11 @@ about something unrelated. We believe in you.
     body: `## The lazy path
 
 \`\`\`sh
-npx @natejswenson/devlog init
+npx @natjswenson/devlog init
 \`\`\`
 
 Answer four prompts. The CLI creates your dev-log repo on GitHub, installs
-the Claude Code skill, and writes your config. Run \`npx @natejswenson/devlog preview\`
+the Claude Code skill, and writes your config. Run \`npx @natjswenson/devlog preview\`
 again. This entry vanishes. You feel powerful.
 
 ## The manual path

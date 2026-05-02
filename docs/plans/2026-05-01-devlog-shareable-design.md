@@ -1,19 +1,19 @@
 ---
 ticket: "n/a"
-title: "Shareable @natejswenson/devlog repo"
+title: "Shareable @natjswenson/devlog repo"
 date: "2026-05-01"
 source: "design"
 ---
 
-# Shareable `@natejswenson/devlog` repo — design
+# Shareable `@natjswenson/devlog` repo — design
 
 ## Goal
 
-Turn the personal `/devlog` skill into a public, easy-to-adopt project. A new user should be able to run **one command** (`npx @natejswenson/devlog init`) and have:
+Turn the personal `/devlog` skill into a public, easy-to-adopt project. A new user should be able to run **one command** (`npx @natjswenson/devlog init`) and have:
 
 1. A GitHub repo where their dev log entries get published.
 2. The Claude Code skill installed and configured locally.
-3. A path to either preview locally (`npx @natejswenson/devlog preview`) or copy the React components into their own site.
+3. A path to either preview locally (`npx @natjswenson/devlog preview`) or copy the React components into their own site.
 
 Lean v1 — ship fast for the LinkedIn audience that asked. No frameworks beyond React, no auth, no private-repo support.
 
@@ -28,7 +28,7 @@ devlog/
 ├── README.md                    # Single source of setup truth
 ├── SKILL.md                     # Genericized skill, reads config.json
 ├── config.example.json          # Schema reference + manual-setup template
-├── package.json                 # name: @natejswenson/devlog, bin: devlog
+├── package.json                 # name: @natjswenson/devlog, bin: devlog
 ├── bin/
 │   └── devlog.js                # CLI: `init` and `preview` subcommands
 ├── preview/                     # Standalone Vite app, also deployable
@@ -84,7 +84,7 @@ Config lives at `~/.claude/skills/devlog/config.json`:
 
 The genericized skill is a near-line-for-line port of the existing one. Only these changes:
 
-1. **Step 0 (new):** Read and validate `~/.claude/skills/devlog/config.json`. If missing, instruct user to run `npx @natejswenson/devlog init`.
+1. **Step 0 (new):** Read and validate `~/.claude/skills/devlog/config.json`. If missing, instruct user to run `npx @natjswenson/devlog init`.
 2. **Project Registry table** → replaced with: "Projects are configured in `config.json`. The skill operates on `config.projects[]`."
 3. **`--author="Nate"`** → `--author="<config.gitAuthor>"`
 4. **`natejswenson/daily-dev-log`** → `<config.targetRepo>` (everywhere it appears)
@@ -96,7 +96,7 @@ Everything else — step structure, append mode, manifest update logic, content 
 
 Single Node entrypoint at `bin/devlog.js`. Two subcommands. Minimal dependencies: `prompts` (interactive prompts) and `kleur` (terminal colors). Everything else uses Node built-ins.
 
-### `npx @natejswenson/devlog init`
+### `npx @natjswenson/devlog init`
 
 One-time bootstrap. Idempotent on re-run (prompts before overwriting).
 
@@ -128,10 +128,10 @@ One-time bootstrap. Idempotent on re-run (prompts before overwriting).
    1. (Optional) Edit config.json to register more projects
    2. Make some commits in a registered project
    3. Run /devlog in Claude Code to publish your first entry
-   4. Run `npx @natejswenson/devlog preview` to see it locally
+   4. Run `npx @natjswenson/devlog preview` to see it locally
    ```
 
-### `npx @natejswenson/devlog preview`
+### `npx @natjswenson/devlog preview`
 
 **Preflight:** read `~/.claude/skills/devlog/config.json`. If missing, instruct user to run `init`.
 
@@ -177,7 +177,7 @@ The README is the product. Single page, ordered for skim-first reading:
 [1-line pitch] [screenshot of natejswenson.io devlog page]
 
 ## Quick start
-    npx @natejswenson/devlog init
+    npx @natjswenson/devlog init
 That creates your dev-log repo, installs the skill, sets up config.
 
 ## How it works
@@ -192,7 +192,7 @@ That creates your dev-log repo, installs the skill, sets up config.
 
 ## Setup options
 ### Option A: One command (recommended)
-    npx @natejswenson/devlog init
+    npx @natjswenson/devlog init
 
 ### Option B: Manual
 1. gh repo create <you>/daily-dev-log --public
@@ -200,7 +200,7 @@ That creates your dev-log repo, installs the skill, sets up config.
 3. cp config.example.json ~/.claude/skills/devlog/config.json (then edit)
 
 ## Preview locally
-    npx @natejswenson/devlog preview
+    npx @natjswenson/devlog preview
 
 ## Add to your site
 - React: copy examples/react/ in, edit devlog-config.js, mount <DevLogPage>
@@ -225,10 +225,10 @@ MIT
 
 | Command | Effect |
 |---|---|
-| `npx @natejswenson/devlog init` | Interactive setup. Creates `<user>/<repo>` on GitHub, writes `~/.claude/skills/devlog/{SKILL.md,config.json}`. |
-| `npx @natejswenson/devlog preview` | Reads config, launches Vite dev server pointed at user's published dev log. |
-| `npx @natejswenson/devlog --help` | Usage. |
-| `npx @natejswenson/devlog --version` | Version from package.json. |
+| `npx @natjswenson/devlog init` | Interactive setup. Creates `<user>/<repo>` on GitHub, writes `~/.claude/skills/devlog/{SKILL.md,config.json}`. |
+| `npx @natjswenson/devlog preview` | Reads config, launches Vite dev server pointed at user's published dev log. |
+| `npx @natjswenson/devlog --help` | Usage. |
+| `npx @natjswenson/devlog --version` | Version from package.json. |
 
 ### Config schema (`~/.claude/skills/devlog/config.json`)
 
@@ -311,8 +311,8 @@ useDevLogEntries(project: string): {
 - `examples/react/` files have no imports from outside the directory except npm packages.
 
 **Testable:**
-- `npx @natejswenson/devlog init` in a clean environment produces a valid `config.json` and copies SKILL.md to `~/.claude/skills/devlog/`.
-- `npx @natejswenson/devlog preview` against a known-good `<owner>/<repo>/<project>` renders entries without console errors.
+- `npx @natjswenson/devlog init` in a clean environment produces a valid `config.json` and copies SKILL.md to `~/.claude/skills/devlog/`.
+- `npx @natjswenson/devlog preview` against a known-good `<owner>/<repo>/<project>` renders entries without console errors.
 - Running the genericized SKILL.md with a valid config produces an entry whose content is structurally identical (frontmatter shape, sections) to the current production skill's output.
 
 ## Failure modes & handling
@@ -341,12 +341,12 @@ useDevLogEntries(project: string): {
 
 ## Open questions
 
-None blocking. npm package name `@natejswenson/devlog` is confirmed. License: MIT (default for shareable repo, no reason to differ).
+None blocking. npm package name `@natjswenson/devlog` is confirmed. License: MIT (default for shareable repo, no reason to differ).
 
 ## Acceptance criteria
 
 A new adopter, on a fresh machine with Node 18+, `gh` authenticated, and Claude Code installed:
-1. Runs `npx @natejswenson/devlog init`, answers prompts → has working skill + repo + config.
+1. Runs `npx @natjswenson/devlog init`, answers prompts → has working skill + repo + config.
 2. Makes a commit in their registered project, runs `/devlog` in Claude Code → entry appears in their dev-log repo.
-3. Runs `npx @natejswenson/devlog preview` → sees their entry rendered locally.
+3. Runs `npx @natjswenson/devlog preview` → sees their entry rendered locally.
 4. Either (a) follows `examples/react/README.md` to drop into their existing site, or (b) deploys `preview/dist/` to Vercel and gets a public dev log site.
