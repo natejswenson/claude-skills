@@ -7,6 +7,17 @@ import './DevLogPage.css';
 
 const ENTRIES_PER_PAGE = 10;
 
+// Strict allowlist of URL schemes permitted in markdown links/images.
+// react-markdown 9's default sanitizer already blocks `javascript:`,
+// `vbscript:`, `file:`. We narrow further: only http/https/mailto.
+// Anything else (data:, blob:, ftp:, custom schemes) is replaced with `#`.
+const SAFE_URL_SCHEME = /^(https?:|mailto:|#|\/|\.\.?\/|[^:]*$)/i;
+function safeUrlTransform(url) {
+  if (typeof url !== 'string') return '#';
+  if (SAFE_URL_SCHEME.test(url)) return url;
+  return '#';
+}
+
 function formatDate(dateStr) {
   if (typeof dateStr !== 'string') return '';
   const parts = dateStr.split('-');
@@ -143,7 +154,11 @@ export default function DevLogPage({
                     <div className="devlog-content-inner">
                       {isExpanded && content && (
                         <div className="devlog-content" onClick={(e) => e.stopPropagation()}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            urlTransform={safeUrlTransform}
+                            skipHtml
+                          >
                             {content}
                           </ReactMarkdown>
                         </div>

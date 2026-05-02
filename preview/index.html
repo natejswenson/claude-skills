@@ -3,6 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content-Security-Policy: defense-in-depth for the preview app.
+      - 'self' for scripts/styles (no inline JS, no eval)
+      - 'unsafe-inline' for styles only — required by Vite's HMR runtime in dev
+        and react-markdown's prismjs (none used here, but standard practice)
+      - connect to raw.githubusercontent.com for entry fetches; api.github.com
+        for any future repo metadata; demo-mode.local for the in-browser fetch
+        override that powers demo mode without env vars
+      - no objects, no frames, no plugins
+      Production build: replace 'unsafe-inline' with hashes/nonces if you
+      configure Vite to emit them.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://raw.githubusercontent.com https://api.github.com https://demo-mode.local; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'none';" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
     <title>devlog preview</title>
     <style>
       :root {

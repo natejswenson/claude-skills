@@ -1,14 +1,31 @@
 #!/usr/bin/env node
 import { spawn, spawnSync, execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, renameSync, unlinkSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve, basename } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import prompts from 'prompts';
 import kleur from 'kleur';
 
-const SHELL_METACHARS = /[;&|`$()<>{}*?!#~"\\\n\r]/;
+// ─── shared validators (single source of truth, also used by SKILL.md guidance) ───
+//
+// SHELL_QUOTE_BREAK matches characters that can break out of a single-quoted
+// shell string OR are dangerous if quoting is omitted. The skill instructs the
+// LLM to single-quote every interpolated value; rejecting these chars upstream
+// guarantees that single-quoting is sufficient. Whitespace, dots, hyphens,
+// equals, and similar are NOT rejected — they're literal inside '...' and are
+// legitimate in human-readable fields like names and paths.
+//
+// For strict-token fields (project keys, repo names, branch names), separate
+// allowlist regexes apply additional structural constraints.
+const SHELL_QUOTE_BREAK = /[;&|`$()<>{}[\]*?!#~"'\\\n\r]/;
+const RE_GH_USER = /^[a-z0-9][a-z0-9-]*$/i;
+const RE_REPO_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
+const RE_OWNER_REPO = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
+const RE_PROJECT_KEY = /^[a-z0-9][a-z0-9._-]*$/i;
+const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
+const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
 
 const require = createRequire(import.meta.url);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,6 +41,7 @@ const log = {
   warn: (msg) => console.log(kleur.yellow('! ') + msg),
   err: (msg) => console.error(kleur.red('✗ ') + msg),
   step: (msg) => console.log(kleur.cyan('→ ') + msg),
+  hint: (msg) => console.log(kleur.dim('  ' + msg)),
 };
 
 function readPackageVersion() {
@@ -31,8 +49,7 @@ function readPackageVersion() {
   return pkg.version;
 }
 
-// Runs a hardcoded shell command (no user input). Use tryExecArgs for any
-// command whose arguments include user-supplied values.
+// Hardcoded shell command, no user input. Use tryExecArgs for anything user-supplied.
 function tryExec(cmd) {
   try {
     return execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
@@ -59,31 +76,91 @@ function expandHome(p) {
   return p;
 }
 
+// Atomic write: write to sibling tmp file then rename.
+// Prevents readers from seeing a half-written config if process is killed mid-write.
+function atomicWriteJSON(path, data) {
+  const tmp = path + '.tmp.' + process.pid;
+  writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
+  try {
+    renameSync(tmp, path);
+  } catch (e) {
+    try { unlinkSync(tmp); } catch {}
+    throw e;
+  }
+}
+
+// Validate a config object before writing. Throws with a user-facing message on failure.
+function validateConfig(config) {
+  if (!config || typeof config !== 'object') throw new Error('Config must be an object');
+  const required = ['targetRepo', 'gitAuthor', 'githubUser', 'projects'];
+  for (const k of required) {
+    if (!(k in config)) throw new Error(`Missing required field: ${k}`);
+  }
+  if (!RE_OWNER_REPO.test(config.targetRepo)) {
+    throw new Error(`targetRepo must match <owner>/<repo>: got ${JSON.stringify(config.targetRepo)}`);
+  }
+  if (typeof config.gitAuthor !== 'string' || config.gitAuthor.length === 0 || SHELL_QUOTE_BREAK.test(config.gitAuthor)) {
+    throw new Error(`gitAuthor must be non-empty and contain no shell metacharacters: got ${JSON.stringify(config.gitAuthor)}`);
+  }
+  if (!RE_GH_USER.test(config.githubUser)) {
+    throw new Error(`githubUser must match GitHub username pattern: got ${JSON.stringify(config.githubUser)}`);
+  }
+  if ('branch' in config) {
+    if (!RE_BRANCH.test(config.branch) || FORBIDDEN_BRANCH_PARTS.test(config.branch)) {
+      throw new Error(`branch must be a valid git branch name (no leading dash, no '..'): got ${JSON.stringify(config.branch)}`);
+    }
+  }
+  if (!Array.isArray(config.projects)) {
+    throw new Error('projects must be an array');
+  }
+  const seenKeys = new Set();
+  for (const p of config.projects) {
+    if (!p || typeof p !== 'object') throw new Error('Each project must be an object');
+    if (!RE_PROJECT_KEY.test(p.key) || p.key.includes('..')) {
+      throw new Error(`project.key invalid: ${JSON.stringify(p.key)}`);
+    }
+    if (seenKeys.has(p.key)) throw new Error(`Duplicate project key: ${JSON.stringify(p.key)}`);
+    seenKeys.add(p.key);
+    if (typeof p.path !== 'string' || SHELL_QUOTE_BREAK.test(p.path)) {
+      throw new Error(`project.path invalid (must contain no shell metacharacters): ${JSON.stringify(p.path)}`);
+    }
+    if (!RE_OWNER_REPO.test(p.remote)) {
+      throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
+    }
+    if ('label' in p && typeof p.label !== 'string') {
+      throw new Error(`project.label must be a string if present`);
+    }
+  }
+  return config;
+}
+
+function readConfig() {
+  if (!existsSync(CONFIG_PATH)) return null;
+  const raw = readFileSync(CONFIG_PATH, 'utf8');
+  return JSON.parse(raw);
+}
+
 async function preflight() {
   const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
   if (nodeMajor < 18) {
     log.err(`Node 18+ required (you have ${process.versions.node}).`);
+    log.hint('Update Node: https://nodejs.org/');
     process.exit(1);
   }
-
-  const ghVersion = tryExec('gh --version');
-  if (!ghVersion) {
+  if (!tryExec('gh --version')) {
     log.err('GitHub CLI (`gh`) is not installed.');
-    log.info('Install: https://cli.github.com/');
+    log.hint('Install: https://cli.github.com/   then run `gh auth login`');
     process.exit(1);
   }
-
-  const ghAuth = tryExec('gh auth status');
-  if (!ghAuth) {
+  if (!tryExec('gh auth status')) {
     log.err('GitHub CLI is not authenticated.');
-    log.info('Run: gh auth login');
+    log.hint('Run: gh auth login');
     process.exit(1);
   }
 }
 
 function detectGhUser() {
-  const out = tryExec('gh api user --jq .login');
-  return out || null;
+  return tryExec('gh api user --jq .login') || null;
 }
 
 function detectGitName() {
@@ -104,10 +181,84 @@ async function confirmOverwrite(label, path) {
     name: 'ok',
     message: `${label} already exists at ${path}. Overwrite?`,
     initial: false,
-  });
+  }, { onCancel: () => process.exit(1) });
   return ok === true;
 }
 
+// ─── prompt validators (reused across init and add-project) ──────────────────
+const VALIDATORS = {
+  gitAuthor: (v) => {
+    if (v.trim().length === 0) return 'Required';
+    if (SHELL_QUOTE_BREAK.test(v)) return 'Invalid characters (no quotes, backticks, dollar signs, semicolons, parens, or shell metacharacters)';
+    return true;
+  },
+  githubUser: (v) => RE_GH_USER.test(v.trim()) || 'Invalid username (must start with letter/digit, alphanumeric + hyphens only)',
+  targetRepoName: (v) => RE_REPO_NAME.test(v.trim()) || 'Invalid repo name (must start with letter/digit, no leading dash)',
+  path: (v) => {
+    if (SHELL_QUOTE_BREAK.test(v)) return 'Invalid characters (no quotes, backticks, dollar signs, semicolons, parens, or shell metacharacters)';
+    if (v.trim().startsWith('-')) return 'Path cannot start with a dash';
+    return existsSync(expandHome(v)) || 'Path does not exist';
+  },
+  projectKey: (v) => {
+    const t = v.trim();
+    if (!RE_PROJECT_KEY.test(t)) return 'Invalid key (must start with letter/digit, alphanumeric + ._- only)';
+    if (t.includes('..')) return 'Invalid key (no `..`)';
+    return true;
+  },
+  ownerRepo: (v) => RE_OWNER_REPO.test(v.trim()) || 'Expected <owner>/<repo>, no leading dash, alphanumeric + ._- only',
+  label: (v) => {
+    if (typeof v === 'string' && SHELL_QUOTE_BREAK.test(v)) return 'Label has shell metacharacters (cosmetic field, but kept clean defensively)';
+    return true;
+  },
+};
+
+// Prompt for a single project's fields. Returns { key, path, remote, label } or null on cancel.
+async function promptForProject(defaults = {}) {
+  const initialPath = defaults.path || process.cwd();
+  const initialKey = defaults.key || basename(expandHome(initialPath));
+  const initialRemote = defaults.remote || detectProjectRemote(expandHome(initialPath)) || '';
+
+  const answers = await prompts([
+    {
+      type: 'text',
+      name: 'path',
+      message: 'Project absolute path:',
+      initial: initialPath,
+      validate: VALIDATORS.path,
+    },
+    {
+      type: 'text',
+      name: 'key',
+      message: 'Project key (used as dev-log subdir name):',
+      initial: (_p, values) => basename(expandHome(values.path || initialKey)),
+      validate: VALIDATORS.projectKey,
+    },
+    {
+      type: 'text',
+      name: 'label',
+      message: 'Project display label (optional, defaults to key):',
+      initial: '',
+      validate: VALIDATORS.label,
+    },
+    {
+      type: 'text',
+      name: 'remote',
+      message: 'Project GitHub remote (<owner>/<repo>):',
+      initial: (_p, values) => detectProjectRemote(expandHome(values.path)) || initialRemote,
+      validate: VALIDATORS.ownerRepo,
+    },
+  ], { onCancel: () => process.exit(1) });
+
+  const out = {
+    key: answers.key.trim(),
+    path: expandHome(answers.path),
+    remote: answers.remote.trim(),
+  };
+  if (answers.label && answers.label.trim()) out.label = answers.label.trim();
+  return out;
+}
+
+// ─── init ────────────────────────────────────────────────────────────────────
 async function cmdInit() {
   log.info(kleur.bold('\ndevlog setup\n'));
   await preflight();
@@ -119,113 +270,69 @@ async function cmdInit() {
   };
 
   const answers = await prompts([
-    {
-      type: 'text',
-      name: 'gitAuthor',
-      message: 'Your name (used to filter `git log --author`):',
-      initial: defaults.gitAuthor,
-      validate: (v) => {
-        if (v.trim().length === 0) return 'Required';
-        if (SHELL_METACHARS.test(v)) return 'Invalid characters (no quotes, backticks, or shell metacharacters)';
-        return true;
-      },
-    },
-    {
-      type: 'text',
-      name: 'githubUser',
-      message: 'Your GitHub username:',
-      initial: defaults.githubUser,
-      validate: (v) => /^[a-z0-9][a-z0-9-]*$/i.test(v.trim()) || 'Invalid username (must start with letter/digit, alphanumeric + hyphens only)',
-    },
-    {
-      type: 'text',
-      name: 'targetRepoName',
-      message: 'Name of the repo where dev logs will be published:',
-      initial: defaults.targetRepoName,
-      validate: (v) => /^[a-z0-9][a-z0-9._-]*$/i.test(v.trim()) || 'Invalid repo name (must start with letter/digit, no leading dash)',
-    },
-    {
-      type: 'confirm',
-      name: 'registerProject',
-      message: 'Register a project now? (you can add more later by editing config.json)',
-      initial: true,
-    },
+    { type: 'text', name: 'gitAuthor', message: 'Your name (used to filter `git log --author`):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
+    { type: 'text', name: 'githubUser', message: 'Your GitHub username:', initial: defaults.githubUser, validate: VALIDATORS.githubUser },
+    { type: 'text', name: 'targetRepoName', message: 'Name of the repo where dev logs will be published:', initial: defaults.targetRepoName, validate: VALIDATORS.targetRepoName },
   ], { onCancel: () => process.exit(1) });
 
-  let projectAnswers = null;
-  if (answers.registerProject) {
-    const cwd = process.cwd();
-    const cwdRemote = detectProjectRemote(cwd);
-    projectAnswers = await prompts([
-      {
-        type: 'text',
-        name: 'path',
-        message: 'Project absolute path:',
-        initial: cwd,
-        validate: (v) => {
-          if (SHELL_METACHARS.test(v)) return 'Invalid characters (no quotes, backticks, or shell metacharacters)';
-          return existsSync(expandHome(v)) || 'Path does not exist';
-        },
-      },
-      {
-        type: 'text',
-        name: 'key',
-        message: 'Project key (used as dev-log subdir name):',
-        initial: (prev) => basename(expandHome(prev || cwd)),
-        validate: (v) => {
-          const t = v.trim();
-          if (!/^[a-z0-9][a-z0-9._-]*$/i.test(t)) return 'Invalid key (must start with letter/digit, alphanumeric + ._- only)';
-          if (t.includes('..')) return 'Invalid key (no `..`)';
-          return true;
-        },
-      },
-      {
-        type: 'text',
-        name: 'remote',
-        message: 'Project GitHub remote (<owner>/<repo>):',
-        initial: (_prev, values) => detectProjectRemote(expandHome(values.path)) || cwdRemote || `${answers.githubUser}/${basename(expandHome(values.path))}`,
-        validate: (v) => /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i.test(v.trim()) || 'Expected <owner>/<repo>, no leading dash',
-      },
-    ], { onCancel: () => process.exit(1) });
+  // Optionally register projects in a loop. First time defaults to "yes".
+  const projects = [];
+  let registerAnother = true;
+  let firstPrompt = true;
+  while (registerAnother) {
+    const { add } = await prompts({
+      type: 'confirm',
+      name: 'add',
+      message: firstPrompt ? 'Register a project now?' : 'Register another project?',
+      initial: firstPrompt,
+    }, { onCancel: () => process.exit(1) });
+    firstPrompt = false;
+    if (!add) break;
+    const p = await promptForProject();
+    if (projects.find((x) => x.key === p.key)) {
+      log.warn(`Skipped (duplicate key): ${p.key}`);
+      continue;
+    }
+    projects.push(p);
+    log.ok(`Registered: ${p.key}`);
   }
 
   const targetRepo = `${answers.githubUser}/${answers.targetRepoName}`;
-  const config = {
+  const config = validateConfig({
     targetRepo,
+    branch: 'main',
     gitAuthor: answers.gitAuthor,
     githubUser: answers.githubUser,
-    projects: projectAnswers ? [{
-      key: projectAnswers.key,
-      path: expandHome(projectAnswers.path),
-      remote: projectAnswers.remote,
-    }] : [],
-  };
+    projects,
+  });
+
+  // Sanity check: warn if the gh-authenticated user differs from githubUser.
+  // Common mistake on machines with multiple gh logins.
+  const ghUser = detectGhUser();
+  if (ghUser && ghUser !== config.githubUser) {
+    log.warn(`gh is authenticated as "${ghUser}" but config.githubUser is "${config.githubUser}".`);
+    log.hint('Run `gh auth login` to switch accounts, or update config.githubUser.');
+  }
 
   log.info('\n' + kleur.bold('Summary:'));
   log.info(`  Target repo:    ${kleur.cyan(`github.com/${targetRepo}`)}`);
   log.info(`  Git author:     ${config.gitAuthor}`);
   log.info(`  GitHub user:    ${config.githubUser}`);
-  log.info(`  Projects:       ${config.projects.length === 0 ? '(none — add later)' : config.projects.map(p => p.key).join(', ')}`);
+  log.info(`  Branch:         ${config.branch}`);
+  log.info(`  Projects:       ${config.projects.length === 0 ? '(none — add later with `devlog add-project`)' : config.projects.map((p) => p.key).join(', ')}`);
   log.info(`  Skill location: ${CONFIG_DIR}`);
 
-  const { proceed } = await prompts({
-    type: 'confirm',
-    name: 'proceed',
-    message: 'Continue?',
-    initial: true,
-  }, { onCancel: () => process.exit(1) });
+  const { proceed } = await prompts({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
   if (!proceed) process.exit(0);
-
   log.info('');
 
+  // Repo create — argv form, no shell.
   const repoExists = tryExecArgs('gh', ['repo', 'view', targetRepo, '--json', 'name']) !== null;
   if (repoExists) {
     log.warn(`Repo github.com/${targetRepo} already exists. Will use it as-is.`);
   } else {
     log.step(`Creating github.com/${targetRepo}...`);
-    const r = spawnSync('gh', ['repo', 'create', targetRepo, '--public', '--description', 'Daily dev log', '--add-readme'], {
-      stdio: 'inherit',
-    });
+    const r = spawnSync('gh', ['repo', 'create', targetRepo, '--public', '--description', 'Daily dev log', '--add-readme'], { stdio: 'inherit' });
     if (r.status !== 0) {
       log.err('Failed to create repo. Check `gh` permissions.');
       process.exit(1);
@@ -234,7 +341,7 @@ async function cmdInit() {
   }
 
   if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
+    mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
     log.ok(`Created ${CONFIG_DIR}`);
   }
 
@@ -246,44 +353,131 @@ async function cmdInit() {
   }
 
   if (await confirmOverwrite('config.json', CONFIG_PATH)) {
-    writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+    atomicWriteJSON(CONFIG_PATH, config);
     log.ok(`Wrote config → ${CONFIG_PATH}`);
   } else {
     log.warn('Skipped config.json');
   }
 
-  log.info('\n' + kleur.bold().green('Done.') + '\n');
+  log.info('\n' + kleur.bold().green('Setup complete.') + '\n');
   log.info('Next steps:');
-  log.info(`  1. ${config.projects.length === 0 ? 'Edit config.json to register projects' : '(Optional) edit config.json to register more projects'}`);
-  log.info('  2. Make some commits in a registered project');
-  log.info('  3. In Claude Code, run: /devlog');
-  log.info('  4. Preview locally: npx @natjswenson/devlog preview');
+  if (config.projects.length === 0) {
+    log.info(`  1. Add a project: ${kleur.cyan('npx @natjswenson/devlog add-project')}`);
+    log.info('  2. Make some commits in the project');
+  } else {
+    log.info('  1. Make some commits in a registered project');
+  }
+  log.info(`  2. In Claude Code, run: ${kleur.cyan('/devlog')}`);
+  log.info(`  3. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
   log.info('');
 }
 
-async function cmdPreview() {
+// ─── add-project ─────────────────────────────────────────────────────────────
+async function cmdAddProject() {
+  log.info(kleur.bold('\ndevlog add-project\n'));
   if (!existsSync(CONFIG_PATH)) {
     log.err(`No config found at ${CONFIG_PATH}`);
-    log.info('Run `npx @natjswenson/devlog init` first.');
+    log.hint('Run `npx @natjswenson/devlog init` first.');
     process.exit(1);
   }
 
   let config;
   try {
-    config = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+    config = readConfig();
+    validateConfig(config);
   } catch (e) {
-    log.err(`Failed to parse config: ${e.message}`);
+    log.err(`Existing config is invalid: ${e.message}`);
+    log.hint(`Edit ${CONFIG_PATH} or run \`devlog init\` to recreate.`);
     process.exit(1);
   }
 
-  const [owner, repo] = (config.targetRepo || '').split('/');
-  if (!owner || !repo) {
-    log.err('config.targetRepo is not in <owner>/<repo> format');
+  if (config.projects.length > 0) {
+    log.info(kleur.dim('Currently registered projects:'));
+    for (const p of config.projects) log.info(kleur.dim(`  - ${p.key}  (${p.path})`));
+    log.info('');
+  }
+
+  const newProject = await promptForProject();
+  if (config.projects.find((p) => p.key === newProject.key)) {
+    log.err(`Project key "${newProject.key}" is already registered.`);
+    log.hint('Pick a different key, or remove the existing entry first.');
     process.exit(1);
   }
 
-  const projects = (config.projects || []).map((p) => ({ key: p.key, label: p.label || p.key }));
+  const newConfig = validateConfig({ ...config, projects: [...config.projects, newProject] });
+  atomicWriteJSON(CONFIG_PATH, newConfig);
+  log.ok(`Added "${newProject.key}" to config.`);
+  log.info('');
+  log.info(`Run ${kleur.cyan('/devlog ' + newProject.key)} in Claude Code to publish an entry for this project.`);
+  log.info('');
+}
+
+// ─── config (view) ───────────────────────────────────────────────────────────
+async function cmdConfig() {
+  if (!existsSync(CONFIG_PATH)) {
+    log.err(`No config found at ${CONFIG_PATH}`);
+    log.hint('Run `npx @natjswenson/devlog init` first.');
+    process.exit(1);
+  }
+
+  let config;
+  try {
+    config = readConfig();
+  } catch (e) {
+    log.err(`Failed to read config: ${e.message}`);
+    process.exit(1);
+  }
+
+  let validationStatus;
+  try {
+    validateConfig(config);
+    validationStatus = kleur.green('valid');
+  } catch (e) {
+    validationStatus = kleur.red('INVALID — ' + e.message);
+  }
+
+  log.info('');
+  log.info(kleur.bold(`Config: ${CONFIG_PATH}`));
+  log.info(`Status:        ${validationStatus}`);
+  log.info(`Target repo:   ${kleur.cyan(`github.com/${config.targetRepo || '?'}`)}`);
+  log.info(`Branch:        ${config.branch || 'main'}`);
+  log.info(`Git author:    ${config.gitAuthor || '?'}`);
+  log.info(`GitHub user:   ${config.githubUser || '?'}`);
+  log.info(`Projects (${(config.projects || []).length}):`);
+  for (const p of config.projects || []) {
+    log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
+    log.info(kleur.dim(`    path:   ${p.path}`));
+    log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+  }
+  log.info('');
+}
+
+// ─── preview ─────────────────────────────────────────────────────────────────
+async function cmdPreview() {
+  if (!existsSync(CONFIG_PATH)) {
+    log.err(`No config found at ${CONFIG_PATH}`);
+    log.hint('Run `npx @natjswenson/devlog init` first.');
+    process.exit(1);
+  }
+
+  let config;
+  try {
+    config = readConfig();
+    validateConfig(config);
+  } catch (e) {
+    log.err(`Config validation failed: ${e.message}`);
+    log.hint(`Edit ${CONFIG_PATH} or run \`devlog config\` to inspect.`);
+    process.exit(1);
+  }
+
+  const [owner, repo] = config.targetRepo.split('/');
   const branch = config.branch || 'main';
+  const projects = config.projects.map((p) => ({ key: p.key, label: p.label || p.key }));
+
+  if (projects.length === 0) {
+    log.warn('No projects registered. The preview will show an empty state.');
+    log.hint(`Run \`npx @natjswenson/devlog add-project\` to register one.`);
+  }
 
   log.step(`Launching preview against github.com/${config.targetRepo}...`);
 
@@ -291,11 +485,20 @@ async function cmdPreview() {
   const vitePkg = JSON.parse(readFileSync(vitePkgPath, 'utf8'));
   const viteBin = resolve(dirname(vitePkgPath), vitePkg.bin?.vite || 'bin/vite.js');
 
+  // Filter env to only PATH/HOME/etc plus VITE_DEVLOG_* we set explicitly.
+  // This prevents adopters' arbitrary VITE_* vars (e.g. VITE_API_KEY for an
+  // unrelated project in their shell) from being inlined into preview source.
+  const SAFE_ENV_KEYS = ['PATH', 'HOME', 'USER', 'SHELL', 'LANG', 'LC_ALL', 'TERM', 'TMPDIR', 'NODE_PATH', 'NODE_OPTIONS'];
+  const safeEnv = {};
+  for (const k of SAFE_ENV_KEYS) {
+    if (process.env[k] !== undefined) safeEnv[k] = process.env[k];
+  }
+
   const proc = spawn(process.execPath, [viteBin], {
     cwd: PREVIEW_DIR,
     stdio: 'inherit',
     env: {
-      ...process.env,
+      ...safeEnv,
       VITE_DEVLOG_OWNER: owner,
       VITE_DEVLOG_REPO: repo,
       VITE_DEVLOG_BRANCH: branch,
@@ -305,24 +508,35 @@ async function cmdPreview() {
   proc.on('exit', (code) => process.exit(code ?? 0));
 }
 
+// ─── help ────────────────────────────────────────────────────────────────────
 function printHelp() {
   console.log(`
-${kleur.bold('@natjswenson/devlog')} — daily dev log generator
+${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — daily dev log generator
 
 Usage:
-  npx @natjswenson/devlog init       Set up the skill, create your dev-log repo, write config
-  npx @natjswenson/devlog preview    Run a local preview of your published dev log
-  npx @natjswenson/devlog --help
-  npx @natjswenson/devlog --version
+  ${kleur.cyan('npx @natjswenson/devlog init')}           One-time setup: create your dev-log repo, install the skill, write config
+  ${kleur.cyan('npx @natjswenson/devlog add-project')}    Register an additional project in your config
+  ${kleur.cyan('npx @natjswenson/devlog config')}         Show your current config (with validation)
+  ${kleur.cyan('npx @natjswenson/devlog preview')}        Run a local preview of your published dev log
+  ${kleur.cyan('npx @natjswenson/devlog --help')}
+  ${kleur.cyan('npx @natjswenson/devlog --version')}
 
-Docs: https://github.com/natejswenson/devlog
+Docs:    https://github.com/natejswenson/devlog
+Issues:  https://github.com/natejswenson/devlog/issues
 `);
 }
 
+// ─── dispatch ────────────────────────────────────────────────────────────────
 const arg = process.argv[2];
 switch (arg) {
   case 'init':
     cmdInit();
+    break;
+  case 'add-project':
+    cmdAddProject();
+    break;
+  case 'config':
+    cmdConfig();
     break;
   case 'preview':
     cmdPreview();

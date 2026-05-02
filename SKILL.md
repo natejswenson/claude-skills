@@ -51,20 +51,38 @@ Validate that `targetRepo`, `gitAuthor`, `githubUser`, and `projects` (non-empty
 
 **Critical:** every value below gets interpolated into shell commands. If any value contains shell metacharacters or breaks the expected shape, **STOP** and tell the user their config is malformed. Do not "fix" it — refuse to run.
 
+The CLI's `init` and `add-project` commands enforce these patterns at write time. The skill MUST re-enforce them at runtime because the user can edit `config.json` by hand at any time.
+
 | Field | Required pattern |
 |---|---|
 | `targetRepo` | Matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*\/[a-zA-Z0-9][a-zA-Z0-9._-]*$` (owner/repo, no leading dash) |
-| `branch` (optional) | Matches `^[a-zA-Z0-9][a-zA-Z0-9._/-]*$` (no leading dash, no `..`); defaults to `main` |
-| `gitAuthor` | Must NOT contain any of: `;` `&` `|` `` ` `` `$` `(` `)` `<` `>` `{` `}` `*` `?` `!` `#` `~` `"` `\` newline, carriage return |
+| `branch` (optional) | Matches `^[a-zA-Z0-9][a-zA-Z0-9._/-]*$` (no leading dash, no `..` as a path component); defaults to `main` |
+| `gitAuthor` | Must NOT contain any of: `;` `&` `\|` `` ` `` `$` `(` `)` `<` `>` `{` `}` `[` `]` `*` `?` `!` `#` `~` `"` `'` `\` newline, CR. (Whitespace, dots, hyphens, equals, percent are fine — names like "Nate Swenson" and "O.G. Lastname" must validate.) |
 | `githubUser` | Matches `^[a-zA-Z0-9][a-zA-Z0-9-]*$` |
 | `projects[].key` | Matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*$` AND must not contain `..` |
-| `projects[].path` | Must NOT contain shell metacharacters (same set as gitAuthor) AND must point to an existing directory |
+| `projects[].path` | Must NOT contain the shell-quote-break set (same as gitAuthor), MUST NOT start with `-`, AND must point to an existing directory. Whitespace allowed (paths legitimately contain spaces). |
+| `projects[].label` (optional) | Same character constraints as `gitAuthor` — used as display text, never as a shell argument |
 | `projects[].remote` | Same pattern as `targetRepo` |
 
 If any field fails validation, stop with:
-> Config field `<field>` failed security validation: `<value>`. Edit `~/.claude/skills/devlog/config.json` and retry.
+> Config field `<field>` failed security validation: `<value>`. Edit `~/.claude/skills/devlog/config.json` and retry, or run `npx @natjswenson/devlog config` to inspect.
 
-Once validated, the values are safe to interpolate into the shell commands below. Even so, **prefer `git -C <path>` form over `cd <path> && git ...`** (reduces shell-escape complexity) and **use the Write tool, not bash heredocs, when writing JSON or markdown files** (avoids accidentally re-injecting attacker-controlled content into shell).
+**Shell-quoting rule (defense-in-depth):**
+
+Even with values validated, when interpolating into a shell command, ALWAYS wrap the value in single quotes (`'...'`). Single-quoted shell strings have no metacharacter expansion. Since validation above forbids embedded single quotes, this is always safe. Example:
+
+```bash
+# Right
+git -C '<project.path>' log --author='<config.gitAuthor>' --since=midnight ...
+
+# Also right (separate flags after `=`)
+git -C '<project.path>' log "--author=<config.gitAuthor>" --since=midnight ...
+
+# Wrong — no quotes
+git -C <project.path> log ...
+```
+
+Once validated AND single-quoted, the values are safe to interpolate into the shell commands below. Even so, **prefer `git -C <path>` form over `cd <path> && git ...`** (reduces shell-escape complexity) and **use the Write tool, not bash heredocs, when writing JSON or markdown files** (avoids accidentally re-injecting attacker-controlled content into shell).
 
 ## Step 1: Determine scope
 
@@ -73,10 +91,10 @@ Once validated, the values are safe to interpolate into the shell commands below
 
 ## Step 2: Gather today's commits
 
-For each project in scope, run (use `git -C` to avoid `cd` shell-composition):
+For each project in scope, run (use `git -C` to avoid `cd` shell-composition; single-quote interpolated values):
 
 ```bash
-git -C <project.path> log --author=<config.gitAuthor> --since=midnight --format=%H|%s|%D --all
+git -C '<project.path>' log "--author=<config.gitAuthor>" --since=midnight --format='%H|%s|%D' --all
 ```
 
 If no commits are found for a project, skip it. If no commits are found across all projects, inform the user and stop.
@@ -86,8 +104,8 @@ If no commits are found for a project, skip it. If no commits are found across a
 For each commit, check if it's on the `main` branch and if the remote is public:
 
 ```bash
-git -C <project.path> remote get-url origin
-git -C <project.path> branch --contains <hash> -r 2>/dev/null | grep -q 'origin/main'
+git -C '<project.path>' remote get-url origin
+git -C '<project.path>' branch --contains <hash> -r 2>/dev/null | grep -q 'origin/main'
 ```
 
 - If the remote URL matches `<project.remote>` (i.e. `github.com/<project.remote>` or the SSH equivalent) and the commit is on `origin/main`, it's a public commit — include a link using `https://github.com/<project.remote>/commit/<hash>`.
@@ -154,8 +172,9 @@ Clone the repo once, write all project entries, then push.
 mktemp -d
 # → record the printed path, e.g. /var/folders/.../tmp.abc123
 
-# Step 6.2: clone (use --depth=1 to limit blast radius if remote is huge)
-git -C <abs-tmp-path> clone --depth=1 https://github.com/<config.targetRepo>.git
+# Step 6.2: clone (use --depth=1 to limit blast radius if remote is huge;
+# the targetRepo value has been validated to match <owner>/<repo> already)
+git -C '<abs-tmp-path>' clone --depth=1 'https://github.com/<config.targetRepo>.git'
 ```
 
 Write entries and manifest using the **Write tool** (not bash heredocs — avoids re-injecting content into shell):
@@ -166,16 +185,18 @@ Write entries and manifest using the **Write tool** (not bash heredocs — avoid
   - Entry object: `{ "date": "YYYY-MM-DD", "file": "YYYY-MM-DD.md", "title": "...", "summary": "..." }`
   - If appending to existing entry, update title/summary only if changed
   - If manifest doesn't exist, create it as `{ "entries": [...] }`
+  - **Sanitize fetched title/summary:** if appending to an existing entry, the fetched values are external content — never echo them through bash without escaping. Use the Write tool with the values as JSON literals.
 
-Then commit and push:
+Then commit and push (single-quote all interpolated values):
 
 ```bash
-git -C <abs-tmp-path>/<repo-name> add .
-git -C <abs-tmp-path>/<repo-name> commit -m "devlog: add entries for YYYY-MM-DD"
-git -C <abs-tmp-path>/<repo-name> push origin <config.branch || 'main'>
+git -C '<abs-tmp-path>/<repo-name>' add .
+git -C '<abs-tmp-path>/<repo-name>' commit -m 'devlog: add entries for YYYY-MM-DD'
+# Use --no-tags to avoid pushing any local tags that happened to be in the temp clone
+git -C '<abs-tmp-path>/<repo-name>' push --no-tags origin '<config.branch || main>'
 
 # Cleanup — pass the absolute path explicitly
-rm -rf <abs-tmp-path>
+rm -rf '<abs-tmp-path>'
 ```
 
 ## Step 7: Confirm
