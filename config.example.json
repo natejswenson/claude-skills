@@ -4,9 +4,14 @@
   "githubUser": "yourusername",
   "projects": [
     {
-      "key": "myproject",
-      "path": "/Users/yourusername/code/myproject",
-      "remote": "yourusername/myproject"
+      "key": "midnight-side-quest",
+      "path": "/Users/yourusername/code/midnight-side-quest",
+      "remote": "yourusername/midnight-side-quest"
+    },
+    {
+      "key": "todays-existential-crisis",
+      "path": "/Users/yourusername/code/todays-existential-crisis",
+      "remote": "yourusername/todays-existential-crisis"
     }
   ]
 }
