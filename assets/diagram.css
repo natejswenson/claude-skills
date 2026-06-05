@@ -1,0 +1,96 @@
+/* Brand theme for LinkedIn diagrams & cards. Edit the variables to retheme. */
+:root {
+  --bg:        #0D1117;  /* canvas background (GitHub-dark; reads premium in the feed) */
+  --surface:   #161B22;  /* node / panel fill */
+  --surface-2: #1F2630;  /* secondary fill */
+  --border:    #30363D;  /* hairlines */
+  --text:      #E6EDF3;  /* primary text */
+  --muted:     #9DA7B3;  /* secondary text */
+  --accent:    #58A6FF;  /* primary accent (blue) */
+  --accent-2:  #3FB950;  /* secondary accent (green) */
+  --accent-3:  #F778BA;  /* tertiary accent (pink) */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); }
+body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* ---- Mermaid canvas: auto-sizes to the diagram, with generous padding ---- */
+#canvas.mermaid-canvas {
+  width: 1180px;
+  padding: 80px;
+  background: var(--bg);
+}
+#canvas.mermaid-canvas .mermaid {
+  background: transparent;
+  display: flex;
+  justify-content: center;
+}
+/* Scale the diagram to fill the frame width — keeps simple diagrams feed-sized. */
+#canvas.mermaid-canvas .mermaid svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* ---- Designed card: a fixed-size hero graphic ---- */
+#canvas.card {
+  width: 1200px;
+  height: 1200px;
+  padding: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 36px;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(88,166,255,0.16), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(63,185,80,0.12), transparent 60%),
+    var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+#canvas.card::after {
+  content: "";
+  position: absolute; inset: 0;
+  border: 1px solid var(--border);
+  border-radius: 0; /* full-bleed; the feed crops corners anyway */
+  pointer-events: none;
+}
+
+.card .eyebrow {
+  font: 600 28px/1.2 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.card h1 {
+  font: 800 84px/1.04 var(--font);
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+.card .sub { font: 400 38px/1.4 var(--font); color: var(--muted); margin: 0; }
+
+.card .rows { display: flex; flex-direction: column; gap: 20px; margin-top: 8px; }
+.card .row {
+  display: flex; align-items: baseline; gap: 20px;
+  font: 500 40px/1.3 var(--font);
+}
+.card .row .key { color: var(--accent-2); font-weight: 700; min-width: 220px; }
+.card .row .arrow { color: var(--muted); }
+
+.card .stat { font: 800 140px/1 var(--font); letter-spacing: -0.03em; }
+.card .stat .unit { font-size: 56px; color: var(--muted); font-weight: 600; }
+
+.card .footer {
+  position: absolute; left: 96px; bottom: 72px;
+  font: 500 30px/1 var(--mono); color: var(--muted);
+}
+.card .pill {
+  align-self: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 14px 28px;
+  font: 600 30px/1 var(--mono); color: var(--text);
+}

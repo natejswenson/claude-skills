@@ -81,6 +81,34 @@ launchd template (`scripts/release_radar.plist.example` — see its header for s
 > Edit `scripts/release_radar_prompt.md` to point the radar at *your* field's sources — the
 > default is tuned for Claude/Anthropic releases.
 
+## Optional: diagrams & cards
+
+You can attach a **visual** to any post — entirely optional, off by default. Two kinds:
+
+- **Technical diagrams** — Mermaid flows / architecture / sequence (Claude writes the `.mmd`).
+- **Designed cards** — a hero/stat/before-after graphic (HTML/CSS from `assets/card-template.html`).
+
+Both render to a high-DPI PNG on a shared brand theme (`assets/diagram.css` — edit to retheme).
+Just ask: *"…and make a diagram to go with it"* or *"…with a card."* Claude drafts the source,
+renders it, **shows you the PNG**, and only attaches it to the post after you approve — text-only
+stays the default if you don't ask.
+
+This feature needs a one-time setup (a headless browser):
+
+```
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-diagrams.txt
+.venv/bin/playwright install chromium
+```
+
+Render manually if you like:
+`​.venv/bin/python scripts/render_image.py --type mermaid --in images/foo.mmd --out images/foo.png`
+(cards: `--type card --in images/foo.html`). Output is ~1200–2400 px, sized for the feed.
+
+> Rendering is **fully local** — nothing is sent to a third party. Generated PNGs and their
+> sources live in `images/` (gitignored). Visuals must not misrepresent facts, and always get
+> alt text for accessibility.
+
 ## Files
 
 | Path | What it is |
@@ -92,9 +120,11 @@ launchd template (`scripts/release_radar.plist.example` — see its header for s
 | `scripts/release_radar.sh` | Optional research run that builds a digest of recent developments |
 | `scripts/release_radar_prompt.md` | What the radar searches for — edit for your field |
 | `scripts/release_radar.plist.example` | macOS launchd template to schedule the radar |
+| `scripts/render_image.py` | Optional: renders a Mermaid diagram or HTML card to a PNG |
+| `assets/` | Diagram brand theme (`diagram.css`), templates, vendored `mermaid.min.js` |
 | `voice/*.example.md` | Templates — copy to `voice/interests.md` / `voice/voice-notes.md` |
 | `voice/voice-profile.md` | Your generated style guide (gitignored; the heart of "sounds like me") |
-| `drafts/`, `research/` | Generated drafts & radar digests, kept local (gitignored) |
+| `drafts/`, `research/`, `images/` | Generated drafts, radar digests & visuals, kept local (gitignored) |
 
 ## Security
 
@@ -102,7 +132,9 @@ launchd template (`scripts/release_radar.plist.example` — see its header for s
 - Your post export (`data/`), drafts (`drafts/`), radar digests (`research/`), filled-in voice
   files (`voice/interests.md`, `voice/voice-notes.md`, `voice/voice-profile.md`), and local
   Claude settings (`.claude/settings.local.json`) are all gitignored — personal data stays local.
-- Scripts use only the Python 3 standard library — no third-party packages to install.
+- The **core** (drafting + publishing) uses only the Python 3 standard library — no third-party
+  packages. The **optional** diagram feature is the one exception: it needs Playwright + Chromium
+  (installed into a local `.venv`), and only if you choose to use it.
 
 ## Notes & limits
 

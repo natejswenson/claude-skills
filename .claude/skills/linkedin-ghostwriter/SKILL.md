@@ -98,6 +98,26 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
    don't have it; do not invent one).
 4. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
    scrap it?"* Wait for their answer. Do not publish unprompted.
+5. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
+   *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
+   stays **text-only** — that's the default. Only build a visual if they opt in. See **Visuals**.
+
+### Visuals (optional — diagrams & cards)
+
+Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
+reports Playwright/Chromium is missing, point them at the install step and stop).
+
+- **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd` flow/architecture/
+  sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`
+  copied from `assets/card-template.html`) for one punchy idea (headline / before-after / stat).
+  Let the user choose if unsure.
+- **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
+  **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
+  as `voice/voice-notes.md` — a misleading diagram is worse than none).
+- **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
+- **Show the user the rendered PNG** and iterate (tweak the source or `assets/diagram.css`) until
+  they approve it. Don't claim it looks good without showing the image.
+- **Write alt text** describing the visual; you'll pass it to the publish step.
 
 ### Engagement craft (apply to every draft)
 
@@ -122,6 +142,9 @@ Only after the user explicitly approves a specific draft.
 1. **Preview the payload** (optional sanity check):
    `python3 scripts/linkedin_post.py --file drafts/<file>.md --dry-run`
 2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md`
+   - **With an approved visual** (only if the user opted in and approved the PNG), add
+     `--image images/<slug>.png --alt "<alt text>"`. Never attach an image the user hasn't seen
+     and approved; if the image changes, re-show and re-confirm.
 3. **Report** the result. On success, share the post URL the script prints. On an auth error
    (HTTP 401/403), tell the user to re-run `python3 scripts/linkedin_auth.py` (token likely
    expired after ~60 days), then retry.

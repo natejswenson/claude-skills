@@ -38,6 +38,7 @@ If the radar ever gained the ability to post on its own, that would break this r
 | §3.1 — no scraping/crawling LinkedIn content | Voice data is the user's own **"Get a copy of your data" export**, not scraped. |
 | §3.1 — no collecting usernames/passwords | OAuth 2.0 only; we never see the password. |
 | §3.1 — pre-filled content must be editable by the member | Every AI draft is shown and is fully editable / refusable before posting. |
+| Images on posts | Uploaded via the official Images + Posts API; optional, member-approved per post; rendered fully locally (nothing sent to third parties); carry alt text and must not misrepresent facts. |
 | §3.1 — no impersonation | Posts are the member's own content from their own authenticated account. |
 | §1.4 — self-serve eligibility | Single user, not advertising, not business-critical, well under call limits. |
 | §4.2 — may store OAuth token + Member Token | We store only the access token + person URN, locally in `.env`. |

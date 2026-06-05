@@ -26,6 +26,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ENV_PATH = REPO / ".env"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
+IMAGES_URL = "https://api.linkedin.com/rest/images"
 
 
 def load_env(path: Path = ENV_PATH) -> dict:
@@ -60,8 +61,13 @@ def read_post_text(args) -> str:
     return text
 
 
-def build_payload(author_urn: str, text: str) -> dict:
-    return {
+def build_payload(
+    author_urn: str,
+    text: str,
+    image_urn: str | None = None,
+    alt_text: str = "",
+) -> dict:
+    payload = {
         "author": author_urn,
         "commentary": text,
         "visibility": "PUBLIC",
@@ -73,6 +79,54 @@ def build_payload(author_urn: str, text: str) -> dict:
         "lifecycleState": "PUBLISHED",
         "isReshareDisabledByAuthor": False,
     }
+    # Only added when an image is attached — text-only payloads are unchanged.
+    if image_urn:
+        media: dict = {"id": image_urn}
+        if alt_text:
+            media["altText"] = alt_text
+        payload["content"] = {"media": media}
+    return payload
+
+
+def initialize_image_upload(env: dict, owner: str) -> tuple[str, str]:
+    """Register an image upload; returns (uploadUrl, image_urn)."""
+    token = env.get("LINKEDIN_ACCESS_TOKEN", "")
+    version = env.get("LINKEDIN_API_VERSION", "202605")
+    body = json.dumps({"initializeUploadRequest": {"owner": owner}}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{IMAGES_URL}?action=initializeUpload", data=body, method="POST"
+    )
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("X-Restli-Protocol-Version", "2.0.0")
+    req.add_header("LinkedIn-Version", version)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        sys.exit(f"ERROR: initializeUpload returned HTTP {e.code}\n{body}")
+    value = data.get("value", {})
+    upload_url = value.get("uploadUrl")
+    image_urn = value.get("image")
+    if not upload_url or not image_urn:
+        sys.exit(f"ERROR: unexpected initializeUpload response: {data}")
+    return upload_url, image_urn
+
+
+def upload_image_bytes(upload_url: str, token: str, path: Path) -> None:
+    """PUT the raw image bytes to the upload URL from initializeUpload."""
+    img = path.read_bytes()
+    req = urllib.request.Request(upload_url, data=img, method="PUT")
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Content-Type", "application/octet-stream")
+    try:
+        with urllib.request.urlopen(req) as resp:
+            if resp.status not in (200, 201):
+                sys.exit(f"ERROR: image upload returned HTTP {resp.status}")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        sys.exit(f"ERROR: image upload returned HTTP {e.code}\n{body}")
 
 
 def warn_if_token_expiring(env: dict) -> None:
@@ -140,6 +194,15 @@ def main() -> None:
     src.add_argument("--file", help="Path to a file containing the post text.")
     src.add_argument("--text", help="Post text passed directly on the command line.")
     ap.add_argument(
+        "--image",
+        help="Optional path to an image (e.g. images/foo.png) to attach to the post.",
+    )
+    ap.add_argument(
+        "--alt",
+        default="",
+        help="Alt text for the attached image (accessibility). Recommended with --image.",
+    )
+    ap.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the request payload and exit without calling LinkedIn.",
@@ -150,18 +213,42 @@ def main() -> None:
     text = read_post_text(args)
     author = env.get("LINKEDIN_PERSON_URN", "").strip()
 
+    image_path: Path | None = None
+    if args.image:
+        image_path = Path(args.image)
+        if not image_path.is_absolute():
+            image_path = REPO / image_path
+        if not image_path.exists():
+            sys.exit(f"ERROR: image not found: {image_path}")
+
     if args.dry_run:
-        # Use a placeholder author if not yet authorized, so dry-run works pre-setup.
-        payload = build_payload(author or "urn:li:person:DRY_RUN_PLACEHOLDER", text)
+        # Use placeholders so dry-run works pre-setup and without uploading.
+        image_urn = "urn:li:image:DRY_RUN_PLACEHOLDER" if image_path else None
+        payload = build_payload(
+            author or "urn:li:person:DRY_RUN_PLACEHOLDER", text, image_urn, args.alt
+        )
         print("DRY RUN — no request sent. Payload that would POST to /rest/posts:\n")
         print(json.dumps(payload, indent=2, ensure_ascii=False))
-        print(f"\n({len(text)} characters)")
+        print(f"\n({len(text)} characters{', with image' if image_path else ''})")
         return
 
     if not author:
         sys.exit("ERROR: LINKEDIN_PERSON_URN missing. Run scripts/linkedin_auth.py.")
     warn_if_token_expiring(env)
-    publish(env, build_payload(author, text))
+
+    image_urn = None
+    if image_path:
+        if not args.alt:
+            print(
+                "NOTE: no --alt provided; posting image without alt text "
+                "(accessibility). Consider adding --alt.",
+                file=sys.stderr,
+            )
+        upload_url, image_urn = initialize_image_upload(env, author)
+        upload_image_bytes(upload_url, env.get("LINKEDIN_ACCESS_TOKEN", ""), image_path)
+        print(f"Uploaded image: {image_urn}")
+
+    publish(env, build_payload(author, text, image_urn, args.alt))
 
 
 if __name__ == "__main__":

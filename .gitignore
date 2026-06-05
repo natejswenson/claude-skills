@@ -19,6 +19,10 @@ voice/voice-profile.md
 research/*
 !research/.gitkeep
 
+# Generated visuals + their sources (keep the dir, ignore contents)
+images/*
+!images/.gitkeep
+
 # Python
 __pycache__/
 *.pyc
