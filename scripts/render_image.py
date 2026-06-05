@@ -27,9 +27,15 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 ASSETS = REPO / "assets"
+# Personal brand guide (gitignored); falls back to the shipped default on a fresh clone.
 CSS = ASSETS / "diagram.css"
+CSS_EXAMPLE = ASSETS / "diagram.css.example"
 MERMAID_JS = ASSETS / "vendor" / "mermaid.min.js"
 MERMAID_TEMPLATE = ASSETS / "mermaid-template.html"
+
+
+def brand_css_path() -> Path:
+    return CSS if CSS.exists() else CSS_EXAMPLE
 
 INSTALL_HINT = (
     "Rendering needs Playwright + Chromium (the optional diagram feature).\n"
@@ -45,7 +51,7 @@ def inline_assets(html: str) -> str:
     so the page is self-contained and path-independent."""
     # Use function replacements so backslashes in CSS/JS aren't treated as
     # regex escape sequences in the replacement string.
-    css = CSS.read_text(encoding="utf-8")
+    css = brand_css_path().read_text(encoding="utf-8")
     html = re.sub(
         r'<link[^>]*href="[^"]*diagram\.css"[^>]*>',
         lambda _m: f"<style>\n{css}\n</style>",

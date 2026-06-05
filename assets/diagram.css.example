@@ -1,5 +1,13 @@
-/* Brand theme for LinkedIn diagrams & cards. Edit the variables to retheme. */
+/* Image brand style guide (TEMPLATE).
+ *
+ * Copy this to assets/diagram.css and make it yours — palette, fonts, and the
+ * --byline below. assets/diagram.css is gitignored (it's YOUR brand, not shared);
+ * this .example is the neutral default that ships with the repo.
+ */
 :root {
+  /* ↓↓↓ Set your byline — shown at the bottom of every card and diagram. ↓↓↓ */
+  --byline:    "Your Name · yoursite.com";
+
   --bg:        #0D1117;  /* canvas background (GitHub-dark; reads premium in the feed) */
   --surface:   #161B22;  /* node / panel fill */
   --surface-2: #1F2630;  /* secondary fill */
@@ -17,7 +25,7 @@
 html, body { margin: 0; padding: 0; background: var(--bg); }
 body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
 
-/* ---- Mermaid canvas: auto-sizes to the diagram, with generous padding ---- */
+/* ---- Mermaid canvas: scales the diagram to fill a fixed-width brand frame ---- */
 #canvas.mermaid-canvas {
   width: 1180px;
   padding: 80px;
@@ -28,11 +36,20 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   display: flex;
   justify-content: center;
 }
-/* Scale the diagram to fill the frame width — keeps simple diagrams feed-sized. */
 #canvas.mermaid-canvas .mermaid svg {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
+}
+/* Byline under every diagram (from --byline). */
+#canvas.mermaid-canvas::after {
+  content: var(--byline);
+  display: block;
+  margin-top: 44px;
+  text-align: right;
+  font: 500 24px/1 var(--mono);
+  color: var(--muted);
+  opacity: 0.85;
 }
 
 /* ---- Designed card: a fixed-size hero graphic ---- */
@@ -55,7 +72,6 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   content: "";
   position: absolute; inset: 0;
   border: 1px solid var(--border);
-  border-radius: 0; /* full-bleed; the feed crops corners anyway */
   pointer-events: none;
 }
 
@@ -84,10 +100,14 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card .stat { font: 800 140px/1 var(--font); letter-spacing: -0.03em; }
 .card .stat .unit { font-size: 56px; color: var(--muted); font-weight: 600; }
 
+/* Footer byline. Use <div class="footer brand"></div> to pull --byline automatically,
+   or <div class="footer">custom text</div> for a one-off. */
 .card .footer {
   position: absolute; left: 96px; bottom: 72px;
   font: 500 30px/1 var(--mono); color: var(--muted);
 }
+.card .footer.brand::before { content: var(--byline); }
+
 .card .pill {
   align-self: flex-start;
   background: var(--surface); border: 1px solid var(--border);

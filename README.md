@@ -88,10 +88,12 @@ You can attach a **visual** to any post — entirely optional, off by default. T
 - **Technical diagrams** — Mermaid flows / architecture / sequence (Claude writes the `.mmd`).
 - **Designed cards** — a hero/stat/before-after graphic (HTML/CSS from `assets/card-template.html`).
 
-Both render to a high-DPI PNG on a shared brand theme (`assets/diagram.css` — edit to retheme).
-Just ask: *"…and make a diagram to go with it"* or *"…with a card."* Claude drafts the source,
-renders it, **shows you the PNG**, and only attaches it to the post after you approve — text-only
-stays the default if you don't ask.
+Both render to a high-DPI PNG using **your own brand guide** — copy `assets/diagram.css.example`
+to `assets/diagram.css` (gitignored, so your styling isn't shared) and set your `--byline`
+(name · site, shown at the bottom of every visual) plus the palette. Just ask: *"…and make a
+diagram to go with it"* or *"…with a card."* Claude drafts the source, renders it, **shows you the
+PNG**, and only attaches it to the post after you approve — text-only stays the default if you
+don't ask.
 
 This feature needs a one-time setup (a headless browser):
 
@@ -121,7 +123,8 @@ Render manually if you like:
 | `scripts/release_radar_prompt.md` | What the radar searches for — edit for your field |
 | `scripts/release_radar.plist.example` | macOS launchd template to schedule the radar |
 | `scripts/render_image.py` | Optional: renders a Mermaid diagram or HTML card to a PNG |
-| `assets/` | Diagram brand theme (`diagram.css`), templates, vendored `mermaid.min.js` |
+| `assets/diagram.css.example` | Brand-guide template — copy to `assets/diagram.css` (gitignored) and set your byline/palette |
+| `assets/` | Diagram templates + vendored `mermaid.min.js` |
 | `voice/*.example.md` | Templates — copy to `voice/interests.md` / `voice/voice-notes.md` |
 | `voice/voice-profile.md` | Your generated style guide (gitignored; the heart of "sounds like me") |
 | `drafts/`, `research/`, `images/` | Generated drafts, radar digests & visuals, kept local (gitignored) |

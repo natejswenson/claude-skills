@@ -15,6 +15,9 @@ voice/interests.md
 voice/voice-notes.md
 voice/voice-profile.md
 
+# Personal image brand guide — copy assets/diagram.css.example and make it yours
+assets/diagram.css
+
 # Release-radar digests + log (research artifacts, keep local)
 research/*
 !research/.gitkeep

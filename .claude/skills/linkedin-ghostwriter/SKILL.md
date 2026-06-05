@@ -107,6 +107,12 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
 reports Playwright/Chromium is missing, point them at the install step and stop).
 
+**Brand guide (per-user).** Styling + byline live in `assets/diagram.css` — the user's personal
+brand guide (gitignored). On first use, if it doesn't exist, copy it from the template:
+`cp assets/diagram.css.example assets/diagram.css`, then set their `--byline` (shown at the
+bottom of every visual) and tweak the palette. Cards use `<div class="footer brand"></div>` to
+pull the byline automatically — don't hardcode it.
+
 - **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd` flow/architecture/
   sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`
   copied from `assets/card-template.html`) for one punchy idea (headline / before-after / stat).
