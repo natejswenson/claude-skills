@@ -69,6 +69,11 @@ digest to `research/` — each item paired with a suggested, voice-aware angle. 
 Run it by hand (`bash scripts/release_radar.sh`) or schedule it with the included macOS
 launchd template (`scripts/release_radar.plist.example` — see its header for setup).
 
+> **Prerequisites:** the radar shells out to the [`claude` CLI](https://docs.claude.com), so it
+> must be installed and on your `PATH`. The desktop notification and the launchd schedule are
+> **macOS-only**; on other systems you can still run the script by hand — it writes the digest,
+> it just won't pop a notification.
+
 > **The radar only researches. It never posts.** That's deliberate: LinkedIn's API Terms
 > (§3.1) prohibit *automated posting*, not automated research. A human still picks an item,
 > reviews the draft, and approves it before anything publishes. See [`COMPLIANCE.md`](COMPLIANCE.md).
@@ -105,5 +110,8 @@ launchd template (`scripts/release_radar.plist.example` — see its header for s
   `python3 scripts/linkedin_auth.py` to refresh (takes 30 seconds).
 - Review-then-publish is **permanent, not a v1 limitation**. LinkedIn's API Terms (§3.1)
   prohibit automated posting; keeping a human approving each post is what keeps this compliant.
-  See [`COMPLIANCE.md`](COMPLIANCE.md). Do not add unattended/scheduled posting, and keep this a
-  single-user tool (sharing it triggers privacy-policy and security obligations under §5/§7).
+  See [`COMPLIANCE.md`](COMPLIANCE.md). Do not add unattended/scheduled posting.
+- **"Single-user" is about the LinkedIn app, not the code.** Sharing/forking this repo is fine —
+  each person runs their *own* instance with their *own* LinkedIn developer app and only posts to
+  their *own* profile. What you must not do is let multiple people post through one app, which
+  triggers privacy-policy and security obligations under §5/§7.

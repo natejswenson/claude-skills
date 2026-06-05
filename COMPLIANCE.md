@@ -48,7 +48,10 @@ If the radar ever gained the ability to post on its own, that would break this r
 - **Autonomous / scheduled posting** with no human approving each post (§3.1).
 - **Letting anyone else use this app**, which triggers §5.1 (your own privacy policy + user
   agreement), §5.2 (member consent flows), and §7.1 (security questionnaire) obligations. Keep
-  it a single-user personal tool.
+  it a single-user personal tool. (Note: *open-sourcing the code* is fine — that's distinct.
+  Each person who clones it creates their own LinkedIn app and posts only to their own profile,
+  so each install stays single-user. The line you must not cross is many members posting through
+  one app.)
 - **Scraping** LinkedIn (profiles, posts, connections) to gather voice data or topics (§3.1).
   Always use the official data export instead.
 - **Creating multiple apps** for the same purpose to dodge limits (§3.1).

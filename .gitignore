@@ -9,7 +9,6 @@ data/*
 !data/.gitkeep
 drafts/*
 !drafts/.gitkeep
-voice/my_posts.md
 
 # Personal voice files — copy the *.example.md versions and fill these in
 voice/interests.md

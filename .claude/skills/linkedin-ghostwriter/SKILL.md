@@ -40,7 +40,11 @@ Walk the user through this once. Do the steps you can; hand them the steps only 
    The email takes ~10 minutes.
 5. **Extract.** Once `data/Shares.csv` exists, run `python3 scripts/extract_posts.py`.
 6. **Build the voice profile.** Do the **Voice Profile** step below.
-7. **Interests.** Help them fill in `voice/interests.md` (interview them if it's empty).
+7. **Interests & voice notes.** If they don't exist yet (e.g. a fresh clone), seed them from
+   the templates: `cp voice/interests.example.md voice/interests.md` and
+   `cp voice/voice-notes.example.md voice/voice-notes.md`. Then help them fill in
+   `voice/interests.md` (interview them if it's empty). `voice-notes.md` ships with sensible
+   defaults; append the user's own feedback to it as it comes up.
 
 If the user has no usable export (few/no past posts), skip 4–5 and build `voice-profile.md`
 by interviewing them: ask about tone, the 3–5 topics they're known for, formatting habits
@@ -82,7 +86,10 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
    - "From my interests" / no topic given → pick an evergreen theme from `voice/interests.md`
      they haven't covered recently.
 2. **Draft against the voice profile.** Read `voice/voice-notes.md` AND `voice/voice-profile.md`
-   first, every time (voice-notes.md holds direct user feedback and takes priority). Write the
+   first, every time (voice-notes.md holds direct user feedback and takes priority). If either
+   is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
+   `voice/voice-notes.md` and proceed with what you have (`voice/interests.md` plus the
+   defaults). Write the
    post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Apply the
    **Engagement craft** rules below. Aim for one strong post, not three mediocre options.
    **Never fabricate or exaggerate** details that aren't true to the user's real experience —
