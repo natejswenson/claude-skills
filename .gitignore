@@ -32,5 +32,10 @@ __pycache__/
 .venv/
 venv/
 
+# Test / coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+
 # OS
 .DS_Store
