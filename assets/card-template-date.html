@@ -1,0 +1,23 @@
+<!doctype html>
+<!--
+  Date / deadline card TYPE. Best for "X happens on <date>" posts (deprecations,
+  launches, events). The date is the hero; keep the other two fields short.
+  Copy to images/<slug>.html, fill the three fields, then:
+    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+  Styling lives in diagram.css (.card.date, .date-label, .date-hero, .date-sub) —
+  don't add inline CSS; edit the brand guide if you need to retheme.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card date">
+    <div class="date-label">Short label · here</div>
+    <div class="date-hero">June 15</div>
+    <div class="date-sub">One short line of context.</div>
+    <div class="footer brand"></div>
+  </div>
+</body>
+</html>

@@ -114,9 +114,13 @@ bottom of every visual) and tweak the palette. Cards use `<div class="footer bra
 pull the byline automatically — don't hardcode it.
 
 - **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd` flow/architecture/
-  sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`
-  copied from `assets/card-template.html`) for one punchy idea (headline / before-after / stat).
-  Let the user choose if unsure.
+  sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`)
+  for one punchy idea. Card templates to copy:
+  - `assets/card-template.html` — general hero (headline / before-after / stat / quote).
+  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event);
+    the date is the hero, keep words minimal so it's scannable at a glance.
+  Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
+  one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
   as `voice/voice-notes.md` — a misleading diagram is worse than none).
