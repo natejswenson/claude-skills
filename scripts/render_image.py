@@ -22,8 +22,23 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
+
+
+def open_in_viewer(path: Path) -> None:
+    """Pop the rendered PNG open in the OS image viewer so it's actually seen.
+    Best-effort and cross-platform; never fails the render if it can't open."""
+    try:
+        if sys.platform == "darwin":
+            subprocess.run(["open", str(path)], check=False)
+        elif sys.platform.startswith("win"):
+            subprocess.run(["cmd", "/c", "start", "", str(path)], check=False)
+        else:  # linux / other
+            subprocess.run(["xdg-open", str(path)], check=False)
+    except Exception:
+        pass  # opening is a convenience, not a requirement
 
 REPO = Path(__file__).resolve().parent.parent
 ASSETS = REPO / "assets"
@@ -122,6 +137,11 @@ def main() -> None:
         default="1280x1280",
         help="Viewport WxH (cards are fixed 1200x1200; mermaid auto-fits). Default 1280x1280.",
     )
+    ap.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Don't pop the PNG open in the image viewer after rendering (default: open it).",
+    )
     args = ap.parse_args()
 
     src = Path(args.src)
@@ -140,7 +160,9 @@ def main() -> None:
 
     html = build_html(args.type, src)
     render(args.type, html, out, w, h)
-    print(f"Rendered {args.type} -> {out}  (viewport {w}x{h} @2x)")
+    if not args.no_open:
+        open_in_viewer(out)
+    print(f"Rendered {args.type} -> {out}  (viewport {w}x{h} @2x){'' if args.no_open else ' — opened in viewer'}")
 
 
 if __name__ == "__main__":
