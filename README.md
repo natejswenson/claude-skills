@@ -105,7 +105,8 @@ python3 -m venv .venv
 
 Render manually if you like:
 `​.venv/bin/python scripts/render_image.py --type mermaid --in images/foo.mmd --out images/foo.png`
-(cards: `--type card --in images/foo.html`). Output is ~1200–2400 px, sized for the feed.
+(cards: `--type card --in images/foo.html`). Output is ~1200–2400 px, sized for the feed, and the
+PNG **opens in your image viewer automatically** (pass `--no-open` to skip).
 
 > Rendering is **fully local** — nothing is sent to a third party. Generated PNGs and their
 > sources live in `images/` (gitignored). Visuals must not misrepresent facts, and always get

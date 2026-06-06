@@ -121,6 +121,8 @@ pull the byline automatically — don't hardcode it.
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
   as `voice/voice-notes.md` — a misleading diagram is worse than none).
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
+  — this **auto-opens the PNG in the user's image viewer** so they can actually see it (pass
+  `--no-open` only for headless/batch use).
 - **Show the user the rendered PNG** and iterate (tweak the source or `assets/diagram.css`) until
   they approve it. Don't claim it looks good without showing the image.
 - **Write alt text** describing the visual; you'll pass it to the publish step.
