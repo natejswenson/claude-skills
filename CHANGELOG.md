@@ -2,6 +2,16 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.1.9 (2026-06-05) — accessibility fix
+
+**Accessibility**
+- The drop-in React component (`examples/react/DevLogPage.jsx`) now exposes the expand/collapse entries as a proper disclosure control. Previously they were mouse-only — a bare `onClick` on `<article>` with no `role`, `tabIndex`, `aria-expanded`, or keyboard handler, so keyboard and screen-reader users could not operate the feed.
+  - The header carries `role="button"`, `tabIndex={0}`, `aria-expanded`, and `aria-controls` for screen-reader toggle semantics.
+  - `Enter`/`Space` toggle the focused entry (`preventDefault` on Space stops page scroll).
+  - `:focus-visible` outline makes keyboard focus visible.
+  - The toggle moved from the whole card to the header, so links inside an expanded entry are no longer nested in an interactive ancestor and text selection in the body works normally.
+- Visuals are unchanged: padding/hover/cursor moved from `.devlog-entry` to `.devlog-header`, with the redundant content padding zeroed so spacing matches.
+
 ## 0.1.8 (2026-05-01) — final hardening pass
 
 Closes the four Low-Hardening findings from the second adversarial verification:
