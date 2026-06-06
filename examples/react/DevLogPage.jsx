@@ -81,6 +81,15 @@ export default function DevLogPage({
     }
   }, [expandedEntry, loadedContent, fetchEntryContent]);
 
+  // Enter/Space toggle the focused entry — keyboard parity with the click
+  // handler. preventDefault on Space stops the page from scrolling.
+  const handleKeyDown = useCallback((e, filename) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleToggle(filename);
+    }
+  }, [handleToggle]);
+
   const visibleEntries = entries.slice(0, visibleCount);
   const hasMore = visibleCount < entries.length;
   const showTabs = projects && projects.length > 1;
@@ -132,14 +141,28 @@ export default function DevLogPage({
             {visibleEntries.map((entry) => {
               const isExpanded = expandedEntry === entry.file;
               const content = loadedContent.get(entry.file);
+              const contentId = `devlog-content-${entry.file}`;
 
               return (
                 <article
                   key={entry.file}
                   className={`devlog-entry${isExpanded ? ' devlog-entry--expanded' : ''}`}
-                  onClick={() => handleToggle(entry.file)}
                 >
-                  <div className="devlog-header">
+                  {/* The header is the disclosure control: role=button +
+                      aria-expanded/aria-controls give screen readers the
+                      toggle semantics, and it's keyboard-focusable. Keeping
+                      it separate from the content region (rather than wrapping
+                      the whole card in onClick) means links inside an expanded
+                      entry aren't trapped inside an interactive ancestor. */}
+                  <div
+                    className="devlog-header"
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    aria-controls={contentId}
+                    onClick={() => handleToggle(entry.file)}
+                    onKeyDown={(e) => handleKeyDown(e, entry.file)}
+                  >
                     <div className="devlog-header__left">
                       <p className="devlog-date">{formatDate(entry.date)}</p>
                       <h2 className="devlog-title">{entry.title}</h2>
@@ -150,10 +173,10 @@ export default function DevLogPage({
                     </div>
                   </div>
 
-                  <div className="devlog-content-wrapper">
+                  <div className="devlog-content-wrapper" id={contentId}>
                     <div className="devlog-content-inner">
                       {isExpanded && content && (
-                        <div className="devlog-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="devlog-content">
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             urlTransform={safeUrlTransform}

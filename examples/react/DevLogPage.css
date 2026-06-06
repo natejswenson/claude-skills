@@ -75,33 +75,39 @@
 }
 
 .devlog-entry {
-  padding: 28px 0;
   border-bottom: 1px solid var(--devlog-border);
-  cursor: pointer;
-  transition: background var(--devlog-transition-fast);
 }
 
 .devlog-entry:first-child {
   border-top: 1px solid var(--devlog-border);
 }
 
-.devlog-entry:hover {
-  background: var(--devlog-bg-surface);
-}
-
-.devlog-entry--expanded,
-.devlog-entry--expanded:hover {
-  cursor: default;
-  background: none;
-}
-
-/* ─── Entry header ──────────────────────────────────────────────────── */
+/* ─── Entry header (the disclosure control) ─────────────────────────── */
 
 .devlog-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
+  padding: 28px 0;
+  cursor: pointer;
+  transition: background var(--devlog-transition-fast);
+}
+
+.devlog-header:hover {
+  background: var(--devlog-bg-surface);
+}
+
+.devlog-header:focus-visible {
+  outline: 2px solid var(--devlog-fg);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.devlog-entry--expanded .devlog-header,
+.devlog-entry--expanded .devlog-header:hover {
+  cursor: default;
+  background: none;
 }
 
 .devlog-header__left {
@@ -163,8 +169,10 @@
   overflow: hidden;
 }
 
+/* Header already contributes 28px of bottom padding above this region,
+   so the expanded body sits flush against it. */
 .devlog-content {
-  padding-top: 24px;
+  padding-top: 0;
 }
 
 .devlog-content h2 {
