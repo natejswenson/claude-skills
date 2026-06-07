@@ -1,0 +1,113 @@
+{
+  "name": "Nate Swenson",
+  "contact": {
+    "email": "natejswenson@gmail.com",
+    "phone": "612-849-4103",
+    "location": "Hawley, MN",
+    "links": ["linkedin.com/in/natejswenson"]
+  },
+  "summary": "Senior DevOps Engineer building AWS infrastructure with Terraform and GitHub Actions CI/CD. Led infrastructure engineering for major product releases at GoodLeap, designing cloud platforms and deployment pipelines. Mentored engineers while establishing automation standards across multiple teams.",
+  "experience": [
+    {
+      "title": "Senior DevOps Engineer",
+      "company": "GoodLeap",
+      "location": "Roseville, CA",
+      "startDate": "11/2022",
+      "endDate": "Current",
+      "bullets": [
+        "Led AWS infrastructure engineering for two major product releases, designing Terraform modules and GitHub Actions CI/CD pipelines for reliable production delivery",
+        "Served as organizational SME for CI/CD and infrastructure-as-code, advancing automation and deployment reliability across multiple teams",
+        "Delivered Datadog observability dashboards and alerting for production infrastructure, improving incident response and operational maturity",
+        "Acted as subject-matter expert for Anthropic Claude platform, creating internal engineering tools that optimized debugging and incident resolution workflows",
+        "Mentored engineers on infrastructure automation, delivery pipelines, and modern cloud engineering practices",
+        "Led cross-team infrastructure consolidation ensuring scalable, maintainable, and production-ready systems for critical product launches"
+      ]
+    },
+    {
+      "title": "Lead Associate (DevOps Engineering)",
+      "company": "Fannie Mae",
+      "location": "Hawley, MN",
+      "startDate": "06/2021",
+      "endDate": "11/2022",
+      "bullets": [
+        "Led GitLab infrastructure management to enhance system reliability and support development needs",
+        "Designed and maintained CI/CD pipelines and runner infrastructure enabling automated builds and deployments across engineering teams"
+      ]
+    },
+    {
+      "title": "Lead Cloud Engineer",
+      "company": "Discover Financial",
+      "location": "Hawley, MN",
+      "startDate": "12/2020",
+      "endDate": "06/2021",
+      "bullets": [
+        "Lead engineer on cloud foundations team managing Ansible Tower for enterprise automation",
+        "Migrated Ansible Tower environment from version 3.6 to 3.8",
+        "Automated IAM policy assignment to S3 buckets using Lambda, DynamoDB, Jenkins, and Ansible Tower",
+        "Developed reusable Ansible templates for cloud and on-premise services",
+        "Coordinated team integration into Ansible Tower system"
+      ]
+    },
+    {
+      "title": "Lead DevOps Engineer",
+      "company": "Optum",
+      "location": "Eden Prairie, MN",
+      "startDate": "09/2019",
+      "endDate": "12/2020",
+      "bullets": [
+        "Led technical engineering team delivering applications for government and military contracts, ensuring compliance and reliability",
+        "Achieved zero-downtime deployments using Jenkins CI/CD",
+        "Implemented container-based Jenkins architecture, enhancing deployment efficiency",
+        "Maintained Jenkins, Chef, and GitHub supporting integration and deployment across the organization"
+      ]
+    },
+    {
+      "title": "Senior DevOps Engineer",
+      "company": "Optum",
+      "location": "Eden Prairie, MN",
+      "startDate": "01/2019",
+      "endDate": "09/2019",
+      "bullets": [
+        "Led a distributed team building internal Agile and Engineering communities of practice across a 235K-person organization",
+        "Developed and delivered hands-on training focused on TDD, pair programming, and XP practices",
+        "Researched new trends and technologies for the engineering training curriculum",
+        "Managed and prioritized the community backlog"
+      ]
+    },
+    {
+      "title": "DevOps Engineer",
+      "company": "Optum",
+      "location": "Eden Prairie, MN",
+      "startDate": "12/2016",
+      "endDate": "01/2019",
+      "bullets": [
+        "Delivered zero-downtime deployments in OpenShift",
+        "Developed and maintained pipelines as code in Jenkins CI/CD",
+        "Automated E2E testing using Testcafe, Cucumber, Selenium, and Sauce Labs",
+        "Maintained and contributed to inner-source projects on GitHub",
+        "Active member of the internal engineering community, leading to promotion as DevOps Community Lead"
+      ]
+    }
+  ],
+  "skills": ["AWS", "Terraform", "GitHub Actions", "CI/CD", "Datadog", "Python", "JavaScript", "Linux", "Infrastructure as Code", "Jenkins", "Ansible"],
+  "education": [
+    {
+      "degree": "Bachelor of Science, Industrial Engineering",
+      "school": "University of Minnesota",
+      "year": "2010"
+    }
+  ],
+  "droppedBullets": [],
+  "optimizedBullets": [
+    {
+      "role": "GoodLeap",
+      "original": "Led infrastructure engineering for two major product releases (Payments and Roofing), designing and operating the deployment architecture, CI/CD pipelines, and supporting cloud infrastructure required for reliable production delivery.",
+      "rewritten": "Led AWS infrastructure engineering for two major product releases, designing Terraform modules and GitHub Actions CI/CD pipelines for reliable production delivery"
+    },
+    {
+      "role": "GoodLeap",
+      "original": "Strengthened platform reliability and operational maturity while handling SRE DevOps platform engineering and operations functions.",
+      "rewritten": "Delivered Datadog observability dashboards and alerting for production infrastructure, improving incident response and operational maturity"
+    }
+  ]
+}

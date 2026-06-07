@@ -1,0 +1,33 @@
+{
+  "name": "career-io-aggregator",
+  "description": "career.io is a job aggregator — hostname is not the hiring company. Plain fetch 403 → Firecrawl. Markdown mirrors the live response for the Border States DevOps posting observed 2026-04-20.",
+  "url": "https://career.io/job/sr-devops-engineer-fargo-border-states-7b9f625841dc68537a7a8060763f66e3?utm_campaign=google_jobs_apply&utm_source=google_jobs_apply&utm_medium=organic",
+  "firecrawlKey": "fc-test-dummy-key",
+  "stubs": [
+    {
+      "match": "https://career.io/job/sr-devops-engineer-fargo-border-states-7b9f625841dc68537a7a8060763f66e3",
+      "status": 403,
+      "body": "<!doctype html><html><head><title>Career.io</title></head><body>Blocked</body></html>"
+    },
+    {
+      "match": "https://api.firecrawl.dev/v1/scrape",
+      "status": 200,
+      "json": {
+        "success": true,
+        "data": {
+          "markdown": "[Back](https://www.google.com/)\n\nSearch\n\n## This job has expired\n\n### Summary\n\nBe part of a growing, successful company in an exciting and challenging field. Border States is 100% employee-owned, which means you're empowered to make decisions, find solutions and receive rewards for your hard work.\n\n**This position will be located in:** Fargo, ND\n\n**Application Deadline: April 16, 2026**\n\n## **Job Summary**\n\nThe Senior DevOps Engineer is a hands-on technical leader responsible for building and maintaining scalable, secure, and highly available infrastructure and delivery pipelines across cloud environments. This role drives automation, observability, and reliability engineering practices to support business-critical applications and microservices.\n\n## **Responsibilities**\n\n- Implements and manages complex CI/CD pipelines for business-critical applications\n- Supports Dev teams with infrastructure-as-code and container orchestration\n- Owns observability and incident response practices across production systems\n\n## **Requirements**\n\n- 7+ years of backend or infrastructure experience\n- Deep knowledge of Azure, Terraform, and Kubernetes\n- Strong track record of reliability engineering\n",
+          "metadata": {
+            "title": "Sr DevOps Engineer in Fargo, ND, US - Career.io"
+          }
+        }
+      }
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "minTextLength": 500,
+    "titleContains": "Sr DevOps Engineer",
+    "textIncludes": ["Border States", "Fargo", "Azure"],
+    "textExcludes": []
+  }
+}

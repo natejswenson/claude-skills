@@ -1,0 +1,34 @@
+{
+  "name": "coinbase-cloudflare",
+  "description": "Coinbase careers page is Cloudflare-protected — plain fetch 403, tier-4 Firecrawl bypasses. Markdown / metadata.title mirror the live response observed 2026-04-19.",
+  "url": "https://www.coinbase.com/careers/positions/7595047?gh_src=8td8zq5y1us",
+  "firecrawlKey": "fc-test-dummy-key",
+  "stubs": [
+    {
+      "match": "https://www.coinbase.com/careers/positions/7595047?gh_src=8td8zq5y1us",
+      "status": 403,
+      "statusText": "Forbidden",
+      "body": "<!doctype html><html><head><title>Just a moment...</title></head><body><p>Enable JavaScript and cookies to continue.</p></body></html>"
+    },
+    {
+      "match": "https://api.firecrawl.dev/v1/scrape",
+      "status": 200,
+      "json": {
+        "success": true,
+        "data": {
+          "markdown": "󰂢\n\n[Back to jobs](https://www.coinbase.com/careers/positions)\n\n# Senior Software Engineer, Backend\n\nRemote - Singapore\n\nBase salary range (based on your work location and excluding equity and bonus):$191,100 SGD\n\nJob ID#: P75627\n\n[Apply now](https://job-boards.greenhouse.io/embed/job_app?token=7595047)\n\n## About the role\n\nCoinbase is seeking a Senior Software Engineer to join our Backend team. You will design and build the foundational infrastructure that powers millions of crypto transactions per day. We are looking for someone passionate about distributed systems, messaging, and high-throughput services.\n\n## What you'll do\n\n- Design distributed systems for high-throughput payment processing\n- Partner with product and security teams on new cryptocurrency integrations\n- Mentor junior engineers and drive engineering excellence\n\n## Requirements\n\n- 5+ years of production backend services in Go, Rust, or Java\n- Strong distributed-systems and database fundamentals\n- Experience with Kubernetes, Kafka, or similar infrastructure",
+          "metadata": {
+            "title": "Senior Software Engineer, Backend , Remote - Singapore - Coinbase"
+          }
+        }
+      }
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "minTextLength": 500,
+    "titleContains": "Senior Software Engineer, Backend",
+    "textIncludes": ["Coinbase", "distributed systems", "Kubernetes"],
+    "textExcludes": ["Just a moment", "Enable JavaScript"]
+  }
+}
