@@ -28,6 +28,14 @@ export async function parseResumeFile(
     ) {
       const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
       text = result.value;
+    } else if (
+      mimeType === "text/plain" ||
+      mimeType === "text/markdown" ||
+      mimeType === "text/x-markdown"
+    ) {
+      // CLI users frequently keep their resume as plain text or Markdown.
+      // No extraction needed — decode the bytes as UTF-8.
+      text = new TextDecoder("utf-8").decode(new Uint8Array(buffer));
     } else {
       return { ok: false, error: "unsupported_type", detail: mimeType };
     }
