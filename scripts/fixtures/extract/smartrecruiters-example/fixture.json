@@ -1,0 +1,40 @@
+{
+  "name": "smartrecruiters-example",
+  "description": "SmartRecruiters URL routes to tier-2 adapter against api.smartrecruiters.com.",
+  "url": "https://jobs.smartrecruiters.com/Bosch/743999876543210",
+  "stubs": [
+    {
+      "match": "https://api.smartrecruiters.com/v1/companies/Bosch/postings/743999876543210",
+      "status": 200,
+      "json": {
+        "name": "Staff Embedded Engineer — Autonomous Driving",
+        "location": {
+          "city": "Stuttgart"
+        },
+        "jobAd": {
+          "sections": {
+            "companyDescription": {
+              "text": "<p>Bosch is a global supplier of technology and services, active in the areas of Mobility, Industrial Technology, Consumer Goods, and Energy and Building Technology.</p>"
+            },
+            "jobDescription": {
+              "text": "<p>You will architect low-latency perception-stack software running on our autonomous-driving platform, collaborating with hardware, simulation, and safety teams across four continents.</p><ul><li>Design perception fusion algorithms in C++17</li><li>Own latency, throughput, and safety requirements end-to-end</li><li>Drive adoption of automated testing and CI/CD</li></ul>"
+            },
+            "qualifications": {
+              "text": "<ul><li>8+ years of embedded or real-time systems experience</li><li>Mastery of modern C++ and deterministic systems</li><li>Exposure to AUTOSAR, ROS, or similar automotive stacks</li></ul>"
+            },
+            "additionalInformation": {
+              "text": "<p>Relocation assistance available. Bosch is an equal-opportunity employer.</p>"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "minTextLength": 400,
+    "titleContains": "Staff Embedded Engineer",
+    "textIncludes": ["Bosch", "Stuttgart", "C++", "AUTOSAR"],
+    "textExcludes": []
+  }
+}
