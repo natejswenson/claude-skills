@@ -1,0 +1,11 @@
+{
+  "name": "linkedin-hostile",
+  "description": "LinkedIn host is on the hostile list — tier 1 short-circuits with no network call.",
+  "url": "https://www.linkedin.com/jobs/view/1234567890",
+  "stubs": [],
+  "expected": {
+    "ok": false,
+    "error": "hostile_domain",
+    "detailContains": "linkedin"
+  }
+}
