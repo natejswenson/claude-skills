@@ -1,0 +1,37 @@
+{
+  "name": "onetapresume-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a PDF — the OneTap Resume pipeline, minus the web monetization shell.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "onetapresume": "bin/onetapresume.mjs"
+  },
+  "scripts": {
+    "tailor": "node --import ./scripts/_tsx-register.mjs bin/onetapresume.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "eval": "node --import ./scripts/_tsx-register.mjs scripts/eval/run-eval.mjs",
+    "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.109",
+    "@mozilla/readability": "^0.6.0",
+    "@react-pdf/renderer": "^4.5.0",
+    "jsdom": "^29.0.2",
+    "mammoth": "^1.12.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "unpdf": "^1.6.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
