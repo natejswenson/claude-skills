@@ -1,0 +1,19 @@
+{
+  "targetRepo": "yourusername/daily-dev-log",
+  "branch": "main",
+  "gitAuthor": "Your Name",
+  "githubUser": "yourusername",
+  "projects": [
+    {
+      "key": "midnight-side-quest",
+      "label": "Midnight Side Quest",
+      "path": "/Users/yourusername/code/midnight-side-quest",
+      "remote": "yourusername/midnight-side-quest"
+    },
+    {
+      "key": "todays-existential-crisis",
+      "path": "/Users/yourusername/code/todays-existential-crisis",
+      "remote": "yourusername/todays-existential-crisis"
+    }
+  ]
+}

@@ -1,0 +1,380 @@
+/* DevLogPage — entry feed styles
+ *
+ * Self-contained: defines its own CSS variables in a default :root scope.
+ * Override any of the --devlog-* vars in your own stylesheet to match
+ * your site's theme.
+ */
+
+.devlog-page {
+  --devlog-fg: #1a1a1a;
+  --devlog-fg-secondary: #4a4a4a;
+  --devlog-fg-tertiary: #888;
+  --devlog-bg-surface: #f7f7f7;
+  --devlog-bg-elevated: #f0f0f0;
+  --devlog-border: #e5e5e5;
+  --devlog-border-hover: #cccccc;
+  --devlog-transition-fast: 0.15s ease;
+  --devlog-transition-normal: 0.3s ease;
+
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--devlog-fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .devlog-page {
+    --devlog-fg: #e8e8e8;
+    --devlog-fg-secondary: #b0b0b0;
+    --devlog-fg-tertiary: #777;
+    --devlog-bg-surface: #1a1a1a;
+    --devlog-bg-elevated: #222;
+    --devlog-border: #2a2a2a;
+    --devlog-border-hover: #3a3a3a;
+  }
+}
+
+/* ─── Project tabs ──────────────────────────────────────────────────── */
+
+.devlog-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--devlog-border);
+}
+
+.devlog-tab {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--devlog-fg-tertiary);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--devlog-transition-fast), border-color var(--devlog-transition-fast);
+}
+
+.devlog-tab:hover {
+  color: var(--devlog-fg);
+}
+
+.devlog-tab--active {
+  color: var(--devlog-fg);
+  border-bottom-color: var(--devlog-fg);
+}
+
+/* ─── Entry list ────────────────────────────────────────────────────── */
+
+.devlog-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.devlog-entry {
+  border-bottom: 1px solid var(--devlog-border);
+}
+
+.devlog-entry:first-child {
+  border-top: 1px solid var(--devlog-border);
+}
+
+/* ─── Entry header (the disclosure control) ─────────────────────────── */
+
+.devlog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 28px 0;
+  cursor: pointer;
+  transition: background var(--devlog-transition-fast);
+}
+
+.devlog-header:hover {
+  background: var(--devlog-bg-surface);
+}
+
+.devlog-header:focus-visible {
+  outline: 2px solid var(--devlog-fg);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.devlog-entry--expanded .devlog-header,
+.devlog-entry--expanded .devlog-header:hover {
+  cursor: default;
+  background: none;
+}
+
+.devlog-header__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.devlog-date {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--devlog-fg-tertiary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.devlog-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--devlog-fg);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.devlog-summary {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--devlog-fg-secondary);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.devlog-chevron {
+  flex-shrink: 0;
+  color: var(--devlog-fg-tertiary);
+  transition: transform var(--devlog-transition-fast);
+  margin-top: 4px;
+}
+
+.devlog-entry--expanded .devlog-chevron {
+  transform: rotate(180deg);
+}
+
+/* ─── Entry content (expanded) ──────────────────────────────────────── */
+
+.devlog-content-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--devlog-transition-normal);
+}
+
+.devlog-entry--expanded .devlog-content-wrapper {
+  grid-template-rows: 1fr;
+}
+
+.devlog-content-inner {
+  overflow: hidden;
+}
+
+/* Header already contributes 28px of bottom padding above this region,
+   so the expanded body sits flush against it. */
+.devlog-content {
+  padding-top: 0;
+}
+
+.devlog-content h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--devlog-fg-tertiary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 28px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--devlog-border);
+}
+
+.devlog-content h2:first-child {
+  margin-top: 0;
+}
+
+.devlog-content p {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--devlog-fg-secondary);
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+
+.devlog-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.devlog-content li {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--devlog-fg-secondary);
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  padding-left: 16px;
+  position: relative;
+}
+
+.devlog-content li::before {
+  content: '\2013';
+  position: absolute;
+  left: 0;
+  color: var(--devlog-fg-tertiary);
+}
+
+.devlog-content a {
+  color: var(--devlog-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--devlog-fg-tertiary);
+  transition: text-decoration-color var(--devlog-transition-fast);
+}
+
+.devlog-content a:hover {
+  text-decoration-color: var(--devlog-fg);
+}
+
+.devlog-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  background: var(--devlog-bg-elevated);
+  border: 1px solid var(--devlog-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.devlog-content pre {
+  background: var(--devlog-bg-elevated);
+  border: 1px solid var(--devlog-border);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 0 0 12px;
+  overflow-x: auto;
+}
+
+.devlog-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.devlog-content blockquote {
+  margin: 0 0 12px;
+  padding: 0 0 0 16px;
+  border-left: 2px solid var(--devlog-border-hover);
+  color: var(--devlog-fg-secondary);
+  font-style: normal;
+}
+
+/* ─── Loading skeleton ──────────────────────────────────────────────── */
+
+.devlog-skeleton {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--devlog-border);
+}
+
+.devlog-skeleton:first-child {
+  border-top: 1px solid var(--devlog-border);
+}
+
+.devlog-skeleton__line {
+  height: 12px;
+  background: var(--devlog-bg-elevated);
+  border-radius: 4px;
+  animation: devlog-pulse 1.5s ease-in-out infinite;
+}
+
+.devlog-skeleton__line--date {
+  width: 80px;
+  margin-bottom: 10px;
+}
+
+.devlog-skeleton__line--title {
+  width: 60%;
+  height: 16px;
+  margin-bottom: 8px;
+}
+
+.devlog-skeleton__line--summary {
+  width: 85%;
+}
+
+@keyframes devlog-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* ─── Empty & error states ──────────────────────────────────────────── */
+
+.devlog-empty,
+.devlog-error {
+  text-align: center;
+  padding: 80px 0;
+}
+
+.devlog-empty__text,
+.devlog-error__text {
+  font-size: 14px;
+  color: var(--devlog-fg-tertiary);
+  letter-spacing: -0.01em;
+  margin: 0 0 16px;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────── */
+
+.devlog-btn {
+  background: none;
+  border: 1px solid var(--devlog-border);
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--devlog-fg);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  transition: border-color var(--devlog-transition-fast), background var(--devlog-transition-fast);
+}
+
+.devlog-btn:hover {
+  border-color: var(--devlog-border-hover);
+  background: var(--devlog-bg-surface);
+}
+
+/* ─── Load more ─────────────────────────────────────────────────────── */
+
+.devlog-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .devlog-header {
+    flex-direction: column;
+    gap: 0;
+  }
+  .devlog-chevron {
+    display: none;
+  }
+  .devlog-title {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .devlog-content-wrapper,
+  .devlog-chevron {
+    transition: none;
+  }
+  .devlog-skeleton__line {
+    animation: none;
+    opacity: 0.6;
+  }
+}
