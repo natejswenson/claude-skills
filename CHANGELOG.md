@@ -10,6 +10,10 @@ Initial release: a self-contained Claude Code skill port of the OneTap Resume
 tailoring pipeline.
 
 ### Added
+- **Automated releases** (`.github/workflows/release.yml`): merging to `master`
+  tags `v<package.json version>` and publishes a GitHub Release (notes pulled
+  from this file), if that version isn't already released. Semver is driven by
+  the `package.json` version bump in the PR.
 - **Interactive style picker.** After a single (expensive) tailoring pass, the
   skill opens the PDF (`--open`) and lets the user switch templates instantly:
   `--render <json-sidecar> --template <name>` re-renders an already-tailored

@@ -121,5 +121,9 @@ preview; otherwise the `--open` flag opens it in the user's default viewer.
 - `npm run eval` — quality eval of the non-deterministic tailoring; real
   tailoring is free (subscription), `--l3` adds a billed LLM judge under a hard
   budget cap. See `scripts/eval/run-eval.mjs`.
-- Versioning: bump `version` here **and** in `package.json`; record in
-  `CHANGELOG.md`. Release via PR `dev → master`, tag `vN.M.P`.
+- Versioning (semver): in the `dev → master` PR, bump `version` here **and** in
+  `package.json` (the release tag is driven by `package.json`), and add a
+  matching `## [N.M.P]` section to `CHANGELOG.md`. On merge to `master`,
+  `.github/workflows/release.yml` automatically tags `vN.M.P` and publishes a
+  GitHub Release with notes pulled from that CHANGELOG section — no manual
+  tagging. Merges that don't change the version are a no-op (idempotent).
