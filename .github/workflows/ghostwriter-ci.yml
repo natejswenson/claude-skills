@@ -8,6 +8,7 @@ on:
     paths: ["skills/ghostwriter/**", ".github/workflows/ghostwriter-ci.yml"]
   pull_request:
     paths: ["skills/ghostwriter/**", ".github/workflows/ghostwriter-ci.yml"]
+  workflow_dispatch:
 
 jobs:
   validate:
