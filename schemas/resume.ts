@@ -6,8 +6,6 @@ export const OptimizedBullet = z.object({
   role: z.string(),
 });
 
-export type OptimizedBullet = z.infer<typeof OptimizedBullet>;
-
 export const ResumeJSON = z.object({
   name: z.string().min(1),
   contact: z.object({

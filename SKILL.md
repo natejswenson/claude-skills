@@ -32,52 +32,88 @@ The skill needs two things. Gather whatever the user already gave you in their
 message; ask for anything missing (one item at a time):
 
 1. **Résumé file** — an absolute path to a `.pdf`, `.docx`, `.txt`, or `.md`.
+   If the user would rather **pick the file** than type a path, run with
+   `--pick` (with no résumé positional arg) — on macOS this opens a native
+   Finder dialog and they select it. The picker works even though you launch
+   the command, because it runs on the user's machine.
 2. **Job posting** — a URL, a path to a `.txt` job description, or pasted text.
 
 Optional, only if the user expresses a preference:
 - **Template** — one of `modern` (default), `classic`, `technical`, `polished`,
   `timeline`, `editorial`, `spotlight`.
 - **Output directory** — defaults to `./onetap-out` under `$SKILL_DIR`.
+- **Model** — `--model <name>` (default `haiku` on the CLI subscription path).
+  Do **not** switch to `sonnet` for a real CLI run: with no prompt caching on
+  the subscription path, Sonnet reliably exceeds the timeout on a real résumé
+  (observed 3/3 timeouts), while Haiku completes in ~5–6 min. The cost is the
+  large tailoring prompt, not the model tier — don't promise a speedup by
+  changing models.
 - `--pdf-only` if they want just the PDF (no JSON sidecar).
 
 Do not ask the user to pre-edit or "clean up" their résumé — the tool does the
 work.
 
-## Step 3 — Run the pipeline
+## Step 3 — Tailor once (the expensive step)
 
-Pass the inputs as arguments (the CLI also prompts interactively, but since you
-already have the inputs, pass them directly). Quote every argument:
+Tailoring runs the LLM and is the only slow step (~1–2 min). Run it ONCE with
+`--open` so the result opens on the user's screen the moment it's ready. Quote
+every argument:
 
 ```bash
-cd "$SKILL_DIR" && node bin/onetapresume.mjs "<resume-path>" "<job-url-or-text>" [--template <name>] [--out <dir>] [--pdf-only]
+cd "$SKILL_DIR" && node bin/onetapresume.mjs "<resume-path>" "<job-url-or-text>" --open [--out <dir>]
 ```
 
+To let the user pick the résumé from a native dialog instead of passing a path,
+use `--pick` (no résumé positional):
+
+```bash
+cd "$SKILL_DIR" && node bin/onetapresume.mjs --pick "<job-url-or-text>" --open
+```
+
+**Run it in the FOREGROUND — do not background it or pipe it through a monitor.**
+The CLI emits a clean, self-updating progress display (one line per phase, a
+live spinner + elapsed timer + streamed token count) and prints results as
+tables. Note the **JSON sidecar path** it prints — you need it for the style
+picker in Step 4.
+
 Notes:
-- This invokes a nested `claude -p` call for the tailoring step. It is normal
-  for it to take 20–60 seconds.
-- Do **not** set `MOCK_LLM=1` for a real run — that returns a fixed sample
-  résumé and is for testing only.
-- If extraction from a job URL fails (`job_extract_failed`), ask the user to
-  paste the job description text instead, and re-run with the text.
+- Streamed via `stream-json` on the free subscription; **expect ~1–2 minutes**.
+  The streaming status shows it is working; it is not hung.
+- Do **not** set `MOCK_LLM=1` for a real run (fixed sample, testing only) and do
+  **not** pass `--model sonnet` on the CLI path (it times out — Haiku is the
+  default for a reason).
+- If a job URL fails (`job_extract_failed`), ask the user to paste the job
+  description text instead, and re-run.
 
-## Step 4 — Present results
+## Step 4 — Style picker (interactive, instant)
 
-The CLI prints the output PDF path, the JSON sidecar path (unless
-`--pdf-only`), and a diff of which bullets were optimized vs dropped. Relay to
-the user:
+The tailored content is now fixed in the JSON sidecar. Switching templates is a
+cheap (~0.5s) re-render — never re-tailor. Drive this as a friendly loop:
 
-- The **PDF path** (the deliverable).
-- A short summary of the change counts (bullets optimized / dropped / kept).
-- Offer to re-run with a different **template** if they want a different look.
+1. **Show the change summary** from Step 3 as a small markdown table (optimized /
+   dropped / kept / roles), and confirm the résumé opened.
+2. **Offer the styles as a selector.** Use the `AskUserQuestion` tool with the
+   seven templates as options, each with a one-line description (and, if useful,
+   a tiny ASCII layout sketch in the option `preview`):
+   `modern` (clean, accent headers · default), `classic` (traditional serif),
+   `technical` (dense, monospace accents), `polished` (two-column sidebar),
+   `timeline` (dated timeline rail), `editorial` (magazine-style),
+   `spotlight` (colored header band).
+3. **On each pick, re-render and re-open the preview** (instant):
 
-If you have a way to display the PDF (an image/screenshot tool), show it;
-otherwise give the path so they can open it.
+   ```bash
+   cd "$SKILL_DIR" && node bin/onetapresume.mjs --render "<json-sidecar-path>" --template <pick> --out <same-out-dir> --open
+   ```
 
-## What this skill does NOT do
+4. **Then ask what's next** with `AskUserQuestion`: **"Preview another style"**
+   or **"Save & finish"**.
+   - *Another style* → back to step 2/3.
+   - *Save & finish* → the chosen PDF is already saved locally in the out dir;
+     give its path as the final deliverable.
+5. **End the run with exactly:** `Thanks for using OneTap Resume!`
 
-It deliberately omits the web product's monetization shell: no payment, no
-Cloudflare Turnstile, no rate-limiting, no recovery flow. It is a local
-single-user tool.
+If you have an image/screenshot tool, show the PDF after each render as the
+preview; otherwise the `--open` flag opens it in the user's default viewer.
 
 ## Maintainer reference (not part of a user run)
 
