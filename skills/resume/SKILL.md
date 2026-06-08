@@ -1,18 +1,18 @@
 ---
-name: onetapresume
-description: Tailor a résumé to a job description and render a polished PDF, entirely from the CLI. Triggers on "/onetapresume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
+name: resume
+description: Tailor a résumé to a job description and render a polished PDF, entirely from the CLI. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
 user_invocable: true
 version: 0.1.1
 ---
 
-# /onetapresume — Résumé tailoring
+# /resume — Résumé tailoring
 
-You are running the **onetapresume** skill: a self-contained port of the
+You are running the **resume** skill: a self-contained port of the
 OneTap Resume pipeline (parse → extract job → LLM tailoring → multi-template
 PDF). The tailoring runs through the `claude` CLI on the user's subscription —
 no API key, no per-run cost.
 
-**Announce at start:** "I'm using the onetapresume skill to tailor your résumé."
+**Announce at start:** "I'm using the resume skill to tailor your résumé."
 
 > All commands below run from the directory containing this `SKILL.md` (the
 > skill's install dir, referred to as `$SKILL_DIR`). Resolve it once and `cd`
@@ -60,14 +60,14 @@ Tailoring runs the LLM and is the only slow step (~1–2 min). Run it ONCE with
 every argument:
 
 ```bash
-cd "$SKILL_DIR" && node bin/onetapresume.mjs "<resume-path>" "<job-url-or-text>" --open [--out <dir>]
+cd "$SKILL_DIR" && node bin/resume.mjs "<resume-path>" "<job-url-or-text>" --open [--out <dir>]
 ```
 
 To let the user pick the résumé from a native dialog instead of passing a path,
 use `--pick` (no résumé positional):
 
 ```bash
-cd "$SKILL_DIR" && node bin/onetapresume.mjs --pick "<job-url-or-text>" --open
+cd "$SKILL_DIR" && node bin/resume.mjs --pick "<job-url-or-text>" --open
 ```
 
 **Run it in the FOREGROUND — do not background it or pipe it through a monitor.**
@@ -102,7 +102,7 @@ cheap (~0.5s) re-render — never re-tailor. Drive this as a friendly loop:
 3. **On each pick, re-render and re-open the preview** (instant):
 
    ```bash
-   cd "$SKILL_DIR" && node bin/onetapresume.mjs --render "<json-sidecar-path>" --template <pick> --out <same-out-dir> --open
+   cd "$SKILL_DIR" && node bin/resume.mjs --render "<json-sidecar-path>" --template <pick> --out <same-out-dir> --open
    ```
 
 4. **Then ask what's next** with `AskUserQuestion`: **"Preview another style"**

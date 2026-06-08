@@ -1,4 +1,4 @@
-# linkedin-ghostwriter
+# ghostwriter
 
 A Claude skill that writes engaging LinkedIn posts **in your own voice**, on topics you
 care about, and publishes them to your profile after you approve — no copy-paste.
@@ -116,7 +116,7 @@ PNG **opens in your image viewer automatically** (pass `--no-open` to skip).
 
 | Path | What it is |
 |------|------------|
-| `.claude/skills/linkedin-ghostwriter/SKILL.md` | The skill instructions Claude follows |
+| `SKILL.md` | The skill instructions Claude follows |
 | `scripts/extract_posts.py` | Turns `Shares.csv` into clean text for voice analysis |
 | `scripts/linkedin_auth.py` | One-time OAuth; writes token + URN to `.env` |
 | `scripts/linkedin_post.py` | Publishes a post (`--dry-run` to preview the API payload) |

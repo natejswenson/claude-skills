@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * onetapresume CLI — tailor a resume to a job and render a PDF.
+ * resume CLI — tailor a resume to a job and render a PDF.
  *
  * Self-registers the TS-on-the-fly loader so it runs with a plain
- * `node bin/onetapresume.mjs ...` (no --import flag needed).
+ * `node bin/resume.mjs ...` (no --import flag needed).
  *
  * Smart invocation:
  *   - pass resume + job as positional args, or
  *   - omit the resume (or pass --pick) to choose it from a native file dialog,
  *   - omit either and it prompts interactively (when stdin is a TTY).
  *
- *   node bin/onetapresume.mjs <resume-path> <job-url-or-text> [flags]
+ *   node bin/resume.mjs <resume-path> <job-url-or-text> [flags]
  *
  * Flags:
  *   --pick              choose the resume from a native file picker (macOS)
@@ -34,10 +34,10 @@ register(
   pathToFileURL(join(__dirname, "/")).href,
 );
 
-const HELP = `onetapresume — tailor a resume to a job description and render a PDF
+const HELP = `resume — tailor a resume to a job description and render a PDF
 
 Usage:
-  onetapresume <resume-path> <job-url-or-text> [flags]
+  resume <resume-path> <job-url-or-text> [flags]
 
 Arguments:
   resume-path        path to your resume (.pdf .docx .txt .md)
@@ -148,7 +148,7 @@ async function main() {
 
   if (pretty) {
     stderr.write(
-      `\n  onetapresume · ${relative(process.cwd(), resumePath) || resumePath} → ${flags.template ?? "modern"} template${usingMock ? " [MOCK_LLM]" : ""}\n\n`,
+      `\n  resume · ${relative(process.cwd(), resumePath) || resumePath} → ${flags.template ?? "modern"} template${usingMock ? " [MOCK_LLM]" : ""}\n\n`,
     );
   }
 

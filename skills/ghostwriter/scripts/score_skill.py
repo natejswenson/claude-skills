@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-DEFAULT_SKILL = REPO / ".claude" / "skills" / "linkedin-ghostwriter" / "SKILL.md"
+DEFAULT_SKILL = REPO / "SKILL.md"
 
 # LinkedIn/Anthropic cap skill descriptions at 1024 characters.
 MAX_DESCRIPTION_CHARS = 1024

@@ -1,6 +1,6 @@
 /**
- * Pure argument parser for the onetapresume CLI. Kept separate from
- * bin/onetapresume.mjs so it can be unit-tested without spawning a process.
+ * Pure argument parser for the resume CLI. Kept separate from
+ * bin/resume.mjs so it can be unit-tested without spawning a process.
  */
 export interface ParsedFlags {
   pdfOnly: boolean;

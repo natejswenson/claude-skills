@@ -1,5 +1,5 @@
 {
-  "name": "onetapresume-skill",
+  "name": "resume-skill",
   "version": "0.1.1",
   "private": true,
   "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF, running locally on the claude CLI subscription.",
@@ -7,11 +7,11 @@
   "author": "Nate Swenson",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/natejswenson/onetapskill.git"
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
   },
-  "homepage": "https://github.com/natejswenson/onetapskill#readme",
+  "homepage": "https://github.com/natejswenson/claude-skills#readme",
   "bugs": {
-    "url": "https://github.com/natejswenson/onetapskill/issues"
+    "url": "https://github.com/natejswenson/claude-skills/issues"
   },
   "keywords": [
     "claude-code",
@@ -27,10 +27,10 @@
     "node": ">=22"
   },
   "bin": {
-    "onetapresume": "bin/onetapresume.mjs"
+    "resume": "bin/resume.mjs"
   },
   "scripts": {
-    "tailor": "node --import ./scripts/_tsx-register.mjs bin/onetapresume.mjs",
+    "tailor": "node --import ./scripts/_tsx-register.mjs bin/resume.mjs",
     "test": "node scripts/run-tests.mjs",
     "eval": "node --import ./scripts/_tsx-register.mjs scripts/eval/run-eval.mjs",
     "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
