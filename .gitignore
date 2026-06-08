@@ -1,0 +1,18 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets / local config
+.env
+*.local.json
+
+# Skill outputs / scratch
+onetap-out/
