@@ -1,0 +1,16 @@
+{
+  "name": "not-a-job-page",
+  "description": "Page fetches ok but has no job content — parsers all fall through to tier 5 too_short.",
+  "url": "https://example.com/",
+  "stubs": [
+    {
+      "match": "https://example.com/",
+      "status": 200,
+      "body": "<!doctype html><html><head><title>Example</title></head><body><h1>Example</h1><p>Hi.</p></body></html>"
+    }
+  ],
+  "expected": {
+    "ok": false,
+    "error": "too_short"
+  }
+}

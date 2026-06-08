@@ -1,0 +1,31 @@
+# dependencies
+/node_modules
+
+# build / TS incremental
+*.tsbuildinfo
+
+# test + eval run artifacts
+/coverage
+/scripts/test-results
+/runs
+
+# eval outputs may contain raw resume content — never track
+/eval-out/
+
+# default skill output dir (tailored PDFs + JSON — user data)
+/onetap-out/
+
+# local PDF render scratch
+/pdf-snapshots/
+
+# env files
+.env*
+!.env.example
+
+# claude code session runtime
+.claude/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
