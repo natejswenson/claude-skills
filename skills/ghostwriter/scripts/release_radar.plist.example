@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Optional: schedules the release radar (scripts/release_radar.sh) as a macOS
+  launchd agent. RESEARCH ONLY — it never posts to LinkedIn (see COMPLIANCE.md).
+
+  Setup:
+    1. Replace REPO_PATH below with the absolute path to this repo
+       (e.g. /Users/you/code/linkedin-ghostwriter). Both occurrences.
+    2. Copy this file to ~/Library/LaunchAgents/ as
+       com.example.linkedin-release-radar.plist
+    3. launchctl load -w ~/Library/LaunchAgents/com.example.linkedin-release-radar.plist
+
+  Requires the `claude` CLI on your PATH. Adjust the schedule as you like.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.example.linkedin-release-radar</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>REPO_PATH/scripts/release_radar.sh</string>
+  </array>
+
+  <!-- Twice weekly: Monday (1) and Thursday (4) at 07:53 local. -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Weekday</key><integer>1</integer>
+      <key>Hour</key><integer>7</integer>
+      <key>Minute</key><integer>53</integer>
+    </dict>
+    <dict>
+      <key>Weekday</key><integer>4</integer>
+      <key>Hour</key><integer>7</integer>
+      <key>Minute</key><integer>53</integer>
+    </dict>
+  </array>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>REPO_PATH/research/.radar.log</string>
+  <key>StandardErrorPath</key>
+  <string>REPO_PATH/research/.radar.log</string>
+</dict>
+</plist>

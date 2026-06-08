@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  Designed-card scaffold. Copy this to images/<slug>.html, fill in the content,
+  then: render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+  The #canvas element is a fixed 1200x1200 hero; styles live in diagram.css.
+  Use whatever inner markup fits — the classes below are ready-made building blocks:
+    .eyebrow  small uppercase label      .h1 / <h1>  big headline
+    .sub      muted subhead              .rows/.row/.key/.arrow  before-after lists
+    .stat/.unit  giant number            .pill  small chip        .footer  byline
+  Delete what you don't use. Keep it to ONE idea.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card">
+    <div class="eyebrow">EYEBROW LABEL</div>
+    <h1>One sharp headline that carries the whole point.</h1>
+    <p class="sub">A single supporting line, if needed.</p>
+
+    <div class="rows">
+      <div class="row"><span class="key">Fast tier</span><span class="arrow">▸</span><span>fetch, check, route</span></div>
+      <div class="row"><span class="key">Big model</span><span class="arrow">▸</span><span>planning, judgment</span></div>
+    </div>
+
+    <!-- "footer brand" auto-fills your byline from --byline in diagram.css.
+         For a one-off, use <div class="footer">custom text</div> instead. -->
+    <div class="footer brand"></div>
+  </div>
+</body>
+</html>

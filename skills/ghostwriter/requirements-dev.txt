@@ -1,0 +1,6 @@
+# Dev/test dependencies (NOT needed to run the skill — the runtime scripts are
+# standard-library only). Install with:
+#     .venv/bin/pip install -r requirements-dev.txt
+pytest>=8
+pytest-cov>=5
+coverage>=7

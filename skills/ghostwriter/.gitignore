@@ -1,0 +1,41 @@
+# Secrets — never commit
+.env
+
+# Local per-user Claude settings
+.claude/settings.local.json
+
+# Personal data exports & generated posts (keep the dirs, ignore contents)
+data/*
+!data/.gitkeep
+drafts/*
+!drafts/.gitkeep
+
+# Personal voice files — copy the *.example.md versions and fill these in
+voice/interests.md
+voice/voice-notes.md
+voice/voice-profile.md
+
+# Personal image brand guide — copy assets/diagram.css.example and make it yours
+assets/diagram.css
+
+# Release-radar digests + log (research artifacts, keep local)
+research/*
+!research/.gitkeep
+
+# Generated visuals + their sources (keep the dir, ignore contents)
+images/*
+!images/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Test / coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+
+# OS
+.DS_Store
