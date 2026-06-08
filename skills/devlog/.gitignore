@@ -3,6 +3,8 @@ dist/
 .env
 .env.*
 .npmrc
+# Per-user devlog config (lives next to SKILL.md; use config.example.json as a template)
+config.json
 *.pem
 *.key
 *.log
