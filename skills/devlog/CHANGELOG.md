@@ -2,6 +2,17 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.2.0 (2026-06-08) — monorepo subdirectory filtering
+
+**Added**
+- `projects[].pathFilter` config field: scope a project's commits to a repo-relative
+  subdirectory (e.g. `skills/devlog`). Lets several logical projects share one monorepo
+  `path`/`remote` while each collects only its own subtree's commits. `git log` gains a
+  `-- <pathFilter>` pathspec; commit links still resolve to `<remote>/commit/<hash>`.
+- SKILL.md documents the field, its security validation (no leading `-`/`/`, no `..`,
+  single-quoted), and the multi-skill monorepo workflow.
+- `bin/devlog.js` validates `pathFilter` and shows it as `scope:` in `devlog config`.
+
 ## 0.1.9 (2026-06-05) — accessibility fix
 
 **Accessibility**

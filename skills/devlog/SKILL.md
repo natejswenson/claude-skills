@@ -27,13 +27,19 @@ Schema (required fields plus optional ones):
       "key": "project-key",
       "label": "Display Name",
       "path": "/absolute/path/to/project",
-      "remote": "<owner>/<repo>"
+      "remote": "<owner>/<repo>",
+      "pathFilter": "optional/subdir"
     }
   ]
 }
 ```
 
-Optional fields: `branch` (defaults to `main`), `projects[].label` (defaults to `key`).
+Optional fields: `branch` (defaults to `main`), `projects[].label` (defaults to `key`), and
+`projects[].pathFilter` — a repo-relative subdirectory (e.g. `skills/devlog`) that scopes a
+project's commits to one part of a repo. Use it when several logical projects live in one
+**monorepo**: give each its own `key` + `pathFilter`, all sharing the same `path` and `remote`.
+When omitted, all of the repo's commits are considered. A commit that touches more than one
+project's subdir legitimately appears in each of those projects' entries.
 
 ## Step 0: Load and validate config
 
@@ -63,6 +69,7 @@ The CLI's `init` and `add-project` commands enforce these patterns at write time
 | `projects[].path` | Must NOT contain the shell-quote-break set (same as gitAuthor), MUST NOT start with `-`, AND must point to an existing directory. Whitespace allowed (paths legitimately contain spaces). |
 | `projects[].label` (optional) | Same character constraints as `gitAuthor` — used as display text, never as a shell argument |
 | `projects[].remote` | Same pattern as `targetRepo` |
+| `projects[].pathFilter` (optional) | Matches `^[a-zA-Z0-9][a-zA-Z0-9._/-]*$` (no leading `-` or `/`), AND must not contain `..` as a path component. Interpolated into `git log -- <pathFilter>`, so single-quote it like every other value. |
 
 If any field fails validation, stop with:
 > Config field `<field>` failed security validation: `<value>`. Edit `~/.claude/skills/devlog/config.json` and retry, or run `npx @natjswenson/devlog config` to inspect.
@@ -96,6 +103,17 @@ For each project in scope, run (use `git -C` to avoid `cd` shell-composition; si
 ```bash
 git -C '<project.path>' log "--author=<config.gitAuthor>" --since=midnight --format='%H|%s|%D' --all
 ```
+
+**If the project has a `pathFilter`**, scope the log to that subdirectory by appending a pathspec
+(the `--` separates revisions from paths so the value can never be mistaken for a flag):
+
+```bash
+git -C '<project.path>' log "--author=<config.gitAuthor>" --since=midnight --format='%H|%s|%D' --all -- '<project.pathFilter>'
+```
+
+This is what lets several monorepo projects (same `path`/`remote`, different `pathFilter`) each
+collect only their own skill's commits. Commit links in Step 3 still use `<project.remote>`, so a
+filtered commit links to `https://github.com/<project.remote>/commit/<hash>` as usual.
 
 If no commits are found for a project, skip it. If no commits are found across all projects, inform the user and stop.
 
