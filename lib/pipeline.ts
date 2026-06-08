@@ -17,6 +17,7 @@ import { parseResumeFile } from "@/lib/parsing/resume";
 import { extractJobFromUrl } from "@/lib/parsing/job";
 import { SYSTEM_PROMPT, buildUserMessage, RESUME_JSON_SCHEMA } from "@/lib/prompt";
 import { ResumeJSON, type ResumeJSON as ResumeJSONType } from "@/schemas/resume";
+import { validateTailoring } from "@/lib/validate";
 import { templates, type TemplateName } from "@/lib/templates";
 import { ResumeDocument } from "@/components/ResumeDocument";
 import { logInfo, logWarn } from "@/lib/log";
@@ -104,10 +105,29 @@ export async function resolveJobText(
 // Tailoring — schema-validated structured output with one corrective retry.
 // Ported from the generate route's streamTailorPipeline (non-streaming).
 // ---------------------------------------------------------------------------
+/**
+ * Minimal progress sink the pipeline reports phases through. The CLI's
+ * `Progress` class satisfies this shape; eval/tests pass nothing and get the
+ * silent no-op default.
+ */
+export interface RunReporter {
+  start(label: string): void;
+  update(detail: string): void;
+  succeed(label?: string): void;
+  fail(label?: string): void;
+}
+
+const SILENT_REPORTER: RunReporter = {
+  start() {},
+  update() {},
+  succeed() {},
+  fail() {},
+};
+
 export async function tailorResume(
   resumeText: string,
   jobText: string,
-  opts: { model?: string } = {},
+  opts: { model?: string; onProgress?: (p: { outChars: number }) => void } = {},
 ): Promise<ResumeJSONType> {
   // MOCK path: $0 wiring test. Returns the fixed mock-resume fixture.
   if (process.env.MOCK_LLM === "1") {
@@ -124,33 +144,48 @@ export async function tailorResume(
   const llm = getLLMClient();
   const user = buildUserMessage(resumeText, trimJobText(jobText));
 
-  // Attempt 1
-  const out1 = await llm.completeStructured({
-    system: SYSTEM_PROMPT,
-    user,
-    schema: RESUME_JSON_SCHEMA,
-    model: opts.model,
-  });
-  let v = ResumeJSON.safeParse(out1);
-  if (v.success) return v.data;
+  // Bounded correction loop. Each pass either fixes a schema failure or a
+  // deterministic content violation (the audits moved out of the prompt into
+  // lib/validate.ts). With thinking disabled each call is ~10–40s, so up to
+  // MAX_ATTEMPTS passes stay well within a reasonable wall time. We return the
+  // first clean result, or the last schema-valid one if we run out of passes.
+  const MAX_ATTEMPTS = 2;
+  let system = SYSTEM_PROMPT;
+  let lastValid: ResumeJSONType | null = null;
+  let lastSchemaIssues = "";
 
-  // Attempt 2 — corrective retry naming the exact validation failures.
-  const issues = v.error.issues
-    .slice(0, 5)
-    .map((i) => `${i.path.join(".")}: ${i.message}`)
-    .join("; ");
-  logWarn("tailor_retry", { reason: issues.slice(0, 200) });
-  const retrySystem = `${SYSTEM_PROMPT}\n\n# RETRY\n\nYour previous response failed validation with these issues: ${issues}. Fix exactly those issues and return the corrected JSON. Do not change anything else.`;
-  const out2 = await llm.completeStructured({
-    system: retrySystem,
-    user,
-    schema: RESUME_JSON_SCHEMA,
-    model: opts.model,
-  });
-  v = ResumeJSON.safeParse(out2);
-  if (v.success) return v.data;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const out = await llm.completeStructured({
+      system,
+      user,
+      schema: RESUME_JSON_SCHEMA,
+      model: opts.model,
+      onProgress: opts.onProgress,
+    });
 
-  throw new Error(`schema_validation_failed: ${issues}`);
+    const parsed = ResumeJSON.safeParse(out);
+    if (!parsed.success) {
+      lastSchemaIssues = parsed.error.issues
+        .slice(0, 5)
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ");
+      logWarn("tailor_retry", { kind: "schema", reason: lastSchemaIssues.slice(0, 200) });
+      system = `${SYSTEM_PROMPT}\n\n# RETRY\n\nYour previous response failed validation with these issues: ${lastSchemaIssues}. Fix exactly those issues and return the corrected JSON. Do not change anything else.`;
+      continue;
+    }
+
+    lastValid = parsed.data;
+    const check = validateTailoring(parsed.data, resumeText);
+    if (check.ok) return parsed.data;
+
+    logWarn("tailor_retry", { kind: "content", reason: check.violations.join("; ").slice(0, 200) });
+    system = `${SYSTEM_PROMPT}\n\n# CORRECTIONS\n\nYour previous output violated these hard constraints: ${check.violations.join("; ")}. Fix exactly these and re-emit the full corrected JSON. Change nothing else.`;
+  }
+
+  // Ran out of passes: prefer the last schema-valid result (best effort) over
+  // failing the whole run; only throw if we never got valid JSON at all.
+  if (lastValid) return lastValid;
+  throw new Error(`schema_validation_failed: ${lastSchemaIssues || "no valid JSON produced"}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +210,23 @@ export async function renderResumePdf(
     ws.on("error", rej);
     stream.on("error", rej);
   });
+}
+
+/**
+ * Re-render an already-tailored résumé in a different template. Cheap (~1s) —
+ * no parsing, job extraction, or LLM call — so the style picker can switch
+ * looks instantly. Returns the written PDF path.
+ */
+export async function renderTemplateFromResume(
+  resume: ResumeJSONType,
+  template: TemplateName,
+  outDir: string,
+): Promise<string> {
+  await mkdir(outDir, { recursive: true });
+  const stem = sanitizeStem(resume.name) || "resume";
+  const pdfPath = join(outDir, `${stem}-${template}.pdf`);
+  await renderResumePdf(resume, template, pdfPath);
+  return pdfPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,6 +271,8 @@ export interface PipelineInput {
   outDir?: string;
   pdfOnly?: boolean;
   model?: string;
+  /** Optional live-progress sink. Defaults to silent. */
+  reporter?: RunReporter;
 }
 
 export interface PipelineResult {
@@ -234,12 +288,29 @@ export interface PipelineResult {
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
   const template = normalizeTemplate(input.template);
   const outDir = resolve(input.outDir ?? "onetap-out");
+  const report = input.reporter ?? SILENT_REPORTER;
 
   logInfo("pipeline_start", { resume: basename(input.resumePath), template });
-  const resumeText = await loadResumeText(input.resumePath);
-  const job = await resolveJobText(input.jobInput);
-  const resume = await tailorResume(resumeText, job.text, { model: input.model });
 
+  report.start("Parsing résumé");
+  const resumeText = await loadResumeText(input.resumePath);
+  report.succeed(`Parsed résumé (${resumeText.length.toLocaleString()} chars)`);
+
+  report.start("Resolving job posting");
+  const job = await resolveJobText(input.jobInput);
+  report.succeed(`Job ready${job.title ? `: ${job.title}` : ` (${job.source})`}`);
+
+  report.start("Tailoring with Claude");
+  const resume = await tailorResume(resumeText, job.text, {
+    model: input.model,
+    onProgress: ({ outChars }) =>
+      report.update(`generating… ${outChars.toLocaleString()} chars`),
+  });
+  report.succeed(
+    `Tailored: ${resume.optimizedBullets.length} optimized · ${resume.droppedBullets.length} dropped`,
+  );
+
+  report.start(`Rendering ${template} PDF`);
   await mkdir(outDir, { recursive: true });
   const stem = sanitizeStem(resume.name) || "resume";
   const pdfPath = join(outDir, `${stem}-${template}.pdf`);
@@ -251,6 +322,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
     const { writeFile } = await import("node:fs/promises");
     await writeFile(jsonPath, JSON.stringify(resume, null, 2), "utf-8");
   }
+  report.succeed("PDF rendered");
 
   return {
     resume,

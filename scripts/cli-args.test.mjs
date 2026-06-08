@@ -26,11 +26,33 @@ test("two positionals captured in order", () => {
   assert.deepEqual(positional, ["resume.pdf", "https://x.com/job"]);
 });
 
-test("defaults: pdfOnly/json/help false", () => {
+test("defaults: pdfOnly/json/help/pick/open false", () => {
   const { flags } = parseArgs([]);
   assert.equal(flags.pdfOnly, false);
   assert.equal(flags.json, false);
   assert.equal(flags.help, false);
+  assert.equal(flags.pick, false);
+  assert.equal(flags.open, false);
+  assert.equal(flags.render, undefined);
+});
+
+test("--open sets open", () => {
+  assert.equal(parseArgs(["--open"]).flags.open, true);
+});
+
+test("--render captures path (space and = forms)", () => {
+  assert.equal(parseArgs(["--render", "/tmp/r.json"]).flags.render, "/tmp/r.json");
+  assert.equal(parseArgs(["--render=/tmp/r.json"]).flags.render, "/tmp/r.json");
+});
+
+test("--pick sets pick", () => {
+  assert.equal(parseArgs(["--pick"]).flags.pick, true);
+});
+
+test("--pick with a job positional and no resume", () => {
+  const { flags, positional } = parseArgs(["--pick", "https://x.com/job"]);
+  assert.equal(flags.pick, true);
+  assert.deepEqual(positional, ["https://x.com/job"]);
 });
 
 test("--help and -h set help", () => {

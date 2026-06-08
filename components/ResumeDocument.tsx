@@ -479,24 +479,8 @@ function TimelineLayout({ resume, config, s }: { resume: ResumeJSON; config: Tem
   );
 }
 
-export function ResumeDocument({ resume, template = "modern", accentOverride }: { resume: ResumeJSON; template?: TemplateName; accentOverride?: { sidebar?: string; band?: string; accent: string } }) {
-  const baseConfig = templates[template];
-  let config = baseConfig;
-  if (accentOverride) {
-    if (template === "polished" && accentOverride.sidebar && baseConfig.sidebar) {
-      config = {
-        ...baseConfig,
-        sidebar: { ...baseConfig.sidebar, backgroundColor: accentOverride.sidebar },
-        colors: { ...baseConfig.colors, accent: accentOverride.accent },
-      };
-    } else if (template === "spotlight" && accentOverride.band && baseConfig.band) {
-      config = {
-        ...baseConfig,
-        band: { ...baseConfig.band, backgroundColor: accentOverride.band },
-        colors: { ...baseConfig.colors, accent: accentOverride.accent },
-      };
-    }
-  }
+export function ResumeDocument({ resume, template = "modern" }: { resume: ResumeJSON; template?: TemplateName }) {
+  const config = templates[template];
   const s = allStyles[template];
 
   return (

@@ -38,15 +38,6 @@ export function htmlToPlainText(html: string): string {
     .trim();
 }
 
-/** Normalize whitespace but preserve paragraph breaks (\n\n). */
-export function preserveParagraphs(text: string): string {
-  return text
-    .replace(/\r\n/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 // ---------- 1. JSON-LD JobPosting ----------
 
 export interface JobLdResult {
