@@ -1,0 +1,26 @@
+Alex Morgan
+alex.morgan@example.com | 555-123-4567 | Portland, OR
+
+SUMMARY
+Software engineer with background in web platforms.
+
+EXPERIENCE
+
+Acme Corp — Senior Engineer
+2022-01 – Present
+- Built a React dashboard for internal analytics used by 200 employees
+- Migrated payment flow from Python 2 to Python 3 across 15 services
+- Mentored 3 junior engineers through weekly 1:1s
+- Wrote runbook for on-call rotation
+
+Beta Labs — Software Engineer
+2019-05 – 2021-12
+- Developed REST API endpoints in Node.js for mobile client
+- Participated in code reviews across two product teams
+- Contributed to database query optimization
+
+SKILLS
+JavaScript, TypeScript, React, Node.js, Python, PostgreSQL, Git
+
+EDUCATION
+B.S. Computer Science, Portland State University, 2019

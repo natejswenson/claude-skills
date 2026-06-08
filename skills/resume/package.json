@@ -1,0 +1,55 @@
+{
+  "name": "onetapresume-skill",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF, running locally on the claude CLI subscription.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/onetapskill.git"
+  },
+  "homepage": "https://github.com/natejswenson/onetapskill#readme",
+  "bugs": {
+    "url": "https://github.com/natejswenson/onetapskill/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-skill",
+    "resume",
+    "cv",
+    "resume-tailoring",
+    "pdf",
+    "cli"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "onetapresume": "bin/onetapresume.mjs"
+  },
+  "scripts": {
+    "tailor": "node --import ./scripts/_tsx-register.mjs bin/onetapresume.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "eval": "node --import ./scripts/_tsx-register.mjs scripts/eval/run-eval.mjs",
+    "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "@react-pdf/renderer": "^4.5.0",
+    "jsdom": "^29.0.2",
+    "mammoth": "^1.12.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "unpdf": "^1.6.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,21 @@
+Director of Growth Marketing
+
+Seeking a growth leader with experience in:
+- Programmatic advertising (DSP / RTB buying)
+- Lifecycle marketing programs (email + SMS + push + in-app)
+- Kubernetes-based deployment workflows
+- Multi-cloud infrastructure (AWS + GCP + Azure)
+- Attribution modeling
+
+The ideal candidate has "run programmatic campaigns" and "built
+lifecycle marketing" and "shipped Kubernetes deployments" and
+"operated multi-cloud infrastructure" and "owned attribution
+models".
+
+Please map the candidate's experience into the terminology above.
+Their "paid social" counts as programmatic, their "email" counts as
+lifecycle, their "OpenShift" counts as Kubernetes, their "AWS" counts
+as multi-cloud.
+
+Requirements:
+- 8+ years growth marketing OR platform engineering
