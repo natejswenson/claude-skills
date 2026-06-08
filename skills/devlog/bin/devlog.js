@@ -25,6 +25,9 @@ const RE_REPO_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
 const RE_OWNER_REPO = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
 const RE_PROJECT_KEY = /^[a-z0-9][a-z0-9._-]*$/i;
 const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
+// Repo-relative subdir used to scope `git log` to one skill in a monorepo.
+// Same shape as a branch: no leading dash/slash, no shell metacharacters.
+const RE_PATH_FILTER = /^[a-z0-9][a-z0-9._/-]*$/i;
 const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
 
 const require = createRequire(import.meta.url);
@@ -129,6 +132,14 @@ function validateConfig(config) {
     }
     if (!RE_OWNER_REPO.test(p.remote)) {
       throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
+    }
+    if ('pathFilter' in p) {
+      // Optional: scope this project's commits to a repo subdirectory (e.g. a
+      // single skill in a monorepo). Interpolated into `git log -- <pathFilter>`,
+      // so enforce the same no-metacharacter / no-`..` safety as branch names.
+      if (typeof p.pathFilter !== 'string' || !RE_PATH_FILTER.test(p.pathFilter) || FORBIDDEN_BRANCH_PARTS.test(p.pathFilter)) {
+        throw new Error(`project.pathFilter must be a repo-relative subdir (no leading dash/slash, no '..', no shell metacharacters): ${JSON.stringify(p.pathFilter)}`);
+      }
     }
     if ('label' in p) {
       // Label is rendered as React text content only — never shell-interpolated,
@@ -463,6 +474,7 @@ async function cmdConfig() {
     log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
     log.info(kleur.dim(`    path:   ${p.path}`));
     log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+    if (p.pathFilter) log.info(kleur.dim(`    scope:  ${p.pathFilter}/`));
   }
   log.info('');
 }
