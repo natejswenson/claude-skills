@@ -1,6 +1,6 @@
 {
   "name": "onetapresume-skill",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF, running locally on the claude CLI subscription.",
   "license": "MIT",
