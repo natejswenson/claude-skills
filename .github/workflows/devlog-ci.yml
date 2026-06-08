@@ -8,6 +8,7 @@ on:
     paths: ["skills/devlog/**", ".github/workflows/devlog-ci.yml"]
   pull_request:
     paths: ["skills/devlog/**", ".github/workflows/devlog-ci.yml"]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -22,6 +23,8 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: skills/devlog/package-lock.json
-      - run: npm ci
-      # devlog has no unit suite today; its quality gate is a dependency audit.
+      # devlog has no unit suite; its gate is a dependency audit. Use `npm install`
+      # (not `npm ci`) so cross-platform optional-dep resolution self-heals — a
+      # strict lockfile match buys nothing for an audit-only job.
+      - run: npm install --no-fund
       - run: npm run audit

@@ -9,6 +9,7 @@ on:
     paths: ["skills/resume/**", ".github/workflows/resume-ci.yml"]
   pull_request:
     paths: ["skills/resume/**", ".github/workflows/resume-ci.yml"]
+  workflow_dispatch:
 
 jobs:
   test:
