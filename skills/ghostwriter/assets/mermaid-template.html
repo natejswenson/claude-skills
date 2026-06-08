@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  Mermaid render wrapper. scripts/render_image.py injects the diagram source at
+  %%DIAGRAM%% and screenshots #canvas. The brand palette comes from diagram.css
+  and is mirrored into mermaid's themeVariables below — keep them in sync if you
+  retheme.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+  <script src="vendor/mermaid.min.js"></script>
+</head>
+<body>
+  <div id="canvas" class="mermaid-canvas">
+    <pre class="mermaid">
+%%DIAGRAM%%
+    </pre>
+  </div>
+  <script>
+    const css = getComputedStyle(document.documentElement);
+    const v = (n) => css.getPropertyValue(n).trim();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      fontFamily: v("--font"),
+      themeVariables: {
+        background:        v("--bg"),
+        primaryColor:      v("--surface"),
+        secondaryColor:    v("--surface-2"),
+        tertiaryColor:     v("--surface-2"),
+        primaryBorderColor:v("--accent"),
+        secondaryBorderColor: v("--border"),
+        tertiaryBorderColor:  v("--border"),
+        primaryTextColor:  v("--text"),
+        secondaryTextColor:v("--text"),
+        tertiaryTextColor: v("--text"),
+        lineColor:         v("--muted"),
+        textColor:         v("--text"),
+        mainBkg:           v("--surface"),
+        nodeBorder:        v("--accent"),
+        clusterBkg:        v("--surface-2"),
+        clusterBorder:     v("--border"),
+        edgeLabelBackground: v("--bg"),
+        fontSize: "26px"
+      }
+    });
+    // Signal to Playwright when rendering is fully complete.
+    window.__renderDone = false;
+    mermaid.run({ querySelector: ".mermaid" })
+      .then(() => { window.__renderDone = true; })
+      .catch((e) => { window.__renderError = String(e); });
+  </script>
+</body>
+</html>
