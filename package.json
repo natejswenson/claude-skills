@@ -2,7 +2,26 @@
   "name": "onetapresume-skill",
   "version": "0.1.0",
   "private": true,
-  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a PDF — the OneTap Resume pipeline, minus the web monetization shell.",
+  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF, running locally on the claude CLI subscription.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/onetapskill.git"
+  },
+  "homepage": "https://github.com/natejswenson/onetapskill#readme",
+  "bugs": {
+    "url": "https://github.com/natejswenson/onetapskill/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-skill",
+    "resume",
+    "cv",
+    "resume-tailoring",
+    "pdf",
+    "cli"
+  ],
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -17,7 +36,6 @@
     "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.109",
     "@mozilla/readability": "^0.6.0",
     "@react-pdf/renderer": "^4.5.0",
     "jsdom": "^29.0.2",

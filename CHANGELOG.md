@@ -4,12 +4,15 @@ All notable changes to the onetapresume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-06-08
 
 Initial release: a self-contained Claude Code skill port of the OneTap Resume
 tailoring pipeline.
 
 ### Added
+- **MIT `LICENSE`** and full `package.json` metadata (`license`, `author`,
+  `repository`, `homepage`, `bugs`, `keywords`); README rewritten with
+  requirements, install-as-a-skill, full flag/usage docs, and a license section.
 - **Automated releases** (`.github/workflows/release.yml`): merging to `master`
   tags `v<package.json version>` and publishes a GitHub Release (notes pulled
   from this file), if that version isn't already released. Semver is driven by
@@ -62,6 +65,9 @@ tailoring pipeline.
   Previously it auto-switched to the paid Anthropic API whenever
   `ANTHROPIC_API_KEY` was present in the environment — a footgun for a
   subscription-first skill. `api` mode is now opt-in via `LLM_MODE=api` only.
+- **Dropped the unused `@anthropic-ai/claude-agent-sdk` dependency** (its only
+  consumer was the removed `SDKAdapter`) — 92 fewer transitive packages on
+  install.
 - `lib/url-safety.ts` gained an `ONETAP_SKIP_DNS_CHECK` seam so the offline
   fixture harness never depends on real DNS.
 - Résumé parser accepts `.txt`/`.md` (common CLI formats), in addition to
