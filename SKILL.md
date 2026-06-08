@@ -2,7 +2,7 @@
 name: onetapresume
 description: Tailor a résumé to a job description and render a polished PDF, entirely from the CLI. Triggers on "/onetapresume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
 user_invocable: true
-version: 0.1.0
+version: 0.1.1
 ---
 
 # /onetapresume — Résumé tailoring
