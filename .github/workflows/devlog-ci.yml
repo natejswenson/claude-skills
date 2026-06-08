@@ -1,0 +1,27 @@
+name: devlog-ci
+
+# Path-filtered: only runs when the devlog skill (or this workflow) changes, so
+# each skill in the monorepo has its own independent CI.
+on:
+  push:
+    branches: [main]
+    paths: ["skills/devlog/**", ".github/workflows/devlog-ci.yml"]
+  pull_request:
+    paths: ["skills/devlog/**", ".github/workflows/devlog-ci.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/devlog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: skills/devlog/package-lock.json
+      - run: npm ci
+      # devlog has no unit suite today; its quality gate is a dependency audit.
+      - run: npm run audit

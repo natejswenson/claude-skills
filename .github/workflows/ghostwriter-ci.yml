@@ -1,16 +1,20 @@
-name: CI
+name: ghostwriter-ci
 
 # A skill is code. Validate it like code: lint the bash, test the Python at 100%
-# coverage, and score the SKILL.md. Fails the build if any pillar regresses.
+# coverage, and score the SKILL.md. Path-filtered to the ghostwriter skill.
 on:
   push:
     branches: [main]
+    paths: ["skills/ghostwriter/**", ".github/workflows/ghostwriter-ci.yml"]
   pull_request:
-    branches: [main]
+    paths: ["skills/ghostwriter/**", ".github/workflows/ghostwriter-ci.yml"]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/ghostwriter
     steps:
       - uses: actions/checkout@v4
 

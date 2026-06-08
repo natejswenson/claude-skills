@@ -1,0 +1,65 @@
+name: resume-release
+
+# Independent, manifest-driven release for the resume skill.
+# Bump skills/resume/package.json version (+ CHANGELOG) in a PR; merging to main
+# tags `resume-v<version>` and publishes a GitHub Release — only if that version
+# isn't already tagged. Idempotent.
+on:
+  push:
+    branches: [main]
+    paths: ["skills/resume/**"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-resume
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/resume
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from package.json
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether this version is already tagged
+        id: tag
+        run: |
+          if git rev-parse "resume-v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "resume-v${{ steps.ver.outputs.version }} already released — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        if: steps.tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          awk -v ver="$VERSION" '
+            /^## / && index($0, ver) {flag=1; next}
+            flag && /^## / {flag=0}
+            flag {print}
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            printf 'resume v%s\n' "$VERSION" > release-notes.md
+          fi
+
+      - name: Create tag and GitHub Release
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "resume-v${{ steps.ver.outputs.version }}" \
+            --target "${{ github.sha }}" \
+            --title "resume v${{ steps.ver.outputs.version }}" \
+            --notes-file release-notes.md

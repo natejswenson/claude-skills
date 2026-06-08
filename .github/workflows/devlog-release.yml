@@ -1,25 +1,27 @@
-name: release
+name: devlog-release
 
-# When a PR is merged to master (i.e. master receives a push), tag and publish
-# a GitHub Release for the version in package.json — but only if that version
-# isn't already released. Semantic versioning is driven by the version field:
-# bump package.json (+ SKILL.md frontmatter + CHANGELOG) in the PR, and merging
-# cuts that release. Idempotent: pushes that don't change the version no-op.
-
+# Independent, manifest-driven release for the devlog skill.
+# Bump skills/devlog/package.json version (+ CHANGELOG) in a PR; merging to main
+# tags `devlog-v<version>` and publishes a GitHub Release — only if that version
+# isn't already tagged. Idempotent: a push that doesn't change the version no-ops.
 on:
   push:
-    branches: [master]
+    branches: [main]
+    paths: ["skills/devlog/**"]
 
 permissions:
   contents: write
 
 concurrency:
-  group: release
+  group: release-devlog
   cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/devlog
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,9 +34,9 @@ jobs:
       - name: Check whether this version is already tagged
         id: tag
         run: |
-          if git rev-parse "v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "devlog-v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "v${{ steps.ver.outputs.version }} already released — skipping."
+            echo "devlog-v${{ steps.ver.outputs.version }} already released — skipping."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
@@ -43,15 +45,16 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
-          # Print the lines under "## [VERSION] ..." up to the next "## " heading.
+          # Print the lines under the first "## ..." heading containing VERSION,
+          # up to the next "## " heading. Works for both "## 1.2.3 (...)" and
+          # "## [1.2.3] - ..." changelog styles.
           awk -v ver="$VERSION" '
-            $0 ~ ("^## \\[" ver "\\]") {flag=1; next}
+            /^## / && index($0, ver) {flag=1; next}
             flag && /^## / {flag=0}
             flag {print}
           ' CHANGELOG.md > release-notes.md
-          # Fall back to a minimal note if the section is empty/missing.
           if [ ! -s release-notes.md ]; then
-            printf 'Release v%s\n' "$VERSION" > release-notes.md
+            printf 'devlog v%s\n' "$VERSION" > release-notes.md
           fi
 
       - name: Create tag and GitHub Release
@@ -59,7 +62,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v${{ steps.ver.outputs.version }}" \
+          gh release create "devlog-v${{ steps.ver.outputs.version }}" \
             --target "${{ github.sha }}" \
-            --title "v${{ steps.ver.outputs.version }}" \
+            --title "devlog v${{ steps.ver.outputs.version }}" \
             --notes-file release-notes.md
