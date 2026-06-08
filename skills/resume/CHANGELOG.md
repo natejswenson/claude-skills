@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the onetapresume skill are documented here. The format
+All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
@@ -46,10 +46,10 @@ tailoring pipeline.
 - **Native résumé picker** (`lib/ui/file-picker.ts`) — `--pick` opens a macOS
   Finder dialog to choose the résumé instead of typing a path; falls back to a
   text prompt off-macOS.
-- `/onetapresume` skill (`SKILL.md`) — smart invocation with args + interactive
+- `/resume` skill (`SKILL.md`) — smart invocation with args + interactive
   fallback, `--pick`, `--template`, `--out`, `--model`, `--pdf-only`, `--json`
   flags.
-- `bin/onetapresume.mjs` CLI entry (self-registers the TS loader).
+- `bin/resume.mjs` CLI entry (self-registers the TS loader).
 - `lib/pipeline.ts` — end-to-end orchestrator: parse résumé (PDF/DOCX/TXT/MD) →
   resolve job (URL waterfall / file / text) → schema-validated LLM tailoring with
   one corrective retry → render PDF → readable diff.

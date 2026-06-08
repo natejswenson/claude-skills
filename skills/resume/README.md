@@ -1,8 +1,8 @@
-# onetapresume (Claude Code skill)
+# resume (Claude Code skill)
 
 A self-contained [Claude Code](https://claude.com/claude-code) skill that tailors a
 résumé to a target job description and renders a polished PDF — invocable as
-`/onetapresume`. Tailoring runs locally through the `claude` CLI on your
+`/resume`. Tailoring runs locally through the `claude` CLI on your
 subscription: **no API key, no per-run cost.**
 
 ## What it does
@@ -29,22 +29,25 @@ subscription: **no API key, no per-run cost.**
 
 ## Install
 
-Clone into your personal Claude Code skills directory and install dependencies:
+This skill ships inside the [`claude-skills`](https://github.com/natejswenson/claude-skills)
+monorepo. Clone the repo, symlink this skill into your skills directory, and
+install its dependencies:
 
 ```bash
-git clone https://github.com/natejswenson/onetapskill.git ~/.claude/skills/onetapresume
-cd ~/.claude/skills/onetapresume
+git clone https://github.com/natejswenson/claude-skills.git
+ln -sfn "$PWD/claude-skills/skills/resume" ~/.claude/skills/resume
+cd claude-skills/skills/resume
 npm install
 ```
 
-Then, in any Claude Code session, run `/onetapresume` and follow the prompts.
+Then, in any Claude Code session, run `/resume` and follow the prompts.
 
 ## Usage
 
 In Claude Code:
 
 ```
-/onetapresume <resume-path> <job-url-or-text>
+/resume <resume-path> <job-url-or-text>
 ```
 
 Pass what you have; the skill prompts for anything missing. After tailoring it
@@ -53,7 +56,7 @@ opens the PDF and offers a style picker, ending when you save your favorite.
 You can also run the CLI directly:
 
 ```bash
-node bin/onetapresume.mjs <resume-path> <job-url-or-text> [flags]
+node bin/resume.mjs <resume-path> <job-url-or-text> [flags]
 ```
 
 | Flag | Description |

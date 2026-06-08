@@ -1,5 +1,5 @@
 /**
- * Live progress reporter for the onetapresume CLI.
+ * Live progress reporter for the resume CLI.
  *
  * Two render modes, chosen automatically from the stream's TTY-ness:
  *   - TTY: a single in-place line with a braille spinner, the current phase,

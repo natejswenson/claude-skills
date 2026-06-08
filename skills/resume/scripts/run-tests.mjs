@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Test runner for the onetapresume skill.
+ * Test runner for the resume skill.
  *
  * The ported unit tests are self-contained scripts: each owns its own
  * assertion harness, prints a `result: N passed, M failed` line, and exits

@@ -1,5 +1,5 @@
 /**
- * End-to-end tailoring pipeline for the onetapresume skill.
+ * End-to-end tailoring pipeline for the resume skill.
  *
  * Mirrors the web app's /api/generate + /api/extract-job + /api/pdf routes,
  * collapsed into a single local function with no HTTP, paywall, Turnstile,
