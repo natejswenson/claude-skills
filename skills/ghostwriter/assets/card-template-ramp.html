@@ -1,0 +1,30 @@
+<!doctype html>
+<!--
+  Ramp card scaffold (accelerating progression). Copy to images/<slug>.html, fill in,
+  then: render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+  Three ascending steps; the last (s3) is highlighted. Bars are illustrative, NOT to
+  scale — the labeled .val figures carry the truth, so keep them accurate.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card ramp">
+    <div class="eyebrow">EYEBROW LABEL</div>
+    <h1>One line naming the metric that's accelerating.</h1>
+
+    <div class="ramp-row">
+      <div class="step s1"><div class="val">val 1</div><div class="bar"></div><div class="date">then</div></div>
+      <div class="step s2"><div class="val">val 2</div><div class="bar"></div><div class="date">later</div></div>
+      <div class="step s3"><div class="val">val 3</div><div class="bar"></div><div class="date">now</div></div>
+    </div>
+    <div class="ramp-base"></div>
+
+    <p class="kicker">A supporting stat, with the key figure in <b>bold</b>.</p>
+
+    <div class="footer brand"></div>
+  </div>
+</body>
+</html>

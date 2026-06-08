@@ -121,6 +121,9 @@ pull the byline automatically — don't hardcode it.
   - `assets/card-template.html` — general hero (headline / before-after / stat / quote).
   - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event);
     the date is the hero, keep words minimal so it's scannable at a glance.
+  - `assets/card-template-ramp.html` — **ramp type** (an accelerating progression); three
+    ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
+    figures must be accurate.
   Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
   one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
