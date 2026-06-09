@@ -4,6 +4,15 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-08
+
+### Added
+- `assets/card-template-stem.html` — a **STEM card type** for STEM / education /
+  outreach posts: deliberately playful (a chunky toy-block S T E M motif, confetti
+  accents, a rounded hero headline) so it reads as kid-energy rather than buttoned-up.
+- `.card.stem` styles in `assets/diagram.css.example`, and a SKILL.md reference
+  documenting when to reach for the STEM card under Visuals.
+
 ## [0.1.0] - 2026-06-08
 
 ### Added

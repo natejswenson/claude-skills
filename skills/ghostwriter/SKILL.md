@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.1.0
+version: 0.2.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -124,6 +124,9 @@ pull the byline automatically — don't hardcode it.
   - `assets/card-template-ramp.html` — **ramp type** (an accelerating progression); three
     ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
     figures must be accurate.
+  - `assets/card-template-stem.html` — **STEM type** (STEM / education / outreach posts);
+    playful by design — a chunky toy-block S T E M motif, confetti, a rounded hero headline.
+    Reach for it when the tone is kid-energy / inspirational rather than buttoned-up.
   Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
   one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
