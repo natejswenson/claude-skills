@@ -1,0 +1,9 @@
+# The github-stats skill is bash + gh CLI at its core; this file exists so the
+# skill has a Python test harness (pytest) and a place for dev tooling config.
+# The release version is the SKILL.md frontmatter `version:` field (source of
+# truth for the github-stats-v<version> release tag), not a value here.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]

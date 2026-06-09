@@ -1,0 +1,5 @@
+# Public GitHub usernames the eval compares (skill vs. original CLI).
+# Keep these small-to-moderate: the commit metric walks every repo, so very
+# large accounts make the eval slow and rate-limit-heavy. One per line.
+octocat
+natejswenson
