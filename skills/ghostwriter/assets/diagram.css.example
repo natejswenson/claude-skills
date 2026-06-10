@@ -151,3 +151,139 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card .ramp-base { height: 1px; background: var(--border); margin-top: -1px; }
 .card.ramp .kicker { margin-top: 56px; font: 500 40px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.ramp .kicker b { color: var(--text); font-weight: 700; }
+
+/* ---- STEM card TYPE: playful, kid-energy styling for STEM / education / outreach.
+   Brighter and more colorful than the other cards on purpose — a chunky toy-block
+   S T E M motif, confetti accents, a rounded hero headline. Keep it to one idea. ---- */
+#canvas.card.stem {
+  --b1: var(--accent);     /* blue   */
+  --b2: var(--accent-2);   /* green  */
+  --b3: var(--accent-3);   /* pink   */
+  --b4: #F2CC60;           /* warm yellow — a playful 4th hue, stem-only */
+  justify-content: center;
+  gap: 40px;
+  background:
+    radial-gradient(440px 440px at 12% 16%, rgba(88,166,255,0.30), transparent 60%),
+    radial-gradient(480px 480px at 88% 12%, rgba(247,120,186,0.26), transparent 60%),
+    radial-gradient(540px 540px at 84% 92%, rgba(63,185,80,0.24), transparent 60%),
+    radial-gradient(440px 440px at 10% 90%, rgba(242,204,96,0.24), transparent 62%),
+    linear-gradient(160deg, #2B3A7A 0%, #1E2A5E 56%, #182146 100%);
+}
+/* confetti dots scattered behind the content */
+#canvas.card.stem::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle, var(--accent) 0 9px, transparent 10px),
+    radial-gradient(circle, var(--accent-3) 0 7px, transparent 8px),
+    radial-gradient(circle, var(--b4) 0 8px, transparent 9px),
+    radial-gradient(circle, var(--accent-2) 0 6px, transparent 7px);
+  background-position: 130px 980px, 1050px 770px, 980px 250px, 220px 360px;
+  background-repeat: no-repeat;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.card.stem .blocks { display: flex; gap: 30px; justify-content: flex-start; z-index: 1; }
+.card.stem .block {
+  width: 150px; height: 150px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 30px;
+  font: 800 84px/1 var(--font);
+  color: #11183A;
+  box-shadow: 0 14px 0 rgba(0,0,0,0.22), inset 0 5px 0 rgba(255,255,255,0.38);
+}
+.card.stem .block.b1 { background: var(--b1); transform: rotate(-6deg); }
+.card.stem .block.b2 { background: var(--b2); transform: rotate(4deg); }
+.card.stem .block.b3 { background: var(--b3); transform: rotate(-3deg); }
+.card.stem .block.b4 { background: var(--b4); transform: rotate(7deg); }
+.card.stem .eyebrow {
+  align-self: flex-start; z-index: 1;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 999px; padding: 12px 28px;
+  color: #FFFFFF;
+}
+.card.stem h1 { font-size: 92px; color: #FFFFFF; z-index: 1; }
+.card.stem .kicker {
+  margin: 0; z-index: 1;
+  font: 500 42px/1.4 var(--font); color: rgba(255,255,255,0.80); text-wrap: balance;
+}
+.card.stem .kicker b { color: #FFFFFF; font-weight: 800; }
+.card.stem .footer { color: rgba(255,255,255,0.62); z-index: 1; }
+
+/* ---- FLOW card TYPE: a clean, linear architecture / pipeline diagram.
+   Color-coded stage chips (a left accent bar marks the layer) connected by simple
+   chevrons, vertically centered so the flow fills the card naturally - calm, not
+   busy. The byline sits inline in the .toprow (top-right) so a feed crop of the
+   bottom can't remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
+#canvas.card.flow { justify-content: flex-start; gap: 0; }
+
+.card.flow .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.card.flow .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
+.card.flow .footer.brand::before { width: 52px; height: 52px; }
+
+.card.flow h1 { font-size: 66px; line-height: 1.05; margin: 16px 0 10px; }
+.card.flow .sub { font-size: 30px; }
+
+/* the flow grows to fill the space under the header and centers its stages */
+.card.flow .flow { display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+  flex: 1 1 auto; width: 100%; gap: 2px; margin-top: 18px; }
+
+/* stage chip: a left accent bar marks the layer; bold title + a muted mono example */
+.card.flow .fnode {
+  background: var(--surface); border: 1.5px solid var(--border); border-left: 6px solid var(--border);
+  border-radius: 16px; padding: 26px 32px; text-align: left;
+  display: flex; flex-direction: column; gap: 9px; box-shadow: 0 12px 30px rgba(0,0,0,0.34);
+}
+.card.flow .fnode .t { font: 700 37px/1.12 var(--font); color: var(--text); letter-spacing: -0.01em; }
+.card.flow .fnode .e { font: 500 23px/1.35 var(--mono); color: var(--muted); }
+.card.flow .fnode.det   { border-left-color: var(--accent-2); }
+.card.flow .fnode.tools { border-left-color: var(--accent-3); }
+.card.flow .fnode.agent { border-left-color: var(--accent); }
+.card.flow .fnode.out   { border-left-color: var(--muted); background: var(--surface-2); }
+
+/* simple downward chevron between stages */
+.card.flow .vconn { display: flex; justify-content: center; padding: 11px 0; }
+.card.flow .vconn .chev { width: 15px; height: 15px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+
+/* ---- CAROUSEL: a multi-slide LinkedIn document (the highest-reach native format,
+   ~1.45x a single image). Each .slide is a full 1200x1200 page that shares the card
+   brand styling; author from assets/card-template-carousel.html and render with
+   scripts/render_carousel.py, which screenshots every .slide and stitches them into one
+   PDF to post as a document. Keep ~5-8 slides, ONE idea per slide. ---- */
+.card.slide {
+  width: 1200px; height: 1200px; padding: 96px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 30px;
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(88,166,255,0.16), transparent 60%),
+              radial-gradient(900px 500px at -10% 110%, rgba(63,185,80,0.12), transparent 60%),
+              var(--bg);
+}
+.card.slide::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--border); pointer-events: none; }
+
+/* byline inline at the top (same crop-safe pattern as the other cards) */
+.card.slide .toprow { position: absolute; top: 96px; left: 96px; right: 96px; display: flex; align-items: center; justify-content: space-between; }
+.card.slide .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
+.card.slide .footer.brand::before { width: 52px; height: 52px; }
+
+/* page counter (e.g. 02 / 06) and the cover's swipe hint */
+.card.slide .pageno { position: absolute; right: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--muted); letter-spacing: 0.1em; }
+.card.slide .swipe  { position: absolute; left: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* COVER: eyebrow + byline up top, a big hook headline */
+.card.slide.cover h1 { font-size: 98px; line-height: 1.02; }
+
+/* POINT: a big index number, a headline, a short body */
+.card.slide.point { gap: 24px; }
+.card.slide.point .idx  { font: 800 40px/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; }
+.card.slide.point h2    { font: 800 72px/1.05 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.point .body { font: 400 38px/1.4 var(--font); color: var(--muted); margin: 0; max-width: 940px; }
+.card.slide.point .body b, .card.slide.point .body strong { color: var(--text); font-weight: 700; }
+.card.slide.point code  { font: 600 0.9em var(--mono); color: var(--accent-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px 10px; }
+
+/* CTA: the takeaway + an explicit Save prompt (saves are the #1 reach signal) */
+.card.slide.cta h2 { font: 800 78px/1.04 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.cta .save {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1.5px solid var(--accent-3); border-radius: 999px;
+  padding: 16px 32px; font: 700 30px/1 var(--mono); color: var(--accent-3);
+}

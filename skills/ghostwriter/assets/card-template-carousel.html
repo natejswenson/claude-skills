@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  CAROUSEL TYPE — a multi-slide LinkedIn document (the highest-reach native format).
+  Copy to images/<slug>-carousel.html, fill in the slides, then:
+    render_carousel.py --in images/<slug>-carousel.html --out images/<slug>.pdf
+  That writes preview PNGs (images/<slug>-NN.png) to approve AND the PDF to post:
+    linkedin_post.py --file drafts/<post>.md --document images/<slug>.pdf --title "<title>"
+
+  Rules:
+   * Each page is a `<div class="slide card ...">` — 1200x1200, styled by diagram.css.
+   * ONE idea per slide; keep it to ~5-8 slides. Slides 1 = cover (the hook), middle =
+     .point (a numbered step), last = .cta (the takeaway + an explicit "Save this").
+   * Cover and CTA carry the byline in a .toprow (crop-safe). Numbered slides carry a
+     .pageno. Update the NN / TOTAL counts by hand to match your slide count.
+   * Never invent numbers/structure that aren't true (same rule as voice-notes.md).
+   * Don't add one-off inline CSS; extend diagram.css if you need a new treatment.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+
+  <!-- 1 — cover: the hook -->
+  <div class="slide card cover">
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+    <h1>The one-line hook that makes someone stop scrolling.</h1>
+    <p class="sub">A single supporting line that frames the payoff.</p>
+    <span class="swipe">Swipe &rarr;</span>
+  </div>
+
+  <!-- 2..n — points: one idea each -->
+  <div class="slide card point">
+    <span class="idx">01</span>
+    <h2>The first idea, as a short statement</h2>
+    <p class="body">Two lines of plain explanation. Bold the <b>key phrase</b>; show code or
+      identifiers as <code>inline_code</code>.</p>
+    <span class="pageno">02 / 04</span>
+  </div>
+
+  <div class="slide card point">
+    <span class="idx">02</span>
+    <h2>The second idea</h2>
+    <p class="body">Keep each slide to one point; let the body breathe.</p>
+    <span class="pageno">03 / 04</span>
+  </div>
+
+  <!-- last — cta: the takeaway + a Save prompt (saves are the #1 reach signal) -->
+  <div class="slide card cta">
+    <div class="toprow">
+      <div class="eyebrow">THE TAKEAWAY</div>
+      <div class="footer brand"></div>
+    </div>
+    <h2>The one sentence you want them to remember.</h2>
+    <p class="sub">An optional supporting line.</p>
+    <span class="save">&#9634; Save this for later</span>
+    <span class="pageno">04 / 04</span>
+  </div>
+
+</body>
+</html>
