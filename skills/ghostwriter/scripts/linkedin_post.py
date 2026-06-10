@@ -27,6 +27,7 @@ REPO = Path(__file__).resolve().parent.parent
 ENV_PATH = REPO / ".env"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
 IMAGES_URL = "https://api.linkedin.com/rest/images"
+DOCUMENTS_URL = "https://api.linkedin.com/rest/documents"
 
 
 def load_env(path: Path = ENV_PATH) -> dict:
@@ -66,6 +67,8 @@ def build_payload(
     text: str,
     image_urn: str | None = None,
     alt_text: str = "",
+    document_urn: str | None = None,
+    title: str = "",
 ) -> dict:
     payload = {
         "author": author_urn,
@@ -79,11 +82,17 @@ def build_payload(
         "lifecycleState": "PUBLISHED",
         "isReshareDisabledByAuthor": False,
     }
-    # Only added when an image is attached — text-only payloads are unchanged.
+    # Only added when media is attached — text-only payloads are unchanged.
     if image_urn:
         media: dict = {"id": image_urn}
         if alt_text:
             media["altText"] = alt_text
+        payload["content"] = {"media": media}
+    elif document_urn:
+        # A multi-page PDF posted as a document = a LinkedIn carousel.
+        media = {"id": document_urn}
+        if title:
+            media["title"] = title
         payload["content"] = {"media": media}
     return payload
 
@@ -114,19 +123,49 @@ def initialize_image_upload(env: dict, owner: str) -> tuple[str, str]:
     return upload_url, image_urn
 
 
-def upload_image_bytes(upload_url: str, token: str, path: Path) -> None:
-    """PUT the raw image bytes to the upload URL from initializeUpload."""
-    img = path.read_bytes()
-    req = urllib.request.Request(upload_url, data=img, method="PUT")
+def initialize_document_upload(env: dict, owner: str) -> tuple[str, str]:
+    """Register a document (PDF) upload; returns (uploadUrl, document_urn).
+
+    Mirrors the image flow against /rest/documents — this is how a multi-page PDF
+    becomes a LinkedIn carousel.
+    """
+    token = env.get("LINKEDIN_ACCESS_TOKEN", "")
+    version = env.get("LINKEDIN_API_VERSION", "202605")
+    body = json.dumps({"initializeUploadRequest": {"owner": owner}}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{DOCUMENTS_URL}?action=initializeUpload", data=body, method="POST"
+    )
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("X-Restli-Protocol-Version", "2.0.0")
+    req.add_header("LinkedIn-Version", version)
+    try:
+        with urllib.request.urlopen(req) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        sys.exit(f"ERROR: document initializeUpload returned HTTP {e.code}\n{body}")
+    value = data.get("value", {})
+    upload_url = value.get("uploadUrl")
+    document_urn = value.get("document")
+    if not upload_url or not document_urn:
+        sys.exit(f"ERROR: unexpected document initializeUpload response: {data}")
+    return upload_url, document_urn
+
+
+def upload_file_bytes(upload_url: str, token: str, path: Path) -> None:
+    """PUT the raw file bytes (image or PDF) to the upload URL from initializeUpload."""
+    blob = path.read_bytes()
+    req = urllib.request.Request(upload_url, data=blob, method="PUT")
     req.add_header("Authorization", f"Bearer {token}")
     req.add_header("Content-Type", "application/octet-stream")
     try:
         with urllib.request.urlopen(req) as resp:
             if resp.status not in (200, 201):
-                sys.exit(f"ERROR: image upload returned HTTP {resp.status}")
+                sys.exit(f"ERROR: upload returned HTTP {resp.status}")
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
-        sys.exit(f"ERROR: image upload returned HTTP {e.code}\n{body}")
+        sys.exit(f"ERROR: upload returned HTTP {e.code}\n{body}")
 
 
 def warn_if_token_expiring(env: dict) -> None:
@@ -203,11 +242,23 @@ def main() -> None:
         help="Alt text for the attached image (accessibility). Recommended with --image.",
     )
     ap.add_argument(
+        "--document",
+        help="Optional path to a PDF (e.g. images/foo.pdf) to post as a document/carousel.",
+    )
+    ap.add_argument(
+        "--title",
+        default="",
+        help="Title for the attached document/carousel (shown above the slides). Recommended with --document.",
+    )
+    ap.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the request payload and exit without calling LinkedIn.",
     )
     args = ap.parse_args()
+
+    if args.image and args.document:
+        sys.exit("ERROR: attach either --image or --document, not both.")
 
     env = load_env()
     text = read_post_text(args)
@@ -221,15 +272,32 @@ def main() -> None:
         if not image_path.exists():
             sys.exit(f"ERROR: image not found: {image_path}")
 
+    document_path: Path | None = None
+    if args.document:
+        document_path = Path(args.document)
+        if not document_path.is_absolute():
+            document_path = REPO / document_path
+        if not document_path.exists():
+            sys.exit(f"ERROR: document not found: {document_path}")
+        if document_path.suffix.lower() != ".pdf":
+            sys.exit("ERROR: --document must be a .pdf (LinkedIn carousels are PDFs).")
+
     if args.dry_run:
         # Use placeholders so dry-run works pre-setup and without uploading.
         image_urn = "urn:li:image:DRY_RUN_PLACEHOLDER" if image_path else None
+        document_urn = "urn:li:document:DRY_RUN_PLACEHOLDER" if document_path else None
         payload = build_payload(
-            author or "urn:li:person:DRY_RUN_PLACEHOLDER", text, image_urn, args.alt
+            author or "urn:li:person:DRY_RUN_PLACEHOLDER",
+            text,
+            image_urn,
+            args.alt,
+            document_urn,
+            args.title,
         )
         print("DRY RUN — no request sent. Payload that would POST to /rest/posts:\n")
         print(json.dumps(payload, indent=2, ensure_ascii=False))
-        print(f"\n({len(text)} characters{', with image' if image_path else ''})")
+        attached = ", with image" if image_path else (", with carousel PDF" if document_path else "")
+        print(f"\n({len(text)} characters{attached})")
         return
 
     if not author:
@@ -237,6 +305,7 @@ def main() -> None:
     warn_if_token_expiring(env)
 
     image_urn = None
+    document_urn = None
     if image_path:
         if not args.alt:
             print(
@@ -245,10 +314,19 @@ def main() -> None:
                 file=sys.stderr,
             )
         upload_url, image_urn = initialize_image_upload(env, author)
-        upload_image_bytes(upload_url, env.get("LINKEDIN_ACCESS_TOKEN", ""), image_path)
+        upload_file_bytes(upload_url, env.get("LINKEDIN_ACCESS_TOKEN", ""), image_path)
         print(f"Uploaded image: {image_urn}")
+    elif document_path:
+        if not args.title:
+            print(
+                "NOTE: no --title provided; the carousel will post without a title.",
+                file=sys.stderr,
+            )
+        upload_url, document_urn = initialize_document_upload(env, author)
+        upload_file_bytes(upload_url, env.get("LINKEDIN_ACCESS_TOKEN", ""), document_path)
+        print(f"Uploaded document: {document_urn}")
 
-    publish(env, build_payload(author, text, image_urn, args.alt))
+    publish(env, build_payload(author, text, image_urn, args.alt, document_urn, args.title))
 
 
 if __name__ == "__main__":

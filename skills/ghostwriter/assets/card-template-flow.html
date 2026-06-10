@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  FLOW card TYPE — a clean, linear architecture / pipeline diagram.
+  Copy to images/<slug>.html, fill in the stages, then:
+    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+
+  Keep these properties:
+   * Byline lives in .toprow (top-right), inline with the .eyebrow, so a feed crop
+     of the bottom can NEVER remove your attribution. Don't move it to a bottom .footer.
+   * Each stage is a .fnode with a bold <span class="t">title</span> and ONE muted
+     <span class="e">example</span>. A left accent bar marks the layer - use
+     .det (green) / .tools (pink) / .agent (blue) / .out (grey), or add your own in
+     diagram.css. Show a sub-pipeline inline in the example with arrows (A -> B -> C)
+     rather than nesting more boxes.
+   * Connect stages with <div class="vconn"><span class="chev"></span></div>.
+   * Keep it to ONE flow, ~4-5 stages, one example each, so it stays calm and
+     readable at phone size. The flow auto-centers to fill the card height.
+  All colour/type/spacing comes from diagram.css (.card.flow rules) — don't add
+  one-off inline CSS; extend diagram.css if you need a new treatment.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card flow">
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>One sharp headline that carries the whole point.</h1>
+    <p class="sub">A single supporting line, if needed.</p>
+
+    <div class="flow">
+      <div class="fnode det">
+        <span class="t">First layer</span>
+        <span class="e">source &rarr; step &rarr; result, with a concrete detail</span>
+      </div>
+
+      <div class="vconn"><span class="chev"></span></div>
+
+      <div class="fnode tools">
+        <span class="t">The interface / boundary</span>
+        <span class="e">example_a &middot; example_b &middot; example_c</span>
+      </div>
+
+      <div class="vconn"><span class="chev"></span></div>
+
+      <div class="fnode agent">
+        <span class="t">The consumer</span>
+        <span class="e">its one rule; e.g. a concrete value it reads</span>
+      </div>
+
+      <div class="vconn"><span class="chev"></span></div>
+
+      <div class="fnode out">
+        <span class="t">Outputs</span>
+        <span class="e">a &middot; b &middot; c</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

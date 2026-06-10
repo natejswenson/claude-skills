@@ -130,23 +130,23 @@ def test_initialize_image_upload_missing_fields(monkeypatch):
         lp.initialize_image_upload({}, "owner")
 
 
-# --------------------------------------------------------- upload_image_bytes
-def test_upload_image_bytes_success(monkeypatch, tmp_path):
+# --------------------------------------------------------- upload_file_bytes
+def test_upload_file_bytes_success(monkeypatch, tmp_path):
     img = tmp_path / "x.png"
     img.write_bytes(b"PNG")
     monkeypatch.setattr(lp.urllib.request, "urlopen", lambda req: FakeResp(status=201))
-    lp.upload_image_bytes("http://up", "t", img)  # no exception == pass
+    lp.upload_file_bytes("http://up", "t", img)  # no exception == pass
 
 
-def test_upload_image_bytes_bad_status(monkeypatch, tmp_path):
+def test_upload_file_bytes_bad_status(monkeypatch, tmp_path):
     img = tmp_path / "x.png"
     img.write_bytes(b"PNG")
     monkeypatch.setattr(lp.urllib.request, "urlopen", lambda req: FakeResp(status=500))
     with pytest.raises(SystemExit):
-        lp.upload_image_bytes("http://up", "t", img)
+        lp.upload_file_bytes("http://up", "t", img)
 
 
-def test_upload_image_bytes_http_error(monkeypatch, tmp_path):
+def test_upload_file_bytes_http_error(monkeypatch, tmp_path):
     img = tmp_path / "x.png"
     img.write_bytes(b"PNG")
 
@@ -155,7 +155,7 @@ def test_upload_image_bytes_http_error(monkeypatch, tmp_path):
 
     monkeypatch.setattr(lp.urllib.request, "urlopen", boom)
     with pytest.raises(SystemExit):
-        lp.upload_image_bytes("http://up", "t", img)
+        lp.upload_file_bytes("http://up", "t", img)
 
 
 # ----------------------------------------------------- warn_if_token_expiring
@@ -278,7 +278,7 @@ def test_main_full_publish_with_image(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(
         lp, "initialize_image_upload", lambda env, owner: ("http://up", "urn:li:image:1")
     )
-    monkeypatch.setattr(lp, "upload_image_bytes", lambda *a: None)
+    monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
     monkeypatch.setattr(
         "sys.argv", ["x", "--text", "hi", "--image", str(img), "--alt", "desc"]
@@ -299,8 +299,127 @@ def test_main_image_without_alt_warns(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(
         lp, "initialize_image_upload", lambda env, owner: ("http://up", "urn:li:image:1")
     )
-    monkeypatch.setattr(lp, "upload_image_bytes", lambda *a: None)
+    monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: None)
     monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--image", str(img)])
     lp.main()
     assert "no --alt provided" in capsys.readouterr().err
+
+
+# ----------------------------------------------------- documents / carousels
+def test_build_payload_with_document_and_title():
+    p = lp.build_payload("urn:li:person:1", "hi", document_urn="urn:li:document:9", title="T")
+    assert p["content"]["media"] == {"id": "urn:li:document:9", "title": "T"}
+
+
+def test_build_payload_with_document_no_title():
+    p = lp.build_payload("urn:li:person:1", "hi", document_urn="urn:li:document:9")
+    assert p["content"]["media"] == {"id": "urn:li:document:9"}
+
+
+def test_initialize_document_upload_success(monkeypatch):
+    body = json.dumps(
+        {"value": {"uploadUrl": "http://up", "document": "urn:li:document:1"}}
+    ).encode()
+    monkeypatch.setattr(lp.urllib.request, "urlopen", lambda req: FakeResp(body))
+    url, urn = lp.initialize_document_upload({"LINKEDIN_ACCESS_TOKEN": "t"}, "owner")
+    assert url == "http://up" and urn == "urn:li:document:1"
+
+
+def test_initialize_document_upload_http_error(monkeypatch):
+    def boom(req):
+        raise http_error(500)
+
+    monkeypatch.setattr(lp.urllib.request, "urlopen", boom)
+    with pytest.raises(SystemExit):
+        lp.initialize_document_upload({}, "owner")
+
+
+def test_initialize_document_upload_missing_fields(monkeypatch):
+    monkeypatch.setattr(
+        lp.urllib.request, "urlopen", lambda req: FakeResp(b'{"value": {}}')
+    )
+    with pytest.raises(SystemExit):
+        lp.initialize_document_upload({}, "owner")
+
+
+def test_main_image_and_document_mutually_exclusive(monkeypatch, tmp_path):
+    img = tmp_path / "i.png"
+    img.write_bytes(b"PNG")
+    pdf = tmp_path / "d.pdf"
+    pdf.write_bytes(b"%PDF")
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr(
+        "sys.argv",
+        ["x", "--text", "hi", "--image", str(img), "--document", str(pdf)],
+    )
+    with pytest.raises(SystemExit):
+        lp.main()
+
+
+def test_main_document_not_found_exits(monkeypatch):
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--document", "no_such_xyz.pdf"])
+    with pytest.raises(SystemExit):
+        lp.main()
+
+
+def test_main_document_wrong_extension_exits(monkeypatch, tmp_path):
+    notpdf = tmp_path / "d.png"
+    notpdf.write_bytes(b"PNG")
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--document", str(notpdf)])
+    with pytest.raises(SystemExit):
+        lp.main()
+
+
+def test_main_dry_run_with_document(monkeypatch, capsys, tmp_path):
+    pdf = tmp_path / "d.pdf"
+    pdf.write_bytes(b"%PDF")
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr(
+        "sys.argv",
+        ["x", "--text", "hi", "--document", str(pdf), "--title", "T", "--dry-run"],
+    )
+    lp.main()
+    out = capsys.readouterr().out
+    assert "with carousel PDF" in out and "urn:li:document:DRY_RUN_PLACEHOLDER" in out
+
+
+def test_main_full_publish_with_document(monkeypatch, capsys, tmp_path):
+    pdf = tmp_path / "d.pdf"
+    pdf.write_bytes(b"%PDF")
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(
+        lp, "initialize_document_upload", lambda env, owner: ("http://up", "urn:li:document:1")
+    )
+    monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
+    monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--text", "hi", "--document", str(pdf), "--title", "T"]
+    )
+    lp.main()
+    out = capsys.readouterr().out
+    assert "Uploaded document" in out and "PUBLISHED" in out
+
+
+def test_main_document_without_title_warns(monkeypatch, capsys, tmp_path):
+    pdf = tmp_path / "d.pdf"
+    pdf.write_bytes(b"%PDF")
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(
+        lp, "initialize_document_upload", lambda env, owner: ("http://up", "urn:li:document:1")
+    )
+    monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
+    monkeypatch.setattr(lp, "publish", lambda env, payload: None)
+    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--document", str(pdf)])
+    lp.main()
+    assert "no --title provided" in capsys.readouterr().err
