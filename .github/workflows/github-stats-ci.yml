@@ -1,0 +1,35 @@
+name: github-stats-ci
+
+# A skill is code. Validate it like code: lint the bash and run the network-free
+# unit tests. Path-filtered to the github-stats skill. The live smoke test and
+# the eval (which need gh auth / the original repo) are intentionally not run
+# here — they auto-skip without credentials.
+on:
+  push:
+    branches: [main]
+    paths: ["skills/github-stats/**", ".github/workflows/github-stats-ci.yml"]
+  pull_request:
+    paths: ["skills/github-stats/**", ".github/workflows/github-stats-ci.yml"]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/github-stats
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint shell script
+        run: shellcheck scripts/gh-stats.sh
+
+      - name: Run network-free unit tests
+        run: pytest tests/ -v
