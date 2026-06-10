@@ -5,7 +5,7 @@ A monorepo of self-contained, independently-released [Claude Code](https://claud
 Each skill under `skills/` is versioned, tested, and released **on its own cadence** —
 consolidated into one repo for convenience, but with the same autonomy they had as
 separate repos. Independence is achieved with **namespaced release tags**
-(`devlog-vX`, `ghostwriter-vX`, `resume-vX`) and **path-filtered workflows**: a change
+(`devlog-vX`, `ghostwriter-vX`, `resume-vX`, `github-stats-vX`) and **path-filtered workflows**: a change
 to one skill only runs that skill's CI and only cuts that skill's release.
 
 ## Skills
@@ -15,6 +15,7 @@ to one skill only runs that skill's CI and only cuts that skill's release.
 | [`devlog`](skills/devlog) | `/devlog` | Node | Generate a daily dev-log entry from today's git commits and publish to GitHub. |
 | [`ghostwriter`](skills/ghostwriter) | `/ghostwriter` | Python | Turn engineering work into LinkedIn posts with diagram cards. |
 | [`resume`](skills/resume) | `/resume` | Node/TS | Tailor a résumé to a job description and render a polished PDF from the CLI. |
+| [`github-stats`](skills/github-stats) | `/github-stats` | Bash/`gh` | Show GitHub profile statistics — commits, followers, stars, PRs, issues — plus a repo browser. |
 
 ## Install (local Claude Code)
 
@@ -24,6 +25,7 @@ Symlink each skill into your skills directory so `SKILL.md` is discovered:
 ln -sfn "$PWD/skills/devlog"      ~/.claude/skills/devlog
 ln -sfn "$PWD/skills/ghostwriter" ~/.claude/skills/ghostwriter
 ln -sfn "$PWD/skills/resume"      ~/.claude/skills/resume
+ln -sfn "$PWD/skills/github-stats" ~/.claude/skills/github-stats
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
