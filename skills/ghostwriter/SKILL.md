@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.2.0
+version: 0.3.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -87,13 +87,16 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
      one with the strongest personal angle. Briefly tell the user which you picked and why.
    - "From my interests" / no topic given → pick an evergreen theme from `voice/interests.md`
      they haven't covered recently.
-2. **Draft against the voice profile.** Read `voice/voice-notes.md` AND `voice/voice-profile.md`
-   first, every time (voice-notes.md holds direct user feedback and takes priority). If either
-   is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
+2. **Draft against the voice profile.** Read `voice/voice-notes.md`, `voice/voice-profile.md`,
+   AND `voice/algorithm.md` first, every time (voice-notes.md holds direct user feedback and
+   takes priority; algorithm.md is reach optimization and must never override voice). If a voice
+   file is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
    `voice/voice-notes.md` and proceed with what you have (`voice/interests.md` plus the
    defaults). Write the
    post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Apply the
-   **Engagement craft** rules below. Aim for one strong post, not three mediocre options.
+   **Engagement craft** rules below AND the reach rules in `voice/algorithm.md` (hook in the
+   first ~210 chars, ~900–1,500 chars, optimize for *saves*, no links in the body). Aim for one
+   strong post, not three mediocre options.
    **Never fabricate or exaggerate** details that aren't true to the user's real experience —
    authenticity over drama (see voice-notes.md).
 3. **Save the draft** to `drafts/` as `YYYY-MM-DD-slug.md` (ask the user for today's date if you
@@ -102,7 +105,11 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
    scrap it?"* Wait for their answer. Do not publish unprompted.
 5. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
    *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
-   stays **text-only** — that's the default. Only build a visual if they opt in. See **Visuals**.
+   stays **text-only** — a strong text post outperforms a weak image, so that's a fine default.
+   Only build a visual if it genuinely earns dwell time (a real diagram people study), not as
+   decoration. For educational / how-to posts, **offer a multi-slide carousel** — the
+   highest-reach native format (1.45× vs 1.18× for a single image). See **Visuals → Carousels**
+   and `voice/algorithm.md`.
 
 ### Visuals (optional — diagrams & cards)
 
@@ -127,6 +134,17 @@ pull the byline automatically — don't hardcode it.
   - `assets/card-template-stem.html` — **STEM type** (STEM / education / outreach posts);
     playful by design — a chunky toy-block S T E M motif, confetti, a rounded hero headline.
     Reach for it when the tone is kid-energy / inspirational rather than buttoned-up.
+  - `assets/card-template-flow.html` — **flow type** (architecture / pipeline / data-flow);
+    a clean, linear diagram of color-coded stage chips (a left accent bar marks the layer: green
+    `.det` / pink `.tools` / blue `.agent` / grey `.out`), each with a bold title and one muted
+    example, connected by simple chevrons and auto-centered to fill the card. **Prefer this over
+    a Mermaid diagram for architecture posts** — it matches the brand cards and renders crisp at
+    phone size, where a Mermaid `.mmd` tends to come out as a skinny, hard-to-read strip. Keep it
+    calm: ~4-5 stages, one example each (show sub-steps inline as `A -> B -> C`, don't nest boxes).
+    The byline sits inline in the `.toprow` so a feed crop can't remove it.
+  - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
+    **Carousels** below — this is the highest-reach native format and the right choice for
+    educational / how-to / step-by-step posts.
   Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
   one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
@@ -139,19 +157,49 @@ pull the byline automatically — don't hardcode it.
   they approve it. Don't claim it looks good without showing the image.
 - **Write alt text** describing the visual; you'll pass it to the publish step.
 
+#### Carousels (multi-slide documents — highest reach)
+
+A carousel is a multi-page PDF posted as a **document**. It gets ~1.45× the reach of a single
+image and the most dwell time and saves, so it's the best visual for educational / how-to /
+step-by-step posts. Workflow:
+
+1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html` — one
+   `<div class="slide card …">` per page (cover → numbered `.point` slides → a `.cta` with a
+   "Save this" prompt). One idea per slide, ~5–8 slides. Same authenticity rule: never invent
+   numbers or structure.
+2. **Render:** `.venv/bin/python scripts/render_carousel.py --in images/<slug>-carousel.html --out images/<slug>.pdf`
+   — writes preview PNGs (`images/<slug>-NN.png`) and the `images/<slug>.pdf` to post, and opens
+   the PDF.
+3. **Show the slides** and iterate until approved (don't claim it looks good without showing it).
+4. **Publish** with `--document` (see Publish mode). The post body (`commentary`) is still the
+   draft text; the carousel rides along as the document.
+
 ### Engagement craft (apply to every draft)
 
-- **Hook in line one.** It must earn the "see more" click — a sharp claim, a specific number,
-  a tension, or a story cold-open. No throat-clearing ("I've been thinking lately...").
+The full, sourced rationale is in `voice/algorithm.md` — read it. The essentials:
+
+- **Hook in the first ~210 characters (2–3 short lines).** That is all that shows before
+  "…see more", and it decides reach. A sharp claim, a specific number, a tension, or a story
+  cold-open. No throat-clearing ("I've been thinking lately...").
 - **One idea per post.** Cut anything that isn't serving the single point.
+- **Optimize for SAVES, not applause.** Saves are worth ~5× a like and drive the most reach.
+  Make the post reference-worthy: a framework, a "how to", a reusable mental model the reader
+  wants to keep. This is how we chase the algorithm without resorting to engagement bait.
+- **Teach something.** Knowledge/advice content gets ~3–5× the reach. Prescriptive, for the
+  reader (see voice-notes), not autobiographical.
 - **Specifics over abstractions.** Real numbers, real moments, real names of things.
-- **Short lines, white space.** LinkedIn is read on phones. Generous line breaks.
-- **Earn the ending.** End with a genuine question or a line worth re-sharing, if that matches
-  their voice — never a hollow "Thoughts? 👇" unless they actually write that way.
+- **Short lines, white space.** LinkedIn is read on phones. Paragraphs ≤3–4 lines, ~8th-grade
+  reading level (denser than 10th grade ≈ 35% less reach).
+- **No external links in the post body** (a single in-body link cuts reach ~50–70%). If a link
+  is needed, leave it out and tell the user to drop it in the **first comment**.
+- **Earn the ending on substance.** A line worth re-sharing, or a genuine question only when it
+  truly is the strongest ending — never a reflexive "Thoughts? 👇" (voice-notes forbids it).
 - **Sound human.** No "In today's fast-paced world", no "game-changer", no "delve", no
   manufactured humility. If it reads like AI, rewrite it. Match the profile's "Never do" list.
-- **Length:** typically 80–250 words. Hard cap 3000 characters (the script enforces it).
-- **Hashtags:** only if the voice profile says they use them; 3–5 max, at the end.
+- **Length: ~900–1,500 characters** (~150–250 words) is the reach sweet spot. Hard cap 3000
+  (the script enforces it).
+- **Hashtags: 0–3, specific.** They barely help now and 6+ hurt; default to none unless the
+  voice profile says otherwise.
 
 ---
 
@@ -162,12 +210,22 @@ Only after the user explicitly approves a specific draft.
 1. **Preview the payload** (optional sanity check):
    `python3 scripts/linkedin_post.py --file drafts/<file>.md --dry-run`
 2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md`
-   - **With an approved visual** (only if the user opted in and approved the PNG), add
-     `--image images/<slug>.png --alt "<alt text>"`. Never attach an image the user hasn't seen
-     and approved; if the image changes, re-show and re-confirm.
+   - **With an approved single image** (only if the user opted in and approved the PNG), add
+     `--image images/<slug>.png --alt "<alt text>"`.
+   - **With an approved carousel**, add `--document images/<slug>.pdf --title "<short title>"`
+     instead (image and document are mutually exclusive). Prefer the carousel for educational
+     posts (higher reach). Always `--dry-run` once first; document upload is the same flow as
+     images but posts to `/rest/documents`.
+   - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm.
 3. **Report** the result. On success, share the post URL the script prints. On an auth error
    (HTTP 401/403), tell the user to re-run `python3 scripts/linkedin_auth.py` (token likely
    expired after ~60 days), then retry.
+4. **Prompt the golden hour.** Reach is largely decided in the first 30–60 minutes (see
+   `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour:
+   reply to every comment with substance (a question back, not just "thanks"), go comment on
+   5+ other people's posts to signal activity, and — if the post references a link — drop that
+   link in the **first comment** now (links in the body suppress reach). The script can't do
+   these; they are the single biggest fix for low reach.
 
 Never run the non-`--dry-run` publish command without a clear, specific approval from the user
 for that exact draft.
