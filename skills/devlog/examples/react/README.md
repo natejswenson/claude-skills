@@ -1,6 +1,6 @@
 # React example — devlog
 
-Drop-in React components for rendering your daily dev log on any React-based site.
+Drop-in React components for rendering your release dev log on any React-based site.
 
 ## What's here
 

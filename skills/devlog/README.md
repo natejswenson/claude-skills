@@ -5,9 +5,9 @@
 [![security](https://img.shields.io/badge/security-audited-green)](./SECURITY.md)
 [![vulnerabilities](https://img.shields.io/badge/npm%20audit-0%20issues-brightgreen)](#security)
 
-A Claude Code skill that turns your daily git commits into a published dev log — and a React example for displaying it on your site.
+A Claude Code skill that turns each version release (a git tag) into a published dev log entry, written in your own voice — and a React example for displaying it on your site.
 
-> **Build in public, automatically.** Make commits like you always do. Run `/devlog`. Today's work shows up on your site as a narrative entry, not raw commit messages.
+> **Build in public, by release.** Tag a release like you always do. Run `/devlog`. Each new version shows up on your site as a narrative entry — in your voice — not raw commit messages.
 
 ## Live example
 
@@ -15,9 +15,11 @@ The skill is in production at [natejswenson.com/devlog](https://natejswenson.com
 
 ## How it works
 
-1. **You commit code** in your projects, like you already do.
-2. **Run `/devlog` in Claude Code.** The skill reads today's commits, writes a narrative markdown entry, and pushes it to your dev-log GitHub repo.
-3. **Your site fetches it.** Static `manifest.json` + per-day markdown files served from `raw.githubusercontent.com` — no backend needed.
+1. **You ship a release** — tag it (e.g. `git tag v0.3.0`), like you already do.
+2. **Run `/devlog` in Claude Code.** The skill finds tags that don't yet have an entry, summarizes each release's changes into a narrative markdown entry written in your voice, and pushes it to your dev-log GitHub repo. It's idempotent — re-running does nothing until you cut a new release.
+3. **Your site fetches it.** Static `manifest.json` + per-release markdown files served from `raw.githubusercontent.com` — no backend needed.
+
+**In your voice.** Entries are written using a voice profile, resolved in this order: your `config.voicePath` → [ghostwriter](../ghostwriter)'s `voice/` dir if installed → a bundled default. devlog reads `voice-profile.md` (and `voice-notes.md` overrides) — never ghostwriter's `algorithm.md`, since LinkedIn reach tuning doesn't apply to a dev log.
 
 ## Quick start
 
@@ -63,12 +65,16 @@ to see your dev log rendered locally at `http://localhost:5173`.
 ```
 ~/.claude/skills/devlog/
 ├── SKILL.md          # The /devlog slash-command instructions
-└── config.json       # Your settings (mode 0600)
+├── config.json       # Your settings (mode 0600)
+└── voice/            # Bundled fallback voice profile (last resort)
+    ├── voice-profile.md
+    └── voice-notes.md
 
 github.com/<you>/daily-dev-log/   # Created by init, populated by /devlog
 ├── myproject/
 │   ├── manifest.json
-│   ├── 2026-05-01.md
+│   ├── v0.3.0.md
+│   ├── v0.2.0.md
 │   └── ...
 └── ...
 ```
@@ -77,8 +83,11 @@ github.com/<you>/daily-dev-log/   # Created by init, populated by /devlog
 
 ```sh
 gh repo create <you>/daily-dev-log --public --add-readme
-mkdir -p ~/.claude/skills/devlog
+mkdir -p ~/.claude/skills/devlog/voice
 curl -o ~/.claude/skills/devlog/SKILL.md https://raw.githubusercontent.com/natejswenson/devlog/main/SKILL.md
+# Optional fallback voice profile (used when voicePath and ghostwriter are both absent):
+curl -o ~/.claude/skills/devlog/voice/voice-profile.md https://raw.githubusercontent.com/natejswenson/devlog/main/voice/voice-profile.example.md
+curl -o ~/.claude/skills/devlog/voice/voice-notes.md https://raw.githubusercontent.com/natejswenson/devlog/main/voice/voice-notes.example.md
 # Then copy config.example.json → ~/.claude/skills/devlog/config.json and fill it in
 ```
 
@@ -116,8 +125,8 @@ The dev-log repo has this layout, all served as raw files from `https://raw.gith
 <repo>/
 └── <project-key>/
     ├── manifest.json          # Index of all entries (newest first)
-    ├── 2026-05-01.md          # One entry per day
-    ├── 2026-04-30.md
+    ├── v0.3.0.md              # One entry per release (named by version)
+    ├── v0.2.0.md
     └── ...
 ```
 
@@ -125,34 +134,36 @@ The dev-log repo has this layout, all served as raw files from `https://raw.gith
 ```json
 {
   "entries": [
-    { "date": "2026-05-01", "file": "2026-05-01.md", "title": "...", "summary": "..." }
+    { "date": "2026-06-08", "file": "v0.2.0.md", "title": "...", "summary": "...", "version": "v0.2.0" }
   ]
 }
 ```
 
 Strict validation rules (entries that don't match are silently dropped by the React example):
-- `date` matches `YYYY-MM-DD`
+- `date` matches `YYYY-MM-DD` (the release/tag date)
 - `file` matches `^[a-zA-Z0-9._-]+\.md$`
 - `title` and `summary` are non-empty strings
+- `version` (optional) matches `^[a-zA-Z0-9._-]+$`
 
 **Entry markdown:**
 
 ```markdown
 ---
-title: "Concise day summary"
-date: 2026-05-01
+title: "Concise release summary"
+date: 2026-06-08
 project: myproject
+version: v0.2.0
 summary: "1-2 sentence summary"
 ---
 
-## What I Built
-Narrative paragraphs.
+## What Shipped
+Narrative paragraphs, written in your voice.
 
 ## What's Next
 Forward-looking note.
 
-## Public Commits
-- [myproject] commit message ([abc1234](https://github.com/.../commit/abc1234567...))
+## Commits
+- commit message ([abc1234](https://github.com/.../commit/abc1234567...))
 ```
 
 That's the entire contract.
@@ -165,13 +176,16 @@ That's the entire contract.
 |---|---|---|
 | `targetRepo` | `"<owner>/<repo>"` | Repo where dev log entries are published. Must match `^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$`. |
 | `branch` | string (optional) | Branch in the dev-log repo. Defaults to `main`. Must not contain `..` or start with `-`. |
-| `gitAuthor` | string | Used as `git log --author=...` to find your commits. Whitespace OK; no shell metacharacters. |
+| `gitAuthor` | string | Your name. Retained for backward compatibility; it is **not** currently rendered on entries (the author filter was removed, and release notes summarize all commits in a tag range). Still **required** by config validation — it must be present and non-empty (don't drop it). Whitespace OK; no shell metacharacters. |
 | `githubUser` | string | Your GitHub username. |
+| `voicePath` | string (optional) | Directory holding `voice-profile.md` (and optionally `voice-notes.md`) used to write entries in your voice. A leading `~` is expanded. If unset, devlog uses ghostwriter's `voice/` if installed, else the bundled default. Read only — never shell-interpolated. |
 | `projects` | array | One entry per project you want dev logs for. |
 | `projects[].key` | string | Subdirectory name in the dev-log repo. Strict token: `^[a-z0-9][a-z0-9._-]*$`, no `..`. |
 | `projects[].label` | string (optional) | Display name for the tab. Defaults to `key`. |
 | `projects[].path` | string | Local filesystem path to the project. Whitespace OK. |
 | `projects[].remote` | `"<owner>/<repo>"` | The project's GitHub remote. Used to mark public commits and link them. |
+| `projects[].pathFilter` | string (optional) | Repo-relative subdir scoping this project's commits in a monorepo (e.g. `skills/devlog`). |
+| `projects[].tagPrefix` | string (optional) | Prefix of the git tags that mark this project's releases (e.g. `devlog-v`). Defaults to `v`. Used in `git tag --list '<tagPrefix>*'`. |
 
 See [`config.example.json`](./config.example.json) for a complete template, or run `npx @natjswenson/devlog config` to inspect your current config with validation.
 
@@ -195,7 +209,8 @@ The package is designed to be safe to install on a developer's machine and have 
 
 ## Customization
 
-- **Tweak the entry template:** edit `~/.claude/skills/devlog/SKILL.md` (Step 4 — generate the entry).
+- **Tweak the entry template:** edit `~/.claude/skills/devlog/SKILL.md` (Step 6 — generate the entry).
+- **Tweak your voice:** edit the `voice-profile.md` / `voice-notes.md` in your `voicePath` (or `~/.claude/skills/devlog/voice/`).
 - **Tweak the UI:** override the `--devlog-*` CSS variables in `examples/react/DevLogPage.css` to match your theme.
 - **Add more projects:** `npx @natjswenson/devlog add-project` (no manual JSON editing required).
 

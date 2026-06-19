@@ -2,6 +2,35 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.3.0 (2026-06-18) — release-focused entries, written in your voice
+
+**Changed (behavior)**
+- `/devlog` now generates one entry **per version release** (a semver git tag) instead of
+  one entry per day. An entry summarizes the commits in a release's tag range
+  (`<prevTag>..<thisTag>`), scoped by `pathFilter` when present. The run is **idempotent**:
+  a release's entry is written once and never overwritten, and re-running produces nothing
+  until a new tag is cut. The per-day "Update — HH:MM" append mode is removed.
+- Entries are keyed by version: `<project-key>/<version>.md` (e.g. `v0.2.0.md`), with a
+  `version` field added to the frontmatter and to each `manifest.json` entry. Entry sections
+  are now **What Shipped / What's Next / Commits**. The entry `date` is the tag's commit date.
+
+**Added**
+- **Voice-driven publishing.** Entries are written in the user's voice using a voice profile
+  resolved in this order: `config.voicePath` → `~/.claude/skills/ghostwriter/voice` (if
+  installed) → a bundled fallback at `~/.claude/skills/devlog/voice/`. devlog reads
+  `voice-profile.md` and `voice-notes.md` (overrides) — and never `algorithm.md`, since
+  LinkedIn reach tuning does not apply to a dev log.
+- `voicePath` (top-level, optional) and `projects[].tagPrefix` (optional, default `v`) config
+  fields, with security validation in both `bin/devlog.js` and SKILL.md. `tagPrefix` lets each
+  project in a monorepo detect its own releases (e.g. `devlog-v`, `ghostwriter-v`).
+- `init` prompts for the voice directory and release tag prefix, and installs the bundled
+  voice template. `config` shows the voice path and each project's tag pattern.
+- The React example carries the optional `version` field through frontmatter parsing and
+  manifest validation.
+
+**Migration note:** existing per-day `YYYY-MM-DD.md` entries are left untouched; new entries
+are per-release. To detect a monorepo project's releases, set its `tagPrefix`.
+
 ## 0.2.0 (2026-06-08) — monorepo subdirectory filtering
 
 **Added**

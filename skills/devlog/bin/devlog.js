@@ -28,6 +28,9 @@ const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
 // Repo-relative subdir used to scope `git log` to one skill in a monorepo.
 // Same shape as a branch: no leading dash/slash, no shell metacharacters.
 const RE_PATH_FILTER = /^[a-z0-9][a-z0-9._/-]*$/i;
+// Git tag prefix that marks a project's releases (e.g. `v` or `devlog-v`).
+// Interpolated into `git tag --list '<tagPrefix>*'`; same safety as a path filter.
+const RE_TAG_PREFIX = /^[a-z0-9][a-z0-9._/-]*$/i;
 const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
 
 const require = createRequire(import.meta.url);
@@ -37,6 +40,9 @@ const CONFIG_DIR = join(homedir(), '.claude', 'skills', 'devlog');
 const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 const SKILL_DEST = join(CONFIG_DIR, 'SKILL.md');
 const PREVIEW_DIR = join(PACKAGE_ROOT, 'preview');
+const VOICE_SRC_DIR = join(PACKAGE_ROOT, 'voice');
+const VOICE_DEST_DIR = join(CONFIG_DIR, 'voice');
+const GHOSTWRITER_VOICE_DIR = join(homedir(), '.claude', 'skills', 'ghostwriter', 'voice');
 
 const log = {
   info: (msg) => console.log(msg),
@@ -116,6 +122,18 @@ function validateConfig(config) {
       throw new Error(`branch must be a valid git branch name (no leading dash, no '..'): got ${JSON.stringify(config.branch)}`);
     }
   }
+  if ('voicePath' in config) {
+    // Optional: directory holding the voice profile used to write entries. Read by
+    // the skill with the Read tool only — never shell-interpolated — so the only
+    // hard requirement is no shell metacharacters and no leading dash. A leading `~`
+    // is allowed (the skill expands it); we test the expanded form so an absolute
+    // path has no `~` left to trip the shell-quote-break check. Existence is checked
+    // at prompt time (and at runtime, with a fallback chain), not here.
+    const expanded = typeof config.voicePath === 'string' ? expandHome(config.voicePath) : config.voicePath;
+    if (typeof config.voicePath !== 'string' || SHELL_QUOTE_BREAK.test(expanded) || expanded.trim().startsWith('-')) {
+      throw new Error(`voicePath must be a path with no shell metacharacters and no leading dash: got ${JSON.stringify(config.voicePath)}`);
+    }
+  }
   if (!Array.isArray(config.projects)) {
     throw new Error('projects must be an array');
   }
@@ -139,6 +157,14 @@ function validateConfig(config) {
       // so enforce the same no-metacharacter / no-`..` safety as branch names.
       if (typeof p.pathFilter !== 'string' || !RE_PATH_FILTER.test(p.pathFilter) || FORBIDDEN_BRANCH_PARTS.test(p.pathFilter)) {
         throw new Error(`project.pathFilter must be a repo-relative subdir (no leading dash/slash, no '..', no shell metacharacters): ${JSON.stringify(p.pathFilter)}`);
+      }
+    }
+    if ('tagPrefix' in p) {
+      // Optional: the prefix of the git tags that mark this project's releases
+      // (e.g. `devlog-v`). Interpolated into `git tag --list '<tagPrefix>*'`, so
+      // enforce the same no-metacharacter / no-`..` safety as path filters.
+      if (typeof p.tagPrefix !== 'string' || !RE_TAG_PREFIX.test(p.tagPrefix) || FORBIDDEN_BRANCH_PARTS.test(p.tagPrefix)) {
+        throw new Error(`project.tagPrefix must be a tag prefix (no leading dash/slash, no '..', no shell metacharacters): ${JSON.stringify(p.tagPrefix)}`);
       }
     }
     if ('label' in p) {
@@ -228,6 +254,20 @@ const VALIDATORS = {
     return true;
   },
   ownerRepo: (v) => RE_OWNER_REPO.test(v.trim()) || 'Expected <owner>/<repo>, no leading dash, alphanumeric + ._- only',
+  voicePath: (v) => {
+    // Optional. Blank means "use ghostwriter's voice dir if present, else the bundled default".
+    if (!v || v.trim() === '') return true;
+    if (SHELL_QUOTE_BREAK.test(v)) return 'Invalid characters (no quotes, backticks, dollar signs, semicolons, parens, or shell metacharacters)';
+    if (v.trim().startsWith('-')) return 'Path cannot start with a dash';
+    return existsSync(expandHome(v.trim())) || 'Path does not exist';
+  },
+  tagPrefix: (v) => {
+    // Optional. Blank/`v` is the default. Used in `git tag --list '<prefix>*'`.
+    const t = (v || '').trim();
+    if (t === '') return true;
+    if (!RE_TAG_PREFIX.test(t) || FORBIDDEN_BRANCH_PARTS.test(t)) return 'Invalid prefix (no leading dash/slash, no "..", no shell metacharacters)';
+    return true;
+  },
   label: (v) => {
     // Label is React text content only — apostrophes and most punctuation are fine.
     // Reject only control chars and overlong values.
@@ -273,6 +313,13 @@ async function promptForProject(defaults = {}) {
       initial: (_p, values) => detectProjectRemote(expandHome(values.path)) || initialRemote,
       validate: VALIDATORS.ownerRepo,
     },
+    {
+      type: 'text',
+      name: 'tagPrefix',
+      message: 'Release tag prefix (optional, e.g. "v" or "myproject-v"):',
+      initial: defaults.tagPrefix || 'v',
+      validate: VALIDATORS.tagPrefix,
+    },
   ], { onCancel: () => process.exit(1) });
 
   const out = {
@@ -281,6 +328,9 @@ async function promptForProject(defaults = {}) {
     remote: answers.remote.trim(),
   };
   if (answers.label && answers.label.trim()) out.label = answers.label.trim();
+  // Only persist tagPrefix when it differs from the default `v` (keeps configs clean).
+  const tagPrefix = (answers.tagPrefix || '').trim();
+  if (tagPrefix && tagPrefix !== 'v') out.tagPrefix = tagPrefix;
   return out;
 }
 
@@ -293,12 +343,16 @@ async function cmdInit() {
     gitAuthor: detectGitName() || '',
     githubUser: detectGhUser() || '',
     targetRepoName: 'daily-dev-log',
+    // Pre-fill the voice path with ghostwriter's voice dir if it's installed — that's
+    // the most likely place a user already keeps their voice profile.
+    voicePath: existsSync(GHOSTWRITER_VOICE_DIR) ? GHOSTWRITER_VOICE_DIR : '',
   };
 
   const answers = await prompts([
-    { type: 'text', name: 'gitAuthor', message: 'Your name (used to filter `git log --author`):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
+    { type: 'text', name: 'gitAuthor', message: 'Your name (retained for backward compatibility; not currently rendered on entries):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
     { type: 'text', name: 'githubUser', message: 'Your GitHub username:', initial: defaults.githubUser, validate: VALIDATORS.githubUser },
     { type: 'text', name: 'targetRepoName', message: 'Name of the repo where dev logs will be published:', initial: defaults.targetRepoName, validate: VALIDATORS.targetRepoName },
+    { type: 'text', name: 'voicePath', message: 'Voice profile directory (optional — blank uses ghostwriter\'s if present, else the bundled default):', initial: defaults.voicePath, validate: VALIDATORS.voicePath },
   ], { onCancel: () => process.exit(1) });
 
   // Optionally register projects in a loop. First time defaults to "yes".
@@ -324,11 +378,16 @@ async function cmdInit() {
   }
 
   const targetRepo = `${answers.githubUser}/${answers.targetRepoName}`;
+  // Store the expanded absolute path (consistent with project.path) so the persisted
+  // config never carries a `~` that would later trip the shell-quote-break check.
+  const rawVoicePath = (answers.voicePath || '').trim();
+  const voicePath = rawVoicePath ? expandHome(rawVoicePath) : '';
   const config = validateConfig({
     targetRepo,
     branch: 'main',
     gitAuthor: answers.gitAuthor,
     githubUser: answers.githubUser,
+    ...(voicePath ? { voicePath } : {}),
     projects,
   });
 
@@ -345,6 +404,7 @@ async function cmdInit() {
   log.info(`  Git author:     ${config.gitAuthor}`);
   log.info(`  GitHub user:    ${config.githubUser}`);
   log.info(`  Branch:         ${config.branch}`);
+  log.info(`  Voice profile:  ${config.voicePath || '(ghostwriter if present, else bundled default)'}`);
   log.info(`  Projects:       ${config.projects.length === 0 ? '(none — add later with `devlog add-project`)' : config.projects.map((p) => p.key).join(', ')}`);
   log.info(`  Skill location: ${CONFIG_DIR}`);
 
@@ -358,7 +418,7 @@ async function cmdInit() {
     log.warn(`Repo github.com/${targetRepo} already exists. Will use it as-is.`);
   } else {
     log.step(`Creating github.com/${targetRepo}...`);
-    const r = spawnSync('gh', ['repo', 'create', targetRepo, '--public', '--description', 'Daily dev log', '--add-readme'], { stdio: 'inherit' });
+    const r = spawnSync('gh', ['repo', 'create', targetRepo, '--public', '--description', 'Release dev log', '--add-readme'], { stdio: 'inherit' });
     if (r.status !== 0) {
       log.err('Failed to create repo. Check `gh` permissions.');
       process.exit(1);
@@ -385,16 +445,33 @@ async function cmdInit() {
     log.warn('Skipped config.json');
   }
 
+  // Install the bundled voice template as the fallback voice profile. The skill
+  // resolves voice in this order: config.voicePath → ghostwriter's voice dir →
+  // this bundled copy. Installing it guarantees the last fallback always exists.
+  if (!existsSync(VOICE_DEST_DIR)) {
+    mkdirSync(VOICE_DEST_DIR, { recursive: true, mode: 0o700 });
+  }
+  for (const [src, dest] of [['voice-profile.example.md', 'voice-profile.md'], ['voice-notes.example.md', 'voice-notes.md']]) {
+    const s = join(VOICE_SRC_DIR, src);
+    const d = join(VOICE_DEST_DIR, dest);
+    if (existsSync(s) && (await confirmOverwrite(`voice/${dest}`, d))) {
+      copyFileSync(s, d);
+      log.ok(`Installed voice/${dest} → ${d}`);
+    }
+  }
+
   log.info('\n' + kleur.bold().green('Setup complete.') + '\n');
   log.info('Next steps:');
   if (config.projects.length === 0) {
     log.info(`  1. Add a project: ${kleur.cyan('npx @natjswenson/devlog add-project')}`);
-    log.info('  2. Make some commits in the project');
+    log.info('  2. Tag a release in the project (e.g. `git tag v0.1.0`)');
+    log.info(`  3. In Claude Code, run: ${kleur.cyan('/devlog')}`);
+    log.info(`  4. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
   } else {
-    log.info('  1. Make some commits in a registered project');
+    log.info('  1. Tag a release in a registered project (e.g. `git tag v0.1.0`)');
+    log.info(`  2. In Claude Code, run: ${kleur.cyan('/devlog')}`);
+    log.info(`  3. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
   }
-  log.info(`  2. In Claude Code, run: ${kleur.cyan('/devlog')}`);
-  log.info(`  3. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
   log.info('');
 }
 
@@ -469,12 +546,14 @@ async function cmdConfig() {
   log.info(`Branch:        ${config.branch || 'main'}`);
   log.info(`Git author:    ${config.gitAuthor || '?'}`);
   log.info(`GitHub user:   ${config.githubUser || '?'}`);
+  log.info(`Voice path:    ${config.voicePath || kleur.dim('(ghostwriter if present, else bundled default)')}`);
   log.info(`Projects (${(config.projects || []).length}):`);
   for (const p of config.projects || []) {
     log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
     log.info(kleur.dim(`    path:   ${p.path}`));
     log.info(kleur.dim(`    remote: github.com/${p.remote}`));
     if (p.pathFilter) log.info(kleur.dim(`    scope:  ${p.pathFilter}/`));
+    log.info(kleur.dim(`    tags:   ${p.tagPrefix || 'v'}*`));
   }
   log.info('');
 }
@@ -538,7 +617,7 @@ async function cmdPreview() {
 // ─── help ────────────────────────────────────────────────────────────────────
 function printHelp() {
   console.log(`
-${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — daily dev log generator
+${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — release dev log generator
 
 Usage:
   ${kleur.cyan('npx @natjswenson/devlog init')}           One-time setup: create your dev-log repo, install the skill, write config
