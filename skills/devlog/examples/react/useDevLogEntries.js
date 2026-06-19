@@ -3,11 +3,12 @@ import { DEVLOG_CONFIG as DEFAULT_CONFIG } from './devlog-config.js';
 
 // Allowlist of frontmatter keys we recognize. Anything else is ignored —
 // prevents prototype-pollution via crafted keys like `__proto__`.
-const FRONTMATTER_KEYS = new Set(['title', 'date', 'project', 'summary']);
+// `version` is the release tag this entry corresponds to (e.g. "v0.2.0").
+const FRONTMATTER_KEYS = new Set(['title', 'date', 'project', 'summary', 'version']);
 
 /**
  * Parse YAML-ish frontmatter from a markdown string.
- * Returns { metadata: { title, date, project, summary }, body: string }
+ * Returns { metadata: { title, date, project, summary, version }, body: string }
  */
 function parseFrontmatter(raw) {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -24,19 +25,22 @@ function parseFrontmatter(raw) {
 }
 
 // Schema validation for fetched manifest. Reject anything that isn't shaped
-// like { entries: [{ date, file, title, summary }, ...] } so a hostile commit
-// to the dev-log repo can't crash the page.
+// like { entries: [{ date, file, title, summary, version? }, ...] } so a hostile
+// commit to the dev-log repo can't crash the page. `version` is optional and
+// only kept when it's a clean tag-ish string.
 function validateManifest(data) {
   if (!data || typeof data !== 'object') return null;
   if (!Array.isArray(data.entries)) return null;
   const entries = [];
   for (const e of data.entries) {
     if (!e || typeof e !== 'object') continue;
-    const { date, file, title, summary } = e;
+    const { date, file, title, summary, version } = e;
     if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
     if (typeof file !== 'string' || !/^[a-zA-Z0-9._-]+\.md$/.test(file)) continue;
     if (typeof title !== 'string' || typeof summary !== 'string') continue;
-    entries.push({ date, file, title, summary });
+    const entry = { date, file, title, summary };
+    if (typeof version === 'string' && /^[a-zA-Z0-9._-]+$/.test(version)) entry.version = version;
+    entries.push(entry);
   }
   return { entries };
 }
