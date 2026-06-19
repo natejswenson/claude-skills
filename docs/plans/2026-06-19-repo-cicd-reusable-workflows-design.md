@@ -198,8 +198,8 @@ sit at "Expected — waiting for status" and block the merge **permanently**. Th
 trigger + changed-files short-circuit above resolves this while preserving the per-skill-caller
 architecture: all four `ci` checks run and report on every PR, cheaply when nothing changed.
 
-**Chosen branch-protection configuration:** the four per-skill `ci` jobs (`devlog / ci`,
-`resume / ci`, `ghostwriter / ci`, `github-stats / ci`) are the required status checks. They are
+**Chosen branch-protection configuration:** the four per-skill `ci` jobs, named via the job's `name:` (`ci / devlog`,
+`ci / resume`, `ci / ghostwriter`, `ci / github-stats`) are the required status checks. They are
 safe to require precisely because each now reports on every PR. **Future skills MUST keep the PR
 trigger un-filtered** (path-filter only the `push` trigger) or they reintroduce the deadlock —
 this is the load-bearing rule for adding a required skill check. **Equally load-bearing: the `ci`

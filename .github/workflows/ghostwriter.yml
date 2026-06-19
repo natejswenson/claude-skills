@@ -14,6 +14,7 @@ on:
 
 jobs:
   ci:
+    name: ci / ghostwriter # distinct check-run name so it can be a required status check
     runs-on: ubuntu-latest
     permissions:
       contents: read
