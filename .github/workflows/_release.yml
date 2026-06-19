@@ -1,0 +1,102 @@
+name: _release
+
+# Reusable, version-driven release for any skill in the monorepo. Called by each
+# per-skill caller's `release` job (which runs only on push to main, after `ci`).
+# Resolves the skill's version (package.json if present, else SKILL.md frontmatter),
+# and if `<skill>-v<version>` isn't already tagged, cuts the tag + a GitHub Release
+# with notes from that skill's CHANGELOG. Idempotent: a no-version-bump merge no-ops.
+on:
+  workflow_call:
+    inputs:
+      skill:
+        description: "Skill key — used as the tag prefix and working directory (skills/<skill>)."
+        required: true
+        type: string
+      version-source:
+        description: "auto | package-json | skill-md. auto = package.json if present, else SKILL.md frontmatter."
+        required: false
+        type: string
+        default: "auto"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.skill }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/${{ inputs.skill }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags so the "already tagged?" check works
+
+      - name: Resolve version
+        id: ver
+        run: |
+          set -euo pipefail
+          read_pkg() { node -p "require('./package.json').version"; }
+          # Frontmatter-only: read `version:` ONLY from the YAML block between the
+          # first two `---` lines. Never a whole-file grep (a `version:` inside a
+          # body code block must never be matched).
+          read_fm() {
+            awk '
+              NR==1 && $0!="---" { exit 0 }
+              NR==1 { infm=1; next }
+              infm && $0=="---" { exit 0 }
+              infm && /^version:[[:space:]]*/ {
+                sub(/^version:[[:space:]]*/, ""); gsub(/"/, ""); print; exit 0
+              }
+            ' SKILL.md
+          }
+          case "${{ inputs.version-source }}" in
+            package-json) V="$(read_pkg)" ;;
+            skill-md)     V="$(read_fm)" ;;
+            *)            if [ -f package.json ]; then V="$(read_pkg)"; else V="$(read_fm)"; fi ;;
+          esac
+          if [ -z "${V:-}" ]; then
+            echo "::error::Could not resolve a version for skill '${{ inputs.skill }}' (no package.json version and no frontmatter version:)."
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Resolved ${{ inputs.skill }} version: $V"
+
+      - name: Check whether this version is already tagged
+        id: tag
+        run: |
+          if git rev-parse "${{ inputs.skill }}-v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "${{ inputs.skill }}-v${{ steps.ver.outputs.version }} already released — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        if: steps.tag.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          # Print the lines under the first "## ..." heading containing VERSION, up to
+          # the next "## " heading. Handles both "## 1.2.3 (...)" and "## [1.2.3] - ...".
+          awk -v ver="$VERSION" '
+            /^## / && index($0, ver) {flag=1; next}
+            flag && /^## / {flag=0}
+            flag {print}
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            printf '%s v%s\n' "${{ inputs.skill }}" "$VERSION" > release-notes.md
+          fi
+
+      - name: Create tag and GitHub Release
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.skill }}-v${{ steps.ver.outputs.version }}" \
+            --target "${{ github.sha }}" \
+            --title "${{ inputs.skill }} v${{ steps.ver.outputs.version }}" \
+            --notes-file release-notes.md
