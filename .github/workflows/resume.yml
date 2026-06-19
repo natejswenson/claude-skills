@@ -1,0 +1,61 @@
+name: resume
+
+# Per-skill CI + release for the resume skill. See devlog.yml for the PR/push
+# trigger + change-detection rationale (deadlock avoidance).
+on:
+  push:
+    branches: [main]
+    paths: ["skills/resume/**", "tools/score_skill.py", ".github/workflows/resume.yml"]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # required by dorny/paths-filter on pull_request events
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            resume:
+              - 'skills/resume/**'
+              - 'tools/score_skill.py'
+              - '.github/workflows/resume.yml'
+      # Tier 1: shared SKILL.md structural lint
+      - if: steps.changes.outputs.resume == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: steps.changes.outputs.resume == 'true'
+        run: python tools/score_skill.py skills/resume --min 100
+      # Tier 2: resume offline unit suite + $0 MOCK eval wiring check (Node)
+      - if: steps.changes.outputs.resume == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: skills/resume/package-lock.json
+      - if: steps.changes.outputs.resume == 'true'
+        run: npm ci
+        working-directory: skills/resume
+      - if: steps.changes.outputs.resume == 'true'
+        run: npm test
+        working-directory: skills/resume
+      - if: steps.changes.outputs.resume == 'true'
+        run: MOCK_LLM=1 npm run eval
+        working-directory: skills/resume
+
+  release:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_release.yml
+    with:
+      skill: resume
+    permissions:
+      contents: write

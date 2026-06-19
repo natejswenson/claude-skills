@@ -1,0 +1,64 @@
+name: devlog
+
+# Per-skill CI + release for the devlog skill.
+# - PR trigger is intentionally NOT path-filtered, so the `ci` check ALWAYS reports
+#   on every PR to dev/main (required-check + path-filter deadlock avoidance). The
+#   dorny/paths-filter step short-circuits the heavy steps when devlog is unchanged.
+# - push trigger IS path-filtered, so the release job only attempts on relevant merges.
+on:
+  push:
+    branches: [main]
+    paths: ["skills/devlog/**", "tools/score_skill.py", ".github/workflows/devlog.yml"]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # required by dorny/paths-filter on pull_request events
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            devlog:
+              - 'skills/devlog/**'
+              - 'tools/score_skill.py'
+              - '.github/workflows/devlog.yml'
+      # Tier 1: shared SKILL.md structural lint (every skill)
+      - if: steps.changes.outputs.devlog == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: steps.changes.outputs.devlog == 'true'
+        run: python tools/score_skill.py skills/devlog --min 100
+      # Tier 2: devlog functional tests (Node)
+      - if: steps.changes.outputs.devlog == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: skills/devlog/package-lock.json
+      - if: steps.changes.outputs.devlog == 'true'
+        run: npm install --no-fund
+        working-directory: skills/devlog
+      - if: steps.changes.outputs.devlog == 'true'
+        run: npm test
+        working-directory: skills/devlog
+      - if: steps.changes.outputs.devlog == 'true'
+        run: npm run audit
+        working-directory: skills/devlog
+
+  release:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/_release.yml
+    with:
+      skill: devlog
+    permissions:
+      contents: write

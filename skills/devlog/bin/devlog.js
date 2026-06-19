@@ -19,19 +19,19 @@ import kleur from 'kleur';
 //
 // For strict-token fields (project keys, repo names, branch names), separate
 // allowlist regexes apply additional structural constraints.
-const SHELL_QUOTE_BREAK = /[;&|`$()<>{}[\]*?!#~"'\\\n\r]/;
-const RE_GH_USER = /^[a-z0-9][a-z0-9-]*$/i;
-const RE_REPO_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
-const RE_OWNER_REPO = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
-const RE_PROJECT_KEY = /^[a-z0-9][a-z0-9._-]*$/i;
-const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
+export const SHELL_QUOTE_BREAK = /[;&|`$()<>{}[\]*?!#~"'\\\n\r]/;
+export const RE_GH_USER = /^[a-z0-9][a-z0-9-]*$/i;
+export const RE_REPO_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
+export const RE_OWNER_REPO = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
+export const RE_PROJECT_KEY = /^[a-z0-9][a-z0-9._-]*$/i;
+export const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
 // Repo-relative subdir used to scope `git log` to one skill in a monorepo.
 // Same shape as a branch: no leading dash/slash, no shell metacharacters.
-const RE_PATH_FILTER = /^[a-z0-9][a-z0-9._/-]*$/i;
+export const RE_PATH_FILTER = /^[a-z0-9][a-z0-9._/-]*$/i;
 // Git tag prefix that marks a project's releases (e.g. `v` or `devlog-v`).
 // Interpolated into `git tag --list '<tagPrefix>*'`; same safety as a path filter.
-const RE_TAG_PREFIX = /^[a-z0-9][a-z0-9._/-]*$/i;
-const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
+export const RE_TAG_PREFIX = /^[a-z0-9][a-z0-9._/-]*$/i;
+export const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
 
 const require = createRequire(import.meta.url);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -78,7 +78,7 @@ function tryExecArgs(cmd, args) {
   }
 }
 
-function expandHome(p) {
+export function expandHome(p) {
   if (!p) return p;
   if (p === '~') return homedir();
   if (p.startsWith('~/')) return join(homedir(), p.slice(2));
@@ -102,7 +102,7 @@ function atomicWriteJSON(path, data) {
 }
 
 // Validate a config object before writing. Throws with a user-facing message on failure.
-function validateConfig(config) {
+export function validateConfig(config) {
   if (!config || typeof config !== 'object') throw new Error('Config must be an object');
   const required = ['targetRepo', 'gitAuthor', 'githubUser', 'projects'];
   for (const k of required) {
@@ -234,7 +234,7 @@ async function confirmOverwrite(label, path) {
 }
 
 // ─── prompt validators (reused across init and add-project) ──────────────────
-const VALIDATORS = {
+export const VALIDATORS = {
   gitAuthor: (v) => {
     if (v.trim().length === 0) return 'Required';
     if (SHELL_QUOTE_BREAK.test(v)) return 'Invalid characters (no quotes, backticks, dollar signs, semicolons, parens, or shell metacharacters)';
@@ -633,31 +633,36 @@ Issues:  https://github.com/natejswenson/devlog/issues
 }
 
 // ─── dispatch ────────────────────────────────────────────────────────────────
-const arg = process.argv[2];
-switch (arg) {
-  case 'init':
-    cmdInit();
-    break;
-  case 'add-project':
-    cmdAddProject();
-    break;
-  case 'config':
-    cmdConfig();
-    break;
-  case 'preview':
-    cmdPreview();
-    break;
-  case '-v':
-  case '--version':
-    console.log(readPackageVersion());
-    break;
-  case undefined:
-  case '-h':
-  case '--help':
-    printHelp();
-    break;
-  default:
-    log.err(`Unknown command: ${arg}`);
-    printHelp();
-    process.exit(1);
+// Only run the CLI dispatch when this file is executed directly, not when it is
+// imported (e.g. by the test suite). Importing the module must have no side effects.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
+  const arg = process.argv[2];
+  switch (arg) {
+    case 'init':
+      cmdInit();
+      break;
+    case 'add-project':
+      cmdAddProject();
+      break;
+    case 'config':
+      cmdConfig();
+      break;
+    case 'preview':
+      cmdPreview();
+      break;
+    case '-v':
+    case '--version':
+      console.log(readPackageVersion());
+      break;
+    case undefined:
+    case '-h':
+    case '--help':
+      printHelp();
+      break;
+    default:
+      log.err(`Unknown command: ${arg}`);
+      printHelp();
+      process.exit(1);
+  }
 }
