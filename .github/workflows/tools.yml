@@ -1,0 +1,24 @@
+name: tools
+
+# CI for the shared repo tooling (the Tier-1 SKILL.md scorer that gates every
+# skill). Path-filtered to tools/** and intentionally NOT a required status check,
+# so it never participates in the per-skill required-check set (no deadlock).
+on:
+  push:
+    branches: [main]
+    paths: ["tools/**", ".github/workflows/tools.yml"]
+  pull_request:
+    branches: [dev, main]
+    paths: ["tools/**", ".github/workflows/tools.yml"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements-dev.txt
+      - run: python -m pytest tools/tests -q
