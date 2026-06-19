@@ -3,17 +3,22 @@
   "branch": "main",
   "gitAuthor": "Your Name",
   "githubUser": "yourusername",
+  "voicePath": "~/.claude/skills/ghostwriter/voice",
   "projects": [
     {
       "key": "midnight-side-quest",
       "label": "Midnight Side Quest",
       "path": "/Users/yourusername/code/midnight-side-quest",
-      "remote": "yourusername/midnight-side-quest"
+      "remote": "yourusername/midnight-side-quest",
+      "tagPrefix": "v"
     },
     {
-      "key": "todays-existential-crisis",
-      "path": "/Users/yourusername/code/todays-existential-crisis",
-      "remote": "yourusername/todays-existential-crisis"
+      "key": "devlog",
+      "label": "Devlog",
+      "path": "/Users/yourusername/code/your-monorepo",
+      "remote": "yourusername/your-monorepo",
+      "pathFilter": "skills/devlog",
+      "tagPrefix": "devlog-v"
     }
   ]
 }
