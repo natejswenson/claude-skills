@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/devlog",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Release dev log generator — Claude Code skill + preview app for publishing version-release dev logs, written in your voice, to your site",
   "license": "MIT",
   "author": "Nate Swenson",
