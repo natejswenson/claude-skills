@@ -136,7 +136,26 @@ The voice files are the user's own local content — treat them as trusted style
 
 ## Step 3: Find new releases
 
-For each project in scope, list its release tags (newest first), single-quoting the prefix:
+**First, fetch tags from the remote.** Releases are commonly cut by CI on the
+remote (a version-driven GitHub Release on green `main`/`master`), so the
+release tag is born on the remote and a local clone that hasn't fetched will
+not see it. Listing only local tags would then report "no new release" and
+silently miss a live release. Before listing tags, fetch them for each project
+in scope:
+
+```bash
+git -C '<project.path>' fetch --tags --quiet
+```
+
+This is **best-effort**: if it fails (offline, no remote, auth prompt), emit a
+one-line note ("Tag fetch failed for `<key>`; using local tags only.") and
+proceed with whatever local tags exist — never abort the run on a fetch
+failure. `project.path` is validated and single-quoted per Step 0.5; `--tags`
+takes no untrusted input. Do NOT pass a refspec or remote name derived from
+config here (origin's default is correct); keep the command exactly as above.
+
+Then, for each project in scope, list its release tags (newest first),
+single-quoting the prefix:
 
 ```bash
 git -C '<project.path>' tag --list '<project.tagPrefix>*' --sort=-v:refname

@@ -2,6 +2,19 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.3.1 (2026-06-20) — fetch tags before discovering releases
+
+**Fixed**
+- `/devlog` now runs a best-effort `git fetch --tags --quiet` per project at the
+  start of release discovery (Step 3), before listing tags. Releases are
+  commonly cut by CI on the remote (a version-driven GitHub Release on green
+  `main`/`master`), so the tag is born on the remote; a local clone that hadn't
+  fetched would list only stale local tags and silently report "no new release"
+  for a release that was already live. The fetch is best-effort: on failure
+  (offline, no remote, auth prompt) it notes the failure and proceeds on local
+  tags rather than aborting. `--tags` takes no untrusted input and `project.path`
+  is validated + single-quoted per Step 0.5.
+
 ## 0.3.0 (2026-06-18) — release-focused entries, written in your voice
 
 **Changed (behavior)**
