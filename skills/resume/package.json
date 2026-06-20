@@ -33,6 +33,7 @@
     "tailor": "node --import ./scripts/_tsx-register.mjs bin/resume.mjs",
     "test": "node scripts/run-tests.mjs",
     "eval": "node --import ./scripts/_tsx-register.mjs scripts/eval/run-eval.mjs",
+    "benchmark": "node --import ./scripts/_tsx-register.mjs scripts/eval/benchmark.mjs",
     "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
   },
   "dependencies": {
