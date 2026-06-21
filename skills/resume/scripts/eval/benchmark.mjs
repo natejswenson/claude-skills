@@ -41,12 +41,16 @@ const val = (n, def) => {
 
 const MOCK = flag("--mock");
 const USE_JUDGE = flag("--judge");
-const JUDGE_SAMPLES = Math.max(1, parseInt(val("--judge-samples", "1"), 10));
-const REPEAT = parseInt(val("--repeat", "0"), 10);
+const _js = parseInt(val("--judge-samples", "1"), 10);
+const JUDGE_SAMPLES = Number.isFinite(_js) ? Math.max(1, _js) : 1;
+const _rep = parseInt(val("--repeat", "0"), 10);
+const REPEAT = Number.isFinite(_rep) ? _rep : 0;
 const RENDER = flag("--render");
 const JSON_OUT = flag("--json");
-const G3_FLOOR = parseInt(val("--g3-floor", "40"), 10);
-const COVERAGE_FLOOR = parseFloat(val("--coverage-floor", "0"));
+const _g3f = parseInt(val("--g3-floor", "40"), 10);
+const G3_FLOOR = Number.isFinite(_g3f) ? _g3f : 40;
+const _cf = parseFloat(val("--coverage-floor", "0"));
+const COVERAGE_FLOOR = Number.isFinite(_cf) ? _cf : 0;
 const TEMPLATE = val("--template", "modern");
 const DEFAULT_RESUME = resolve(ROOT, "scripts/fixtures/benchmark/resume.pdf");
 const RESUME_PATH = resolve(val("--resume", DEFAULT_RESUME));
@@ -55,8 +59,12 @@ const JOBS_FILTER = val("--jobs", null);
 
 // Pin tailoring to the subscription CLI adapter BEFORE importing the pipeline,
 // and set MOCK before any pipeline code reads it. (INV: LLM_MODE=cli first.)
+// FORCES cli (overwrite, not coalesce) so the benchmark can never bill, even if
+// LLM_MODE=api is exported in the environment. Tailoring is always $0
+// subscription CLI here; the judges spawn their own claude child and ignore
+// LLM_MODE.
 if (MOCK) process.env.MOCK_LLM = "1";
-process.env.LLM_MODE ??= "cli";
+process.env.LLM_MODE = "cli";
 
 // Imports that touch the LLM factory must come AFTER the env pins above.
 const { loadResumeText, tailorResume, trimJobText, renderResumePdf, normalizeTemplate } =
@@ -137,6 +145,12 @@ if (REPEAT > 0) {
   }
   if (samples.length < 2) {
     console.log(`\n⚠  Only ${samples.length} measured point(s) — use --repeat 4+ for a non-degenerate median.`);
+  }
+  // With --repeat 1 the only run is the warmup (discarded), leaving no samples;
+  // Math.min([])/Math.max([])/median([]) would print Infinity/-Infinity/0. Skip
+  // the degenerate stats line entirely.
+  if (samples.length === 0) {
+    process.exit(0);
   }
   console.log(
     `\nTailoring latency (n=${samples.length}): ` +

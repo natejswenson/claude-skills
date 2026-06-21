@@ -24,7 +24,8 @@ import os from "node:os";
 // Read at spawn time (not module-load) so a single import sees env changes.
 const claudeBin = () => process.env.BENCHMARK_CLAUDE_BIN ?? "claude";
 const JUDGE_MODEL = process.env.BENCHMARK_JUDGE_MODEL ?? "haiku";
-const JUDGE_TIMEOUT_MS = Number(process.env.BENCHMARK_JUDGE_TIMEOUT_MS ?? 90_000);
+const _t = Number(process.env.BENCHMARK_JUDGE_TIMEOUT_MS ?? 90_000);
+const JUDGE_TIMEOUT_MS = Number.isFinite(_t) && _t > 0 ? _t : 90_000;
 const SIGKILL_GRACE_MS = 5_000;
 
 /**
@@ -74,7 +75,7 @@ function spawnClaudeStructured({ system, user, schema, model, timeoutMs }) {
     // 90s hard timeout: kill the child (SIGTERM, then SIGKILL) and reject.
     const timer = setTimeout(() => {
       if (settled) return;
-      child.kill("SIGTERM");
+      try { child.kill("SIGTERM"); } catch { /* already gone */ }
       setTimeout(() => {
         try { child.kill("SIGKILL"); } catch { /* already gone */ }
       }, SIGKILL_GRACE_MS).unref();

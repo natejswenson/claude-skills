@@ -1,9 +1,19 @@
 /**
  * Targeted summary-only repair.
  *
- * When the only post-tailoring violations are summary-scoped (a banned
- * connective phrase or a derived duration), regenerating the WHOLE résumé to fix
- * one sentence is wasteful and risky: on the subscription CLI every call
+ * The fast path fires ONLY for the two genuinely summary-specific validator
+ * rules: a banned connective phrase ("summary contains banned phrase") or a
+ * derived duration ("summary states duration"). Other rules — a scope qualifier
+ * ('output uses scope qualifier "..."') or an invented number ('number "..." in
+ * output ...') — scan ALL output (summary + bullets + skills), so the validator
+ * does not attribute them to the summary by phrasing; even when the offending
+ * text happens to be in the summary, those correctly fall back to the full
+ * regeneration (broadening the fast path would risk a wasted cheap call when the
+ * offending text is actually in a bullet).
+ *
+ * When the only post-tailoring violations are the two summary-specific rules
+ * above, regenerating the WHOLE résumé to fix one sentence is wasteful and
+ * risky: on the subscription CLI every call
  * re-processes the full ~9k-token system prompt cold, and a full regeneration
  * can regress otherwise-valid bullets, roles, or numbers.
  *
@@ -34,9 +44,14 @@ Rules:
 - Sentence 1: role title + 2-3 specific named technologies from the FACTS. Sentence 2: a specific accomplishment naming a company, technology, or number from the FACTS.`;
 
 /**
- * True iff every violation is summary-scoped (so a summary-only fix can clear
- * them). The validator phrases summary violations as "summary ..." and
- * everything else as "output ..." / 'number "..." in output ...'.
+ * True iff every violation matches the `"summary "` prefix — i.e. one of the two
+ * summary-specific validator rules ("summary contains banned phrase" / "summary
+ * states duration"), the only violations a summary-only fix can clear. The
+ * validator phrases these as "summary ..." and everything else as "output ..." /
+ * 'number "..." in output ...'. Scope-qualifier and invented-number rules scan
+ * all output, so they are deliberately NOT matched here (see module doc): even
+ * if the offending text is in the summary, it is not summary-attributable by the
+ * validator's phrasing and must fall back to the full regeneration.
  */
 export function summaryScopedOnly(violations: string[]): boolean {
   return violations.length > 0 && violations.every((v) => v.startsWith("summary "));
@@ -56,8 +71,10 @@ function factsContext(resume: ResumeJSONType): string {
   ].join("\n");
 }
 
-/** Deterministic scrub used under MOCK_LLM (and as a safety net): strip banned
- *  phrases and derived "N years" so the result validates without an LLM call. */
+/** Deterministic scrub used under MOCK_LLM by direct unit tests (the benchmark's
+ *  tailorResume short-circuits on MOCK before the retry loop, so this path isn't
+ *  hit there) and as a safety net: strip banned phrases and derived "N years" so
+ *  the result validates without an LLM call. */
 function deterministicScrub(summary: string): string {
   let s = summary;
   for (const p of BANNED_SUMMARY_PHRASES) {
