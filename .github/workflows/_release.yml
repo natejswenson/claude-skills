@@ -41,7 +41,7 @@ jobs:
       run:
         working-directory: skills/${{ inputs.skill }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history + tags so the "already tagged?" check works
 
@@ -116,7 +116,7 @@ jobs:
       # npm. Opt-in per skill via the `npm-publish` input.
       - name: Setup Node for npm publish
         if: inputs.npm-publish
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
