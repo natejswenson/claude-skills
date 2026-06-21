@@ -7,9 +7,11 @@ doc: [`docs/plans/2026-06-20-resume-benchmark-design.md`](../../../../../docs/pl
 
 ```
 scripts/fixtures/benchmark/
-├── README.md     (this file)
-├── jobs.mjs      (7 real job postings: 5 high-fit + 2 low-fit controls)
-└── resume.pdf    (the real résumé under test — GITIGNORED, never committed)
+├── README.md          (this file)
+├── jobs.mjs           (7 real job postings: 5 high-fit + 2 low-fit controls)
+├── sample-resume.txt  (small synthetic résumé — COMMITTED; used by the CI-safe
+│                       --mock plumbing test, since resume.pdf is gitignored)
+└── resume.pdf         (the real résumé under test — GITIGNORED, never committed)
 ```
 
 ## resume.pdf

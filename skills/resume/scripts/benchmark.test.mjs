@@ -218,9 +218,13 @@ console.log("\n[--mock plumbing: exit 0, no claude spawn, full report]");
 // ============================================================
 
 await test("benchmark --mock runs $0, exits 0, prints the report", () => {
+  // Use the COMMITTED synthetic .txt fixture via --resume so this is CI-portable
+  // (the default résumé.pdf fixture is gitignored / absent in CI). A custom
+  // --resume also skips the fixture-anchor check, so any valid résumé works.
+  const sampleResume = resolve(ROOT, "scripts/fixtures/benchmark/sample-resume.txt");
   const res = spawnSync(
     process.execPath,
-    ["--import", REGISTER, "scripts/eval/benchmark.mjs", "--mock", "--jobs", "j1-senior-devops,j6-frontend"],
+    ["--import", REGISTER, "scripts/eval/benchmark.mjs", "--mock", "--resume", sampleResume, "--jobs", "j1-senior-devops,j6-frontend"],
     { cwd: ROOT, encoding: "utf8", env: { ...process.env, MOCK_LLM: "1" } },
   );
   assert.equal(res.status, 0, `expected exit 0, got ${res.status}. stderr: ${res.stderr}`);
