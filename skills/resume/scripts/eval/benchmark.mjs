@@ -226,7 +226,7 @@ for (const job of jobs) {
       if (!rulesOk) row.gateReasons.push(`${hardViol.length} HARD checkRules violation(s)`);
     }
   } catch (err) {
-    row.error = err.message ?? String(err);
+    row.error = (err?.message || String(err)) || "unknown error";
   }
   rows.push(row);
   if (!JSON_OUT) printRow(row);
@@ -323,9 +323,12 @@ function printSummary(s, disc) {
   if (MOCK) {
     console.log(`Hard gate: skipped (plumbing)`);
   } else {
+    const ctrlErrored = ctrl.filter((r) => r.error).length;
+    const treatErrored = treat.filter((r) => r.error).length;
     console.log(
-      `Hard gate (treatment, exit-affecting): ${s.treatmentPass}/${s.treatmentTotal} passed · ` +
-        `controls (informational, not gating): ${s.controlPass}/${s.controlTotal} met the same bar`,
+      `Hard gate (treatment, exit-affecting): ${s.treatmentPass}/${s.treatmentTotal} passed${treatErrored ? ` (${treatErrored} errored)` : ""} · ` +
+        `controls (informational, not gating): ${s.controlPass}/${s.controlTotal} met the same bar` +
+        `${ctrlErrored ? ` (${ctrlErrored} errored)` : ""}`,
     );
   }
   if (disc) {

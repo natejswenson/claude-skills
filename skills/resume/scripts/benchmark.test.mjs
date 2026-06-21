@@ -145,7 +145,7 @@ await test("a control AT/above the median → FAIL (catches non-discriminating m
   const rows = [
     { id: "t1", control: false, coverage: 0.5 },
     { id: "t2", control: false, coverage: 0.6 },
-    { id: "c1", control: true, coverage: 0.55 }, // above median 0.55? median of [0.5,0.6]=0.55 → not below
+    { id: "c1", control: true, coverage: 0.55 }, // median of [0.5,0.6] = 0.55; control 0.55 is NOT < 0.55 → not below → FAIL
   ];
   const d = discriminationCheck(rows);
   assert.equal(d.pass, false, "control at/above median must fail");
@@ -173,9 +173,13 @@ await test("a failing TREATMENT job fails the suite", () => {
   assert.equal(suiteHardFail(rows), true);
 });
 
-await test("a treatment ERROR fails the suite; a control error does not", () => {
+await test("any job ERROR fails the suite (treatment or control)", () => {
   assert.equal(suiteHardFail([{ id: "t1", control: false, error: "boom" }]), true);
-  assert.equal(suiteHardFail([{ id: "c1", control: true, error: "boom" }]), false);
+  assert.equal(suiteHardFail([{ id: "c1", control: true, error: "boom" }]), true); // control CRASH = real breakage
+});
+
+await test("treatment row with undefined gateOk and no error does NOT fail (strict === false)", () => {
+  assert.equal(suiteHardFail([{ id: "t1", control: false }]), false); // undefined gateOk, no error → not a failure
 });
 
 await test("mock never fails", () => {

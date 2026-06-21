@@ -583,7 +583,10 @@ Mirrors `scripts/fixtures/perf/README.md`'s bias section — same risks apply he
   formulaic, low-G3 output); failing the run on a control would conflate
   "intentionally off-target control" with "generator broken". A control's gate
   status is still computed and reported (marked `•`, "not gating"), just not
-  exit-affecting (see `suiteHardFail` in `benchmark-lib.mjs`). REPORTED `checkRules`
+  exit-affecting (see `suiteHardFail` in `benchmark-lib.mjs`) — except a control
+  ERROR (a pipeline crash on the control input) DOES fail the suite, since a crash
+  is real generator breakage, not an intentionally-low score. Only a control
+  gate-MISS (G3 floor / HARD rule) is non-gating. REPORTED `checkRules`
   rules and all LLM-judge signals are surfaced but never cause a non-zero exit.
   **One-time calibration** on the default fixture must have confirmed 0 violations
   on a known-clean tailoring before the gate is trusted. (No cross-job p50/p95 —
