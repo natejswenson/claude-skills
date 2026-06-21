@@ -4,6 +4,38 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-06-21
+
+Accuracy + speed benchmark for the tailoring pipeline, plus two measured
+improvements it surfaced.
+
+### Added
+- **`npm run benchmark`** — a $0 benchmark that runs the real `tailorResume`
+  pipeline over the résumé fixture × **7 real job postings** (5 high-fit +
+  2 low-fit controls), timing each phase and scoring accuracy. Per-phase
+  wall-clock (`--repeat N` for a true tailoring-latency distribution), a
+  hard-rule faithfulness gate (HARD/REPORTED `checkRules` partition), JD-coverage,
+  G2/G3/G4 + fitness, optional **$0 subscription-CLI judges** (`--judge`) for
+  tailoring-fit + grounding (soft, fail-open, own 90s kill-timeout), and a
+  directional discrimination check (only treatment jobs gate the exit code;
+  controls are non-gating, but a control *crash* still fails the run).
+  `--mock` is a CI-safe plumbing check; `--json` for regression tracking.
+  See `docs/plans/2026-06-20-resume-benchmark-design.md`.
+
+### Changed
+- **Cheaper retry on summary-only violations.** A content-violation retry used to
+  regenerate the entire résumé; now a summary-scoped violation (banned phrase /
+  derived duration) gets a small focused fix spliced into the valid pass-1 output
+  and re-validated, falling back to the full retry if it can't clear. Measured:
+  per-retry cost ~39s → ~5.3s (≈86% cheaper), and safer (valid bullets are never
+  regenerated). (`lib/summary-fix.ts`, `lib/pipeline.ts`.)
+
+### Fixed
+- **Drop no-op optimized bullets.** `optimizedBullets` entries whose rewrite
+  equals the original (a model bookkeeping error that polluted the change summary
+  and tripped the faithfulness check) are now removed deterministically before
+  validation — no LLM call. (`lib/validate.ts`.)
+
 ## [0.1.1] — 2026-06-08
 
 Packaging & licensing pass to make the repo ready for public consumption.
