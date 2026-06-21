@@ -19,10 +19,10 @@ jobs:
       contents: read
       pull-requests: read # required by dorny/paths-filter on pull_request events
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Detect relevant changes
         id: changes
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             github-stats:
@@ -30,7 +30,7 @@ jobs:
               - 'tools/score_skill.py'
               - '.github/workflows/github-stats.yml'
       - if: steps.changes.outputs.github-stats == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       # Tier 1: shared SKILL.md structural lint
