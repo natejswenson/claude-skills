@@ -61,5 +61,8 @@ jobs:
     uses: ./.github/workflows/_release.yml
     with:
       skill: devlog
+      npm-publish: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     permissions:
       contents: write
