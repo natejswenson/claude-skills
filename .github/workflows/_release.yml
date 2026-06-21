@@ -17,6 +17,15 @@ on:
         required: false
         type: string
         default: "auto"
+      npm-publish:
+        description: "Publish the skill's package.json to npm when its version isn't already on the registry. Opt-in per skill."
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      NPM_TOKEN:
+        description: "npm automation token used to authenticate `npm publish`. Required only when npm-publish is true."
+        required: false
 
 permissions:
   contents: write
@@ -100,3 +109,37 @@ jobs:
             --target "${{ github.sha }}" \
             --title "${{ inputs.skill }} v${{ steps.ver.outputs.version }}" \
             --notes-file release-notes.md
+
+      # npm publish is intentionally INDEPENDENT of the "already tagged?" check
+      # above: it republishes nothing (guarded by `npm view`) but will catch the
+      # registry up if a prior release cut the GitHub tag without publishing to
+      # npm. Opt-in per skill via the `npm-publish` input.
+      - name: Setup Node for npm publish
+        if: inputs.npm-publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish to npm if not already published
+        if: inputs.npm-publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ ! -f package.json ]; then
+            echo "::notice::No package.json in skills/${{ inputs.skill }}; nothing to publish."
+            exit 0
+          fi
+          PKG="$(node -p "require('./package.json').name")"
+          VER="$(node -p "require('./package.json').version")"
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::npm-publish is enabled but the NPM_TOKEN secret is empty. Set NPM_TOKEN (repo secret) and pass it via the caller's secrets."
+            exit 1
+          fi
+          if npm view "$PKG@$VER" version >/dev/null 2>&1; then
+            echo "$PKG@$VER is already on npm — skipping publish."
+            exit 0
+          fi
+          echo "Publishing $PKG@$VER to npm (scoped package → --access public)…"
+          npm publish --access public
