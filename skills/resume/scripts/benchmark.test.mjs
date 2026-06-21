@@ -15,7 +15,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { keywordCoverage } from "./eval/keyword-coverage.mjs";
-import { partitionViolations, normalizeSource, median, discriminationCheck } from "./eval/benchmark-lib.mjs";
+import { partitionViolations, normalizeSource, median, discriminationCheck, suiteHardFail } from "./eval/benchmark-lib.mjs";
 import { checkRules } from "./eval/rules.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -153,6 +153,37 @@ await test("a control AT/above the median → FAIL (catches non-discriminating m
 
 await test("no controls in selection → null (not evaluated)", () => {
   assert.equal(discriminationCheck([{ id: "t1", control: false, coverage: 0.5 }]), null);
+});
+
+console.log("\n[suiteHardFail — only treatment jobs gate]");
+
+await test("a failing CONTROL does not fail the suite", () => {
+  const rows = [
+    { id: "t1", control: false, gateOk: true },
+    { id: "c1", control: true, gateOk: false }, // bad-fit control misses the bar
+  ];
+  assert.equal(suiteHardFail(rows), false, "control failure must not fail the suite");
+});
+
+await test("a failing TREATMENT job fails the suite", () => {
+  const rows = [
+    { id: "t1", control: false, gateOk: false },
+    { id: "c1", control: true, gateOk: false },
+  ];
+  assert.equal(suiteHardFail(rows), true);
+});
+
+await test("a treatment ERROR fails the suite; a control error does not", () => {
+  assert.equal(suiteHardFail([{ id: "t1", control: false, error: "boom" }]), true);
+  assert.equal(suiteHardFail([{ id: "c1", control: true, error: "boom" }]), false);
+});
+
+await test("mock never fails", () => {
+  assert.equal(suiteHardFail([{ id: "t1", control: false, gateOk: false }], { mock: true }), false);
+});
+
+await test("all-pass suite does not fail", () => {
+  assert.equal(suiteHardFail([{ id: "t1", control: false, gateOk: true }, { id: "c1", control: true, gateOk: true }]), false);
 });
 
 // ============================================================

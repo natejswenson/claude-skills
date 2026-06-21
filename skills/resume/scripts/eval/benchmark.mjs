@@ -65,7 +65,7 @@ const { scoreEval } = await import("../scorer/index.mjs");
 const { checkRules } = await import("./rules.mjs");
 const { keywordCoverage } = await import("./keyword-coverage.mjs");
 const { BENCHMARK_JOBS } = await import("../fixtures/benchmark/jobs.mjs");
-const { partitionViolations, normalizeSource, median, mean, discriminationCheck } =
+const { partitionViolations, normalizeSource, median, mean, discriminationCheck, suiteHardFail } =
   await import("./benchmark-lib.mjs");
 
 // Anchors for the parse-time sanity check — fixture-coupled, case-insensitive.
@@ -157,7 +157,6 @@ console.log(
 mkdirSync(OUT_DIR, { recursive: true });
 
 const rows = [];
-let anyHardFail = false;
 
 for (const job of jobs) {
   const row = { id: job.id, fit: job.fit, control: !!job.control, title: job.title, company: job.company };
@@ -211,6 +210,10 @@ for (const job of jobs) {
     row.tTotal = row.tTailor + (row.tRender ?? 0) + (row.tScore ?? 0) + (row.tJudge ?? 0);
 
     // ---- HARD gate (skipped in mock — plumbing only) ----
+    // Gate status is computed for every job, but only TREATMENT jobs are
+    // exit-affecting (see suiteHardFail): controls are deliberately bad-fit and
+    // are expected to score low, so failing the run on them would conflate
+    // "off-target control" with "generator broken".
     if (MOCK) {
       row.gateOk = true;
       row.gateSkipped = true;
@@ -221,11 +224,9 @@ for (const job of jobs) {
       row.gateReasons = [];
       if (!g3Ok) row.gateReasons.push(`G3 ${row.g3} < ${G3_FLOOR}`);
       if (!rulesOk) row.gateReasons.push(`${hardViol.length} HARD checkRules violation(s)`);
-      if (!row.gateOk) anyHardFail = true;
     }
   } catch (err) {
     row.error = err.message ?? String(err);
-    anyHardFail = true;
   }
   rows.push(row);
   if (!JSON_OUT) printRow(row);
@@ -235,11 +236,19 @@ for (const job of jobs) {
 // Mock returns a fixed résumé for every job, so separation is meaningless.
 const discrimination = MOCK ? null : discriminationCheck(rows);
 
+// Only treatment jobs are exit-affecting; controls are reported but not gated.
+const anyHardFail = suiteHardFail(rows, { mock: MOCK });
+
 // ---- suite aggregates -----------------------------------------------------
 const ok = rows.filter((r) => !r.error);
+const treat = rows.filter((r) => !r.control);
+const ctrl = rows.filter((r) => r.control);
 const suite = {
   jobs: rows.length,
-  hardPass: rows.filter((r) => r.gateOk).length,
+  treatmentPass: treat.filter((r) => r.gateOk).length,
+  treatmentTotal: treat.length,
+  controlPass: ctrl.filter((r) => r.gateOk).length,
+  controlTotal: ctrl.length,
   tParse,
   tTailorMean: mean(ok.map((r) => r.tTailor ?? 0)),
   tTailorTotal: ok.reduce((s, r) => s + (r.tTailor ?? 0), 0),
@@ -258,7 +267,8 @@ if (JSON_OUT) {
           g2: r.g2, g3: r.g3, g4: r.g4, fitness: r.fitness, coverage: r.coverage,
           hardViolations: (r.hardViolations ?? []).map((v) => v.rule),
           reportedViolations: (r.reportedViolations ?? []).map((v) => v.rule),
-          gateOk: r.gateOk, gateReasons: r.gateReasons,
+          // gateOk is computed for all jobs; only treatment jobs are exit-affecting.
+          gateOk: r.gateOk, gateReasons: r.gateReasons, gating: !r.control,
           // timing (noisy — compare with tolerance only):
           timing: { tTailor: r.tTailor, tRender: r.tRender, tJudge: r.tJudge, tTotal: r.tTotal },
           // non-deterministic judge signals (NOT regression triggers):
@@ -286,7 +296,8 @@ function printRow(r) {
     console.log(`  ✖ ${pad(r.id, 18)} ERROR: ${r.error}`);
     return;
   }
-  const mark = r.gateOk ? "✓" : "✖";
+  // Controls are non-gating: a control that misses the bar is marked "•", not "✖".
+  const mark = r.gateOk ? "✓" : r.control ? "•" : "✖";
   const tag = r.control ? "ctrl" : r.fit;
   const judge = r.g1 !== undefined ? ` g1 ${padL(r.g1, 3)}${r.g1Failed ? "!" : ""}` : "";
   const ungr = r.ungrounded !== undefined ? ` ungr ${padL(r.ungrounded.length, 2)}${r.groundingFailed ? "!" : ""}` : "";
@@ -297,7 +308,9 @@ function printRow(r) {
       `tailor ${padL(ms(r.tTailor), 6)}  g3 ${padL(r.g3, 3)}  fit ${padL(r.fitness, 4)}  ` +
       `cov ${padL((r.coverage * 100).toFixed(0) + "%", 4)}${judge}${ungr}${hard}${reported}`,
   );
-  if (r.gateReasons?.length) console.log(`       ↳ gate fail: ${r.gateReasons.join("; ")}`);
+  if (r.gateReasons?.length) {
+    console.log(`       ↳ gate ${r.control ? "miss (control — not gating)" : "fail"}: ${r.gateReasons.join("; ")}`);
+  }
   for (const v of r.hardViolations) console.log(`       ↳ [HARD ${v.rule}] ${v.detail}`);
 }
 
@@ -307,7 +320,14 @@ function printSummary(s, disc) {
     `Speed: parse ${ms(s.tParse)} · tailor mean ${ms(s.tTailorMean)} · ` +
       `tailor total ${ms(s.tTailorTotal)} · suite total ${ms(s.tSuiteTotal)}`,
   );
-  console.log(`Hard gate: ${s.hardPass}/${s.jobs} passed${MOCK ? " (skipped — plumbing)" : ""}`);
+  if (MOCK) {
+    console.log(`Hard gate: skipped (plumbing)`);
+  } else {
+    console.log(
+      `Hard gate (treatment, exit-affecting): ${s.treatmentPass}/${s.treatmentTotal} passed · ` +
+        `controls (informational, not gating): ${s.controlPass}/${s.controlTotal} met the same bar`,
+    );
+  }
   if (disc) {
     console.log(
       `\nDiscrimination (${disc.pass ? "PASS" : "FAIL"}) · primary signal=JD-coverage · ` +

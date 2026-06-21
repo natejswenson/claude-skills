@@ -48,6 +48,22 @@ export function median(nums) {
 export const mean = (nums) => (nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0);
 
 /**
+ * Does the suite fail (non-zero exit)? ONLY treatment jobs gate. Control jobs
+ * are deliberately bad-fit reference points for the discrimination check — they
+ * exist to score low, so gating them on quality (G3 floor / faithfulness) would
+ * conflate "intentionally off-target control" with "generator broken". Their
+ * gate status is still computed and reported, just not exit-affecting. Mock
+ * never fails (plumbing only).
+ *
+ * @param {{control?:boolean, error?:string, gateOk?:boolean}[]} rows
+ * @param {{mock?:boolean}} [opts]
+ */
+export function suiteHardFail(rows, { mock } = {}) {
+  if (mock) return false;
+  return (rows ?? []).some((r) => !r.control && (Boolean(r.error) || r.gateOk === false));
+}
+
+/**
  * Directional discrimination check: every control's coverage must land below the
  * treatment median. NOT statistical proof — see the design doc.
  *

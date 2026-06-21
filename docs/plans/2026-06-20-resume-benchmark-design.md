@@ -575,13 +575,19 @@ Mirrors `scripts/fixtures/perf/README.md`'s bias section — same risks apply he
 - `npm run benchmark` runs the real pipeline over all fixtures, prints per-job
   accuracy + per-phase timing + suite total/mean + discrimination verdict
   (directional; primary signal = JD-coverage, G1 corroborating),
-  exits non-zero ONLY on a function-deterministic
-  violation: a **HARD-partition `checkRules`** violation (`R6_summary_phrase` or
-  `R9_optimized_noop`) or a G3-floor breach. REPORTED `checkRules` rules and all
-  LLM-judge signals are surfaced but never cause a non-zero exit. **One-time
-  calibration** on the default fixture must have confirmed 0 violations on a
-  known-clean tailoring before the gate is trusted. (No cross-job p50/p95 — that's
-  only produced by `--repeat`.)
+  exits non-zero ONLY on a function-deterministic violation **on a TREATMENT
+  job**: a **HARD-partition `checkRules`** violation (`R6_summary_phrase` or
+  `R9_optimized_noop`) or a G3-floor breach. **Control jobs are NOT exit-affecting**
+  — they are deliberately bad-fit reference points for the discrimination check, so
+  they are expected to score low (forcing a strong-mismatch tailoring produces
+  formulaic, low-G3 output); failing the run on a control would conflate
+  "intentionally off-target control" with "generator broken". A control's gate
+  status is still computed and reported (marked `•`, "not gating"), just not
+  exit-affecting (see `suiteHardFail` in `benchmark-lib.mjs`). REPORTED `checkRules`
+  rules and all LLM-judge signals are surfaced but never cause a non-zero exit.
+  **One-time calibration** on the default fixture must have confirmed 0 violations
+  on a known-clean tailoring before the gate is trusted. (No cross-job p50/p95 —
+  that's only produced by `--repeat`.)
 - `npm run benchmark -- --judge` adds the $0 CLI G1 and grounding judges. Both are
   **soft/corroborating and fail-open**: they enrich the report (and surface
   suspected-ungrounded claims for human review) but never fail or abort the run.
