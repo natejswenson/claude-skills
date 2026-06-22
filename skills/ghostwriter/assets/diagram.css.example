@@ -507,7 +507,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.code .dots i:nth-child(1) { background: #FF5F56; }   /* macOS close  */
 .card.code .dots i:nth-child(2) { background: #FFBD2E; }   /* macOS minimize */
 .card.code .dots i:nth-child(3) { background: #27C93F; }   /* macOS zoom   */
-.card.code .title { margin-left: 6px; font: 500 26px/1 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+.card.code .title { margin-left: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 26px/1.3 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+.card.code .title .path { color: var(--text); }   /* the variable part — e.g. the cwd after "claude —" */
 
 /* The body: one .line per source row, each a right-aligned line-number gutter (.no) and
    the source (.src, whitespace preserved for indentation). */
