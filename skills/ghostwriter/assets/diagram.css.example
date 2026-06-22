@@ -213,13 +213,25 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 }
 .card.ramp .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
 .card.ramp .footer.brand::before { width: 52px; height: 52px; }
-.card.ramp h1 { font-size: 64px; margin-bottom: 72px; letter-spacing: -0.02em; }
+.card.ramp h1 { font-size: 64px; margin-bottom: 56px; letter-spacing: -0.02em; }
+
+/* The chart: bars measured against a faint gridline system, a solid axis baseline, and
+   aligned axis labels below — the structure that makes it read as a real analytics chart
+   rather than bare bars. */
+.card .chart { position: relative; }
 .card .ramp-row {
+  position: relative;
   display: flex; align-items: flex-end; justify-content: center; gap: 56px;
 }
-.card .step { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+/* Faint horizontal gridlines behind the bars, extended a little past them on each side
+   for an axis feel. They sit below the bars (z-index) so the bars read as sitting on them. */
+.card .ramp-row::before {
+  content: ""; position: absolute; left: -36px; right: -36px; bottom: 0; height: 468px; z-index: 0;
+  background: repeating-linear-gradient(to top, transparent 0 116px, rgba(230,237,243,0.06) 116px 117px);
+}
+.card .step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .card .step .val {
-  font: 800 50px/1 var(--font); letter-spacing: -0.02em; color: var(--text);
+  font: 800 44px/1 var(--font); letter-spacing: -0.02em; color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .card .step .bar {
@@ -233,17 +245,19 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 /* The payoff bar: a confident solid accent fill with a crisp lit top edge and a soft
    same-hue lift, plus a larger accent value, so "now" is unmistakably the focal point. */
 .card .step.s3 .bar {
-  height: 470px; border-color: var(--accent);
+  height: 468px; border-color: var(--accent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent));
   box-shadow: inset 0 2px 0 rgba(255,255,255,0.28), 0 14px 34px rgba(88,166,255,0.24);
 }
-.card .step.s3 .val { color: var(--accent); font-size: 60px; }
-.card .step .date {
-  font: 600 24px/1 var(--mono); color: var(--muted);
-  letter-spacing: 0.12em; text-transform: uppercase;
+.card .step.s3 .val { color: var(--accent); font-size: 52px; }
+/* Solid axis baseline the bars sit on, then date labels aligned in columns under each bar. */
+.card .ramp-base { height: 2px; background: var(--border); position: relative; z-index: 1; }
+.card .dates { display: flex; justify-content: center; gap: 56px; margin-top: 18px; }
+.card .dates span {
+  width: 200px; text-align: center;
+  font: 600 24px/1 var(--mono); color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
 }
-.card .ramp-base { height: 1px; background: var(--border); margin-top: -1px; }
-.card.ramp .kicker { margin-top: 52px; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
+.card.ramp .kicker { margin-top: 44px; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.ramp .kicker b { color: var(--text); font-weight: 700; }
 
 /* ---- STEM card TYPE: playful, kid-energy styling for STEM / education / outreach.
