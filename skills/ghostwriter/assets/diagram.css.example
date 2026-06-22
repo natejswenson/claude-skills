@@ -463,3 +463,74 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   background: var(--surface); border: 1.5px solid var(--accent-3); border-radius: 999px;
   padding: 16px 32px; font: 700 30px/1 var(--mono); color: var(--accent-3);
 }
+
+/* ---- CODE card TYPE: a code snippet shown as a terminal coding session. A macOS-style
+   window (traffic-light dots + filename) sits on a --surface panel that lifts off the
+   --bg with the family hairline + soft shadow; the body is bat-style — a muted line-number
+   gutter, monospace source with theme-colored syntax tokens, ONE focal "hot" line, and a
+   solid accent caret implying a live session. Highlight by hand: wrap tokens in
+   <span class="t-*">; the token hues are theme accents and retheme via the --t-* vars
+   below. Keep it to ONE idea — short lines (~<=42 chars) and ~<=10 rows so it stays
+   legible in the feed. ---- */
+#canvas.card.code {
+  /* syntax token palette — theme accents by default, override per-card if you like */
+  --t-kw:     var(--accent-3);   /* keywords: def / return / const / import   (pink) */
+  --t-fn:     var(--accent);     /* function + method names                   (blue) */
+  --t-str:    var(--accent-2);   /* strings                                  (green) */
+  --t-num:    #E3B341;           /* numbers / constants                      (amber) */
+  --t-com:    var(--muted);      /* comments                                 (muted) */
+  --t-prompt: var(--accent-2);   /* shell prompt glyph                       (green) */
+  justify-content: center; gap: 40px;
+  background:
+    radial-gradient(1100px 620px at 82% -8%, rgba(88,166,255,0.12), transparent 60%),
+    radial-gradient(900px 520px at -8% 108%, rgba(63,185,80,0.10), transparent 60%),
+    var(--bg);
+}
+/* optional one-line setup above the terminal (the scaffold omits it; keep it short) */
+.card.code h1 { font-size: 56px; }
+
+/* The window: a clean panel lifted off the canvas, corners clipped so the titlebar and
+   the current-line highlight bleed to the edges. */
+.card.code .terminal {
+  width: 100%; z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+}
+.card.code .titlebar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px 28px;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.card.code .dots { display: inline-flex; gap: 12px; }
+.card.code .dots i { width: 19px; height: 19px; border-radius: 50%; display: block; }
+.card.code .dots i:nth-child(1) { background: #FF5F56; }   /* macOS close  */
+.card.code .dots i:nth-child(2) { background: #FFBD2E; }   /* macOS minimize */
+.card.code .dots i:nth-child(3) { background: #27C93F; }   /* macOS zoom   */
+.card.code .title { margin-left: 6px; font: 500 26px/1 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+
+/* The body: one .line per source row, each a right-aligned line-number gutter (.no) and
+   the source (.src, whitespace preserved for indentation). */
+.card.code .term-body {
+  margin: 0; padding: 34px 0;
+  display: flex; flex-direction: column;
+  font: 500 33px/1.7 var(--mono); color: var(--text);
+}
+.card.code .line { display: flex; align-items: baseline; gap: 30px; padding: 0 44px; }
+.card.code .line .no { flex: none; width: 1.6em; text-align: right; color: var(--muted); opacity: 0.45; user-select: none; }
+.card.code .line .src { white-space: pre; }
+/* the single focal line — a faint accent band with an inset rail, full-bleed to the edges */
+.card.code .line.hot { background: rgba(88,166,255,0.10); box-shadow: inset 4px 0 0 var(--accent); }
+
+/* syntax tokens (theme-colored) */
+.card.code .t-kw  { color: var(--t-kw); }
+.card.code .t-fn  { color: var(--t-fn); }
+.card.code .t-str { color: var(--t-str); }
+.card.code .t-num { color: var(--t-num); }
+.card.code .t-com { color: var(--t-com); font-style: italic; }
+.card.code .t-pr  { color: var(--t-prompt); }
+/* solid caret at the end of the last line — implies an active session (no blink in a still) */
+.card.code .caret { display: inline-block; width: 15px; height: 34px; margin-left: 8px; vertical-align: -5px; border-radius: 2px; background: var(--accent-2); }
+
+.card.code .kicker { margin: 0; z-index: 1; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
+.card.code .kicker b { color: var(--text); font-weight: 700; }

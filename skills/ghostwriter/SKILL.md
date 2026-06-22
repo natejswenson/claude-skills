@@ -133,8 +133,9 @@ pull the byline automatically — don't hardcode it.
     ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
     figures must be accurate.
   - `assets/card-template-stem.html` — **STEM type** (STEM / education / outreach posts);
-    playful by design — a chunky toy-block S T E M motif, confetti, a rounded hero headline.
-    Reach for it when the tone is kid-energy / inspirational rather than buttoned-up.
+    the warm member of the family — same clean dark base, kept playful by a chunky toy-block
+    S T E M motif and a soft four-hue corner glow. Reach for it when the tone is kid-energy /
+    inspirational rather than buttoned-up.
   - `assets/card-template-flow.html` — **flow type** (architecture / pipeline / data-flow);
     a clean, linear diagram of color-coded stage chips (a left accent bar marks the layer: green
     `.det` / pink `.tools` / blue `.agent` / grey `.out`), each with a bold title and one muted
@@ -143,6 +144,11 @@ pull the byline automatically — don't hardcode it.
     phone size, where a Mermaid `.mmd` tends to come out as a skinny, hard-to-read strip. Keep it
     calm: ~4-5 stages, one example each (show sub-steps inline as `A -> B -> C`, don't nest boxes).
     The byline sits inline in the `.toprow` so a feed crop can't remove it.
+  - `assets/card-template-code.html` — **code type** (share a snippet); a macOS-style terminal
+    window with bat-style line numbers and theme-colored syntax. Highlight by hand — wrap tokens
+    in `<span class="t-kw/t-fn/t-str/t-num/t-com">`, mark the one money line `class="line hot"`,
+    and cap the last line with `<span class="caret">`. Keep it to ONE idea: short lines (≤~42
+    chars) and ≤~10 rows so it stays legible at phone size.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — this is the highest-reach native format and the right choice for
     educational / how-to / step-by-step posts.
