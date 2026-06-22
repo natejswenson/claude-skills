@@ -534,3 +534,17 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 
 .card.code .kicker { margin: 0; z-index: 1; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.code .kicker b { color: var(--text); font-weight: 700; }
+
+/* --- Claude Code SESSION variant: a transcript instead of a static file. Drop the .no
+   gutter and use these line roles. The clay accent (--claude, Anthropic's) carries the
+   user's request and Claude's action bullets so the window reads as a Claude Code session;
+   tool names take the blue accent, result branches go muted, added/success text green. The
+   action bullet is a CSS circle (not the ⏺ glyph, which can tofu in headless Chromium); the
+   result branch uses the box-drawing └, which renders reliably in the mono stack. --- */
+.card.code { --claude: #D97757; }
+.card.code .line.ask { background: rgba(217,119,87,0.12); box-shadow: inset 4px 0 0 var(--claude); }
+.card.code .u    { color: var(--claude); font-weight: 700; }   /* the user's request line */
+.card.code .dot  { display: inline-block; width: 17px; height: 17px; border-radius: 50%; background: var(--claude); vertical-align: 1px; }
+.card.code .tool { color: var(--accent); }                     /* tool name: Bash / Edit / Update */
+.card.code .br   { color: var(--muted); }                      /* └ result branch */
+.card.code .ok   { color: var(--accent-2); }                   /* added / success text */

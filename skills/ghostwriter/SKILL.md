@@ -149,6 +149,11 @@ pull the byline automatically — don't hardcode it.
     in `<span class="t-kw/t-fn/t-str/t-num/t-com">`, mark the one money line `class="line hot"`,
     and cap the last line with `<span class="caret">`. Keep it to ONE idea: short lines (≤~42
     chars) and ≤~10 rows so it stays legible at phone size.
+  - `assets/card-template-claude.html` — **Claude Code session** (the session variant of the
+    code type): same terminal window, but a *transcript* — the user's request in a clay band,
+    Claude's action bullets, tool names, and `└` result branches — for "here's what I shipped
+    with Claude Code" posts. Uses Anthropic's clay accent so it reads as Claude Code at a glance;
+    be honest — show a real request and a real outcome.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — this is the highest-reach native format and the right choice for
     educational / how-to / step-by-step posts.

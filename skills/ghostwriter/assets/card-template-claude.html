@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  CLAUDE CODE SESSION card scaffold (a transcript — for "here's what I shipped with
+  Claude Code" posts). Copy to images/<slug>.html, fill in, then:
+    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+
+  This is the SESSION variant of the .card.code type: the same terminal window, but a
+  transcript instead of a numbered file. No line-number gutter — use these line roles:
+    class="line ask"          the user's request row (clay band + rail)
+      <span class="u">           the request text
+    <span class="dot"></span>  Claude's action bullet (a CSS circle — leave it empty)
+    <span class="tool">        a tool name (Bash / Edit / Update / Read)
+    <span class="br">          a └ result branch (muted)
+    <span class="ok">          added / success text (green)
+    <span class="t-str/t-num"> reuse the syntax tokens inside a result if useful
+  Cap the last line with <span class="caret"></span>. Keep it to ONE arc — short lines
+  (~<=42 chars) and ~<=9 rows so it stays legible in the feed. Be honest: show a real
+  request and a real outcome, not an inflated one.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card code">
+    <div class="toprow">
+      <div class="eyebrow">ONE PROMPT, ONE FIX</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <div class="terminal">
+      <div class="titlebar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span class="title">claude — ~/acme-api</span>
+      </div>
+      <div class="term-body">
+        <span class="line ask"><span class="src"><span class="u">&gt; fix the failing auth test</span></span></span>
+        <span class="line"><span class="src"> </span></span>
+        <span class="line"><span class="src"><span class="dot"></span> <span class="tool">Bash</span>(npm test auth)</span></span>
+        <span class="line"><span class="src">  <span class="br">&#x2514; FAIL  token expiry off-by-one</span></span></span>
+        <span class="line"><span class="src"><span class="dot"></span> <span class="tool">Update</span>(auth.ts)</span></span>
+        <span class="line"><span class="src">  <span class="br">&#x2514; <span class="ok">+ exp = now + ttl - <span class="t-num">1</span></span></span></span></span>
+        <span class="line"><span class="src"> </span></span>
+        <span class="line"><span class="src"><span class="dot"></span> Tests pass. Shipped the fix.<span class="caret"></span></span></span>
+      </div>
+    </div>
+
+    <p class="kicker">One prompt, a red test to green &mdash; the loop that makes <b>Claude Code</b> stick.</p>
+  </div>
+</body>
+</html>
