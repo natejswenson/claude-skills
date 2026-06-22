@@ -171,14 +171,18 @@ pull the byline automatically — don't hardcode it.
 
 #### Carousels (multi-slide documents — highest reach)
 
-A carousel is a multi-page PDF posted as a **document**. It gets ~1.45× the reach of a single
-image and the most dwell time and saves, so it's the best visual for educational / how-to /
-step-by-step posts. Workflow:
+A carousel is a multi-page PDF posted as a **document** — the highest-reach native format and
+the best visual for educational / how-to / step-by-step posts. The template is **portrait 4:5
+(1200×1500)** to own the mobile feed. Workflow:
 
-1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html` — one
-   `<div class="slide card …">` per page (cover → numbered `.point` slides → a `.cta` with a
-   "Save this" prompt). One idea per slide, ~5–8 slides. Same authenticity rule: never invent
-   numbers or structure.
+1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html`, following
+   the blueprint: **cover (hook) → 4–6 numbered `.point` slides → a `.recap` list → a `.cta`**.
+   One idea per slide, **≤~30 words/slide**, **7–9 slides**. Set `--i` (this slide's number) and
+   `--n` (total) on every `.slide` via `style="…"` — they drive the **progress bar** and the
+   `NN / TOTAL` counter; keep `--n` equal to your real slide count. The series `.eyebrow` and the
+   byline repeat on every slide for branding. End on **ONE action** — default to a single comment
+   question (comments are the #1 reach signal); swap to "Save this" if saves fit better. Same
+   authenticity rule: never invent numbers or structure.
 2. **Render:** `.venv/bin/python scripts/render_carousel.py --in images/<slug>-carousel.html --out images/<slug>.pdf`
    — writes preview PNGs (`images/<slug>-NN.png`) and the `images/<slug>.pdf` to post, and opens
    the PDF.

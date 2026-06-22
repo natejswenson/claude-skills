@@ -1,19 +1,29 @@
 <!doctype html>
 <!--
-  CAROUSEL TYPE — a multi-slide LinkedIn document (the highest-reach native format).
-  Copy to images/<slug>-carousel.html, fill in the slides, then:
+  CAROUSEL TYPE — a multi-slide LinkedIn DOCUMENT (the highest-reach native format, and the
+  showstopper of the card family). Copy to images/<slug>-carousel.html, fill the slides, then:
     render_carousel.py --in images/<slug>-carousel.html --out images/<slug>.pdf
   That writes preview PNGs (images/<slug>-NN.png) to approve AND the PDF to post:
     linkedin_post.py --file drafts/<post>.md --document images/<slug>.pdf --title "<title>"
 
-  Rules:
-   * Each page is a `<div class="slide card ...">` — 1200x1200, styled by diagram.css.
-   * ONE idea per slide; keep it to ~5-8 slides. Slides 1 = cover (the hook), middle =
-     .point (a numbered step), last = .cta (the takeaway + an explicit "Save this").
-   * Cover and CTA carry the byline in a .toprow (crop-safe). Numbered slides carry a
-     .pageno. Update the NN / TOTAL counts by hand to match your slide count.
+  THE BLUEPRINT (research-backed): cover (hook) → context → 4-6 numbered points → recap → CTA.
+  Rules that actually move reach:
+   * PORTRAIT 4:5 — each page is 1200x1500 (handled by diagram.css; don't set sizes here).
+   * ONE idea per slide; <=~30 words/slide. Text walls are the #1 swipe-through killer.
+   * Set --i (this slide's number) and --n (total) on EVERY .slide via style="" — they drive
+     the progress bar and the "NN / TOTAL" counter. Keep --n equal to your real slide count.
+   * The .eyebrow (series label, top-left) and the .footer brand (byline, bottom-left) repeat
+     on every slide for consistent branding — keep the eyebrow text identical across slides.
+   * Cover: a 6-10 word hook, bold the pivot word with <b> for an accent pop. Add .sub + a
+     .swipe cue. It deliberately looks different from the content slides.
+   * Points: an accent .idx, a big <h2> statement, a short .body (bold the key phrase).
+   * Recap: list the framework so a skimmer gets the whole thing on one page.
+   * CTA: end on ONE action. Comments are the #1 reach signal — default to a single question;
+     swap to "Save this" if saves fit better. Keep the follow line soft + secondary.
    * Never invent numbers/structure that aren't true (same rule as voice-notes.md).
-   * Don't add one-off inline CSS; extend diagram.css if you need a new treatment.
+   * Don't add one-off inline CSS (beyond --i/--n); extend diagram.css for new treatments.
+
+  The example below is a complete, swappable 8-slide carousel — replace the copy with yours.
 -->
 <html lang="en">
 <head>
@@ -22,43 +32,92 @@
 </head>
 <body>
 
-  <!-- 1 — cover: the hook -->
-  <div class="slide card cover">
-    <div class="toprow">
-      <div class="eyebrow">EYEBROW LABEL</div>
-      <div class="footer brand"></div>
-    </div>
-    <h1>The one-line hook that makes someone stop scrolling.</h1>
-    <p class="sub">A single supporting line that frames the payoff.</p>
+  <!-- 1 — COVER: the hook (looks distinct from the content slides) -->
+  <div class="slide card cover" style="--i:1; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <h1>Most devs use coding agents <b>wrong</b>.</h1>
+    <p class="sub">5 habits that separate shipping from spinning your wheels.</p>
+    <div class="footer brand"></div>
     <span class="swipe">Swipe &rarr;</span>
   </div>
 
-  <!-- 2..n — points: one idea each -->
-  <div class="slide card point">
+  <!-- 2..n — POINTS: one idea each -->
+  <div class="slide card point" style="--i:2; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
     <span class="idx">01</span>
-    <h2>The first idea, as a short statement</h2>
-    <p class="body">Two lines of plain explanation. Bold the <b>key phrase</b>; show code or
-      identifiers as <code>inline_code</code>.</p>
-    <span class="pageno">02 / 04</span>
+    <h2>Give it a target, not a vibe</h2>
+    <p class="body">Spell out the outcome and the constraints up front. <b>Vague prompts get vague code.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>02</b> / 08</span>
   </div>
 
-  <div class="slide card point">
+  <div class="slide card point" style="--i:3; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
     <span class="idx">02</span>
-    <h2>The second idea</h2>
-    <p class="body">Keep each slide to one point; let the body breathe.</p>
-    <span class="pageno">03 / 04</span>
+    <h2>Make it read before it writes</h2>
+    <p class="body">Point it at the real files first. <b>Context beats cleverness</b> every single time.</p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>03</b> / 08</span>
   </div>
 
-  <!-- last — cta: the takeaway + a Save prompt (saves are the #1 reach signal) -->
-  <div class="slide card cta">
-    <div class="toprow">
-      <div class="eyebrow">THE TAKEAWAY</div>
-      <div class="footer brand"></div>
-    </div>
-    <h2>The one sentence you want them to remember.</h2>
-    <p class="sub">An optional supporting line.</p>
-    <span class="save">&#9634; Save this for later</span>
-    <span class="pageno">04 / 04</span>
+  <div class="slide card point" style="--i:4; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <span class="idx">03</span>
+    <h2>Review the diff like a PR</h2>
+    <p class="body">Read every line as if a teammate wrote it. <b>You own what you merge.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>04</b> / 08</span>
+  </div>
+
+  <div class="slide card point" style="--i:5; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <span class="idx">04</span>
+    <h2>Verify with a real run</h2>
+    <p class="body">Tests and a live run &mdash; not a glance. <b>&ldquo;Looks right&rdquo; isn&rsquo;t evidence.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>05</b> / 08</span>
+  </div>
+
+  <div class="slide card point" style="--i:6; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <span class="idx">05</span>
+    <h2>Ship in small, reversible steps</h2>
+    <p class="body">One commit per idea. Easy to review, <b>easy to roll back.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>06</b> / 08</span>
+  </div>
+
+  <!-- n-1 — RECAP: the whole framework on one page -->
+  <div class="slide card recap" style="--i:7; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <h2>The 5 habits</h2>
+    <ul>
+      <li>A clear <b>target</b>, not a vibe</li>
+      <li><b>Read</b> before it writes</li>
+      <li>Review the <b>diff</b> like a PR</li>
+      <li><b>Verify</b> with a real run</li>
+      <li>Small, <b>reversible</b> commits</li>
+    </ul>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>07</b> / 08</span>
+  </div>
+
+  <!-- last — CTA: the takeaway + ONE action -->
+  <div class="slide card cta" style="--i:8; --n:8">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <h2>Treat the agent like a sharp junior dev.</h2>
+    <p class="sub">Clear targets in, reviewed code out.</p>
+    <span class="action">Which habit do you skip? Comment &darr;</span>
+    <p class="follow">Follow <b>Nate Swenson</b> for more.</p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>08</b> / 08</span>
   </div>
 
 </body>

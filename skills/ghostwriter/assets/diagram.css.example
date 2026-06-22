@@ -422,47 +422,83 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.flow .fnode.agent::before { --badge: var(--accent); }
 .card.flow .fnode.out::before   { --badge: var(--muted); color: var(--bg); }
 
-/* ---- CAROUSEL: a multi-slide LinkedIn document (the highest-reach native format,
-   ~1.45x a single image). Each .slide is a full 1200x1200 page that shares the card
-   brand styling; author from assets/card-template-carousel.html and render with
-   scripts/render_carousel.py, which screenshots every .slide and stitches them into one
-   PDF to post as a document. Keep ~5-8 slides, ONE idea per slide. ---- */
+/* ---- CAROUSEL: a multi-slide LinkedIn DOCUMENT — the highest-reach native format and the
+   showstopper of the family (carousels pull the top engagement of any LI format). Authored
+   as one HTML file of .slide pages and rendered by scripts/render_carousel.py (screenshots
+   each slide + stitches a PDF). Research-driven build:
+     • PORTRAIT 4:5 (1200x1500) — owns the most vertical space in the mobile feed.
+     • 7-9 slides, ONE idea per slide, <=~30 words/slide — text walls kill swipe-through.
+     • A persistent footer brand + a PROGRESS BAR on every slide (seeing "3/8" pulls people
+       to the end). Drive both by setting --i (this slide's number) and --n (total) on the
+       .slide, e.g. <div class="slide card point" style="--i:3; --n:8">.
+     • ONE accent (60/30/10) — accent only on the index, the bar and the CTA.
+     • A cover that visually CONTRASTS with the content slides and stays legible at thumbnail.
+     • End on ONE action — comments are the #1 reach signal, saves the easy high-quality one.
+   Slide kinds: .cover (hook) · .point (a numbered idea) · .recap (the list) · .cta. ---- */
 .card.slide {
-  width: 1200px; height: 1200px; padding: 96px; position: relative; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: center; gap: 30px;
-  background: radial-gradient(1200px 600px at 85% -10%, rgba(88,166,255,0.16), transparent 60%),
-              radial-gradient(900px 500px at -10% 110%, rgba(63,185,80,0.12), transparent 60%),
-              var(--bg);
+  --i: 1; --n: 8;                               /* this slide's number / the total */
+  width: 1200px; height: 1500px; padding: 110px 110px 200px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 34px;
+  background:
+    radial-gradient(1200px 680px at 85% -12%, rgba(88,166,255,0.14), transparent 60%),
+    radial-gradient(1000px 560px at -10% 112%, rgba(63,185,80,0.10), transparent 60%),
+    var(--bg);
 }
 .card.slide::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--border); pointer-events: none; }
 
-/* byline inline at the top (same crop-safe pattern as the other cards) */
-.card.slide .toprow { position: absolute; top: 96px; left: 96px; right: 96px; display: flex; align-items: center; justify-content: space-between; }
-.card.slide .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
-.card.slide .footer.brand::before { width: 52px; height: 52px; }
+/* Persistent branding: a series eyebrow pinned top-left and the name byline bottom-left, on
+   every slide (a carousel is a PDF read page-by-page, so the bottom byline is always seen). */
+.card.slide .eyebrow { position: absolute; top: 104px; left: 110px; margin: 0; font: 600 27px/1.2 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.card.slide .footer { position: absolute; left: 110px; bottom: 92px; margin: 0; gap: 15px; font-size: 25px; color: var(--muted); }
+.card.slide .footer.brand::before { width: 48px; height: 48px; }
 
-/* page counter (e.g. 02 / 06) and the cover's swipe hint */
-.card.slide .pageno { position: absolute; right: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--muted); letter-spacing: 0.1em; }
-.card.slide .swipe  { position: absolute; left: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+/* Progress bar (fills to --i/--n) + the page counter, bottom of every content slide. */
+.card.slide .rail { position: absolute; left: 110px; right: 110px; bottom: 168px; height: 5px; border-radius: 3px; background: var(--surface-2); }
+.card.slide .rail::after { content: ""; position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: var(--accent); width: calc(var(--i) / var(--n) * 100%); }
+.card.slide .pageno { position: absolute; right: 110px; bottom: 90px; font: 700 27px/1 var(--mono); color: var(--muted); letter-spacing: 0.12em; }
+.card.slide .pageno b { color: var(--text); font-weight: 800; }
+/* the cover's swipe cue sits where the page counter would be */
+.card.slide .swipe { position: absolute; right: 110px; bottom: 90px; font: 800 28px/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
 
-/* COVER: eyebrow + byline up top, a big hook headline */
-.card.slide.cover h1 { font-size: 98px; line-height: 1.02; }
-
-/* POINT: a big index number, a headline, a short body */
-.card.slide.point { gap: 24px; }
-.card.slide.point .idx  { font: 800 40px/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; }
-.card.slide.point h2    { font: 800 72px/1.05 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
-.card.slide.point .body { font: 400 38px/1.4 var(--font); color: var(--muted); margin: 0; max-width: 940px; }
-.card.slide.point .body b, .card.slide.point .body strong { color: var(--text); font-weight: 700; }
-.card.slide.point code  { font: 600 0.9em var(--mono); color: var(--accent-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px 10px; }
-
-/* CTA: the takeaway + an explicit Save prompt (saves are the #1 reach signal) */
-.card.slide.cta h2 { font: 800 78px/1.04 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
-.card.slide.cta .save {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 14px;
-  background: var(--surface); border: 1.5px solid var(--accent-3); border-radius: 999px;
-  padding: 16px 32px; font: 700 30px/1 var(--mono); color: var(--accent-3);
+/* ── COVER: contrasts with the content — a heavier accent glow and an oversized hook. Bold
+   the pivot word with <b> for an accent pop; keep the hook to 6-10 words, legible at thumb. ── */
+.card.slide.cover {
+  background:
+    radial-gradient(1000px 760px at 50% -12%, rgba(88,166,255,0.22), transparent 62%),
+    radial-gradient(900px 620px at 105% 110%, rgba(247,120,186,0.14), transparent 60%),
+    var(--bg);
 }
+.card.slide.cover h1 { font: 800 106px/1.02 var(--font); letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
+.card.slide.cover h1 b { color: var(--accent); }
+.card.slide.cover .sub { font: 400 45px/1.34 var(--font); color: var(--muted); margin: 14px 0 0; max-width: 980px; text-wrap: balance; }
+
+/* ── POINT: one idea — an accent index, a big statement, a short body. ── */
+.card.slide.point { gap: 26px; }
+.card.slide.point .idx  { font: 800 40px/1 var(--mono); color: var(--accent); letter-spacing: 0.12em; }
+.card.slide.point h2    { font: 800 90px/1.04 var(--font); letter-spacing: -0.025em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.point .body { font: 400 45px/1.42 var(--font); color: var(--muted); margin: 0; max-width: 960px; text-wrap: pretty; }
+.card.slide.point .body b, .card.slide.point .body strong { color: var(--text); font-weight: 700; }
+.card.slide.point code  { font: 600 0.9em var(--mono); color: var(--accent-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px 12px; }
+
+/* ── RECAP: the framework recapped as a tight auto-numbered list with accent markers. ── */
+.card.slide.recap h2 { font: 800 78px/1.04 var(--font); letter-spacing: -0.02em; margin: 0 0 16px; color: var(--text); }
+.card.slide.recap ul { list-style: none; margin: 0; padding: 0; counter-reset: item; display: flex; flex-direction: column; gap: 30px; }
+.card.slide.recap li { position: relative; padding-left: 84px; font: 500 46px/1.3 var(--font); color: var(--text); }
+.card.slide.recap li::before { content: counter(item, decimal-leading-zero); counter-increment: item; position: absolute; left: 0; top: 0.18em; font: 800 30px/1 var(--mono); color: var(--accent); }
+.card.slide.recap li b { font-weight: 800; }
+
+/* ── CTA: the takeaway + ONE action. Lead with a solid accent prompt (the single ask); keep
+   a soft follow line secondary. Swap the prompt copy to "Save this" if saves fit better. ── */
+.card.slide.cta { background: radial-gradient(1000px 740px at 50% 0%, rgba(63,185,80,0.16), transparent 62%), var(--bg); }
+.card.slide.cta h2 { font: 800 88px/1.03 var(--font); letter-spacing: -0.025em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.cta .sub { font: 400 45px/1.34 var(--font); color: var(--muted); margin: 8px 0 0; max-width: 960px; text-wrap: balance; }
+.card.slide.cta .action {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 16px; margin-top: 26px;
+  background: var(--accent-2); border-radius: 999px; padding: 24px 44px;
+  font: 800 38px/1 var(--font); color: #06210F; letter-spacing: -0.01em;
+}
+.card.slide.cta .follow { margin: 30px 0 0; font: 600 32px/1 var(--mono); color: var(--muted); }
+.card.slide.cta .follow b { color: var(--text); font-weight: 800; }
 
 /* ---- CODE card TYPE: a code snippet shown as a terminal coding session. A macOS-style
    window (traffic-light dots + filename) sits on a --surface panel that lifts off the
