@@ -429,8 +429,9 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
      • PORTRAIT 4:5 (1200x1500) — owns the most vertical space in the mobile feed.
      • 7-9 slides, ONE idea per slide, <=~30 words/slide — text walls kill swipe-through.
      • A persistent footer brand + a PROGRESS BAR on every slide (seeing "3/8" pulls people
-       to the end). Drive both by setting --i (this slide's number) and --n (total) on the
-       .slide, e.g. <div class="slide card point" style="--i:3; --n:8">.
+       to the end). Drive the bar by setting --i (this slide's number) and --n (total) on the
+       .slide, e.g. <div class="slide card point" style="--i:3; --n:8">. The "NN / TOTAL" page
+       counter is literal text — keep it in sync by hand (and --n equal to the real slide count).
      • ONE accent (60/30/10) — accent only on the index, the bar and the CTA.
      • A cover that visually CONTRASTS with the content slides and stays legible at thumbnail.
      • End on ONE action — comments are the #1 reach signal, saves the easy high-quality one.

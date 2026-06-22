@@ -178,8 +178,9 @@ the best visual for educational / how-to / step-by-step posts. The template is *
 1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html`, following
    the blueprint: **cover (hook) → 4–6 numbered `.point` slides → a `.recap` list → a `.cta`**.
    One idea per slide, **≤~30 words/slide**, **7–9 slides**. Set `--i` (this slide's number) and
-   `--n` (total) on every `.slide` via `style="…"` — they drive the **progress bar** and the
-   `NN / TOTAL` counter; keep `--n` equal to your real slide count. The series `.eyebrow` and the
+   `--n` (total) on every `.slide` via `style="…"` — they drive the **progress bar** only. The
+   `NN / TOTAL` page counter is literal text you keep in sync by hand; keep `--n` equal to your
+   real slide count. The series `.eyebrow` and the
    byline repeat on every slide for branding. End on **ONE action** — default to a single comment
    question (comments are the #1 reach signal); swap to "Save this" if saves fit better. Same
    authenticity rule: never invent numbers or structure.
