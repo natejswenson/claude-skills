@@ -296,8 +296,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.flow .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
 .card.flow .footer.brand::before { width: 52px; height: 52px; }
 
-.card.flow h1 { font-size: 66px; line-height: 1.05; margin: 16px 0 10px; }
-.card.flow .sub { font-size: 30px; }
+.card.flow h1 { font-size: 64px; line-height: 1.04; margin: 16px 0 8px; letter-spacing: -0.02em; }
+.card.flow .sub { font-size: 29px; }
 
 /* The flow grows to fill the space under the header and centers its stages. It is the
    positioning context for the spine, reserves a left gutter for the badges, and seeds
@@ -305,38 +305,50 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.flow .flow {
   position: relative; counter-reset: step;
   display: flex; flex-direction: column; align-items: stretch;
-  flex: 0 1 auto; width: 100%; gap: 22px; margin: auto 0; padding-left: 78px;
+  flex: 0 1 auto; width: 100%; gap: 18px; margin: auto 0; padding-left: 80px;
 }
-/* The spine: one vertical rail behind the badges, fading at both ends so it reads as
+/* The spine: one crisp 2px rail behind the badges, fading at both ends so it reads as
    deliberate regardless of how tall the first/last stage is. */
 .card.flow .flow::before {
-  content: ""; position: absolute; left: 28px; top: 6px; bottom: 6px; width: 3px; border-radius: 3px;
-  background: linear-gradient(180deg, transparent 0, var(--border) 7%, var(--border) 93%, transparent 100%);
+  content: ""; position: absolute; left: 28px; top: 4px; bottom: 4px; width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, transparent 0, var(--border) 8%, var(--border) 92%, transparent 100%);
 }
-/* Stage chip: a uniform card; the layer colour now lives in the badge, not a side bar. */
+/* Stage chip: a uniform card with a hairline edge, a whisper of top sheen, and a tight
+   layered shadow (a 1px ambient lift + a soft drop) so it reads crisp, not muddy. The
+   layer colour lives in the badge, not a side bar. */
 .card.flow .fnode {
   position: relative; counter-increment: step;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: 16px; padding: 26px 32px; text-align: left;
-  display: flex; flex-direction: column; gap: 9px; box-shadow: 0 12px 30px rgba(0,0,0,0.34);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0) 42%), var(--surface);
+  border: 1px solid var(--border); border-radius: 14px; padding: 23px 30px; text-align: left;
+  display: flex; flex-direction: column; gap: 7px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 24px rgba(0,0,0,0.28);
+}
+/* A short connector tick wiring each badge to its card, so the stage reads as wired to
+   the spine rather than floating beside it. */
+.card.flow .fnode::after {
+  content: ""; position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 2px; background: var(--border);
 }
 /* Numbered badge, centred on the spine in the left gutter. The bg-coloured ring punches
-   the rail so the line never runs through the digit. */
+   the rail so the line never runs through the digit; a hairline accent ring and a soft
+   same-hue shadow give it crisp definition. */
 .card.flow .fnode::before {
-  content: counter(step);
-  position: absolute; left: -64px; top: 50%; transform: translateY(-50%);
-  width: 41px; height: 41px; border-radius: 50%;
+  content: counter(step); z-index: 1;
+  position: absolute; left: -69px; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font: 800 23px/1 var(--mono); color: #0A0E16;
-  background: var(--muted); box-shadow: 0 0 0 6px var(--bg);
+  font: 800 22px/1 var(--mono); color: #0A0E16;
+  background: var(--muted);
+  box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px rgba(255,255,255,0.07), 0 5px 14px rgba(0,0,0,0.4);
 }
-.card.flow .fnode .t { font: 700 37px/1.12 var(--font); color: var(--text); letter-spacing: -0.01em; }
-.card.flow .fnode .e { font: 500 23px/1.35 var(--mono); color: var(--muted); }
-.card.flow .fnode.det::before   { background: var(--accent-2); }
-.card.flow .fnode.tools::before { background: var(--accent-3); }
-.card.flow .fnode.agent::before { background: var(--accent); }
-.card.flow .fnode.out::before   { background: var(--muted); color: var(--bg); }
-.card.flow .fnode.out           { background: var(--surface-2); }
+.card.flow .fnode .t { font: 700 36px/1.1 var(--font); color: var(--text); letter-spacing: -0.015em; }
+.card.flow .fnode .e { font: 500 22px/1.35 var(--mono); color: var(--muted); letter-spacing: -0.005em; }
+/* Per-layer badge colour, each with a soft halo in its own hue for a polished, wired-up look. */
+.card.flow .fnode.det::before   { background: var(--accent-2); box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px rgba(63,185,80,0.30),  0 5px 16px rgba(63,185,80,0.28); }
+.card.flow .fnode.tools::before { background: var(--accent-3); box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px rgba(247,120,186,0.30), 0 5px 16px rgba(247,120,186,0.28); }
+.card.flow .fnode.agent::before { background: var(--accent);   box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px rgba(88,166,255,0.30),  0 5px 16px rgba(88,166,255,0.28); }
+.card.flow .fnode.out::before   { background: var(--muted); color: var(--bg); box-shadow: 0 0 0 6px var(--bg), 0 0 0 7px rgba(157,167,179,0.24), 0 5px 14px rgba(0,0,0,0.4); }
+.card.flow .fnode.out           { background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0) 42%), var(--surface-2); }
 
 /* ---- CAROUSEL: a multi-slide LinkedIn document (the highest-reach native format,
    ~1.45x a single image). Each .slide is a full 1200x1200 page that shares the card
