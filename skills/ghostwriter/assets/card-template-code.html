@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  CODE card scaffold (terminal coding session — for sharing a snippet). Copy to
+  images/<slug>.html, fill in, then:
+    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+
+  A macOS-style terminal window with bat-style line numbers and theme-colored syntax.
+  Highlight BY HAND — wrap tokens in spans:
+    <span class="t-kw">   keyword   (def/return/const/if/import)
+    <span class="t-fn">   function/method name
+    <span class="t-str">  string literal
+    <span class="t-num">  number / constant
+    <span class="t-com">  comment
+    <span class="t-pr">   shell prompt glyph (if you show a command line)
+  Mark the ONE money line class="line hot" (faint accent band). Drop a
+  <span class="caret"></span> at the end of the last line for the live-session look.
+  Indentation inside .src is literal spaces; escape < as &lt;. Keep it to ONE idea:
+  short lines (~<=42 chars) and ~<=10 rows so it stays legible in the feed. Lines wider than
+  the window are SILENTLY TRUNCATED — clipped at the right edge with no ellipsis, so any
+  overflow text is simply lost.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card code">
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <div class="terminal">
+      <div class="titlebar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span class="title">fib.py — python3</span>
+      </div>
+      <div class="term-body">
+        <span class="line"><span class="no">1</span><span class="src"><span class="t-kw">def</span> <span class="t-fn">fib</span>(n, memo={}):</span></span>
+        <span class="line"><span class="no">2</span><span class="src">    <span class="t-kw">if</span> n <span class="t-kw">in</span> memo:</span></span>
+        <span class="line"><span class="no">3</span><span class="src">        <span class="t-kw">return</span> memo[n]</span></span>
+        <span class="line"><span class="no">4</span><span class="src">    <span class="t-kw">if</span> n &lt; <span class="t-num">2</span>:  <span class="t-com"># base case</span></span></span>
+        <span class="line"><span class="no">5</span><span class="src">        <span class="t-kw">return</span> n</span></span>
+        <span class="line hot"><span class="no">6</span><span class="src">    memo[n] = <span class="t-fn">fib</span>(n<span class="t-num">-1</span>) + <span class="t-fn">fib</span>(n<span class="t-num">-2</span>)</span></span>
+        <span class="line"><span class="no">7</span><span class="src">    <span class="t-kw">return</span> memo[n]<span class="caret"></span></span></span>
+      </div>
+    </div>
+
+    <p class="kicker">Cache each subproblem once and an O(2&#8319;) call tree collapses to <b>O(n)</b>.</p>
+  </div>
+</body>
+</html>

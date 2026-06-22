@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.3.0
+version: 0.4.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -126,14 +126,16 @@ pull the byline automatically — don't hardcode it.
   sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`)
   for one punchy idea. Card templates to copy:
   - `assets/card-template.html` — general hero (headline / before-after / stat / quote).
-  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event);
-    the date is the hero, keep words minimal so it's scannable at a glance.
+  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event),
+    rendered as a realistic ADMIT-ONE ticket; the date is the hero, keep words minimal so it's
+    scannable at a glance.
   - `assets/card-template-ramp.html` — **ramp type** (an accelerating progression); three
     ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
     figures must be accurate.
   - `assets/card-template-stem.html` — **STEM type** (STEM / education / outreach posts);
-    playful by design — a chunky toy-block S T E M motif, confetti, a rounded hero headline.
-    Reach for it when the tone is kid-energy / inspirational rather than buttoned-up.
+    the warm member of the family — same clean dark base, kept playful by a chunky toy-block
+    S T E M motif and a soft four-hue corner glow. Reach for it when the tone is kid-energy /
+    inspirational rather than buttoned-up.
   - `assets/card-template-flow.html` — **flow type** (architecture / pipeline / data-flow);
     a clean, linear diagram of color-coded stage chips (a left accent bar marks the layer: green
     `.det` / pink `.tools` / blue `.agent` / grey `.out`), each with a bold title and one muted
@@ -142,6 +144,16 @@ pull the byline automatically — don't hardcode it.
     phone size, where a Mermaid `.mmd` tends to come out as a skinny, hard-to-read strip. Keep it
     calm: ~4-5 stages, one example each (show sub-steps inline as `A -> B -> C`, don't nest boxes).
     The byline sits inline in the `.toprow` so a feed crop can't remove it.
+  - `assets/card-template-code.html` — **code type** (share a snippet); a macOS-style terminal
+    window with bat-style line numbers and theme-colored syntax. Highlight by hand — wrap tokens
+    in `<span class="t-kw/t-fn/t-str/t-num/t-com">`, mark the one money line `class="line hot"`,
+    and cap the last line with `<span class="caret">`. Keep it to ONE idea: short lines (≤~42
+    chars) and ≤~10 rows so it stays legible at phone size.
+  - `assets/card-template-claude.html` — **Claude Code session** (the session variant of the
+    code type): same terminal window, but a *transcript* — the user's request in a clay band,
+    Claude's action bullets, tool names, and `└` result branches — for "here's what I shipped
+    with Claude Code" posts. Uses Anthropic's clay accent so it reads as Claude Code at a glance;
+    be honest — show a real request and a real outcome.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — this is the highest-reach native format and the right choice for
     educational / how-to / step-by-step posts.
@@ -159,14 +171,19 @@ pull the byline automatically — don't hardcode it.
 
 #### Carousels (multi-slide documents — highest reach)
 
-A carousel is a multi-page PDF posted as a **document**. It gets ~1.45× the reach of a single
-image and the most dwell time and saves, so it's the best visual for educational / how-to /
-step-by-step posts. Workflow:
+A carousel is a multi-page PDF posted as a **document** — the highest-reach native format and
+the best visual for educational / how-to / step-by-step posts. The template is **portrait 4:5
+(1200×1500)** to own the mobile feed. Workflow:
 
-1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html` — one
-   `<div class="slide card …">` per page (cover → numbered `.point` slides → a `.cta` with a
-   "Save this" prompt). One idea per slide, ~5–8 slides. Same authenticity rule: never invent
-   numbers or structure.
+1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html`, following
+   the blueprint: **cover (hook) → 4–6 numbered `.point` slides → a `.recap` list → a `.cta`**.
+   One idea per slide, **≤~30 words/slide**, **7–9 slides**. Set `--i` (this slide's number) and
+   `--n` (total) on every `.slide` via `style="…"` — they drive the **progress bar** only. The
+   `NN / TOTAL` page counter is literal text you keep in sync by hand; keep `--n` equal to your
+   real slide count. The series `.eyebrow` and the
+   byline repeat on every slide for branding. End on **ONE action** — default to a single comment
+   question (comments are the #1 reach signal); swap to "Save this" if saves fit better. Same
+   authenticity rule: never invent numbers or structure.
 2. **Render:** `.venv/bin/python scripts/render_carousel.py --in images/<slug>-carousel.html --out images/<slug>.pdf`
    — writes preview PNGs (`images/<slug>-NN.png`) and the `images/<slug>.pdf` to post, and opens
    the PDF.

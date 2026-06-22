@@ -1,10 +1,12 @@
 <!doctype html>
 <!--
-  STEM card scaffold (playful — for STEM / education / outreach posts). Copy to
+  STEM card scaffold (the warm one — for STEM / education / outreach posts). Copy to
   images/<slug>.html, fill in, then:
     render_image.py --type card --in images/<slug>.html --out images/<slug>.png
-  Brighter and chunkier than the other cards by design: toy-block S T E M motif +
-  confetti. Keep it to one punchy idea; the headline is the hero.
+  Same clean dark family as the other cards, kept playful by a chunky toy-block
+  S T E M motif and a soft four-hue corner glow. The byline rides inline in the
+  .toprow (top-right) so a feed crop can't drop it. Keep it to one punchy idea; the
+  headline is the hero.
 -->
 <html lang="en">
 <head>
@@ -20,11 +22,13 @@
       <span class="block b4">M</span>
     </div>
 
-    <div class="eyebrow">EYEBROW LABEL</div>
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
     <h1>One playful line for the big idea.</h1>
     <p class="kicker">A supporting line, with the key phrase in <b>bold</b>.</p>
-
-    <div class="footer brand"></div>
   </div>
 </body>
 </html>
