@@ -202,27 +202,40 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   width: 40px; height: 40px; box-shadow: 0 0 0 2px var(--ink);
 }
 
-/* ---- Ramp card TYPE: ascending steps showing an accelerating progression.
-   Bars are illustrative (NOT to scale); the labeled figures carry the truth. ---- */
+/* ---- Ramp card TYPE: ascending steps showing an accelerating progression. Same clean,
+   minimal language as the flow card — flat bars with a hairline edge and one soft shadow;
+   only the final bar carries the accent, lifted by a soft same-hue shadow so the payoff is
+   the focal point. Bars are illustrative (NOT to scale); the labeled figures carry truth. ---- */
 #canvas.card.ramp { justify-content: center; gap: 0; }
 .card.ramp .eyebrow { margin-bottom: 14px; }
-.card.ramp h1 { font-size: 64px; margin-bottom: 64px; }
+.card.ramp h1 { font-size: 64px; margin-bottom: 64px; letter-spacing: -0.02em; }
 .card .ramp-row {
-  display: flex; align-items: flex-end; justify-content: center; gap: 60px;
+  display: flex; align-items: flex-end; justify-content: center; gap: 56px;
 }
-.card .step { display: flex; flex-direction: column; align-items: center; gap: 26px; }
-.card .step .val { font: 800 60px/1 var(--font); letter-spacing: -0.02em; color: var(--text); }
+.card .step { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.card .step .val {
+  font: 800 56px/1 var(--font); letter-spacing: -0.02em; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
 .card .step .bar {
-  width: 210px; border-radius: 22px 22px 0 0;
+  width: 200px; border-radius: 14px 14px 0 0;
   background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
 .card .step.s1 .bar { height: 130px; }
 .card .step.s2 .bar { height: 290px; }
-.card .step.s3 .bar { height: 470px; background: linear-gradient(180deg, var(--accent) 0%, rgba(88,166,255,0.15) 100%); border-color: var(--accent); }
+.card .step.s3 .bar {
+  height: 470px; border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff), var(--accent));
+  box-shadow: 0 12px 32px rgba(88,166,255,0.22);
+}
 .card .step.s3 .val { color: var(--accent); }
-.card .step .date { font: 600 28px/1 var(--mono); color: var(--muted); }
+.card .step .date {
+  font: 600 24px/1 var(--mono); color: var(--muted);
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
 .card .ramp-base { height: 1px; background: var(--border); margin-top: -1px; }
-.card.ramp .kicker { margin-top: 56px; font: 500 40px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
+.card.ramp .kicker { margin-top: 52px; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.ramp .kicker b { color: var(--text); font-weight: 700; }
 
 /* ---- STEM card TYPE: playful, kid-energy styling for STEM / education / outreach.
