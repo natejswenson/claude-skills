@@ -215,14 +215,35 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.ramp .footer.brand::before { width: 52px; height: 52px; }
 .card.ramp h1 { font-size: 64px; margin-bottom: 56px; letter-spacing: -0.02em; }
 
-/* The chart: bars measured against a faint gridline system, a solid axis baseline, and
-   aligned axis labels below — the structure that makes it read as a real analytics chart
-   rather than bare bars. */
+/* The chart: bars measured against a faint gridline system, a solid axis baseline, a
+   trend line tracing the acceleration, and a growth-delta callout — the structure that
+   makes it read as a real analytics chart rather than bare bars. */
 .card .chart { position: relative; }
+/* Growth-delta pill, placed in the empty upper-left so it balances the rising bars. */
+.card .delta {
+  position: absolute; top: 0; left: 0; z-index: 3;
+  display: inline-flex; align-items: center; gap: 9px;
+  background: var(--surface); border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 999px; padding: 11px 22px;
+  font: 700 27px/1 var(--mono); letter-spacing: 0.01em;
+  box-shadow: 0 4px 16px rgba(88,166,255,0.16);
+}
 .card .ramp-row {
   position: relative;
   display: flex; align-items: flex-end; justify-content: center; gap: 56px;
 }
+/* Trend line over the bar tops: a crisp accent stroke with ringed data-point nodes (the
+   final node enlarged), drawn above the bars. Geometry lives in the SVG in the template. */
+.card .trendline {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 498px; z-index: 2;
+  pointer-events: none; overflow: visible;
+}
+.card .trendline polyline {
+  fill: none; stroke: var(--accent); stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+}
+.card .trendline circle { fill: var(--accent); stroke: var(--bg); stroke-width: 4; }
+.card .trendline circle.last { stroke-width: 5; }
 /* Faint horizontal gridlines behind the bars, extended a little past them on each side
    for an axis feel. They sit below the bars (z-index) so the bars read as sitting on them. */
 .card .ramp-row::before {
