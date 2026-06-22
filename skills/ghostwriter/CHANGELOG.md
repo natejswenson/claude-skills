@@ -4,6 +4,33 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-22
+
+### Added
+- **`code` card type** — share a snippet as a terminal coding session: a macOS-style window
+  (traffic-light dots + filename), `bat`-style line-number gutter, theme-colored syntax tokens
+  (`.t-kw/.t-fn/.t-str/.t-num/.t-com`, retheme via `--t-*`), one focal `.line.hot`, and a solid
+  accent caret. `assets/card-template-code.html`. Syntax is hand-authored token spans so the
+  card render path stays deterministic and JS-free.
+- **`claude` card type** — a Claude Code *session* variant of the code card: a transcript
+  (request → action bullets → `└` result branches) in Anthropic's clay accent, for
+  "shipped with Claude Code" posts. `assets/card-template-claude.html`.
+
+### Changed
+- **Carousel rebuilt as the showstopper**, grounded in current LinkedIn document-post research.
+  Switched from 1200×1200 square to **portrait 4:5 (1200×1500)** to own the mobile feed
+  (`scripts/render_carousel.py` renders + stitches the PDF at the new ratio). New slide system:
+  a cover that contrasts with content, numbered `.point` slides, a new `.recap` framework slide,
+  and a `.cta` that ends on ONE action. A persistent progress bar + `NN/TOTAL` counter + byline
+  on every slide; the bar fills from per-slide `--i/--n` custom props. One-accent (60/30/10)
+  discipline throughout.
+- **Redesigned the whole card family into one clean, minimal, professional language:** date →
+  realistic ADMIT-ONE ticket; flow → numbered vertical spine; ramp → a real analytics chart
+  (gridlines, axis baseline, SVG trend line, growth-delta pill); general hero → grid-aligned
+  mapping rows with accent key-markers; stem → calmed onto the dark family base (dropped the
+  confetti + saturated gradient, kept the chunky toy-block S T E M motif). Bylines ride inline
+  in a crop-safe `.toprow` across the family.
+
 ## [0.3.0] - 2026-06-09
 
 ### Added
