@@ -4,6 +4,8 @@
   then: render_image.py --type card --in images/<slug>.html --out images/<slug>.png
   Three ascending steps; the last (s3) is highlighted. Bars are illustrative, NOT to
   scale — the labeled .val figures carry the truth, so keep them accurate.
+  The byline sits inline in the .toprow (top-right, beside the eyebrow) so a feed crop
+  of the bottom can't remove your attribution — keep it there, don't move it down.
 -->
 <html lang="en">
 <head>
@@ -12,7 +14,11 @@
 </head>
 <body>
   <div id="canvas" class="card ramp">
-    <div class="eyebrow">EYEBROW LABEL</div>
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
     <h1>One line naming the metric that's accelerating.</h1>
 
     <div class="ramp-row">
@@ -23,8 +29,6 @@
     <div class="ramp-base"></div>
 
     <p class="kicker">A supporting stat, with the key figure in <b>bold</b>.</p>
-
-    <div class="footer brand"></div>
   </div>
 </body>
 </html>
