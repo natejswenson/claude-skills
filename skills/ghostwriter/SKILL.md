@@ -126,8 +126,9 @@ pull the byline automatically — don't hardcode it.
   sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`)
   for one punchy idea. Card templates to copy:
   - `assets/card-template.html` — general hero (headline / before-after / stat / quote).
-  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event);
-    the date is the hero, keep words minimal so it's scannable at a glance.
+  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event),
+    rendered as a realistic ADMIT-ONE ticket; the date is the hero, keep words minimal so it's
+    scannable at a glance.
   - `assets/card-template-ramp.html` — **ramp type** (an accelerating progression); three
     ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
     figures must be accurate.
