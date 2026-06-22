@@ -284,11 +284,12 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.stem .kicker b { color: #FFFFFF; font-weight: 800; }
 .card.stem .footer { color: rgba(255,255,255,0.62); z-index: 1; }
 
-/* ---- FLOW card TYPE: a clean, linear architecture / pipeline diagram.
-   Color-coded stage chips (a left accent bar marks the layer) connected by simple
-   chevrons, vertically centered so the flow fills the card naturally - calm, not
-   busy. The byline sits inline in the .toprow (top-right) so a feed crop of the
-   bottom can't remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
+/* ---- FLOW card TYPE: a clean, linear architecture / pipeline diagram. The stages
+   are threaded onto a single vertical SPINE with a numbered badge at each junction,
+   so it reads as one sequenced pipeline (1 -> 2 -> 3 -> 4) rather than a stack of
+   loose chips. The badge carries the per-layer accent (det/tools/agent/out). The
+   byline sits inline in the .toprow (top-right) so a feed crop of the bottom can't
+   remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
 #canvas.card.flow { justify-content: flex-start; gap: 0; }
 
 .card.flow .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; }
@@ -298,26 +299,44 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.flow h1 { font-size: 66px; line-height: 1.05; margin: 16px 0 10px; }
 .card.flow .sub { font-size: 30px; }
 
-/* the flow grows to fill the space under the header and centers its stages */
-.card.flow .flow { display: flex; flex-direction: column; align-items: stretch; justify-content: center;
-  flex: 1 1 auto; width: 100%; gap: 2px; margin-top: 18px; }
-
-/* stage chip: a left accent bar marks the layer; bold title + a muted mono example */
+/* The flow grows to fill the space under the header and centers its stages. It is the
+   positioning context for the spine, reserves a left gutter for the badges, and seeds
+   the step counter. */
+.card.flow .flow {
+  position: relative; counter-reset: step;
+  display: flex; flex-direction: column; align-items: stretch;
+  flex: 0 1 auto; width: 100%; gap: 22px; margin: auto 0; padding-left: 78px;
+}
+/* The spine: one vertical rail behind the badges, fading at both ends so it reads as
+   deliberate regardless of how tall the first/last stage is. */
+.card.flow .flow::before {
+  content: ""; position: absolute; left: 28px; top: 6px; bottom: 6px; width: 3px; border-radius: 3px;
+  background: linear-gradient(180deg, transparent 0, var(--border) 7%, var(--border) 93%, transparent 100%);
+}
+/* Stage chip: a uniform card; the layer colour now lives in the badge, not a side bar. */
 .card.flow .fnode {
-  background: var(--surface); border: 1.5px solid var(--border); border-left: 6px solid var(--border);
+  position: relative; counter-increment: step;
+  background: var(--surface); border: 1.5px solid var(--border);
   border-radius: 16px; padding: 26px 32px; text-align: left;
   display: flex; flex-direction: column; gap: 9px; box-shadow: 0 12px 30px rgba(0,0,0,0.34);
 }
+/* Numbered badge, centred on the spine in the left gutter. The bg-coloured ring punches
+   the rail so the line never runs through the digit. */
+.card.flow .fnode::before {
+  content: counter(step);
+  position: absolute; left: -64px; top: 50%; transform: translateY(-50%);
+  width: 41px; height: 41px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font: 800 23px/1 var(--mono); color: #0A0E16;
+  background: var(--muted); box-shadow: 0 0 0 6px var(--bg);
+}
 .card.flow .fnode .t { font: 700 37px/1.12 var(--font); color: var(--text); letter-spacing: -0.01em; }
 .card.flow .fnode .e { font: 500 23px/1.35 var(--mono); color: var(--muted); }
-.card.flow .fnode.det   { border-left-color: var(--accent-2); }
-.card.flow .fnode.tools { border-left-color: var(--accent-3); }
-.card.flow .fnode.agent { border-left-color: var(--accent); }
-.card.flow .fnode.out   { border-left-color: var(--muted); background: var(--surface-2); }
-
-/* simple downward chevron between stages */
-.card.flow .vconn { display: flex; justify-content: center; padding: 11px 0; }
-.card.flow .vconn .chev { width: 15px; height: 15px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+.card.flow .fnode.det::before   { background: var(--accent-2); }
+.card.flow .fnode.tools::before { background: var(--accent-3); }
+.card.flow .fnode.agent::before { background: var(--accent); }
+.card.flow .fnode.out::before   { background: var(--muted); color: var(--bg); }
+.card.flow .fnode.out           { background: var(--surface-2); }
 
 /* ---- CAROUSEL: a multi-slide LinkedIn document (the highest-reach native format,
    ~1.45x a single image). Each .slide is a full 1200x1200 page that shares the card
