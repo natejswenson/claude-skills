@@ -323,10 +323,10 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   gap: 40px;
   /* dark family base with a restrained four-corner glow in the STEM hues */
   background:
-    radial-gradient(560px 560px at 14% 14%, rgba(88,166,255,0.16), transparent 62%),
-    radial-gradient(620px 620px at 88% 10%, rgba(247,120,186,0.14), transparent 62%),
-    radial-gradient(640px 640px at 86% 92%, rgba(63,185,80,0.12), transparent 62%),
-    radial-gradient(520px 520px at 10% 92%, rgba(242,204,96,0.12), transparent 64%),
+    radial-gradient(600px 600px at 13% 13%, rgba(88,166,255,0.20), transparent 62%),
+    radial-gradient(660px 660px at 89% 9%, rgba(247,120,186,0.18), transparent 62%),
+    radial-gradient(680px 680px at 87% 93%, rgba(63,185,80,0.16), transparent 62%),
+    radial-gradient(560px 560px at 9% 93%, rgba(242,204,96,0.16), transparent 64%),
     var(--bg);
 }
 .card.stem .blocks { display: flex; gap: 30px; justify-content: flex-start; z-index: 1; }
@@ -338,7 +338,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   display: flex; align-items: center; justify-content: center;
   border-radius: 30px;
   font: 800 84px/1 var(--font);
-  color: #11183A;
+  color: #0A0E16;
   box-shadow:
     0 16px 30px rgba(0,0,0,0.45),
     inset 0 5px 0 rgba(255,255,255,0.38),
