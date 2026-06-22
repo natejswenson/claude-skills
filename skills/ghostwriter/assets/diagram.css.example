@@ -291,14 +291,6 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
    byline sits inline in the .toprow (top-right) so a feed crop of the bottom can't
    remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
 #canvas.card.flow { justify-content: flex-start; gap: 0; }
-/* A whisper of fractal grain across the canvas for a tactile, premium surface. It sits
-   behind every element (the stage cards' own fills cover it), so it only enriches the
-   negative space — soft-light keeps it from ever reading as visible noise. */
-#canvas.card.flow::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.045; mix-blend-mode: soft-light;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-}
 
 .card.flow .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .card.flow .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
@@ -321,53 +313,38 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   content: ""; position: absolute; left: 28px; top: 4px; bottom: 4px; width: 2px; border-radius: 2px;
   background: linear-gradient(180deg, transparent 0, var(--border) 8%, var(--border) 92%, transparent 100%);
 }
-/* Stage chip — premium detailing: a LIGHT-CATCHING gradient hairline (brighter along the
-   top edge, like a real panel lit from above) via a border-box gradient over a transparent
-   border, a faint top sheen over the fill, and a tight two-layer shadow (close contact +
-   soft ambient) so it reads crisp and dimensional. --node-fill lets the OUTPUT stage swap
-   to the secondary surface without repeating the recipe. */
+/* Stage chip — minimal and flat: a single clean hairline and one soft shadow for just
+   enough lift off the canvas. No sheen, no gradient border, no glow; restraint is the
+   point. --node-fill lets the OUTPUT stage swap to the secondary surface. */
 .card.flow .fnode {
   --node-fill: var(--surface);
   position: relative; counter-increment: step;
-  border: 1px solid transparent; border-radius: 14px; padding: 23px 30px; text-align: left;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 46%) padding-box,
-    var(--node-fill) padding-box,
-    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02)) border-box;
-  display: flex; flex-direction: column; gap: 7px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.18), 0 14px 30px rgba(0,0,0,0.30);
+  background: var(--node-fill); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 28px; text-align: left;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
 .card.flow .fnode.out { --node-fill: var(--surface-2); }
-/* A short connector tick wiring each badge to its card; it fades toward the card so the
-   join reads as drawn, not bolted on. */
+/* A short hairline tick wiring each badge to its card. */
 .card.flow .fnode::after {
   content: ""; position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
-  width: 30px; height: 2px;
-  background: linear-gradient(90deg, var(--border), rgba(48,54,61,0));
+  width: 30px; height: 1px; background: var(--border);
 }
-/* Numbered badge — a DIMENSIONAL token: a top-lit radial fill in the layer hue, a crisp
-   inner highlight + base shade so it reads spherical, a bg ring that punches the spine,
-   and a soft same-hue glow. --badge is set per layer below; the tint, ring and glow are
-   all derived from it with color-mix so a new layer needs only its base colour. */
+/* Numbered badge — a flat, solid disc in the layer hue with a clean bg ring that punches
+   the spine. Minimal: the colour alone carries the layer; no gloss, no glow. */
 .card.flow .fnode::before {
   --badge: var(--muted);
   content: counter(step); z-index: 1;
   position: absolute; left: -69px; top: 50%; transform: translateY(-50%);
-  width: 40px; height: 40px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font: 800 22px/1 var(--mono); color: #0A0E16; font-variant-numeric: tabular-nums;
-  background: radial-gradient(125% 125% at 50% 16%, color-mix(in srgb, var(--badge) 70%, #fff), var(--badge) 72%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    inset 0 -2px 3px rgba(0,0,0,0.22),
-    0 0 0 6px var(--bg),
-    0 0 0 7.5px color-mix(in srgb, var(--badge) 34%, transparent),
-    0 6px 16px color-mix(in srgb, var(--badge) 32%, transparent);
+  font: 700 20px/1 var(--mono); color: #0A0E16; font-variant-numeric: tabular-nums;
+  background: var(--badge); box-shadow: 0 0 0 6px var(--bg);
 }
-.card.flow .fnode .t { font: 700 36px/1.1 var(--font); color: var(--text); letter-spacing: -0.015em; }
+.card.flow .fnode .t { font: 700 35px/1.1 var(--font); color: var(--text); letter-spacing: -0.015em; }
 .card.flow .fnode .e {
   font: 500 22px/1.4 var(--mono); letter-spacing: -0.005em; font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--muted) 88%, #fff);
+  color: var(--muted);
 }
 .card.flow .fnode.det::before   { --badge: var(--accent-2); }
 .card.flow .fnode.tools::before { --badge: var(--accent-3); }
