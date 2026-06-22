@@ -123,12 +123,19 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 }
 
 /* Footer byline. Use <div class="footer brand"></div> to pull --byline automatically,
-   or <div class="footer">custom text</div> for a one-off. */
+   or <div class="footer">custom text</div> for a one-off. By default it's pinned bottom-
+   left; place it inside a .toprow (with the eyebrow) to sit inline at the top-right. */
 .card .footer {
   position: absolute; left: 96px; bottom: 72px;
   font: 500 30px/1 var(--mono); color: var(--muted);
 }
 .card .footer.brand::before { content: var(--byline); }
+
+/* Eyebrow + byline top row: byline pushed inline to the right of the eyebrow (crop-safe,
+   matching the flow/ramp cards). The footer goes static and the avatar sizes to match. */
+.card .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; }
+.card .toprow .footer { position: static; left: auto; bottom: auto; margin: 0 0 0 auto; gap: 16px; font-size: 26px; }
+.card .toprow .footer.brand::before { width: 52px; height: 52px; }
 
 .card .pill {
   align-self: flex-start;
