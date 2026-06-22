@@ -1,11 +1,14 @@
 <!doctype html>
 <!--
-  Date / deadline card TYPE. Best for "X happens on <date>" posts (deprecations,
-  launches, events). The date is the hero; keep the other two fields short.
-  Copy to images/<slug>.html, fill the three fields, then:
+  Date / deadline card TYPE — rendered as a realistic ADMIT-ONE ticket stub. Best
+  for "X happens on <date>" posts (deprecations, launches, events). The date is the
+  hero; keep the label and sub short. Set the .date-hero to the human date and BOTH
+  .serial values to that date in numeric YYYYMMDD form (e.g. June 15 2026 -> 20260615),
+  then:
     render_image.py --type card --in images/<slug>.html --out images/<slug>.png
-  Styling lives in diagram.css (.card.date, .date-label, .date-hero, .date-sub) —
-  don't add inline CSS; edit the brand guide if you need to retheme.
+  Styling lives in diagram.css (.card.date and its .ticket/.inner/.serial/.deco
+  children) — don't add inline CSS. It uses the same dark brand palette as the other
+  cards; edit the brand guide if you need to retheme.
 -->
 <html lang="en">
 <head>
@@ -14,10 +17,17 @@
 </head>
 <body>
   <div id="canvas" class="card date">
-    <div class="date-label">Short label · here</div>
-    <div class="date-hero">June 15</div>
-    <div class="date-sub">One short line of context.</div>
-    <div class="footer brand"></div>
+    <div class="ticket">
+      <div class="serial s-left">20260615</div>
+      <div class="serial s-right">20260615</div>
+      <div class="inner">
+        <div class="deco">★ ★</div>
+        <div class="date-label">Short label · here</div>
+        <div class="date-hero">June 15</div>
+        <div class="date-sub">One short line of context.</div>
+        <div class="footer brand"></div>
+      </div>
+    </div>
   </div>
 </body>
 </html>
