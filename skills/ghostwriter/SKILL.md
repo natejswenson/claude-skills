@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.4.0
+version: 0.5.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -157,6 +157,12 @@ pull the byline automatically — don't hardcode it.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — this is the highest-reach native format and the right choice for
     educational / how-to / step-by-step posts.
+  - `assets/card-template-matrix.html` — **matrix type** (a comparison): a labeled grid that
+    compares a few options (columns) across the same attributes (rows). Header cells (`.col-h`)
+    carry a column accent (`.green`/`.grey`/`.pink`); value cells are `.v` for a big mono NUMBER
+    or `.vt` for a short plain-English phrase; one or more `.switch` rows act as group dividers.
+    Keep it to ≤4 columns and ≤7 rows so it stays scannable at phone size; translate any insider
+    units into plain words so it reads cold (a stranger won't know what "0.85 of goal" means).
   Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
   one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
