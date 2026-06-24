@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  MATRIX card TYPE — an N-column comparison: a heading per column, rows of
+  labeled values, with optional ".switch" dividers to group rows. Copy to
+  images/<slug>.html, fill in the columns/rows, then:
+    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
+
+  Keep these properties:
+   * Byline lives in .toprow (top-right), inline with the .eyebrow, so a feed
+     crop of the bottom can NEVER remove your attribution.
+   * The table is a CSS grid: the first column is the row-label gutter (.dial),
+     then one column per item. The header cells (.col-h) carry the column accent
+     via .green / .grey / .pink (brand hues). Add more in diagram.css if needed.
+   * Value cells come in two kinds: .v for a NUMBER (big mono) and .vt for a
+     short plain-English phrase (1-2 words, sans). Don't put sentences in a cell.
+   * A ".switch" row spans all columns (grid-column: 1 / -1) as a labeled group
+     divider — use one or more to separate row groups, or delete if not needed.
+   * Keep it to <=4 columns and <=7 value rows so it stays legible at phone size.
+   * Numbers/labels must be accurate — never invent figures (authenticity rule).
+  All colour/type/spacing comes from diagram.css (.card.matrix rules) — don't add
+  one-off inline CSS; extend diagram.css if you need a new treatment.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card matrix">
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>One sharp headline.</h1>
+    <p class="sub">A single supporting line, if needed.</p>
+
+    <div class="grid">
+      <div></div>
+      <div class="col-h green">Option A</div>
+      <div class="col-h grey">Option B</div>
+      <div class="col-h pink">Option C</div>
+
+      <div class="switch">a number group · with units</div>
+
+      <div class="dial">Row one</div>
+      <div class="v">1</div><div class="v">5</div><div class="v">9</div>
+
+      <div class="dial">Row two</div>
+      <div class="v">9</div><div class="v">5</div><div class="v">1</div>
+
+      <div class="switch">a plain-english group</div>
+
+      <div class="dial">Behaves</div>
+      <div class="vt">never</div><div class="vt">on a miss</div><div class="vt">below 100%</div>
+    </div>
+  </div>
+</body>
+</html>
