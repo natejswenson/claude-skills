@@ -4,6 +4,18 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-24
+
+### Added
+- **Matrix card type** (`assets/card-template-matrix.html`) — a comparison card: a
+  labeled grid that compares a few options (columns) across the same attributes
+  (rows). Header cells (`.col-h`) carry a column accent (`.green`/`.grey`/`.pink`);
+  value cells are `.v` for a big mono number or `.vt` for a short plain-English
+  phrase; one or more `.switch` rows act as labeled group dividers. The
+  `.card.matrix` styling ships in `assets/diagram.css.example`, and the type is
+  documented in SKILL.md's template list. Keep it to ≤4 columns / ≤7 rows and
+  translate insider units into plain words so the card reads cold.
+
 ## [0.4.0] - 2026-06-22
 
 ### Added
