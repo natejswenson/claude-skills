@@ -586,3 +586,39 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.code .tool { color: var(--accent); }                     /* tool name: Bash / Edit / Update */
 .card.code .br   { color: var(--muted); }                      /* └ result branch */
 .card.code .ok   { color: var(--accent-2); }                   /* added / success text */
+
+/* ── MATRIX card TYPE — N-column comparison: a heading per column, rows of
+   labeled values, with an optional ".switch" divider to set one group apart.
+   Built for the 3-profile coach-tone comparison; reusable for any small matrix.
+   Profile columns are color-coded (green / grey / pink). Keep it to ≤4 columns
+   and ≤7 rows so it stays legible at phone size. */
+.card.matrix { display: flex; flex-direction: column; }
+.card.matrix h1 { font: 800 78px/1.04 var(--font); color: #E6EDF3; margin: 22px 0 8px; }
+.card.matrix .sub { margin: 0 0 30px; }
+.card.matrix .grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  align-items: center;
+  row-gap: 24px;
+  margin-top: auto; margin-bottom: auto;   /* vertically center the table */
+}
+.card.matrix .col-h { font: 700 50px/1 var(--font); text-align: center; letter-spacing: -0.02em; }
+/* generic column-accent classes (put on .col-h and/or value cells) */
+.card.matrix .green { color: var(--accent-2); }   /* green */
+.card.matrix .grey  { color: #C9D1D9; }            /* light grey */
+.card.matrix .pink  { color: var(--accent-3); }    /* pink/hot */
+.card.matrix .dial { font: 500 40px/1.1 var(--font); color: var(--muted); }
+.card.matrix .v { font: 700 64px/1 var(--mono); color: #E6EDF3; text-align: center; }
+/* word-value cell (plain-English behavior, not a number) */
+.card.matrix .vt { font: 500 33px/1.18 var(--font); color: #C9D1D9; text-align: center; }
+.card.matrix .switch {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 22px;
+  font: 600 26px/1 var(--mono); color: var(--accent);
+  letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
+  margin: 4px 0;
+}
+.card.matrix .switch::before, .card.matrix .switch::after {
+  content: ""; flex: 1; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(88,166,255,0.5), transparent);
+}
