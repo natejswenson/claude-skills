@@ -21,7 +21,7 @@ read it before opening any PR.
 ## Branch model
 
 ```
-feature/* ──PR──▶ dev ──PR (auto-merge)──▶ main ──▶ per-skill release
+feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ··· release tags cut manually
 ```
 
 - **`main`** — default + protected release branch. Required: a PR, the four `ci / <skill>` checks
@@ -35,26 +35,33 @@ feature/* ──PR──▶ dev ──PR (auto-merge)──▶ main ──▶ pe
 
 ## Release process (step by step)
 
-1. **Branch off `dev`**, do the work. If the change is a skill release, bump that skill's version +
-   `CHANGELOG.md` entry. Each skill must keep its own tests green (`ci / <skill>` runs them).
+**Auto-merge and release tagging are decoupled.** Promoting `dev → main` auto-merges on green; it
+does **not** cut a release tag on its own. Cutting a tag is a separate, deliberate step.
+
+1. **Branch off `dev`**, do the work. Each skill must keep its own tests green (`ci / <skill>` runs them).
 2. **Land it on `dev`** — open a PR into `dev` and merge it, or push directly (dev is unprotected).
 3. **Promote: open a PR from `dev` into `main`.** The **`auto-merge dev to main`** workflow
    (`.github/workflows/auto-merge.yml`) turns on GitHub native auto-merge, and the PR **merges
    itself once all four `ci / <skill>` checks pass**. If any check fails, it never merges.
    - **Hold a promotion** by opening the `dev → main` PR as a **draft** — it won't auto-merge until
      you mark it *ready for review*.
-4. **On the merge to `main`**, each **changed** skill's `release` job tags `<skill>-v<version>` and
-   publishes a GitHub Release from its `CHANGELOG.md` — only if that version isn't already tagged.
-   Unchanged skills are untouched; a no-bump promotion releases nothing.
+4. **AGENT RULE — after opening a `dev → main` PR, ASK whether to cut a release tag.** Do not assume.
+   List which skills changed in the promotion and ask the user if any need a `<skill>-v<version>`
+   tag cut. The auto-merge (bot `GITHUB_TOKEN`) does not trigger the per-skill release workflows, so
+   nothing is tagged unless this step is done on purpose.
+5. **If a release is wanted**, ensure that skill's version is bumped (`package.json` for node skills,
+   `SKILL.md` frontmatter `version:` for python skills) with a matching `CHANGELOG.md` entry, then
+   after the PR merges cut the tag from `main`:
+   ```
+   awk '/^## \[<version>\]/{f=1;next} /^## \[/{f=0} f' skills/<skill>/CHANGELOG.md > /tmp/notes.md
+   gh release create "<skill>-v<version>" --target "$(gh api repos/<owner>/<repo>/commits/main --jq .sha)" \
+     --title "<skill> v<version>" --notes-file /tmp/notes.md
+   ```
+   The tag is idempotent by convention — only cut a version that isn't already tagged.
 
-**`RELEASE_PAT` is required for step 4 to fire automatically.** A merge performed by the default
-`GITHUB_TOKEN` does **not** trigger downstream workflows (GitHub loop-prevention), so `auto-merge.yml`
-enables auto-merge with a fine-grained PAT stored as the repo secret **`RELEASE_PAT`** (scopes:
-*Contents: read/write* + *Pull requests: read/write* on this repo). With it, the merge is attributed
-to a real identity and the release fires. Without it, auto-merge still works but **the release must be
-cut by hand** — extract the version's `CHANGELOG.md` section and
-`gh release create "<skill>-v<version>" --target <main-sha> --title "<skill> v<version>" --notes-file <notes>`.
-Rotate the PAT before it expires.
+> The per-skill `release` job (`needs: ci`, push-to-`main`) still exists in each caller and remains
+> the path for a future re-coupling (e.g. enabling auto-merge via a `RELEASE_PAT` so the push fires
+> downstream workflows). For now it stays dormant under bot auto-merge — releases are manual per above.
 
 ## CI architecture (how the gate works)
 

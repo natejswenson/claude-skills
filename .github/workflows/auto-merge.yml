@@ -11,12 +11,11 @@ name: auto-merge dev to main
 # dev→main PR, so the very first promotion PR (the one that adds this file) is merged
 # by hand; every dev→main PR after that auto-merges.
 #
-# RELEASE_PAT: auto-merge is enabled with a fine-grained PAT (secret RELEASE_PAT) rather
-# than the default GITHUB_TOKEN. A merge performed by GITHUB_TOKEN does NOT trigger
-# downstream workflows (GitHub loop-prevention), so the per-skill release jobs would never
-# run. With a PAT, the merge is attributed to a real identity and the push-to-main release
-# fires normally. The `|| github.token` fallback keeps auto-merge working if the secret is
-# absent — but in that mode releases must be cut manually (see CLAUDE.md → Release process).
+# Release tagging is intentionally DECOUPLED from auto-merge. This merge runs as the
+# default GITHUB_TOKEN, which (by GitHub's loop-prevention) does NOT trigger the per-skill
+# release workflows — so an auto-merge never cuts a release on its own. Release tags are a
+# separate, deliberate step: after opening a dev→main PR, decide whether a release is needed
+# and cut it manually. See CLAUDE.md → Release process.
 
 on:
   pull_request_target:
@@ -35,7 +34,7 @@ jobs:
     steps:
       - name: Enable native auto-merge (merge commit)
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh pr merge "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
