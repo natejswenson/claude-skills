@@ -17,7 +17,8 @@ import { parseResumeFile } from "@/lib/parsing/resume";
 import { extractJobFromUrl } from "@/lib/parsing/job";
 import { SYSTEM_PROMPT, buildUserMessage, RESUME_JSON_SCHEMA } from "@/lib/prompt";
 import { ResumeJSON, type ResumeJSON as ResumeJSONType } from "@/schemas/resume";
-import { validateTailoring } from "@/lib/validate";
+import { validateTailoring, dropNoopOptimizedBullets } from "@/lib/validate";
+import { summaryScopedOnly, fixSummaryOnly } from "@/lib/summary-fix";
 import { templates, type TemplateName } from "@/lib/templates";
 import { ResumeDocument } from "@/components/ResumeDocument";
 import { logInfo, logWarn } from "@/lib/log";
@@ -174,9 +175,23 @@ export async function tailorResume(
       continue;
     }
 
-    lastValid = parsed.data;
-    const check = validateTailoring(parsed.data, resumeText);
-    if (check.ok) return parsed.data;
+    // Deterministically drop noop "optimized" bullets (rewritten === original)
+    // before validating — a free correctness/clarity fix, no LLM round-trip.
+    const cleaned = dropNoopOptimizedBullets(parsed.data);
+    lastValid = cleaned;
+    const check = validateTailoring(cleaned, resumeText);
+    if (check.ok) return cleaned;
+
+    // Fast path: when every violation is summary-scoped, fix ONLY the summary
+    // with a small, focused call instead of regenerating the whole résumé. This
+    // is much cheaper (a one-sentence output vs a full re-emit, on a tiny prompt)
+    // and safer (the valid bullets/roles/numbers are untouched). Falls back to
+    // the full corrective retry below if it can't produce a clean summary.
+    if (summaryScopedOnly(check.violations)) {
+      logWarn("tailor_retry", { kind: "summary-fix", reason: check.violations.join("; ").slice(0, 200) });
+      const fixed = await fixSummaryOnly(llm, cleaned, resumeText, check.violations, opts.model);
+      if (fixed) return fixed;
+    }
 
     logWarn("tailor_retry", { kind: "content", reason: check.violations.join("; ").slice(0, 200) });
     system = `${SYSTEM_PROMPT}\n\n# CORRECTIONS\n\nYour previous output violated these hard constraints: ${check.violations.join("; ")}. Fix exactly these and re-emit the full corrected JSON. Change nothing else.`;

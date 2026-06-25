@@ -29,7 +29,8 @@ ASSETS = REPO / "assets"
 CSS = ASSETS / "diagram.css"
 CSS_EXAMPLE = ASSETS / "diagram.css.example"
 
-SLIDE_PX = 1200  # each slide is a fixed 1200x1200 page
+SLIDE_W = 1200  # each slide is a fixed portrait 4:5 page (1200x1500) — the research-backed
+SLIDE_H = 1500  # document ratio that owns the most vertical space in the mobile feed
 
 INSTALL_HINT = (
     "Rendering needs Playwright + Chromium (the optional diagram feature).\n"
@@ -67,23 +68,23 @@ def open_in_viewer(path: Path) -> None:
 
 
 def pdf_from_pngs(page, png_bytes: list[bytes], pdf_out: Path) -> None:
-    """Stitch the slide PNGs into one square-page PDF (one slide per page)."""
+    """Stitch the slide PNGs into one portrait-page PDF (one slide per page)."""
     imgs = "".join(
         f'<img src="data:image/png;base64,{base64.b64encode(b).decode()}" />'
         for b in png_bytes
     )
     html = f"""<!doctype html><html><head><meta charset="utf-8"><style>
-      @page {{ size: {SLIDE_PX}px {SLIDE_PX}px; margin: 0; }}
+      @page {{ size: {SLIDE_W}px {SLIDE_H}px; margin: 0; }}
       html, body {{ margin: 0; padding: 0; }}
-      img {{ display: block; width: {SLIDE_PX}px; height: {SLIDE_PX}px; }}
+      img {{ display: block; width: {SLIDE_W}px; height: {SLIDE_H}px; }}
       img {{ break-after: page; page-break-after: always; }}
       img:last-child {{ break-after: auto; page-break-after: auto; }}
     </style></head><body>{imgs}</body></html>"""
     page.set_content(html, wait_until="load")
     page.pdf(
         path=str(pdf_out),
-        width=f"{SLIDE_PX}px",
-        height=f"{SLIDE_PX}px",
+        width=f"{SLIDE_W}px",
+        height=f"{SLIDE_H}px",
         print_background=True,
         margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
     )
@@ -101,7 +102,7 @@ def render(html: str, pdf_out: Path) -> int:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page(
-                viewport={"width": SLIDE_PX, "height": SLIDE_PX},
+                viewport={"width": SLIDE_W, "height": SLIDE_H},
                 device_scale_factor=2,
             )
             page.set_content(html, wait_until="load")

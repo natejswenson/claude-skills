@@ -29,3 +29,9 @@
 .DS_Store
 *.pem
 npm-debug.log*
+
+# benchmark résumé fixture — personal data, never track
+/scripts/fixtures/benchmark/resume.pdf
+
+# benchmark run artifacts (tailored JSON/PDFs — user data)
+/benchmark-out/

@@ -89,24 +89,53 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 }
 .card .sub { font: 400 38px/1.4 var(--font); color: var(--muted); margin: 0; }
 
-.card .rows { display: flex; flex-direction: column; gap: 20px; margin-top: 8px; }
+/* Before/after or key->value mapping rows. A grid keeps the keys, arrows and values
+   in clean aligned columns (no magic min-width); a small accent marker tags each key. */
+.card .rows { display: flex; flex-direction: column; gap: 18px; margin-top: 8px; }
 .card .row {
-  display: flex; align-items: baseline; gap: 20px;
+  display: grid; grid-template-columns: max-content max-content 1fr;
+  align-items: baseline; column-gap: 22px;
   font: 500 40px/1.3 var(--font);
 }
-.card .row .key { color: var(--accent-2); font-weight: 700; min-width: 220px; }
-.card .row .arrow { color: var(--muted); }
+.card .row .key {
+  color: var(--accent-2); font-weight: 700;
+  display: inline-flex; align-items: baseline; gap: 16px;
+}
+.card .row .key::before {
+  content: ""; align-self: center; flex: none;
+  width: 13px; height: 13px; border-radius: 4px; background: var(--accent-2);
+}
+.card .row .arrow { color: var(--muted); font-weight: 400; }
 
+/* Giant stat. The number is the hero in --text; the unit sits as a lighter accent suffix,
+   nudged off the baseline so it reads as a unit, not part of the figure. */
 .card .stat { font: 800 140px/1 var(--font); letter-spacing: -0.03em; }
-.card .stat .unit { font-size: 56px; color: var(--muted); font-weight: 600; }
+.card .stat .unit {
+  font-size: 60px; font-weight: 700; color: var(--accent);
+  letter-spacing: -0.01em; margin-left: 8px; vertical-align: 6px;
+}
+
+/* Quote treatment. Put a <div class="quotemark">"</div> above an unquoted <h1> for a big
+   accent quotation mark that anchors the card; the attribution goes in a .sub below. */
+.card .quotemark {
+  font: 800 150px/0.6 var(--font); color: var(--accent);
+  height: 78px; margin-bottom: 4px; user-select: none;
+}
 
 /* Footer byline. Use <div class="footer brand"></div> to pull --byline automatically,
-   or <div class="footer">custom text</div> for a one-off. */
+   or <div class="footer">custom text</div> for a one-off. By default it's pinned bottom-
+   left; place it inside a .toprow (with the eyebrow) to sit inline at the top-right. */
 .card .footer {
   position: absolute; left: 96px; bottom: 72px;
   font: 500 30px/1 var(--mono); color: var(--muted);
 }
 .card .footer.brand::before { content: var(--byline); }
+
+/* Eyebrow + byline top row: byline pushed inline to the right of the eyebrow (crop-safe,
+   matching the flow/ramp cards). The footer goes static and the avatar sizes to match. */
+.card .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; }
+.card .toprow .footer { position: static; left: auto; bottom: auto; margin: 0 0 0 auto; gap: 16px; font-size: 26px; }
+.card .toprow .footer.brand::before { width: 52px; height: 52px; }
 
 .card .pill {
   align-self: flex-start;
@@ -115,46 +144,176 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   font: 600 30px/1 var(--mono); color: var(--text);
 }
 
-/* ---- Date / deadline card TYPE: the date is the hero, keep words minimal ---- */
-#canvas.card.date { gap: 22px; justify-content: center; }
-.card .date-label {
+/* ---- Date / deadline card TYPE: a realistic ADMIT-ONE ticket. A SOLID
+   accent-filled stub with dark ink punched out — scalloped notch edges down both
+   sides, a double ink frame, vertical side serials, a star rule up top, and the
+   byline stamped along the bottom. The date is the hero; keep words minimal.
+   Override --ticket to retheme the stock color. ---- */
+#canvas.card.date {
+  --ticket: var(--accent);   /* the ticket "stock" color — swap to --accent-2/-3 to retheme */
+  --ink:    #0A0E16;         /* dark ink stamped onto the stock */
+  justify-content: center; align-items: center; gap: 0; text-align: center;
+  background:
+    radial-gradient(900px 620px at 50% 50%, rgba(88,166,255,0.10), transparent 60%),
+    var(--bg);
+}
+/* The ticket body: SOLID accent stock with a faint top-down sheen so the flat
+   fill reads as printed card, not a UI panel. A round cutout is punched into EACH
+   of the four corners (the classic amscan ADMIT-ONE silhouette) by masking a circle
+   centered on each corner; the long edges stay clean. */
+.card.date .ticket {
+  --corner: 30px;            /* radius of the round cut at each corner */
+  position: relative; z-index: 1; width: 80%; box-sizing: border-box;
+  border-radius: 16px;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 26%),
+    radial-gradient(120% 140% at 50% 0%, rgba(255,255,255,0.10), transparent 55%),
+    var(--ticket);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+  -webkit-mask:
+    radial-gradient(var(--corner) at top left,     #0000 98%, #000),
+    radial-gradient(var(--corner) at top right,    #0000 98%, #000),
+    radial-gradient(var(--corner) at bottom left,  #0000 98%, #000),
+    radial-gradient(var(--corner) at bottom right, #0000 98%, #000);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(var(--corner) at top left,     #0000 98%, #000),
+    radial-gradient(var(--corner) at top right,    #0000 98%, #000),
+    radial-gradient(var(--corner) at bottom left,  #0000 98%, #000),
+    radial-gradient(var(--corner) at bottom right, #0000 98%, #000);
+  mask-composite: intersect;
+}
+/* Vertical serials in the side gutters, between the edge and the inner frame. */
+.card.date .serial {
+  position: absolute; top: 50%; writing-mode: vertical-rl;
+  font: 800 28px/1 var(--mono); letter-spacing: 0.3em; color: var(--ink); opacity: 0.72;
+}
+.card.date .serial.s-left  { left: 26px;  transform: translateY(-50%) rotate(180deg); }
+.card.date .serial.s-right { right: 26px; transform: translateY(-50%); }
+/* Double ink frame — inset to clear the corner cutouts and the serials. The hero
+   date must always sit INSIDE this frame, so the inner box is wide and the field
+   sizes (below) are tuned to fit the longest month + day on at most two lines. */
+.card.date .inner {
+  margin: 30px 78px; padding: 38px 34px 34px;
+  border: 3px solid var(--ink); border-radius: 12px;
+  box-shadow: 0 0 0 2px var(--ticket), 0 0 0 5px var(--ink);  /* the second, outer ink line */
+  display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center;
+}
+/* ── ★ ★ ── rule (top). */
+.card.date .deco {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  color: var(--ink); font-size: 30px; line-height: 1;
+}
+.card.date .deco::before, .card.date .deco::after {
+  content: ""; width: 78px; height: 3px; background: currentColor; opacity: 0.55; border-radius: 2px;
+}
+/* The three fields, stamped in ink on the colored stock. */
+.card.date .date-label {
   font: 600 28px/1.2 var(--mono);
   letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--accent-2);
+  color: var(--ink); opacity: 0.9;
 }
-.card .date-hero {
-  font: 800 200px/0.9 var(--font);
-  letter-spacing: -0.04em; color: var(--text);
-  white-space: nowrap;
+/* Hero date. Sized so short dates ("June 15") read big on one line; long months
+   ("September 30") wrap the day to a second line instead of clipping off the edge. */
+.card.date .date-hero {
+  font: 800 102px/0.96 var(--font);
+  letter-spacing: -0.04em; color: var(--ink);
+  max-width: 100%; text-wrap: balance;
 }
-.card .date-sub { font: 500 48px/1.3 var(--font); color: var(--muted); }
+.card.date .date-sub { font: 500 38px/1.3 var(--font); color: var(--ink); opacity: 0.82; }
+/* Byline stamped along the bottom, centered like the deco rule above it. */
+.card.date .inner .footer {
+  position: static; left: auto; bottom: auto; justify-content: center;
+  gap: 13px; font-size: 23px; color: var(--ink); opacity: 0.85;
+}
+.card.date .inner .footer.brand::before {
+  width: 40px; height: 40px; box-shadow: 0 0 0 2px var(--ink);
+}
 
-/* ---- Ramp card TYPE: ascending steps showing an accelerating progression.
-   Bars are illustrative (NOT to scale); the labeled figures carry the truth. ---- */
+/* ---- Ramp card TYPE: ascending steps showing an accelerating progression. Same clean,
+   minimal language as the flow card — flat bars with a hairline edge and one soft shadow;
+   only the final bar carries the accent, lifted by a soft same-hue shadow so the payoff is
+   the focal point. Bars are illustrative (NOT to scale); the labeled figures carry truth. ---- */
 #canvas.card.ramp { justify-content: center; gap: 0; }
-.card.ramp .eyebrow { margin-bottom: 14px; }
-.card.ramp h1 { font-size: 64px; margin-bottom: 64px; }
-.card .ramp-row {
-  display: flex; align-items: flex-end; justify-content: center; gap: 60px;
+/* Byline inline beside the eyebrow (crop-safe), matching the flow card. */
+.card.ramp .toprow {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 16px;
 }
-.card .step { display: flex; flex-direction: column; align-items: center; gap: 26px; }
-.card .step .val { font: 800 60px/1 var(--font); letter-spacing: -0.02em; color: var(--text); }
+.card.ramp .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
+.card.ramp .footer.brand::before { width: 52px; height: 52px; }
+.card.ramp h1 { font-size: 64px; margin-bottom: 56px; letter-spacing: -0.02em; }
+
+/* The chart: bars measured against a faint gridline system, a solid axis baseline, a
+   trend line tracing the acceleration, and a growth-delta callout — the structure that
+   makes it read as a real analytics chart rather than bare bars. */
+.card .chart { position: relative; }
+/* Growth-delta pill, placed in the empty upper-left so it balances the rising bars. */
+.card .delta {
+  position: absolute; top: 0; left: 0; z-index: 3;
+  display: inline-flex; align-items: center; gap: 9px;
+  background: var(--surface); border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 999px; padding: 11px 22px;
+  font: 700 27px/1 var(--mono); letter-spacing: 0.01em;
+  box-shadow: 0 4px 16px rgba(88,166,255,0.16);
+}
+.card .ramp-row {
+  position: relative;
+  display: flex; align-items: flex-end; justify-content: center; gap: 56px;
+}
+/* Trend line over the bar tops: a crisp accent stroke with ringed data-point nodes (the
+   final node enlarged), drawn above the bars. Geometry lives in the SVG in the template. */
+.card .trendline {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 498px; z-index: 2;
+  pointer-events: none; overflow: visible;
+}
+.card .trendline polyline {
+  fill: none; stroke: var(--accent); stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+}
+.card .trendline circle { fill: var(--accent); stroke: var(--bg); stroke-width: 4; }
+.card .trendline circle.last { stroke-width: 5; }
+/* Faint horizontal gridlines behind the bars, extended a little past them on each side
+   for an axis feel. They sit below the bars (z-index) so the bars read as sitting on them. */
+.card .ramp-row::before {
+  content: ""; position: absolute; left: -36px; right: -36px; bottom: 0; height: 468px; z-index: 0;
+  background: repeating-linear-gradient(to top, transparent 0 116px, rgba(230,237,243,0.06) 116px 117px);
+}
+.card .step { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.card .step .val {
+  font: 800 44px/1 var(--font); letter-spacing: -0.02em; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
 .card .step .bar {
-  width: 210px; border-radius: 22px 22px 0 0;
-  background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+  width: 200px; border-radius: 14px 14px 0 0;
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-bottom: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
 .card .step.s1 .bar { height: 130px; }
 .card .step.s2 .bar { height: 290px; }
-.card .step.s3 .bar { height: 470px; background: linear-gradient(180deg, var(--accent) 0%, rgba(88,166,255,0.15) 100%); border-color: var(--accent); }
-.card .step.s3 .val { color: var(--accent); }
-.card .step .date { font: 600 28px/1 var(--mono); color: var(--muted); }
-.card .ramp-base { height: 1px; background: var(--border); margin-top: -1px; }
-.card.ramp .kicker { margin-top: 56px; font: 500 40px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
+/* The payoff bar: a confident solid accent fill with a crisp lit top edge and a soft
+   same-hue lift, plus a larger accent value, so "now" is unmistakably the focal point. */
+.card .step.s3 .bar {
+  height: 468px; border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.28), 0 14px 34px rgba(88,166,255,0.24);
+}
+.card .step.s3 .val { color: var(--accent); font-size: 52px; }
+/* Solid axis baseline the bars sit on, then date labels aligned in columns under each bar. */
+.card .ramp-base { height: 2px; background: var(--border); position: relative; z-index: 1; }
+.card .dates { display: flex; justify-content: center; gap: 56px; margin-top: 18px; }
+.card .dates span {
+  width: 200px; text-align: center;
+  font: 600 24px/1 var(--mono); color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.card.ramp .kicker { margin-top: 44px; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.ramp .kicker b { color: var(--text); font-weight: 700; }
 
-/* ---- STEM card TYPE: playful, kid-energy styling for STEM / education / outreach.
-   Brighter and more colorful than the other cards on purpose — a chunky toy-block
-   S T E M motif, confetti accents, a rounded hero headline. Keep it to one idea. ---- */
+/* ---- STEM card TYPE: the warm member of the family. Same dark base, hairline frame
+   and restrained typography as the other cards — but it keeps a chunky toy-block
+   S T E M motif and a soft four-hue glow in the corners so an education / outreach
+   post still reads playful without breaking the set. Keep it to one idea. ---- */
 #canvas.card.stem {
   --b1: var(--accent);     /* blue   */
   --b2: var(--accent-2);   /* green  */
@@ -162,128 +321,304 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   --b4: #F2CC60;           /* warm yellow — a playful 4th hue, stem-only */
   justify-content: center;
   gap: 40px;
+  /* dark family base with a restrained four-corner glow in the STEM hues */
   background:
-    radial-gradient(440px 440px at 12% 16%, rgba(88,166,255,0.30), transparent 60%),
-    radial-gradient(480px 480px at 88% 12%, rgba(247,120,186,0.26), transparent 60%),
-    radial-gradient(540px 540px at 84% 92%, rgba(63,185,80,0.24), transparent 60%),
-    radial-gradient(440px 440px at 10% 90%, rgba(242,204,96,0.24), transparent 62%),
-    linear-gradient(160deg, #2B3A7A 0%, #1E2A5E 56%, #182146 100%);
-}
-/* confetti dots scattered behind the content */
-#canvas.card.stem::before {
-  content: "";
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(circle, var(--accent) 0 9px, transparent 10px),
-    radial-gradient(circle, var(--accent-3) 0 7px, transparent 8px),
-    radial-gradient(circle, var(--b4) 0 8px, transparent 9px),
-    radial-gradient(circle, var(--accent-2) 0 6px, transparent 7px);
-  background-position: 130px 980px, 1050px 770px, 980px 250px, 220px 360px;
-  background-repeat: no-repeat;
-  opacity: 0.75;
-  pointer-events: none;
+    radial-gradient(600px 600px at 13% 13%, rgba(88,166,255,0.20), transparent 62%),
+    radial-gradient(660px 660px at 89% 9%, rgba(247,120,186,0.18), transparent 62%),
+    radial-gradient(680px 680px at 87% 93%, rgba(63,185,80,0.16), transparent 62%),
+    radial-gradient(560px 560px at 9% 93%, rgba(242,204,96,0.16), transparent 64%),
+    var(--bg);
 }
 .card.stem .blocks { display: flex; gap: 30px; justify-content: flex-start; z-index: 1; }
+/* Chunky toy block: a soft ambient drop lifts it off the dark base, an inset top
+   highlight gives the rounded sheen, and an inset bottom shade reads as the block's
+   3D bottom face (a flat black drop would vanish on the dark bg). */
 .card.stem .block {
   width: 150px; height: 150px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 30px;
   font: 800 84px/1 var(--font);
-  color: #11183A;
-  box-shadow: 0 14px 0 rgba(0,0,0,0.22), inset 0 5px 0 rgba(255,255,255,0.38);
+  color: #0A0E16;
+  box-shadow:
+    0 16px 30px rgba(0,0,0,0.45),
+    inset 0 5px 0 rgba(255,255,255,0.38),
+    inset 0 -12px 0 rgba(0,0,0,0.16);
 }
 .card.stem .block.b1 { background: var(--b1); transform: rotate(-6deg); }
 .card.stem .block.b2 { background: var(--b2); transform: rotate(4deg); }
 .card.stem .block.b3 { background: var(--b3); transform: rotate(-3deg); }
 .card.stem .block.b4 { background: var(--b4); transform: rotate(7deg); }
-.card.stem .eyebrow {
-  align-self: flex-start; z-index: 1;
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.20);
-  border-radius: 999px; padding: 12px 28px;
-  color: #FFFFFF;
-}
-.card.stem h1 { font-size: 92px; color: #FFFFFF; z-index: 1; }
+.card.stem h1 { font-size: 92px; z-index: 1; }
 .card.stem .kicker {
   margin: 0; z-index: 1;
-  font: 500 42px/1.4 var(--font); color: rgba(255,255,255,0.80); text-wrap: balance;
+  font: 500 42px/1.4 var(--font); color: var(--muted); text-wrap: balance;
 }
-.card.stem .kicker b { color: #FFFFFF; font-weight: 800; }
-.card.stem .footer { color: rgba(255,255,255,0.62); z-index: 1; }
+.card.stem .kicker b { color: var(--text); font-weight: 700; }
 
-/* ---- FLOW card TYPE: a clean, linear architecture / pipeline diagram.
-   Color-coded stage chips (a left accent bar marks the layer) connected by simple
-   chevrons, vertically centered so the flow fills the card naturally - calm, not
-   busy. The byline sits inline in the .toprow (top-right) so a feed crop of the
-   bottom can't remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
+/* ---- FLOW card TYPE: a clean, linear architecture / pipeline diagram. The stages
+   are threaded onto a single vertical SPINE with a numbered badge at each junction,
+   so it reads as one sequenced pipeline (1 -> 2 -> 3 -> 4) rather than a stack of
+   loose chips. The badge carries the per-layer accent (det/tools/agent/out). The
+   byline sits inline in the .toprow (top-right) so a feed crop of the bottom can't
+   remove it. Keep it to ONE flow, ~4-5 stages, one example per stage. ---- */
 #canvas.card.flow { justify-content: flex-start; gap: 0; }
 
 .card.flow .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .card.flow .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
 .card.flow .footer.brand::before { width: 52px; height: 52px; }
 
-.card.flow h1 { font-size: 66px; line-height: 1.05; margin: 16px 0 10px; }
-.card.flow .sub { font-size: 30px; }
+.card.flow h1 { font-size: 64px; line-height: 1.04; margin: 16px 0 8px; letter-spacing: -0.02em; }
+.card.flow .sub { font-size: 29px; }
 
-/* the flow grows to fill the space under the header and centers its stages */
-.card.flow .flow { display: flex; flex-direction: column; align-items: stretch; justify-content: center;
-  flex: 1 1 auto; width: 100%; gap: 2px; margin-top: 18px; }
-
-/* stage chip: a left accent bar marks the layer; bold title + a muted mono example */
-.card.flow .fnode {
-  background: var(--surface); border: 1.5px solid var(--border); border-left: 6px solid var(--border);
-  border-radius: 16px; padding: 26px 32px; text-align: left;
-  display: flex; flex-direction: column; gap: 9px; box-shadow: 0 12px 30px rgba(0,0,0,0.34);
+/* The flow grows to fill the space under the header and centers its stages. It is the
+   positioning context for the spine, reserves a left gutter for the badges, and seeds
+   the step counter. */
+.card.flow .flow {
+  position: relative; counter-reset: step;
+  display: flex; flex-direction: column; align-items: stretch;
+  flex: 0 1 auto; width: 100%; gap: 18px; margin: auto 0; padding-left: 80px;
 }
-.card.flow .fnode .t { font: 700 37px/1.12 var(--font); color: var(--text); letter-spacing: -0.01em; }
-.card.flow .fnode .e { font: 500 23px/1.35 var(--mono); color: var(--muted); }
-.card.flow .fnode.det   { border-left-color: var(--accent-2); }
-.card.flow .fnode.tools { border-left-color: var(--accent-3); }
-.card.flow .fnode.agent { border-left-color: var(--accent); }
-.card.flow .fnode.out   { border-left-color: var(--muted); background: var(--surface-2); }
+/* The spine: one crisp 2px rail behind the badges, fading at both ends so it reads as
+   deliberate regardless of how tall the first/last stage is. */
+.card.flow .flow::before {
+  content: ""; position: absolute; left: 28px; top: 4px; bottom: 4px; width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, transparent 0, var(--border) 8%, var(--border) 92%, transparent 100%);
+}
+/* Stage chip — minimal and flat: a single clean hairline and one soft shadow for just
+   enough lift off the canvas. No sheen, no gradient border, no glow; restraint is the
+   point. --node-fill lets the OUTPUT stage swap to the secondary surface. */
+.card.flow .fnode {
+  --node-fill: var(--surface);
+  position: relative; counter-increment: step;
+  background: var(--node-fill); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px 28px; text-align: left;
+  display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+.card.flow .fnode.out { --node-fill: var(--surface-2); }
+/* A short hairline tick wiring each badge to its card. */
+.card.flow .fnode::after {
+  content: ""; position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 1px; background: var(--border);
+}
+/* Numbered badge — a flat, solid disc in the layer hue with a clean bg ring that punches
+   the spine. Minimal: the colour alone carries the layer; no gloss, no glow. */
+.card.flow .fnode::before {
+  --badge: var(--muted);
+  content: counter(step); z-index: 1;
+  position: absolute; left: -69px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font: 700 20px/1 var(--mono); color: #0A0E16; font-variant-numeric: tabular-nums;
+  background: var(--badge); box-shadow: 0 0 0 6px var(--bg);
+}
+.card.flow .fnode .t { font: 700 35px/1.1 var(--font); color: var(--text); letter-spacing: -0.015em; }
+.card.flow .fnode .e {
+  font: 500 22px/1.4 var(--mono); letter-spacing: -0.005em; font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.card.flow .fnode.det::before   { --badge: var(--accent-2); }
+.card.flow .fnode.tools::before { --badge: var(--accent-3); }
+.card.flow .fnode.agent::before { --badge: var(--accent); }
+.card.flow .fnode.out::before   { --badge: var(--muted); color: var(--bg); }
 
-/* simple downward chevron between stages */
-.card.flow .vconn { display: flex; justify-content: center; padding: 11px 0; }
-.card.flow .vconn .chev { width: 15px; height: 15px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
-
-/* ---- CAROUSEL: a multi-slide LinkedIn document (the highest-reach native format,
-   ~1.45x a single image). Each .slide is a full 1200x1200 page that shares the card
-   brand styling; author from assets/card-template-carousel.html and render with
-   scripts/render_carousel.py, which screenshots every .slide and stitches them into one
-   PDF to post as a document. Keep ~5-8 slides, ONE idea per slide. ---- */
+/* ---- CAROUSEL: a multi-slide LinkedIn DOCUMENT — the highest-reach native format and the
+   showstopper of the family (carousels pull the top engagement of any LI format). Authored
+   as one HTML file of .slide pages and rendered by scripts/render_carousel.py (screenshots
+   each slide + stitches a PDF). Research-driven build:
+     • PORTRAIT 4:5 (1200x1500) — owns the most vertical space in the mobile feed.
+     • 7-9 slides, ONE idea per slide, <=~30 words/slide — text walls kill swipe-through.
+     • A persistent footer brand + a PROGRESS BAR on every slide (seeing "3/8" pulls people
+       to the end). Drive the bar by setting --i (this slide's number) and --n (total) on the
+       .slide, e.g. <div class="slide card point" style="--i:3; --n:8">. The "NN / TOTAL" page
+       counter is literal text — keep it in sync by hand (and --n equal to the real slide count).
+     • ONE accent (60/30/10) — accent only on the index, the bar and the CTA.
+     • A cover that visually CONTRASTS with the content slides and stays legible at thumbnail.
+     • End on ONE action — comments are the #1 reach signal, saves the easy high-quality one.
+   Slide kinds: .cover (hook) · .point (a numbered idea) · .recap (the list) · .cta. ---- */
 .card.slide {
-  width: 1200px; height: 1200px; padding: 96px; position: relative; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: center; gap: 30px;
-  background: radial-gradient(1200px 600px at 85% -10%, rgba(88,166,255,0.16), transparent 60%),
-              radial-gradient(900px 500px at -10% 110%, rgba(63,185,80,0.12), transparent 60%),
-              var(--bg);
+  --i: 1; --n: 8;                               /* this slide's number / the total */
+  width: 1200px; height: 1500px; padding: 110px 110px 200px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 34px;
+  background:
+    radial-gradient(1200px 680px at 85% -12%, rgba(88,166,255,0.14), transparent 60%),
+    radial-gradient(1000px 560px at -10% 112%, rgba(63,185,80,0.10), transparent 60%),
+    var(--bg);
 }
 .card.slide::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--border); pointer-events: none; }
 
-/* byline inline at the top (same crop-safe pattern as the other cards) */
-.card.slide .toprow { position: absolute; top: 96px; left: 96px; right: 96px; display: flex; align-items: center; justify-content: space-between; }
-.card.slide .footer { position: static; left: auto; bottom: auto; margin: 0; gap: 16px; font-size: 26px; }
-.card.slide .footer.brand::before { width: 52px; height: 52px; }
+/* Persistent branding: a series eyebrow pinned top-left and the name byline bottom-left, on
+   every slide (a carousel is a PDF read page-by-page, so the bottom byline is always seen). */
+.card.slide .eyebrow { position: absolute; top: 104px; left: 110px; margin: 0; font: 600 27px/1.2 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.card.slide .footer { position: absolute; left: 110px; bottom: 92px; margin: 0; gap: 15px; font-size: 25px; color: var(--muted); }
+.card.slide .footer.brand::before { width: 48px; height: 48px; }
 
-/* page counter (e.g. 02 / 06) and the cover's swipe hint */
-.card.slide .pageno { position: absolute; right: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--muted); letter-spacing: 0.1em; }
-.card.slide .swipe  { position: absolute; left: 96px; bottom: 80px; font: 700 26px/1 var(--mono); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+/* Progress bar (fills to --i/--n) + the page counter, bottom of every content slide. */
+.card.slide .rail { position: absolute; left: 110px; right: 110px; bottom: 168px; height: 5px; border-radius: 3px; background: var(--surface-2); }
+.card.slide .rail::after { content: ""; position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; background: var(--accent); width: calc(var(--i) / var(--n) * 100%); }
+.card.slide .pageno { position: absolute; right: 110px; bottom: 90px; font: 700 27px/1 var(--mono); color: var(--muted); letter-spacing: 0.12em; }
+.card.slide .pageno b { color: var(--text); font-weight: 800; }
+/* the cover's swipe cue sits where the page counter would be */
+.card.slide .swipe { position: absolute; right: 110px; bottom: 90px; font: 800 28px/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
 
-/* COVER: eyebrow + byline up top, a big hook headline */
-.card.slide.cover h1 { font-size: 98px; line-height: 1.02; }
+/* ── COVER: contrasts with the content — a heavier accent glow and an oversized hook. Bold
+   the pivot word with <b> for an accent pop; keep the hook to 6-10 words, legible at thumb. ── */
+.card.slide.cover {
+  background:
+    radial-gradient(1000px 760px at 50% -12%, rgba(88,166,255,0.22), transparent 62%),
+    radial-gradient(900px 620px at 105% 110%, rgba(247,120,186,0.14), transparent 60%),
+    var(--bg);
+}
+.card.slide.cover h1 { font: 800 106px/1.02 var(--font); letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
+.card.slide.cover h1 b { color: var(--accent); }
+.card.slide.cover .sub { font: 400 45px/1.34 var(--font); color: var(--muted); margin: 14px 0 0; max-width: 980px; text-wrap: balance; }
 
-/* POINT: a big index number, a headline, a short body */
-.card.slide.point { gap: 24px; }
-.card.slide.point .idx  { font: 800 40px/1 var(--mono); color: var(--accent); letter-spacing: 0.08em; }
-.card.slide.point h2    { font: 800 72px/1.05 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
-.card.slide.point .body { font: 400 38px/1.4 var(--font); color: var(--muted); margin: 0; max-width: 940px; }
+/* ── POINT: one idea — an accent index, a big statement, a short body. ── */
+.card.slide.point { gap: 26px; }
+.card.slide.point .idx  { font: 800 40px/1 var(--mono); color: var(--accent); letter-spacing: 0.12em; }
+.card.slide.point h2    { font: 800 90px/1.04 var(--font); letter-spacing: -0.025em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.point .body { font: 400 45px/1.42 var(--font); color: var(--muted); margin: 0; max-width: 960px; text-wrap: pretty; }
 .card.slide.point .body b, .card.slide.point .body strong { color: var(--text); font-weight: 700; }
-.card.slide.point code  { font: 600 0.9em var(--mono); color: var(--accent-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px 10px; }
+.card.slide.point code  { font: 600 0.9em var(--mono); color: var(--accent-2); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px 12px; }
 
-/* CTA: the takeaway + an explicit Save prompt (saves are the #1 reach signal) */
-.card.slide.cta h2 { font: 800 78px/1.04 var(--font); letter-spacing: -0.02em; margin: 0; color: var(--text); text-wrap: balance; }
-.card.slide.cta .save {
-  align-self: flex-start; display: inline-flex; align-items: center; gap: 14px;
-  background: var(--surface); border: 1.5px solid var(--accent-3); border-radius: 999px;
-  padding: 16px 32px; font: 700 30px/1 var(--mono); color: var(--accent-3);
+/* ── RECAP: the framework recapped as a tight auto-numbered list with accent markers. ── */
+.card.slide.recap h2 { font: 800 78px/1.04 var(--font); letter-spacing: -0.02em; margin: 0 0 16px; color: var(--text); }
+.card.slide.recap ul { list-style: none; margin: 0; padding: 0; counter-reset: item; display: flex; flex-direction: column; gap: 30px; }
+.card.slide.recap li { position: relative; padding-left: 84px; font: 500 46px/1.3 var(--font); color: var(--text); }
+.card.slide.recap li::before { content: counter(item, decimal-leading-zero); counter-increment: item; position: absolute; left: 0; top: 0.18em; font: 800 30px/1 var(--mono); color: var(--accent); }
+.card.slide.recap li b { font-weight: 800; }
+
+/* ── CTA: the takeaway + ONE action. Lead with a solid accent prompt (the single ask); keep
+   a soft follow line secondary. Swap the prompt copy to "Save this" if saves fit better. ── */
+.card.slide.cta { background: radial-gradient(1000px 740px at 50% 0%, rgba(63,185,80,0.16), transparent 62%), var(--bg); }
+.card.slide.cta h2 { font: 800 88px/1.03 var(--font); letter-spacing: -0.025em; margin: 0; color: var(--text); text-wrap: balance; }
+.card.slide.cta .sub { font: 400 45px/1.34 var(--font); color: var(--muted); margin: 8px 0 0; max-width: 960px; text-wrap: balance; }
+.card.slide.cta .action {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 16px; margin-top: 26px;
+  background: var(--accent-2); border-radius: 999px; padding: 24px 44px;
+  font: 800 38px/1 var(--font); color: #06210F; letter-spacing: -0.01em;
+}
+.card.slide.cta .follow { margin: 30px 0 0; font: 600 32px/1 var(--mono); color: var(--muted); }
+.card.slide.cta .follow b { color: var(--text); font-weight: 800; }
+
+/* ---- CODE card TYPE: a code snippet shown as a terminal coding session. A macOS-style
+   window (traffic-light dots + filename) sits on a --surface panel that lifts off the
+   --bg with the family hairline + soft shadow; the body is bat-style — a muted line-number
+   gutter, monospace source with theme-colored syntax tokens, ONE focal "hot" line, and a
+   solid accent caret implying a live session. Highlight by hand: wrap tokens in
+   <span class="t-*">; the token hues are theme accents and retheme via the --t-* vars
+   below. Keep it to ONE idea — short lines (~<=42 chars) and ~<=10 rows so it stays
+   legible in the feed. ---- */
+#canvas.card.code {
+  /* syntax token palette — theme accents by default, override per-card if you like */
+  --t-kw:     var(--accent-3);   /* keywords: def / return / const / import   (pink) */
+  --t-fn:     var(--accent);     /* function + method names                   (blue) */
+  --t-str:    var(--accent-2);   /* strings                                  (green) */
+  --t-num:    #E3B341;           /* numbers / constants                      (amber) */
+  --t-com:    var(--muted);      /* comments                                 (muted) */
+  --t-prompt: var(--accent-2);   /* shell prompt glyph                       (green) */
+  justify-content: center; gap: 40px;
+  background:
+    radial-gradient(1100px 620px at 82% -8%, rgba(88,166,255,0.12), transparent 60%),
+    radial-gradient(900px 520px at -8% 108%, rgba(63,185,80,0.10), transparent 60%),
+    var(--bg);
+}
+/* optional one-line setup above the terminal (the scaffold omits it; keep it short) */
+.card.code h1 { font-size: 56px; }
+
+/* The window: a clean panel lifted off the canvas, corners clipped so the titlebar and
+   the current-line highlight bleed to the edges. */
+.card.code .terminal {
+  width: 100%; z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+}
+.card.code .titlebar {
+  display: flex; align-items: center; gap: 18px;
+  padding: 22px 28px;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.card.code .dots { display: inline-flex; gap: 12px; }
+.card.code .dots i { width: 19px; height: 19px; border-radius: 50%; display: block; }
+.card.code .dots i:nth-child(1) { background: #FF5F56; }   /* macOS close  */
+.card.code .dots i:nth-child(2) { background: #FFBD2E; }   /* macOS minimize */
+.card.code .dots i:nth-child(3) { background: #27C93F; }   /* macOS zoom   */
+.card.code .title { margin-left: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 26px/1.3 var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+.card.code .title .path { color: var(--text); }   /* the variable part — e.g. the cwd after "claude —" */
+
+/* The body: one .line per source row, each a right-aligned line-number gutter (.no) and
+   the source (.src, whitespace preserved for indentation). */
+.card.code .term-body {
+  margin: 0; padding: 34px 0;
+  display: flex; flex-direction: column;
+  font: 500 33px/1.7 var(--mono); color: var(--text);
+}
+.card.code .line { display: flex; align-items: baseline; gap: 30px; padding: 0 44px; }
+.card.code .line .no { flex: none; width: 1.6em; text-align: right; color: var(--muted); opacity: 0.45; user-select: none; }
+.card.code .line .src { white-space: pre; }
+/* the single focal line — a faint accent band with an inset rail, full-bleed to the edges */
+.card.code .line.hot { background: rgba(88,166,255,0.10); box-shadow: inset 4px 0 0 var(--accent); }
+
+/* syntax tokens (theme-colored) */
+.card.code .t-kw  { color: var(--t-kw); }
+.card.code .t-fn  { color: var(--t-fn); }
+.card.code .t-str { color: var(--t-str); }
+.card.code .t-num { color: var(--t-num); }
+.card.code .t-com { color: var(--t-com); font-style: italic; }
+.card.code .t-pr  { color: var(--t-prompt); }
+/* solid caret at the end of the last line — implies an active session (no blink in a still) */
+.card.code .caret { display: inline-block; width: 15px; height: 34px; margin-left: 8px; vertical-align: -5px; border-radius: 2px; background: var(--accent-2); }
+
+.card.code .kicker { margin: 0; z-index: 1; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
+.card.code .kicker b { color: var(--text); font-weight: 700; }
+
+/* --- Claude Code SESSION variant: a transcript instead of a static file. Drop the .no
+   gutter and use these line roles. The clay accent (--claude, Anthropic's) carries the
+   user's request and Claude's action bullets so the window reads as a Claude Code session;
+   tool names take the blue accent, result branches go muted, added/success text green. The
+   action bullet is a CSS circle (not the ⏺ glyph, which can tofu in headless Chromium); the
+   result branch uses the box-drawing └, which renders reliably in the mono stack. --- */
+.card.code { --claude: #D97757; }
+.card.code .line.ask { background: rgba(217,119,87,0.12); box-shadow: inset 4px 0 0 var(--claude); }
+.card.code .u    { color: var(--claude); font-weight: 700; }   /* the user's request line */
+.card.code .dot  { display: inline-block; width: 17px; height: 17px; border-radius: 50%; background: var(--claude); vertical-align: 1px; }
+.card.code .tool { color: var(--accent); }                     /* tool name: Bash / Edit / Update */
+.card.code .br   { color: var(--muted); }                      /* └ result branch */
+.card.code .ok   { color: var(--accent-2); }                   /* added / success text */
+
+/* ── MATRIX card TYPE — N-column comparison: a heading per column, rows of
+   labeled values, with an optional ".switch" divider to set one group apart.
+   Built for the 3-profile coach-tone comparison; reusable for any small matrix.
+   Profile columns are color-coded (green / grey / pink). Keep it to ≤4 columns
+   and ≤7 rows so it stays legible at phone size. */
+.card.matrix { display: flex; flex-direction: column; }
+.card.matrix h1 { font: 800 78px/1.04 var(--font); color: #E6EDF3; margin: 22px 0 8px; }
+.card.matrix .sub { margin: 0 0 30px; }
+.card.matrix .grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  align-items: center;
+  row-gap: 24px;
+  margin-top: auto; margin-bottom: auto;   /* vertically center the table */
+}
+.card.matrix .col-h { font: 700 50px/1 var(--font); text-align: center; letter-spacing: -0.02em; }
+/* generic column-accent classes (put on .col-h and/or value cells) */
+.card.matrix .green { color: var(--accent-2); }   /* green */
+.card.matrix .grey  { color: #C9D1D9; }            /* light grey */
+.card.matrix .pink  { color: var(--accent-3); }    /* pink/hot */
+.card.matrix .dial { font: 500 40px/1.1 var(--font); color: var(--muted); }
+.card.matrix .v { font: 700 64px/1 var(--mono); color: #E6EDF3; text-align: center; }
+/* word-value cell (plain-English behavior, not a number) */
+.card.matrix .vt { font: 500 33px/1.18 var(--font); color: #C9D1D9; text-align: center; }
+.card.matrix .switch {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 22px;
+  font: 600 26px/1 var(--mono); color: var(--accent);
+  letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
+  margin: 4px 0;
+}
+.card.matrix .switch::before, .card.matrix .switch::after {
+  content: ""; flex: 1; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(88,166,255,0.5), transparent);
 }

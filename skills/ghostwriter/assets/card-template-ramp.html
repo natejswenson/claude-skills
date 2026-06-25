@@ -4,6 +4,8 @@
   then: render_image.py --type card --in images/<slug>.html --out images/<slug>.png
   Three ascending steps; the last (s3) is highlighted. Bars are illustrative, NOT to
   scale — the labeled .val figures carry the truth, so keep them accurate.
+  The byline sits inline in the .toprow (top-right, beside the eyebrow) so a feed crop
+  of the bottom can't remove your attribution — keep it there, don't move it down.
 -->
 <html lang="en">
 <head>
@@ -12,19 +14,37 @@
 </head>
 <body>
   <div id="canvas" class="card ramp">
-    <div class="eyebrow">EYEBROW LABEL</div>
+    <div class="toprow">
+      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="footer brand"></div>
+    </div>
+
     <h1>One line naming the metric that's accelerating.</h1>
 
-    <div class="ramp-row">
-      <div class="step s1"><div class="val">val 1</div><div class="bar"></div><div class="date">then</div></div>
-      <div class="step s2"><div class="val">val 2</div><div class="bar"></div><div class="date">later</div></div>
-      <div class="step s3"><div class="val">val 3</div><div class="bar"></div><div class="date">now</div></div>
+    <div class="chart">
+      <!-- Growth-delta callout: the headline jump (edit the figure). -->
+      <div class="delta">&#8599; 3.6&#215;</div>
+
+      <div class="ramp-row">
+        <div class="step s1"><div class="val">val 1</div><div class="bar"></div></div>
+        <div class="step s2"><div class="val">val 2</div><div class="bar"></div></div>
+        <div class="step s3"><div class="val">val 3</div><div class="bar"></div></div>
+
+        <!-- Trend line over the bar tops. The node cy values MUST match the bar heights:
+             cy = 498 - barHeight (s1 130->368, s2 290->208, s3 468->30). If you change a
+             bar's height in diagram.css, update its circle cy and the polyline point. -->
+        <svg class="trendline" viewBox="0 0 1008 498" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="248,368 504,208 760,30" />
+          <circle cx="248" cy="368" r="7" />
+          <circle cx="504" cy="208" r="7" />
+          <circle cx="760" cy="30" r="9" class="last" />
+        </svg>
+      </div>
+      <div class="ramp-base"></div>
+      <div class="dates"><span>then</span><span>later</span><span>now</span></div>
     </div>
-    <div class="ramp-base"></div>
 
     <p class="kicker">A supporting stat, with the key figure in <b>bold</b>.</p>
-
-    <div class="footer brand"></div>
   </div>
 </body>
 </html>
