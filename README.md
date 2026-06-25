@@ -30,17 +30,34 @@ ln -sfn "$PWD/skills/github-stats" ~/.claude/skills/github-stats
 
 Each skill's own `README.md` covers its dependencies and configuration.
 
-## Releasing a skill
+## Branch & release flow
 
-1. In a PR, bump the skill's version manifest (`package.json` for devlog/resume,
-   `pyproject.toml` for ghostwriter) and add a `CHANGELOG.md` entry.
-2. Merge to `main`. The skill's release workflow tags `&lt;skill&gt;-v&lt;version&gt;` and
-   publishes a GitHub Release from the changelog — only if that version isn't
-   already tagged. Other skills are untouched.
+Work integrates on `dev`; `main` is the protected release branch. A push to `main`
+is what cuts a skill's release, and the only way in is an auto-merged PR.
+
+1. Branch off `dev`, do the work, and land it on `dev` (open a PR into `dev`, or push
+   directly — `dev` is unprotected).
+2. To release, **open a PR from `dev` into `main`**. The `auto-merge dev to main`
+   workflow enables GitHub native auto-merge, and the PR **merges itself once all
+   `ci / <skill>` checks pass** (one required check per skill; each reports on every
+   PR). If any check fails, it never merges. Open the PR as a **draft** to hold it —
+   it won't auto-merge until you mark it ready.
+3. On the merge to `main`, each **changed** skill's release job tags
+   `<skill>-v<version>` and publishes a GitHub Release from its changelog — only if
+   that version isn't already tagged. Unchanged skills are untouched.
+
+To cut a skill's release, bump its version (`package.json` for devlog/resume, the
+`SKILL.md` frontmatter `version:` for ghostwriter/github-stats) and add a `CHANGELOG.md`
+entry in the same change. A `dev → main` merge with no version bump is a no-op release.
+
+The required checks + native auto-merge are configured as code in
+[`.github/repo-settings.sh`](.github/repo-settings.sh) (run once by a repo admin).
 
 ## Repo layout
 
 ```
 skills/<name>/        # one self-contained skill (history preserved via git subtree)
-.github/workflows/    # <name>-ci.yml + <name>-release.yml per skill, path-filtered
+.github/workflows/    # _release.yml (reusable) + one caller per skill, path-filtered
+                      # + auto-merge.yml (dev→main) and tools.yml (shared scorer)
+.github/repo-settings.sh   # repo + main-branch-protection config, as code
 ```
