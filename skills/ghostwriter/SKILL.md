@@ -87,7 +87,19 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
      one with the strongest personal angle. Briefly tell the user which you picked and why.
    - "From my interests" / no topic given → pick an evergreen theme from `voice/interests.md`
      they haven't covered recently.
-2. **Draft against the voice profile.** Read `voice/voice-notes.md`, `voice/voice-profile.md`,
+2. **Ground it in a real detail first (do this before drafting).** The #1 cause of generic,
+   shallow, AI-sounding drafts is writing *around* a vague point instead of *from* a specific
+   real thing. Before you draft, make sure you have **one concrete, real, first-person anchor**
+   for the post: the actual tool, a real number, a specific decision, a thing that actually
+   happened. If you don't already have it (from the topic, the radar digest, or a source the
+   user pointed you at), **interview the user to extract it** — use the `AskUserQuestion` tool
+   to ask **2–3 sharp questions**, each as **a/b/c/other multiple choice** so they answer in one
+   tap. Pull for: (a) the specific real thing this is about, (b) what actually happened / what
+   they decided, and (c) the one takeaway a reader should leave with. Draft only once you have a
+   real anchor. **Never fabricate a detail to skip this step** (see voice-notes.md → Substance
+   bar + Authenticity). If the user genuinely has no real anchor, say so rather than producing a
+   generic post.
+3. **Draft against the voice profile.** Read `voice/voice-notes.md`, `voice/voice-profile.md`,
    AND `voice/algorithm.md` first, every time (voice-notes.md holds direct user feedback and
    takes priority; algorithm.md is reach optimization and must never override voice). If a voice
    file is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
@@ -99,11 +111,11 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
    strong post, not three mediocre options.
    **Never fabricate or exaggerate** details that aren't true to the user's real experience —
    authenticity over drama (see voice-notes.md).
-3. **Save the draft** to `drafts/` as `YYYY-MM-DD-slug.md` (ask the user for today's date if you
+4. **Save the draft** to `drafts/` as `YYYY-MM-DD-slug.md` (ask the user for today's date if you
    don't have it; do not invent one).
-4. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
+5. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
    scrap it?"* Wait for their answer. Do not publish unprompted.
-5. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
+6. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
    *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
    stays **text-only** — a strong text post outperforms a weak image, so that's a fine default.
    Only build a visual if it genuinely earns dwell time (a real diagram people study), not as
