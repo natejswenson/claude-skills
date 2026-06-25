@@ -15,6 +15,11 @@ read it before opening any PR.
 - **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
   (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills) **and** add
   a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release.
+- **Always delete a feature branch as soon as it's merged** — local *and* remote. The repo has
+  `delete_branch_on_merge` on, so a PR merged on GitHub auto-removes its head. If you merge or
+  integrate any other way (CLI, direct push, squash), delete the branch by hand:
+  `git push origin --delete <branch>` + `git branch -D <branch>`. Never leave merged branches around.
+  (`dev` and `main` are deletion-protected, so auto-delete only ever eats `feature/*` heads.)
 - **Keep this file current in the same PR.** Any change to the branch model, CI, release flow, or
   repo settings updates the relevant section here as part of that same change, not as a follow-up.
 
@@ -28,8 +33,12 @@ feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ·�
   green, no force-push, no deletion. **0 required approvals** (solo maintainer self-merges).
   **`enforce_admins: false`** — the admin keeps a direct-push break-glass path; protection is a
   discipline gate for the normal flow, not a hard wall.
-- **`dev`** — integration branch, **unprotected**. Land feature work here (via PR or direct push).
-  `dev` is long-lived and must never be deleted.
+- **`dev`** — integration branch, push-open (no required checks/PR — direct and force pushes allowed)
+  but **deletion-protected**. Land feature work here (via PR or direct push). `dev` is long-lived;
+  the deletion lock is what lets repo-wide `delete_branch_on_merge` run without eating `dev` on a
+  `dev → main` merge.
+- **Feature branches are deleted on merge** (`delete_branch_on_merge`); only `feature/*` heads are
+  ever auto-removed since `dev`/`main` are deletion-protected.
 - Merge style: **merge commit** for `dev → main` (keeps `dev` and `main` linked so `dev` never
   diverges and needs no reset). Feature → `dev` is typically squashed for a clean integration commit.
 
