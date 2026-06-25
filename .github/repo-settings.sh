@@ -12,13 +12,28 @@ set -euo pipefail
 
 REPO="${REPO:-natejswenson/claude-skills}"
 
-echo "==> Enabling native auto-merge + merge commits on $REPO"
-# delete_branch_on_merge stays FALSE on purpose: a dev->main PR's head IS `dev`, and
-# delete-on-merge would delete the long-lived `dev` branch. Keep it off to protect dev.
+echo "==> Enabling native auto-merge + merge commits + delete-branch-on-merge on $REPO"
+# delete_branch_on_merge=true auto-cleans every merged PR's head branch. This is SAFE for
+# the dev->main PR (whose head is `dev`) ONLY because `dev` is deletion-protected below, so
+# GitHub skips deleting it and only feature/* heads get auto-removed.
 gh api -X PATCH "repos/$REPO" \
   -F allow_auto_merge=true \
   -F allow_merge_commit=true \
-  -F delete_branch_on_merge=false >/dev/null
+  -F delete_branch_on_merge=true >/dev/null
+
+echo "==> Protecting dev from DELETION (it stays push-open; only deletion is blocked)"
+# Minimal protection: no required checks/PR (direct pushes to dev still allowed), force-push
+# allowed, but allow_deletions=false so delete-branch-on-merge can't eat dev on a dev->main merge.
+gh api -X PUT "repos/$REPO/branches/dev/protection" --input - >/dev/null <<'JSON'
+{
+  "required_status_checks": null,
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": true,
+  "allow_deletions": false
+}
+JSON
 
 echo "==> Re-asserting main branch protection (PR + four ci/<skill> checks, 0 approvals)"
 # Mirrors the protection the 2026-06-19 CI/CD design requires. Re-applying is a no-op
