@@ -28,11 +28,13 @@ at the repo level (`allow_auto_merge: false`).
 - **`auto-merge.yml` enables auto-merge on the promotion PR.** On a `pull_request_target`
   targeting `main` with `head_ref == 'dev'`, it runs `gh pr merge --auto --merge`. Opening
   a non-draft `dev → main` PR therefore means "ship when green."
-- **Auto-merge is enabled with a fine-grained PAT (`secrets.RELEASE_PAT`), not `GITHUB_TOKEN`.**
-  A merge performed by `GITHUB_TOKEN` does not trigger downstream workflows (loop-prevention), so
-  the per-skill `release` jobs would never fire. The PAT (Contents + Pull requests write) attributes
-  the merge to a real identity so the push-to-main release runs. Workflow falls back to
-  `github.token` if the secret is absent (auto-merge still works; release must then be cut by hand).
+- **Release tagging is decoupled from auto-merge (current decision).** Auto-merge runs as the
+  default `GITHUB_TOKEN`, which does not trigger downstream workflows (loop-prevention), so a
+  promotion never cuts a release on its own. Release tags are a separate, deliberate step: after
+  opening a `dev → main` PR the agent asks whether a release is needed and, if so, cuts
+  `<skill>-v<version>` from `main` by hand (see CLAUDE.md → Release process). The per-skill `release`
+  job remains in each caller, dormant under bot auto-merge — kept as the path for a future
+  re-coupling (enable auto-merge via a `RELEASE_PAT` so the push-to-main release fires automatically).
   - `pull_request_target` (not `pull_request`) so the job has a write-scoped token. It
     never checks out or runs PR code — it only calls the `gh` API — so the usual
     `pull_request_target` risk does not apply.
