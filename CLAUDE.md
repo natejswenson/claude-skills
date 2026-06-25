@@ -47,6 +47,15 @@ feature/* ──PR──▶ dev ──PR (auto-merge)──▶ main ──▶ pe
    publishes a GitHub Release from its `CHANGELOG.md` — only if that version isn't already tagged.
    Unchanged skills are untouched; a no-bump promotion releases nothing.
 
+**`RELEASE_PAT` is required for step 4 to fire automatically.** A merge performed by the default
+`GITHUB_TOKEN` does **not** trigger downstream workflows (GitHub loop-prevention), so `auto-merge.yml`
+enables auto-merge with a fine-grained PAT stored as the repo secret **`RELEASE_PAT`** (scopes:
+*Contents: read/write* + *Pull requests: read/write* on this repo). With it, the merge is attributed
+to a real identity and the release fires. Without it, auto-merge still works but **the release must be
+cut by hand** — extract the version's `CHANGELOG.md` section and
+`gh release create "<skill>-v<version>" --target <main-sha> --title "<skill> v<version>" --notes-file <notes>`.
+Rotate the PAT before it expires.
+
 ## CI architecture (how the gate works)
 
 - One reusable **`_release.yml`** (`workflow_call`) + one caller **`<skill>.yml`** per skill +
