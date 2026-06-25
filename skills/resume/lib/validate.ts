@@ -16,7 +16,7 @@ function norm(s: string): string {
 }
 
 /** Banned connective phrases that must never appear in the summary (R6). */
-const BANNED_SUMMARY_PHRASES = [
+export const BANNED_SUMMARY_PHRASES = [
   "expertise in",
   "deep expertise",
   "experienced in",
@@ -73,6 +73,23 @@ function outputText(resume: ResumeJSONType): string {
 export interface ValidationResult {
   ok: boolean;
   violations: string[];
+}
+
+/**
+ * Drop `optimizedBullets` entries that record no actual change (rewritten ===
+ * original after trim). Such entries are a model bookkeeping error — the bullet
+ * was effectively KEPT, not optimized — and they pollute the change summary
+ * shown to the user and trip the downstream `R9_optimized_noop` faithfulness
+ * check. Deterministic, no LLM call; the bullet itself stays in
+ * `experience[].bullets` untouched. Returns the same object when nothing changes.
+ */
+export function dropNoopOptimizedBullets(resume: ResumeJSONType): ResumeJSONType {
+  const cleaned = resume.optimizedBullets.filter(
+    (b) => b.original.trim() !== b.rewritten.trim(),
+  );
+  return cleaned.length === resume.optimizedBullets.length
+    ? resume
+    : { ...resume, optimizedBullets: cleaned };
 }
 
 /**

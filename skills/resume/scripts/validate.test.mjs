@@ -5,7 +5,7 @@
  * Run: node scripts/validate.test.mjs
  */
 import assert from "node:assert/strict";
-const { validateTailoring } = await import("../lib/validate.ts");
+const { validateTailoring, dropNoopOptimizedBullets } = await import("../lib/validate.ts");
 
 let pass = 0,
   fail = 0;
@@ -92,6 +92,25 @@ test("number present in source is allowed", () => {
     SOURCE + " across 15 services.",
   );
   assert(!has(r, '"15"'), r.violations.join(" | "));
+});
+
+test("dropNoopOptimizedBullets removes unchanged entries, keeps real ones", () => {
+  const resume = {
+    ...base,
+    optimizedBullets: [
+      { original: "Built Python services", rewritten: "Built Python services", role: "Acme" }, // noop
+      { original: "  Led work  ", rewritten: "Led work", role: "Acme" }, // noop after trim
+      { original: "Wrote docs", rewritten: "Authored on-call runbook", role: "Acme" }, // real
+    ],
+  };
+  const out = dropNoopOptimizedBullets(resume);
+  assert.equal(out.optimizedBullets.length, 1, "expected only the real change to survive");
+  assert.equal(out.optimizedBullets[0].rewritten, "Authored on-call runbook");
+});
+
+test("dropNoopOptimizedBullets returns same object when nothing is a noop", () => {
+  const resume = { ...base, optimizedBullets: [{ original: "a", rewritten: "b", role: "Acme" }] };
+  assert.equal(dropNoopOptimizedBullets(resume), resume, "should be referentially identical");
 });
 
 console.log(`\nresult: ${pass} passed, ${fail} failed`);

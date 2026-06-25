@@ -2,7 +2,7 @@
 name: resume
 description: Tailor a résumé to a job description and render a polished PDF, entirely from the CLI. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
 user_invocable: true
-version: 0.1.1
+version: 0.2.0
 ---
 
 # /resume — Résumé tailoring
@@ -121,6 +121,11 @@ preview; otherwise the `--open` flag opens it in the user's default viewer.
 - `npm run eval` — quality eval of the non-deterministic tailoring; real
   tailoring is free (subscription), `--l3` adds a billed LLM judge under a hard
   budget cap. See `scripts/eval/run-eval.mjs`.
+- `npm run benchmark` — accuracy + speed benchmark over the real résumé fixture ×
+  real job postings (per-phase wall-clock, hard-rule gate, JD-coverage, a
+  directional discrimination check, and optional $0 subscription-CLI judges via
+  `--judge`). All $0. `--mock` is a CI-safe plumbing check. See
+  `scripts/eval/benchmark.mjs` and `docs/plans/2026-06-20-resume-benchmark-design.md`.
 - Versioning (semver): in the `dev → master` PR, bump `version` here **and** in
   `package.json` (the release tag is driven by `package.json`), and add a
   matching `## [N.M.P]` section to `CHANGELOG.md`. On merge to `master`,
