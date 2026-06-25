@@ -8,21 +8,34 @@ post anything to LinkedIn and you do NOT call any LinkedIn API or
 
 ## What to find
 
-Recent, genuinely noteworthy releases / changes from Anthropic that matter to engineers
-building AI agents for ops, SRE, and CI/CD — Nate's audience. Examples of what counts:
-new Claude models, Claude Code features/releases, Agent SDK changes, API capabilities
-(tool use, batch, files, memory, prompt caching), pricing/limits changes, notable docs.
+Recent, genuinely noteworthy developments across the **AI industry** that matter to engineers
+building AI agents for ops, SRE, and CI/CD — Nate's audience. Not just Anthropic: cover the whole
+field, but keep the relevance filter tight (it has to change what an ops/agent builder does or
+thinks). Examples of what counts: new frontier models (any vendor), agent frameworks / SDKs, API
+capabilities (tool use, computer use, batch, files, memory, prompt caching), coding-agent tooling,
+LLMOps / eval / observability tooling, AI features landing in the cloud + CI/CD platforms Nate's
+audience already runs (AWS, Kubernetes, GitHub Actions, Terraform), and pricing/limits/policy
+shifts that hit automated workloads.
 
-## Sources — prefer these; ignore SEO blogs, hype roundups, and rumor
+## Sources — prefer primary; ignore SEO blogs, hype roundups, and rumor
 
+**Tier 1 — Anthropic (still the core; Nate builds on it):**
 - Anthropic news: https://www.anthropic.com/news
 - Claude Code release notes / CHANGELOG: https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
   and the Claude Code docs at https://docs.claude.com
 - Claude API / platform changelog and docs: https://docs.claude.com
 - Anthropic engineering blog: https://www.anthropic.com/engineering
 
-Use WebSearch to find what shipped, then confirm each item against one of the sources
-above before including it. If a claim only appears on a third-party hype site, drop it.
+**Tier 2 — broader AI industry (include when relevant to the audience above):**
+- OpenAI: https://openai.com/news and https://platform.openai.com/docs/changelog
+- Google: https://blog.google/technology/ai/ , Google DeepMind, and Vertex AI release notes
+- AWS AI & agents (Bedrock, Q, agent tooling): https://aws.amazon.com/about-aws/whats-new/
+- Major agent / LLMOps tooling — agent frameworks (e.g. LangChain/LangGraph, LlamaIndex),
+  eval / observability, and coding-agent tools — via their own changelogs / release notes.
+
+Use WebSearch to find what shipped, then confirm each item against a **primary source** (the
+vendor's own announcement, docs, or changelog) before including it. If a claim only appears on a
+third-party hype site, drop it. Note each item's vendor/source in the digest.
 
 ## Window & dedup
 
@@ -36,7 +49,7 @@ The angle is the part Nate will actually use, so it must obey his voice rules
 (`voice/voice-notes.md` is the source of truth — these are a summary):
 
 - **Prescriptive, for the reader** — "here's what you should do / what your tooling
-  should now handle," NOT "look what Anthropic announced" and NOT autobiographical
+  should now handle," NOT "look what $VENDOR announced" and NOT autobiographical
   "here's what I'm building."
 - **Lead with the implication, not the announcement.** The release is the hook; the
   engineering takeaway is the post.
@@ -57,7 +70,7 @@ Structure:
 _Research only. Pick an item and tell the ghostwriter "draft a post from item N in the radar."_
 
 ## 1. <short title>
-- **What shipped:** <one factual line> — <source URL>
+- **What shipped:** <one factual line> (<vendor>) — <source URL>
 - **Why it matters (ops/agent builders):** <1–2 lines>
 - **Suggested angle:** <a prescriptive, Nate-voice hook — the implication, not the news>
 

@@ -4,6 +4,30 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-25
+
+### Changed
+- **Generate entry point is now an idea menu, not an interview.** The flow opens by
+  *proposing* concrete, already-grounded ideas instead of interrogating the user. A
+  two-tier `AskUserQuestion` menu: pick a lane (**Radar** / **Personal project** /
+  **Interests-hot-take**), then pick a specific anchor (a radar item, a recently-shipped
+  local repo, or an evergreen angle). The pick *is* the post's real anchor, so the old
+  generic 2–3-question grounding interview is gone — at most one sharp follow-up remains
+  for the personal-project lane. A named topic or "from item N in the radar" still
+  short-circuits straight to drafting. (SKILL.md → Mode: Generate.)
+- **Release radar broadened beyond Anthropic to the whole AI industry.** The twice-weekly
+  research prompt now scans Tier 1 (Anthropic) *and* Tier 2 (OpenAI, Google/DeepMind/Vertex,
+  AWS AI & agents, agent/LLMOps tooling), keeping the ops/agent-builder relevance filter and
+  the primary-source / anti-hype rule. Each digest item notes its vendor.
+  (`scripts/release_radar_prompt.md`.)
+
+### Added
+- **`scripts/recent_projects.py`** — discovers local repos that recently had Claude Code
+  sessions, powering the "personal project" idea lane. Reads the authoritative `cwd` /
+  `gitBranch` out of each session's jsonl (the `~/.claude/projects` slug is ambiguous),
+  dedupes by real path, skips temp dirs, and adds each repo's last commit. Human list by
+  default, `--json` / `--limit` flags. Pure stdlib, read-only.
+
 ## [0.5.0] - 2026-06-24
 
 ### Added
