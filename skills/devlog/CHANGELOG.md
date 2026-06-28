@@ -2,6 +2,25 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.4.0 (2026-06-28) — researched, end-to-end implementation-guide posts
+
+**Changed**
+- `/devlog` now writes each release entry as a researched, cited, end-to-end
+  implementation guide rather than a narrative summary of what shipped. Step 6
+  derives the engineering topic(s) the work touched, researches them against
+  reputable outside sources (cited inline and in a `## Sources` section), and
+  writes a setup → build → use → verify walkthrough with multiple
+  copy-paste-reusable, language-tagged code blocks that together form a complete,
+  runnable whole (right-sized: roughly 3-6 essential blocks for a substantive
+  feature, fewer for a small change, never padded). A short `## Shipped` hook
+  still opens the post and `## Changelog` still closes it. Updated the skill
+  description and the Step 6 / 6a-6c guidance accordingly.
+
+**Added**
+- `deepDive` config block: `topicDomains` (default: AI, DevOps/SRE, software
+  engineering) and `minSources` (default 2) to steer topic selection and the
+  citation floor. Repo-agnostic; user-supplied values live in `config.json`.
+
 ## 0.3.1 (2026-06-20) — fetch tags before discovering releases
 
 **Fixed**
