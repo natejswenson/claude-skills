@@ -1,14 +1,20 @@
 ---
 name: devlog
-description: Generate a dev log entry for each new version release from git tags, written in your own voice, and publish to GitHub
+description: Generate a researched, cited blog post for each new version release from git tags, written in your own voice, and publish to GitHub
 user_invocable: true
 ---
 
-# /devlog — Release Dev Log Generator
+# /devlog — Release Blog-Post Generator
 
-You are generating a dev log entry **for each new version release** (a semver git tag) in
-the user's projects, writing each entry **in the user's own voice**, and publishing them to
-a GitHub repo configured in `~/.claude/skills/devlog/config.json`.
+You are generating a **blog post for each new version release** (a semver git tag) in the
+user's projects, writing each in **the user's own voice**, and publishing them to a GitHub
+repo configured in `~/.claude/skills/devlog/config.json`.
+
+Each post is more than a changelog: a short "what shipped" hook, then a **deeply researched,
+end-to-end implementation guide** for the engineering topic(s) the work touched — how to build
+and use the technique, grounded in BOTH the user's actual work AND reputable, cited outside
+sources, with multiple copy-paste-reusable code blocks that form a complete, runnable whole
+(see Step 6).
 
 Usage: `/devlog` (all configured projects) or `/devlog <project-key>` (single project)
 
@@ -55,6 +61,11 @@ Optional fields:
   (e.g. `devlog-v` for tags like `devlog-v0.2.0`). Defaults to `v` (matching tags like
   `v1.4.0`). In a monorepo, each project sets its own prefix so its releases are detected
   independently.
+- `deepDive` — optional object controlling the researched deep-dive (Step 6). Repo-agnostic;
+  all values have sensible defaults:
+  - `topicDomains` — array of domains the deep dive may explore. Default
+    `["AI", "DevOps/SRE", "software engineering"]`.
+  - `minSources` — minimum reputable external sources to cite per post. Default `2`.
 
 ## Step 0: Load and validate config
 
@@ -266,42 +277,131 @@ git -C '<project.path>' branch --contains '<hash>' -r 2>/dev/null | grep -q 'ori
 - If the remote URL matches `<project.remote>` (i.e. `github.com/<project.remote>` or the SSH equivalent) and the commit is on the published branch, it's a public commit — link it using `https://github.com/<project.remote>/commit/<hash>`.
 - Otherwise, describe the change without linking.
 
-## Step 6: Generate the entry (in the user's voice)
+## Step 6: Research and write the blog post (in the user's voice)
 
-For each new release, generate a markdown entry with this structure, writing the prose to
-match the voice profile resolved in Step 2 (its openers, rhythm, vocabulary, never-do):
+Each entry is a **proper blog post**, not a changelog: a short "what shipped" hook, then a
+**researched deep dive** into the engineering topic(s) the work touched. The release is the
+springboard; the teaching is the point. Every post must be grounded in BOTH the user's actual
+work AND **reputable outside sources, cited**.
+
+### Step 6a: Derive the deep-dive topic(s)
+
+From the release's real changes (Step 4), identify the **one** substantive topic the work
+touched (occasionally several, only when the work genuinely spans them) in the configured
+`deepDive.topicDomains` (default: AI, DevOps/SRE, and software engineering). The topic is the
+general concept *behind* what shipped, e.g. shipping a `feature→dev→main` flow → branching
+strategy and release engineering. Never pad with topics the work didn't touch.
+
+### Step 6b: Research — deeply, from reputable sources
+
+For each topic, **research before writing**. Use web search/fetch to gather authoritative
+sources and concrete, citable facts. Requirements:
+- **Prefer primary/authoritative sources:** official docs and release notes, standards bodies
+  (e.g. semver.org), primary research (e.g. DORA / *Accelerate*), and well-regarded
+  engineering writing (e.g. Martin Fowler / Thoughtworks, Atlassian, the project's own docs).
+  Avoid SEO content farms and low-signal blog spam.
+- **At least `deepDive.minSources` reputable sources** (default 2; aim for 3+ on a meaty topic).
+- **Every specific external claim must be backed by a source** — version numbers, behaviors,
+  research findings, definitions, statistics. If you can't source a specific claim, don't make
+  it. Verify facts against the source rather than recalling them.
+- Keep a working list of `(claim, url)` pairs to cite in the post.
+
+### Step 6c: Write the post
+
+Structure (write the prose to match the voice profile resolved in Step 2 — openers, rhythm,
+vocabulary, never-do):
 
 ```markdown
 ---
-title: "<concise title for this release>"
+title: "<essay-style title; NOT 'release vX.Y.Z'>"
 date: YYYY-MM-DD
 project: <project.key>
 version: <version label, e.g. v0.2.0>
-summary: "<1-2 sentence summary of what shipped>"
+tags: [<2-5 lowercase topic tags, e.g. git, ci-cd, release-engineering>]
+summary: "<1-2 sentence hook that frames the deep dive, not just what shipped>"
 ---
 
-## What Shipped
+## Shipped
 
-<Narrative paragraphs about what this version delivers. Focus on WHAT changed and WHY it
-matters to someone using or following the project, not raw commit messages. Group related
-commits into the handful of changes that actually matter. Write in the user's voice per the
-resolved voice profile.>
+<2-4 sentences: what this release actually delivered, plainly. End by pivoting to the topic
+the rest of the post explores. This is the only purely-changelog part.>
 
-## What's Next
+## <Descriptive section heading for the deep dive / walkthrough>
 
-<Brief 1-2 sentence forward-looking note based on the trajectory of the work.>
+<The deep dive is an END-TO-END IMPLEMENTATION GUIDE, not a single illustrative snippet. A
+developer should be able to read this post and actually BUILD and USE the thing it's about.
+Weave together THREE threads throughout: (1) what the user actually did (grounded, first-person,
+no fabrication), (2) the general concept backed by the researched sources, cited inline as
+markdown links, and (3) the user's earned take/lesson.
 
-## Commits
+Cover the full path, in order, using descriptive section headings (split across multiple `##`
+sections — do not cram the whole build into one):
+
+- **Setup / prerequisites** — what's needed before the core code: dependencies, config, the
+  relevant data model, types, or interfaces. Include a code block whenever it has real content
+  (install command, schema, config file).
+- **Build it, step by step** — the core implementation broken into ordered steps, EACH with its
+  own language-tagged code block, that together form a COMPLETE, coherent, runnable whole, not
+  one isolated centerpiece function. Show the wiring between the pieces (how they call each
+  other), not just the most interesting line.
+- **Use it** — how to actually invoke or run the result, with a code block showing the call site
+  and a realistic example of its output or effect.
+- **Verify it / edge cases** — how to confirm it works (a test, an assertion, or what to check),
+  plus the one or two real failure modes worth calling out.
+
+This is a blog for DEVELOPERS: every code block must be real, correct, idiomatic, language-tagged,
+and copy-paste-reusable, and the blocks must be collectively complete enough to reproduce the
+LOAD-BEARING path of the feature. Aim for the essential blocks (roughly 3-6 for a substantive
+feature, fewer for a small change) — show the pieces that carry the idea and the wiring between
+them, not every helper, import, or obvious glue line. Favor one clear block per step over many
+tiny ones or one giant dump; if a block isn't teaching something, cut it. A clean, general
+version of the concept is the goal; it need not be the user's exact source. Use inline `code`
+for identifiers.>
+
+## <Next build/use section — continue the walkthrough>
+
+<...>
+
+## Sources
+
+- [<source title>](<url>) — <one phrase on what it supports>
+- [<source title>](<url>) — <...>
+
+## Changelog
 
 - <commit message> ([short-hash](https://github.com/<project.remote>/commit/full-hash))
 ```
 
 **Important rules for content generation:**
-- "What Shipped" is a NARRATIVE release note, not a commit list. Describe the changes that matter, grouped, with their impact.
-- Match the **voice profile** for tone and phrasing; let `voice-notes.md` override it. Do NOT apply any LinkedIn reach rules — this is a dev log.
-- Only include the "Commits" section's links for commits on the published branch of a public repo.
-- "What's Next" should be a reasonable inference from the release's trajectory — never a fabricated roadmap.
-- **Never invent** metrics, motivations, or outcomes the commits don't support.
+- **Separate fact from concept.** What the user *did* comes only from the commits/diff — never
+  invent metrics, motivations, decisions, or outcomes the work doesn't support. What the topic
+  *is* comes from the cited sources. Keep the two clearly distinguishable to the reader.
+- **No unsourced external claims.** Any specific fact about the wider world (a version, a
+  behavior, a study, a definition) needs a `## Sources` citation. General reasoning and the
+  user's own opinions don't need a citation, but must be clearly the user's view.
+- **Match the voice profile + `voice-notes.md`** for tone and phrasing. Apply the voice's
+  authenticity, anti-AI-tell, and punctuation rules (e.g. no em dashes if the profile bans
+  them; no rhetorical fragment-lists; no clever-symmetry "payoff" closer; end on the last real
+  point). Do **NOT** apply the profile's LinkedIn length/reach rules — a blog implementation
+  guide needs room (target ~900–1600 words for a substantive feature; shorter for a genuinely
+  small change; as long as a complete, honest walkthrough requires, never padded).
+- **Accessible but substantive:** a curious non-expert can follow the entry, an experienced
+  engineer still learns something non-obvious.
+- **Write it as an END-TO-END implementation guide, not a snippet showcase.** The post must
+  teach a developer how to BUILD and USE the technique, not just glimpse it. Walk the full path:
+  setup/prerequisites → the implementation built up step by step across MULTIPLE code blocks
+  that form a complete, runnable whole → how to invoke/use it → how to verify it (and the key
+  failure modes). A reader should be able to reproduce the feature from the post alone. Every
+  code block is real, correct, idiomatic, language-tagged, and copy-paste-reusable; show the
+  load-bearing pieces and how they wire together, but keep it lean (roughly 3-6 blocks for a
+  substantive feature) — don't block every helper, import, or obvious glue line, and cut any
+  block that isn't teaching something. The code need NOT be the user's exact source (a clean, general version
+  of the concept is fine), but never claim illustrative code is verbatim production source and
+  never put fabricated metrics/results in it. **Right-size honestly:** a genuinely small change
+  gets a proportionally shorter guide that still shows the full build-and-use path; never pad a
+  thin change to look bigger, and never shrink a real feature to a single teaser block.
+- Only include the `## Changelog` links for commits on the published branch of a public repo
+  (per Step 5); omit the section if there are none.
 
 ## Step 7: Push to GitHub
 
