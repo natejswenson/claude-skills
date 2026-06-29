@@ -87,7 +87,12 @@ def _is_live(url):
     request's code."""
     code = _status(url, "HEAD")
     if code in HEAD_RETRY:
-        code = _status(url, "GET")
+        retry = _status(url, "GET")
+        # Only let the GET override the HEAD code if it actually returned one; a
+        # transient GET network error must not downgrade a HEAD that already
+        # proved the host is up (e.g. a 405 from a bot-walling CDN).
+        if retry is not None:
+            code = retry
     if code is None:
         return False
     return 200 <= code < 400 or code in ALIVE_EXTRA
@@ -113,8 +118,11 @@ def verify(draft_path):
 
     claims = data.get("claims", [])
     # Missing key defaults to True — fail-closed: an under-specified sidecar must
-    # prove its sources, not skip the gate.
+    # prove its sources, not skip the gate. An explicit non-bool value (e.g.
+    # null) is rejected rather than silently treated as "personal".
     external = data.get("external_claims", True)
+    if not isinstance(external, bool):
+        return _fail("Sidecar 'external_claims' must be true or false.")
 
     if not external:
         if claims:
@@ -124,14 +132,24 @@ def verify(draft_path):
             )
         return _ok("Personal post (external_claims:false); nothing to verify.")
 
+    if not isinstance(claims, list):
+        return _fail("Sidecar 'claims' must be a list.")
     if not claims:
         return _fail("Sidecar declares external claims but lists none.")
 
+    # The sidecar is hand/agent-authored JSON with no schema, so validate shape
+    # before touching it — a malformed sidecar must fail with a clean message,
+    # not a traceback.
     urls = []
     for claim in claims:
+        if not isinstance(claim, dict):
+            return _fail(f"Each claim must be an object; got: {claim!r}")
         sources = claim.get("sources", [])
-        if not sources:
+        if not isinstance(sources, list) or not sources:
             return _fail(f"Claim has no source: {claim.get('claim', '?')!r}")
+        for src in sources:
+            if not isinstance(src, str):
+                return _fail(f"Each source must be a URL string; got: {src!r}")
         urls.extend(sources)
 
     for url in urls:

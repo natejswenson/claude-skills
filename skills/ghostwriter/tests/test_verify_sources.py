@@ -131,6 +131,12 @@ def test_is_live_network_error_not_live(monkeypatch):
     assert vs._is_live("http://x") is False
 
 
+def test_is_live_head405_get_network_error_keeps_live(monkeypatch):
+    # A 405 proved the host is up; a transient GET error must not downgrade it.
+    monkeypatch.setattr(vs, "_status", _fake_status({"HEAD": 405, "GET": None}))
+    assert vs._is_live("http://x") is True
+
+
 # --------------------------------------------------------------------- verify
 def test_verify_missing_sidecar_fails(tmp_path):
     draft = write_sidecar(tmp_path, None)  # no sidecar written
@@ -148,6 +154,23 @@ def test_verify_non_object_json_fails(tmp_path):
     draft = write_sidecar(tmp_path, "[]")
     res = vs.verify(draft)
     assert res["ok"] is False and "JSON object" in res["reason"]
+
+
+def test_verify_external_claims_null_fails(tmp_path):
+    # Explicit null must fail-closed, not be treated as a personal post.
+    draft = write_sidecar(tmp_path, json.dumps({"external_claims": None, "claims": []}))
+    res = vs.verify(draft)
+    assert res["ok"] is False and "must be true or false" in res["reason"]
+
+
+def test_verify_missing_external_claims_key_defaults_external(tmp_path):
+    # No external_claims key -> default True -> routes into the external path
+    # (proven by hitting the claim-needs-a-source failure, not a trivial pass).
+    draft = write_sidecar(
+        tmp_path, json.dumps({"claims": [{"claim": "c", "sources": []}]})
+    )
+    res = vs.verify(draft)
+    assert res["ok"] is False and "no source" in res["reason"]
 
 
 def test_verify_personal_post_passes(tmp_path):
@@ -178,6 +201,45 @@ def test_verify_claim_without_source_fails(tmp_path):
     )
     res = vs.verify(draft)
     assert res["ok"] is False and "no source" in res["reason"]
+
+
+# --- malformed sidecar shapes must fail cleanly, never crash with a traceback
+def test_verify_claims_not_a_list_fails(tmp_path):
+    draft = write_sidecar(
+        tmp_path, json.dumps({"external_claims": True, "claims": {"c1": "x"}})
+    )
+    res = vs.verify(draft)
+    assert res["ok"] is False and "'claims' must be a list" in res["reason"]
+
+
+def test_verify_claim_not_an_object_fails(tmp_path):
+    draft = write_sidecar(
+        tmp_path, json.dumps({"external_claims": True, "claims": ["just a string"]})
+    )
+    res = vs.verify(draft)
+    assert res["ok"] is False and "must be an object" in res["reason"]
+
+
+def test_verify_sources_not_a_list_fails(tmp_path):
+    # A bare string for `sources` (a common authoring mistake) must fail with a
+    # real message, not iterate the string's characters.
+    draft = write_sidecar(
+        tmp_path,
+        json.dumps(
+            {"external_claims": True, "claims": [{"claim": "c", "sources": "https://a.com"}]}
+        ),
+    )
+    res = vs.verify(draft)
+    assert res["ok"] is False and "no source" in res["reason"]
+
+
+def test_verify_source_not_a_string_fails(tmp_path):
+    draft = write_sidecar(
+        tmp_path,
+        json.dumps({"external_claims": True, "claims": [{"claim": "c", "sources": [123]}]}),
+    )
+    res = vs.verify(draft)
+    assert res["ok"] is False and "must be a URL string" in res["reason"]
 
 
 def test_verify_non_http_scheme_fails(tmp_path):
