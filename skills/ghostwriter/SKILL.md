@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.6.0
+version: 0.7.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -128,9 +128,32 @@ post's real anchor, so there's no generic interview.
    authenticity over drama (see voice-notes.md).
 5. **Save the draft** to `drafts/` as `YYYY-MM-DD-slug.md` (ask the user for today's date if you
    don't have it; do not invent one).
-6. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
+6. **Research & fact-check — every external claim must be backed by ≥3 real, live sources (the post
+   is *generated from* sources).** Do this after Save (you need the slug) and before showing the
+   draft. List every **external/world claim** the draft makes — a vendor shipped X, a research
+   finding, a statistic, a definition; anything about the outside world, not the user's own
+   first-person experience. For each, **research it** (WebSearch / firecrawl / WebFetch) and
+   **actually read the source to confirm it supports the claim** — a live URL is not enough, the
+   content has to back the statement. Prefer **primary/authoritative** sources (official docs,
+   release notes, the vendor's own announcement, standards bodies, reputable engineering writing);
+   skip SEO/hype blogs. Radar-lane posts: reuse the digest's source URLs. Then write a sidecar
+   `drafts/YYYY-MM-DD-slug.sources.json` pairing each claim to its URL(s) — **every claim needs ≥1
+   source, and the post needs ≥3 distinct live source hosts overall** — and run
+   `python3 scripts/verify_sources.py --file drafts/YYYY-MM-DD-slug.md` until it passes. The sources
+   live **only** in the sidecar; **never put sources, links, or a "Sources" section in the post
+   body** (in-body links also crush reach — see `voice/algorithm.md`). If a claim can't reach ≥3
+   reputable sources, **cut it or don't ship the post — never fabricate a citation or a fact.**
+   - **Pure first-person posts** (no external claims — e.g. a personal/vulnerable story) make no
+     outside-world assertion. Write a sidecar declaring `{"external_claims": false, "claims": []}`;
+     the gate passes trivially. The authenticity/substance bar in `voice/voice-notes.md` covers
+     these. Be honest: if the post mixes a real external claim into a personal story, it is *not*
+     `external_claims:false`.
+   - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
+     written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
+     sidecar before publishing.
+7. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
    scrap it?"* Wait for their answer. Do not publish unprompted.
-7. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
+8. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
    *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
    stays **text-only** — a strong text post outperforms a weak image, so that's a fine default.
    Only build a visual if it genuinely earns dwell time (a real diagram people study), not as
@@ -260,6 +283,11 @@ Only after the user explicitly approves a specific draft.
 1. **Preview the payload** (optional sanity check):
    `python3 scripts/linkedin_post.py --file drafts/<file>.md --dry-run`
 2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md`
+   - **Source gate runs automatically.** A real (non-dry-run) `--file` publish is refused unless the
+     draft's `*.sources.json` sidecar passes `verify_sources.py` (≥3 distinct live hosts, every claim
+     sourced, or `external_claims:false`). If it fails, **fix the sidecar / redo the research step,
+     not the gate** — re-run Generate step 6, then retry. A bare `--text`/stdin publish is refused by
+     design (nothing to verify). Do **not** reach for `--allow-unverified` to get past a failure.
    - **With an approved single image** (only if the user opted in and approved the PNG), add
      `--image images/<slug>.png --alt "<alt text>"`.
    - **With an approved carousel**, add `--document images/<slug>.pdf --title "<short title>"`
@@ -288,8 +316,15 @@ for that exact draft.
   → re-confirm.
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
   way. Don't echo the access token or client secret in chat.
-- **Don't fabricate facts** in posts — no invented metrics, quotes, or events. If a trending
-  claim needs a number, verify it via web search or leave it out.
+- **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
+  external/world claim must clear the source contract** (Generate step 6): ≥3 distinct live,
+  reputable sources recorded in the draft's `*.sources.json` sidecar and confirmed to *support* the
+  claim, enforced at publish by `verify_sources.py`. Sources stay in the sidecar, **never in the post
+  body**. If you can't source a claim, cut it — don't ship it.
+- **`--allow-unverified` is human-only.** It is the single bypass of the source gate and exists for a
+  human to override a genuine edge case (e.g. a real source transiently down). **The agent must
+  never set it to get past a failed gate** — fix the sidecar / redo the research instead (same
+  spirit as "never publish without explicit approval").
 - **One post per request** unless the user asks for several.
 - **Compliance (LinkedIn API ToS §3.1) — never automate posting.** Every post must be
   member-initiated and explicitly approved by the user, one at a time. Do NOT set up scheduled,

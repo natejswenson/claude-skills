@@ -45,7 +45,7 @@ jobs:
         run: shellcheck scripts/release_radar.sh
         working-directory: skills/ghostwriter
       - if: steps.changes.outputs.ghostwriter == 'true'
-        run: pytest --cov=scripts --cov-report=term-missing --cov-fail-under=100
+        run: pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100
         working-directory: skills/ghostwriter
 
   release:
