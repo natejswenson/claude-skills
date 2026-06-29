@@ -8,6 +8,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
+SKILL_ROOT = Path(__file__).resolve().parent.parent
+for _sub in ("scripts", "evals"):
+    _p = str(SKILL_ROOT / _sub)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)

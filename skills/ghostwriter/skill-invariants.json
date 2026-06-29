@@ -1,0 +1,47 @@
+{
+  "_comment": "Tier-1 skill-contract manifest. Each prose invariant is a regex asserted (case-insensitive, DOTALL) against the named file by tests/test_skill_contract.py. These guardrails live ONLY in SKILL.md prose with no other automated guard; deleting one would otherwise pass CI green. Adding a new guardrail to the skill = add an entry here. The `rationale` is surfaced on failure so a breakage is self-explaining.",
+  "prose": [
+    {
+      "id": "approval-required",
+      "file": "SKILL.md",
+      "pattern": "never\\s+(auto-?publish|publish[^.\\n]*without[^.\\n]*approval)",
+      "rationale": "linkedin_post.py has NO approval check in code; approval-before-publish lives only in this prose. Deleting it lets the agent publish to the user's real profile without consent."
+    },
+    {
+      "id": "source-gate-step",
+      "file": "SKILL.md",
+      "pattern": "verify_sources\\.py",
+      "rationale": "The Generate research step must invoke the source gate; losing the reference skips source proof-of-work for external claims."
+    },
+    {
+      "id": "tos-no-automation",
+      "file": "SKILL.md",
+      "pattern": "(never automate posting|ToS\\s*§?\\s*3\\.1|member-initiated)",
+      "rationale": "LinkedIn ToS §3.1 exposure: this is the only instruction telling the agent to decline scheduled/looped/unattended posting."
+    },
+    {
+      "id": "sources-not-in-body",
+      "file": "SKILL.md",
+      "pattern": "(never put sources[^.\\n]*post body|sources stay in the sidecar)",
+      "rationale": "verify_sources never inspects the post body; keeping sources out of the body is prose-only (and in-body links also crush reach)."
+    },
+    {
+      "id": "allow-unverified-human-only",
+      "file": "SKILL.md",
+      "pattern": "(allow-unverified[^.\\n]*human-only|agent must never (set|self-apply) it)",
+      "rationale": "--allow-unverified is the single bypass of the source gate; it is enforced only by this human-only convention."
+    },
+    {
+      "id": "never-fabricate",
+      "file": "SKILL.md",
+      "pattern": "never fabricate",
+      "rationale": "Anti-fabrication for first-person content has no mechanical check; this is the skill's core authenticity rule."
+    },
+    {
+      "id": "research-after-save-before-show",
+      "file": "SKILL.md",
+      "pattern": "after .{0,40}save.{0,200}before .{0,40}show",
+      "rationale": "Generate flow ordering is load-bearing: research must run AFTER Save (the slug/sidecar path exists) and BEFORE Show (the shown draft is already source-backed)."
+    }
+  ]
+}
