@@ -39,6 +39,20 @@ the flag — CI can never spend. The harness *logic* is unit-tested in mock mode
 (`../tests/test_evals_harness.py`), so it stays under the repo's 100% coverage bar; the live API
 call sites are marked `# pragma: no cover`.
 
+**What `--mock` does NOT grade.** In mock mode the voice judge's score is derived purely from the
+deterministic AI-tell flags (em-dash / rule-of-three / reflexive CTA) — it does **not** run the LLM
+stylometry. So the mock layer cannot catch a draft that has no hard flags but is still off-voice
+(corporate buzzwords, credential-flexing, "I'm humbled to announce"). `fixtures/offvoice-draft.md`
+is exactly that case: it passes the deterministic layer and is only caught by a **live** judge run.
+Don't read a green `--mock` voice run as "the voice is good" — it means "no hard tells fired."
+
+## Behavioral harness caveats (live runs)
+
+- `run_eval.py` passes `--max-turns` (default 12) to bound spend; the cost estimate multiplies the
+  per-call estimate by `--max-turns` so the cap is conservative, not single-shot.
+- A live run that produces no parseable events (e.g. a CLI flag drift) **raises** rather than
+  scoring — an empty transcript must never read as a passing `must_not` scenario.
+
 ## Safety
 
 The behavioral harness runs with **no real LinkedIn credentials** and grades the agent's *tool-use

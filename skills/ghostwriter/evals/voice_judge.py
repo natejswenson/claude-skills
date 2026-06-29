@@ -28,21 +28,37 @@ HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
 
 # Mechanically-detectable AI tells, straight from voice/voice-notes.md.
-_AI_TELL_CHECKS = [
-    ("em_dash", re.compile("—")),  # voice-notes: "No em dashes (—)."
-    ("rule_of_three_no",
-     re.compile(r"\bNo\s+[^.\n]+\.\s+No\s+[^.\n]+\.\s+No\s+[^.\n]+\.", re.IGNORECASE)),
-    ("reflexive_cta",
-     re.compile(r"(?im)(thoughts\?|what'?s your[^?\n]{0,80}\?|how do you[^?\n]{0,80}\?)\s*\U0001F447?\s*$")),
-]
+# em-dash and the "No X. No Y. No Z." staccato are whole-text; the reflexive CTA
+# is a CLOSER tell, so it is checked ONLY against the last line — a mid-body
+# rhetorical question is legitimate and must not false-fail a good post.
+_EM_DASH = re.compile("—")  # voice-notes: "No em dashes (—)."
+_RULE_OF_THREE = re.compile(
+    r"\bNo\s+[^.\n]+\.\s+No\s+[^.\n]+\.\s+No\s+[^.\n]+\.", re.IGNORECASE
+)
+_REFLEXIVE_CTA = re.compile(
+    r"(?i)(thoughts\?|what'?s your[^?\n]{0,80}\?|how do you[^?\n]{0,80}\?)"
+    r"\s*\U0001F447?\s*$"
+)
+
+
+def _last_nonempty_line(text):
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    return lines[-1] if lines else ""
 
 
 def deterministic_flags(text):
     """Return the ids of any hard AI-tell rules that fired."""
-    return [name for name, rx in _AI_TELL_CHECKS if rx.search(text)]
+    flags = []
+    if _EM_DASH.search(text):
+        flags.append("em_dash")
+    if _RULE_OF_THREE.search(text):
+        flags.append("rule_of_three_no")
+    if _REFLEXIVE_CTA.search(_last_nonempty_line(text)):
+        flags.append("reflexive_cta")
+    return flags
 
 
-def _voice_context():  # pragma: no cover - only used on the live judge path
+def _voice_context():
     """Voice files are gitignored; fall back to the committed .example versions."""
     parts = []
     for stem in ("voice-notes", "voice-profile"):

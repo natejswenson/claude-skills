@@ -25,13 +25,18 @@ class BudgetExceeded(RuntimeError):
     """Raised by the pre-call gate before a call that would breach the cap."""
 
 
-def estimate_usd(text: str, model: str, *, output_tokens: int = 600) -> float:
-    """Conservative spend estimate for one call.
+def estimate_usd(
+    text: str, model: str, *, output_tokens: int = 600, context_tokens: int = 6000
+) -> float:
+    """Conservative spend estimate for one model call.
 
-    ~4 chars/token for the input, plus an assumed output budget. Over-estimates
-    on purpose so the gate trips early rather than late.
+    A `claude -p` agent turn re-sends the system prompt + the whole skill + any
+    accumulated tool context, so a prompt-only estimate would under-count by
+    orders of magnitude. `context_tokens` is a deliberately generous baseline for
+    that re-sent context (~4 chars/token for the prompt on top), plus an assumed
+    output budget. Over-estimates on purpose so the cap trips early, not late.
     """
-    in_tokens = max(1, len(text) // 4)
+    in_tokens = context_tokens + max(1, len(text) // 4)
     price = _PRICE_PER_1K.get(model, _DEFAULT_PRICE)
     return round((in_tokens + output_tokens) / 1000 * price, 4)
 
