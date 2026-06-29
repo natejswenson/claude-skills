@@ -23,6 +23,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import verify_sources
+
 REPO = Path(__file__).resolve().parent.parent
 ENV_PATH = REPO / ".env"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
@@ -227,6 +229,35 @@ def publish(env: dict, payload: dict) -> None:
         sys.exit(f"ERROR: network problem reaching LinkedIn: {e.reason}")
 
 
+def enforce_source_gate(args) -> None:
+    """Refuse to publish unless the draft's external claims are source-verified.
+
+    Gates the publish ACTION, not the input flavor: a draft published via --file
+    must pass scripts/verify_sources.py; a bare --text/stdin publish (no draft,
+    so nothing to verify) is refused by default. The only bypass is
+    --allow-unverified, which is HUMAN-ONLY by convention (see SKILL.md
+    guardrails) — the agent must never self-apply it to clear the gate.
+    """
+    if args.allow_unverified:
+        print(
+            "WARNING: --allow-unverified set — publishing WITHOUT source "
+            "verification. This bypass is for human use only.",
+            file=sys.stderr,
+        )
+        return
+    if not args.file:
+        sys.exit(
+            "ERROR: refusing to publish unverified. The verified path is "
+            "--file drafts/<slug>.md with a <slug>.sources.json sidecar "
+            "(see SKILL.md → Research & fact-check). A human can override with "
+            "--allow-unverified."
+        )
+    result = verify_sources.verify(args.file)
+    if not result["ok"]:
+        sys.exit(f"ERROR: source check failed — {result['reason']}")
+    print(f"Source check passed: {result['reason']}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     src = ap.add_mutually_exclusive_group()
@@ -254,6 +285,12 @@ def main() -> None:
         "--dry-run",
         action="store_true",
         help="Print the request payload and exit without calling LinkedIn.",
+    )
+    ap.add_argument(
+        "--allow-unverified",
+        action="store_true",
+        help="HUMAN-ONLY escape hatch: publish without the source-verification "
+        "gate. The agent must never set this to get past the gate.",
     )
     args = ap.parse_args()
 
@@ -302,6 +339,11 @@ def main() -> None:
 
     if not author:
         sys.exit("ERROR: LINKEDIN_PERSON_URN missing. Run scripts/linkedin_auth.py.")
+
+    # Source gate: before any media upload so a failed gate never orphans an
+    # uploaded asset on LinkedIn's side.
+    enforce_source_gate(args)
+
     warn_if_token_expiring(env)
 
     image_urn = None
