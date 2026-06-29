@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gate is **fail-closed**; the only bypass is the human-only `--allow-unverified` flag.
 - **Pure first-person posts** declare `{"external_claims": false}` in the sidecar and pass the gate
   trivially — they make no outside-world claim and are covered by the existing authenticity bar.
+- **Three-tier regression evals** so future features can't silently break existing behavior.
+  *Tier 1* (`tests/test_skill_contract.py` + `skill-invariants.json`): a deterministic, offline,
+  $0 CI guard asserting the load-bearing SKILL.md guardrails still exist (approval-before-publish,
+  the source gate, never-fabricate, ToS §3.1, sources-out-of-body, human-only bypass, flow order)
+  plus repo consistency (referenced scripts/templates exist, version↔CHANGELOG match). *Tier 2*
+  (`evals/run_eval.py` + `scenarios.json`): on-demand behavioral scenarios via `claude -p` that
+  grade the agent's tool-use intent (refuses w/o approval, runs the gate, declines auto-posting),
+  with no real LinkedIn creds. *Tier 3* (`evals/voice_judge.py`): deterministic AI-tell checks +
+  an LLM voice-fidelity score. Shared `evals/budget.py` enforces a pre-call hard cap + spend
+  estimate + `--mock` mode; CI runs the harness only in mock at $0 (live API call sites are
+  `# pragma: no cover`). Design: `docs/plans/2026-06-28-ghostwriter-evals-design.md`.
 
 ### Changed
 - **SKILL.md Generate mode gains a "Research & fact-check" step** (after Save, before Show): list
