@@ -62,7 +62,11 @@ def test_compliance_doc_exists():
 
 # ------------------------------------------------- version <-> CHANGELOG parity
 def _frontmatter_version(text: str) -> str:
-    m = re.search(r"^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$", text, re.MULTILINE)
+    # Scope the search to the leading `--- ... ---` frontmatter block so a body
+    # line like `version: x` can never shadow the real version.
+    fm = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+    assert fm, "SKILL.md has no frontmatter block"
+    m = re.search(r"^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$", fm.group(1), re.MULTILINE)
     assert m, "SKILL.md frontmatter has no `version: x.y.z`"
     return m.group(1)
 

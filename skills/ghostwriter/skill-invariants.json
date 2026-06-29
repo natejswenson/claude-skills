@@ -11,18 +11,18 @@
       "id": "source-gate-step",
       "file": "SKILL.md",
       "pattern": "verify_sources\\.py",
-      "rationale": "The Generate research step must invoke the source gate; losing the reference skips source proof-of-work for external claims."
+      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). This is a soft check that the gate isn't unreferenced; the HARD enforcement that publishing runs the gate is code-tested in tests/test_linkedin_post.py (enforce_source_gate) — not this regex."
     },
     {
       "id": "tos-no-automation",
       "file": "SKILL.md",
-      "pattern": "(never automate posting|ToS\\s*§?\\s*3\\.1|member-initiated)",
+      "pattern": "(never automate posting|ToS\\s*§?\\s*3\\.1|decline and explain)",
       "rationale": "LinkedIn ToS §3.1 exposure: this is the only instruction telling the agent to decline scheduled/looped/unattended posting."
     },
     {
       "id": "sources-not-in-body",
       "file": "SKILL.md",
-      "pattern": "(never put sources[^.\\n]*post body|sources stay in the sidecar)",
+      "pattern": "(never put sources[\\s\\S]{0,60}?post\\s+body|sources stay in the sidecar)",
       "rationale": "verify_sources never inspects the post body; keeping sources out of the body is prose-only (and in-body links also crush reach)."
     },
     {
