@@ -57,7 +57,9 @@ jobs:
 
   release:
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Real push to main (when re-coupled via a PAT) OR a deliberate manual dispatch on main.
+    # The bot GITHUB_TOKEN auto-merge doesn't trigger push events, so workflow_dispatch is the on-demand release path.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/_release.yml
     with:
       skill: devlog

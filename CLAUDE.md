@@ -59,18 +59,29 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    tag cut. The auto-merge (bot `GITHUB_TOKEN`) does not trigger the per-skill release workflows, so
    nothing is tagged unless this step is done on purpose.
 5. **If a release is wanted**, ensure that skill's version is bumped (`package.json` for node skills,
-   `SKILL.md` frontmatter `version:` for python skills) with a matching `CHANGELOG.md` entry, then
-   after the PR merges cut the tag from `main`:
+   `SKILL.md` frontmatter `version:` for python skills) with a matching `CHANGELOG.md` entry. Then,
+   after the PR merges, cut the release from `main` by dispatching that skill's workflow:
+   ```
+   gh workflow run <skill>.yml --ref main
+   ```
+   The `release` job runs the version-driven `_release` reusable workflow: it cuts the
+   `<skill>-v<version>` tag + a GitHub Release with notes from `CHANGELOG.md` (skipped if the tag
+   already exists), and — for skills with `npm-publish: true` — publishes to npm when that version
+   isn't on the registry yet. Both are idempotent (tag + `npm view` guards), so re-dispatching is
+   safe, and the npm publish is independent of the tag check (it catches the registry up if a tag
+   was cut without publishing).
+
+   To cut only the GitHub tag/Release without npm, `gh release create` also works:
    ```
    awk '/^## \[<version>\]/{f=1;next} /^## \[/{f=0} f' skills/<skill>/CHANGELOG.md > /tmp/notes.md
    gh release create "<skill>-v<version>" --target "$(gh api repos/<owner>/<repo>/commits/main --jq .sha)" \
      --title "<skill> v<version>" --notes-file /tmp/notes.md
    ```
-   The tag is idempotent by convention — only cut a version that isn't already tagged.
 
-> The per-skill `release` job (`needs: ci`, push-to-`main`) still exists in each caller and remains
-> the path for a future re-coupling (e.g. enabling auto-merge via a `RELEASE_PAT` so the push fires
-> downstream workflows). For now it stays dormant under bot auto-merge — releases are manual per above.
+> The per-skill `release` job (`needs: ci`) runs on a real push to `main` **or** an on-demand
+> `workflow_dispatch` (step 5). The bot `GITHUB_TOKEN` auto-merge does not fire push events, so the
+> dispatch is the deliberate release trigger. Full publish-on-merge would still need re-coupling via
+> a `RELEASE_PAT` so the auto-merge push fires downstream workflows.
 
 ## CI architecture (how the gate works)
 
