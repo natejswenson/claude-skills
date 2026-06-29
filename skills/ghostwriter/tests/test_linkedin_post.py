@@ -281,7 +281,8 @@ def test_main_full_publish_with_image(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
     monkeypatch.setattr(
-        "sys.argv", ["x", "--text", "hi", "--image", str(img), "--alt", "desc"]
+        "sys.argv",
+        ["x", "--text", "hi", "--image", str(img), "--alt", "desc", "--allow-unverified"],
     )
     lp.main()
     out = capsys.readouterr().out
@@ -301,7 +302,9 @@ def test_main_image_without_alt_warns(monkeypatch, capsys, tmp_path):
     )
     monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: None)
-    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--image", str(img)])
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--text", "hi", "--image", str(img), "--allow-unverified"]
+    )
     lp.main()
     assert "no --alt provided" in capsys.readouterr().err
 
@@ -400,7 +403,8 @@ def test_main_full_publish_with_document(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
     monkeypatch.setattr(
-        "sys.argv", ["x", "--text", "hi", "--document", str(pdf), "--title", "T"]
+        "sys.argv",
+        ["x", "--text", "hi", "--document", str(pdf), "--title", "T", "--allow-unverified"],
     )
     lp.main()
     out = capsys.readouterr().out
@@ -420,6 +424,89 @@ def test_main_document_without_title_warns(monkeypatch, capsys, tmp_path):
     )
     monkeypatch.setattr(lp, "upload_file_bytes", lambda *a: None)
     monkeypatch.setattr(lp, "publish", lambda env, payload: None)
-    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--document", str(pdf)])
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--text", "hi", "--document", str(pdf), "--allow-unverified"]
+    )
     lp.main()
     assert "no --title provided" in capsys.readouterr().err
+
+
+# ------------------------------------------------------------- source gate
+def _gate_args(**over):
+    base = {"allow_unverified": False, "file": None}
+    base.update(over)
+    return type("A", (), base)()
+
+
+def test_gate_allow_unverified_warns_and_passes(capsys):
+    lp.enforce_source_gate(_gate_args(allow_unverified=True))
+    assert "WITHOUT source verification" in capsys.readouterr().err
+
+
+def test_gate_no_file_refuses():
+    with pytest.raises(SystemExit) as e:
+        lp.enforce_source_gate(_gate_args(file=None))
+    assert "refusing to publish unverified" in str(e.value)
+
+
+def test_gate_file_fail_refuses(monkeypatch):
+    monkeypatch.setattr(lp.verify_sources, "verify", lambda f: {"ok": False, "reason": "nope"})
+    with pytest.raises(SystemExit) as e:
+        lp.enforce_source_gate(_gate_args(file="drafts/p.md"))
+    assert "source check failed — nope" in str(e.value)
+
+
+def test_gate_file_pass_proceeds(monkeypatch, capsys):
+    monkeypatch.setattr(lp.verify_sources, "verify", lambda f: {"ok": True, "reason": "3 sources"})
+    lp.enforce_source_gate(_gate_args(file="drafts/p.md"))
+    assert "Source check passed" in capsys.readouterr().out
+
+
+def test_main_bare_text_publish_blocked_by_gate(monkeypatch):
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr("sys.argv", ["x", "--text", "hi"])
+    with pytest.raises(SystemExit) as e:
+        lp.main()
+    assert "refusing to publish unverified" in str(e.value)
+
+
+def test_main_file_gate_fail_blocks_before_upload(monkeypatch, tmp_path):
+    """A failed gate must exit before any media upload (no orphaned asset)."""
+    draft = tmp_path / "p.md"
+    draft.write_text("body", encoding="utf-8")
+    img = tmp_path / "i.png"
+    img.write_bytes(b"PNG")
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(lp.verify_sources, "verify", lambda f: {"ok": False, "reason": "x"})
+
+    def fail_upload(*a):
+        raise AssertionError("upload must not run on a failed gate")
+
+    monkeypatch.setattr(lp, "initialize_image_upload", fail_upload)
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--file", str(draft), "--image", str(img), "--alt", "d"]
+    )
+    with pytest.raises(SystemExit):
+        lp.main()
+
+
+def test_main_file_gate_pass_publishes(monkeypatch, capsys, tmp_path):
+    draft = tmp_path / "p.md"
+    draft.write_text("real post body", encoding="utf-8")
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(
+        lp.verify_sources, "verify", lambda f: {"ok": True, "reason": "3 sources"}
+    )
+    monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
+    monkeypatch.setattr("sys.argv", ["x", "--file", str(draft)])
+    lp.main()
+    out = capsys.readouterr().out
+    assert "Source check passed" in out and "PUBLISHED" in out

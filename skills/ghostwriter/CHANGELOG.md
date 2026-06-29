@@ -4,6 +4,33 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-06-28
+
+### Added
+- **Source-verification gate — every external-claim post must be generated from ≥3 real, live
+  sources, enforced in code at publish time, with zero sources in the post body.** Each draft gets a
+  gitignored sidecar `drafts/<slug>.sources.json` pairing every external/world claim to its source
+  URL(s). New `scripts/verify_sources.py` (stdlib-only, importable + CLI) checks each URL's liveness
+  (browser UA, HEAD then ranged-GET fallback; 401/403/405 count as live since CDNs bot-wall HEAD)
+  and requires **≥3 distinct live hosts** (normalized by hostname). `scripts/linkedin_post.py` now
+  runs the gate on every real publish — after the dry-run/author checks and **before any media
+  upload** — and refuses unless it passes; a bare `--text`/stdin publish is refused by design. The
+  gate is **fail-closed**; the only bypass is the human-only `--allow-unverified` flag.
+- **Pure first-person posts** declare `{"external_claims": false}` in the sidecar and pass the gate
+  trivially — they make no outside-world claim and are covered by the existing authenticity bar.
+
+### Changed
+- **SKILL.md Generate mode gains a "Research & fact-check" step** (after Save, before Show): list
+  external claims, research each from primary/authoritative sources and read the source to confirm
+  it supports the claim, write the sidecar, and run `verify_sources.py` until green. Sources stay in
+  the sidecar, never in the post body; re-run when a post-approval edit adds a claim. Guardrails now
+  reference the source contract and mark `--allow-unverified` as human-only.
+
+### Notes
+- The code gate is **liveness proof-of-work** (evidence the research happened), not a factuality
+  checker — whether a source supports its claim, and the personal/external boundary, stay
+  prompt-enforced by the research step. This is deliberate and documented.
+
 ## [0.6.0] - 2026-06-25
 
 ### Changed
