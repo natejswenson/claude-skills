@@ -510,3 +510,55 @@ def test_main_file_gate_pass_publishes(monkeypatch, capsys, tmp_path):
     lp.main()
     out = capsys.readouterr().out
     assert "Source check passed" in out and "PUBLISHED" in out
+
+
+def test_main_file_drives_real_verify_and_publishes(monkeypatch, capsys, tmp_path):
+    """End-to-end: main(--file) runs the REAL verify() against an on-disk sidecar
+    (only the network is mocked), closing the behavior-coverage gap."""
+    draft = tmp_path / "p.md"
+    draft.write_text("real post body", encoding="utf-8")
+    (tmp_path / "p.sources.json").write_text(
+        json.dumps(
+            {
+                "external_claims": True,
+                "claims": [
+                    {"claim": "a", "sources": ["https://a.com"]},
+                    {"claim": "b", "sources": ["https://b.com"]},
+                    {"claim": "c", "sources": ["https://c.com"]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(lp.verify_sources, "_is_live", lambda url: True)  # no network
+    monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
+    monkeypatch.setattr("sys.argv", ["x", "--file", str(draft)])
+    lp.main()
+    out = capsys.readouterr().out
+    assert "3 distinct live sources verified" in out and "PUBLISHED" in out
+
+
+def test_main_file_real_verify_too_few_hosts_blocks(monkeypatch, tmp_path):
+    """End-to-end: a real verify() with <3 hosts blocks the publish."""
+    draft = tmp_path / "p.md"
+    draft.write_text("body", encoding="utf-8")
+    (tmp_path / "p.sources.json").write_text(
+        json.dumps(
+            {"external_claims": True, "claims": [{"claim": "a", "sources": ["https://a.com"]}]}
+        ),
+        encoding="utf-8",
+    )
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp.verify_sources, "_is_live", lambda url: True)
+    monkeypatch.setattr("sys.argv", ["x", "--file", str(draft)])
+    with pytest.raises(SystemExit) as e:
+        lp.main()
+    assert "distinct live source host" in str(e.value)
