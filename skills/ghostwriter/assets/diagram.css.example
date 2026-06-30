@@ -637,8 +637,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
    ============================================================================ */
 .card.light {
   /* light tokens override the dark defaults via the cascade */
-  --bg:#F7F8FA; --surface:#FFFFFF; --ink:#0C111B; --ink-2:#3A424F;
-  --muted:#727B8A; --border:#E6E9EE; --band:#10141C;
+  --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#EEF1F5; --ink:#0C111B; --ink-2:#3A424F;
+  --text:#0C111B; --muted:#727B8A; --border:#E6E9EE; --band:#10141C;
   /* green/blue identity, tuned for contrast on a light surface */
   --accent:#2D7DF6; --accent-2:#1F9D45; --accent-3:#17A2A2; --accent-4:#C9952B;
   color: var(--ink);
@@ -718,3 +718,20 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 }
 .card.brief .eyebrow { color: var(--accent-2); }       /* green eyebrow */
 .card.brief h1 { font-size: 70px; color: var(--ink); } /* restrained headline */
+
+/* ---- flow card (light): an ordered pipeline of stage chips threaded on a spine,
+   each chip carrying a topic icon. Class: `card flow light`. Keeps the auto-numbered
+   spine (sequence) and adds a left .fic icon chip (subject). ---- */
+.card.light .tint-grey { background:#EEF1F5; }  .card.light .s-grey { stroke:var(--muted); }
+.card.flow.light h1 { color: var(--ink); }
+.card.flow.light .fnode {
+  flex-direction: row; align-items: center; gap: 24px;
+  border-radius: 16px; padding: 24px 30px;
+  box-shadow: 0 14px 32px -26px rgba(16,20,28,.34);
+}
+.card.flow.light .fnode.out { --node-fill: #F2F4F7; }
+.card.flow.light .fnode .fic { flex: none; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+.card.flow.light .fnode .fic svg { width: 32px; height: 32px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.card.flow.light .fnode .fbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card.flow.light .fnode::before { color: #fff; }            /* white numeral on the colour badge */
+.card.flow.light .fnode.out::before { color: #fff; }

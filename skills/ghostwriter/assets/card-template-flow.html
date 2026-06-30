@@ -1,24 +1,23 @@
 <!doctype html>
 <!--
-  FLOW card TYPE — a clean, linear architecture / pipeline diagram.
+  FLOW card TYPE — a clean, linear architecture / pipeline diagram (light system).
   Copy to images/<slug>.html, fill in the stages, then:
     render_image.py --type card --in images/<slug>.html --out images/<slug>.png
 
   Keep these properties:
-   * Byline lives in .toprow (top-right), inline with the .eyebrow, so a feed crop
-     of the bottom can NEVER remove your attribution. Don't move it to a bottom .footer.
-   * Each stage is a .fnode with a bold <span class="t">title</span> and ONE muted
-     <span class="e">example</span>. The stages are auto-numbered and threaded onto a
-     vertical spine; a numbered badge marks the layer - use .det (green) / .tools
-     (pink) / .agent (blue) / .out (grey), or add your own in diagram.css. Show a
-     sub-pipeline inline in the example with arrows (A -> B -> C) rather than nesting
-     more boxes.
-   * Just list the .fnode stages in order - the spine and the 1..N badges are drawn
-     automatically, so you do NOT add any connector elements between them.
-   * Keep it to ONE flow, ~4-5 stages, one example each, so it stays calm and
-     readable at phone size. The flow auto-centers to fill the card height.
-  All colour/type/spacing comes from diagram.css (.card.flow rules) — don't add
-  one-off inline CSS; extend diagram.css if you need a new treatment.
+   * Class is `card flow light`. Byline lives in .toprow (top-right), inline with the
+     .eyebrow, so a feed crop of the bottom can NEVER remove your attribution.
+   * Each stage is a .fnode with: a .fic icon chip (pick a TOPIC icon from
+     assets/card-icons.md — pair a .tint-* with its .s-* stroke), then a .fbody with a
+     bold <span class="t">title</span> and ONE muted <span class="e">example</span>.
+     Stages are auto-numbered onto a vertical spine; the layer class colours the badge +
+     chip: .det (green) / .tools (teal) / .agent (blue) / .out (grey).
+   * Just list the .fnode stages in order — the spine and the 1..N badges are drawn
+     automatically; do NOT add connector elements. Show a sub-pipeline inline in the
+     example with arrows (A -> B -> C) rather than nesting more boxes.
+   * Keep it to ONE flow, ~4-5 stages, one example each, so it stays calm at phone size.
+  All colour/type/spacing comes from diagram.css (.card.flow.light) — don't add one-off
+  inline CSS; extend diagram.css if you need a new treatment.
 -->
 <html lang="en">
 <head>
@@ -26,9 +25,9 @@
   <link rel="stylesheet" href="diagram.css" />
 </head>
 <body>
-  <div id="canvas" class="card flow">
+  <div id="canvas" class="card flow light">
     <div class="toprow">
-      <div class="eyebrow">EYEBROW LABEL</div>
+      <div class="eyebrow">Eyebrow Label</div>
       <div class="footer brand"></div>
     </div>
 
@@ -37,23 +36,35 @@
 
     <div class="flow">
       <div class="fnode det">
-        <span class="t">First layer</span>
-        <span class="e">source &rarr; step &rarr; result, with a concrete detail</span>
+        <div class="fic tint-green"><svg class="s-green" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="fbody">
+          <span class="t">First layer</span>
+          <span class="e">source &rarr; step &rarr; result, with a concrete detail</span>
+        </div>
       </div>
 
       <div class="fnode tools">
-        <span class="t">The interface / boundary</span>
-        <span class="e">example_a &middot; example_b &middot; example_c</span>
+        <div class="fic tint-teal"><svg class="s-teal" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></div>
+        <div class="fbody">
+          <span class="t">The interface / boundary</span>
+          <span class="e">example_a &middot; example_b &middot; example_c</span>
+        </div>
       </div>
 
       <div class="fnode agent">
-        <span class="t">The consumer</span>
-        <span class="e">its one rule; e.g. a concrete value it reads</span>
+        <div class="fic tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></div>
+        <div class="fbody">
+          <span class="t">The consumer</span>
+          <span class="e">its one rule; e.g. a concrete value it reads</span>
+        </div>
       </div>
 
       <div class="fnode out">
-        <span class="t">Outputs</span>
-        <span class="e">a &middot; b &middot; c</span>
+        <div class="fic tint-grey"><svg class="s-grey" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="fbody">
+          <span class="t">Outputs</span>
+          <span class="e">a &middot; b &middot; c</span>
+        </div>
       </div>
     </div>
   </div>
