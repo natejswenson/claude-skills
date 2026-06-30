@@ -829,3 +829,19 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.stem.light .block.b4 { background: #F5B82E; }   /* yellow */
 /* topic graphic — the post's real diagram; fills the card under the motif + header */
 .card.stem.light .topic { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
+
+/* ---- date card (light): the ADMIT-ONE ticket as the centerpiece topic graphic on a
+   light canvas. Portrait 4:5 with the family header (eyebrow/byline/headline/lead) and
+   a caption; the ticket keeps its accent stock, dark-ink stamp, serials and scallops.
+   Class: `card date light`. ---- */
+#canvas.card.date.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 28px;
+  justify-content: flex-start; align-items: stretch; text-align: left;
+  background: var(--bg);
+}
+.card.date.light .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; }
+.card.date.light .toprow .footer { position: static; left: auto; bottom: auto; margin: 0 0 0 auto; gap: 16px; font-size: 26px; color: var(--muted); opacity: 1; }
+.card.date.light .toprow .footer.brand::before { width: 52px; height: 52px; box-shadow: none; }
+.card.date.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; text-align: left; }
+.card.date.light .ticket { width: 88%; align-self: center; margin: auto 0; box-shadow: 0 30px 60px -22px rgba(16,20,28,0.42); }
+.card.date.light .caption { margin-top: 0; text-align: center; }
