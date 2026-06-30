@@ -1,12 +1,15 @@
 <!doctype html>
 <!--
-  STEM card scaffold (the warm one — for STEM / education / outreach posts). Copy to
-  images/<slug>.html, fill in, then:
-    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
-  Same clean dark family as the other cards, kept playful by a chunky toy-block
-  S T E M motif and a soft four-hue corner glow. The byline rides inline in the
-  .toprow (top-right) so a feed crop can't drop it. Keep it to one punchy idea; the
-  headline is the hero.
+  STEM card scaffold (warm education / outreach posts, light system). Copy to
+  images/<slug>.html, fill in, then render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+  Class is `card stem light`. IMPORTANT: the toy-block S·T·E·M strip is a SMALL brand
+  ACCENT only — it sits above the headline and must stay compact. The hero is the
+  .topic block: the post's REAL topic graphic (~3/4 of the card). Build .topic from the
+  shared primitives — .panel + .concept (before/after), .band (thesis), .statrow (icon
+  row) — and fill it with the actual content of THIS post (the build, the experiment, the
+  result), picking topic icons from assets/card-icons.md. The example below shows a build
+  story; replace it with your own diagram. Keep the headline warm and the lead one idea.
 -->
 <html lang="en">
 <head>
@@ -14,7 +17,13 @@
   <link rel="stylesheet" href="diagram.css" />
 </head>
 <body>
-  <div id="canvas" class="card stem">
+  <div id="canvas" class="card stem light">
+    <div class="toprow">
+      <div class="eyebrow">Eyebrow Label</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <!-- compact STEM motif: a small brand accent, NOT the hero -->
     <div class="blocks">
       <span class="block b1">S</span>
       <span class="block b2">T</span>
@@ -22,13 +31,51 @@
       <span class="block b4">M</span>
     </div>
 
-    <div class="toprow">
-      <div class="eyebrow">EYEBROW LABEL</div>
-      <div class="footer brand"></div>
+    <h1>One warm line for the build we did.</h1>
+    <p class="lead">A supporting line that frames the project, with the
+      <strong>key moment</strong> pulled into bold.</p>
+
+    <!-- TOPIC GRAPHIC (~3/4): replace with this post's REAL diagram -->
+    <div class="topic">
+      <div class="panel">
+        <div class="panel-label">What we built · start to finish</div>
+        <!-- ICONS: examples only — replace each <svg> with a topic icon from assets/card-icons.md that fits THIS post. Never ship the defaults. -->
+        <div class="concept">
+          <div class="node">
+            <div class="glyph tint-gold"><svg class="s-gold" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg></div>
+            <div class="ntitle">An idea</div>
+            <div class="ncap">a question worth chasing</div>
+          </div>
+          <div class="to"></div>
+          <div class="node">
+            <div class="glyph tint-green"><svg class="s-green" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div class="ntitle">A working build</div>
+            <div class="ncap">made with their own hands</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="btext">The point isn't the robot. It's the <em>kid who built it.</em></div>
+        <div class="dots">
+          <span style="background:#3B82F6"></span>
+          <span style="background:#22C55E"></span>
+          <span style="background:#EC4899"></span>
+          <span style="background:#F5B82E"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <!-- ICONS: examples only — replace each <svg> with a topic icon from assets/card-icons.md that fits THIS post. Never ship the defaults. -->
+        <div class="statrow">
+          <div class="scol"><div class="ig" style="background:#E8F0FE"><svg style="stroke:#3B82F6" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg></div><div class="label">Curiosity</div><div class="cap">asked better questions</div></div>
+          <div class="scol"><div class="ig" style="background:#FCE7F1"><svg style="stroke:#EC4899" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="label">Grit</div><div class="cap">it broke, they fixed it</div></div>
+          <div class="scol"><div class="ig" style="background:#E7F8EE"><svg style="stroke:#22C55E" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="label">Pride</div><div class="cap">a thing they finished</div></div>
+        </div>
+      </div>
     </div>
 
-    <h1>One playful line for the big idea.</h1>
-    <p class="kicker">A supporting line, with the key phrase in <b>bold</b>.</p>
+    <div class="caption"><span class="d">●</span>&nbsp; The takeaway · why it matters, in a phrase</div>
   </div>
 </body>
 </html>

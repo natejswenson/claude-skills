@@ -27,6 +27,10 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 
 /* ---- Mermaid canvas: scales the diagram to fill a fixed-width brand frame ---- */
 #canvas.mermaid-canvas {
+  /* light theme tokens for diagrams (mirrored into mermaid themeVariables by the
+     template JS, which reads computed styles from #canvas) */
+  --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#EEF1F5; --border:#E6E9EE;
+  --text:#0C111B; --muted:#727B8A; --accent:#2D7DF6;
   width: 1180px;
   padding: 80px;
   background: var(--bg);
@@ -621,4 +625,265 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.matrix .switch::before, .card.matrix .switch::after {
   content: ""; flex: 1; height: 2px;
   background: linear-gradient(90deg, transparent, rgba(88,166,255,0.5), transparent);
+}
+
+/* ============================================================================
+   LIGHT DESIGN SYSTEM — the modern card family
+   A light canvas with layered white panels, a dark callout band, real line
+   icons, and a restrained hierarchy. Add `light` to a card's class list to opt
+   in; compose with a type class (e.g. `brief`) for layout. Dark surfaces
+   (terminal cards, the .band) sit ON the light canvas as intentional contrast.
+   Reusable building blocks (use across any light card):
+     .lead   emphasis paragraph      .panel + .panel-label  elevated white card
+     .band   dark callout strip       .concept  before/after node row
+     .statrow/.scol  icon row          .caption  anchored footer line
+     .glyph/.ig  icon chip (+ .tint-* fill and .s-* stroke helpers)
+   ============================================================================ */
+.card.light {
+  /* light tokens override the dark defaults via the cascade */
+  --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#EEF1F5; --ink:#0C111B; --ink-2:#3A424F;
+  --text:#0C111B; --muted:#727B8A; --border:#E6E9EE; --band:#10141C;
+  /* green/blue identity, tuned for contrast on a light surface */
+  --accent:#2D7DF6; --accent-2:#1F9D45; --accent-3:#17A2A2; --accent-4:#C9952B;
+  color: var(--ink);
+}
+/* flat light canvas — replaces the dark radial gradient + inset frame */
+#canvas.card.light { background: var(--bg); }
+#canvas.card.light::after { content: none; }
+
+/* reusable icon chips: a tinted rounded container + a stroked line icon.
+   Pair a .tint-* fill with a matching .s-* stroke on the inner <svg>. */
+.card.light .glyph svg, .card.light .ig svg, .card.light .ic svg {
+  fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.card.light .tint-blue  { background:#EEF3FE; }  .card.light .s-blue  { stroke:var(--accent);   }
+.card.light .tint-green { background:#EAF7EF; }  .card.light .s-green { stroke:var(--accent-2); }
+.card.light .tint-teal  { background:#E7F6F6; }  .card.light .s-teal  { stroke:var(--accent-3); }
+.card.light .tint-gold  { background:#FAF2E1; }  .card.light .s-gold  { stroke:var(--accent-4); }
+
+/* lead: a supporting paragraph under the headline; wrap key phrases in <strong>. */
+.card.light .lead {
+  font: 400 31px/1.42 var(--font); color: var(--ink-2); margin: 0; max-width: 44ch;
+}
+.card.light .lead strong { color: var(--ink); font-weight: 700; }
+
+/* panel: an elevated white card that groups related content. */
+.card.light .panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
+  padding: 34px 38px;
+  box-shadow: 0 1px 0 rgba(16,20,28,.02), 0 18px 40px -28px rgba(16,20,28,.28);
+}
+.card.light .panel-label {
+  font: 700 22px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 26px;
+}
+
+/* concept: a before/after (or A | B) node row inside a panel. Each .node holds a
+   .glyph icon chip, a .ntitle, and a .ncap; a .to draws a divider between them. */
+.card.light .concept { display: flex; align-items: center; gap: 34px; }
+.card.light .concept .node { display: flex; flex-direction: column; align-items: center; gap: 16px; flex: 1; }
+.card.light .concept .glyph { width: 84px; height: 84px; border-radius: 22px; display: flex; align-items: center; justify-content: center; }
+.card.light .concept .glyph svg { width: 44px; height: 44px; }
+.card.light .concept .ntitle { font: 700 30px/1 var(--font); color: var(--ink); }
+.card.light .concept .ncap { font: 400 24px/1.3 var(--font); color: var(--muted); text-align: center; }
+.card.light .concept .to { flex: none; width: 1px; height: 96px; background: var(--border); }
+
+/* band: a dark callout strip for the one-line thesis. <em> highlights a word;
+   .dots holds up to four accent dots on the right. */
+.card.light .band {
+  background: var(--band); border-radius: 18px; padding: 30px 36px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.card.light .band .btext { color: #fff; font: 600 34px/1.2 var(--font); letter-spacing: -.01em; }
+.card.light .band .btext em { font-style: normal; color: #6FE39A; }
+.card.light .band .dots { display: flex; gap: 14px; flex: none; }
+.card.light .band .dots span { width: 22px; height: 22px; border-radius: 50%; }
+
+/* statrow: an icon row (2–4 columns) on a panel — "the parts" / "what scales". */
+.card.light .statrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.card.light .scol { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.card.light .scol .ig { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.card.light .scol .ig svg { width: 32px; height: 32px; }
+.card.light .scol .label { font: 700 27px/1 var(--font); color: var(--ink); }
+.card.light .scol .cap { font: 400 22px/1.25 var(--font); color: var(--muted); text-align: center; }
+
+/* caption: an anchored footer line with a leading accent dot, ruled off the top. */
+.card.light .caption {
+  margin-top: auto; border-top: 1px solid var(--border); padding-top: 26px;
+  text-align: center; font: 600 26px/1 var(--font); color: var(--ink-2);
+}
+.card.light .caption .d { color: var(--accent-2); }
+
+/* ---- brief card TYPE: the default light "explainer" for teaching posts.
+   Portrait 4:5 (render at --size 1200x1500). Top-aligned, generous gaps. ---- */
+#canvas.card.brief {
+  height: 1500px; padding: 78px 80px 70px;
+  justify-content: flex-start; gap: 32px;
+}
+.card.brief .eyebrow { color: var(--accent-2); }       /* green eyebrow */
+.card.brief h1 { font-size: 70px; color: var(--ink); } /* restrained headline */
+
+/* ---- flow card (light): an ordered pipeline of stage chips threaded on a spine,
+   each chip carrying a topic icon. Class: `card flow light`. Keeps the auto-numbered
+   spine (sequence) and adds a left .fic icon chip (subject). ---- */
+.card.light .tint-grey { background:#EEF1F5; }  .card.light .s-grey { stroke:var(--muted); }
+/* portrait 4:5 + the brief's rhythm: top-aligned header, a filled body, footer caption */
+#canvas.card.flow.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.flow.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.flow.light .flow { flex: 1 1 auto; margin: 0; justify-content: space-between; gap: 22px; }
+.card.flow.light .fnode {
+  flex-direction: row; align-items: center; gap: 24px;
+  border-radius: 16px; padding: 26px 32px;
+  box-shadow: 0 14px 32px -26px rgba(16,20,28,.34);
+}
+.card.flow.light .fnode.out { --node-fill: #F2F4F7; }
+.card.flow.light .fnode .fic { flex: none; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+.card.flow.light .fnode .fic svg { width: 32px; height: 32px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.card.flow.light .fnode .fbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.card.flow.light .fnode::before { color: #fff; }            /* white numeral on the colour badge */
+.card.flow.light .fnode.out::before { color: #fff; }
+
+/* ---- matrix card (light): an N-column comparison on one elevated panel. The
+   column-accent classes (.green/.grey/.pink) still colour the headers; only the
+   hardcoded dark text values are remapped to ink. Class: `card matrix light`. ---- */
+#canvas.card.matrix.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.matrix.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.matrix.light .grid {
+  flex: 1 1 auto; align-content: space-between; margin: 0;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr;
+  column-gap: 16px; row-gap: 18px;
+  padding: 10px 0;
+}
+/* column headers as solid colour pills (strong column identity) */
+.card.matrix.light .col-h {
+  align-self: stretch; display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #fff; font: 700 34px/1.05 var(--font); letter-spacing: -.01em;
+  padding: 20px 12px; border-radius: 16px; background: #8A94A3;
+}
+.card.matrix.light .col-h.green { background: var(--accent-2); }
+.card.matrix.light .col-h.grey  { background: #8A94A3; }
+.card.matrix.light .col-h.pink  { background: var(--accent-3); }   /* teal */
+/* row-label gutter */
+.card.matrix.light .dial { color: var(--ink-2); font: 600 36px/1.15 var(--font); display: flex; align-items: center; }
+/* value tiles — each value contained; .best highlights the winner per row */
+.card.matrix.light .v, .card.matrix.light .vt {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: #F2F4F7; border-radius: 16px; min-height: 104px; padding: 10px 8px;
+}
+.card.matrix.light .v  { font: 800 62px/1 var(--mono); color: var(--ink); }
+.card.matrix.light .vt { font: 600 31px/1.2 var(--font); color: var(--ink-2); }
+.card.matrix.light .v.best, .card.matrix.light .vt.best {
+  background: #EAF7EF; color: var(--accent-2); box-shadow: inset 0 0 0 2px rgba(31,157,69,.45);
+}
+/* group divider label spanning all columns */
+.card.matrix.light .switch { grid-column: 1 / -1; color: var(--muted); margin: 10px 0 4px; }
+.card.matrix.light .switch::before, .card.matrix.light .switch::after {
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+/* ---- ramp card (light): an accelerating bar chart on the light canvas. Portrait 4:5
+   with lead + caption; neutral rising bars to an accent payoff bar, with the trend line,
+   gridlines, and delta pill carried over. Class: `card ramp light`. ---- */
+#canvas.card.ramp.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.ramp.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.ramp.light .chart { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+.card.ramp.light .step .val { color: var(--ink); }
+.card.ramp.light .step .bar {
+  background: linear-gradient(180deg, #EAEEF4, #F5F7FB);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 26px -20px rgba(16,20,28,.30);
+}
+.card.ramp.light .step.s3 .bar {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.30), 0 20px 40px -16px rgba(45,125,246,.45);
+}
+.card.ramp.light .step.s3 .val { color: var(--accent); }
+.card.ramp.light .ramp-row::before {
+  background: repeating-linear-gradient(to top, transparent 0 116px, rgba(16,20,28,0.05) 116px 117px);
+}
+.card.ramp.light .ramp-base { background: var(--border); }
+
+/* ---- STEM card (light): the warm member. Portrait 4:5 with a soft four-hue glow,
+   the chunky toy-blocks kept as the playful signature on a white "play-mat" panel,
+   plus an S·T·E·M discipline row. Class: `card stem light`. ---- */
+#canvas.card.stem.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start;
+  background:
+    radial-gradient(620px 620px at 8% 4%,  rgba(59,130,246,0.07), transparent 60%),
+    radial-gradient(640px 640px at 94% 6%, rgba(236,72,153,0.07), transparent 60%),
+    radial-gradient(660px 660px at 92% 97%, rgba(34,197,94,0.06), transparent 60%),
+    radial-gradient(560px 560px at 6% 97%, rgba(245,184,46,0.07), transparent 62%),
+    var(--bg);
+}
+.card.stem.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; }
+/* compact STEM motif — a small toy-block strip used as a brand ACCENT, not the hero.
+   The post's real topic graphic lives in .topic and fills the rest of the card. */
+.card.stem.light .blocks { justify-content: center; align-items: center; gap: 18px; margin: 4px 0 2px; }
+.card.stem.light .block {
+  width: 84px; height: 84px; border-radius: 18px; color: #0A0E16; font: 800 46px/1 var(--font);
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.45),
+    inset 0 -8px 0 rgba(0,0,0,0.12),
+    0 10px 18px -6px rgba(16,20,28,0.22);
+}
+.card.stem.light .block.b1 { background: #3B82F6; }   /* blue   */
+.card.stem.light .block.b2 { background: #22C55E; }   /* green  */
+.card.stem.light .block.b3 { background: #EC4899; }   /* pink   */
+.card.stem.light .block.b4 { background: #F5B82E; }   /* yellow */
+/* topic graphic — the post's real diagram; fills the card under the motif + header */
+.card.stem.light .topic { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
+
+/* ---- date card (light): the ADMIT-ONE ticket as the centerpiece topic graphic on a
+   light canvas. Portrait 4:5 with the family header (eyebrow/byline/headline/lead) and
+   a caption; the ticket keeps its accent stock, dark-ink stamp, serials and scallops.
+   Class: `card date light`. ---- */
+#canvas.card.date.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 28px;
+  justify-content: flex-start; align-items: stretch; text-align: left;
+  background: var(--bg);
+}
+.card.date.light .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; }
+.card.date.light .toprow .footer { position: static; left: auto; bottom: auto; margin: 0 0 0 auto; gap: 16px; font-size: 26px; color: var(--muted); opacity: 1; }
+.card.date.light .toprow .footer.brand::before { width: 52px; height: 52px; box-shadow: none; }
+.card.date.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; text-align: left; }
+.card.date.light .ticket { width: 88%; align-self: center; margin: auto 0; box-shadow: 0 30px 60px -22px rgba(16,20,28,0.42); }
+.card.date.light .caption { margin-top: 0; text-align: center; }
+
+/* ---- code + Claude-session cards (light): the terminal stays DARK as an elevated
+   surface floating on the light canvas (the modern docs pattern). Portrait 4:5 with the
+   family header + caption. Class: `card code light` (and the Claude-session variant). ---- */
+#canvas.card.code.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 26px; justify-content: flex-start;
+  background: var(--bg);
+}
+.card.code.light h1 { color: var(--ink); font-size: 58px; line-height: 1.05; margin: 2px 0 0; }
+.card.code.light .terminal {
+  flex: 1 1 auto; min-height: 0;
+  background: #0D1117; border: 1px solid #30363D;
+  box-shadow: 0 34px 64px -26px rgba(16,20,28,0.45);
+  /* hold the terminal's own dark palette regardless of the light page theme */
+  --surface-2: #161B22; --border: #30363D; --text: #E6EDF3; --muted: #8B949E;
+  --accent: #58A6FF; --accent-2: #3FB950;
+  --t-kw: #F778BA; --t-fn: #58A6FF; --t-str: #3FB950; --t-num: #E3B341; --t-com: #8B949E; --t-prompt: #3FB950;
+}
+.card.code.light .caption { margin-top: 0; }
+
+/* ---- carousel slides (light): the multi-slide deck on the light canvas. Add `light` to
+   every slide; the token-driven type rules (cover/point/recap/cta) adapt automatically —
+   only the dark gradient backgrounds need a light restatement. ---- */
+.card.slide.light {
+  background:
+    radial-gradient(1200px 680px at 85% -12%, rgba(45,125,246,0.06), transparent 60%),
+    radial-gradient(1000px 560px at -10% 112%, rgba(31,157,69,0.05), transparent 60%),
+    var(--bg);
+}
+.card.slide.cover.light {
+  background:
+    radial-gradient(1000px 760px at 50% -12%, rgba(45,125,246,0.10), transparent 62%),
+    radial-gradient(900px 620px at 105% 110%, rgba(236,72,153,0.06), transparent 60%),
+    var(--bg);
+}
+.card.slide.cta.light {
+  background: radial-gradient(1000px 740px at 50% 0%, rgba(31,157,69,0.09), transparent 62%), var(--bg);
 }
