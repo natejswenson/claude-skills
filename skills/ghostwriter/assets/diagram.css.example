@@ -723,10 +723,13 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
    each chip carrying a topic icon. Class: `card flow light`. Keeps the auto-numbered
    spine (sequence) and adds a left .fic icon chip (subject). ---- */
 .card.light .tint-grey { background:#EEF1F5; }  .card.light .s-grey { stroke:var(--muted); }
-.card.flow.light h1 { color: var(--ink); }
+/* portrait 4:5 + the brief's rhythm: top-aligned header, a filled body, footer caption */
+#canvas.card.flow.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.flow.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.flow.light .flow { flex: 1 1 auto; margin: 0; justify-content: space-between; gap: 22px; }
 .card.flow.light .fnode {
   flex-direction: row; align-items: center; gap: 24px;
-  border-radius: 16px; padding: 24px 30px;
+  border-radius: 16px; padding: 26px 32px;
   box-shadow: 0 14px 32px -26px rgba(16,20,28,.34);
 }
 .card.flow.light .fnode.out { --node-fill: #F2F4F7; }
@@ -735,3 +738,41 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.flow.light .fnode .fbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .card.flow.light .fnode::before { color: #fff; }            /* white numeral on the colour badge */
 .card.flow.light .fnode.out::before { color: #fff; }
+
+/* ---- matrix card (light): an N-column comparison on one elevated panel. The
+   column-accent classes (.green/.grey/.pink) still colour the headers; only the
+   hardcoded dark text values are remapped to ink. Class: `card matrix light`. ---- */
+#canvas.card.matrix.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.matrix.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.matrix.light .grid {
+  flex: 1 1 auto; align-content: space-between; margin: 0;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr;
+  column-gap: 16px; row-gap: 18px;
+  padding: 10px 0;
+}
+/* column headers as solid colour pills (strong column identity) */
+.card.matrix.light .col-h {
+  align-self: stretch; display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #fff; font: 700 34px/1.05 var(--font); letter-spacing: -.01em;
+  padding: 20px 12px; border-radius: 16px; background: #8A94A3;
+}
+.card.matrix.light .col-h.green { background: var(--accent-2); }
+.card.matrix.light .col-h.grey  { background: #8A94A3; }
+.card.matrix.light .col-h.pink  { background: var(--accent-3); }   /* teal */
+/* row-label gutter */
+.card.matrix.light .dial { color: var(--ink-2); font: 600 36px/1.15 var(--font); display: flex; align-items: center; }
+/* value tiles — each value contained; .best highlights the winner per row */
+.card.matrix.light .v, .card.matrix.light .vt {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  background: #F2F4F7; border-radius: 16px; min-height: 104px; padding: 10px 8px;
+}
+.card.matrix.light .v  { font: 800 62px/1 var(--mono); color: var(--ink); }
+.card.matrix.light .vt { font: 600 31px/1.2 var(--font); color: var(--ink-2); }
+.card.matrix.light .v.best, .card.matrix.light .vt.best {
+  background: #EAF7EF; color: var(--accent-2); box-shadow: inset 0 0 0 2px rgba(31,157,69,.45);
+}
+/* group divider label spanning all columns */
+.card.matrix.light .switch { grid-column: 1 / -1; color: var(--muted); margin: 10px 0 4px; }
+.card.matrix.light .switch::before, .card.matrix.light .switch::after {
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
