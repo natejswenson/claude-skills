@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  BRIEF card — the default light "explainer" for teaching / how-it-works posts.
+  Copy to images/<slug>.html, fill in the content, then render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+  Light canvas + layered panels + real topic icons. Styles live in diagram.css
+  under the LIGHT DESIGN SYSTEM block. Building blocks (delete what you don't use):
+    .lead   emphasis paragraph (<strong> the key phrases)
+    .panel + .panel-label   elevated white card with a small uppercase label
+    .concept   before/after (or A | B) node row, each .node = .glyph + .ntitle + .ncap
+    .band   dark callout strip for the one-line thesis (<em> highlights a word)
+    .statrow / .scol   2–4 column icon row ("the parts" / "what scales")
+    .caption   anchored footer line
+  ICONS: pick from assets/card-icons.md and match each glyph to the idea — a people
+  icon for a team, git-branch for a pipeline, lock for security. Meaningful and few
+  (2–4) beats many. Generic shapes are a last resort. Keep it to ONE idea.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card light brief">
+
+    <div class="toprow">
+      <div class="eyebrow">Eyebrow Label</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>One restrained headline that frames the idea.</h1>
+
+    <p class="lead">A supporting line or two that sets up the concept, with the
+      <strong>load-bearing phrase</strong> and one more <strong>key term</strong>
+      pulled into full-ink bold so the eye lands on what matters.</p>
+
+    <!-- explainer panel: a mini before/after (or A | B) of the core concept -->
+    <div class="panel">
+      <div class="panel-label">Section label · context</div>
+      <!-- ICONS: examples only — replace each <svg> with a topic icon from assets/card-icons.md that fits THIS post. Never ship the defaults. -->
+      <div class="concept">
+        <div class="node">
+          <div class="glyph tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="ntitle">Before</div>
+          <div class="ncap">the old way</div>
+        </div>
+        <div class="to"></div>
+        <div class="node">
+          <div class="glyph tint-green"><svg class="s-green" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></div>
+          <div class="ntitle">After</div>
+          <div class="ncap">the better way</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- dark callout band: the one-line thesis -->
+    <div class="band">
+      <div class="btext">The single sentence that <em>lands the point</em>.</div>
+      <div class="dots">
+        <span style="background:var(--accent)"></span>
+        <span style="background:var(--accent-3)"></span>
+        <span style="background:var(--accent-2)"></span>
+        <span style="background:var(--accent-4)"></span>
+      </div>
+    </div>
+
+    <!-- icon row: the parts / what scales (2–4 columns) -->
+    <div class="panel">
+      <!-- ICONS: examples only — replace each <svg> with a topic icon from assets/card-icons.md that fits THIS post. Never ship the defaults. -->
+      <div class="statrow">
+        <div class="scol"><div class="ig tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="label">First</div><div class="cap">one detail</div></div>
+        <div class="scol"><div class="ig tint-teal"><svg class="s-teal" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="label">Second</div><div class="cap">one detail</div></div>
+        <div class="scol"><div class="ig tint-green"><svg class="s-green" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div><div class="label">Third</div><div class="cap">one detail</div></div>
+        <div class="scol"><div class="ig tint-gold"><svg class="s-gold" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div class="label">Fourth</div><div class="cap">one detail</div></div>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The takeaway · one closing tag</div>
+  </div>
+</body>
+</html>
