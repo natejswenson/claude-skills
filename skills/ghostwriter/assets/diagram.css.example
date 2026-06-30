@@ -845,3 +845,22 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.date.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; text-align: left; }
 .card.date.light .ticket { width: 88%; align-self: center; margin: auto 0; box-shadow: 0 30px 60px -22px rgba(16,20,28,0.42); }
 .card.date.light .caption { margin-top: 0; text-align: center; }
+
+/* ---- code + Claude-session cards (light): the terminal stays DARK as an elevated
+   surface floating on the light canvas (the modern docs pattern). Portrait 4:5 with the
+   family header + caption. Class: `card code light` (and the Claude-session variant). ---- */
+#canvas.card.code.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 26px; justify-content: flex-start;
+  background: var(--bg);
+}
+.card.code.light h1 { color: var(--ink); font-size: 58px; line-height: 1.05; margin: 2px 0 0; }
+.card.code.light .terminal {
+  flex: 1 1 auto; min-height: 0;
+  background: #0D1117; border: 1px solid #30363D;
+  box-shadow: 0 34px 64px -26px rgba(16,20,28,0.45);
+  /* hold the terminal's own dark palette regardless of the light page theme */
+  --surface-2: #161B22; --border: #30363D; --text: #E6EDF3; --muted: #8B949E;
+  --accent: #58A6FF; --accent-2: #3FB950;
+  --t-kw: #F778BA; --t-fn: #58A6FF; --t-str: #3FB950; --t-num: #E3B341; --t-com: #8B949E; --t-prompt: #3FB950;
+}
+.card.code.light .caption { margin-top: 0; }
