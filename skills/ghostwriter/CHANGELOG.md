@@ -4,6 +4,36 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-06-30
+
+### Changed
+- **Card/diagram visuals redesigned into a modern light system.** Every designed card (and Mermaid
+  diagrams) moved off the flat dark "quote poster" look to a light canvas with layered white
+  panels, a dark callout band, real line icons, and a restrained type hierarchy — the crisp,
+  high-end feel of a modern docs card. All card types are now **portrait 4:5 (1200×1500)** and
+  share one rhythm: eyebrow + byline → restrained headline → a **lead** paragraph → the **topic
+  graphic** that fills the body → an anchored **footer caption**. Migrated: brief (new flagship
+  explainer), flow, matrix, ramp, STEM, date/ticket, code, Claude-session, carousel, and the
+  Mermaid theme. The code/Claude terminals stay dark as elevated surfaces floating on the light
+  canvas (the docs-site pattern).
+
+### Added
+- **`assets/card-template-brief.html` — the default light "explainer" card**: headline + lead, an
+  explainer `.panel` (before/after `.concept`), a dark thesis `.band`, and an icon `.statrow`.
+- **Light design-system foundation in `diagram.css`(.example)**: a `.light` modifier with light
+  tokens plus reusable primitives — `.lead`, `.panel`/`.panel-label`, `.band`, `.concept`,
+  `.statrow`/`.scol`, `.caption` — and icon-chip helpers (`.tint-*` / `.s-*`).
+- **`assets/card-icons.md` — a curated paste-ready line-icon catalog** (Lucide, MIT) grouped by
+  topic, so glyphs fit each post instead of generic shapes.
+- **Premium matrix scorecard**: solid colour header pills, contained value tiles, and a `.best`
+  marker that highlights the winning cell per row for an instant verdict.
+
+### Design principles (enforced in the templates + SKILL.md)
+- **Topic graphic is the hero (~3/4); any type-motif is a small accent** (e.g. the STEM blocks
+  shrank to a header accent over a real topic graphic).
+- **Icons must fit the post** — template icons are examples flagged with `ICONS: …` REPLACE-ME
+  comments; pick topic glyphs from `card-icons.md` and never ship the defaults.
+
 ## [0.7.0] - 2026-06-28
 
 ### Added
