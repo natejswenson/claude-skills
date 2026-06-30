@@ -1,14 +1,14 @@
 <!doctype html>
 <!--
-  Date / deadline card TYPE — rendered as a realistic ADMIT-ONE ticket stub. Best
-  for "X happens on <date>" posts (deprecations, launches, events). The date is the
-  hero; keep the label and sub short. Set the .date-hero to the human date and BOTH
-  .serial values to that date in numeric YYYYMMDD form (e.g. June 15 2026 -> 20260615),
-  then:
-    render_image.py --type card --in images/<slug>.html --out images/<slug>.png
-  Styling lives in diagram.css (.card.date and its .ticket/.inner/.serial/.deco
-  children) — don't add inline CSS. It uses the same dark brand palette as the other
-  cards; edit the brand guide if you need to retheme.
+  Date / deadline card TYPE (light system) — a realistic ADMIT-ONE ticket as the
+  centerpiece, for "X happens on <date>" posts (deprecations, launches, events). The
+  ticket is the topic graphic; the headline names the event, the date is the hero.
+  Class is `card date light`. Set .date-hero to the human date and BOTH .serial values
+  to that date in numeric YYYYMMDD form (e.g. June 15 2026 -> 20260615), then render at
+  PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+  Retheme the ticket stock by setting --ticket on #canvas (var(--accent-2) green, etc.).
+  Styling lives in diagram.css (.card.date.light and the .ticket children).
 -->
 <html lang="en">
 <head>
@@ -16,7 +16,15 @@
   <link rel="stylesheet" href="diagram.css" />
 </head>
 <body>
-  <div id="canvas" class="card date">
+  <div id="canvas" class="card date light">
+    <div class="toprow">
+      <div class="eyebrow">Eyebrow Label</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>The event, named in one line.</h1>
+    <p class="lead">One line of context, with the <strong>what changes</strong> in bold.</p>
+
     <div class="ticket">
       <div class="serial s-left">20260615</div>
       <div class="serial s-right">20260615</div>
@@ -25,9 +33,10 @@
         <div class="date-label">Short label · here</div>
         <div class="date-hero">June 15</div>
         <div class="date-sub">One short line of context.</div>
-        <div class="footer brand"></div>
       </div>
     </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The takeaway · why this date matters</div>
   </div>
 </body>
 </html>

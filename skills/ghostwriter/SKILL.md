@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.7.0
+version: 0.8.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -172,55 +172,55 @@ brand guide (gitignored). On first use, if it doesn't exist, copy it from the te
 bottom of every visual) and tweak the palette. Cards use `<div class="footer brand"></div>` to
 pull the byline automatically — don't hardcode it.
 
-- **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd` flow/architecture/
-  sequence) for structured/technical content; a **designed card** (`--type card`, an `.html`)
-  for one punchy idea. Card templates to copy:
-  - `assets/card-template.html` — general hero (headline / before-after / stat / quote).
-  - `assets/card-template-date.html` — **date/deadline type** (a launch, deprecation, event),
-    rendered as a realistic ADMIT-ONE ticket; the date is the hero, keep words minimal so it's
-    scannable at a glance.
-  - `assets/card-template-ramp.html` — **ramp type** (an accelerating progression); three
-    ascending steps, the last highlighted. Bars are illustrative, not to scale — the labeled
-    figures must be accurate.
-  - `assets/card-template-stem.html` — **STEM type** (STEM / education / outreach posts);
-    the warm member of the family — same clean dark base, kept playful by a chunky toy-block
-    S T E M motif and a soft four-hue corner glow. Reach for it when the tone is kid-energy /
-    inspirational rather than buttoned-up.
-  - `assets/card-template-flow.html` — **flow type** (architecture / pipeline / data-flow);
-    a clean, linear diagram of color-coded stage chips (a left accent bar marks the layer: green
-    `.det` / pink `.tools` / blue `.agent` / grey `.out`), each with a bold title and one muted
-    example, connected by simple chevrons and auto-centered to fill the card. **Prefer this over
-    a Mermaid diagram for architecture posts** — it matches the brand cards and renders crisp at
-    phone size, where a Mermaid `.mmd` tends to come out as a skinny, hard-to-read strip. Keep it
-    calm: ~4-5 stages, one example each (show sub-steps inline as `A -> B -> C`, don't nest boxes).
-    The byline sits inline in the `.toprow` so a feed crop can't remove it.
-  - `assets/card-template-code.html` — **code type** (share a snippet); a macOS-style terminal
-    window with bat-style line numbers and theme-colored syntax. Highlight by hand — wrap tokens
-    in `<span class="t-kw/t-fn/t-str/t-num/t-com">`, mark the one money line `class="line hot"`,
-    and cap the last line with `<span class="caret">`. Keep it to ONE idea: short lines (≤~42
-    chars) and ≤~10 rows so it stays legible at phone size.
-  - `assets/card-template-claude.html` — **Claude Code session** (the session variant of the
-    code type): same terminal window, but a *transcript* — the user's request in a clay band,
-    Claude's action bullets, tool names, and `└` result branches — for "here's what I shipped
-    with Claude Code" posts. Uses Anthropic's clay accent so it reads as Claude Code at a glance;
-    be honest — show a real request and a real outcome.
+- **The light card system.** Every designed card uses the modern **light** system: a light
+  canvas, layered white panels, a dark callout band, real line icons, and a restrained hierarchy.
+  Cards are **portrait 4:5 (1200×1500)** and share one rhythm — eyebrow + byline → restrained
+  headline → a **lead** paragraph (bold the key phrase) → the **topic graphic** that fills the
+  body → an anchored **footer caption**. Two rules keep them premium:
+    - **The topic graphic is the hero (~3/4); any type-motif is a small accent.** Don't let
+      decoration (e.g. the STEM blocks) dominate — the real diagram of THIS post carries the card.
+    - **Icons must fit the post.** The `<svg>` icons in every template are EXAMPLES, flagged with
+      an `ICONS: …` comment. Pick topic-matching glyphs from `assets/card-icons.md` and swap them
+      in for each card — **never ship a template's default icons.** Meaningful and few (2–4)
+      beats many.
+- **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd`) for structured/technical
+  content; a **designed card** (`--type card`, an `.html`) for one punchy idea. Card templates:
+  - `assets/card-template-brief.html` — **brief type (the default explainer)**: the flagship —
+    headline + lead, an explainer `.panel` (a before/after `.concept`), a dark thesis `.band`, and
+    an icon `.statrow`. Reach for it first for teaching / how-it-works posts.
+  - `assets/card-template-flow.html` — **flow type** (architecture / pipeline): light stage chips
+    threaded on a numbered spine, each with a **topic icon** + a bold title + one muted example
+    (layer classes `.det` green / `.tools` teal / `.agent` blue / `.out` grey). **Prefer over a
+    Mermaid diagram for architecture posts.** ~4–5 stages; sub-steps inline as `A -> B -> C`.
+  - `assets/card-template-matrix.html` — **matrix type** (comparison): a premium scorecard —
+    solid colour header pills (`.col-h .green/.grey/.pink`), every value in a contained tile
+    (`.v` number / `.vt` phrase), the winning cell per row marked `.best` for an instant verdict;
+    `.switch` rows group. ≤4 columns, ≤7 rows; translate insider units into plain words.
+  - `assets/card-template-ramp.html` — **ramp type** (accelerating progression): a light analytics
+    chart — neutral rising bars to an accent payoff bar, a trend line, a delta pill. Bars are
+    illustrative; the labeled figures must be accurate.
+  - `assets/card-template-date.html` — **date type** (a launch / deprecation / event): a realistic
+    ADMIT-ONE ticket as the centerpiece; the headline names the event, the date is the hero.
+  - `assets/card-template-stem.html` — **STEM type** (education / outreach): the warm one — a
+    SMALL toy-block S·T·E·M accent over a real topic graphic (the build / experiment / result).
+    Reach for it when the tone is kid-energy / inspirational.
+  - `assets/card-template-code.html` — **code type** (a snippet): a dark macOS terminal floating
+    on the light canvas. Highlight by hand (`<span class="t-kw/t-fn/t-str/t-num/t-com">`), mark the
+    money line `class="line hot"`, cap with `<span class="caret">`. ≤~42 chars, ≤~10 rows.
+  - `assets/card-template-claude.html` — **Claude Code session**: the transcript variant of the
+    code type (clay request band, action bullets, `└` result branches). Be honest — real request,
+    real outcome.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
-    **Carousels** below — this is the highest-reach native format and the right choice for
-    educational / how-to / step-by-step posts.
-  - `assets/card-template-matrix.html` — **matrix type** (a comparison): a labeled grid that
-    compares a few options (columns) across the same attributes (rows). Header cells (`.col-h`)
-    carry a column accent (`.green`/`.grey`/`.pink`); value cells are `.v` for a big mono NUMBER
-    or `.vt` for a short plain-English phrase; one or more `.switch` rows act as group dividers.
-    Keep it to ≤4 columns and ≤7 rows so it stays scannable at phone size; translate any insider
-    units into plain words so it reads cold (a stranger won't know what "0.85 of goal" means).
+    **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
   Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
   one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
   as `voice/voice-notes.md` — a misleading diagram is worse than none).
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
-  — this **auto-opens the PNG in the user's image viewer** so they can actually see it (pass
-  `--no-open` only for headless/batch use).
+  — **for the portrait light cards add `--size 1200x1500`** (Mermaid auto-fits; only the legacy
+  square `card-template.html` omits it). This **auto-opens the PNG in the user's image viewer** so
+  they can actually see it (pass `--no-open` only for headless/batch use).
 - **Show the user the rendered PNG** and iterate (tweak the source or `assets/diagram.css`) until
   they approve it. Don't claim it looks good without showing the image.
 - **Write alt text** describing the visual; you'll pass it to the publish step.
