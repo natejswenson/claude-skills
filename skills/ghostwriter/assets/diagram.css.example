@@ -27,6 +27,10 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 
 /* ---- Mermaid canvas: scales the diagram to fill a fixed-width brand frame ---- */
 #canvas.mermaid-canvas {
+  /* light theme tokens for diagrams (mirrored into mermaid themeVariables by the
+     template JS, which reads computed styles from #canvas) */
+  --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#EEF1F5; --border:#E6E9EE;
+  --text:#0C111B; --muted:#727B8A; --accent:#2D7DF6;
   width: 1180px;
   padding: 80px;
   background: var(--bg);
@@ -864,3 +868,22 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   --t-kw: #F778BA; --t-fn: #58A6FF; --t-str: #3FB950; --t-num: #E3B341; --t-com: #8B949E; --t-prompt: #3FB950;
 }
 .card.code.light .caption { margin-top: 0; }
+
+/* ---- carousel slides (light): the multi-slide deck on the light canvas. Add `light` to
+   every slide; the token-driven type rules (cover/point/recap/cta) adapt automatically —
+   only the dark gradient backgrounds need a light restatement. ---- */
+.card.slide.light {
+  background:
+    radial-gradient(1200px 680px at 85% -12%, rgba(45,125,246,0.06), transparent 60%),
+    radial-gradient(1000px 560px at -10% 112%, rgba(31,157,69,0.05), transparent 60%),
+    var(--bg);
+}
+.card.slide.cover.light {
+  background:
+    radial-gradient(1000px 760px at 50% -12%, rgba(45,125,246,0.10), transparent 62%),
+    radial-gradient(900px 620px at 105% 110%, rgba(236,72,153,0.06), transparent 60%),
+    var(--bg);
+}
+.card.slide.cta.light {
+  background: radial-gradient(1000px 740px at 50% 0%, rgba(31,157,69,0.09), transparent 62%), var(--bg);
+}

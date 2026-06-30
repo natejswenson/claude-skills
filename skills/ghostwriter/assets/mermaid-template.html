@@ -18,7 +18,8 @@
     </pre>
   </div>
   <script>
-    const css = getComputedStyle(document.documentElement);
+    // Read the brand tokens from #canvas (the light diagram theme is scoped there).
+    const css = getComputedStyle(document.getElementById("canvas"));
     const v = (n) => css.getPropertyValue(n).trim();
     mermaid.initialize({
       startOnLoad: false,
