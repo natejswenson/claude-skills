@@ -776,3 +776,56 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.matrix.light .switch::before, .card.matrix.light .switch::after {
   background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
+
+/* ---- ramp card (light): an accelerating bar chart on the light canvas. Portrait 4:5
+   with lead + caption; neutral rising bars to an accent payoff bar, with the trend line,
+   gridlines, and delta pill carried over. Class: `card ramp light`. ---- */
+#canvas.card.ramp.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
+.card.ramp.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
+.card.ramp.light .chart { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; }
+.card.ramp.light .step .val { color: var(--ink); }
+.card.ramp.light .step .bar {
+  background: linear-gradient(180deg, #EAEEF4, #F5F7FB);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 26px -20px rgba(16,20,28,.30);
+}
+.card.ramp.light .step.s3 .bar {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 86%, #fff), var(--accent));
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.30), 0 20px 40px -16px rgba(45,125,246,.45);
+}
+.card.ramp.light .step.s3 .val { color: var(--accent); }
+.card.ramp.light .ramp-row::before {
+  background: repeating-linear-gradient(to top, transparent 0 116px, rgba(16,20,28,0.05) 116px 117px);
+}
+.card.ramp.light .ramp-base { background: var(--border); }
+
+/* ---- STEM card (light): the warm member. Portrait 4:5 with a soft four-hue glow,
+   the chunky toy-blocks kept as the playful signature on a white "play-mat" panel,
+   plus an S·T·E·M discipline row. Class: `card stem light`. ---- */
+#canvas.card.stem.light {
+  height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start;
+  background:
+    radial-gradient(620px 620px at 8% 4%,  rgba(59,130,246,0.07), transparent 60%),
+    radial-gradient(640px 640px at 94% 6%, rgba(236,72,153,0.07), transparent 60%),
+    radial-gradient(660px 660px at 92% 97%, rgba(34,197,94,0.06), transparent 60%),
+    radial-gradient(560px 560px at 6% 97%, rgba(245,184,46,0.07), transparent 62%),
+    var(--bg);
+}
+.card.stem.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; }
+/* compact STEM motif — a small toy-block strip used as a brand ACCENT, not the hero.
+   The post's real topic graphic lives in .topic and fills the rest of the card. */
+.card.stem.light .blocks { justify-content: center; align-items: center; gap: 18px; margin: 4px 0 2px; }
+.card.stem.light .block {
+  width: 84px; height: 84px; border-radius: 18px; color: #0A0E16; font: 800 46px/1 var(--font);
+  box-shadow:
+    inset 0 4px 0 rgba(255,255,255,0.45),
+    inset 0 -8px 0 rgba(0,0,0,0.12),
+    0 10px 18px -6px rgba(16,20,28,0.22);
+}
+.card.stem.light .block.b1 { background: #3B82F6; }   /* blue   */
+.card.stem.light .block.b2 { background: #22C55E; }   /* green  */
+.card.stem.light .block.b3 { background: #EC4899; }   /* pink   */
+.card.stem.light .block.b4 { background: #F5B82E; }   /* yellow */
+/* topic graphic — the post's real diagram; fills the card under the motif + header */
+.card.stem.light .topic { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
