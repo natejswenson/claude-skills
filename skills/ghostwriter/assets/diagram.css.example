@@ -622,3 +622,99 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   content: ""; flex: 1; height: 2px;
   background: linear-gradient(90deg, transparent, rgba(88,166,255,0.5), transparent);
 }
+
+/* ============================================================================
+   LIGHT DESIGN SYSTEM — the modern card family
+   A light canvas with layered white panels, a dark callout band, real line
+   icons, and a restrained hierarchy. Add `light` to a card's class list to opt
+   in; compose with a type class (e.g. `brief`) for layout. Dark surfaces
+   (terminal cards, the .band) sit ON the light canvas as intentional contrast.
+   Reusable building blocks (use across any light card):
+     .lead   emphasis paragraph      .panel + .panel-label  elevated white card
+     .band   dark callout strip       .concept  before/after node row
+     .statrow/.scol  icon row          .caption  anchored footer line
+     .glyph/.ig  icon chip (+ .tint-* fill and .s-* stroke helpers)
+   ============================================================================ */
+.card.light {
+  /* light tokens override the dark defaults via the cascade */
+  --bg:#F7F8FA; --surface:#FFFFFF; --ink:#0C111B; --ink-2:#3A424F;
+  --muted:#727B8A; --border:#E6E9EE; --band:#10141C;
+  /* green/blue identity, tuned for contrast on a light surface */
+  --accent:#2D7DF6; --accent-2:#1F9D45; --accent-3:#17A2A2; --accent-4:#C9952B;
+  color: var(--ink);
+}
+/* flat light canvas — replaces the dark radial gradient + inset frame */
+#canvas.card.light { background: var(--bg); }
+#canvas.card.light::after { content: none; }
+
+/* reusable icon chips: a tinted rounded container + a stroked line icon.
+   Pair a .tint-* fill with a matching .s-* stroke on the inner <svg>. */
+.card.light .glyph svg, .card.light .ig svg, .card.light .ic svg {
+  fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.card.light .tint-blue  { background:#EEF3FE; }  .card.light .s-blue  { stroke:var(--accent);   }
+.card.light .tint-green { background:#EAF7EF; }  .card.light .s-green { stroke:var(--accent-2); }
+.card.light .tint-teal  { background:#E7F6F6; }  .card.light .s-teal  { stroke:var(--accent-3); }
+.card.light .tint-gold  { background:#FAF2E1; }  .card.light .s-gold  { stroke:var(--accent-4); }
+
+/* lead: a supporting paragraph under the headline; wrap key phrases in <strong>. */
+.card.light .lead {
+  font: 400 31px/1.42 var(--font); color: var(--ink-2); margin: 0; max-width: 44ch;
+}
+.card.light .lead strong { color: var(--ink); font-weight: 700; }
+
+/* panel: an elevated white card that groups related content. */
+.card.light .panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 22px;
+  padding: 34px 38px;
+  box-shadow: 0 1px 0 rgba(16,20,28,.02), 0 18px 40px -28px rgba(16,20,28,.28);
+}
+.card.light .panel-label {
+  font: 700 22px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 26px;
+}
+
+/* concept: a before/after (or A | B) node row inside a panel. Each .node holds a
+   .glyph icon chip, a .ntitle, and a .ncap; a .to draws a divider between them. */
+.card.light .concept { display: flex; align-items: center; gap: 34px; }
+.card.light .concept .node { display: flex; flex-direction: column; align-items: center; gap: 16px; flex: 1; }
+.card.light .concept .glyph { width: 84px; height: 84px; border-radius: 22px; display: flex; align-items: center; justify-content: center; }
+.card.light .concept .glyph svg { width: 44px; height: 44px; }
+.card.light .concept .ntitle { font: 700 30px/1 var(--font); color: var(--ink); }
+.card.light .concept .ncap { font: 400 24px/1.3 var(--font); color: var(--muted); text-align: center; }
+.card.light .concept .to { flex: none; width: 1px; height: 96px; background: var(--border); }
+
+/* band: a dark callout strip for the one-line thesis. <em> highlights a word;
+   .dots holds up to four accent dots on the right. */
+.card.light .band {
+  background: var(--band); border-radius: 18px; padding: 30px 36px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.card.light .band .btext { color: #fff; font: 600 34px/1.2 var(--font); letter-spacing: -.01em; }
+.card.light .band .btext em { font-style: normal; color: #6FE39A; }
+.card.light .band .dots { display: flex; gap: 14px; flex: none; }
+.card.light .band .dots span { width: 22px; height: 22px; border-radius: 50%; }
+
+/* statrow: an icon row (2–4 columns) on a panel — "the parts" / "what scales". */
+.card.light .statrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.card.light .scol { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.card.light .scol .ig { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.card.light .scol .ig svg { width: 32px; height: 32px; }
+.card.light .scol .label { font: 700 27px/1 var(--font); color: var(--ink); }
+.card.light .scol .cap { font: 400 22px/1.25 var(--font); color: var(--muted); text-align: center; }
+
+/* caption: an anchored footer line with a leading accent dot, ruled off the top. */
+.card.light .caption {
+  margin-top: auto; border-top: 1px solid var(--border); padding-top: 26px;
+  text-align: center; font: 600 26px/1 var(--font); color: var(--ink-2);
+}
+.card.light .caption .d { color: var(--accent-2); }
+
+/* ---- brief card TYPE: the default light "explainer" for teaching posts.
+   Portrait 4:5 (render at --size 1200x1500). Top-aligned, generous gaps. ---- */
+#canvas.card.brief {
+  height: 1500px; padding: 78px 80px 70px;
+  justify-content: flex-start; gap: 32px;
+}
+.card.brief .eyebrow { color: var(--accent-2); }       /* green eyebrow */
+.card.brief h1 { font-size: 70px; color: var(--ink); } /* restrained headline */
