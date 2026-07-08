@@ -4,63 +4,6 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] — 2026-07-08
-
-Complete agent-native rewrite — see
-`docs/plans/2026-07-08-resume-agent-native-rewrite-design.md` for the full
-design. Breaking: the CLI (`bin/resume.mjs`) and DOCX support are gone;
-reading, job extraction, and tailoring are now the invoking agent's own work,
-not a subprocess `claude -p` call.
-
-### Changed
-- **No more subprocess LLM call.** The agent reads the résumé, extracts the
-  job description, and tailors the bullets directly in-conversation using its
-  own tools and reasoning — replacing `lib/llm/`'s CLI/API adapter pair and
-  `lib/pipeline.ts`'s orchestration. `SKILL.md` now carries the full flow as
-  direct instructions, with the 11-rule optimizer prompt ported to
-  `references/tailoring-rules.md` and the job-extraction fallback ported to
-  `references/job-extraction-fallback.md` (Firecrawl `curl` via Bash, with an
-  explicit `$FIRECRAWL_API_KEY` shell-variable-only security requirement so
-  the key never appears in a tool-call transcript or shell history).
-- **Job extraction fallback is a markdown reference file, not code.** The old
-  5-tier waterfall (ATS adapters, JSON-LD/OpenGraph/Readability parsers,
-  SSRF-safe fetch) is replaced by `WebFetch` first, then
-  `references/job-extraction-fallback.md`'s procedure (LinkedIn policy check →
-  Firecrawl stealth fetch → ask the user to paste text).
-- **Dependencies cut roughly in half (8 → 4).** Removed `@mozilla/readability`,
-  `jsdom`, `mammoth`, `unpdf` — nothing left to parse HTML or DOCX in code.
-  Kept `@react-pdf/renderer`, `react`, `react-dom`, `zod`.
-- `lib/pipeline.ts`'s PDF-rendering logic moved to a new `lib/render.ts`,
-  exposed via a new thin `scripts/render.mjs` CLI entrypoint (self-registers
-  the TSX loader; no `--import` flag needed for direct invocation).
-  `scripts/validate.mjs` is a new equivalent thin entrypoint over
-  `lib/validate.ts`'s `validateTailoring()` — the deterministic content
-  checks (banned phrases, scope qualifiers, derived durations, invented
-  numbers) survive as a standalone lightweight guardrail even though the
-  agent, not a subprocess LLM, now does the tailoring.
-
-### Removed
-- **DOCX support.** The `Read` tool doesn't parse DOCX natively; rather than
-  keep a small conversion script for one format, `.docx` is dropped. Only
-  `.pdf`/`.txt`/`.md` are supported — ask the user to convert or paste the
-  text instead.
-- `bin/resume.mjs` (the CLI entrypoint and all its flags: `--pick`,
-  `--model`, `--pdf-only`, `--json`, `--render`), `lib/parsing/` (job/URL/ATS
-  extraction, résumé file parsing), `lib/llm/` (CLI/API adapters, budget
-  gating), `lib/pipeline.ts`, `lib/prompt.ts`, `lib/summary-fix.ts`,
-  `lib/log.ts`, `lib/ui/` (file-picker, job-summary, progress, table),
-  `lib/url-safety.ts`, `lib/cli-args.ts`, `scripts/eval/` (the scored eval
-  harness) and `npm run eval`/`npm run benchmark`.
-- **Automated prompt-injection regression test** (`scripts/prompt-injection.test.mjs`).
-  `lib/prompt.ts`'s `sanitizeBlock()` doesn't transfer to an agent-native
-  architecture; prompt-injection defense is now explicit prose in `SKILL.md`
-  and `references/job-extraction-fallback.md` instructing the agent to treat
-  fetched content as data, never instructions.
-  `docs/security/prompt-injection-fixtures/` remains as a **manual**
-  verification checklist — this is a disclosed, permanent loss of automated
-  coverage on a security-relevant surface, accepted as part of this rewrite's
-  trade-offs.
-
 ## [0.3.0] — 2026-07-08
 
 Extraction hardening, a mandatory style-picker loop, and a vendor-neutral

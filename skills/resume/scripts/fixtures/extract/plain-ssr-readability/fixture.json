@@ -1,0 +1,19 @@
+{
+  "name": "plain-ssr-readability",
+  "description": "SSR page with no JSON-LD — Readability extracts article body (tier 3).",
+  "url": "https://example.com/careers/senior-platform-engineer",
+  "stubs": [
+    {
+      "match": "https://example.com/careers/senior-platform-engineer",
+      "status": 200,
+      "bodyFile": "page.html"
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "minTextLength": 400,
+    "titleContains": "",
+    "textIncludes": ["Senior Platform Engineer", "infrastructure", "Terraform"],
+    "textExcludes": []
+  }
+}
