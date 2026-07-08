@@ -1,0 +1,28 @@
+{
+  "name": "linkedin-stealth-optin",
+  "description": "With RESUME_ALLOW_LINKEDIN=1 and a Firecrawl key set, LinkedIn is routed through the stealth path instead of the tier-1 hostile short-circuit.",
+  "url": "https://www.linkedin.com/jobs/view/1234567890",
+  "linkedInAllow": true,
+  "firecrawlKey": "fc-test-dummy-key",
+  "stubs": [
+    {
+      "match": "https://api.firecrawl.dev/v1/scrape",
+      "status": 200,
+      "json": {
+        "success": true,
+        "data": {
+          "markdown": "# Senior Platform Engineer\n\n**ExampleCo** — Remote\n\n## About the role\n\nExampleCo is hiring a Senior Platform Engineer to build internal developer tooling and CI/CD infrastructure.\n\n## Requirements\n\n- 5+ years platform/infra engineering\n- Kubernetes and Terraform experience\n- Strong Go or Python",
+          "metadata": {
+            "title": "Senior Platform Engineer - ExampleCo | LinkedIn"
+          }
+        }
+      }
+    }
+  ],
+  "expected": {
+    "ok": true,
+    "minTextLength": 100,
+    "titleContains": "Senior Platform Engineer",
+    "textIncludes": ["ExampleCo", "Kubernetes"]
+  }
+}

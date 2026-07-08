@@ -59,8 +59,17 @@ export async function extractJobFromUrl(rawUrl: string): Promise<JobParseResult>
   rawUrl = url.toString();
 
   // ---- Tier 1: Hostile short-circuit ----
+  // RESUME_ALLOW_LINKEDIN=1 opts a user into attempting Firecrawl stealth
+  // against LinkedIn instead of the unconditional reject below — default
+  // off, since LinkedIn actively pursues scrapers. Gated on the explicit
+  // hostname (not `classification.kind === "hostile"` generically) so this
+  // flag can never widen scope to some other host added to HOSTILE_HOSTS
+  // later for an unrelated reason.
+  const linkedInStealthOptIn =
+    process.env.RESUME_ALLOW_LINKEDIN === "1" &&
+    (url.hostname === "linkedin.com" || url.hostname === "www.linkedin.com");
   const classification = classifyUrl(url);
-  if (classification.kind === "hostile") {
+  if (classification.kind === "hostile" && !linkedInStealthOptIn) {
     return {
       ok: false,
       error: "hostile_domain",
@@ -70,7 +79,7 @@ export async function extractJobFromUrl(rawUrl: string): Promise<JobParseResult>
 
   // ---- Stealth-required hosts: skip tier 2/3, go straight to Firecrawl stealth ----
   // Indeed/Glassdoor block plain fetch + basic Firecrawl proxy. Only stealth works.
-  if (STEALTH_REQUIRED_HOSTS.has(url.hostname)) {
+  if (STEALTH_REQUIRED_HOSTS.has(url.hostname) || linkedInStealthOptIn) {
     if (firecrawlEnabled()) {
       const fc = await firecrawlScrape(rawUrl, { stealth: true });
       if (fc) {
