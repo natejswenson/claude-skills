@@ -65,13 +65,13 @@ node bin/resume.mjs <resume-path> <job-url-or-text> [flags]
 | `--open` | Open the rendered PDF in your default viewer when done |
 | `--render <json>` | Re-render an existing tailored JSON sidecar in a new `--template` (instant; skips tailoring) |
 | `--template <name>` | `modern` (default) · `classic` · `technical` · `polished` · `timeline` · `editorial` · `spotlight` |
-| `--out <dir>` | Output directory (default: `./onetap-out`) |
+| `--out <dir>` | Output directory (default: `~/resume-out`) |
 | `--model <name>` | LLM model (default: `haiku` — fastest on the subscription path) |
 | `--pdf-only` | Write only the PDF (skip the JSON sidecar) |
 | `--json` | Print the change summary as JSON |
 | `-h, --help` | Show help |
 
-Outputs land in `./onetap-out/` (git-ignored): the tailored PDF, a JSON sidecar
+Outputs land in `~/resume-out/`: the tailored PDF, a JSON sidecar
 (the tailored résumé data, reusable with `--render`), and a printed before→after
 table of every optimized and dropped bullet.
 

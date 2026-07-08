@@ -19,7 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(__dirname, "fixtures", "extract");
 
 // Truly offline: skip the network DNS round-trip in assertPublicUrl.
-process.env.ONETAP_SKIP_DNS_CHECK ??= "1";
+process.env.RESUME_SKIP_DNS_CHECK ??= "1";
 
 // ---- fetch stub (same pattern as extract.test.mjs) ----
 
