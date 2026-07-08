@@ -4,6 +4,47 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-07-08
+
+Extraction hardening, a mandatory style-picker loop, and a vendor-neutral
+rebrand — see `docs/plans/2026-07-08-resume-skill-hardening-design.md` for
+the full design.
+
+### Added
+- **`RESUME_ALLOW_LINKEDIN=1`** — opt-in (default off) that routes LinkedIn
+  job URLs through the same Firecrawl stealth path already used for
+  Indeed/Glassdoor/ZipRecruiter, instead of the unconditional
+  `hostile_domain` rejection. Unvalidated against a real LinkedIn posting;
+  ships as an opt-in specifically because LinkedIn actively pursues
+  scrapers.
+- Friendly `job_extract_failed` error message — the CLI now prints "Could
+  not fetch this job posting automatically (`<reason>`). Paste the job
+  description text instead and re-run." instead of the raw internal error
+  string, so any invoking agent (not just one that parses
+  `job_extract_failed`) gets an actionable instruction.
+- A one-time setup note (SKILL.md Step 1) when `FIRECRAWL_API_KEY` is unset,
+  explaining what it unlocks (Indeed/Glassdoor/ZipRecruiter extraction)
+  without blocking the run.
+- The post-render style picker (SKILL.md Step 4) is now explicit and
+  mandatory — always run after the first PDF opens, not conditional on the
+  user asking.
+
+### Changed
+- **Default output directory** moved from `./onetap-out` (resolved relative
+  to `$SKILL_DIR`, which lands under `~/.claude/skills/resume` for a plugin
+  install) to `~/resume-out` — stable and human-findable regardless of
+  install location or invoking agent. `--out` still overrides.
+- Renamed `ONETAP_SKIP_DNS_CHECK` → `RESUME_SKIP_DNS_CHECK` (production code
+  + all test files).
+- Dropped "OneTap Resume" naming from SKILL.md's intro paragraph and closing
+  line, and the `"Tailoring with Claude"` progress string (now "Tailoring
+  résumé") — the most user-visible "Claude" string in the codebase.
+- `lib/llm/index.ts`'s log line "ambient ~/.claude OAuth session" →
+  "ambient CLI session".
+- Regenerated `package-lock.json` to drop its stale
+  `onetapresume-skill`/`onetapresume` name/bin (already inconsistent with
+  `package.json`'s `resume-skill`).
+
 ## [0.2.0] — 2026-06-21
 
 Accuracy + speed benchmark for the tailoring pipeline, plus two measured

@@ -15,7 +15,7 @@
  * Flags:
  *   --pick              choose the resume from a native file picker (macOS)
  *   --template <name>   one of: modern classic technical polished timeline editorial spotlight (default: modern)
- *   --out <dir>         output directory (default: ./onetap-out)
+ *   --out <dir>         output directory (default: ~/resume-out)
  *   --model <name>      LLM model override (default: haiku via the cli adapter)
  *   --pdf-only          write only the PDF (skip the ResumeJSON sidecar)
  *   --json              print the diff as JSON instead of tables
@@ -24,6 +24,7 @@
 import { register } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join, relative, resolve } from "node:path";
+import { homedir } from "node:os";
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout, stderr } from "node:process";
@@ -49,7 +50,7 @@ Flags:
   --render <json>    re-render an existing tailored JSON in a new --template
                      (skips tailoring — instant style switch)
   --template <name>  modern | classic | technical | polished | timeline | editorial | spotlight  (default: modern)
-  --out <dir>        output directory (default: ./onetap-out)
+  --out <dir>        output directory (default: ~/resume-out)
   --model <name>     LLM model override (default: haiku on the CLI path)
   --pdf-only         write only the PDF (skip the ResumeJSON sidecar)
   --json             print the change summary as JSON
@@ -225,7 +226,7 @@ async function renderOnly(flags) {
   }
 
   const template = normalizeTemplate(flags.template);
-  const outDir = resolve(flags.out ?? "onetap-out");
+  const outDir = flags.out ? resolve(flags.out) : join(homedir(), "resume-out");
   const pdfPath = await renderTemplateFromResume(parsed.data, template, outDir);
   if (flags.open) openFile(pdfPath);
 
@@ -299,6 +300,14 @@ async function printResult(r, elapsedSec) {
 }
 
 main().catch((err) => {
-  console.error(`\n✖ ${err.message ?? err}`);
+  const message = err.message ?? String(err);
+  if (message.startsWith("job_extract_failed:")) {
+    const reason = message.slice("job_extract_failed:".length).trim();
+    console.error(
+      `\n✖ Could not fetch this job posting automatically (${reason}).\n  Paste the job description text instead and re-run.\n`,
+    );
+  } else {
+    console.error(`\n✖ ${message}`);
+  }
   process.exit(1);
 });

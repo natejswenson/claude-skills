@@ -93,10 +93,10 @@ export async function assertPublicUrl(urlString: string): Promise<void> {
   // against untrusted multi-tenant traffic. This skill is a single-user
   // local CLI tool fetching a job URL the user typed — the DNS round-trip
   // is fetch hygiene, not a security boundary (see plan). Setting
-  // ONETAP_SKIP_DNS_CHECK=1 skips ONLY the network resolution step; the
+  // RESUME_SKIP_DNS_CHECK=1 skips ONLY the network resolution step; the
   // scheme check and literal private-IP rejection above still apply. The
   // offline fixture harness sets this so tests never depend on real DNS.
-  if (process.env.ONETAP_SKIP_DNS_CHECK === "1") return;
+  if (process.env.RESUME_SKIP_DNS_CHECK === "1") return;
 
   // Hostname: resolve both families; reject if any answer is private.
   let addrs4: string[] = [];

@@ -22,7 +22,7 @@ const FIXTURES_DIR = path.join(__dirname, "fixtures", "extract");
 // Truly offline: skip the network DNS round-trip in assertPublicUrl so
 // fixtures whose hosts don't resolve (e.g. careers.example.com) still work
 // with no network. Literal private-IP rejection still applies.
-process.env.ONETAP_SKIP_DNS_CHECK ??= "1";
+process.env.RESUME_SKIP_DNS_CHECK ??= "1";
 
 // ---- fetch stub installed BEFORE job.ts imports ----
 let activeStubs = [];
@@ -164,6 +164,11 @@ for (const fx of fixtures) {
   if (fx.firecrawlKey) process.env.FIRECRAWL_API_KEY = fx.firecrawlKey;
   else delete process.env.FIRECRAWL_API_KEY;
 
+  // Respect per-fixture RESUME_ALLOW_LINKEDIN toggle — default disabled.
+  const priorLinkedInAllow = process.env.RESUME_ALLOW_LINKEDIN;
+  if (fx.linkedInAllow) process.env.RESUME_ALLOW_LINKEDIN = "1";
+  else delete process.env.RESUME_ALLOW_LINKEDIN;
+
   let result;
   let threw = null;
   try {
@@ -175,6 +180,8 @@ for (const fx of fixtures) {
   // Restore
   if (priorKey === undefined) delete process.env.FIRECRAWL_API_KEY;
   else process.env.FIRECRAWL_API_KEY = priorKey;
+  if (priorLinkedInAllow === undefined) delete process.env.RESUME_ALLOW_LINKEDIN;
+  else process.env.RESUME_ALLOW_LINKEDIN = priorLinkedInAllow;
 
   if (threw) {
     failed++;
