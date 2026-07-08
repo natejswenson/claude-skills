@@ -12,7 +12,9 @@
 # eval outputs may contain raw resume content — never track
 /eval-out/
 
-# default skill output dir (tailored PDFs + JSON — user data)
+# local dev convenience dir (tailored PDFs + JSON — user data); the real
+# default output dir is ~/resume-out, outside the repo entirely
+/resume-out/
 /onetap-out/
 
 # local PDF render scratch

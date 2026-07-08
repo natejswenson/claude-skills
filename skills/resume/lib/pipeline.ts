@@ -9,6 +9,7 @@
 import { readFile, mkdir } from "node:fs/promises";
 import { createWriteStream, existsSync, statSync, readFileSync } from "node:fs";
 import { extname, resolve, join, basename } from "node:path";
+import { homedir } from "node:os";
 import { createElement } from "react";
 import { renderToStream } from "@react-pdf/renderer";
 
@@ -302,7 +303,7 @@ export interface PipelineResult {
 
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
   const template = normalizeTemplate(input.template);
-  const outDir = resolve(input.outDir ?? "onetap-out");
+  const outDir = input.outDir ? resolve(input.outDir) : join(homedir(), "resume-out");
   const report = input.reporter ?? SILENT_REPORTER;
 
   logInfo("pipeline_start", { resume: basename(input.resumePath), template });
@@ -315,7 +316,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
   const job = await resolveJobText(input.jobInput);
   report.succeed(`Job ready${job.title ? `: ${job.title}` : ` (${job.source})`}`);
 
-  report.start("Tailoring with Claude");
+  report.start("Tailoring résumé");
   const resume = await tailorResume(resumeText, job.text, {
     model: input.model,
     onProgress: ({ outChars }) =>
