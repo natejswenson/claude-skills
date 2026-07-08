@@ -2,15 +2,13 @@
 name: resume
 description: Tailor a résumé to a job description and render a polished PDF, entirely from the CLI. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
 user_invocable: true
-version: 0.2.0
+version: 0.3.0
 ---
 
 # /resume — Résumé tailoring
 
-You are running the **resume** skill: a self-contained port of the
-OneTap Resume pipeline (parse → extract job → LLM tailoring → multi-template
-PDF). The tailoring runs through the `claude` CLI on the user's subscription —
-no API key, no per-run cost.
+You are running the **resume** skill: a self-contained résumé tailoring
+pipeline (parse → extract job → LLM tailoring → multi-template PDF).
 
 **Announce at start:** "I'm using the resume skill to tailor your résumé."
 
@@ -25,6 +23,17 @@ If `$SKILL_DIR/node_modules` does not exist, install dependencies first:
 ```bash
 cd "$SKILL_DIR" && npm install
 ```
+
+Tailoring shells out to the `claude` CLI on the user's subscription by
+default — no API key, no per-run cost. If `claude` isn't on `PATH`, the run
+will fail at the tailoring step; that's the one hard external dependency.
+
+If `FIRECRAWL_API_KEY` is not set in the environment, mention it once (don't
+block the run on it): without it, job postings on Indeed, Glassdoor, and
+ZipRecruiter will fail to extract automatically (they require Firecrawl's
+stealth proxy), and the user will need to paste the job description text
+instead. A key can be obtained at firecrawl.dev. Extraction still degrades
+gracefully without one — see Step 3's notes.
 
 ## Step 2 — Collect inputs
 
@@ -41,7 +50,8 @@ message; ask for anything missing (one item at a time):
 Optional, only if the user expresses a preference:
 - **Template** — one of `modern` (default), `classic`, `technical`, `polished`,
   `timeline`, `editorial`, `spotlight`.
-- **Output directory** — defaults to `./onetap-out` under `$SKILL_DIR`.
+- **Output directory** — defaults to `~/resume-out`, independent of where
+  the skill is installed or invoked from.
 - **Model** — `--model <name>` (default `haiku` on the CLI subscription path).
   Do **not** switch to `sonnet` for a real CLI run: with no prompt caching on
   the subscription path, Sonnet reliably exceeds the timeout on a real résumé
@@ -82,13 +92,24 @@ Notes:
 - Do **not** set `MOCK_LLM=1` for a real run (fixed sample, testing only) and do
   **not** pass `--model sonnet` on the CLI path (it times out — Haiku is the
   default for a reason).
-- If a job URL fails (`job_extract_failed`), ask the user to paste the job
-  description text instead, and re-run.
+- If a job URL fails, the CLI itself prints a plain "could not fetch this
+  posting automatically — paste the job description text instead" message
+  (not a raw internal error). Follow that instruction: ask the user to paste
+  the JD text, and re-run.
+- LinkedIn job URLs are rejected by default (`hostile_domain`) — LinkedIn
+  actively pursues scrapers, so this is a deliberate choice, not a bug. A
+  user who wants to try anyway can set `RESUME_ALLOW_LINKEDIN=1` before
+  running, which attempts Firecrawl's stealth proxy against LinkedIn instead
+  of an immediate reject (requires `FIRECRAWL_API_KEY`; unvalidated — may not
+  actually get past LinkedIn's anti-bot measures). Otherwise, paste the job
+  text as with any other failed URL.
 
-## Step 4 — Style picker (interactive, instant)
+## Step 4 — Style picker (interactive, instant, mandatory)
 
 The tailored content is now fixed in the JSON sidecar. Switching templates is a
-cheap (~0.5s) re-render — never re-tailor. Drive this as a friendly loop:
+cheap (~0.5s) re-render — never re-tailor. **This step is not optional — always
+run it after opening the first PDF, even if the user hasn't asked for a
+different style.** Drive this as a friendly loop:
 
 1. **Show the change summary** from Step 3 as a small markdown table (optimized /
    dropped / kept / roles), and confirm the résumé opened.
@@ -110,7 +131,7 @@ cheap (~0.5s) re-render — never re-tailor. Drive this as a friendly loop:
    - *Another style* → back to step 2/3.
    - *Save & finish* → the chosen PDF is already saved locally in the out dir;
      give its path as the final deliverable.
-5. **End the run with exactly:** `Thanks for using OneTap Resume!`
+5. **End the run with exactly:** `Done — let me know if you'd like anything else.`
 
 If you have an image/screenshot tool, show the PDF after each render as the
 preview; otherwise the `--open` flag opens it in the user's default viewer.

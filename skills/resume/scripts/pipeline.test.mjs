@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 process.env.MOCK_LLM ??= "1";
-process.env.ONETAP_SKIP_DNS_CHECK ??= "1";
+process.env.RESUME_SKIP_DNS_CHECK ??= "1";
 
 const {
   mimeFromPath,
@@ -185,6 +185,27 @@ await test("template choice is honored in output path + result", async () => {
   });
   assert.equal(res.template, "editorial");
   assert.ok(res.pdfPath.endsWith("-editorial.pdf"));
+});
+
+console.log("\n[runPipeline — default outDir]");
+await test("defaults to ~/resume-out, not a repo-relative path", async () => {
+  const fakeHome = join(TMP, "fake-home");
+  mkdirSync(fakeHome, { recursive: true });
+  const priorHome = process.env.HOME;
+  process.env.HOME = fakeHome;
+  try {
+    const res = await runPipeline({
+      resumePath: RESUME_FIXTURE,
+      jobInput: "Backend engineer",
+    });
+    assert.ok(
+      res.pdfPath.startsWith(join(fakeHome, "resume-out")),
+      `expected pdf under ${join(fakeHome, "resume-out")}, got ${res.pdfPath}`,
+    );
+  } finally {
+    if (priorHome === undefined) delete process.env.HOME;
+    else process.env.HOME = priorHome;
+  }
 });
 
 rmSync(TMP, { recursive: true, force: true });

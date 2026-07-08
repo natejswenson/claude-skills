@@ -37,7 +37,7 @@ export function getLLMClient(): LLMClient {
     cached = new CLIAdapter();
     const authMode = process.env.CLAUDE_CODE_OAUTH_TOKEN
       ? "CLAUDE_CODE_OAUTH_TOKEN"
-      : "ambient ~/.claude OAuth session";
+      : "ambient CLI session";
     console.log(`[llm] using CLI adapter (${authMode})`);
     return cached;
   }

@@ -1,0 +1,12 @@
+{
+  "name": "linkedin-stealth-optin-no-key",
+  "description": "RESUME_ALLOW_LINKEDIN=1 without a Firecrawl API key — LinkedIn is still routed away from the hostile short-circuit, but with no Firecrawl fallback it returns fetch_failed rather than hostile_domain.",
+  "url": "https://www.linkedin.com/jobs/view/1234567890",
+  "linkedInAllow": true,
+  "stubs": [],
+  "expected": {
+    "ok": false,
+    "error": "fetch_failed",
+    "detailContains": "FIRECRAWL_API_KEY unset"
+  }
+}
