@@ -35,7 +35,7 @@ jobs:
           python-version: "3.12"
       - if: steps.changes.outputs.resume == 'true'
         run: python tools/score_skill.py skills/resume --min 100
-      # Tier 2: resume offline unit suite (Node)
+      # Tier 2: resume offline unit suite + $0 MOCK eval wiring check (Node)
       - if: steps.changes.outputs.resume == 'true'
         uses: actions/setup-node@v6
         with:
@@ -47,6 +47,9 @@ jobs:
         working-directory: skills/resume
       - if: steps.changes.outputs.resume == 'true'
         run: npm test
+        working-directory: skills/resume
+      - if: steps.changes.outputs.resume == 'true'
+        run: MOCK_LLM=1 npm run eval
         working-directory: skills/resume
 
   release:

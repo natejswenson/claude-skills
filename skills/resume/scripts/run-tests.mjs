@@ -53,7 +53,10 @@ for (const test of tests) {
     {
       stdio: "inherit",
       cwd: ROOT,
-      env: process.env,
+      // Unit tests run offline and free by default:
+      //  - MOCK_LLM=1: no paid LLM calls (live LLM checks live in the eval harness)
+      //  - RESUME_SKIP_DNS_CHECK=1: extraction fixtures never depend on real DNS
+      env: { MOCK_LLM: "1", RESUME_SKIP_DNS_CHECK: "1", ...process.env },
     },
   );
   if (res.status !== 0) failed.push(rel);
