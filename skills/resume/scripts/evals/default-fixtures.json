@@ -1,0 +1,14 @@
+{
+  "_comment": "Pinned default 9-pair subset for scripts/evals/run.mjs — one job per archetype from scripts/fixtures/perf/. Pinned once so two runs never disagree on what 'the default fixture set' means (see docs/plans/2026-07-08-resume-eval-harness-design.md). Selection: first-listed job per archetype cohort. Spot-checked 3 cohorts (swe-mid, accountant, hvac-tech) by hand before wiring this in — job postings each named >=3 concrete skills/requirements, resumes each had >=2 plausibly relevant bullets.",
+  "pairs": [
+    { "cohortId": "swe-mid", "jobId": "j01-swe-greenhouse" },
+    { "cohortId": "sales-ae", "jobId": "j04-sales-greenhouse" },
+    { "cohortId": "rn-clinical", "jobId": "j07-rn-workday-rochester" },
+    { "cohortId": "retail-mgr", "jobId": "j10-retail-workday-skechers" },
+    { "cohortId": "restaurant-gm", "jobId": "j13-restaurant-workday-shakeshack" },
+    { "cohortId": "mktg-coord", "jobId": "j15-mktg-ashby-sanguine" },
+    { "cohortId": "accountant", "jobId": "j18-accountant-workday-groupon" },
+    { "cohortId": "hvac-tech", "jobId": "j21-hvac-linkedin-nj" },
+    { "cohortId": "teacher-elem", "jobId": "j23-teacher-linkedin-leander" }
+  ]
+}

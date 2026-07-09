@@ -1,8 +1,8 @@
 {
   "name": "resume-skill",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF, running locally on the claude CLI subscription.",
+  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF. Reading, extraction, and tailoring run agent-native; only PDF rendering and content validation are code.",
   "license": "MIT",
   "author": "Nate Swenson",
   "repository": {
@@ -26,31 +26,21 @@
   "engines": {
     "node": ">=22"
   },
-  "bin": {
-    "resume": "bin/resume.mjs"
-  },
   "scripts": {
-    "tailor": "node --import ./scripts/_tsx-register.mjs bin/resume.mjs",
     "test": "node scripts/run-tests.mjs",
-    "eval": "node --import ./scripts/_tsx-register.mjs scripts/eval/run-eval.mjs",
-    "benchmark": "node --import ./scripts/_tsx-register.mjs scripts/eval/benchmark.mjs",
-    "render": "node --import ./scripts/_tsx-register.mjs scripts/render-resume-pdf.mjs"
+    "eval": "node --import ./scripts/_tsx-register.mjs scripts/evals/run.mjs",
+    "render": "node --import ./scripts/_tsx-register.mjs scripts/render.mjs"
   },
   "dependencies": {
-    "@mozilla/readability": "^0.6.0",
     "@react-pdf/renderer": "^4.5.0",
-    "jsdom": "^29.0.2",
     "mammoth": "^1.12.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
     "unpdf": "^1.6.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/jsdom": "^28.0.1",
     "@types/node": "^20",
     "@types/react": "^19",
-    "@types/react-dom": "^19",
     "typescript": "^5"
   }
 }
