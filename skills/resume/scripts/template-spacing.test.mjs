@@ -46,7 +46,7 @@ function test(name, fn) {
 for (const n of NAMES) {
   test(`${n}: lineHeight is tight (<= ${MAX_LINE_HEIGHT})`, () => {
     const src = readFileSync(
-      resolve(`lib/templates/${n}.ts`),
+      resolve(`scripts/templates/${n}.ts`),
       "utf8",
     );
     const m = src.match(/lineHeight:\s*([0-9]+(?:\.[0-9]+)?)/);
