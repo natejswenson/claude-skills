@@ -35,7 +35,11 @@ jobs:
           python-version: "3.12"
       - if: steps.changes.outputs.resume == 'true'
         run: python tools/score_skill.py skills/resume --min 100
-      # Tier 2: resume offline unit suite + $0 MOCK eval wiring check (Node)
+      # Tier 2: resume offline unit suite (Node). The tailoring-quality eval
+      # harness (npm run eval) is NOT run here — it shells a real claude -p
+      # call, costs real money, takes 10-90 minutes, and requires human
+      # sign-off on its results (see docs/plans/2026-07-08-resume-eval-harness-design.md).
+      # It's a manual/on-demand gate, not a CI check.
       - if: steps.changes.outputs.resume == 'true'
         uses: actions/setup-node@v6
         with:
@@ -47,9 +51,6 @@ jobs:
         working-directory: skills/resume
       - if: steps.changes.outputs.resume == 'true'
         run: npm test
-        working-directory: skills/resume
-      - if: steps.changes.outputs.resume == 'true'
-        run: MOCK_LLM=1 npm run eval
         working-directory: skills/resume
 
   release:
