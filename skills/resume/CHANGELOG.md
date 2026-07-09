@@ -4,6 +4,80 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] — 2026-07-08
+
+Agent-native rewrite — **the second attempt at this architecture.** A first
+1.0.0 (same core idea: no subprocess LLM call, the invoking agent tailors
+directly) shipped and was reverted the same day because it was never run
+end-to-end before being judged "no good," and separately had a messy root
+mixing markdown and deterministic code across `lib/`, `bin/`, `components/`,
+`schemas/`, and `scripts/`. This attempt keeps the architecture (independent
+research confirmed it was correct) and fixes the process gap: a real
+evaluation harness with an enforced cost cap and a single PASS/FAIL verdict,
+mandatory human sign-off on its results, and one live interactive run
+producing a real PDF confirmed by a human — before anything is declared done.
+See `docs/plans/2026-07-08-resume-agent-native-rewrite-v2-design.md` and
+`docs/plans/2026-07-08-resume-eval-harness-design.md` for the full design.
+
+### Added
+- **Agent-native tailoring.** The invoking Claude Code agent reads the
+  résumé, gets the job description, and rewrites bullets in-conversation per
+  `references/tailoring-rules.md` — no subprocess `claude -p` call, no
+  per-run LLM cost or timeout tuning.
+- **`references/`** — the skill's markdown home: `tailoring-rules.md` (R1–R11
+  plus a new R12 JD-keyword-coverage soft rule) and
+  `job-extraction-fallback.md` (WebFetch-fails procedure, LinkedIn policy,
+  Firecrawl `curl` fallback).
+- **One code home.** All deterministic logic collapses into `scripts/`:
+  `render.mjs` (rendering), `validate.mjs` (the zod schema + content-truth
+  checks), `docx-to-text.mjs` (a small extracted mammoth shim — DOCX support
+  recovered after being dropped in the first attempt), `templates/` (the 7
+  PDF templates + `ResumeDocument.tsx`, moved from `lib/templates/` and
+  `components/`).
+- **ATS-safe vs. presentation-only template labeling.** `modern`, `classic`,
+  `technical`, `editorial` are single-column/standard-header (ATS-safe);
+  `polished` (sidebar), `timeline` (timeline rail), `spotlight` (colored
+  header band) are presentation-only. SKILL.md's style picker now labels
+  each accordingly.
+- **`scripts/evals/run.mjs`** — the tailoring-quality evaluation harness.
+  Two must-pass gates (deterministic content validation, prompt-injection
+  regression); keyword-coverage/ATS-parseability/baseline-delta as scored,
+  non-gating signals; an optional LLM-judge pass capped via `BudgetGate`
+  ($2.00 default) at `scripts/evals/judge.mjs`. Prints one aggregate
+  PASS/FAIL verdict plus a full results summary — never runs in CI (real
+  cost, 10–90 min runtime); it's a manual/on-demand gate a maintainer signs
+  off on before release.
+- **`scripts/fixtures/injection-fixtures.mjs`** — the 5-fixture
+  prompt-injection oracle (`FIXTURES`/`scanOutput`), extracted so both the
+  unit test and the eval harness's injection-regression check share one
+  source of truth instead of two.
+- **`scripts/fixtures/sample-resume.docx`** — first `.docx` test fixture in
+  this repo, backing `scripts/docx-to-text.test.mjs`.
+
+### Changed
+- **Validate/fix loop is now explicitly capped at 3 attempts** before
+  stopping and surfacing the remaining violations to the user, rather than
+  retrying silently forever.
+- `SKILL.md` rewritten end to end for the agent-native flow; version bumped
+  to 1.0.0.
+
+### Removed
+- The entire subprocess-CLI pipeline: `bin/resume.mjs`, `lib/pipeline.ts`,
+  `lib/llm/*`, `lib/parsing/*` (except the mammoth branch, extracted),
+  `lib/ui/*`, `lib/cli-args.ts`, `lib/log.ts`, `lib/summary-fix.ts`,
+  `lib/url-safety.ts`, `schemas/resume.ts` (folded into `scripts/validate.mjs`),
+  the old eval/benchmark stack (`scripts/eval/run-eval.mjs`,
+  `scripts/eval/benchmark*.mjs`, `scripts/scorer/judge.mjs`,
+  `scripts/scorer/lexicon.mjs`, `scripts/scorer/stylometry.mjs`), and their
+  associated test files and fixtures.
+- Orphaned dependencies: `@mozilla/readability`, `jsdom`, `@types/jsdom`,
+  and two already-unused ones found during the cleanup, `react-dom` +
+  `@types/react-dom`.
+- `RESUME_ALLOW_LINKEDIN`, `RESUME_SKIP_DNS_CHECK` — no longer meaningful
+  without the retired URL-extraction waterfall (job-URL fetching is now
+  `WebFetch` + the documented fallback in
+  `references/job-extraction-fallback.md`).
+
 ## [0.3.0] — 2026-07-08
 
 Extraction hardening, a mandatory style-picker loop, and a vendor-neutral
