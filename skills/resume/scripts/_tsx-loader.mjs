@@ -2,7 +2,7 @@
  * Minimal Node ESM loader: transpiles .ts/.tsx (incl. JSX) on the fly with
  * the installed `typescript`, and resolves the project's `@/` path alias to
  * the repo root. Lets plain node scripts import real .tsx components
- * (e.g. components/ResumeDocument.tsx) without a full Next build.
+ * (e.g. scripts/templates/ResumeDocument.tsx) without a full Next build.
  *
  * Usage: node --import ./scripts/_tsx-loader.mjs scripts/<thing>.mjs
  */
