@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync, execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, copyFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, copyFileSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -725,7 +725,17 @@ Issues:  https://github.com/natejswenson/devlog/issues
 // ─── dispatch ────────────────────────────────────────────────────────────────
 // Only run the CLI dispatch when this file is executed directly, not when it is
 // imported (e.g. by the test suite). Importing the module must have no side effects.
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+// Both sides are realpath'd: under npm/npx, argv[1] is the node_modules/.bin/devlog
+// SYMLINK while import.meta.url is the resolved file — a naive === never matches
+// and every npx invocation becomes a silent no-op.
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
 if (isMain) {
   const arg = process.argv[2];
   const rest = process.argv.slice(3);
