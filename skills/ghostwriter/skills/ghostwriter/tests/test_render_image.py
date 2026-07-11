@@ -33,9 +33,22 @@ def test_open_in_viewer_swallows_errors(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------- brand_css_path
+def test_brand_css_path_prefers_home_dir(monkeypatch, tmp_path):
+    # ~/.claude/ghostwriter/assets/diagram.css (shared across Claude Code and Claude
+    # Desktop) wins over both the repo copy and the shipped example.
+    home = tmp_path / "home-diagram.css"
+    home.write_text(":root {}", encoding="utf-8")
+    present = tmp_path / "repo-diagram.css"
+    present.write_text(":root {}", encoding="utf-8")
+    monkeypatch.setattr(ri, "HOME_CSS", home)
+    monkeypatch.setattr(ri, "CSS", present)
+    assert ri.brand_css_path() == home
+
+
 def test_brand_css_path_uses_real_when_present(monkeypatch, tmp_path):
     # The real assets/diagram.css is gitignored (personal brand guide), so don't
     # depend on it existing — point CSS at a file we know exists.
+    monkeypatch.setattr(ri, "HOME_CSS", tmp_path / "no-home.css")
     present = tmp_path / "diagram.css"
     present.write_text(":root {}", encoding="utf-8")
     monkeypatch.setattr(ri, "CSS", present)
@@ -43,6 +56,7 @@ def test_brand_css_path_uses_real_when_present(monkeypatch, tmp_path):
 
 
 def test_brand_css_path_falls_back_to_example(monkeypatch, tmp_path):
+    monkeypatch.setattr(ri, "HOME_CSS", tmp_path / "no-home.css")
     monkeypatch.setattr(ri, "CSS", tmp_path / "missing.css")
     assert ri.brand_css_path() == ri.CSS_EXAMPLE
 
