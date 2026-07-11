@@ -47,6 +47,11 @@ jobs:
 
       - name: Resolve version
         id: ver
+        # SKILL.md/package.json live one level deeper than the plugin root, at
+        # skills/<skill>/skills/<skill>/ -- Claude Code's plugin auto-discovery
+        # path. CHANGELOG.md (read by later steps) stays at the plugin root, so
+        # only this step and the npm-publish step override working-directory.
+        working-directory: skills/${{ inputs.skill }}/skills/${{ inputs.skill }}
         run: |
           set -euo pipefail
           read_pkg() { node -p "require('./package.json').version"; }
@@ -123,12 +128,13 @@ jobs:
 
       - name: Publish to npm if not already published
         if: inputs.npm-publish
+        working-directory: skills/${{ inputs.skill }}/skills/${{ inputs.skill }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           if [ ! -f package.json ]; then
-            echo "::notice::No package.json in skills/${{ inputs.skill }}; nothing to publish."
+            echo "::notice::No package.json in skills/${{ inputs.skill }}/skills/${{ inputs.skill }}; nothing to publish."
             exit 0
           fi
           PKG="$(node -p "require('./package.json').name")"
