@@ -5,9 +5,9 @@
 [![security](https://img.shields.io/badge/security-audited-green)](./SECURITY.md)
 [![vulnerabilities](https://img.shields.io/badge/npm%20audit-0%20issues-brightgreen)](#security)
 
-A Claude Code skill that turns each version release (a git tag) into a published dev log entry, written in your own voice — and a React example for displaying it on your site.
+A Claude Code skill that turns each version release (a git tag) into a published how-to guide, written in your own voice — and a React example for displaying it on your site.
 
-> **Build in public, by release.** Tag a release like you always do. Run `/devlog`. Each new version shows up on your site as a narrative entry — in your voice — not raw commit messages.
+> **Build in public, by release.** Tag a release like you always do. Run `/devlog`. Each new version shows up on your site as a polished, end-to-end implementation guide — in your voice, with cited sources and the gotchas you actually hit — not raw commit messages.
 
 ## Live example
 
@@ -16,8 +16,10 @@ The skill is in production at [natejswenson.com/devlog](https://natejswenson.com
 ## How it works
 
 1. **You ship a release** — tag it (e.g. `git tag v0.3.0`), like you already do.
-2. **Run `/devlog` in Claude Code.** The skill finds tags that don't yet have an entry, summarizes each release's changes into a narrative markdown entry written in your voice, and pushes it to your dev-log GitHub repo. It's idempotent — re-running does nothing until you cut a new release.
+2. **Run `/devlog` in Claude Code.** The skill runs `devlog scan` to find tags that don't yet have an entry, researches the engineering topic behind each release, and writes a full setup → build → use → verify how-to guide (with a required `## Gotchas` section mined from your real fix commits, and 3+ cited sources). Every draft passes a deterministic lint (`devlog lint-post`) plus a quality self-review before it publishes. It's idempotent — re-running does nothing until you cut a new release, and a published entry is never overwritten (`devlog publish-entry` refuses).
 3. **Your site fetches it.** Static `manifest.json` + per-release markdown files served from `raw.githubusercontent.com` — no backend needed.
+
+You can also manage configuration conversationally in Claude Code: "add this repo to devlog", "stop tracking X", "set min sources to 4", or `/devlog status` to see what would be generated without writing anything.
 
 **In your voice.** Entries are written using a voice profile, resolved in this order: your `config.voicePath` → [ghostwriter](../ghostwriter)'s `voice/` dir if installed → a bundled default. devlog reads `voice-profile.md` (and `voice-notes.md` overrides) — never ghostwriter's `algorithm.md`, since LinkedIn reach tuning doesn't apply to a dev log.
 
@@ -52,8 +54,13 @@ to see your dev log rendered locally at `http://localhost:5173`.
 | Command | What it does |
 |---|---|
 | `npx @natjswenson/devlog init` | One-time setup: create dev-log repo, install skill, write config |
-| `npx @natjswenson/devlog add-project` | Register an additional project without editing config.json by hand |
-| `npx @natjswenson/devlog config` | Show your current config with validation status |
+| `npx @natjswenson/devlog add-project` | Register a project (interactive; `--yes --path <p>` for non-interactive/agent use) |
+| `npx @natjswenson/devlog remove-project <key> --yes` | Unregister a project (published entries stay) |
+| `npx @natjswenson/devlog set <field> <value>` | Update one config field (`targetRepo`, `branch`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+| `npx @natjswenson/devlog config [--json]` | Show your current config with validation status |
+| `npx @natjswenson/devlog scan [--project <key>]` | JSON plan of new releases needing entries (used by the skill) |
+| `npx @natjswenson/devlog lint-post <file>` | Deterministic post-contract check (used by the skill) |
+| `npx @natjswenson/devlog publish-entry ...` | Copy a drafted entry into a clone + update the manifest; never overwrites (used by the skill) |
 | `npx @natjswenson/devlog preview` | Run a local preview at `http://localhost:5173` |
 | `npx @natjswenson/devlog --help` | Usage |
 | `npx @natjswenson/devlog --version` | Version |
@@ -149,24 +156,32 @@ Strict validation rules (entries that don't match are silently dropped by the Re
 
 ```markdown
 ---
-title: "Concise release summary"
+title: "Essay-style title (never 'release vX.Y.Z')"
 date: 2026-06-08
 project: myproject
 version: v0.2.0
-summary: "1-2 sentence summary"
+tags: [reliability, python]
+summary: "1-2 sentence hook framing the how-to"
 ---
 
-## What Shipped
-Narrative paragraphs, written in your voice.
+## Shipped
+What the release delivered, then the pivot to the topic the guide teaches.
 
-## What's Next
-Forward-looking note.
+## <Setup / build / use-and-verify sections>
+An end-to-end implementation guide a reader can follow without your repo:
+complete, language-tagged code blocks; reader-side verification steps.
 
-## Commits
+## Gotchas
+Real traps from the release's history, each: trap → symptom → escape.
+
+## Sources
+- [Title](https://...) — what it supports  (3+ distinct URLs)
+
+## Changelog
 - commit message ([abc1234](https://github.com/.../commit/abc1234567...))
 ```
 
-That's the entire contract.
+That's the entire contract — `npx @natjswenson/devlog lint-post <file>` checks the mechanical parts of it.
 
 ## Configuration reference
 
@@ -186,6 +201,7 @@ That's the entire contract.
 | `projects[].remote` | `"<owner>/<repo>"` | The project's GitHub remote. Used to mark public commits and link them. |
 | `projects[].pathFilter` | string (optional) | Repo-relative subdir scoping this project's commits in a monorepo (e.g. `skills/devlog`). |
 | `projects[].tagPrefix` | string (optional) | Prefix of the git tags that mark this project's releases (e.g. `devlog-v`). Defaults to `v`. Used in `git tag --list '<tagPrefix>*'`. |
+| `deepDive` | object (optional) | Controls the researched how-to. `topicDomains` (array, default `["AI", "DevOps/SRE", "software engineering"]`) steers topic selection; `minSources` (integer 1-10, default 3) is the floor of **distinct** cited source URLs per post. |
 
 See [`config.example.json`](./config.example.json) for a complete template, or run `npx @natjswenson/devlog config` to inspect your current config with validation.
 
@@ -209,10 +225,26 @@ The package is designed to be safe to install on a developer's machine and have 
 
 ## Customization
 
-- **Tweak the entry template:** edit `~/.claude/skills/devlog/SKILL.md` (Step 6 — generate the entry).
+- **Tweak the entry template:** edit `~/.claude/skills/devlog/SKILL.md` (Generate mode, Step 3 — the how-to contract).
 - **Tweak your voice:** edit the `voice-profile.md` / `voice-notes.md` in your `voicePath` (or `~/.claude/skills/devlog/voice/`).
+- **Tune research depth:** `npx @natjswenson/devlog set deepDive.minSources 4`, or `set deepDive.topicDomains "security, platform engineering"`.
 - **Tweak the UI:** override the `--devlog-*` CSS variables in `examples/react/DevLogPage.css` to match your theme.
-- **Add more projects:** `npx @natjswenson/devlog add-project` (no manual JSON editing required).
+- **Add or remove projects:** `npx @natjswenson/devlog add-project` / `remove-project <key> --yes` — or just tell Claude ("add this repo to devlog").
+
+## Testing & evals
+
+The deterministic core (`lib/`, the CLI) is covered by `npm test` (node:test; scan tests
+run against real throwaway git repos). The non-deterministic half — post quality — is
+covered by a cost-capped eval harness:
+
+```sh
+node evals/run_eval.mjs --mock    # $0, runs in CI; deterministic layer only
+node evals/run_eval.mjs --live    # LLM judge on golden fixtures; quotes spend, hard cap $0.50
+```
+
+The judge scores reproducibility, code completeness, gotcha quality, citations, voice,
+and scope honesty (pass ≥ 7/10). Without `ANTHROPIC_API_KEY` in the environment, mock
+mode is forced — CI can never spend money.
 
 ## Troubleshooting
 

@@ -4,6 +4,10 @@
   "gitAuthor": "Your Name",
   "githubUser": "yourusername",
   "voicePath": "~/.claude/ghostwriter/voice",
+  "deepDive": {
+    "topicDomains": ["AI", "DevOps/SRE", "software engineering"],
+    "minSources": 3
+  },
   "projects": [
     {
       "key": "midnight-side-quest",
