@@ -26,7 +26,10 @@ from pathlib import Path
 import verify_sources
 
 REPO = Path(__file__).resolve().parent.parent
-ENV_PATH = REPO / ".env"
+# Personal credentials live in the shared home dir (same location Claude Code and Claude
+# Desktop both read), so publishing isn't tied to whichever install of the skill ran auth.
+HOME_ENV = Path.home() / ".claude" / "ghostwriter" / ".env"
+ENV_PATH = HOME_ENV if HOME_ENV.exists() else REPO / ".env"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
 IMAGES_URL = "https://api.linkedin.com/rest/images"
 DOCUMENTS_URL = "https://api.linkedin.com/rest/documents"

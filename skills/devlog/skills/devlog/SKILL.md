@@ -128,7 +128,7 @@ Once validated AND single-quoted, the values are safe to interpolate into the sh
 Entries are written in the user's voice. Resolve the voice directory **once** per run, in this order:
 
 1. If `config.voicePath` is set and (after expanding a leading `~`) is an existing directory → use it.
-2. Else if `~/.claude/skills/ghostwriter/voice` exists → use it.
+2. Else if `~/.claude/ghostwriter/voice` exists → use it.
 3. Else → use the bundled fallback at `~/.claude/skills/devlog/voice` (shipped with the skill).
 
 From the resolved directory, read with the **Read tool**:
