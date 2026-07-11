@@ -19,6 +19,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+# CHANGELOG.md lives at the plugin root (two levels up from ROOT), not beside
+# SKILL.md -- Claude Code's plugin auto-discovery requires SKILL.md to be nested
+# under skills/<name>/, but CHANGELOG.md/LICENSE/README.md stay at the outer
+# plugin root alongside .claude-plugin/.
+PLUGIN_ROOT = ROOT.parent.parent
 MANIFEST = json.loads((ROOT / "skill-invariants.json").read_text(encoding="utf-8"))
 SKILL_MD = (ROOT / "SKILL.md").read_text(encoding="utf-8")
 
@@ -82,7 +87,7 @@ def test_version_matches_changelog():
     release (the release flow keys off the SKILL.md version)."""
     skill_v = _frontmatter_version(SKILL_MD)
     changelog_v = _changelog_top_version(
-        (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        (PLUGIN_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     )
     assert skill_v == changelog_v, (
         f"SKILL.md version {skill_v} != top CHANGELOG entry {changelog_v}. "
