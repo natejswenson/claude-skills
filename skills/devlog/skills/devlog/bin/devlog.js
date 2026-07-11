@@ -1,48 +1,61 @@
 #!/usr/bin/env node
 import { spawn, spawnSync, execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, renameSync, unlinkSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { parseArgs } from 'node:util';
 import prompts from 'prompts';
 import kleur from 'kleur';
 
-// ─── shared validators (single source of truth, also used by SKILL.md guidance) ───
-//
-// SHELL_QUOTE_BREAK matches characters that can break out of a single-quoted
-// shell string OR are dangerous if quoting is omitted. The skill instructs the
-// LLM to single-quote every interpolated value; rejecting these chars upstream
-// guarantees that single-quoting is sufficient. Whitespace, dots, hyphens,
-// equals, and similar are NOT rejected — they're literal inside '...' and are
-// legitimate in human-readable fields like names and paths.
-//
-// For strict-token fields (project keys, repo names, branch names), separate
-// allowlist regexes apply additional structural constraints.
-export const SHELL_QUOTE_BREAK = /[;&|`$()<>{}[\]*?!#~"'\\\n\r]/;
-export const RE_GH_USER = /^[a-z0-9][a-z0-9-]*$/i;
-export const RE_REPO_NAME = /^[a-z0-9][a-z0-9._-]*$/i;
-export const RE_OWNER_REPO = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
-export const RE_PROJECT_KEY = /^[a-z0-9][a-z0-9._-]*$/i;
-export const RE_BRANCH = /^[a-z0-9][a-z0-9._/-]*$/i;
-// Repo-relative subdir used to scope `git log` to one skill in a monorepo.
-// Same shape as a branch: no leading dash/slash, no shell metacharacters.
-export const RE_PATH_FILTER = /^[a-z0-9][a-z0-9._/-]*$/i;
-// Git tag prefix that marks a project's releases (e.g. `v` or `devlog-v`).
-// Interpolated into `git tag --list '<tagPrefix>*'`; same safety as a path filter.
-export const RE_TAG_PREFIX = /^[a-z0-9][a-z0-9._/-]*$/i;
-export const FORBIDDEN_BRANCH_PARTS = /(^|\/)\.\.($|\/)/; // reject `..` as a path component
+import {
+  SHELL_QUOTE_BREAK,
+  RE_GH_USER,
+  RE_REPO_NAME,
+  RE_OWNER_REPO,
+  RE_PROJECT_KEY,
+  RE_BRANCH,
+  RE_PATH_FILTER,
+  RE_TAG_PREFIX,
+  FORBIDDEN_BRANCH_PARTS,
+  CONFIG_DIR,
+  CONFIG_PATH,
+  expandHome,
+  execArgs,
+  atomicWriteJSON,
+  readConfig,
+  validateConfig,
+  resolveDeepDive,
+} from '../lib/core.mjs';
+import { scanAll } from '../lib/scan.mjs';
+import { lintPost } from '../lib/lint_post.mjs';
+import { publishEntry } from '../lib/publish_entry.mjs';
+import { addProject, removeProject, setField, SETTABLE_FIELDS } from '../lib/config_ops.mjs';
+
+// Re-export the shared validators so existing importers (tests, docs) keep a
+// single canonical entry point; the definitions live in lib/core.mjs.
+export {
+  SHELL_QUOTE_BREAK,
+  RE_GH_USER,
+  RE_REPO_NAME,
+  RE_OWNER_REPO,
+  RE_PROJECT_KEY,
+  RE_BRANCH,
+  RE_PATH_FILTER,
+  RE_TAG_PREFIX,
+  FORBIDDEN_BRANCH_PARTS,
+  expandHome,
+  validateConfig,
+};
 
 const require = createRequire(import.meta.url);
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SRC = join(PACKAGE_ROOT, 'SKILL.md');
-const CONFIG_DIR = join(homedir(), '.claude', 'skills', 'devlog');
-const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 const SKILL_DEST = join(CONFIG_DIR, 'SKILL.md');
 const PREVIEW_DIR = join(PACKAGE_ROOT, 'preview');
 const VOICE_SRC_DIR = join(PACKAGE_ROOT, 'voice');
 const VOICE_DEST_DIR = join(CONFIG_DIR, 'voice');
-const GHOSTWRITER_VOICE_DIR = join(homedir(), '.claude', 'ghostwriter', 'voice');
+const GHOSTWRITER_VOICE_DIR = join(expandHome('~'), '.claude', 'ghostwriter', 'voice');
 
 const log = {
   info: (msg) => console.log(msg),
@@ -58,7 +71,7 @@ function readPackageVersion() {
   return pkg.version;
 }
 
-// Hardcoded shell command, no user input. Use tryExecArgs for anything user-supplied.
+// Hardcoded shell command, no user input. Use execArgs for anything user-supplied.
 function tryExec(cmd) {
   try {
     return execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }).trim();
@@ -67,125 +80,31 @@ function tryExec(cmd) {
   }
 }
 
-// argv-style invocation; no shell, so user-supplied args cannot inject.
-function tryExecArgs(cmd, args) {
-  try {
-    const r = spawnSync(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
-    if (r.status !== 0) return null;
-    return (r.stdout || '').trim();
-  } catch {
-    return null;
+// Machine-readable output for agent-driven commands: JSON on stdout, explicit
+// exit code, no color.
+function emitJSON(obj, exitCode = 0) {
+  console.log(JSON.stringify(obj, null, 2));
+  process.exit(exitCode);
+}
+
+function readValidConfigOrExit({ json = false } = {}) {
+  if (!existsSync(CONFIG_PATH)) {
+    if (json) emitJSON({ error: 'config-missing', path: CONFIG_PATH, hint: 'Run `npx @natjswenson/devlog init` first.' }, 1);
+    log.err(`No config found at ${CONFIG_PATH}`);
+    log.hint('Run `npx @natjswenson/devlog init` first.');
+    process.exit(1);
   }
-}
-
-export function expandHome(p) {
-  if (!p) return p;
-  if (p === '~') return homedir();
-  if (p.startsWith('~/')) return join(homedir(), p.slice(2));
-  return p;
-}
-
-// Atomic write: write to sibling tmp file then rename.
-// Prevents readers from seeing a half-written config if process is killed mid-write.
-// Uses `wx` (exclusive create) flag to prevent symlink-attack on shared filesystems
-// — if an attacker pre-creates the tmp file, our write fails rather than following
-// the symlink to a sensitive target.
-function atomicWriteJSON(path, data) {
-  const tmp = path + '.tmp.' + process.pid + '.' + Date.now();
-  writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
+  let config;
   try {
-    renameSync(tmp, path);
+    config = readConfig();
+    validateConfig(config);
   } catch (e) {
-    try { unlinkSync(tmp); } catch {}
-    throw e;
-  }
-}
-
-// Validate a config object before writing. Throws with a user-facing message on failure.
-export function validateConfig(config) {
-  if (!config || typeof config !== 'object') throw new Error('Config must be an object');
-  const required = ['targetRepo', 'gitAuthor', 'githubUser', 'projects'];
-  for (const k of required) {
-    if (!(k in config)) throw new Error(`Missing required field: ${k}`);
-  }
-  if (!RE_OWNER_REPO.test(config.targetRepo)) {
-    throw new Error(`targetRepo must match <owner>/<repo>: got ${JSON.stringify(config.targetRepo)}`);
-  }
-  if (typeof config.gitAuthor !== 'string' || config.gitAuthor.length === 0 || SHELL_QUOTE_BREAK.test(config.gitAuthor)) {
-    throw new Error(`gitAuthor must be non-empty and contain no shell metacharacters: got ${JSON.stringify(config.gitAuthor)}`);
-  }
-  if (!RE_GH_USER.test(config.githubUser)) {
-    throw new Error(`githubUser must match GitHub username pattern: got ${JSON.stringify(config.githubUser)}`);
-  }
-  if ('branch' in config) {
-    if (!RE_BRANCH.test(config.branch) || FORBIDDEN_BRANCH_PARTS.test(config.branch)) {
-      throw new Error(`branch must be a valid git branch name (no leading dash, no '..'): got ${JSON.stringify(config.branch)}`);
-    }
-  }
-  if ('voicePath' in config) {
-    // Optional: directory holding the voice profile used to write entries. Read by
-    // the skill with the Read tool only — never shell-interpolated — so the only
-    // hard requirement is no shell metacharacters and no leading dash. A leading `~`
-    // is allowed (the skill expands it); we test the expanded form so an absolute
-    // path has no `~` left to trip the shell-quote-break check. Existence is checked
-    // at prompt time (and at runtime, with a fallback chain), not here.
-    const expanded = typeof config.voicePath === 'string' ? expandHome(config.voicePath) : config.voicePath;
-    if (typeof config.voicePath !== 'string' || SHELL_QUOTE_BREAK.test(expanded) || expanded.trim().startsWith('-')) {
-      throw new Error(`voicePath must be a path with no shell metacharacters and no leading dash: got ${JSON.stringify(config.voicePath)}`);
-    }
-  }
-  if (!Array.isArray(config.projects)) {
-    throw new Error('projects must be an array');
-  }
-  const seenKeys = new Set();
-  for (const p of config.projects) {
-    if (!p || typeof p !== 'object') throw new Error('Each project must be an object');
-    if (!RE_PROJECT_KEY.test(p.key) || p.key.includes('..')) {
-      throw new Error(`project.key invalid: ${JSON.stringify(p.key)}`);
-    }
-    if (seenKeys.has(p.key)) throw new Error(`Duplicate project key: ${JSON.stringify(p.key)}`);
-    seenKeys.add(p.key);
-    if (typeof p.path !== 'string' || SHELL_QUOTE_BREAK.test(p.path)) {
-      throw new Error(`project.path invalid (must contain no shell metacharacters): ${JSON.stringify(p.path)}`);
-    }
-    if (!RE_OWNER_REPO.test(p.remote)) {
-      throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
-    }
-    if ('pathFilter' in p) {
-      // Optional: scope this project's commits to a repo subdirectory (e.g. a
-      // single skill in a monorepo). Interpolated into `git log -- <pathFilter>`,
-      // so enforce the same no-metacharacter / no-`..` safety as branch names.
-      if (typeof p.pathFilter !== 'string' || !RE_PATH_FILTER.test(p.pathFilter) || FORBIDDEN_BRANCH_PARTS.test(p.pathFilter)) {
-        throw new Error(`project.pathFilter must be a repo-relative subdir (no leading dash/slash, no '..', no shell metacharacters): ${JSON.stringify(p.pathFilter)}`);
-      }
-    }
-    if ('tagPrefix' in p) {
-      // Optional: the prefix of the git tags that mark this project's releases
-      // (e.g. `devlog-v`). Interpolated into `git tag --list '<tagPrefix>*'`, so
-      // enforce the same no-metacharacter / no-`..` safety as path filters.
-      if (typeof p.tagPrefix !== 'string' || !RE_TAG_PREFIX.test(p.tagPrefix) || FORBIDDEN_BRANCH_PARTS.test(p.tagPrefix)) {
-        throw new Error(`project.tagPrefix must be a tag prefix (no leading dash/slash, no '..', no shell metacharacters): ${JSON.stringify(p.tagPrefix)}`);
-      }
-    }
-    if ('label' in p) {
-      // Label is rendered as React text content only — never shell-interpolated,
-      // never used in URLs, never used as a filesystem path. React escapes all
-      // text content. Therefore: any string is safe. Apostrophes (e.g.
-      // "Mom I'm Bored") and unicode are legitimate label content.
-      // INVARIANT: if a future change makes label flow into shell or innerHTML,
-      // tighten this validation to SHELL_QUOTE_BREAK at the same time.
-      if (typeof p.label !== 'string') throw new Error(`project.label must be a string if present`);
-      if (p.label.length > 200) throw new Error(`project.label too long (max 200 chars)`);
-      if (/[\x00-\x1f]/.test(p.label)) throw new Error(`project.label contains control characters`);
-    }
+    if (json) emitJSON({ error: 'config-invalid', message: e.message, path: CONFIG_PATH }, 1);
+    log.err(`Config is invalid: ${e.message}`);
+    log.hint(`Edit ${CONFIG_PATH} or run \`devlog init\` to recreate.`);
+    process.exit(1);
   }
   return config;
-}
-
-function readConfig() {
-  if (!existsSync(CONFIG_PATH)) return null;
-  const raw = readFileSync(CONFIG_PATH, 'utf8');
-  return JSON.parse(raw);
 }
 
 async function preflight() {
@@ -216,7 +135,7 @@ function detectGitName() {
 }
 
 function detectProjectRemote(path) {
-  const url = tryExecArgs('git', ['-C', path, 'remote', 'get-url', 'origin']);
+  const url = execArgs('git', ['-C', path, 'remote', 'get-url', 'origin']);
   if (!url) return null;
   const m = url.match(/[:/]([^/:]+\/[^/]+?)(?:\.git)?$/);
   return m ? m[1] : null;
@@ -328,9 +247,8 @@ async function promptForProject(defaults = {}) {
     remote: answers.remote.trim(),
   };
   if (answers.label && answers.label.trim()) out.label = answers.label.trim();
-  // Only persist tagPrefix when it differs from the default `v` (keeps configs clean).
   const tagPrefix = (answers.tagPrefix || '').trim();
-  if (tagPrefix && tagPrefix !== 'v') out.tagPrefix = tagPrefix;
+  if (tagPrefix) out.tagPrefix = tagPrefix;
   return out;
 }
 
@@ -357,9 +275,8 @@ async function cmdInit() {
 
   // Optionally register projects in a loop. First time defaults to "yes".
   const projects = [];
-  let registerAnother = true;
   let firstPrompt = true;
-  while (registerAnother) {
+  for (;;) {
     const { add } = await prompts({
       type: 'confirm',
       name: 'add',
@@ -373,6 +290,7 @@ async function cmdInit() {
       log.warn(`Skipped (duplicate key): ${p.key}`);
       continue;
     }
+    if (p.tagPrefix === 'v') delete p.tagPrefix;
     projects.push(p);
     log.ok(`Registered: ${p.key}`);
   }
@@ -413,7 +331,7 @@ async function cmdInit() {
   log.info('');
 
   // Repo create — argv form, no shell.
-  const repoExists = tryExecArgs('gh', ['repo', 'view', targetRepo, '--json', 'name']) !== null;
+  const repoExists = execArgs('gh', ['repo', 'view', targetRepo, '--json', 'name']) !== null;
   if (repoExists) {
     log.warn(`Repo github.com/${targetRepo} already exists. Will use it as-is.`);
   } else {
@@ -441,8 +359,6 @@ async function cmdInit() {
   if (await confirmOverwrite('config.json', CONFIG_PATH)) {
     atomicWriteJSON(CONFIG_PATH, config);
     log.ok(`Wrote config → ${CONFIG_PATH}`);
-  } else {
-    log.warn('Skipped config.json');
   }
 
   // Install the bundled voice template as the fallback voice profile. The skill
@@ -476,23 +392,51 @@ async function cmdInit() {
 }
 
 // ─── add-project ─────────────────────────────────────────────────────────────
-async function cmdAddProject() {
-  log.info(kleur.bold('\ndevlog add-project\n'));
-  if (!existsSync(CONFIG_PATH)) {
-    log.err(`No config found at ${CONFIG_PATH}`);
-    log.hint('Run `npx @natjswenson/devlog init` first.');
-    process.exit(1);
+async function cmdAddProject(rest) {
+  const { values } = parseArgs({
+    args: rest,
+    options: {
+      path: { type: 'string' },
+      key: { type: 'string' },
+      remote: { type: 'string' },
+      label: { type: 'string' },
+      'tag-prefix': { type: 'string' },
+      'path-filter': { type: 'string' },
+      yes: { type: 'boolean', default: false },
+      json: { type: 'boolean', default: false },
+    },
+    allowPositionals: false,
+  });
+
+  // Non-interactive (agent) path: --yes with at least --path. Everything else
+  // is auto-detected the same way the interactive prompts pre-fill.
+  if (values.yes) {
+    const config = readValidConfigOrExit({ json: true });
+    if (!values.path) emitJSON({ error: 'missing-flag', message: 'add-project --yes requires --path' }, 1);
+    const path = expandHome(values.path);
+    if (!existsSync(path)) emitJSON({ error: 'path-missing', message: `Path does not exist: ${path}` }, 1);
+    const key = values.key || basename(path);
+    const remote = values.remote || detectProjectRemote(path);
+    if (!remote) emitJSON({ error: 'remote-undetectable', message: 'No origin remote found; pass --remote <owner>/<repo>.' }, 1);
+    try {
+      const next = addProject(config, {
+        key,
+        path,
+        remote,
+        label: values.label,
+        tagPrefix: values['tag-prefix'],
+        pathFilter: values['path-filter'],
+      });
+      atomicWriteJSON(CONFIG_PATH, next);
+      emitJSON({ ok: true, added: next.projects.at(-1), projects: next.projects.map((p) => p.key) });
+    } catch (e) {
+      emitJSON({ error: 'invalid-project', message: e.message }, 1);
+    }
+    return;
   }
 
-  let config;
-  try {
-    config = readConfig();
-    validateConfig(config);
-  } catch (e) {
-    log.err(`Existing config is invalid: ${e.message}`);
-    log.hint(`Edit ${CONFIG_PATH} or run \`devlog init\` to recreate.`);
-    process.exit(1);
-  }
+  log.info(kleur.bold('\ndevlog add-project\n'));
+  const config = readValidConfigOrExit();
 
   if (config.projects.length > 0) {
     log.info(kleur.dim('Currently registered projects:'));
@@ -500,24 +444,163 @@ async function cmdAddProject() {
     log.info('');
   }
 
-  const newProject = await promptForProject();
-  if (config.projects.find((p) => p.key === newProject.key)) {
-    log.err(`Project key "${newProject.key}" is already registered.`);
+  const newProject = await promptForProject(values);
+  try {
+    const next = addProject(config, {
+      key: newProject.key,
+      path: newProject.path,
+      remote: newProject.remote,
+      label: newProject.label,
+      tagPrefix: newProject.tagPrefix,
+    });
+    atomicWriteJSON(CONFIG_PATH, next);
+    log.ok(`Added "${newProject.key}" to config.`);
+  } catch (e) {
+    log.err(e.message);
     log.hint('Pick a different key, or remove the existing entry first.');
     process.exit(1);
   }
-
-  const newConfig = validateConfig({ ...config, projects: [...config.projects, newProject] });
-  atomicWriteJSON(CONFIG_PATH, newConfig);
-  log.ok(`Added "${newProject.key}" to config.`);
   log.info('');
   log.info(`Run ${kleur.cyan('/devlog ' + newProject.key)} in Claude Code to publish an entry for this project.`);
   log.info('');
 }
 
+// ─── remove-project ──────────────────────────────────────────────────────────
+async function cmdRemoveProject(rest) {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: { yes: { type: 'boolean', default: false } },
+    allowPositionals: true,
+  });
+  const key = positionals[0];
+  const config = readValidConfigOrExit({ json: values.yes });
+  if (!key) emitJSON({ error: 'missing-arg', message: 'Usage: devlog remove-project <key> --yes' }, 1);
+
+  if (!values.yes) {
+    const { ok } = await prompts({
+      type: 'confirm',
+      name: 'ok',
+      message: `Remove project "${key}" from config? (published entries are NOT deleted)`,
+      initial: false,
+    }, { onCancel: () => process.exit(1) });
+    if (!ok) process.exit(0);
+  }
+
+  try {
+    const next = removeProject(config, key);
+    atomicWriteJSON(CONFIG_PATH, next);
+    emitJSON({ ok: true, removed: key, projects: next.projects.map((p) => p.key) });
+  } catch (e) {
+    emitJSON({ error: 'remove-failed', message: e.message }, 1);
+  }
+}
+
+// ─── set ─────────────────────────────────────────────────────────────────────
+function cmdSet(rest) {
+  const { positionals } = parseArgs({ args: rest, options: {}, allowPositionals: true });
+  const [field, value] = positionals;
+  const config = readValidConfigOrExit({ json: true });
+  if (!field || value === undefined) {
+    emitJSON({ error: 'missing-arg', message: `Usage: devlog set <field> <value>. Settable: ${SETTABLE_FIELDS.join(', ')}` }, 1);
+  }
+  try {
+    const next = setField(config, field, value);
+    atomicWriteJSON(CONFIG_PATH, next);
+    emitJSON({ ok: true, field, config: next });
+  } catch (e) {
+    emitJSON({ error: 'set-failed', message: e.message }, 1);
+  }
+}
+
+// ─── scan ────────────────────────────────────────────────────────────────────
+function cmdScan(rest) {
+  const { values } = parseArgs({
+    args: rest,
+    options: {
+      project: { type: 'string' },
+      'no-fetch': { type: 'boolean', default: false },
+      // scan always emits JSON; the flag is accepted so `scan --json` (as
+      // SKILL.md spells it) is never a crash.
+      json: { type: 'boolean', default: true },
+    },
+    allowPositionals: false,
+  });
+  const config = readValidConfigOrExit({ json: true });
+  const result = scanAll(config, { projectKey: values.project || null, fetch: !values['no-fetch'] });
+  emitJSON(result, result.error ? 1 : 0);
+}
+
+// ─── lint-post ───────────────────────────────────────────────────────────────
+function cmdLintPost(rest) {
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: { 'min-sources': { type: 'string' } },
+    allowPositionals: true,
+  });
+  const file = positionals[0];
+  if (!file) emitJSON({ error: 'missing-arg', message: 'Usage: devlog lint-post <file> [--min-sources N]' }, 2);
+
+  let minSources;
+  if (values['min-sources'] !== undefined) {
+    minSources = Number(values['min-sources']);
+    if (!Number.isInteger(minSources) || minSources < 1) {
+      emitJSON({ error: 'bad-flag', message: '--min-sources must be a positive integer' }, 2);
+    }
+  } else {
+    // Default from config when available; falls back to the shipped default.
+    let config = null;
+    try { config = readConfig(); } catch { /* unreadable config → defaults */ }
+    minSources = resolveDeepDive(config || {}).minSources;
+  }
+
+  let content;
+  try {
+    content = readFileSync(expandHome(file), 'utf8');
+  } catch (e) {
+    emitJSON({ error: 'unreadable', message: e.message }, 2);
+  }
+  const result = lintPost(content, { minSources, filename: file });
+  emitJSON({ ...result, minSources }, result.ok ? 0 : 1);
+}
+
+// ─── publish-entry ───────────────────────────────────────────────────────────
+function cmdPublishEntry(rest) {
+  const { values } = parseArgs({
+    args: rest,
+    options: {
+      clone: { type: 'string' },
+      project: { type: 'string' },
+      version: { type: 'string' },
+      entry: { type: 'string' },
+    },
+    allowPositionals: false,
+  });
+  for (const flag of ['clone', 'project', 'version', 'entry']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `publish-entry requires --${flag}` }, 1);
+  }
+  try {
+    const result = publishEntry({
+      cloneDir: expandHome(values.clone),
+      project: values.project,
+      version: values.version,
+      entryPath: expandHome(values.entry),
+    });
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: 'publish-failed', message: e.message }, 1);
+  }
+}
+
 // ─── config (view) ───────────────────────────────────────────────────────────
-async function cmdConfig() {
+async function cmdConfig(rest) {
+  const { values } = parseArgs({
+    args: rest,
+    options: { json: { type: 'boolean', default: false } },
+    allowPositionals: false,
+  });
+
   if (!existsSync(CONFIG_PATH)) {
+    if (values.json) emitJSON({ error: 'config-missing', path: CONFIG_PATH }, 1);
     log.err(`No config found at ${CONFIG_PATH}`);
     log.hint('Run `npx @natjswenson/devlog init` first.');
     process.exit(1);
@@ -527,26 +610,38 @@ async function cmdConfig() {
   try {
     config = readConfig();
   } catch (e) {
+    if (values.json) emitJSON({ error: 'config-unreadable', message: e.message, path: CONFIG_PATH }, 1);
     log.err(`Failed to read config: ${e.message}`);
     process.exit(1);
   }
 
-  let validationStatus;
+  let validationError = null;
   try {
     validateConfig(config);
-    validationStatus = kleur.green('valid');
   } catch (e) {
-    validationStatus = kleur.red('INVALID — ' + e.message);
+    validationError = e.message;
+  }
+
+  if (values.json) {
+    emitJSON({
+      path: CONFIG_PATH,
+      valid: !validationError,
+      ...(validationError ? { validationError } : {}),
+      deepDive: resolveDeepDive(config),
+      config,
+    }, validationError ? 1 : 0);
   }
 
   log.info('');
   log.info(kleur.bold(`Config: ${CONFIG_PATH}`));
-  log.info(`Status:        ${validationStatus}`);
+  log.info(`Status:        ${validationError ? kleur.red('INVALID — ' + validationError) : kleur.green('valid')}`);
   log.info(`Target repo:   ${kleur.cyan(`github.com/${config.targetRepo || '?'}`)}`);
   log.info(`Branch:        ${config.branch || 'main'}`);
   log.info(`Git author:    ${config.gitAuthor || '?'}`);
   log.info(`GitHub user:   ${config.githubUser || '?'}`);
   log.info(`Voice path:    ${config.voicePath || kleur.dim('(ghostwriter if present, else bundled default)')}`);
+  const dd = resolveDeepDive(config);
+  log.info(`Deep dive:     ${dd.minSources}+ sources; domains: ${dd.topicDomains.join(', ')}`);
   log.info(`Projects (${(config.projects || []).length}):`);
   for (const p of config.projects || []) {
     log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
@@ -560,21 +655,7 @@ async function cmdConfig() {
 
 // ─── preview ─────────────────────────────────────────────────────────────────
 async function cmdPreview() {
-  if (!existsSync(CONFIG_PATH)) {
-    log.err(`No config found at ${CONFIG_PATH}`);
-    log.hint('Run `npx @natjswenson/devlog init` first.');
-    process.exit(1);
-  }
-
-  let config;
-  try {
-    config = readConfig();
-    validateConfig(config);
-  } catch (e) {
-    log.err(`Config validation failed: ${e.message}`);
-    log.hint(`Edit ${CONFIG_PATH} or run \`devlog config\` to inspect.`);
-    process.exit(1);
-  }
+  const config = readValidConfigOrExit();
 
   const [owner, repo] = config.targetRepo.split('/');
   const branch = config.branch || 'main';
@@ -619,13 +700,22 @@ function printHelp() {
   console.log(`
 ${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — release dev log generator
 
-Usage:
-  ${kleur.cyan('npx @natjswenson/devlog init')}           One-time setup: create your dev-log repo, install the skill, write config
-  ${kleur.cyan('npx @natjswenson/devlog add-project')}    Register an additional project in your config
-  ${kleur.cyan('npx @natjswenson/devlog config')}         Show your current config (with validation)
-  ${kleur.cyan('npx @natjswenson/devlog preview')}        Run a local preview of your published dev log
-  ${kleur.cyan('npx @natjswenson/devlog --help')}
-  ${kleur.cyan('npx @natjswenson/devlog --version')}
+Setup & config:
+  ${kleur.cyan('npx @natjswenson/devlog init')}                     One-time setup: create your dev-log repo, install the skill, write config
+  ${kleur.cyan('npx @natjswenson/devlog add-project')}              Register a project (interactive; add --yes --path <p> for non-interactive)
+  ${kleur.cyan('npx @natjswenson/devlog remove-project <key> --yes')}  Unregister a project (entries stay published)
+  ${kleur.cyan('npx @natjswenson/devlog set <field> <value>')}      Update one config field (${SETTABLE_FIELDS.join(', ')})
+  ${kleur.cyan('npx @natjswenson/devlog config [--json]')}          Show current config (with validation)
+
+Used by the /devlog skill:
+  ${kleur.cyan('npx @natjswenson/devlog scan [--project <key>]')}   JSON plan of new releases needing entries
+  ${kleur.cyan('npx @natjswenson/devlog lint-post <file>')}         Deterministic post-contract check
+  ${kleur.cyan('npx @natjswenson/devlog publish-entry ...')}        Copy a drafted entry into the clone + update manifest (never overwrites)
+
+Preview:
+  ${kleur.cyan('npx @natjswenson/devlog preview')}                  Run a local preview of your published dev log
+
+  ${kleur.cyan('npx @natjswenson/devlog --help')} | ${kleur.cyan('--version')}
 
 Docs:    https://github.com/natejswenson/devlog
 Issues:  https://github.com/natejswenson/devlog/issues
@@ -638,15 +728,31 @@ Issues:  https://github.com/natejswenson/devlog/issues
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
   const arg = process.argv[2];
+  const rest = process.argv.slice(3);
   switch (arg) {
     case 'init':
       cmdInit();
       break;
     case 'add-project':
-      cmdAddProject();
+      cmdAddProject(rest);
+      break;
+    case 'remove-project':
+      cmdRemoveProject(rest);
+      break;
+    case 'set':
+      cmdSet(rest);
+      break;
+    case 'scan':
+      cmdScan(rest);
+      break;
+    case 'lint-post':
+      cmdLintPost(rest);
+      break;
+    case 'publish-entry':
+      cmdPublishEntry(rest);
       break;
     case 'config':
-      cmdConfig();
+      cmdConfig(rest);
       break;
     case 'preview':
       cmdPreview();

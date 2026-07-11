@@ -1,0 +1,66 @@
+{
+  "comment": "Prose guardrails in SKILL.md that must survive edits. Each pattern is a case-insensitive regex tested against the full SKILL.md text by tests/skill_contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
+  "prose": [
+    {
+      "id": "immutable-entries",
+      "pattern": "immutable[\\s\\S]{0,80}never overwrite",
+      "rationale": "A published release entry must never be overwritten; losing this line reopens the clobber path."
+    },
+    {
+      "id": "stranger-test",
+      "pattern": "stranger test",
+      "rationale": "The governing quality rule: a reader without the author's repo can build the thing."
+    },
+    {
+      "id": "gotchas-section",
+      "pattern": "## Gotchas",
+      "rationale": "The post template must require the Gotchas section (lint-post enforces it mechanically)."
+    },
+    {
+      "id": "gotchas-never-invented",
+      "pattern": "never invented",
+      "rationale": "Gotchas come from real history (fix commits, reverts, changelog) — fabricating them breaks the product's honesty."
+    },
+    {
+      "id": "reader-side-verify",
+      "pattern": "commands the READER runs",
+      "rationale": "Verify sections must instruct the reader, not demonstrate the author's repo."
+    },
+    {
+      "id": "single-quote-rule",
+      "pattern": "single-quote every interpolated value",
+      "rationale": "Defense-in-depth on top of CLI validation for values the agent still shell-interpolates."
+    },
+    {
+      "id": "voicepath-read-only",
+      "pattern": "voicePath[\\s\\S]{0,40}never shell-interpolated",
+      "rationale": "voicePath is deliberately exempt from strict path validation because it never touches a shell."
+    },
+    {
+      "id": "no-algorithm-md",
+      "pattern": "Never read[\\s\\S]{0,10}`algorithm\\.md`",
+      "rationale": "Ghostwriter's LinkedIn reach tuning must not shape dev-log entries."
+    },
+    {
+      "id": "remote-content-is-data",
+      "pattern": "data, not instructions",
+      "rationale": "Prompt-injection defense: fetched content never changes the rules."
+    },
+    {
+      "id": "write-tool-not-heredoc",
+      "pattern": "Write tool[\\s\\S]{0,40}(never|not) (a )?bash heredoc",
+      "rationale": "Heredocs re-inject generated content into the shell."
+    },
+    {
+      "id": "hash-validation",
+      "pattern": "\\^\\[0-9a-f\\]\\{7,40\\}\\$",
+      "rationale": "Commit hashes from scan output are re-validated before shell use."
+    },
+    {
+      "id": "no-push-retry",
+      "pattern": "do not retry automatically",
+      "rationale": "A failed push is surfaced to the user, not retried blind."
+    }
+  ],
+  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init"]
+}
