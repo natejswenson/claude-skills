@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.9.0
+version: 0.10.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -90,40 +90,36 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 
 ## Mode: Generate
 
-**Posture: propose, don't interrogate.** The default is *you* surface 3–4 concrete, already-real
+**Posture: propose, don't interrogate.** The default is *you* surface concrete, already-real
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
 
 1. **Short-circuit if the topic is already concrete.** If the user named a specific topic, pointed
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
-   to grounding + drafting (step 3). The menu below is the default for an open-ended "write me a
-   post."
-2. **Propose ideas — a two-tier menu.**
-
-   **Tier 1 — pick a lane** (`AskUserQuestion`, single-select; the auto "Other" option lets them
-   type a topic directly):
-   - **Radar** — "React to something new in AI this week." (recent AI-industry news)
-   - **Personal project** — "Post about something you actually shipped recently."
-   - **Interests / hot take** — "An evergreen theme or opinion you haven't posted lately."
-
-   **Tier 2 — drill to a concrete anchor** (depends on the lane; present the choices as another
-   `AskUserQuestion` so it's one tap):
-   - **Radar →** read the newest `research/release-radar-*.md` digest and present its 2–4 items
-     (title + the one-line "why it matters") as options. The pick's facts + suggested angle are the
-     anchor — pre-sourced by the twice-weekly research job (`scripts/release_radar.sh`), which now
-     scans the **broader AI industry**, not just Anthropic. Still apply the voice rules below and
-     never add experience claims the digest didn't establish. **No digest yet?** Offer to do a live
-     web search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
-     noteworthy developments, and present those the same way.
-   - **Personal project →** run `python3 scripts/recent_projects.py` to list local repos that
-     recently had Claude Code sessions, and present the top ~4 (name, branch, last commit) as
-     options. When they pick one, read that repo's recent `git log` and last session summary to find
-     the **one real thing they built/shipped** — that's the anchor. Respect
+   to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
+   a post."
+2. **No topic given → offer ONE rich idea menu.** Don't make the user pick a lane and then drill;
+   gather concrete, ready-to-write ideas from every source *yourself*, then present them in a
+   **single `AskUserQuestion`** (single-select; the auto "Other" lets them type their own topic).
+   Aim for **~5–6 options**, each a short title + its one-line hook, **led by recent-AI-release
+   how-tos** (the priority lane):
+   - **~3–4 how-to ideas from the newest `research/release-radar-*.md` digest** — reuse each item's
+     title + "suggested angle" (already how-to-shaped and source-backed). The pick's facts +
+     suggested angle are the anchor, pre-sourced by the twice-weekly research job
+     (`scripts/release_radar.sh`), which scans the **broader AI industry**, not just Anthropic.
+     Never add experience claims the digest didn't establish. **No digest yet?** Do a quick live web
+     search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
+     noteworthy developments, and use those for the how-to slots.
+   - **~1 personal-project idea** — run `python3 scripts/recent_projects.py`, take the top repo with
+     recent Claude Code sessions, and read its recent `git log` + last session summary for the
+     **one real thing shipped** (that's the anchor). Respect
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
      work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
-   - **Interests / hot take →** read `~/.claude/ghostwriter/voice/interests.md` (core themes, hot
-     takes, stories) and present 3–4 specific angles they haven't covered recently as options. The
-     pick is the anchor.
+   - **~1 interests / hot-take idea** — read `~/.claude/ghostwriter/voice/interests.md` (core
+     themes, hot takes, stories) for one specific angle not covered recently.
+
+   The tapped idea is the post's concrete anchor → go straight to grounding + draft (step 3). No
+   second drill. If the user picks a release how-to, follow the **How-to posts** playbook below.
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
    anchor** — the actual tool, a real number, a specific decision, a thing that actually happened
    (see voice-notes.md → Substance bar + Authenticity). The menu pick normally *is* that anchor.
@@ -175,9 +171,31 @@ post's real anchor, so there's no generic interview.
    *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
    stays **text-only** — a strong text post outperforms a weak image, so that's a fine default.
    Only build a visual if it genuinely earns dwell time (a real diagram people study), not as
-   decoration. For educational / how-to posts, **offer a multi-slide carousel** — the
-   highest-reach native format (1.45× vs 1.18× for a single image). See **Visuals → Carousels**
-   and `voice/algorithm.md`.
+   decoration. For **how-to posts, the default visual is the how-to card family** — a single
+   high-quality image; **rotate its four layouts** (spine / grid / checklist / stack) so posts don't
+   repeat (see **Visuals → the card-type table**). A multi-slide carousel stays
+   available for step-by-step posts that truly need more room — offer it only if the user asks (see
+   **Visuals → Carousels** and `voice/algorithm.md`).
+
+### How-to posts (technical, from AI releases)
+
+The priority lane, and the one radar items feed directly. When the anchor is a recent AI release,
+write a genuine how-to — not a news recap.
+
+- **Structure: implication → steps → gotcha → outcome.** Lead with what the reader can now *do*
+  (the implication), not "X shipped." Then the concrete steps they'd take, the one real gotcha, and
+  the outcome. Prescriptive, for the reader (voice-notes → Framing & audience).
+- **Real technical meat, accessible entry.** Use real commands, real config, real names — the
+  "accessible-but-substantive" bar in `~/.claude/ghostwriter/voice/voice-notes.md`: a curious
+  non-expert can follow the entry, an engineer still learns the mechanism. This is what earns
+  **saves** (algorithm.md's #1 lever).
+- **Authenticity — how-to ≠ "I did this."** A release how-to makes external/world claims, so it is
+  exactly the case the source gate is for: the `*.sources.json` sidecar + `verify_sources.py` step
+  (step 6) is mandatory. **Never fabricate** or imply the user personally ran a release they
+  haven't — write the steps generically ("map which jobs call X"), not as a first-person story.
+- **Default visual: the how-to card family** (step 8) — a single high-quality image. **Rotate the
+  four layouts** (`howto` spine / `howto-grid` / `howto-check` / `howto-stack`) so how-to posts
+  never look the same twice in a row; pick by step count (see Visuals → the card-type table).
 
 ### Visuals (optional — diagrams & cards)
 
@@ -202,8 +220,40 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
       an `ICONS: …` comment. Pick topic-matching glyphs from `assets/card-icons.md` and swap them
       in for each card — **never ship a template's default icons.** Meaningful and few (2–4)
       beats many.
-- **Pick the form.** A **Mermaid diagram** (`--type mermaid`, a `.mmd`) for structured/technical
-  content; a **designed card** (`--type card`, an `.html`) for one punchy idea. Card templates:
+- **Pick the form — glance at this table first, then read the matching bullet below.**
+
+  | Post shape | Template | One-liner |
+  |---|---|---|
+  | **How-to — default / 3–5 steps** | **`howto`** | numbered spine, icon + command chips |
+  | How-to — 4 steps, compact | `howto-grid` | 2×2 numbered tiles |
+  | How-to — 4–5 quick steps | `howto-check` | saveable green checklist |
+  | How-to — 3–4 punchy steps | `howto-stack` | editorial big-number rows |
+  | Teaching / how-it-works | `brief` | headline + before/after concept + thesis band |
+  | Architecture / pipeline | `flow` | stage chips on a numbered spine |
+  | Comparison | `matrix` | scorecard, winning cell per row |
+  | Accelerating progression | `ramp` | rising bars to a payoff figure |
+  | Launch / deprecation / event | `date` | ADMIT-ONE ticket, the date is the hero |
+  | Education / outreach | `stem` | small toy-block STEM accent over a real graphic |
+  | Code snippet | `code` | dark terminal, hand-highlighted |
+  | Claude Code session | `claude` | transcript: request → actions → result |
+  | Multi-slide step-by-step | `carousel` | PDF document (see Carousels) |
+
+  A **Mermaid diagram** (`--type mermaid`, a `.mmd`) also works for structured/technical content;
+  a **designed card** (`--type card`, an `.html`) is the default for one punchy idea. Card templates:
+  - **The how-to family (4 on-brand layouts — rotate them; never use the same how-to card twice
+    in a row).** All share the light system (eyebrow + byline, headline, `.lead`, optional `.band`
+    gotcha, `.caption` outcome) and put the real command/flag in a monospace `<code class="cmd">`
+    chip — the meat readers save. Pick by step count / rhythm (see the table above):
+    - `assets/card-template-howto.html` — **howto (spine, the default)**: `.step` rows on an
+      auto-numbered spine, each an icon chip + bold **imperative** `.t` title + a muted `.e` detail
+      or a `.cmd` chip. Best 3–5 steps. Reach for it first for a release how-to.
+    - `assets/card-template-howto-grid.html` — **howto-grid**: a 2×2 tile grid (`.gstep` = a
+      `.gnum` badge + `.gic` topic icon + `.gt` title + `.ge`/`.cmd`). Best with **exactly 4 steps**.
+    - `assets/card-template-howto-check.html` — **howto-check**: a saveable checklist on one panel
+      (`.check` = a green check + `.ct` title + `.ce`/`.cmd`; the check is the motif, no icon swap).
+      Best 4–5 quick steps (6 only if every detail is one line).
+    - `assets/card-template-howto-stack.html` — **howto-stack**: an editorial big-number list
+      (`.sstep` = a giant ghost numeral + `.st` title + `.se`/`.cmd`). Bold, magazine feel. Best 3–4.
   - `assets/card-template-brief.html` — **brief type (the default explainer)**: the flagship —
     headline + lead, an explainer `.panel` (a before/after `.concept`), a dark thesis `.band`, and
     an icon `.statrow`. Reach for it first for teaching / how-it-works posts.
