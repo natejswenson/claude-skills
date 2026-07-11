@@ -13,15 +13,27 @@ LinkedIn's official API — **only after they approve the draft**. Never auto-pu
 The repo root is the directory containing this skill's `scripts/`, `voice/`, and `drafts/`
 folders. All commands below are run from that repo root.
 
+**Personal data lives in `~/.claude/ghostwriter/`, not the repo.** The voice profile
+(`voice/voice-profile.md`, `voice-notes.md`, `interests.md`), the brand guide
+(`assets/diagram.css`), and LinkedIn credentials (`.env`) are read from
+`~/.claude/ghostwriter/{voice,assets,.env}` — the same location whether the skill is running
+from this repo, an installed Claude Code plugin, or Claude Desktop, so editing your voice or
+brand once is visible everywhere. `voice/algorithm.md` (LinkedIn reach tuning) stays bundled in
+the repo — it's shipped, identical content, not personal. `data/`, `drafts/`, `images/`,
+`scripts/` also stay repo-local since they're tied to running the actual publish flow from one
+place.
+
 ## Decide which mode you're in
 
-- **Setup** — `.env` has no `LINKEDIN_ACCESS_TOKEN`, or `voice/voice-profile.md` is missing,
-  or the user says "set up", "configure", "connect my LinkedIn". → Run **Setup**.
+- **Setup** — `~/.claude/ghostwriter/.env` has no `LINKEDIN_ACCESS_TOKEN`, or
+  `~/.claude/ghostwriter/voice/voice-profile.md` is missing, or the user says "set up",
+  "configure", "connect my LinkedIn". → Run **Setup**.
 - **Generate** — the user wants a post (the common case). → Run **Generate**.
 - **Publish** — the user approves a draft you already showed. → Run **Publish**.
 
-Before generating, quietly confirm setup is done: `voice/voice-profile.md` exists and `.env`
-contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`. If not, switch to Setup.
+Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/voice-profile.md`
+exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
+If not, switch to Setup.
 
 ---
 
@@ -33,20 +45,23 @@ Walk the user through this once. Do the steps you can; hand them the steps only 
    add the **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** products,
    and under **Auth** add the redirect URL `http://localhost:8765/callback`. They give you the
    **Client ID** and **Client Secret**.
-2. **.env.** Run `cp .env.example .env`, then write their Client ID/Secret into `.env`
-   (edit the file; never echo the secret back in chat).
+2. **.env.** Run `mkdir -p ~/.claude/ghostwriter && cp .env.example ~/.claude/ghostwriter/.env`,
+   then write their Client ID/Secret into `~/.claude/ghostwriter/.env` (edit the file; never echo
+   the secret back in chat).
 3. **Authorize.** Tell them to run `python3 scripts/linkedin_auth.py` themselves (it opens a
-   browser for them to click "Allow"). It writes the token + person URN into `.env`.
+   browser for them to click "Allow"). It writes the token + person URN into
+   `~/.claude/ghostwriter/.env`.
 4. **Export posts.** Tell them to request their data from LinkedIn (Settings → Data privacy →
    *Get a copy of your data* → **Posts**), and drop the resulting `Shares.csv` into `data/`.
    The email takes ~10 minutes.
 5. **Extract.** Once `data/Shares.csv` exists, run `python3 scripts/extract_posts.py`.
 6. **Build the voice profile.** Do the **Voice Profile** step below.
 7. **Interests & voice notes.** If they don't exist yet (e.g. a fresh clone), seed them from
-   the templates: `cp voice/interests.example.md voice/interests.md` and
-   `cp voice/voice-notes.example.md voice/voice-notes.md`. Then help them fill in
-   `voice/interests.md` (interview them if it's empty). `voice-notes.md` ships with sensible
-   defaults; append the user's own feedback to it as it comes up.
+   the templates: `mkdir -p ~/.claude/ghostwriter/voice && cp voice/interests.example.md
+   ~/.claude/ghostwriter/voice/interests.md` and `cp voice/voice-notes.example.md
+   ~/.claude/ghostwriter/voice/voice-notes.md`. Then help them fill in
+   `~/.claude/ghostwriter/voice/interests.md` (interview them if it's empty). `voice-notes.md`
+   ships with sensible defaults; append the user's own feedback to it as it comes up.
 
 If the user has no usable export (few/no past posts), skip 4–5 and build `voice-profile.md`
 by interviewing them: ask about tone, the 3–5 topics they're known for, formatting habits
@@ -54,7 +69,8 @@ by interviewing them: ask about tone, the 3–5 topics they're known for, format
 
 ### Voice Profile (the heart of "sounds like me")
 
-Read `data/my_posts.md` in full, then write `voice/voice-profile.md` capturing:
+Read `data/my_posts.md` in full, then write `~/.claude/ghostwriter/voice/voice-profile.md`
+(`mkdir -p ~/.claude/ghostwriter/voice` first if it doesn't exist yet) capturing:
 
 - **Voice & tone** — e.g. direct, contrarian, warm, wry. Quote 2–3 lines that exemplify it.
 - **Sentence rhythm** — short and punchy? long and layered? fragments for emphasis?
@@ -97,16 +113,17 @@ post's real anchor, so there's no generic interview.
      anchor — pre-sourced by the twice-weekly research job (`scripts/release_radar.sh`), which now
      scans the **broader AI industry**, not just Anthropic. Still apply the voice rules below and
      never add experience claims the digest didn't establish. **No digest yet?** Offer to do a live
-     web search over `voice/interests.md`'s trending areas, find 2–4 genuinely noteworthy
-     developments, and present those the same way.
+     web search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
+     noteworthy developments, and present those the same way.
    - **Personal project →** run `python3 scripts/recent_projects.py` to list local repos that
      recently had Claude Code sessions, and present the top ~4 (name, branch, last commit) as
      options. When they pick one, read that repo's recent `git log` and last session summary to find
-     the **one real thing they built/shipped** — that's the anchor. Respect `voice/interests.md` →
-     **Off-limits**: never surface or post anything work-confidential (e.g. GoodLeap internals);
-     personal/OSS repos only.
-   - **Interests / hot take →** read `voice/interests.md` (core themes, hot takes, stories) and
-     present 3–4 specific angles they haven't covered recently as options. The pick is the anchor.
+     the **one real thing they built/shipped** — that's the anchor. Respect
+     `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
+     work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
+   - **Interests / hot take →** read `~/.claude/ghostwriter/voice/interests.md` (core themes, hot
+     takes, stories) and present 3–4 specific angles they haven't covered recently as options. The
+     pick is the anchor.
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
    anchor** — the actual tool, a real number, a specific decision, a thing that actually happened
    (see voice-notes.md → Substance bar + Authenticity). The menu pick normally *is* that anchor.
@@ -114,12 +131,12 @@ post's real anchor, so there's no generic interview.
    detail — ask **one** `AskUserQuestion`, never the old generic 2–3-question interview. **Never
    fabricate a detail to clear this bar.** If there's genuinely no real anchor, say so rather than
    shipping a generic post.
-4. **Draft against the voice profile.** Read `voice/voice-notes.md`, `voice/voice-profile.md`,
-   AND `voice/algorithm.md` first, every time (voice-notes.md holds direct user feedback and
-   takes priority; algorithm.md is reach optimization and must never override voice). If a voice
-   file is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
-   `voice/voice-notes.md` and proceed with what you have (`voice/interests.md` plus the
-   defaults). Write the
+4. **Draft against the voice profile.** Read `~/.claude/ghostwriter/voice/voice-notes.md`,
+   `~/.claude/ghostwriter/voice/voice-profile.md`, AND `voice/algorithm.md` (bundled, repo-relative)
+   first, every time (voice-notes.md holds direct user feedback and takes priority; algorithm.md is
+   reach optimization and must never override voice). If a voice file is missing — e.g. a fresh
+   setup — copy `voice/voice-notes.example.md` to `~/.claude/ghostwriter/voice/voice-notes.md` and
+   proceed with what you have (`~/.claude/ghostwriter/voice/interests.md` plus the defaults). Write the
    post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Apply the
    **Engagement craft** rules below AND the reach rules in `voice/algorithm.md` (hook in the
    first ~210 chars, ~900–1,500 chars, optimize for *saves*, no links in the body). Aim for one
@@ -145,8 +162,9 @@ post's real anchor, so there's no generic interview.
    reputable sources, **cut it or don't ship the post — never fabricate a citation or a fact.**
    - **Pure first-person posts** (no external claims — e.g. a personal/vulnerable story) make no
      outside-world assertion. Write a sidecar declaring `{"external_claims": false, "claims": []}`;
-     the gate passes trivially. The authenticity/substance bar in `voice/voice-notes.md` covers
-     these. Be honest: if the post mixes a real external claim into a personal story, it is *not*
+     the gate passes trivially. The authenticity/substance bar in
+     `~/.claude/ghostwriter/voice/voice-notes.md` covers these. Be honest: if the post mixes a
+     real external claim into a personal story, it is *not*
      `external_claims:false`.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
@@ -166,11 +184,12 @@ post's real anchor, so there's no generic interview.
 Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
 reports Playwright/Chromium is missing, point them at the install step and stop).
 
-**Brand guide (per-user).** Styling + byline live in `assets/diagram.css` — the user's personal
-brand guide (gitignored). On first use, if it doesn't exist, copy it from the template:
-`cp assets/diagram.css.example assets/diagram.css`, then set their `--byline` (shown at the
-bottom of every visual) and tweak the palette. Cards use `<div class="footer brand"></div>` to
-pull the byline automatically — don't hardcode it.
+**Brand guide (per-user).** Styling + byline live in `~/.claude/ghostwriter/assets/diagram.css` —
+the user's personal brand guide, shared across every install of the skill. On first use, if it
+doesn't exist, copy it from the template: `mkdir -p ~/.claude/ghostwriter/assets && cp
+assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set their `--byline`
+(shown at the bottom of every visual) and tweak the palette. Cards use
+`<div class="footer brand"></div>` to pull the byline automatically — don't hardcode it.
 
 - **The light card system.** Every designed card uses the modern **light** system: a light
   canvas, layered white panels, a dark callout band, real line icons, and a restrained hierarchy.
@@ -212,17 +231,18 @@ pull the byline automatically — don't hardcode it.
     real outcome.
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
-  Card styling lives in `assets/diagram.css` (the brand guide) — use its classes, don't add
-  one-off inline CSS. Let the user choose the form if unsure.
+  Card styling lives in `~/.claude/ghostwriter/assets/diagram.css` (the brand guide) — use its
+  classes, don't add one-off inline CSS. Let the user choose the form if unsure.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
-  as `voice/voice-notes.md` — a misleading diagram is worse than none).
+  as `~/.claude/ghostwriter/voice/voice-notes.md` — a misleading diagram is worse than none).
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
   — **for the portrait light cards add `--size 1200x1500`** (Mermaid auto-fits; only the legacy
   square `card-template.html` omits it). This **auto-opens the PNG in the user's image viewer** so
   they can actually see it (pass `--no-open` only for headless/batch use).
-- **Show the user the rendered PNG** and iterate (tweak the source or `assets/diagram.css`) until
-  they approve it. Don't claim it looks good without showing the image.
+- **Show the user the rendered PNG** and iterate (tweak the source or
+  `~/.claude/ghostwriter/assets/diagram.css`) until they approve it. Don't claim it looks good
+  without showing the image.
 - **Write alt text** describing the visual; you'll pass it to the publish step.
 
 #### Carousels (multi-slide documents — highest reach)

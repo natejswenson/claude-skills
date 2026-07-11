@@ -42,7 +42,7 @@ const SKILL_DEST = join(CONFIG_DIR, 'SKILL.md');
 const PREVIEW_DIR = join(PACKAGE_ROOT, 'preview');
 const VOICE_SRC_DIR = join(PACKAGE_ROOT, 'voice');
 const VOICE_DEST_DIR = join(CONFIG_DIR, 'voice');
-const GHOSTWRITER_VOICE_DIR = join(homedir(), '.claude', 'skills', 'ghostwriter', 'voice');
+const GHOSTWRITER_VOICE_DIR = join(homedir(), '.claude', 'ghostwriter', 'voice');
 
 const log = {
   info: (msg) => console.log(msg),

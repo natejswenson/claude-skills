@@ -3,7 +3,7 @@
   "branch": "main",
   "gitAuthor": "Your Name",
   "githubUser": "yourusername",
-  "voicePath": "~/.claude/skills/ghostwriter/voice",
+  "voicePath": "~/.claude/ghostwriter/voice",
   "projects": [
     {
       "key": "midnight-side-quest",

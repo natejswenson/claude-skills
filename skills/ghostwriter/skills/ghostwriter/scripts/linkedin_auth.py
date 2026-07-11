@@ -35,7 +35,10 @@ import webbrowser
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-ENV_PATH = REPO / ".env"
+# Personal credentials live in the shared home dir (same location Claude Code and Claude
+# Desktop both read), so a fresh auth run isn't tied to whichever install of the skill ran it.
+HOME_ENV = Path.home() / ".claude" / "ghostwriter" / ".env"
+ENV_PATH = HOME_ENV if HOME_ENV.exists() else REPO / ".env"
 
 AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization"
 TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
@@ -49,8 +52,8 @@ def load_env(path: Path = ENV_PATH) -> dict:
     if not path.exists():
         sys.exit(
             f"ERROR: {path} not found.\n"
-            "Run: cp .env.example .env  then fill in LINKEDIN_CLIENT_ID and "
-            "LINKEDIN_CLIENT_SECRET from your LinkedIn app."
+            "Run: mkdir -p ~/.claude/ghostwriter && cp .env.example ~/.claude/ghostwriter/.env "
+            " then fill in LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET from your LinkedIn app."
         )
     env: dict[str, str] = {}
     for raw in path.read_text(encoding="utf-8").splitlines():
