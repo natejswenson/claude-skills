@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -138,6 +138,21 @@ test('set / add-project --yes / remove-project --yes round-trip through the CLI'
 
   const rmGhost = run(home, 'remove-project', 'ghost', '--yes');
   assert.equal(rmGhost.status, 1);
+});
+
+test('the CLI dispatches when invoked through a bin symlink (the npm/npx layout)', (t) => {
+  // npm/npx expose the binary as node_modules/.bin/devlog → ../.../bin/devlog.js.
+  // process.argv[1] is then the SYMLINK, not the resolved file — the isMain
+  // guard must realpath both sides or every npx invocation is a silent no-op
+  // (the bug that shipped in <=0.5.0).
+  const dir = mkdtempSync(join(tmpdir(), 'devlog-symlink-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const link = join(dir, 'devlog');
+  symlinkSync(BIN, link);
+
+  const r = spawnSync(process.execPath, [link, '--version'], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+$/, 'expected the version on stdout — silent exit means the isMain guard failed to match through the symlink');
 });
 
 test('publish-entry via CLI refuses a second publish of the same version', (t) => {
