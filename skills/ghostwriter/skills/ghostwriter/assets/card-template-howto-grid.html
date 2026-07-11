@@ -1,0 +1,84 @@
+<!doctype html>
+<!--
+  HOW-TO / GRID variant — the numbered playbook as a 2×2 tile grid (light system).
+  One of the how-to family; rotate between these so posts don't all look the same.
+  Best with EXACTLY 4 steps. Render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  Class is `card howto-grid light`. Each .gstep tile has a .ghead (a .gnum badge — the
+  number is drawn by CSS, leave it empty — plus a .gic topic-icon chip), a bold IMPERATIVE
+  .gt title, and EITHER a muted .ge detail OR a <code class="cmd"> command chip. Byline
+  lives in .toprow so a feed crop can't remove attribution. .band = the one gotcha,
+  .caption = the outcome.
+
+  ICONS: the .gic <svg> in each tile is an EXAMPLE — replace each with a topic icon from
+  assets/card-icons.md (use the "topic → icon" cheat-sheet), then delete this comment.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card howto-grid light">
+    <div class="toprow">
+      <div class="eyebrow">How-to · one-line context</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>How to do the concrete thing.</h1>
+    <p class="lead">One line on the payoff, with the <strong>real win</strong> pulled into
+      bold so the eye lands on why this is worth doing.</p>
+
+    <div class="gsteps">
+      <div class="gstep">
+        <div class="ghead">
+          <div class="gnum"></div>
+          <div class="gic tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></div>
+        </div>
+        <span class="gt">Map what applies</span>
+        <span class="ge">the one thing to check first</span>
+      </div>
+
+      <div class="gstep">
+        <div class="ghead">
+          <div class="gnum"></div>
+          <div class="gic tint-gold"><svg class="s-gold" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        </div>
+        <span class="gt">Set it up</span>
+        <code class="cmd">the --actual command</code>
+      </div>
+
+      <div class="gstep">
+        <div class="ghead">
+          <div class="gnum"></div>
+          <div class="gic tint-teal"><svg class="s-teal" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg></div>
+        </div>
+        <span class="gt">Wire it in</span>
+        <span class="ge">where it plugs into your flow</span>
+      </div>
+
+      <div class="gstep">
+        <div class="ghead">
+          <div class="gnum"></div>
+          <div class="gic tint-green"><svg class="s-green" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        </div>
+        <span class="gt">Verify it worked</span>
+        <span class="ge">the signal that says you're done</span>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="btext">The one <em>gotcha</em> people hit, said plainly.</div>
+      <div class="dots">
+        <span style="background:var(--accent)"></span>
+        <span style="background:var(--accent-3)"></span>
+        <span style="background:var(--accent-2)"></span>
+        <span style="background:var(--accent-4)"></span>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The outcome · what you get for the effort</div>
+  </div>
+</body>
+</html>

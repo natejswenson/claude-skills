@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  HOW-TO card TYPE — a numbered "playbook" of imperative steps (light system).
+  The default visual for a technical how-to post built on a recent AI release.
+  Copy to images/<slug>.html, fill in the steps, then render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  Keep these properties:
+   * Class is `card howto light`. Byline lives in .toprow (top-right), inline with the
+     .eyebrow, so a feed crop of the bottom can NEVER remove your attribution.
+   * The <h1> names the task: "How to <do the concrete thing>".
+   * Each step is a .step with: a .sic icon chip (pick a TOPIC icon from
+     assets/card-icons.md — pair a .tint-* with its .s-* stroke), then a .sbody with a
+     bold IMPERATIVE <span class="t">Do this</span>, and EITHER one muted
+     <span class="e">detail</span> OR a monospace <code class="cmd">the-actual-command</code>
+     (use the cmd chip when there's a real command/flag/config to show — that is the
+     technical meat readers save the post for).
+   * Steps are auto-numbered onto a vertical spine — just list them in order; do NOT add
+     connector or number elements. Keep it to 3–5 steps so it stays calm at phone size.
+   * .band carries the ONE real gotcha or the outcome; .caption is the closing result.
+  All colour/type/spacing comes from diagram.css (.card.howto.light) — don't add one-off
+  inline CSS; extend diagram.css if you need a new treatment.
+
+  ICONS: the .sic <svg> in each step below is an EXAMPLE. Replace each with a topic icon
+  from assets/card-icons.md that fits THAT step (use the "topic → icon" cheat-sheet at the
+  top of that file), then delete this ICONS comment. Never ship the default icons.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card howto light">
+    <div class="toprow">
+      <div class="eyebrow">How-to · one-line context</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>How to do the concrete thing.</h1>
+    <p class="lead">One line on the payoff, with the <strong>real win</strong> pulled into
+      bold so the eye lands on why this is worth doing.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="sic tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="sbody">
+          <span class="t">Map what applies to you</span>
+          <span class="e">the one thing to check before you start</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="sic tint-teal"><svg class="s-teal" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg></div>
+        <div class="sbody">
+          <span class="t">Do the concrete action</span>
+          <code class="cmd">the --actual command or config</code>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="sic tint-green"><svg class="s-green" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="sbody">
+          <span class="t">Verify it worked</span>
+          <span class="e">the signal that tells you you're done</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="btext">The one <em>gotcha</em> people hit, said plainly.</div>
+      <div class="dots">
+        <span style="background:var(--accent)"></span>
+        <span style="background:var(--accent-3)"></span>
+        <span style="background:var(--accent-2)"></span>
+        <span style="background:var(--accent-4)"></span>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The outcome · what you get for the effort</div>
+  </div>
+</body>
+</html>

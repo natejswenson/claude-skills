@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  HOW-TO / CHECKLIST variant — a saveable "do these" checklist on one panel (light system).
+  One of the how-to family; rotate between these so posts don't all look the same.
+  Best for 4–5 quick, screenshot-worthy steps (6 only if every detail is one line —
+  more than that overruns the 1500px canvas). Render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  Class is `card howto-check light`. Every .check row is a green check icon (the motif —
+  keep it, no topic-icon swap needed) + a bold IMPERATIVE .ct title + EITHER a muted .ce
+  detail OR a <code class="cmd"> command chip. Byline lives in .toprow. .caption = the
+  outcome. No .band here — the checklist itself is the payload.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card howto-check light">
+    <div class="toprow">
+      <div class="eyebrow">Checklist · one-line context</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>The how-to, as a checklist.</h1>
+    <p class="lead">One line on when this list matters, with the <strong>payoff</strong> in
+      bold. Save it, then work top to bottom.</p>
+
+    <div class="checklist">
+      <div class="check">
+        <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="cbody">
+          <span class="ct">Map what applies to you</span>
+          <span class="ce">the one thing to check before you start</span>
+        </div>
+      </div>
+      <div class="check">
+        <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="cbody">
+          <span class="ct">Run the setup command</span>
+          <code class="cmd">the --actual command or config</code>
+        </div>
+      </div>
+      <div class="check">
+        <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="cbody">
+          <span class="ct">Wire it into your flow</span>
+          <span class="ce">where it plugs in, in one phrase</span>
+        </div>
+      </div>
+      <div class="check">
+        <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="cbody">
+          <span class="ct">Verify the signal</span>
+          <span class="ce">how you know it actually worked</span>
+        </div>
+      </div>
+      <div class="check">
+        <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="cbody">
+          <span class="ct">Roll it out incrementally</span>
+          <span class="ce">the safe order to migrate in</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The outcome · what you get for the effort</div>
+  </div>
+</body>
+</html>
