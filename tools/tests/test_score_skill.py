@@ -256,7 +256,9 @@ def test_soft_check_name_mismatch_is_advisory_not_scored(tmp_path):
 
 @pytest.mark.parametrize("skill", REAL_SKILLS)
 def test_real_skills_score_100(skill):
-    skill_dir = os.path.join(REPO_ROOT, "skills", skill)
+    # SKILL.md lives one level deeper than the plugin root -- Claude Code's
+    # plugin auto-discovery path (skills/<skill>/skills/<skill>/SKILL.md).
+    skill_dir = os.path.join(REPO_ROOT, "skills", skill, "skills", skill)
     assert os.path.isfile(
         os.path.join(skill_dir, "SKILL.md")
     ), f"missing SKILL.md for {skill}"
@@ -266,6 +268,6 @@ def test_real_skills_score_100(skill):
 
 @pytest.mark.parametrize("skill", REAL_SKILLS)
 def test_real_skills_main_exits_0(skill):
-    skill_dir = os.path.join(REPO_ROOT, "skills", skill)
+    skill_dir = os.path.join(REPO_ROOT, "skills", skill, "skills", skill)
     assert main([skill_dir]) == 0
     assert main([skill_dir, "--min", "100"]) == 0

@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.12"
       - if: steps.changes.outputs.resume == 'true'
-        run: python tools/score_skill.py skills/resume --min 100
+        run: python tools/score_skill.py skills/resume/skills/resume --min 100
       # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
       - if: steps.changes.outputs.resume == 'true'
         run: python tools/lint_plugin.py skills/resume
@@ -49,13 +49,13 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: skills/resume/package-lock.json
+          cache-dependency-path: skills/resume/skills/resume/package-lock.json
       - if: steps.changes.outputs.resume == 'true'
         run: npm ci
-        working-directory: skills/resume
+        working-directory: skills/resume/skills/resume
       - if: steps.changes.outputs.resume == 'true'
         run: npm test
-        working-directory: skills/resume
+        working-directory: skills/resume/skills/resume
 
   release:
     needs: ci

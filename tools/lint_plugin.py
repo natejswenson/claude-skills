@@ -63,7 +63,13 @@ def lint_plugin(skill_dir: str) -> dict:
         errors.append(plugin_err)
         plugin_data = {}
 
-    skill_md_path = os.path.join(skill_dir, "SKILL.md")
+    # SKILL.md and package.json live one level deeper than plugin.json, at
+    # <skill_dir>/skills/<dir_base>/ -- Claude Code's plugin auto-discovery only
+    # scans skills/<subdir>/SKILL.md, never a root-level SKILL.md. plugin.json
+    # itself stays at <skill_dir>/.claude-plugin/ per the manifest convention.
+    nested_skill_dir = os.path.join(skill_dir, "skills", dir_base)
+
+    skill_md_path = os.path.join(nested_skill_dir, "SKILL.md")
     try:
         with open(skill_md_path, "r", encoding="utf-8") as fh:
             skill_md_text = fh.read()
@@ -71,7 +77,7 @@ def lint_plugin(skill_dir: str) -> dict:
         skill_md_text = ""
     fm = parse_frontmatter(skill_md_text)
 
-    package_json_path = os.path.join(skill_dir, "package.json")
+    package_json_path = os.path.join(nested_skill_dir, "package.json")
     package_data: dict = {}
     if os.path.isfile(package_json_path):
         package_data, package_err = _read_json(package_json_path)
