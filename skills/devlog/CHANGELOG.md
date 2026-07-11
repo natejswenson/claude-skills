@@ -2,7 +2,7 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
-## Unreleased
+## 0.4.2 (2026-07-10) — ghostwriter voice-fallback path fix
 
 **Fixed**
 - The ghostwriter voice-fallback path (`GHOSTWRITER_VOICE_DIR` / Step 2 of voice resolution) now
