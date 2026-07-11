@@ -13,8 +13,10 @@ read it before opening any PR.
 - **Never push directly to `main`.** It is protected; the four `ci / <skill>` checks must pass and
   a PR is required. `dev` is unprotected — direct pushes there are fine.
 - **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
-  (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills) **and** add
-  a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release.
+  (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills, **and**
+  `plugin.json.version` in `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5
+  lint fails the PR if it diverges) **and** add a `CHANGELOG.md` entry in the same change. A
+  `dev → main` merge with no bump is a no-op release.
 - **Always delete a feature branch as soon as it's merged** — local *and* remote. The repo has
   `delete_branch_on_merge` on, so a PR merged on GitHub auto-removes its head. If you merge or
   integrate any other way (CLI, direct push, squash), delete the branch by hand:
@@ -59,8 +61,14 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    tag cut. The auto-merge (bot `GITHUB_TOKEN`) does not trigger the per-skill release workflows, so
    nothing is tagged unless this step is done on purpose.
 5. **If a release is wanted**, ensure that skill's version is bumped (`package.json` for node skills,
-   `SKILL.md` frontmatter `version:` for python skills) with a matching `CHANGELOG.md` entry. Then,
-   after the PR merges, cut the release from `main` by dispatching that skill's workflow:
+   `SKILL.md` frontmatter `version:` for python skills, **and `plugin.json.version` in
+   `skills/<skill>/.claude-plugin/plugin.json` for all skills**) with a matching `CHANGELOG.md` entry.
+   `plugin.json.version` is a required-mutually-equal field — the Tier-1.5 `lint_plugin.py` step in
+   that skill's `ci` job fails the `dev → main` PR if it diverges from the other present version
+   fields, so this is normally caught before merge, not at release time (release runs via
+   `workflow_dispatch`, which the PR-time lint doesn't gate — see the marketplace design doc's Data
+   Flow section). Then, after the PR merges, cut the release from `main` by dispatching that skill's
+   workflow:
    ```
    gh workflow run <skill>.yml --ref main
    ```
@@ -118,12 +126,25 @@ only fires once it's on `main`. The first promotion that introduces it is merged
    job's `permissions: { contents: read, pull-requests: read }`** — both are load-bearing
    (`pull-requests: read` lets `dorny/paths-filter` detect changes under the restricted default
    token; dropping it red-lines the required check on every PR).
-2. Path-filter only the `push` trigger to `skills/<skill>/**` (+ `tools/score_skill.py` + the caller).
+2. Path-filter only the `push` trigger to `skills/<skill>/**` (+ `tools/score_skill.py` +
+   `tools/lint_plugin.py` + the caller).
 3. Set the release call `with: { skill: <skill> }` (+ `version-source` if not auto-detectable).
 4. Ensure the skill has `CHANGELOG.md` and a version (package.json or SKILL.md frontmatter).
 5. **Add `ci / <skill>` to `main`'s required checks** (and to `.github/repo-settings.sh`).
+6. Add `skills/<skill>/.claude-plugin/plugin.json` with `name` == the directory name (== SKILL.md
+   `name:` — never `package.json.name`, see the marketplace design doc's F1 rule) and `version`
+   equal to the skill's resolved version.
+7. Add a `{name, source}` entry for the new skill to root `.claude-plugin/marketplace.json`
+   (`source` must be `./skills/<skill>`; `name` must equal both the directory name and the
+   `plugin.json.name` at that source).
+8. Add the Tier-1.5 `python tools/lint_plugin.py skills/<skill>` step to the new caller's `ci` job,
+   right after its `score_skill.py` step, gated on the same `steps.changes.outputs.<skill>`
+   condition as every other step. `ci / marketplace` needs no per-skill change — its unconditional
+   lint validates every skill's `plugin.json` and the marketplace membership invariant automatically.
 
 ## Design docs
 
 - `docs/plans/2026-06-19-repo-cicd-reusable-workflows-design.md` — the reusable-CI + per-skill-test design.
 - `docs/plans/2026-06-25-dev-to-main-auto-merge.md` — the `dev → main` auto-merge design.
+- `docs/plans/2026-07-10-marketplace-plugin-topology-design.md` — the plugin-marketplace topology
+  design (plugin.json/marketplace.json, the two new lint scripts, `ci / marketplace`).

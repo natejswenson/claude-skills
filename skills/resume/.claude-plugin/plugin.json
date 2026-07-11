@@ -1,0 +1,10 @@
+{
+  "name": "resume",
+  "version": "1.0.0",
+  "description": "Tailor a résumé to a job description and render a polished PDF. Triggers on \"/resume\", \"tailor my resume\", \"optimize my resume for this job\", or any request to adapt a résumé to a specific posting and produce a PDF.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/resume",
+  "license": "MIT"
+}

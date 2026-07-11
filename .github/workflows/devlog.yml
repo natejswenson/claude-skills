@@ -8,7 +8,7 @@ name: devlog
 on:
   push:
     branches: [main]
-    paths: ["skills/devlog/**", "tools/score_skill.py", ".github/workflows/devlog.yml"]
+    paths: ["skills/devlog/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/devlog.yml"]
   pull_request:
     branches: [dev, main]
   workflow_dispatch:
@@ -30,6 +30,7 @@ jobs:
             devlog:
               - 'skills/devlog/**'
               - 'tools/score_skill.py'
+              - 'tools/lint_plugin.py'
               - '.github/workflows/devlog.yml'
       # Tier 1: shared SKILL.md structural lint (every skill)
       - if: steps.changes.outputs.devlog == 'true'
@@ -38,6 +39,9 @@ jobs:
           python-version: "3.12"
       - if: steps.changes.outputs.devlog == 'true'
         run: python tools/score_skill.py skills/devlog --min 100
+      # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
+      - if: steps.changes.outputs.devlog == 'true'
+        run: python tools/lint_plugin.py skills/devlog
       # Tier 2: devlog functional tests (Node)
       - if: steps.changes.outputs.devlog == 'true'
         uses: actions/setup-node@v6
