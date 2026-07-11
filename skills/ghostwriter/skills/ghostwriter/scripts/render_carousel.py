@@ -26,6 +26,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 ASSETS = REPO / "assets"
+# Personal brand guide: shared home dir first (same location Claude Code and Claude Desktop
+# both read), then the repo copy, then the shipped default on a fresh clone.
+HOME_CSS = Path.home() / ".claude" / "ghostwriter" / "assets" / "diagram.css"
 CSS = ASSETS / "diagram.css"
 CSS_EXAMPLE = ASSETS / "diagram.css.example"
 
@@ -42,6 +45,8 @@ INSTALL_HINT = (
 
 
 def brand_css_path() -> Path:
+    if HOME_CSS.exists():
+        return HOME_CSS
     return CSS if CSS.exists() else CSS_EXAMPLE
 
 

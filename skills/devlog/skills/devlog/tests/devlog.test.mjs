@@ -17,7 +17,7 @@ function baseConfig() {
     branch: 'main',
     gitAuthor: 'Nate Swenson',
     githubUser: 'natejswenson',
-    voicePath: '/Users/natejswenson/.claude/skills/ghostwriter/voice',
+    voicePath: '/Users/natejswenson/.claude/ghostwriter/voice',
     projects: [
       {
         key: 'devlog',
@@ -63,7 +63,7 @@ test('validateConfig accepts empty projects array', () => {
 });
 
 test('validateConfig accepts voicePath with leading ~ (expanded before checks)', () => {
-  assert.doesNotThrow(() => validateConfig(cfg((c) => { c.voicePath = '~/.claude/skills/ghostwriter/voice'; })));
+  assert.doesNotThrow(() => validateConfig(cfg((c) => { c.voicePath = '~/.claude/ghostwriter/voice'; })));
 });
 
 test('validateConfig accepts voicePath of exactly "~"', () => {
