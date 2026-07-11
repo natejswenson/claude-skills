@@ -1,0 +1,33 @@
+name: marketplace
+
+# Validates .claude-plugin/marketplace.json and every skill's plugin.json wiring.
+# Deliberately UNFILTERED and UNCONDITIONAL (no dorny/paths-filter short-circuit,
+# unlike the four per-skill callers): the lint is sub-second, and short-circuiting
+# would let a PR adding/removing marketplace coverage slip through green without
+# the membership invariant ever being evaluated. See
+# docs/plans/2026-07-10-marketplace-plugin-topology-design.md, Components/S2.
+#
+# NOT YET a required status check -- see CLAUDE.md's Repo settings section. Per
+# the design's S1 rollout rule, "ci / marketplace" is added to main's required
+# checks only as a separate, later step, after this workflow is confirmed running
+# successfully on main (a required context that's never reported blocks every
+# PR forever -- fail-closed -- unlike a renamed existing context, which fails
+# open and just silently un-requires).
+on:
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: ci / marketplace # will become a required status check in a LATER, separate step
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python tools/lint_marketplace.py
