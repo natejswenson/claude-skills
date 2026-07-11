@@ -34,6 +34,15 @@ rendering and deterministic content validation run as scripts.
 
 ## Install
 
+```
+/plugin marketplace add natejswenson/claude-skills
+/plugin install resume@claude-skills
+```
+
+Then, in any Claude Code session, run `/resume` and follow the prompts.
+
+### Manual install / fallback
+
 This skill ships inside the [`claude-skills`](https://github.com/natejswenson/claude-skills)
 monorepo. Clone the repo, symlink this skill into your skills directory, and
 install its dependencies:
@@ -46,6 +55,9 @@ npm install
 ```
 
 Then, in any Claude Code session, run `/resume` and follow the prompts.
+
+This stays in place until the marketplace install path above is live-verified
+end-to-end; it will be removed in a fast-follow once confirmed.
 
 ## Usage
 

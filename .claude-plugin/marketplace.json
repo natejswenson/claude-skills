@@ -1,0 +1,13 @@
+{
+  "name": "claude-skills",
+  "description": "A monorepo of self-contained, independently-released Claude Code productivity skills.",
+  "owner": {
+    "name": "Nate Swenson"
+  },
+  "plugins": [
+    { "name": "devlog", "source": "./skills/devlog" },
+    { "name": "ghostwriter", "source": "./skills/ghostwriter" },
+    { "name": "resume", "source": "./skills/resume" },
+    { "name": "github-stats", "source": "./skills/github-stats" }
+  ]
+}
