@@ -213,6 +213,22 @@ test('validateConfig rejects non-string voicePath', () => {
   assert.throws(() => validateConfig(cfg((c) => { c.voicePath = 42; })));
 });
 
+// ─── validateConfig: deepDive ─────────────────────────────────────────────────
+
+test('validateConfig accepts a valid deepDive block', () => {
+  assert.doesNotThrow(() => validateConfig(cfg((c) => { c.deepDive = { minSources: 4, topicDomains: ['AI'] }; })));
+  assert.doesNotThrow(() => validateConfig(cfg((c) => { c.deepDive = {}; })));
+});
+
+test('validateConfig rejects malformed deepDive values', () => {
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = 'lots'; })), /deepDive must be an object/);
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = { minSources: 0 }; })), /minSources/);
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = { minSources: 11 }; })), /minSources/);
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = { minSources: '3' }; })), /minSources/);
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = { topicDomains: [] }; })), /topicDomains/);
+  assert.throws(() => validateConfig(cfg((c) => { c.deepDive = { topicDomains: ['ok', 42] }; })), /topicDomains/);
+});
+
 // ─── expandHome ───────────────────────────────────────────────────────────────
 
 test('expandHome expands "~" to home dir', () => {

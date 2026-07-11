@@ -2,6 +2,46 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.5.0 (2026-07-11) — how-to posts with gotchas, deterministic core, agent-native config
+
+**Changed (posts)**
+- Every post is now held to an explicit **how-to contract**: the stranger test (a reader
+  without the author's repo can build the technique from the post alone), complete code
+  (no phantom fixtures — every referenced symbol is defined or explicitly stubbed),
+  reader-side verification (commands the reader runs, with expected output), a required
+  `## Gotchas` section (trap → symptom → escape, mined from real history: fix-after-feat
+  commits, reverts, CHANGELOG "Fixed" entries — never invented), honest scope, and no
+  leaked repo-specific artifacts. Generate mode runs a mandatory self-check (lint +
+  rubric review, max 2 revision passes) before publishing autonomously.
+- `deepDive.minSources` default raised 2 → 3, and sources must be **distinct** URLs.
+
+**Changed (architecture)**
+- Release discovery, post linting, entry publication, and manifest updates moved from
+  ~20 hand-rolled SKILL.md bash steps into tested CLI subcommands (`scan`, `lint-post`,
+  `publish-entry`) backed by new `lib/` modules. Tag names and semver/range logic no
+  longer pass through the LLM's shell at all (spawnSync argv only), entry existence is
+  one GitHub API call per project instead of one per tag, and the
+  never-overwrite-a-published-entry guard is now code-enforced in `publish-entry`.
+- SKILL.md restructured around three modes — Configure / Status / Generate — and the
+  generate flow prints the release plan up front before any research starts.
+
+**Added**
+- Agent-native configuration: `add-project --yes` (non-interactive, auto-detects
+  key/remote), `remove-project <key> --yes`, `set <field> <value>` (targetRepo, branch,
+  gitAuthor, githubUser, voicePath, deepDive.minSources, deepDive.topicDomains), and
+  `config --json`. `/devlog` now handles "add this repo", "stop tracking X", "set min
+  sources to 4", and `/devlog status` conversationally.
+- `deepDive` config validation (minSources integer 1-10, topicDomains non-empty strings).
+- Deterministic test suites for the new core (fixture git repos for scan; manifest
+  ordering incl. backported tags; overwrite refusal; config ops) plus a skill-contract
+  suite (`skill-invariants.json`) that pins SKILL.md's prose guardrails, its CLI surface,
+  and package.json↔CHANGELOG version agreement.
+- Cost-capped eval harness under `evals/` for the non-deterministic half: a $0
+  deterministic layer (lint-post) plus an LLM judge scoring reproducibility, code
+  completeness, gotcha quality, citations, voice, and scope honesty against golden
+  fixtures. Mock mode runs in CI for free; live runs are hard-capped (default $0.50) and
+  refuse to start over budget.
+
 ## 0.4.2 (2026-07-10) — ghostwriter voice-fallback path fix
 
 **Fixed**
