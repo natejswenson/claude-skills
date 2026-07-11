@@ -2,6 +2,18 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.5.1 (2026-07-11) — fix: npx invocations were a silent no-op
+
+**Fixed**
+- Every `npx @natjswenson/devlog <cmd>` invocation exited 0 with no output (present
+  since the import-side-effect guard was added, so ≤0.5.0). npm/npx expose the binary
+  as a `node_modules/.bin/devlog` **symlink**; `process.argv[1]` is the symlink while
+  `import.meta.url` resolves to the real file, so the naive `===` in the `isMain` guard
+  never matched and the dispatcher never ran. Both sides are now `realpathSync`'d. A
+  regression test invokes the CLI through a symlink exactly like npx does. Running
+  `node bin/devlog.js` directly was always unaffected — which is why the test suite
+  and local verification missed it.
+
 ## 0.5.0 (2026-07-11) — how-to posts with gotchas, deterministic core, agent-native config
 
 **Changed (posts)**
