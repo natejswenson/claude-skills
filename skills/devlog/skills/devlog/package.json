@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/devlog",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Release dev log generator \u2014 Claude Code skill + preview app for publishing version-release dev logs, written in your voice, to your site",
   "license": "MIT",
   "author": "Nate Swenson",
@@ -27,6 +27,9 @@
   },
   "files": [
     "bin/",
+    "lib/",
+    "evals/",
+    "skill-invariants.json",
     "preview/",
     "examples/",
     "voice/",
