@@ -519,6 +519,9 @@ function cmdScan(rest) {
     options: {
       project: { type: 'string' },
       'no-fetch': { type: 'boolean', default: false },
+      // scan always emits JSON; the flag is accepted so `scan --json` (as
+      // SKILL.md spells it) is never a crash.
+      json: { type: 'boolean', default: true },
     },
     allowPositionals: false,
   });
