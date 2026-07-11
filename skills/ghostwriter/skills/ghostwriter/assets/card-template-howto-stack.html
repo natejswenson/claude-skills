@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  HOW-TO / STACK variant — an editorial big-number list (light system). One of the how-to
+  family; rotate between these so posts don't all look the same. Best for 3–4 punchy steps
+  when you want a bold, magazine feel. Render at PORTRAIT 4:5:
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  Class is `card howto-stack light`. Each .sstep row draws a giant ghost numeral (CSS, auto)
+  then a .sbody with a bold IMPERATIVE .st title and EITHER a .se detail OR a
+  <code class="cmd"> command chip. No per-step icon (the big number is the motif). Byline
+  lives in .toprow. .band = the one gotcha; .caption = the outcome.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card howto-stack light">
+    <div class="toprow">
+      <div class="eyebrow">How-to · one-line context</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>How to do the concrete thing.</h1>
+    <p class="lead">One line on the payoff, with the <strong>real win</strong> in bold so the
+      eye lands on why this is worth doing.</p>
+
+    <div class="stack">
+      <div class="sstep">
+        <div class="sbody">
+          <span class="st">Map what applies to you</span>
+          <span class="se">the one thing to check before you start</span>
+        </div>
+      </div>
+      <div class="sstep">
+        <div class="sbody">
+          <span class="st">Run the setup</span>
+          <code class="cmd">the --actual command or config</code>
+        </div>
+      </div>
+      <div class="sstep">
+        <div class="sbody">
+          <span class="st">Verify it worked</span>
+          <span class="se">the signal that tells you you're done</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="band">
+      <div class="btext">The one <em>gotcha</em> people hit, said plainly.</div>
+      <div class="dots">
+        <span style="background:var(--accent)"></span>
+        <span style="background:var(--accent-3)"></span>
+        <span style="background:var(--accent-2)"></span>
+        <span style="background:var(--accent-4)"></span>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The outcome · what you get for the effort</div>
+  </div>
+</body>
+</html>

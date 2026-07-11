@@ -1,13 +1,17 @@
 # Card icon catalog
 
 Paste-ready inline SVG line icons for the light card family. They match the
-reference aesthetic: single-color strokes, 24×24 viewBox, rounded caps. The card
-CSS (`.glyph svg`, `.ig svg`, `.ic svg`) already sets `fill:none; stroke-width:2`
-and rounded joins, so you only choose the icon and the stroke color.
+reference aesthetic: single-color strokes, 24×24 viewBox, rounded caps. Every
+icon-chip class (`.glyph svg`, `.ig svg`, `.ic svg`, plus the how-to family's
+`.sic svg` / `.gic svg`) already sets `fill:none; stroke-width:2` and rounded
+joins, so you only choose the icon and the stroke color.
 
 ## How to use
 
-1. Drop the `<svg>…</svg>` into an icon chip:
+1. Drop the `<svg>…</svg>` into the icon chip **that the card's template uses** —
+   follow each template's `ICONS:` comment for the right wrapper class. The chip
+   class varies by card (`.ig` / `.glyph` / `.ic`, and `.gic` for howto-grid,
+   `.sic` for the howto spine); the `tint-*`/`s-*` pair is the same everywhere:
    ```html
    <div class="ig tint-blue"><svg class="s-blue" viewBox="0 0 24 24">…</svg></div>
    ```
@@ -21,6 +25,35 @@ pipeline, a lock for security. For the hero teaching moment, draw the actual
 concept (a T, two ladders, a flow) rather than reaching for a generic shape.
 Generic circles/squares are a *last resort*, not a default — and keep the count
 low (2–4 meaningful icons beat eight; more than that reads as clip-art).
+
+## Topic → icon cheat-sheet (start here)
+
+Don't scan the whole catalog — look up the idea, grab the named glyph, copy its `<svg>`
+paths from the catalog below. Pair a `.tint-*` fill with the matching `.s-*` stroke.
+
+| The step / idea is about… | Use | Suggested tint |
+|---|---|---|
+| A pipeline / CI / branching / mapping jobs | `git-branch` or `workflow` | blue |
+| A model / compute / a token or key swap | `cpu` | teal |
+| Security / auth / a trust policy / secrets | `lock` (or `shield`) | gold |
+| Verifying / a passing check / "it worked" | `check-circle` | green |
+| Data / a store / caching | `database` | teal |
+| Infra / a server / a deployment | `server` or `cloud` | blue |
+| Running a command / the CLI | `terminal` | blue |
+| A team / people / an audience | `users` (one person: `user`) | blue |
+| Speed / leverage / a big win | `zap` | gold |
+| Growth / cost or metric moving up | `trending-up` | green |
+| Time / a deadline / a TTL / latency | `clock` | gold |
+| Scope / a goal / what to target | `target` | green |
+| An idea / the insight / the "aha" | `lightbulb` | gold |
+| Learning / docs / STEM | `book-open` | teal |
+| Discussion / comments / a question | `message-square` | blue |
+| Craft / tooling / configuring | `wrench` | gold |
+| A milestone / setting the bar | `flag` | green |
+| Launch / ship it | `rocket` | blue |
+
+For a **specific tool** (Claude, Python, AWS, GitHub, …), fetch its monochrome brand SVG
+from Simple Icons instead of a generic glyph (see the catalog note).
 
 ## Catalog
 
