@@ -6,7 +6,7 @@ name: github-stats
 on:
   push:
     branches: [main]
-    paths: ["skills/github-stats/**", "tools/score_skill.py", ".github/workflows/github-stats.yml"]
+    paths: ["skills/github-stats/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/github-stats.yml"]
   pull_request:
     branches: [dev, main]
   workflow_dispatch:
@@ -28,6 +28,7 @@ jobs:
             github-stats:
               - 'skills/github-stats/**'
               - 'tools/score_skill.py'
+              - 'tools/lint_plugin.py'
               - '.github/workflows/github-stats.yml'
       - if: steps.changes.outputs.github-stats == 'true'
         uses: actions/setup-python@v6
@@ -36,6 +37,9 @@ jobs:
       # Tier 1: shared SKILL.md structural lint
       - if: steps.changes.outputs.github-stats == 'true'
         run: python tools/score_skill.py skills/github-stats --min 100
+      # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
+      - if: steps.changes.outputs.github-stats == 'true'
+        run: python tools/lint_plugin.py skills/github-stats
       # Tier 2: lint the bash, run the network-free unit tests
       - if: steps.changes.outputs.github-stats == 'true'
         run: pip install -r requirements-dev.txt
