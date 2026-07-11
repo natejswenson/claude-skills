@@ -1,6 +1,6 @@
 {
   "name": "resume-skill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF. Reading, extraction, and tailoring run agent-native; only PDF rendering and content validation are code.",
   "license": "MIT",

@@ -49,8 +49,8 @@ install its dependencies:
 
 ```bash
 git clone https://github.com/natejswenson/claude-skills.git
-ln -sfn "$PWD/claude-skills/skills/resume" ~/.claude/skills/resume
-cd claude-skills/skills/resume
+ln -sfn "$PWD/claude-skills/skills/resume/skills/resume" ~/.claude/skills/resume
+cd claude-skills/skills/resume/skills/resume
 npm install
 ```
 

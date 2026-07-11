@@ -38,7 +38,7 @@ jobs:
         with:
           python-version: "3.12"
       - if: steps.changes.outputs.devlog == 'true'
-        run: python tools/score_skill.py skills/devlog --min 100
+        run: python tools/score_skill.py skills/devlog/skills/devlog --min 100
       # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
       - if: steps.changes.outputs.devlog == 'true'
         run: python tools/lint_plugin.py skills/devlog
@@ -48,16 +48,16 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: skills/devlog/package-lock.json
+          cache-dependency-path: skills/devlog/skills/devlog/package-lock.json
       - if: steps.changes.outputs.devlog == 'true'
         run: npm install --no-fund
-        working-directory: skills/devlog
+        working-directory: skills/devlog/skills/devlog
       - if: steps.changes.outputs.devlog == 'true'
         run: npm test
-        working-directory: skills/devlog
+        working-directory: skills/devlog/skills/devlog
       - if: steps.changes.outputs.devlog == 'true'
         run: npm run audit
-        working-directory: skills/devlog
+        working-directory: skills/devlog/skills/devlog
 
   release:
     needs: ci

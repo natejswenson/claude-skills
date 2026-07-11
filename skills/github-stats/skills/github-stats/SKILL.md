@@ -1,6 +1,6 @@
 ---
 name: github-stats
-version: 0.1.0
+version: 0.1.1
 user_invocable: true
 description: Show GitHub profile statistics for a user — total commits, followers/following, stars, pull requests, and issues — as a clean summary table, plus a repository browser and per-repo detail. Use when the user asks for "github stats", "github-stats", a GitHub profile summary, "how many stars/followers/commits does <user> have", repo stats for a GitHub account, or wants to create a repo while looking at stats. Powered by the gh CLI.
 ---
