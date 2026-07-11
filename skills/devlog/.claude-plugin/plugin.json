@@ -1,6 +1,6 @@
 {
   "name": "devlog",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Generate a researched, cited blog post for each new version release from git tags, written in your own voice, and publish to GitHub",
   "author": {
     "name": "Nate Swenson"

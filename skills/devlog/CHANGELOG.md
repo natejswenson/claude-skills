@@ -2,6 +2,13 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.4.1 (2026-07-11) — plugin marketplace discovery fix
+
+**Fixed**
+- The skill was not discoverable when installed via the Claude Code plugin marketplace
+  (Claude Desktop's plugin UI showed no skills). `SKILL.md` now lives at the plugin's
+  documented `skills/devlog/SKILL.md` auto-discovery path instead of the plugin root.
+
 ## 0.4.0 (2026-06-28) — researched, end-to-end implementation-guide posts
 
 **Changed**

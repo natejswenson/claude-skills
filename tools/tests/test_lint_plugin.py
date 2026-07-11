@@ -12,16 +12,23 @@ REAL_SKILLS = ["devlog", "resume", "ghostwriter", "github-stats"]
 
 
 def write_plugin(tmp_path, plugin_json, skill_md_body, package_json=None, name="my-skill"):
-    """Write a skill dir with plugin.json + SKILL.md (+ optional package.json)."""
+    """Write a skill dir with plugin.json (+ nested SKILL.md / package.json).
+
+    Mirrors the real layout: plugin.json stays at <skill_dir>/.claude-plugin/,
+    while SKILL.md and package.json live one level deeper at
+    <skill_dir>/skills/<name>/ -- Claude Code's plugin auto-discovery path.
+    """
     skill_dir = tmp_path / name
     skill_dir.mkdir()
     plugin_dir = skill_dir / ".claude-plugin"
     plugin_dir.mkdir()
     if plugin_json is not None:
         (plugin_dir / "plugin.json").write_text(json.dumps(plugin_json), encoding="utf-8")
-    (skill_dir / "SKILL.md").write_text(skill_md_body, encoding="utf-8")
+    nested_skill_dir = skill_dir / "skills" / name
+    nested_skill_dir.mkdir(parents=True)
+    (nested_skill_dir / "SKILL.md").write_text(skill_md_body, encoding="utf-8")
     if package_json is not None:
-        (skill_dir / "package.json").write_text(json.dumps(package_json), encoding="utf-8")
+        (nested_skill_dir / "package.json").write_text(json.dumps(package_json), encoding="utf-8")
     return str(skill_dir)
 
 
@@ -138,7 +145,9 @@ def test_malformed_plugin_json(tmp_path):
     plugin_dir = skill_dir / ".claude-plugin"
     plugin_dir.mkdir()
     (plugin_dir / "plugin.json").write_text("{not valid json", encoding="utf-8")
-    (skill_dir / "SKILL.md").write_text(skill_md(), encoding="utf-8")
+    nested_skill_dir = skill_dir / "skills" / "my-skill"
+    nested_skill_dir.mkdir(parents=True)
+    (nested_skill_dir / "SKILL.md").write_text(skill_md(), encoding="utf-8")
 
     result = lint_plugin(str(skill_dir))
     assert any("JSON parse error" in e for e in result["errors"])

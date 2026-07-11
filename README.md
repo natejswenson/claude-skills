@@ -37,10 +37,10 @@ Each skill's own `README.md` covers its dependencies and configuration.
 Symlink each skill into your skills directory so `SKILL.md` is discovered:
 
 ```bash
-ln -sfn "$PWD/skills/devlog"      ~/.claude/skills/devlog
-ln -sfn "$PWD/skills/ghostwriter" ~/.claude/skills/ghostwriter
-ln -sfn "$PWD/skills/resume"      ~/.claude/skills/resume
-ln -sfn "$PWD/skills/github-stats" ~/.claude/skills/github-stats
+ln -sfn "$PWD/skills/devlog/skills/devlog"           ~/.claude/skills/devlog
+ln -sfn "$PWD/skills/ghostwriter/skills/ghostwriter" ~/.claude/skills/ghostwriter
+ln -sfn "$PWD/skills/resume/skills/resume"           ~/.claude/skills/resume
+ln -sfn "$PWD/skills/github-stats/skills/github-stats" ~/.claude/skills/github-stats
 ```
 
 This stays in place until the marketplace install path above is live-verified
@@ -72,9 +72,12 @@ The required checks + native auto-merge are configured as code in
 ## Repo layout
 
 ```
-.claude-plugin/marketplace.json          # marketplace manifest listing all four skills as plugins
-skills/<name>/                           # one self-contained skill (history preserved via git subtree)
-skills/<name>/.claude-plugin/plugin.json # per-skill plugin manifest (name/version/description)
+.claude-plugin/marketplace.json                  # marketplace manifest listing all four skills as plugins
+skills/<name>/                                   # plugin root (one self-contained skill, history preserved via git subtree)
+skills/<name>/.claude-plugin/plugin.json         # per-skill plugin manifest (name/version/description)
+skills/<name>/skills/<name>/SKILL.md             # the actual skill — nested one level deeper because
+                                                  # Claude Code's plugin auto-discovery only scans
+                                                  # skills/<subdir>/SKILL.md, never a root-level SKILL.md
 .github/workflows/    # _release.yml (reusable) + one caller per skill, path-filtered
                       # + marketplace.yml (marketplace/plugin.json lint, not yet required)
                       # + auto-merge.yml (dev→main) and tools.yml (shared scorer)

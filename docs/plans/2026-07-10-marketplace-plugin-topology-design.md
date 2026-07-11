@@ -312,3 +312,21 @@ SKILL.md-discovery loader behavior in the Error Handling open-risk list). Instea
 
 This ordering guarantees there is always at least one documented, working install method at every
 commit.
+
+## Addendum (2026-07-11) — SKILL.md auto-discovery correction
+
+The Error Handling open-risk list flagged SKILL.md auto-discovery behavior as unverified and
+assumed a root-level `SKILL.md` (directly at `skills/<name>/`, the plugin `source` itself) would
+be discovered. **That assumption was wrong.** After the initial promotion (PR #30/#31), a Claude
+Desktop install of `ghostwriter@claude-skills` showed "This plugin doesn't have any skills or
+agents." Root-caused against `anthropics/claude-plugins-official`'s own `plugin-dev` skill
+documentation and all 23 real `SKILL.md` files across that marketplace (zero exceptions): Claude
+Code's plugin auto-discovery scans `skills/` for **subdirectories** containing `SKILL.md` — never
+a root-level file. The CLI (`claude plugin details`) tolerated the root-level file via an
+undocumented fallback; Claude Desktop does not.
+
+Fixed in a follow-up (`feature/plugin-skill-discovery-fix`): each skill's functional content
+(`SKILL.md`, `scripts/`, `tests/`, etc.) moved one level deeper to
+`skills/<name>/skills/<name>/`, the documented auto-discovery path. Only `.claude-plugin/`,
+`LICENSE`, `README.md`, `CHANGELOG.md` stay at the outer plugin root. See `CLAUDE.md`'s "Adding a
+new skill" checklist (item 9) for the corrected convention going forward.

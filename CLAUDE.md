@@ -141,6 +141,16 @@ only fires once it's on `main`. The first promotion that introduces it is merged
    right after its `score_skill.py` step, gated on the same `steps.changes.outputs.<skill>`
    condition as every other step. `ci / marketplace` needs no per-skill change — its unconditional
    lint validates every skill's `plugin.json` and the marketplace membership invariant automatically.
+9. **`SKILL.md` (and everything the skill's own instructions reference — `scripts/`, `tests/`,
+   `package.json`, etc.) goes at `skills/<skill>/skills/<skill>/SKILL.md`, one level deeper than
+   the plugin root** — Claude Code's plugin auto-discovery only scans `skills/<subdir>/SKILL.md`,
+   never a root-level `SKILL.md` (verified against every plugin in
+   `anthropics/claude-plugins-official`; Claude Desktop enforces this even though the CLI
+   currently tolerates a root-level fallback — don't rely on that). Only `.claude-plugin/`,
+   `LICENSE`, `README.md`, and `CHANGELOG.md` stay at the outer `skills/<skill>/` level. The
+   `score_skill.py` CI invocation argument must point at the nested path
+   (`skills/<skill>/skills/<skill>`); `lint_plugin.py`'s argument stays the plugin root — it
+   resolves the nested SKILL.md/package.json path internally.
 
 ## Design docs
 
