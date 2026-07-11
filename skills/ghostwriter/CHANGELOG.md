@@ -4,6 +4,16 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Personal data (voice profile, brand guide, LinkedIn `.env`) now lives at
+  `~/.claude/ghostwriter/`** instead of inside the skill's own repo/plugin directory. Claude Code
+  and Claude Desktop both read this same home-directory location regardless of which installed
+  copy of the skill is running (dev checkout vs. marketplace plugin), so voice/brand/credentials
+  no longer need separate setup per product or per install. `voice/algorithm.md` stays bundled in
+  the repo (shipped, identical content, not personal).
+
 ## [0.8.1] - 2026-07-11
 
 ### Fixed

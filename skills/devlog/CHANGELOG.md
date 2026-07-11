@@ -2,6 +2,15 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## Unreleased
+
+**Fixed**
+- The ghostwriter voice-fallback path (`GHOSTWRITER_VOICE_DIR` / Step 2 of voice resolution) now
+  points at `~/.claude/ghostwriter/voice`, matching ghostwriter's new shared home-directory
+  location (previously `~/.claude/skills/ghostwriter/voice`, which was never ghostwriter's real
+  install path). devlog's own config location (`~/.claude/skills/devlog/config.json`) is
+  unchanged.
+
 ## 0.4.1 (2026-07-11) — plugin marketplace discovery fix
 
 **Fixed**
