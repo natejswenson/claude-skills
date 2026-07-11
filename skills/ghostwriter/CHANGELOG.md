@@ -4,6 +4,37 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-07-11
+
+### Added
+- **New how-to card family — four on-brand single-image layouts to rotate** so how-to posts never
+  look the same twice: `howto` (numbered spine with icon + command chips), `howto-grid` (2×2
+  numbered tiles), `howto-check` (a saveable green checklist), and `howto-stack` (editorial
+  big-number rows). All share the light design system (eyebrow + byline, headline, lead, optional
+  gotcha band, outcome caption) and a monospace command chip for the real flag/config. Templates in
+  `assets/card-template-howto*.html` + `.card.howto*.light` blocks in `diagram.css`. The family is
+  the default visual for a how-to post; carousels stay available for longer step-by-step content.
+- **Topic → icon cheat-sheet** in `assets/card-icons.md` — an intent-to-glyph lookup so authoring
+  a card's icons is a quick reference rather than scanning the full catalog.
+- **Card-type chooser table** at the top of SKILL.md → Visuals — pick the right template at a
+  glance instead of reading every card description.
+
+### Tested
+- **Deterministic:** `tests/test_card_templates.py` statically verifies every card template's
+  CSS classes resolve in `diagram.css.example`, every card type has a `#canvas` sizing rule, and
+  the how-to family stays in sync across templates / CSS / SKILL.md (catches missing-selector and
+  unregistered-variant defects that were previously only caught by eyeballing a render).
+- **Non-deterministic:** a new `howto-release-still-sources` eval scenario asserts a release
+  how-to still enforces the mandatory source gate (sidecar + `verify_sources.py`).
+
+### Changed
+- **Blank-start topic selection is now one rich menu.** When no topic is given, Generate presents a
+  single `AskUserQuestion` of ~5–6 concrete, ready-to-write ideas — led by recent-AI-release
+  how-tos from the radar digest, plus a personal-project and an interests pick — instead of the
+  two-tier pick-a-lane-then-drill flow. The tapped idea is the anchor; no second drill.
+- **Added a How-to posts playbook** to Generate (implication → steps → gotcha → outcome; real
+  technical meat with an accessible entry; the source gate is mandatory and how-to ≠ "I did this").
+
 ## [0.9.0] - 2026-07-10
 
 ### Changed
