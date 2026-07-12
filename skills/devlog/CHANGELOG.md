@@ -2,6 +2,39 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.6.0 (2026-07-12) — lessons from rewriting the whole back-catalog
+
+Every pre-0.5 entry (38 posts across devlog, ghostwriter, resume, local-fitness) was
+rewritten against the 0.5.0 how-to contract, and each rewrite's friction fed a skill
+refinement. What changed:
+
+**Added (lint)**
+- New `sources-inline` rule: every URL in `## Sources` must also be cited inline in the
+  body — the contract required it, nothing enforced it, and it was the easiest step to
+  silently skip. The finding suggests drop-the-source as an alternative fix so the rule
+  can't push citation stuffing. Fixtures updated to comply.
+
+**Changed (SKILL.md writing contract)**
+- Topics must pass a usability test: prefer the transferable technique a reader could
+  apply to their own project, with a tie-break rule for releases spanning several
+  topics; cross-project (monorepo) commits belong to one post's story only.
+- New contract point 8, **fun to follow**: early runnable win, momentum between steps,
+  payoff visible at each stage — never forced jokes or hype.
+- Reader-side verification must be REAL when cheap: run the blocks, paste actual output
+  (trim/normalize only with disclosure); new **assemble-and-run** self-check step
+  executes the post's own code blocks in order, catching phantom symbols and ordering
+  traps mechanically. Revised functions must be shown as complete redefinitions.
+- Facts anchor at the tag (`git show '<tag>:<file>'`), teaching code may generalize;
+  when a commit message and its diff disagree, the diff wins.
+- Gotcha mining follows the release's code FORWARD in history — a later fix to code
+  this release introduced is prime material when dated honestly.
+- Research: quotes require verbatim re-verification (fetch tools can return
+  quote-shaped summaries that aren't on the page).
+- Punctuation scope settled: voice rules govern prose; the Sources template separator
+  and verbatim commit subjects keep their punctuation. Titles are sentence case.
+- Template flexibility: only Shipped/Gotchas/Sources are mandatory sections; output
+  blocks fence as `text`; the 900-1600 word target counts prose only.
+
 ## 0.5.2 (2026-07-11) — fix: same-date manifest entries buried the newest post
 
 **Fixed**

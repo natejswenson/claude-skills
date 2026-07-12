@@ -15,8 +15,12 @@ system fits together.
 
 ## The validation layer
 
-The heart of it is the stage wrapper. It pulls the declared schema off the stage and
-routes failures to our dead-letter handler:
+The heart of it is the stage wrapper, in the spirit of validating at boundaries
+([Martin Fowler on ContractTest](https://martinfowler.com/bliki/ContractTest.html)) and
+declarative expectations ([Great Expectations documentation](https://docs.greatexpectations.io/docs/)).
+It pulls the declared schema off the stage and routes failures to our dead-letter
+handler, a pattern with deep roots in schema evolution
+([Designing Data-Intensive Applications](https://dataintensive.net/)):
 
 ```python
 def validated(stage):

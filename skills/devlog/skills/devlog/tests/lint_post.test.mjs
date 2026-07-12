@@ -21,9 +21,12 @@ summary: "What a contract test between two generated files actually buys you."
 
 ## Shipped
 
-This release added a contract test. The rest of this post shows how to build one.
+This release added a [contract test](https://martinfowler.com/bliki/ContractTest.html).
+The rest of this post shows how to build one.
 
 ## Build the harvester
+
+Consumer-driven contracts ([Pact docs](https://docs.pact.io/)) put the check at the seam.
 
 \`\`\`python
 def harvest(css: str) -> set[str]:
@@ -33,7 +36,8 @@ def harvest(css: str) -> set[str]:
 ## Gotchas
 
 - Doc comments containing \`class="..."\` produce false positives — strip comments
-  before harvesting, or the test fails on classes that don't exist.
+  before harvesting, or the test fails on classes that don't exist. Keep the check
+  low in the pyramid ([Google Testing Blog](https://testing.googleblog.com/2015/04/just-say-no-to-more-end-to-end-tests.html)).
 
 ## Sources
 
@@ -112,8 +116,9 @@ test('lintPost counts DISTINCT source URLs against minSources', () => {
 `);
   const r = lintPost(dupes, { minSources: 3 });
   assert.ok(r.findings.some((f) => f.rule === 'sources-count'));
-  // The same post passes with minSources 1.
-  assert.equal(lintPost(dupes, { minSources: 1 }).ok, true);
+  // The same post clears the count check with minSources 1 (it still fails
+  // sources-inline, which is that rule's job, not this one's).
+  assert.ok(!lintPost(dupes, { minSources: 1 }).findings.some((f) => f.rule === 'sources-count'));
 });
 
 test('lintPost flags untagged code fences with line numbers', () => {
@@ -162,4 +167,24 @@ test('findUntaggedFences reports only opening fences', () => {
 test('extractSourceUrls dedupes and only accepts http(s)', () => {
   const urls = extractSourceUrls('- [A](https://a.com) [B](https://a.com) [C](http://c.com) [D](javascript:alert(1))');
   assert.deepEqual([...urls].sort(), ['http://c.com', 'https://a.com']);
+});
+
+test('lintPost flags a Sources URL never cited inline', () => {
+  const post = GOOD.replace(
+    '## Sources',
+    `## Sources
+
+- [Uncited extra](https://example.com/uncited) — never referenced in prose`,
+  );
+  const r = lintPost(post, { minSources: 3, filename: 'v0.5.0.md' });
+  assert.equal(r.ok, false);
+  assert.ok(r.findings.some((f) => f.rule === 'sources-inline'
+    && f.message.includes('https://example.com/uncited')));
+});
+
+test('sources-inline tolerates trailing-slash and fragment differences', () => {
+  const post = GOOD
+    .replace('https://docs.pact.io/)', 'https://docs.pact.io/#intro)');
+  const r = lintPost(post, { minSources: 3, filename: 'v0.5.0.md' });
+  assert.ok(!r.findings.some((f) => f.rule === 'sources-inline'), JSON.stringify(r.findings));
 });

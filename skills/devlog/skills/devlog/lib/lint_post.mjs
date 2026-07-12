@@ -79,6 +79,12 @@ export function findUntaggedFences(body) {
   return untagged;
 }
 
+// Ignore differences that don't change the destination: trailing slash and
+// URL fragment.
+export function normalizeUrl(url) {
+  return url.replace(/#.*$/, '').replace(/\/+$/, '');
+}
+
 export function extractSourceUrls(sectionContent) {
   const urls = new Set();
   for (const m of sectionContent.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)) {
@@ -141,6 +147,19 @@ export function lintPost(content, { minSources = 3, filename = null } = {}) {
     const urls = extractSourceUrls(sources.content);
     if (urls.size < minSources) {
       add('sources-count', `Need at least ${minSources} distinct source URLs; found ${urls.size}.`);
+    }
+    // The contract requires claims to carry their citation where they're made,
+    // not only in the bibliography: every Sources URL must also be cited
+    // inline somewhere else in the body.
+    const inline = new Set();
+    for (const s of sections) {
+      if (s.heading === 'Sources') continue;
+      for (const u of extractSourceUrls(s.content)) inline.add(normalizeUrl(u));
+    }
+    for (const u of urls) {
+      if (!inline.has(normalizeUrl(u))) {
+        add('sources-inline', `Source ${u} is listed in \`## Sources\` but never cited inline in the body — cite it where its claim is made, or drop it from Sources.`);
+      }
     }
   }
 
