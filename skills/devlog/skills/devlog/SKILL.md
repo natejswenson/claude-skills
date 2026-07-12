@@ -109,12 +109,20 @@ For each new release, in order:
 
 **3a. Understand what actually shipped.** The scan gives you commit subjects and a
 diffstat. When you need more, read the real changes — validate every hash matches
-`^[0-9a-f]{7,40}$` first, then:
+`^[0-9a-f]{7,40}$` first, then (when a commit message and its diff disagree on a
+specific fact — a count, a filename, a behavior — the diff wins):
 
 ```bash
 git -C '<project.path>' show --stat '<hash>'
 git -C '<project.path>' show '<hash>' -- '<project.pathFilter>'
 ```
+
+Teach the code **as it existed at this tag**, not as it looks today — the repo may have
+moved on since the release. When you need a file's state rather than a diff, use
+`git -C '<project.path>' show '<tag>:<file>'` instead of reading the working tree.
+This anchors the **facts** (what shipped, what it did); the teaching implementation may
+still be a cleaner generalization per the how-to contract — anchor claims at the tag,
+generalize the code.
 
 **3b. Derive the topic.** Identify the **one** substantive engineering topic the work
 touched (occasionally more, only when the work genuinely spans them) within
@@ -122,17 +130,34 @@ touched (occasionally more, only when the work genuinely spans them) within
 shipping a `feature→dev→main` flow → branching strategy and release engineering). Never
 pad with topics the work didn't touch.
 
+Between candidate topics, pick the one the reader can most plausibly **use**: a
+transferable technique they could apply to their own project this week beats project
+trivia or niche internals. If the obvious topic is repo-specific, step up one level to
+the general pattern behind it — the test is "could a reader finish this how-to and have
+something working of their own?" When a release spans two candidate topics (or two
+releases in one run share one), don't write the same guide twice: give each post the
+most usable topic the run hasn't already covered. In a monorepo, one commit can appear
+in several projects' ranges — it belongs to the post whose release story it is; other
+posts leave it out of their narrative and `## Changelog` (check what sibling entries
+already cover, across all projects).
+
 **3c. Research before writing.** Use web search/fetch to gather at least
 `deepDive.minSources` **distinct** reputable sources: official docs and release notes,
 standards bodies, primary research, well-regarded engineering writing. Avoid SEO farms.
 Every specific external claim (a version, a behavior, a study, a definition) must be
 backed by a source you actually verified — if you can't source it, don't claim it. Don't
-lean on one URL for most claims. Keep a working `(claim, url)` list.
+lean on one URL for most claims. Keep a working `(claim, url)` list. Fetch tools can
+summarize a page into quote-shaped text that isn't on it: before putting anything in
+quotation marks, re-fetch asking for the verbatim wording and drop the quotes (paraphrase
+instead) if it can't be confirmed.
 
 **3d. Mine the gotchas.** Gotchas are the post's signature — **real traps from the
 user's own experience**, never invented. Look for them in: fix commits that follow the
 feature commits in the range, revert commits, `CHANGELOG` "Fixed" entries for this
-version, and corrections visible in the diffs (an approach that changed mid-range). Each
+version, and corrections visible in the diffs (an approach that changed mid-range).
+Also follow the code this release introduced **forward** in history (`git log '<tag>..'
+-- <files it touched>`): a later fix to that same code is prime gotcha material, as long
+as the post says plainly when it was discovered ("this bit us a few weeks later"). Each
 gotcha is written as **trap → symptom → escape**, concretely. If the history genuinely
 shows none, the `## Gotchas` section instead covers the sourced failure modes a reader
 will hit first, clearly framed as "what to watch for" rather than as personal war stories.
@@ -141,7 +166,7 @@ will hit first, clearly framed as "what to watch for" rather than as personal wa
 
 ```markdown
 ---
-title: "<essay-style title; NOT 'release vX.Y.Z'>"
+title: "<essay-style title in sentence case (capitalize only the first word and proper nouns); NOT 'release vX.Y.Z'>"
 date: <release date from scan>
 project: <project key>
 version: <version from scan>
@@ -153,6 +178,11 @@ summary: "<1-2 sentence hook that frames the how-to, not just what shipped>"
 
 <2-4 sentences: what this release delivered, plainly, then pivot to the topic the guide
 teaches. The only purely-changelog part.>
+
+<!-- Between Shipped and Gotchas, the headings below are the default shape, not a
+requirement — only Shipped, Gotchas, and Sources are mandatory. Merge or reorder the
+middle sections when the walkthrough flows better that way. Fence command OUTPUT
+blocks as `text`. -->
 
 ## <Descriptive heading: setup / prerequisites>
 
@@ -189,11 +219,17 @@ the wiring between pieces, not just the interesting line.>
 2. **Complete code.** Every symbol a code block references is defined in an earlier
    block or explicitly stubbed with a one-line note ("`load_fixtures()` returns your test
    DB handle"). The blocks compose into a runnable whole — no phantom fixtures or elided
-   helpers. Aim for the essential blocks (roughly 3-6 for a substantive feature); a clean,
+   helpers, and if a later block revises an earlier function, show the complete new
+   function, never a fragment calling helpers no block defines. Aim for the essential blocks (roughly 3-6 for a substantive feature); a clean,
    general version of the concept is the goal, and never claim illustrative code is
    verbatim production source.
 3. **Reader-side verification.** The verify step gives commands the READER runs against
    THEIR implementation, with expected output — not proof that the author's repo works.
+   When the blocks are cheap to execute (scratch dir, no external services), actually
+   run them and paste the real output. Never present output as observed if you didn't
+   run the command; if you can't run it, frame the expectation ("you should see…").
+   Verbose real output (tracebacks, long logs) may be trimmed to the signal lines or
+   whitespace-normalized when the post says so.
 4. **Real gotchas** per 3d.
 5. **Source diversity** per 3c, cited inline as markdown links AND in `## Sources`.
 6. **Honest scope.** A single test file is not "end-to-end". Size the title, summary, and
@@ -202,12 +238,21 @@ the wiring between pieces, not just the interesting line.>
    teaser.
 7. **No leaked repo-specific artifacts.** Genericize or explain anything a stranger
    would trip on (`.example` suffixes, monorepo nesting, internal tool names).
+8. **Fun to follow.** The guide reads like a generous colleague walking the reader
+   through a build they'll actually finish: give an early runnable win, keep momentum
+   between steps, and make the payoff visible at each stage (show real output, not just
+   code). Fun comes from quick wins and concrete results — never forced jokes, hype, or
+   exclamation points.
 
 **Separate fact from concept.** What the user *did* comes only from commits/diffs —
 never invent metrics, motivations, or outcomes. What the topic *is* comes from the cited
 sources. Keep the two distinguishable. Match the voice profile + `voice-notes.md`
-(authenticity, anti-AI-tell, and punctuation rules), but NOT any length/reach rules —
-target ~900-1600 words for a substantive feature, shorter for a small change. Only link
+(authenticity, anti-AI-tell, and punctuation rules — these govern the PROSE; the em dash
+in the `## Sources` template line is fixed template punctuation, and verbatim quoted
+data such as commit subjects in `## Changelog` keeps its original punctuation),
+but NOT any length/reach rules —
+target ~900-1600 words of prose (code blocks don't count) for a substantive feature,
+shorter for a small change. Only link
 commits where `public: true` in the scan; omit `## Changelog` if none are.
 
 ### Step 4: Self-check before publishing
@@ -217,10 +262,15 @@ Write each draft with the **Write tool** (never a bash heredoc) to a temp dir
 calls). Name it `<version>.md`. Then:
 
 1. **Lint:** `npx -y @natjswenson/devlog lint-post '<abs-draft-path>'` — fix every
-   finding (missing sections, thin gotchas, too few distinct sources, untagged fences).
-2. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
-   points 1-7 above plus voice adherence. Revise the draft for any point that fails.
-3. At most **two** revision passes; then proceed with the best version and carry any
+   finding (missing sections, thin gotchas, too few distinct sources, sources listed
+   but never cited inline, untagged fences).
+2. **Assemble-and-run check:** when the post's code is runnable without external
+   services, copy its code blocks in order into a scratch dir and execute them exactly
+   as a reader would. Anything undefined, out of order, or missing an entrypoint fails
+   the stranger test mechanically — fix the post, not just the scratch copy.
+3. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
+   points 1-8 above plus voice adherence. Revise the draft for any point that fails.
+4. At most **two** revision passes; then proceed with the best version and carry any
    residual weakness into the final summary (e.g. "v0.5.0: only 2 gotchas had commit
    evidence").
 
