@@ -211,7 +211,8 @@ the wiring between pieces, not just the interesting line.>
 2. **Complete code.** Every symbol a code block references is defined in an earlier
    block or explicitly stubbed with a one-line note ("`load_fixtures()` returns your test
    DB handle"). The blocks compose into a runnable whole — no phantom fixtures or elided
-   helpers. Aim for the essential blocks (roughly 3-6 for a substantive feature); a clean,
+   helpers, and if a later block revises an earlier function, show the complete new
+   function, never a fragment calling helpers no block defines. Aim for the essential blocks (roughly 3-6 for a substantive feature); a clean,
    general version of the concept is the goal, and never claim illustrative code is
    verbatim production source.
 3. **Reader-side verification.** The verify step gives commands the READER runs against
