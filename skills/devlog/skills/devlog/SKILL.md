@@ -228,8 +228,8 @@ the wiring between pieces, not just the interesting line.>
    When the blocks are cheap to execute (scratch dir, no external services), actually
    run them and paste the real output. Never present output as observed if you didn't
    run the command; if you can't run it, frame the expectation ("you should see…").
-   Verbose real output (tracebacks, long logs) may be trimmed to the signal lines when
-   the post says it was trimmed.
+   Verbose real output (tracebacks, long logs) may be trimmed to the signal lines or
+   whitespace-normalized when the post says so.
 4. **Real gotchas** per 3d.
 5. **Source diversity** per 3c, cited inline as markdown links AND in `## Sources`.
 6. **Honest scope.** A single test file is not "end-to-end". Size the title, summary, and
@@ -248,7 +248,8 @@ the wiring between pieces, not just the interesting line.>
 never invent metrics, motivations, or outcomes. What the topic *is* comes from the cited
 sources. Keep the two distinguishable. Match the voice profile + `voice-notes.md`
 (authenticity, anti-AI-tell, and punctuation rules — these govern the PROSE; the em dash
-in the `## Sources` template line is fixed template punctuation, not a voice violation),
+in the `## Sources` template line is fixed template punctuation, and verbatim quoted
+data such as commit subjects in `## Changelog` keeps its original punctuation),
 but NOT any length/reach rules —
 target ~900-1600 words for a substantive feature, shorter for a small change. Only link
 commits where `public: true` in the scan; omit `## Changelog` if none are.
