@@ -26,7 +26,9 @@ pip install httpx==0.27.0
 
 Start with the delay calculation, isolated so you can unit-test it. Full jitter means:
 sleep a uniform random amount between 0 and the exponential ceiling, which spreads
-retrying clients across the whole window instead of synchronizing them into waves.
+retrying clients across the whole window instead of synchronizing them into waves —
+synchronized retries are exactly how a blip amplifies into an outage
+([Google SRE Book: Handling Overload](https://sre.google/sre-book/handling-overload/)).
 
 ```python
 import random
@@ -39,8 +41,9 @@ def backoff_delay(attempt: int, base: float = 0.5, cap: float = 30.0) -> float:
 
 ## Wrap it into a retry decorator
 
-The decorator retries only on retryable failures (connection errors and 5xx), never on
-4xx — a 404 will be a 404 no matter how many times you ask.
+The decorator retries only on retryable failures (connection errors — httpx's
+[`TransportError` hierarchy](https://www.python-httpx.org/exceptions/) — and 5xx), never
+on 4xx: a 404 will be a 404 no matter how many times you ask.
 
 ```python
 import functools
@@ -104,8 +107,9 @@ randomized delays, then the final 503 returned.
   errors) explicitly.
 - **Equal jitter isn't enough under real outages.** I started with `ceiling/2 +
   uniform(0, ceiling/2)`. Symptom: load tests showed retry waves still clustering at the
-  half-window mark. Escape: full jitter (`uniform(0, ceiling)`), which the AWS analysis
-  below shows keeps total calls lowest across client counts.
+  half-window mark. Escape: full jitter (`uniform(0, ceiling)`), which the
+  [AWS backoff analysis](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
+  shows keeps total calls lowest across client counts.
 
 ## Sources
 
