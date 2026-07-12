@@ -126,6 +126,12 @@ touched (occasionally more, only when the work genuinely spans them) within
 shipping a `feature→dev→main` flow → branching strategy and release engineering). Never
 pad with topics the work didn't touch.
 
+Between candidate topics, pick the one the reader can most plausibly **use**: a
+transferable technique they could apply to their own project this week beats project
+trivia or niche internals. If the obvious topic is repo-specific, step up one level to
+the general pattern behind it — the test is "could a reader finish this how-to and have
+something working of their own?"
+
 **3c. Research before writing.** Use web search/fetch to gather at least
 `deepDive.minSources` **distinct** reputable sources: official docs and release notes,
 standards bodies, primary research, well-regarded engineering writing. Avoid SEO farms.
@@ -206,6 +212,11 @@ the wiring between pieces, not just the interesting line.>
    teaser.
 7. **No leaked repo-specific artifacts.** Genericize or explain anything a stranger
    would trip on (`.example` suffixes, monorepo nesting, internal tool names).
+8. **Fun to follow.** The guide reads like a generous colleague walking the reader
+   through a build they'll actually finish: give an early runnable win, keep momentum
+   between steps, and make the payoff visible at each stage (show real output, not just
+   code). Fun comes from quick wins and concrete results — never forced jokes, hype, or
+   exclamation points.
 
 **Separate fact from concept.** What the user *did* comes only from commits/diffs —
 never invent metrics, motivations, or outcomes. What the topic *is* comes from the cited
@@ -223,7 +234,7 @@ calls). Name it `<version>.md`. Then:
 1. **Lint:** `npx -y @natjswenson/devlog lint-post '<abs-draft-path>'` — fix every
    finding (missing sections, thin gotchas, too few distinct sources, untagged fences).
 2. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
-   points 1-7 above plus voice adherence. Revise the draft for any point that fails.
+   points 1-8 above plus voice adherence. Revise the draft for any point that fails.
 3. At most **two** revision passes; then proceed with the best version and carry any
    residual weakness into the final summary (e.g. "v0.5.0: only 2 gotchas had commit
    evidence").
