@@ -119,6 +119,9 @@ git -C '<project.path>' show '<hash>' -- '<project.pathFilter>'
 Teach the code **as it existed at this tag**, not as it looks today — the repo may have
 moved on since the release. When you need a file's state rather than a diff, use
 `git -C '<project.path>' show '<tag>:<file>'` instead of reading the working tree.
+This anchors the **facts** (what shipped, what it did); the teaching implementation may
+still be a cleaner generalization per the how-to contract — anchor claims at the tag,
+generalize the code.
 
 **3b. Derive the topic.** Identify the **one** substantive engineering topic the work
 touched (occasionally more, only when the work genuinely spans them) within
@@ -209,6 +212,9 @@ the wiring between pieces, not just the interesting line.>
    verbatim production source.
 3. **Reader-side verification.** The verify step gives commands the READER runs against
    THEIR implementation, with expected output — not proof that the author's repo works.
+   When the blocks are cheap to execute (scratch dir, no external services), actually
+   run them and paste the real output. Never present output as observed if you didn't
+   run the command; if you can't run it, frame the expectation ("you should see…").
 4. **Real gotchas** per 3d.
 5. **Source diversity** per 3c, cited inline as markdown links AND in `## Sources`.
 6. **Honest scope.** A single test file is not "end-to-end". Size the title, summary, and
