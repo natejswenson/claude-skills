@@ -2,6 +2,17 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.5.2 (2026-07-11) — fix: same-date manifest entries buried the newest post
+
+**Fixed**
+- `publish-entry` sorted the manifest by date only; several releases cut on the same
+  day kept insertion order, so the feed rendered them oldest-version-on-top and the
+  newest post landed at the bottom of the day's group (hit live with
+  v0.4.2/v0.5.0/v0.5.1, all dated 2026-07-11). Same-date ties now break by version,
+  highest first, with numeric component comparison (v0.10.0 > v0.9.0). Date still wins
+  overall so a backported tag sorts by its release date. Legacy rows without a
+  `version` keep their relative order.
+
 ## 0.5.1 (2026-07-11) — fix: npx invocations were a silent no-op
 
 **Fixed**

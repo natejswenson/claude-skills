@@ -71,6 +71,22 @@ test('publishEntry keeps the manifest newest-first by date', (t) => {
   assert.deepEqual(readManifest(cloneDir).entries.map((e) => e.version), ['v0.3.0', 'v0.2.0', 'v0.1.9']);
 });
 
+test('publishEntry breaks same-date ties by version, newest first', (t) => {
+  // Several releases cut on one day (the 0.4.2/0.5.0/0.5.1 case): date-only
+  // stable sorting buried the newest post under its predecessors.
+  const { root, cloneDir } = makeDirs(t);
+  const date = '2026-07-11';
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.4.2', entryPath: draft(root, 'v0.4.2', { date }) });
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.5.0', entryPath: draft(root, 'v0.5.0', { date }) });
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.5.1', entryPath: draft(root, 'v0.5.1', { date }) });
+  // Multi-digit component: v0.10.0 must beat v0.9.0 (numeric, not lexicographic).
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.10.0', entryPath: draft(root, 'v0.10.0', { date }) });
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.9.0', entryPath: draft(root, 'v0.9.0', { date }) });
+
+  assert.deepEqual(readManifest(cloneDir).entries.map((e) => e.version),
+    ['v0.10.0', 'v0.9.0', 'v0.5.1', 'v0.5.0', 'v0.4.2']);
+});
+
 test('publishEntry tolerates legacy manifest entries without a version field', (t) => {
   const { root, cloneDir } = makeDirs(t);
   mkdirSync(join(cloneDir, 'proj'));
