@@ -251,7 +251,8 @@ sources. Keep the two distinguishable. Match the voice profile + `voice-notes.md
 in the `## Sources` template line is fixed template punctuation, and verbatim quoted
 data such as commit subjects in `## Changelog` keeps its original punctuation),
 but NOT any length/reach rules —
-target ~900-1600 words for a substantive feature, shorter for a small change. Only link
+target ~900-1600 words of prose (code blocks don't count) for a substantive feature,
+shorter for a small change. Only link
 commits where `public: true` in the scan; omit `## Changelog` if none are.
 
 ### Step 4: Self-check before publishing
