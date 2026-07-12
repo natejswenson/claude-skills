@@ -158,7 +158,7 @@ export function lintPost(content, { minSources = 3, filename = null } = {}) {
     }
     for (const u of urls) {
       if (!inline.has(normalizeUrl(u))) {
-        add('sources-inline', `Source ${u} is listed in \`## Sources\` but never cited inline in the body.`);
+        add('sources-inline', `Source ${u} is listed in \`## Sources\` but never cited inline in the body — cite it where its claim is made, or drop it from Sources.`);
       }
     }
   }

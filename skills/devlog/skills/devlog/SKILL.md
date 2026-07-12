@@ -179,6 +179,11 @@ summary: "<1-2 sentence hook that frames the how-to, not just what shipped>"
 <2-4 sentences: what this release delivered, plainly, then pivot to the topic the guide
 teaches. The only purely-changelog part.>
 
+<!-- Between Shipped and Gotchas, the headings below are the default shape, not a
+requirement — only Shipped, Gotchas, and Sources are mandatory. Merge or reorder the
+middle sections when the walkthrough flows better that way. Fence command OUTPUT
+blocks as `text`. -->
+
 ## <Descriptive heading: setup / prerequisites>
 
 <What a reader needs before the core build: dependencies, config, data model. Code block
