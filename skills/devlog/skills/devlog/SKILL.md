@@ -249,9 +249,13 @@ calls). Name it `<version>.md`. Then:
 1. **Lint:** `npx -y @natjswenson/devlog lint-post '<abs-draft-path>'` — fix every
    finding (missing sections, thin gotchas, too few distinct sources, sources listed
    but never cited inline, untagged fences).
-2. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
+2. **Assemble-and-run check:** when the post's code is runnable without external
+   services, copy its code blocks in order into a scratch dir and execute them exactly
+   as a reader would. Anything undefined, out of order, or missing an entrypoint fails
+   the stranger test mechanically — fix the post, not just the scratch copy.
+3. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
    points 1-8 above plus voice adherence. Revise the draft for any point that fails.
-3. At most **two** revision passes; then proceed with the best version and carry any
+4. At most **two** revision passes; then proceed with the best version and carry any
    residual weakness into the final summary (e.g. "v0.5.0: only 2 gotchas had commit
    evidence").
 
