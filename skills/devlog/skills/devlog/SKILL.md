@@ -146,7 +146,10 @@ already cover, across all projects).
 standards bodies, primary research, well-regarded engineering writing. Avoid SEO farms.
 Every specific external claim (a version, a behavior, a study, a definition) must be
 backed by a source you actually verified — if you can't source it, don't claim it. Don't
-lean on one URL for most claims. Keep a working `(claim, url)` list.
+lean on one URL for most claims. Keep a working `(claim, url)` list. Fetch tools can
+summarize a page into quote-shaped text that isn't on it: before putting anything in
+quotation marks, re-fetch asking for the verbatim wording and drop the quotes (paraphrase
+instead) if it can't be confirmed.
 
 **3d. Mine the gotchas.** Gotchas are the post's signature — **real traps from the
 user's own experience**, never invented. Look for them in: fix commits that follow the
