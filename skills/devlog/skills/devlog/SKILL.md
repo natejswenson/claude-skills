@@ -116,6 +116,10 @@ git -C '<project.path>' show --stat '<hash>'
 git -C '<project.path>' show '<hash>' -- '<project.pathFilter>'
 ```
 
+Teach the code **as it existed at this tag**, not as it looks today — the repo may have
+moved on since the release. When you need a file's state rather than a diff, use
+`git -C '<project.path>' show '<tag>:<file>'` instead of reading the working tree.
+
 **3b. Derive the topic.** Identify the **one** substantive engineering topic the work
 touched (occasionally more, only when the work genuinely spans them) within
 `deepDive.topicDomains`. The topic is the general concept *behind* what shipped (e.g.
@@ -141,7 +145,7 @@ will hit first, clearly framed as "what to watch for" rather than as personal wa
 
 ```markdown
 ---
-title: "<essay-style title; NOT 'release vX.Y.Z'>"
+title: "<essay-style title in sentence case (capitalize only the first word and proper nouns); NOT 'release vX.Y.Z'>"
 date: <release date from scan>
 project: <project key>
 version: <version from scan>
