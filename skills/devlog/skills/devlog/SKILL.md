@@ -109,7 +109,8 @@ For each new release, in order:
 
 **3a. Understand what actually shipped.** The scan gives you commit subjects and a
 diffstat. When you need more, read the real changes — validate every hash matches
-`^[0-9a-f]{7,40}$` first, then:
+`^[0-9a-f]{7,40}$` first, then (when a commit message and its diff disagree on a
+specific fact — a count, a filename, a behavior — the diff wins):
 
 ```bash
 git -C '<project.path>' show --stat '<hash>'
@@ -135,7 +136,10 @@ trivia or niche internals. If the obvious topic is repo-specific, step up one le
 the general pattern behind it — the test is "could a reader finish this how-to and have
 something working of their own?" When a release spans two candidate topics (or two
 releases in one run share one), don't write the same guide twice: give each post the
-most usable topic the run hasn't already covered.
+most usable topic the run hasn't already covered. In a monorepo, one commit can appear
+in several projects' ranges — it belongs to the post whose release story it is; other
+posts leave it out of their narrative and `## Changelog` (check what sibling entries
+already cover, across all projects).
 
 **3c. Research before writing.** Use web search/fetch to gather at least
 `deepDive.minSources` **distinct** reputable sources: official docs and release notes,
