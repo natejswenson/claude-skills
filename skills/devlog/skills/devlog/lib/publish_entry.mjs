@@ -7,12 +7,30 @@ import { join } from 'node:path';
 import { RE_PROJECT_KEY, RE_FINAL_RELEASE, atomicWriteJSON } from './core.mjs';
 import { parseFrontmatter } from './lint_post.mjs';
 
-// Newest-first by date; ties keep insertion order (Array.prototype.sort is
-// stable). Date order is normally also version order, but a backported tag
-// (v1.9.1 tagged after v2.0.0) can diverge — sorting by date matches how the
-// feed renders.
+// Newest-first by date; same-date ties break by version, highest first.
+// Without the tiebreak, several releases cut on one day render oldest-on-top
+// in the feed (stable sort keeps insertion order), burying the newest post
+// under its predecessors. Date still wins overall because a backported tag
+// (v1.9.1 tagged after v2.0.0) must sort by when it was released.
+function versionNums(entry) {
+  const m = /^v(\d+(?:\.\d+)*)$/.exec(entry.version || '');
+  return m ? m[1].split('.').map(Number) : null;
+}
+
+function compareVersionsDesc(a, b) {
+  const va = versionNums(a);
+  const vb = versionNums(b);
+  if (!va || !vb) return 0; // legacy rows without a version keep their order
+  for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+    const d = (vb[i] ?? 0) - (va[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
 function sortEntries(entries) {
-  return entries.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return entries.slice().sort((a, b) =>
+    String(b.date).localeCompare(String(a.date)) || compareVersionsDesc(a, b));
 }
 
 export function publishEntry({ cloneDir, project, version, entryPath }) {
