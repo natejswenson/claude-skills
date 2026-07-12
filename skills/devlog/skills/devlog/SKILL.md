@@ -130,7 +130,9 @@ Between candidate topics, pick the one the reader can most plausibly **use**: a
 transferable technique they could apply to their own project this week beats project
 trivia or niche internals. If the obvious topic is repo-specific, step up one level to
 the general pattern behind it — the test is "could a reader finish this how-to and have
-something working of their own?"
+something working of their own?" When a release spans two candidate topics (or two
+releases in one run share one), don't write the same guide twice: give each post the
+most usable topic the run hasn't already covered.
 
 **3c. Research before writing.** Use web search/fetch to gather at least
 `deepDive.minSources` **distinct** reputable sources: official docs and release notes,
@@ -142,7 +144,10 @@ lean on one URL for most claims. Keep a working `(claim, url)` list.
 **3d. Mine the gotchas.** Gotchas are the post's signature — **real traps from the
 user's own experience**, never invented. Look for them in: fix commits that follow the
 feature commits in the range, revert commits, `CHANGELOG` "Fixed" entries for this
-version, and corrections visible in the diffs (an approach that changed mid-range). Each
+version, and corrections visible in the diffs (an approach that changed mid-range).
+Also follow the code this release introduced **forward** in history (`git log '<tag>..'
+-- <files it touched>`): a later fix to that same code is prime gotcha material, as long
+as the post says plainly when it was discovered ("this bit us a few weeks later"). Each
 gotcha is written as **trap → symptom → escape**, concretely. If the history genuinely
 shows none, the `## Gotchas` section instead covers the sourced failure modes a reader
 will hit first, clearly framed as "what to watch for" rather than as personal war stories.
