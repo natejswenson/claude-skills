@@ -243,7 +243,8 @@ Write each draft with the **Write tool** (never a bash heredoc) to a temp dir
 calls). Name it `<version>.md`. Then:
 
 1. **Lint:** `npx -y @natjswenson/devlog lint-post '<abs-draft-path>'` — fix every
-   finding (missing sections, thin gotchas, too few distinct sources, untagged fences).
+   finding (missing sections, thin gotchas, too few distinct sources, sources listed
+   but never cited inline, untagged fences).
 2. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
    points 1-8 above plus voice adherence. Revise the draft for any point that fails.
 3. At most **two** revision passes; then proceed with the best version and carry any
