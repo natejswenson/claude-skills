@@ -1,0 +1,61 @@
+{
+  "comment": "Prose guardrails in SKILL.md that must survive edits. Each pattern is a case-insensitive regex tested against the full SKILL.md text by tests/skill_contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
+  "prose": [
+    {
+      "id": "never-mutates-directly",
+      "pattern": "never mutates repo state directly",
+      "rationale": "The deterministic/nondeterministic split is load-bearing: the agent decides, the CLI does. Losing this line reopens ad-hoc direct gh/git calls from the agent."
+    },
+    {
+      "id": "always-confirm-before-apply",
+      "pattern": "Wait for explicit confirmation before proceeding",
+      "rationale": "A plan must be shown and confirmed before any real apply — this is the safety property the whole design rests on."
+    },
+    {
+      "id": "ambiguous-protection-owner-prompt",
+      "pattern": "Do NOT silently pick either value",
+      "rationale": "The round-2 false-positive fix: ambiguous branch protection must be explicitly disambiguated with the user, never silently defaulted, or protection ends up un-audited and un-managed by anyone."
+    },
+    {
+      "id": "empty-required-checks-refusal",
+      "pattern": "refuses to wire up auto-merge with zero required checks",
+      "rationale": "The fail-open guard: an empty requiredChecks list must never silently enable an unprotected auto-merge."
+    },
+    {
+      "id": "hand-edit-never-silent-force",
+      "pattern": "[Nn]ever silently pass `--force`",
+      "rationale": "A hand-edited template file must always be surfaced and explicitly confirmed per entry, never auto-overridden."
+    },
+    {
+      "id": "toctou-reredetect",
+      "pattern": "re-run the plan step, don't retry the same `--expect-state-hash`",
+      "rationale": "A TOCTOU abort means state drifted — retrying the same stale hash would just abort again or, worse, apply against stale assumptions if the guard were bypassed."
+    },
+    {
+      "id": "auto-mode-refuses",
+      "pattern": "refuses to run.{0,40}against a config with `release\\.mode: \"auto\"`",
+      "rationale": "Auto mode is unimplemented in this version; it must fail loudly, never silently no-op, so a user's config request isn't silently ignored."
+    },
+    {
+      "id": "argv-style-no-shell",
+      "pattern": "argv-style.{0,60}no shell",
+      "rationale": "Command-injection defense: every gh/git invocation must stay argv-style, never a shell string built from user input."
+    },
+    {
+      "id": "config-path-fixed",
+      "pattern": "[Nn]ever write shipflow's config anywhere other than `\\.github/shipflow\\.json`",
+      "rationale": "A committed, repo-specific policy file must live in the target repo's own tree at a fixed, predictable path — never inside the shipped skill package, never at an arbitrary location."
+    },
+    {
+      "id": "first-run-interview-mandatory",
+      "pattern": "even when detected values already look correct",
+      "rationale": "First live end-to-end run (2026-07-14, against natejswenson/1.00s) showed an orchestrating agent can silently skip the confirmation turn when detected values look right. This line makes the interview checkpoint explicit and unskippable, not just implied by 'confirm with the user.'"
+    },
+    {
+      "id": "ci-scaffold-never-overwrites",
+      "pattern": "[Nn]ever silently overwrite an existing workflow file",
+      "rationale": "Agent-driven CI scaffolding (added after 1.00s had no pull_request-triggered CI at all) must never clobber a workflow file that's already there — same confirm-before-write discipline as every other mutation in this skill, applied to a step the CLI itself never touches."
+    }
+  ],
+  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]
+}
