@@ -30,6 +30,21 @@ against `claude-skills` itself:
   entry — it's an expected environment limitation, not a shipflow bug. No
   fallback to classic branch protection was added (declined — out of scope
   for this fix).
+- **`requiredChecks` candidates are now filtered to actually PR-triggered
+  jobs.** `detect`'s `workflows.jobNames` previously listed every job name
+  from every workflow file regardless of its `on:` trigger — a
+  `schedule`/`workflow_dispatch`-only job (like `1.00s`'s `weekly-archive.yml`)
+  could be picked as a required check that would never run on a PR and
+  would block every future merge forever. Now only jobs from
+  `pull_request`/`pull_request_target`-triggered workflows are offered as
+  candidates.
+- **Agent-driven CI scaffolding when no PR check exists.** Rather than
+  teaching shipflow's deterministic CLI about every language/build-tool
+  ecosystem, first-run setup now has the orchestrating agent investigate the
+  repo and draft a starter `pull_request`-triggered build+test workflow when
+  the (now-accurate) required-checks candidate list is empty, with the same
+  confirm-before-write discipline as every other step — never a silent
+  overwrite, always shown to the user first.
 
 ## 0.1.0 (2026-07-14) — Phase A: manual-gate core
 

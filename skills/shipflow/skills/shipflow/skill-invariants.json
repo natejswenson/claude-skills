@@ -50,6 +50,11 @@
       "id": "first-run-interview-mandatory",
       "pattern": "even when detected values already look correct",
       "rationale": "First live end-to-end run (2026-07-14, against natejswenson/1.00s) showed an orchestrating agent can silently skip the confirmation turn when detected values look right. This line makes the interview checkpoint explicit and unskippable, not just implied by 'confirm with the user.'"
+    },
+    {
+      "id": "ci-scaffold-never-overwrites",
+      "pattern": "[Nn]ever silently overwrite an existing workflow file",
+      "rationale": "Agent-driven CI scaffolding (added after 1.00s had no pull_request-triggered CI at all) must never clobber a workflow file that's already there — same confirm-before-write discipline as every other mutation in this skill, applied to a step the CLI itself never touches."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]
