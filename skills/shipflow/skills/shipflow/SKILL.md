@@ -26,43 +26,53 @@ user; the CLI is the only thing that *does*.
 
 ## First-run setup
 
+**This whole section is a mandatory interactive interview, not a narrate-and-proceed pass.** Steps 2–4 below must end with the agent presenting a plain-language summary of what was detected and what's about to be written, and waiting for the user's explicit go-ahead — even when detected values already look correct. Never go from step 1's `detect` straight to step 4's config write without that confirmation turn; a value looking right is not the same as the user confirming it.
+
 1. **Detect.** Run:
    ```
    npx -y @natjswenson/shipflow detect --repo <path> --main main --dev dev
    ```
    (Use whatever branch names the user has, or `main`/`dev` as a starting guess — you'll confirm them next.) This prints a `RepoState` plus a `protectionOwnerClassification` of `"external"`, `"shipflow"`, or `"ambiguous"`.
 
-2. **Confirm branch names and required checks with the user.** Show `workflows.jobNames` from the detect output as candidate `requiredChecks` and let the user confirm/edit the list. **An empty `requiredChecks` list is a fail-open state, not a valid steady state** — `shipflow apply` will hard-refuse to enable auto-merge with zero required checks (see Error handling below). Don't let the user skip this without understanding that consequence.
+2. **Resolve a default-branch mismatch, if any.** Compare `repoState.repoSettings.defaultBranch` (the repo's actual GitHub default branch) to the `--main` name used in step 1. If they match, skip to step 3. If they differ (e.g. the repo's default is `master`), ask the user explicitly — do not silently assume either path:
+   - **Map onto the existing default branch** — set the config's `branches.main` to the detected default branch name and continue with the rest of setup treating that as "main." No mutating calls needed; `branches.main` is fully configurable.
+   - **Switch the repo's default branch to `main`** — flag this as a bigger, more disruptive action than the rest of setup (it affects every collaborator and every open PR), get a distinct explicit confirmation for it specifically, separate from the general setup go-ahead, then run:
+     ```
+     npx -y @natjswenson/shipflow rename-default-branch --repo <path> --branch <old-default> --to main
+     ```
+     GitHub natively retargets the default-branch pointer and open PRs' base ref. On success, tell the user their own local checkout still points at the old name and needs `git fetch origin && git checkout main` to follow, then re-run step 1's `detect` (repo state changed) before continuing.
 
-3. **Resolve `protectionOwner`:**
+3. **Confirm branch names and required checks with the user.** Show `workflows.jobNames` from the detect output as candidate `requiredChecks` and let the user confirm/edit the list. **An empty `requiredChecks` list is a fail-open state, not a valid steady state** — `shipflow apply` will hard-refuse to enable auto-merge with zero required checks (see Error handling below). Don't let the user skip this without understanding that consequence.
+
+4. **Resolve `protectionOwner`:**
    - `"external"` → tell the user which settings-as-code artifact was found (`settingsAsCodeArtifact` in the detect output) and that shipflow will defer to it, managing only cleanup/automerge/release, not installing a competing ruleset.
    - `"shipflow"` → tell the user no existing branch protection was found and shipflow will own it going forward.
    - `"ambiguous"` → **branch protection exists but no settings-as-code artifact was found** (e.g. hand-configured via the GitHub UI). Do NOT silently pick either value — this is exactly the false-positive failure mode a prior design iteration got wrong. Ask explicitly: *"Branch protection exists on this repo but isn't managed as code — should shipflow take ownership of it, or keep managing it externally even though no artifact was found?"* Record whichever the user picks.
 
-4. **Write `.github/shipflow.json`** in the target repo (never inside the skill package) using `config.example.json` as the template, with the confirmed branch names, `requiredChecks`, `protectionOwner`, and `release.mode: "manual-gate"` (the only implemented mode in this version — see Auto mode, below).
+5. **Present the interview summary and write `.github/shipflow.json`.** Before writing anything, show the user the resolved branch names, `requiredChecks`, and `protectionOwner` together in one place and wait for explicit confirmation — this is the checkpoint called out at the top of this section. Then write the config in the target repo (never inside the skill package) using `config.example.json` as the template, with `release.mode: "manual-gate"` (the only implemented mode in this version — see Auto mode, below). Tell the user `.github/shipflow.json` is committed policy and should be `git add`/committed — ideally in the same commit as the rendered auto-merge workflow, once step 9 produces one.
 
-5. **Show the plan.** Run:
+6. **Show the plan.** Run:
    ```
    npx -y @natjswenson/shipflow plan --repo <path>
    ```
-   This prints `{ plan, stateHash }`. Present `plan.creates`/`plan.updates`/`plan.noops` to the user in plain language — what will be created, what will change, what's already correct. **Wait for explicit confirmation before proceeding.** If any entry has `handEditDetected: true`, call it out specifically and ask whether to override (see step 7).
+   This prints `{ plan, stateHash }`. Present `plan.creates`/`plan.updates`/`plan.noops` to the user in plain language — what will be created, what will change, what's already correct. **Wait for explicit confirmation before proceeding.** If any entry has `handEditDetected: true`, call it out specifically and ask whether to override (see step 8).
 
-6. **Dry-run apply** (optional sanity check, same output shape as the real apply but nothing is mutated):
+7. **Dry-run apply** (optional sanity check, same output shape as the real apply but nothing is mutated):
    ```
    npx -y @natjswenson/shipflow apply --repo <path> --dry-run
    ```
 
-7. **Apply for real**, passing the `stateHash` from step 5's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan.
+8. **Apply for real**, passing the `stateHash` from step 6's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan.
    ```
-   npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-5>
+   npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-6>
    ```
-   If a `handEditDetected` entry was confirmed for override in step 5, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override).
+   If a `handEditDetected` entry was confirmed for override in step 6, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override).
 
-8. **Report the result.** Read `applied`/`skipped`/`errors` from the response. If `renderedTemplateHashes` is non-empty, update `.github/shipflow.json`'s `renderedTemplateHashes` field with those values and tell the user to commit the config change *and* the rendered workflow file **together, in the same commit** — a split commit is exactly what causes a false `handEditDetected` on a clean checkout later.
+9. **Report the result.** Read `applied`/`skipped`/`errors` from the response. A `skipped` entry can be a deliberate refusal (empty checks, hand-edit) or an environment limitation shipflow can't do anything about (e.g. a deletion-ruleset skipped because the repo is private and not on a paid GitHub tier) — read each `reason` and relay it plainly rather than treating every `skipped` entry the same. If `renderedTemplateHashes` is non-empty, update `.github/shipflow.json`'s `renderedTemplateHashes` field with those values and tell the user to commit the config change *and* the rendered workflow file **together, in the same commit** — a split commit is exactly what causes a false `handEditDetected` on a clean checkout later.
 
 ## Re-run / audit
 
-Same as steps 1, 5, 6, 7, 8 above, skipping the interview (branch names/checks/protectionOwner are already recorded in `.github/shipflow.json` — read it, don't re-ask, unless the user explicitly says they want to reconfigure). If `plan.creates`/`plan.updates` is non-empty, that's drift since the last apply — show it and confirm before applying, exactly as in first-run setup.
+Same as steps 1, 6, 7, 8, 9 above, skipping the interview (branch names/checks/protectionOwner are already recorded in `.github/shipflow.json` — read it, don't re-ask, unless the user explicitly says they want to reconfigure). If `plan.creates`/`plan.updates` is non-empty, that's drift since the last apply — show it and confirm before applying, exactly as in first-run setup.
 
 ## Check pending releases (`manual-gate` ask-flow)
 
@@ -105,3 +115,4 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 
 - **Greenfield repo, no CI yet:** `requiredChecks` will detect empty. Don't silently proceed — tell the user auto-merge can't be enabled until at least one check exists, and that's a real ordering dependency (CI first, then shipflow setup), not a shipflow bug.
 - **Repo already has `shipflow.json` with `release.mode: "auto"`:** refuse per "Auto mode," above, even on a re-run/audit — don't silently downgrade it to `"manual-gate"` either; surface the refusal and let the user decide.
+- **Private repo on a free GitHub plan:** the deletion-protection ruleset requires GitHub Pro/Team/Enterprise for private repos (rulesets are free for public repos only). `apply` reports this as a `skipped` entry with that reason, not an `errors` entry — it's an expected environment limitation, not a shipflow bug. Cleanup and the release-pending label still apply normally.

@@ -130,8 +130,11 @@ export function checkSecretPresent(ownerRepo, secretName) {
 
 export function fetchRepoSettings(ownerRepo) {
   const r = ghApiJson(`repos/${ownerRepo}`);
-  if (!r.ok) return { deleteBranchOnMerge: null };
-  return { deleteBranchOnMerge: r.data?.delete_branch_on_merge ?? false };
+  if (!r.ok) return { deleteBranchOnMerge: null, defaultBranch: null };
+  return {
+    deleteBranchOnMerge: r.data?.delete_branch_on_merge ?? false,
+    defaultBranch: r.data?.default_branch ?? null,
+  };
 }
 
 export function checkLabelExists(ownerRepo, labelName) {
@@ -170,7 +173,7 @@ export function detectRepoState(repoPath, { branches = { main: 'main', dev: 'dev
   const existingConfig = readExistingConfig(repoPath);
   const releaseCredentialPresent =
     ownerRepo && releaseCredentialName ? checkSecretPresent(ownerRepo, releaseCredentialName) : null;
-  const repoSettings = ownerRepo ? fetchRepoSettings(ownerRepo) : { deleteBranchOnMerge: null };
+  const repoSettings = ownerRepo ? fetchRepoSettings(ownerRepo) : { deleteBranchOnMerge: null, defaultBranch: null };
   const releasePendingLabelExists = ownerRepo ? checkLabelExists(ownerRepo, 'release-pending') : null;
 
   const stateHash = sha256(

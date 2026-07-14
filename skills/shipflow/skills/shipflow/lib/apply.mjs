@@ -12,6 +12,23 @@ import { spawnArgs, ghApiJson } from './gh.mjs';
 // "allow-no-checks" to override the empty-required-checks refusal. Never a
 // global boolean — a force scoped to one entry can't accidentally blanket-
 // override every other flagged entry in the same plan.
+// Repository Rulesets are gated behind GitHub Pro/Team/Enterprise for
+// private repos (free only for public repos) — this is GitHub's exact error
+// string for that case, distinct from a generic 403 (bad token, no admin
+// scope, etc.) which should still surface as a real error.
+const RULESET_TIER_GATED_RE = /Upgrade to GitHub (Pro|Team|Enterprise)/i;
+
+export function classifyRulesetError(stderr) {
+  if (RULESET_TIER_GATED_RE.test(stderr)) {
+    return {
+      tierGated: true,
+      reason:
+        'deletion-protection ruleset requires GitHub Pro/Team/Enterprise for private repos on the free tier — skipped, not a shipflow bug. Make the repo public or upgrade to enable it.',
+    };
+  }
+  return { tierGated: false, reason: null };
+}
+
 export function applyPlan(plan, opts) {
   const { dryRun, currentStateHash, force = [], ownerRepo, repoPath, config } = opts;
 
@@ -75,6 +92,8 @@ export function applyPlan(plan, opts) {
       if (entry.id.startsWith('template:') && entry.renderedHash) {
         renderedTemplateHashes[entry.path] = entry.renderedHash;
       }
+    } else if (result.tierGated) {
+      skipped.push({ id: entry.id, reason: result.error });
     } else {
       errors.push({ id: entry.id, message: result.error });
     }
@@ -100,7 +119,9 @@ function applyOne(entry, { ownerRepo, repoPath, config }) {
       rules: [{ type: 'deletion' }],
     });
     const r = spawnArgs('gh', ['api', `repos/${ownerRepo}/rulesets`, '-X', 'POST', '--input', '-'], { input: body });
-    return r.status === 0 ? { ok: true } : { ok: false, error: r.stderr };
+    if (r.status === 0) return { ok: true };
+    const { tierGated, reason } = classifyRulesetError(r.stderr);
+    return tierGated ? { ok: false, tierGated: true, error: reason } : { ok: false, error: r.stderr };
   }
 
   if (entry.id === 'release-pending-label') {
@@ -164,5 +185,19 @@ export function clearReleasePendingLabel(ownerRepo, prNumber) {
 
 export function dispatchReleaseWorkflow(ownerRepo, skillWorkflowFile, ref) {
   const r = spawnArgs('gh', ['workflow', 'run', skillWorkflowFile, '--ref', ref]);
+  return r.status === 0 ? { ok: true } : { ok: false, error: r.stderr };
+}
+
+// A one-time bootstrap action, not part of the steady-state plan/apply diff
+// model — renaming a repo's default branch affects every collaborator and
+// open PR, so it's a distinct, explicitly-confirmed CLI command rather than
+// a plan entry. GitHub's rename endpoint natively moves the default-branch
+// pointer and retargets open PRs when the renamed branch is the current
+// default; no extra shipflow-side logic is needed for that part.
+export function renameDefaultBranch(ownerRepo, fromBranch, toBranch) {
+  const r = spawnArgs('gh', [
+    'api', '-X', 'POST', `repos/${ownerRepo}/branches/${fromBranch}/rename`,
+    '-f', `new_name=${toBranch}`,
+  ]);
   return r.status === 0 ? { ok: true } : { ok: false, error: r.stderr };
 }
