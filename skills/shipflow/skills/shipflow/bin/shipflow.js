@@ -12,6 +12,7 @@ import {
   confirmPromotionMerged,
   clearReleasePendingLabel,
   dispatchReleaseWorkflow,
+  renameDefaultBranch,
 } from '../lib/apply.mjs';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -199,6 +200,25 @@ function cmdReleaseDispatch(args) {
   printJson({ dispatched: results, labelCleared: cleared.ok, labelClearError: cleared.ok ? null : cleared.error });
 }
 
+function cmdRenameDefaultBranch(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      branch: { type: 'string' },
+      to: { type: 'string' },
+    },
+  });
+  if (!values.repo || !values.branch || !values.to) {
+    return fail('rename-default-branch: --repo, --branch, and --to are all required');
+  }
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('rename-default-branch: could not resolve owner/repo from git remote');
+
+  const result = renameDefaultBranch(ownerRepo, values.branch, values.to);
+  printJson(result);
+}
+
 function printHelp() {
   console.log(`shipflow ${readPackageVersion()}
 
@@ -210,6 +230,7 @@ Commands:
   apply --repo <path> [--config <path>] [--dry-run] [--expect-state-hash <hash>] [--force <id>]...
   releases --repo <path> [--config <path>]
   release-dispatch --repo <path> --pr <number> --workflow-file <file>... --ref <ref>
+  rename-default-branch --repo <path> --branch <current-name> --to <new-name>
 
 Every command prints JSON to stdout.`);
 }
@@ -248,6 +269,9 @@ if (isMain) {
       break;
     case 'release-dispatch':
       cmdReleaseDispatch(rest);
+      break;
+    case 'rename-default-branch':
+      cmdRenameDefaultBranch(rest);
       break;
     case '-v':
     case '--version':
