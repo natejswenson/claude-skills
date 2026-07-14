@@ -51,6 +51,13 @@ export function findSettingsAsCodeArtifact(repoPath, trackedFiles) {
   return null;
 }
 
+// A job that never runs on a pull_request can never satisfy a required
+// status check — picking one as requiredChecks would block every future
+// merge forever. This is a text-based heuristic (matching the rest of this
+// file's no-YAML-parser style), not a full YAML parse: good enough to catch
+// the common schedule/workflow_dispatch-only case.
+const PULL_REQUEST_TRIGGER_RE = /pull_request(_target)?\b/;
+
 export function listWorkflowJobNames(repoPath, trackedFiles) {
   const names = new Set();
   const jobNameRe = /^\s{2}([\w.-]+):\s*$/;
@@ -66,6 +73,8 @@ export function listWorkflowJobNames(repoPath, trackedFiles) {
     const lines = content.split('\n');
     const jobsLineIdx = lines.findIndex((l) => l.trim() === 'jobs:');
     if (jobsLineIdx === -1) continue;
+    const triggerSection = lines.slice(0, jobsLineIdx).join('\n');
+    if (!PULL_REQUEST_TRIGGER_RE.test(triggerSection)) continue; // never PR-triggered
     for (const line of lines.slice(jobsLineIdx + 1)) {
       if (line.trim() !== '' && /^\S/.test(line)) break; // dedented out of the jobs: block
       const m = line.match(jobNameRe);

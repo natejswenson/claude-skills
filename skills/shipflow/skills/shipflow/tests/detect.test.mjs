@@ -23,7 +23,7 @@ test('listWorkflowJobNames extracts job names from workflow YAML', () => {
     mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
     writeFileSync(
       join(dir, '.github', 'workflows', 'ci.yml'),
-      'name: ci\non:\n  push:\njobs:\n  build:\n    runs-on: ubuntu-latest\n  test:\n    runs-on: ubuntu-latest\n'
+      'name: ci\non:\n  pull_request:\n  push:\njobs:\n  build:\n    runs-on: ubuntu-latest\n  test:\n    runs-on: ubuntu-latest\n'
     );
     const names = listWorkflowJobNames(dir, ['.github/workflows/ci.yml']);
     assert.deepEqual(names, ['build', 'test']);
@@ -33,10 +33,34 @@ test('listWorkflowJobNames extracts job names from workflow YAML', () => {
 test('listWorkflowJobNames dedupes job names across multiple workflow files', () => {
   withTempRepo((dir) => {
     mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
-    writeFileSync(join(dir, '.github', 'workflows', 'a.yml'), 'jobs:\n  shared:\n    runs-on: ubuntu-latest\n');
-    writeFileSync(join(dir, '.github', 'workflows', 'b.yml'), 'jobs:\n  shared:\n    runs-on: ubuntu-latest\n  only-in-b:\n    runs-on: ubuntu-latest\n');
+    writeFileSync(join(dir, '.github', 'workflows', 'a.yml'), 'on:\n  pull_request:\njobs:\n  shared:\n    runs-on: ubuntu-latest\n');
+    writeFileSync(join(dir, '.github', 'workflows', 'b.yml'), 'on:\n  pull_request:\njobs:\n  shared:\n    runs-on: ubuntu-latest\n  only-in-b:\n    runs-on: ubuntu-latest\n');
     const names = listWorkflowJobNames(dir, ['.github/workflows/a.yml', '.github/workflows/b.yml']);
     assert.deepEqual(names, ['only-in-b', 'shared']);
+  });
+});
+
+test('listWorkflowJobNames excludes jobs from a workflow with no pull_request trigger', () => {
+  withTempRepo((dir) => {
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    writeFileSync(
+      join(dir, '.github', 'workflows', 'weekly-archive.yml'),
+      'name: Weekly Archive\non:\n  schedule:\n    - cron: "5 0 * * 1"\n  workflow_dispatch:\njobs:\n  archive:\n    runs-on: ubuntu-latest\n'
+    );
+    const names = listWorkflowJobNames(dir, ['.github/workflows/weekly-archive.yml']);
+    assert.deepEqual(names, []);
+  });
+});
+
+test('listWorkflowJobNames includes jobs from a pull_request_target-triggered workflow', () => {
+  withTempRepo((dir) => {
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    writeFileSync(
+      join(dir, '.github', 'workflows', 'auto-merge.yml'),
+      'on:\n  pull_request_target:\n    types: [opened]\njobs:\n  auto-merge:\n    runs-on: ubuntu-latest\n'
+    );
+    const names = listWorkflowJobNames(dir, ['.github/workflows/auto-merge.yml']);
+    assert.deepEqual(names, ['auto-merge']);
   });
 });
 
