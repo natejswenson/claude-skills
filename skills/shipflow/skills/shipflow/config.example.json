@@ -1,0 +1,23 @@
+{
+  "branches": { "main": "main", "dev": "dev" },
+  "featureBranchPrefix": "feature/",
+  "requiredChecks": [],
+  "mergeMethod": {
+    "featureToDevMethod": "squash",
+    "devToMainMethod": "merge"
+  },
+  "protectionOwner": "external",
+  "release": {
+    "enabled": true,
+    "mode": "manual-gate",
+    "tool": "release-please",
+    "layout": "manifest",
+    "releaseCredential": "GITHUB_TOKEN"
+  },
+  "branchCleanup": {
+    "deleteOnMerge": true,
+    "protectedBranches": ["dev", "main"]
+  },
+  "enforceAdmins": false,
+  "renderedTemplateHashes": {}
+}

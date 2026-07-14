@@ -1,0 +1,74 @@
+name: shipflow
+
+# Per-skill CI + release for the shipflow skill.
+# - PR trigger is intentionally NOT path-filtered, so the `ci` check ALWAYS reports
+#   on every PR to dev/main (required-check + path-filter deadlock avoidance). The
+#   dorny/paths-filter step short-circuits the heavy steps when shipflow is unchanged.
+# - push trigger IS path-filtered, so the release job only attempts on relevant merges.
+on:
+  push:
+    branches: [main]
+    paths: ["skills/shipflow/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/shipflow.yml"]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: ci / shipflow # distinct check-run name so it can be a required status check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # required by dorny/paths-filter on pull_request events
+    steps:
+      - uses: actions/checkout@v7
+      - name: Detect relevant changes
+        id: changes
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            shipflow:
+              - 'skills/shipflow/**'
+              - 'tools/score_skill.py'
+              - 'tools/lint_plugin.py'
+              - '.github/workflows/shipflow.yml'
+      # Tier 1: shared SKILL.md structural lint (every skill)
+      - if: steps.changes.outputs.shipflow == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - if: steps.changes.outputs.shipflow == 'true'
+        run: python tools/score_skill.py skills/shipflow/skills/shipflow --min 100
+      # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
+      - if: steps.changes.outputs.shipflow == 'true'
+        run: python tools/lint_plugin.py skills/shipflow
+      # Tier 2: shipflow functional tests (Node)
+      - if: steps.changes.outputs.shipflow == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: skills/shipflow/skills/shipflow/package-lock.json
+      - if: steps.changes.outputs.shipflow == 'true'
+        run: npm install --no-fund
+        working-directory: skills/shipflow/skills/shipflow
+      - if: steps.changes.outputs.shipflow == 'true'
+        run: npm test
+        working-directory: skills/shipflow/skills/shipflow
+      - if: steps.changes.outputs.shipflow == 'true'
+        run: npm run audit
+        working-directory: skills/shipflow/skills/shipflow
+
+  release:
+    needs: ci
+    # Real push to main (when re-coupled via a PAT) OR a deliberate manual dispatch on main.
+    # The bot GITHUB_TOKEN auto-merge doesn't trigger push events, so workflow_dispatch is the on-demand release path.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/_release.yml
+    with:
+      skill: shipflow
+      npm-publish: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    permissions:
+      contents: write

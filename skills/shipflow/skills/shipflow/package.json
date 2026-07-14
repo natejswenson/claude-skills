@@ -1,0 +1,30 @@
+{
+  "name": "@natjswenson/shipflow",
+  "version": "0.2.0",
+  "description": "Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/shipflow",
+  "repository": { "type": "git", "url": "git+https://github.com/natejswenson/shipflow.git" },
+  "bugs": { "url": "https://github.com/natejswenson/shipflow/issues" },
+  "keywords": ["shipflow", "claude-code", "claude-skill", "git", "branching", "release-automation", "ci-cd"],
+  "type": "module",
+  "bin": { "shipflow": "bin/shipflow.js" },
+  "files": [
+    "bin/",
+    "lib/",
+    "templates/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "config.example.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate"
+  },
+  "dependencies": {}
+}
