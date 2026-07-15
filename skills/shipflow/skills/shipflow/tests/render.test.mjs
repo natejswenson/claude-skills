@@ -94,3 +94,61 @@ test('both gh calls use the configurable release-credential secret, not a hardco
     assert.doesNotMatch(line, /secrets\.GITHUB_TOKEN/);
   }
 });
+
+// Regression tests for a Critical finding from a Siege security audit
+// (2026-07-15): renderTemplate did pure string substitution with zero
+// escaping, and DEV_BRANCH/MAIN_BRANCH/RELEASE_CREDENTIAL_SECRET all come
+// from .github/shipflow.json — editable by anyone with repo WRITE access,
+// not just the admin who ran shipflow's setup. A branch name containing a
+// single quote broke out of the auto-merge job's single-quoted `if:`
+// comparison, making it unconditionally true (auto-merge would enable on
+// ANY pull request to main, not just genuine dev-branch promotions) — a
+// privilege escalation from repo-write to effectively-admin-scoped mutation.
+test('renderTemplate rejects a branch name that would break out of the single-quoted if: comparison', () => {
+  assert.throws(
+    () =>
+      renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
+        devBranch: "dev' || 'x'=='x",
+        mainBranch: 'main',
+        mergeFlag: '--merge',
+        releaseCredentialSecret: 'GITHUB_TOKEN',
+      }),
+    /unsafe value.*DEV_BRANCH/
+  );
+});
+
+test('renderTemplate rejects a branch name containing a newline (YAML/step injection)', () => {
+  assert.throws(
+    () =>
+      renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
+        devBranch: 'dev',
+        mainBranch: 'main\n  evil-job:\n    runs-on: ubuntu-latest',
+        mergeFlag: '--merge',
+        releaseCredentialSecret: 'GITHUB_TOKEN',
+      }),
+    /unsafe value.*MAIN_BRANCH/
+  );
+});
+
+test('renderTemplate rejects a release-credential secret name outside GitHub\'s secret-naming rules', () => {
+  assert.throws(
+    () =>
+      renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
+        devBranch: 'dev',
+        mainBranch: 'main',
+        mergeFlag: '--merge',
+        releaseCredentialSecret: "X}}\nenv:\n  EVIL: true",
+      }),
+    /unsafe value.*RELEASE_CREDENTIAL_SECRET/
+  );
+});
+
+test('renderTemplate still accepts ordinary branch names and secret names', () => {
+  const rendered = renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
+    devBranch: 'feature/dev-branch',
+    mainBranch: 'main',
+    mergeFlag: '--merge',
+    releaseCredentialSecret: 'SHIPFLOW_AUTOMERGE_PAT',
+  });
+  assert.match(rendered, /feature\/dev-branch/);
+});
