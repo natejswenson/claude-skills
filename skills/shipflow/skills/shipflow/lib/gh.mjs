@@ -1,5 +1,22 @@
 import { spawnSync } from 'node:child_process';
+import { statSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+
+// Every file shipflow reads under a target repo (.github/shipflow.json,
+// candidate settings-as-code artifacts, workflow YAML, the rendered
+// template on disk) is repo-write-controlled, not admin-only — a
+// maliciously huge or pathologically nested file could exhaust memory on
+// an unbounded readFileSync/JSON.parse. 1 MB is generous for any
+// legitimate config/workflow/IaC file shipflow actually needs to read.
+const MAX_READ_BYTES = 1_000_000;
+
+export function readFileCapped(path, encoding = 'utf8') {
+  const size = statSync(path).size;
+  if (size > MAX_READ_BYTES) {
+    throw new Error(`refusing to read ${path}: ${size} bytes exceeds the ${MAX_READ_BYTES}-byte safety cap`);
+  }
+  return readFileSync(path, encoding);
+}
 
 // argv-style invocation; no shell, so user-supplied args cannot inject.
 // Returns { status, stdout, stderr } so callers can distinguish failure modes
