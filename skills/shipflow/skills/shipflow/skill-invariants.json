@@ -55,6 +55,11 @@
       "id": "ci-scaffold-never-overwrites",
       "pattern": "[Nn]ever silently overwrite an existing workflow file",
       "rationale": "Agent-driven CI scaffolding (added after 1.00s had no pull_request-triggered CI at all) must never clobber a workflow file that's already there — same confirm-before-write discipline as every other mutation in this skill, applied to a step the CLI itself never touches."
+    },
+    {
+      "id": "release-credential-never-github-token",
+      "pattern": "never default it to `GITHUB_TOKEN`",
+      "rationale": "Found by dogfooding on claude-skills itself (2026-07-15): a PR auto-merged under secrets.GITHUB_TOKEN completes attributed to github-actions[bot], and GitHub's loop-prevention rule means that bot-attributed merge's pull_request:closed event never triggers label-release-pending — the entire manual-gate release-ask flow silently never has anything to find unless releaseCredential names a real PAT."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]

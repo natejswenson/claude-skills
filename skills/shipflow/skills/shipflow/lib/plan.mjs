@@ -79,6 +79,11 @@ function computeTemplatePlanEntry(repoState, config, templateSource) {
     devBranch: config.branches.dev,
     mainBranch: config.branches.main,
     mergeFlag: mergeMethodToFlag(config.mergeMethod?.devToMainMethod),
+    // Must be a real PAT/App-installation-token secret name, not
+    // "GITHUB_TOKEN" — see the template's header comment for why a
+    // GITHUB_TOKEN-attributed auto-merge never fires the closed-event
+    // label job at all.
+    releaseCredentialSecret: config.release?.releaseCredential ?? 'GITHUB_TOKEN',
   };
   const renderedContent = renderTemplate(templateSource, params);
   const freshHash = sha256(renderedContent);

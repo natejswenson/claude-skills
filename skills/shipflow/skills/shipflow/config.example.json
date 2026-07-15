@@ -12,7 +12,7 @@
     "mode": "manual-gate",
     "tool": "release-please",
     "layout": "manifest",
-    "releaseCredential": "GITHUB_TOKEN"
+    "releaseCredential": "SHIPFLOW_AUTOMERGE_PAT"
   },
   "branchCleanup": {
     "deleteOnMerge": true,
