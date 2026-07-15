@@ -49,7 +49,30 @@ test('publishEntry writes the entry and creates a fresh manifest', (t) => {
     title: 'A real title',
     summary: 'A summary.',
     version: 'v0.1.0',
+    tags: ['a', 'b'],
   }]);
+});
+
+test('publishEntry writes tags from frontmatter into the manifest entry', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  const path = join(root, 'draft-v0.1.0.md');
+  writeFileSync(path, `---
+title: "A real title"
+date: 2026-07-11
+project: proj
+version: v0.1.0
+tags: [mcp, python, cli, testing, ci]
+summary: "A summary."
+---
+
+## Shipped
+
+Things.
+`);
+
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: path });
+  const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
+  assert.deepEqual(entry.tags, ['mcp', 'python', 'cli', 'testing', 'ci']);
 });
 
 test('publishEntry refuses to overwrite an existing entry', (t) => {

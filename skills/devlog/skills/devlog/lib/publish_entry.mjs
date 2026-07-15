@@ -79,6 +79,7 @@ export function publishEntry({ cloneDir, project, version, entryPath }) {
       title: String(data.title),
       summary: String(data.summary),
       version,
+      tags: Array.isArray(data.tags) ? data.tags : [],
     });
     manifest.entries = sortEntries(manifest.entries);
     atomicWriteJSON(manifestPath, manifest);
