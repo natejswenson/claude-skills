@@ -2,6 +2,40 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.2 (2026-07-15) — `label-release-pending` never fires under `GITHUB_TOKEN`
+
+Found by the same dogfood run as 0.2.1, one merge later — a second, more
+serious bug than the missing `--repo`: the manual-gate release-ask flow's
+whole premise (a durable label survives the async gap between auto-merge
+enabling and completing) silently didn't work at all.
+
+- **Root cause: GitHub's loop-prevention rule.** A PR auto-merged via `gh pr
+  merge --auto` run under the default `secrets.GITHUB_TOKEN` completes
+  (later, once checks pass) attributed to the `github-actions[bot]`
+  identity. A `pull_request: closed` event from that bot-attributed merge
+  does **not** trigger this or any other workflow's `on: pull_request`
+  handlers. Confirmed empirically, not just from docs: an otherwise-identical
+  promotion PR merged by a real, PAT-authenticated actor fired the
+  closed-event trigger within 2 seconds; one completed by
+  `GITHUB_TOKEN`-enabled auto-merge fired **no run at all**, even after
+  100+ seconds of polling. This means `label-release-pending` never ran for
+  any normally-auto-merged promotion — only for a promotion a human merged
+  by hand — which is the opposite of the common case the feature exists for.
+- **Fix: both `gh` calls now use `config.release.releaseCredential`** instead
+  of a hardcoded `secrets.GITHUB_TOKEN`. Wired a new `RELEASE_CREDENTIAL_SECRET`
+  template token through `render.mjs` and `plan.mjs`'s
+  `computeTemplatePlanEntry` (previously `releaseCredential` was read by
+  `detect.mjs` only to check whether a named secret *existed* — it was never
+  actually substituted into the rendered workflow).
+- **First-run setup (SKILL.md) now has an explicit step** requiring the user
+  to create a real PAT/App-installation-token secret and record its name in
+  `release.releaseCredential` — defaulting to `GITHUB_TOKEN` is called out as
+  a silent-failure trap, not a safe default. `config.example.json`'s
+  placeholder changed from `"GITHUB_TOKEN"` to `"SHIPFLOW_AUTOMERGE_PAT"` so
+  copying the example doesn't propagate the trap.
+- New regression test asserts both `GH_TOKEN` lines use the configured
+  secret name and never fall back to a hardcoded `GITHUB_TOKEN`.
+
 ## 0.2.1 (2026-07-14) — rendered workflow was missing `--repo`
 
 Found by dogfooding shipflow on its own home repo (`claude-skills`) — the
