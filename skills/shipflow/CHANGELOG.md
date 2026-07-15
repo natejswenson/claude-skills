@@ -2,6 +2,40 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.3 (2026-07-15) — Critical: unescaped template substitution allowed workflow injection
+
+Found by a Siege security audit run before rolling shipflow out to other
+repos, immediately after 0.2.1/0.2.2 landed the previous two fixes.
+
+- **Critical, fixed:** `render.mjs`'s `renderTemplate` did pure string
+  substitution with zero escaping. `config.branches.dev`/`main` and
+  `config.release.releaseCredential` — all sourced from
+  `.github/shipflow.json`, a file anyone with repo **write** access can
+  edit, not just the admin who ran shipflow's setup — were substituted
+  directly into single-quoted YAML string comparisons and a
+  `${{ secrets.X }}` GitHub Actions expression with no validation.
+  Concretely: a `branches.dev` value of `dev' || 'x'=='x` rendered the
+  auto-merge job's `if:` condition to `... == 'dev' || 'x'=='x'` —
+  unconditionally true, enabling auto-merge on **any** pull request into
+  `main`, not just genuine `dev`-branch promotions. A `releaseCredential`
+  value containing a newline could inject arbitrary new YAML keys/steps
+  into the committed, then-executed workflow file. Both are a privilege
+  escalation: a repo-write-level actor reaching an admin-scoped mutation
+  through the credential the rendered workflow runs with.
+- **Fix:** `renderTemplate` now validates each substituted value against a
+  per-token safety rule before rendering — `DEV_BRANCH`/`MAIN_BRANCH` reject
+  any single quote or newline; `RELEASE_CREDENTIAL_SECRET` must match
+  GitHub's own secret-naming rule (`^[A-Za-z_][A-Za-z0-9_]*$`). A rejected
+  value throws rather than silently rendering unsafe YAML.
+- **Also fixed:** `bin/shipflow.js`'s `cmdPlan`/`cmdApply` never wrapped
+  `computePlan` in a try/catch, so this (and the pre-existing "missing
+  param") error would have crashed with a raw stack trace instead of the
+  clean `{"error": ...}` JSON contract every other failure mode uses —
+  breaking the "every command prints JSON to stdout" guarantee agents rely
+  on to parse output.
+- New regression tests assert the exploit renders are rejected, and that
+  ordinary branch/secret names still render normally.
+
 ## 0.2.2 (2026-07-15) — `label-release-pending` never fires under `GITHUB_TOKEN`
 
 Found by the same dogfood run as 0.2.1, one merge later — a second, more
