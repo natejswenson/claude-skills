@@ -51,30 +51,32 @@ user; the CLI is the only thing that *does*.
    - `"shipflow"` → tell the user no existing branch protection was found and shipflow will own it going forward.
    - `"ambiguous"` → **branch protection exists but no settings-as-code artifact was found** (e.g. hand-configured via the GitHub UI). Do NOT silently pick either value — this is exactly the false-positive failure mode a prior design iteration got wrong. Ask explicitly: *"Branch protection exists on this repo but isn't managed as code — should shipflow take ownership of it, or keep managing it externally even though no artifact was found?"* Record whichever the user picks.
 
-5. **Present the interview summary and write `.github/shipflow.json`.** Before writing anything, show the user the resolved branch names, `requiredChecks`, and `protectionOwner` together in one place and wait for explicit confirmation — this is the checkpoint called out at the top of this section. Then write the config in the target repo (never inside the skill package) using `config.example.json` as the template, with `release.mode: "manual-gate"` (the only implemented mode in this version — see Auto mode, below). Tell the user `.github/shipflow.json` is committed policy and should be `git add`/committed — ideally in the same commit as the rendered auto-merge workflow, once step 9 produces one.
+5. **Resolve `release.releaseCredential` — never default it to `GITHUB_TOKEN`.** The rendered `dev-to-main-automerge.yml`'s `GH_TOKEN` comes from this secret name. A PR auto-merged under `secrets.GITHUB_TOKEN` completes (once checks pass) attributed to the `github-actions[bot]` identity, and GitHub's loop-prevention rule means that bot-attributed merge's `pull_request: closed` event **never triggers this or any other workflow** — so `label-release-pending` silently never runs, and the entire manual-gate release-ask flow never has anything to find. This was confirmed empirically, not theoretically: an otherwise-identical PR merged by a real, PAT-authenticated actor fired the closed-event trigger within 2 seconds; one completed by `GITHUB_TOKEN`-enabled auto-merge fired no run at all, even after 100+ seconds. Ask the user to create a fine-grained PAT (or GitHub App installation token) scoped to this repo with `contents: write` + `pull-requests: write`, and to store it as a repo secret themselves (e.g. `gh secret set <NAME> --repo <owner>/<repo>`, run in *their own* shell so the token value never passes through the agent or the transcript). Record only the secret's *name* in `release.releaseCredential` — never its value.
 
-6. **Show the plan.** Run:
+6. **Present the interview summary and write `.github/shipflow.json`.** Before writing anything, show the user the resolved branch names, `requiredChecks`, `protectionOwner`, and `release.releaseCredential` together in one place and wait for explicit confirmation — this is the checkpoint called out at the top of this section. Then write the config in the target repo (never inside the skill package) using `config.example.json` as the template, with `release.mode: "manual-gate"` (the only implemented mode in this version — see Auto mode, below). Tell the user `.github/shipflow.json` is committed policy and should be `git add`/committed — ideally in the same commit as the rendered auto-merge workflow, once step 10 produces one.
+
+7. **Show the plan.** Run:
    ```
    npx -y @natjswenson/shipflow plan --repo <path>
    ```
-   This prints `{ plan, stateHash }`. Present `plan.creates`/`plan.updates`/`plan.noops` to the user in plain language — what will be created, what will change, what's already correct. **Wait for explicit confirmation before proceeding.** If any entry has `handEditDetected: true`, call it out specifically and ask whether to override (see step 8).
+   This prints `{ plan, stateHash }`. Present `plan.creates`/`plan.updates`/`plan.noops` to the user in plain language — what will be created, what will change, what's already correct. **Wait for explicit confirmation before proceeding.** If any entry has `handEditDetected: true`, call it out specifically and ask whether to override (see step 9).
 
-7. **Dry-run apply** (optional sanity check, same output shape as the real apply but nothing is mutated):
+8. **Dry-run apply** (optional sanity check, same output shape as the real apply but nothing is mutated):
    ```
    npx -y @natjswenson/shipflow apply --repo <path> --dry-run
    ```
 
-8. **Apply for real**, passing the `stateHash` from step 6's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan.
+9. **Apply for real**, passing the `stateHash` from step 7's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan.
    ```
-   npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-6>
+   npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-7>
    ```
-   If a `handEditDetected` entry was confirmed for override in step 6, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override).
+   If a `handEditDetected` entry was confirmed for override in step 7, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override).
 
-9. **Report the result.** Read `applied`/`skipped`/`errors` from the response. A `skipped` entry can be a deliberate refusal (empty checks, hand-edit) or an environment limitation shipflow can't do anything about (e.g. a deletion-ruleset skipped because the repo is private and not on a paid GitHub tier) — read each `reason` and relay it plainly rather than treating every `skipped` entry the same. If `renderedTemplateHashes` is non-empty, update `.github/shipflow.json`'s `renderedTemplateHashes` field with those values and tell the user to commit the config change *and* the rendered workflow file **together, in the same commit** — a split commit is exactly what causes a false `handEditDetected` on a clean checkout later.
+10. **Report the result.** Read `applied`/`skipped`/`errors` from the response. A `skipped` entry can be a deliberate refusal (empty checks, hand-edit) or an environment limitation shipflow can't do anything about (e.g. a deletion-ruleset skipped because the repo is private and not on a paid GitHub tier) — read each `reason` and relay it plainly rather than treating every `skipped` entry the same. If `renderedTemplateHashes` is non-empty, update `.github/shipflow.json`'s `renderedTemplateHashes` field with those values and tell the user to commit the config change *and* the rendered workflow file **together, in the same commit** — a split commit is exactly what causes a false `handEditDetected` on a clean checkout later.
 
 ## Re-run / audit
 
-Same as steps 1, 6, 7, 8, 9 above, skipping the interview (branch names/checks/protectionOwner are already recorded in `.github/shipflow.json` — read it, don't re-ask, unless the user explicitly says they want to reconfigure). If `plan.creates`/`plan.updates` is non-empty, that's drift since the last apply — show it and confirm before applying, exactly as in first-run setup.
+Same as steps 1, 7, 8, 9, 10 above, skipping the interview (branch names/checks/protectionOwner/releaseCredential are already recorded in `.github/shipflow.json` — read it, don't re-ask, unless the user explicitly says they want to reconfigure). If `plan.creates`/`plan.updates` is non-empty, that's drift since the last apply — show it and confirm before applying, exactly as in first-run setup.
 
 ## Check pending releases (`manual-gate` ask-flow)
 
@@ -106,6 +108,7 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 - **`handEditDetected`:** a template file's on-disk content doesn't match what shipflow last rendered *or* what it would freshly render — someone hand-edited it. Never silently pass `--force` for this; always show the user what changed and get explicit confirmation per entry.
 - **TOCTOU abort:** if `apply` returns a `toctou` error, repo state changed between plan and apply — re-run the plan step, don't retry the same `--expect-state-hash`.
 - **`gh auth` failures:** surface these immediately; branch protection and rulesets need repo-admin scope. Don't proceed partway through a plan on missing auth.
+- **`release.releaseCredential` left as (or defaulted to) `GITHUB_TOKEN`:** auto-merge and the required-check gate still work, but `label-release-pending` will silently never run — a `GITHUB_TOKEN`-attributed auto-merge's `pull_request: closed` event never triggers it, so no promotion will ever surface via `shipflow releases`. This fails silently, not loudly — there's no error to catch it — so it must be caught at setup time (step 5) rather than discovered later. If a user reports "releases never show up," check this first.
 
 ## Security rules
 
