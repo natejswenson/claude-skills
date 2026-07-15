@@ -2,6 +2,27 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.1 (2026-07-14) — rendered workflow was missing `--repo`
+
+Found by dogfooding shipflow on its own home repo (`claude-skills`) — the
+very first live promotion PR after switching over would have silently
+broken auto-merge and release labeling.
+
+- **Fix: both `gh` calls in the rendered `dev-to-main-automerge.yml` now pass
+  `--repo "${{ github.repository }}"` explicitly.** Neither the `auto-merge`
+  job's `gh pr merge` nor the `label-release-pending` job's `gh pr edit` had
+  it, and the workflow has no `actions/checkout` step for `gh` to infer the
+  repo from — every run failed with `fatal: not a git repository (or any of
+  the parent directories): .git`. This masked itself in the first dogfood
+  migration only because the hand-built workflow it was replacing (which did
+  pass `--repo`) happened to still be present on `main` and fired on the same
+  transitional PR.
+- **New regression tests** (`tests/render.test.mjs`) read the actual
+  `.tmpl` file's rendered output and assert `--repo` is present on both `gh`
+  invocations — no prior test read the template's real command lines, only a
+  synthetic placeholder string, so this shipped with zero coverage of the
+  actual `gh` calls.
+
 ## 0.2.0 (2026-07-14) — first live-repo fixes
 
 Fixes found by running shipflow end-to-end against a real repo
