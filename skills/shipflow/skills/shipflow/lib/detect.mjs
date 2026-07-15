@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { spawnArgs, ghApiJson, git, sha256 } from './gh.mjs';
+import { spawnArgs, ghApiJson, git, sha256, readFileCapped } from './gh.mjs';
 
 const TEMPLATE_RELATIVE_PATH = '.github/workflows/dev-to-main-automerge.yml';
 const CONFIG_RELATIVE_PATH = '.github/shipflow.json';
@@ -14,11 +14,20 @@ const SETTINGS_AS_CODE_NAME_RE = /repo-settings\.(sh|js|mjs|py)$/i;
 const SETTINGS_AS_CODE_CONTENT_RE =
   /github_branch_protection|github_repository_ruleset|branches\/[\w-]+\/protection/;
 
+// A segment made of only dots ("." / ".." / "...") matches [\w.-]+ but is
+// never a real GitHub owner or repo name — reject it rather than build an
+// ownerRepo string that could normalize away the intended repos/<owner>/<repo>
+// prefix once interpolated into gh api paths downstream.
+const ALL_DOTS_RE = /^\.+$/;
+
 export function resolveOwnerRepo(repoPath) {
   const r = git(['remote', 'get-url', 'origin'], { cwd: repoPath });
   if (r.status !== 0) return null;
   const m = r.stdout.match(/github\.com[:/]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
-  return m ? `${m[1]}/${m[2]}` : null;
+  if (!m) return null;
+  const [, owner, repo] = m;
+  if (ALL_DOTS_RE.test(owner) || ALL_DOTS_RE.test(repo)) return null;
+  return `${owner}/${repo}`;
 }
 
 export function listTrackedFiles(repoPath) {
@@ -42,7 +51,7 @@ export function findSettingsAsCodeArtifact(repoPath, trackedFiles) {
     if (!existsSync(full)) continue;
     let content;
     try {
-      content = readFileSync(full, 'utf8');
+      content = readFileCapped(full);
     } catch {
       continue;
     }
@@ -66,7 +75,7 @@ export function listWorkflowJobNames(repoPath, trackedFiles) {
     if (!existsSync(full)) continue;
     let content;
     try {
-      content = readFileSync(full, 'utf8');
+      content = readFileCapped(full);
     } catch {
       continue;
     }
@@ -87,7 +96,7 @@ export function listWorkflowJobNames(repoPath, trackedFiles) {
 export function readTemplateFileHash(repoPath) {
   const full = join(repoPath, TEMPLATE_RELATIVE_PATH);
   if (!existsSync(full)) return { exists: false, sha256: null };
-  const content = readFileSync(full, 'utf8');
+  const content = readFileCapped(full);
   return { exists: true, sha256: sha256(content) };
 }
 
@@ -95,14 +104,14 @@ export function readExistingConfig(repoPath) {
   const full = join(repoPath, CONFIG_RELATIVE_PATH);
   if (!existsSync(full)) return null;
   try {
-    return JSON.parse(readFileSync(full, 'utf8'));
+    return JSON.parse(readFileCapped(full));
   } catch {
     return null;
   }
 }
 
 export function fetchBranchProtection(ownerRepo, branch) {
-  const r = ghApiJson(`repos/${ownerRepo}/branches/${branch}/protection`);
+  const r = ghApiJson(`repos/${ownerRepo}/branches/${encodeURIComponent(branch)}/protection`);
   if (!r.ok) return null;
   const checks = r.data?.required_status_checks?.contexts ?? [];
   return { requiredChecks: checks, raw: r.data };
@@ -133,7 +142,7 @@ export function fetchRulesetRequiredChecks(ownerRepo, rulesetId) {
 }
 
 export function checkSecretPresent(ownerRepo, secretName) {
-  const r = ghApiJson(`repos/${ownerRepo}/actions/secrets/${secretName}`);
+  const r = ghApiJson(`repos/${ownerRepo}/actions/secrets/${encodeURIComponent(secretName)}`);
   return r.ok;
 }
 

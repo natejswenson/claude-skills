@@ -2,6 +2,31 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.4 (2026-07-15) — REST-path encoding, resolveOwnerRepo hardening, file-size cap
+
+Three more findings from the same Siege audit as 0.2.3, surfaced by an
+independently-dispatched Boundary Attacker pass that (eventually) returned
+its report and cross-confirmed the 0.2.3 fix while adding new findings:
+
+- **Medium, fixed:** `fetchBranchProtection` and `checkSecretPresent`
+  interpolated `branch`/`secretName` unencoded into `gh api` REST path
+  segments — inconsistent with `checkLabelExists`, which already used
+  `encodeURIComponent` for the same class of input. Both now encode.
+- **Low, fixed:** `resolveOwnerRepo`'s regex capture (`[\w.-]+`) admitted
+  all-dots segments (`.`, `..`) since `.` is in the character class with no
+  further constraint — a crafted remote like `github.com/../claude-skills`
+  could yield an `ownerRepo` that normalizes away the intended
+  `repos/<owner>/<repo>` prefix once interpolated downstream. Now rejects
+  any owner/repo segment matching `^\.+$`.
+- **Medium, fixed:** no file shipflow reads from a target repo
+  (`.github/shipflow.json`, candidate settings-as-code artifacts, workflow
+  YAML, the rendered template) had a size guard — all of these are
+  repo-write-controlled, not admin-only, so a maliciously huge or
+  pathologically nested file could exhaust memory on an unbounded
+  `readFileSync`/`JSON.parse`. New `readFileCapped` helper in `gh.mjs`
+  (1 MB cap) used at every such read site.
+- 8 new regression tests.
+
 ## 0.2.3 (2026-07-15) — Critical: unescaped template substitution allowed workflow injection
 
 Found by a Siege security audit run before rolling shipflow out to other
