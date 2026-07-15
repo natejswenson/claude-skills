@@ -5,6 +5,19 @@ name: auto-merge {{DEV_BRANCH}} to {{MAIN_BRANCH}}
 # for this file, or shipflow's next apply will refuse to overwrite it
 # (handEditDetected) until an explicit --force is passed. Commit both files
 # together in the same commit.
+#
+# GH_TOKEN uses config.release.releaseCredential, NOT a hardcoded
+# secrets.GITHUB_TOKEN, because of GitHub's loop-prevention rule: a PR
+# auto-merged via `gh pr merge --auto` run under the default GITHUB_TOKEN
+# completes (later, asynchronously, once checks pass) attributed to the
+# github-actions[bot] identity — and a `pull_request: closed` event
+# resulting from that bot-attributed merge does NOT trigger this or any
+# other workflow's `on: pull_request` handlers. Confirmed empirically:
+# an identical PR merged by a real, PAT-authenticated actor fired the
+# closed-event trigger immediately; one completed by GITHUB_TOKEN-enabled
+# auto-merge fired no run at all. releaseCredential must therefore name a
+# real PAT/App-installation-token secret (not GITHUB_TOKEN) for
+# label-release-pending to ever actually run.
 
 on:
   pull_request:
@@ -30,7 +43,7 @@ jobs:
       - name: Enable auto-merge
         run: gh pr merge --auto {{MERGE_FLAG}} "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}
 
   # Fires once, when the promotion PR actually merges (a separate event from
   # the job above, which only *enables* auto-merge). Applies a durable
@@ -49,4 +62,4 @@ jobs:
       - name: Apply release-pending label
         run: gh pr edit "${{ github.event.pull_request.number }}" --add-label release-pending --repo "${{ github.repository }}"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}

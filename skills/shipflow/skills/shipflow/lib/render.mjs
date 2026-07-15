@@ -14,7 +14,7 @@
 
 const TOKEN_RE = /\{\{(\w+)\}\}/g;
 
-// params: { devBranch, mainBranch, mergeFlag }
+// params: { devBranch, mainBranch, mergeFlag, releaseCredentialSecret }
 // mergeFlag is one of "--merge" | "--squash" | "--rebase", derived from
 // config.mergeMethod.devToMainMethod by the caller (not this function —
 // mapping method name -> gh flag is a config-schema concern, kept out of
@@ -40,6 +40,7 @@ const TOKEN_TO_PARAM = Object.freeze({
   DEV_BRANCH: 'devBranch',
   MAIN_BRANCH: 'mainBranch',
   MERGE_FLAG: 'mergeFlag',
+  RELEASE_CREDENTIAL_SECRET: 'releaseCredentialSecret',
 });
 
 export function mergeMethodToFlag(devToMainMethod) {

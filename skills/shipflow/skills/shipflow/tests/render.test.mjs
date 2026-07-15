@@ -52,8 +52,9 @@ test('auto-merge job passes --repo to gh pr merge (no checkout step to infer it 
     devBranch: 'dev',
     mainBranch: 'main',
     mergeFlag: '--merge',
+    releaseCredentialSecret: 'GITHUB_TOKEN',
   });
-  const mergeLine = rendered.split('\n').find((l) => l.includes('gh pr merge'));
+  const mergeLine = rendered.split('\n').find((l) => l.includes('run: gh pr merge'));
   assert.ok(mergeLine, 'expected a `gh pr merge` line in the rendered workflow');
   assert.match(mergeLine, /--repo "\$\{\{ github\.repository \}\}"/);
 });
@@ -63,8 +64,33 @@ test('label-release-pending job passes --repo to gh pr edit (no checkout step to
     devBranch: 'dev',
     mainBranch: 'main',
     mergeFlag: '--merge',
+    releaseCredentialSecret: 'GITHUB_TOKEN',
   });
-  const labelLine = rendered.split('\n').find((l) => l.includes('gh pr edit'));
+  const labelLine = rendered.split('\n').find((l) => l.includes('run: gh pr edit'));
   assert.ok(labelLine, 'expected a `gh pr edit` line in the rendered workflow');
   assert.match(labelLine, /--repo "\$\{\{ github\.repository \}\}"/);
+});
+
+// Regression test for a second, more serious bug found by the same dogfood
+// run: a PR auto-merged under secrets.GITHUB_TOKEN completes (once checks
+// pass) attributed to github-actions[bot], and GitHub's loop-prevention
+// rule means that bot-attributed merge's `pull_request: closed` event never
+// triggers this or any other workflow — so label-release-pending silently
+// never ran at all (confirmed empirically: an otherwise-identical PR merged
+// by a real, PAT-authenticated actor fired the closed event immediately).
+// Both gh calls must use config.release.releaseCredential, not a hardcoded
+// GITHUB_TOKEN, so a real PAT/App-token secret can be substituted in.
+test('both gh calls use the configurable release-credential secret, not a hardcoded GITHUB_TOKEN', () => {
+  const rendered = renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
+    devBranch: 'dev',
+    mainBranch: 'main',
+    mergeFlag: '--merge',
+    releaseCredentialSecret: 'SHIPFLOW_AUTOMERGE_PAT',
+  });
+  const ghTokenLines = rendered.split('\n').filter((l) => l.includes('GH_TOKEN:'));
+  assert.equal(ghTokenLines.length, 2, 'expected exactly 2 GH_TOKEN env lines (auto-merge + label-release-pending)');
+  for (const line of ghTokenLines) {
+    assert.match(line, /secrets\.SHIPFLOW_AUTOMERGE_PAT/);
+    assert.doesNotMatch(line, /secrets\.GITHUB_TOKEN/);
+  }
 });
