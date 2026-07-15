@@ -28,8 +28,23 @@ test('every CLI command SKILL.md relies on exists in the dispatcher', () => {
   }
 });
 
-test('SKILL.md tells the agent to invoke the CLI via npx', () => {
-  assert.match(skillMd, /npx -y @natjswenson\/shipflow <command>/);
+test('SKILL.md tells the agent to invoke the CLI via npx, pinned to @latest', () => {
+  assert.match(skillMd, /npx -y @natjswenson\/shipflow@latest <command>/);
+});
+
+// Regression guard for a finding self-discovered 2026-07-15 during a live
+// dogfood run: a bare `npx -y @natjswenson/shipflow <command>` (no version/tag)
+// silently resolved a stale global install on PATH instead of fetching the
+// current version from the registry — meaning every fix through 0.2.5,
+// including the Critical template-injection fix, was silently skipped with
+// no warning. Every invocation in SKILL.md must pin @latest; this test fails
+// if a future edit reintroduces a bare, unpinned invocation anywhere.
+test('every npx invocation of shipflow in SKILL.md pins @latest', () => {
+  const invocations = skillMd.match(/npx -y @natjswenson\/shipflow(@\S+)?/g) ?? [];
+  assert.ok(invocations.length > 0, 'expected at least one npx invocation in SKILL.md');
+  for (const inv of invocations) {
+    assert.match(inv, /^npx -y @natjswenson\/shipflow@latest$/, `unpinned or wrongly-pinned invocation: "${inv}"`);
+  }
 });
 
 test('package.json version matches the top CHANGELOG entry', () => {

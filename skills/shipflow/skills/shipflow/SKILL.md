@@ -7,8 +7,17 @@ user_invocable: true
 # /shipflow — branching + release-automation setup
 
 All deterministic work is delegated to the CLI. Invoke it as
-`npx -y @natjswenson/shipflow <command>`. Every command prints JSON to
-stdout — parse it, don't try to re-derive what it computed.
+`npx -y @natjswenson/shipflow@latest <command>` — **always with the explicit
+`@latest` tag, never bare `@natjswenson/shipflow`.** Without a version/tag,
+`npx` prefers an already-resolvable install on `PATH` (e.g. a stale global
+`npm install -g @natjswenson/shipflow` from a prior manual test) over
+fetching the current version from the registry, and does so silently with
+no warning. This isn't hypothetical: it happened in this exact repo — the
+same command with the `@latest` tag omitted silently ran a stale global
+0.2.0 install (missing every fix through 0.2.5, including the Critical
+template-injection fix), while `npx -y @natjswenson/shipflow@latest -v`
+correctly resolved 0.2.5. Every command prints JSON to stdout — parse it,
+don't try to re-derive what it computed.
 
 **This skill never mutates repo state directly.** Every mutating action goes
 through `shipflow apply`, and the computed plan is always shown to the user
@@ -30,7 +39,7 @@ user; the CLI is the only thing that *does*.
 
 1. **Detect.** Run:
    ```
-   npx -y @natjswenson/shipflow detect --repo <path> --main main --dev dev
+   npx -y @natjswenson/shipflow@latest detect --repo <path> --main main --dev dev
    ```
    (Use whatever branch names the user has, or `main`/`dev` as a starting guess — you'll confirm them next.) This prints a `RepoState` plus a `protectionOwnerClassification` of `"external"`, `"shipflow"`, or `"ambiguous"`.
 
@@ -38,7 +47,7 @@ user; the CLI is the only thing that *does*.
    - **Map onto the existing default branch** — set the config's `branches.main` to the detected default branch name and continue with the rest of setup treating that as "main." No mutating calls needed; `branches.main` is fully configurable.
    - **Switch the repo's default branch to `main`** — flag this as a bigger, more disruptive action than the rest of setup (it affects every collaborator and every open PR), get a distinct explicit confirmation for it specifically, separate from the general setup go-ahead, then run:
      ```
-     npx -y @natjswenson/shipflow rename-default-branch --repo <path> --branch <old-default> --to main
+     npx -y @natjswenson/shipflow@latest rename-default-branch --repo <path> --branch <old-default> --to main
      ```
      GitHub natively retargets the default-branch pointer and open PRs' base ref. On success, tell the user their own local checkout still points at the old name and needs `git fetch origin && git checkout main` to follow, then re-run step 1's `detect` (repo state changed) before continuing.
 
@@ -57,18 +66,18 @@ user; the CLI is the only thing that *does*.
 
 7. **Show the plan.** Run:
    ```
-   npx -y @natjswenson/shipflow plan --repo <path>
+   npx -y @natjswenson/shipflow@latest plan --repo <path>
    ```
    This prints `{ plan, stateHash }`. Present `plan.creates`/`plan.updates`/`plan.noops` to the user in plain language — what will be created, what will change, what's already correct. **Wait for explicit confirmation before proceeding.** If any entry has `handEditDetected: true`, call it out specifically and ask whether to override (see step 9).
 
 8. **Dry-run apply** (optional sanity check, same output shape as the real apply but nothing is mutated):
    ```
-   npx -y @natjswenson/shipflow apply --repo <path> --dry-run
+   npx -y @natjswenson/shipflow@latest apply --repo <path> --dry-run
    ```
 
 9. **Apply for real**, passing the `stateHash` from step 7's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan. **`--expect-state-hash` is mandatory for a real (non-dry-run) apply** — omitting it is a hard CLI refusal, not a silent skip of the check; the only way around it is the explicitly-named `--skip-hash-check` escape hatch, which you should never reach for as a matter of course.
    ```
-   npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-7>
+   npx -y @natjswenson/shipflow@latest apply --repo <path> --expect-state-hash <hash-from-step-7>
    ```
    If a `handEditDetected` entry was confirmed for override in step 7, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override) **and** `--force-reason "<short justification>"` — the CLI refuses any `--force` without an accompanying reason, and that reason is echoed back in the apply result for auditability. Write a real justification tied to the user's actual confirmation (e.g. `--force-reason "user confirmed hand-edit override for the branch-rename migration on 2026-07-15"`), never a placeholder string.
 
@@ -84,7 +93,7 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 
 1. Run:
    ```
-   npx -y @natjswenson/shipflow releases --repo <path>
+   npx -y @natjswenson/shipflow@latest releases --repo <path>
    ```
    This returns every `dev → main` PR still labeled `release-pending`, each with a `merged` flag (confirmed independently, not just inferred from the label).
 
@@ -92,7 +101,7 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 
 3. If yes, dispatch each changed skill's release workflow and clear the label **only after every dispatch is confirmed successful**:
    ```
-   npx -y @natjswenson/shipflow release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main
+   npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main
    ```
    If `dispatched` shows a partial failure, the label is deliberately left in place — report this to the user and note the promotion will resurface next time `releases` is checked; a later re-dispatch is safe (each skill's release workflow is idempotent).
 
