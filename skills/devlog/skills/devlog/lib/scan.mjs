@@ -74,6 +74,7 @@ export function scanProject(project, { branch = 'main', fetch = true, existingFi
     key: project.key,
     label: project.label || project.key,
     remote: project.remote,
+    private: !!project.private,
     path: project.path,
     pathFilter: project.pathFilter || null,
     tagPrefix: project.tagPrefix || 'v',
@@ -107,6 +108,11 @@ export function scanProject(project, { branch = 'main', fetch = true, existingFi
   const hasPublishedRef = git(project.path, ['rev-parse', '--verify', '--quiet', publishedRef]) !== null;
 
   const isPublic = (rev) => {
+    // A private project has no safe commit surface, full stop — this bypasses
+    // remoteMatches/hasPublishedRef entirely rather than relying on them to
+    // happen to be false, since a private repo can still have origin configured
+    // correctly (remoteMatches true) and a normally-pushed branch.
+    if (project.private) return false;
     if (!remoteMatches || !hasPublishedRef) return false;
     return spawnArgs('git', ['-C', project.path, 'merge-base', '--is-ancestor', rev, publishedRef]).status === 0;
   };

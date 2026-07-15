@@ -224,6 +224,17 @@ test('scanProject marks nothing public when origin is a different repo', (t) => 
   assert.deepEqual(out.newReleases[0].commits.map((c) => c.public), [false]);
 });
 
+test('scanProject marks nothing public for a private project even when remote and branch match', (t) => {
+  const dir = makeRepo(t);
+  commit(dir, 'a.txt', 'feat: private work');
+  git(dir, 'tag', 'v0.1.0');
+  fakePublish(dir, 'me/proj'); // origin/main matches project.remote and contains the tag
+
+  const out = scanProject(project(dir, { private: true }), { fetch: false });
+  assert.equal(out.private, true);
+  assert.deepEqual(out.newReleases[0].commits.map((c) => c.public), [false]);
+});
+
 test('scanProject reports a missing path as an error', () => {
   const out = scanProject(project('/nonexistent/path/xyz'), { fetch: false });
   assert.equal(out.error, 'path-missing');
