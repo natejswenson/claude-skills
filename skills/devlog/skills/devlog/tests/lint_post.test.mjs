@@ -17,7 +17,7 @@ title: "Testing the seams between generated files"
 date: 2026-07-11
 project: proj
 version: v0.5.0
-tags: [testing, ci-cd]
+tags: [testing, ci-cd, github-actions, vitest, node]
 summary: "What a contract test between two generated files actually buys you."
 ---
 
@@ -80,11 +80,37 @@ test('lintPost rejects changelog-style titles', () => {
   assert.ok(r.findings.some((f) => f.rule === 'title-style'));
 });
 
-test('lintPost enforces 2-5 tags', () => {
-  const one = lintPost(GOOD.replace('tags: [testing, ci-cd]', 'tags: [testing]'));
-  assert.ok(one.findings.some((f) => f.rule === 'tags-count'));
-  const six = lintPost(GOOD.replace('tags: [testing, ci-cd]', 'tags: [a, b, c, d, e, f]'));
-  assert.ok(six.findings.some((f) => f.rule === 'tags-count'));
+test('lintPost rejects fewer than 5 tags', () => {
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [a, b, c, d]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost rejects more than 10 tags', () => {
+  const eleven = Array.from({ length: 11 }, (_, i) => `tag${i}`).join(', ');
+  const post = GOOD.replace(/tags: \[.*\]/, `tags: [${eleven}]`);
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost accepts exactly 5 and exactly 10 tags', () => {
+  const five = GOOD.replace(/tags: \[.*\]/, 'tags: [a, b, c, d, e]');
+  assert.ok(!lintPost(five).findings.some((f) => f.rule === 'tags-count'));
+  const ten = Array.from({ length: 10 }, (_, i) => `tag${i}`).join(', ');
+  const tenPost = GOOD.replace(/tags: \[.*\]/, `tags: [${ten}]`);
+  assert.ok(!lintPost(tenPost).findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost rejects a tag with an uppercase character', () => {
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [MCP, python, cli, testing, ci]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-character-pattern'));
+});
+
+test('lintPost rejects a case-insensitive duplicate tag', () => {
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [mcp, python, cli, testing, MCP]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-duplicate'));
 });
 
 test('lintPost checks filename matches version', () => {
