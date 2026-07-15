@@ -108,9 +108,12 @@ test('lintPost rejects a tag with an uppercase character', () => {
 });
 
 test('lintPost rejects a case-insensitive duplicate tag', () => {
-  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [mcp, python, cli, testing, MCP]');
+  // Literal same-case repeat (not an uppercase variant) so this test isolates
+  // the tags-duplicate rule from tags-character-pattern.
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [mcp, python, cli, testing, mcp]');
   const { findings } = lintPost(post);
   assert.ok(findings.some((f) => f.rule === 'tags-duplicate'));
+  assert.ok(!findings.some((f) => f.rule === 'tags-character-pattern'));
 });
 
 test('lintPost checks filename matches version', () => {

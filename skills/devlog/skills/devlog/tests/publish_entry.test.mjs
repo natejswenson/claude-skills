@@ -75,6 +75,27 @@ Things.
   assert.deepEqual(entry.tags, ['mcp', 'python', 'cli', 'testing', 'ci']);
 });
 
+test('publishEntry defaults tags to [] when frontmatter has no tags field', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  const path = join(root, 'draft-v0.1.0.md');
+  writeFileSync(path, `---
+title: "A real title"
+date: 2026-07-11
+project: proj
+version: v0.1.0
+summary: "A summary."
+---
+
+## Shipped
+
+Things.
+`);
+
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: path });
+  const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
+  assert.deepEqual(entry.tags, []);
+});
+
 test('publishEntry refuses to overwrite an existing entry', (t) => {
   const { root, cloneDir } = makeDirs(t);
   publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
