@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Enable auto-merge
-        run: gh pr merge --auto --merge "${{ github.event.pull_request.number }}"
+        run: gh pr merge --auto --merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,6 +47,6 @@ jobs:
       pull-requests: write
     steps:
       - name: Apply release-pending label
-        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label release-pending
+        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label release-pending --repo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
