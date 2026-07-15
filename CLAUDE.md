@@ -52,15 +52,23 @@ truth for that automation (branch names, merge methods, branch cleanup, release 
 *protection* itself is **not** shipflow-owned here (`protectionOwner: "external"` — see Repo
 settings, below) — `.github/repo-settings.sh` stays the source of truth for that.
 
+**Always invoke the CLI as `npx -y @natjswenson/shipflow@latest <command>` — never bare
+`@natjswenson/shipflow`.** Without a version/tag, `npx` prefers a stale install already on `PATH`
+(e.g. a leftover `npm install -g`) over fetching the current version from the registry, silently
+and with no warning. This bit this exact repo during the 2026-07-15 PAT-wiring dogfood run: a bare
+invocation silently ran a stale global 0.2.0 install, missing every fix through 0.2.5 (including a
+Critical template-injection fix). Every command below already pins `@latest`; keep it that way in
+any new invocation you add here.
+
 - `.github/workflows/dev-to-main-automerge.yml` is **rendered by shipflow's `apply`**, not
   hand-written. Never edit it directly — edit `.github/shipflow.json` and re-run
-  `npx -y @natjswenson/shipflow apply --repo .` (it refuses to overwrite a hand-edited file it
+  `npx -y @natjswenson/shipflow@latest apply --repo .` (it refuses to overwrite a hand-edited file it
   detects a hash mismatch on). If a re-render does change it, commit the file and the config's
   updated `renderedTemplateHashes` entry together.
 - To check for drift between this config and live repo state at any time:
-  `npx -y @natjswenson/shipflow plan --repo .`.
+  `npx -y @natjswenson/shipflow@latest plan --repo .`.
 - To check for a release decision waiting on a merged promotion:
-  `npx -y @natjswenson/shipflow releases --repo .` (see step 4 below).
+  `npx -y @natjswenson/shipflow@latest releases --repo .` (see step 4 below).
 
 ## Release process (step by step)
 
@@ -83,7 +91,7 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    native auto-merge completes asynchronously with no live agent session attached at that moment).
    A **separate, later** invocation checks for it:
    ```
-   npx -y @natjswenson/shipflow releases --repo .
+   npx -y @natjswenson/shipflow@latest releases --repo .
    ```
    For each promotion returned with `merged: true`, the agent lists which skills changed and asks
    whether to cut a release. Declining is final for that promotion in this version — there's no
@@ -98,7 +106,7 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    Flow section).
 6. **Dispatch and clear the label together:**
    ```
-   npx -y @natjswenson/shipflow release-dispatch --repo . --pr <number> \
+   npx -y @natjswenson/shipflow@latest release-dispatch --repo . --pr <number> \
      --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main
    ```
    This is a thin wrapper around `gh workflow run <skill>.yml --ref main` per changed skill, plus

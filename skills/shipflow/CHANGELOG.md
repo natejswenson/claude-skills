@@ -2,6 +2,40 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.6 (2026-07-15) — pin `@latest` on every invocation; docs pass
+
+Self-discovered during the PAT-wiring dogfood step that immediately followed
+0.2.5's release — not a Siege audit finding, but adjacent to the same
+class of risk the audit was meant to close.
+
+- **Fixed: silent global-install shadowing.** `npx -y @natjswenson/shipflow
+  <command>` (no version/tag) can resolve an already-installed copy on
+  `PATH` — e.g. a stale `npm install -g @natjswenson/shipflow` left over
+  from manual testing — instead of fetching the current version from the
+  registry, with **no warning that this happened**. Confirmed concretely on
+  `claude-skills` itself: a bare invocation silently ran a stale global
+  0.2.0 install, missing every fix through 0.2.5, including the Critical
+  template-injection fix (0.2.3). `npx -y @natjswenson/shipflow@latest
+  <command>` correctly resolved 0.2.5. This meant a repo could run
+  `shipflow` believing it was getting current, audited behavior while
+  silently getting pre-audit, vulnerable behavior instead.
+- **Fix: every invocation in `SKILL.md` now pins `@latest`.** New
+  regression tests (`tests/skill_contract.test.mjs`) assert every `npx`
+  invocation of shipflow in `SKILL.md` is pinned, and fail if a future edit
+  reintroduces a bare invocation. New skill-invariant entry
+  (`npx-must-pin-latest`).
+- **Docs pass**, per user request before this release: root `README.md`
+  gained a `shipflow` row in the skills table, marketplace/manual-install
+  instructions, and a rewritten Branch & release flow section describing
+  the actual shipflow-managed automation this repo runs (replacing stale
+  prose describing the pre-dogfood bespoke flow); `skills/shipflow/README.md`
+  gained current usage instructions (with the `@latest` pin and its
+  rationale), an updated Status section reflecting 0.2.5's live validation
+  and completed security audit, and a pointer to remove a shadowing global
+  install if one exists (`npm uninstall -g @natjswenson/shipflow`).
+- No code changes to `lib/`/`bin/` in this release — SKILL.md, tests,
+  README, and version metadata only.
+
 ## 0.2.5 (2026-07-15) — mandatory TOCTOU guard, forced-override auditability, subprocess timeouts, YAML-validity CI check
 
 The four remaining findings from the same Siege audit as 0.2.3/0.2.4, all

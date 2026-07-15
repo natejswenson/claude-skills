@@ -75,6 +75,11 @@
       "id": "force-requires-reason",
       "pattern": "refuses any `--force` without an accompanying reason",
       "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-002): --force had zero code-level friction beyond the flag itself, so a confused or prompt-injected agent could force through an unprotected merge or a tampered template with no audit trail. --force now requires --force-reason, echoed back in the apply result."
+    },
+    {
+      "id": "npx-must-pin-latest",
+      "pattern": "always with the explicit\\s+`@latest` tag, never bare",
+      "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]
