@@ -9,11 +9,11 @@
     "mode": "manual-gate",
     "tool": "release-please",
     "layout": "manifest",
-    "releaseCredential": "GITHUB_TOKEN"
+    "releaseCredential": "SHIPFLOW_AUTOMERGE_PAT"
   },
   "branchCleanup": { "deleteOnMerge": true, "protectedBranches": ["dev", "main"] },
   "enforceAdmins": false,
   "renderedTemplateHashes": {
-    ".github/workflows/dev-to-main-automerge.yml": "cd20609a9ab09ad3d24fcdbf233aa7dc50b1263d778cfd92281899107ad546f2"
+    ".github/workflows/dev-to-main-automerge.yml": "6bc4b307b3d7928fa3b26f3ee6d281a9c4b59e7f6e8766576b688e519b21baef"
   }
 }
