@@ -2,6 +2,28 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.7.0 (2026-07-15) — private projects
+
+**Added**
+- New `private` project flag (`add-project --private`, or the interactive "Is this repo
+  private?" prompt). A private project's `remote` becomes optional, and `scanProject`'s
+  `isPublic` check now short-circuits to `false` unconditionally for it — regardless of
+  whether `remote` matches `origin` and the commit is on the published branch. Previously
+  those two checks alone decided "public," which is a proxy for "the commit is reachable
+  from a correctly-configured remote," not "the GitHub repo is public." A project with a
+  real, correctly configured `remote` that happens to live in a private GitHub repo would
+  have scanned every commit as public and generated dead `github.com/.../commit/...` links
+  in the post. `private` is a declared type, not auto-detected via the GitHub API — no
+  extra network call per run, and it stays correct even for a project with no push target
+  at all.
+- `config`'s project listing shows `(private — no commit links)` instead of a broken
+  `remote: github.com/undefined` line for a private project with no `remote` set.
+
+**Fixed**
+- `validateConfig` previously required every project to have a valid `remote`
+  unconditionally; a private project can now omit it (still validated for shape if
+  supplied anyway).
+
 ## 0.6.0 (2026-07-12) — lessons from rewriting the whole back-catalog
 
 Every pre-0.5 entry (38 posts across devlog, ghostwriter, resume, local-fitness) was

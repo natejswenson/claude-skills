@@ -226,7 +226,13 @@ async function promptForProject(defaults = {}) {
       validate: VALIDATORS.label,
     },
     {
-      type: 'text',
+      type: 'confirm',
+      name: 'private',
+      message: 'Is this repo private? (no GitHub commit links will ever be generated)',
+      initial: defaults.private || false,
+    },
+    {
+      type: (_p, values) => (values.private ? null : 'text'),
       name: 'remote',
       message: 'Project GitHub remote (<owner>/<repo>):',
       initial: (_p, values) => detectProjectRemote(expandHome(values.path)) || initialRemote,
@@ -244,8 +250,9 @@ async function promptForProject(defaults = {}) {
   const out = {
     key: answers.key.trim(),
     path: expandHome(answers.path),
-    remote: answers.remote.trim(),
   };
+  if (answers.remote && answers.remote.trim()) out.remote = answers.remote.trim();
+  if (answers.private) out.private = true;
   if (answers.label && answers.label.trim()) out.label = answers.label.trim();
   const tagPrefix = (answers.tagPrefix || '').trim();
   if (tagPrefix) out.tagPrefix = tagPrefix;
@@ -402,6 +409,7 @@ async function cmdAddProject(rest) {
       label: { type: 'string' },
       'tag-prefix': { type: 'string' },
       'path-filter': { type: 'string' },
+      private: { type: 'boolean', default: false },
       yes: { type: 'boolean', default: false },
       json: { type: 'boolean', default: false },
     },
@@ -417,7 +425,9 @@ async function cmdAddProject(rest) {
     if (!existsSync(path)) emitJSON({ error: 'path-missing', message: `Path does not exist: ${path}` }, 1);
     const key = values.key || basename(path);
     const remote = values.remote || detectProjectRemote(path);
-    if (!remote) emitJSON({ error: 'remote-undetectable', message: 'No origin remote found; pass --remote <owner>/<repo>.' }, 1);
+    // A private project never links commits publicly, so an undetectable
+    // remote isn't fatal for it — only for a project that intends to be public.
+    if (!remote && !values.private) emitJSON({ error: 'remote-undetectable', message: 'No origin remote found; pass --remote <owner>/<repo>.' }, 1);
     try {
       const next = addProject(config, {
         key,
@@ -426,6 +436,7 @@ async function cmdAddProject(rest) {
         label: values.label,
         tagPrefix: values['tag-prefix'],
         pathFilter: values['path-filter'],
+        private: values.private,
       });
       atomicWriteJSON(CONFIG_PATH, next);
       emitJSON({ ok: true, added: next.projects.at(-1), projects: next.projects.map((p) => p.key) });
@@ -452,6 +463,7 @@ async function cmdAddProject(rest) {
       remote: newProject.remote,
       label: newProject.label,
       tagPrefix: newProject.tagPrefix,
+      private: newProject.private,
     });
     atomicWriteJSON(CONFIG_PATH, next);
     log.ok(`Added "${newProject.key}" to config.`);
@@ -646,7 +658,11 @@ async function cmdConfig(rest) {
   for (const p of config.projects || []) {
     log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
     log.info(kleur.dim(`    path:   ${p.path}`));
-    log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+    if (p.private) {
+      log.info(kleur.dim(`    remote: (private — no commit links)${p.remote ? ` [${p.remote}]` : ''}`));
+    } else {
+      log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+    }
     if (p.pathFilter) log.info(kleur.dim(`    scope:  ${p.pathFilter}/`));
     log.info(kleur.dim(`    tags:   ${p.tagPrefix || 'v'}*`));
   }

@@ -60,6 +60,11 @@
       "id": "no-push-retry",
       "pattern": "do not retry automatically",
       "rationale": "A failed push is surfaced to the user, not retried blind."
+    },
+    {
+      "id": "private-project-no-links",
+      "pattern": "no post ever[\\s\\S]{0,10}links a commit for it",
+      "rationale": "A private project's commits must never scan as public just because remoteMatches + branch-contains happen to hold — losing this line reopens the dead-link-to-a-private-repo path."
     }
   ],
   "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init"]

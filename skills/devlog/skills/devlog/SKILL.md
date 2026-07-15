@@ -39,7 +39,7 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 | Intent | Command |
 |---|---|
 | Show config | `npx -y @natjswenson/devlog config --json` |
-| Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F]` |
+| Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
 | Remove a project | `npx -y @natjswenson/devlog remove-project <key> --yes` |
 | Change a setting | `npx -y @natjswenson/devlog set <field> <value>` (settable: `targetRepo`, `branch`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
 
@@ -50,6 +50,16 @@ get-url origin`. In a monorepo, suggest a `--path-filter` (the project's subdir)
 `AskUserQuestion` (options: "looks right" / sensible alternatives), then run with `--yes`
 and show the resulting project list. For **remove-project**, confirm once before running;
 tell the user published entries are not deleted.
+
+**Private repos.** If the user says the repo is private (or a source repo happens to be
+private on GitHub even though it's configured normally), pass `--private`. A private
+project's commits are never marked public in the scan (see Generate mode), so no post ever
+links a commit for it, `## Changelog` is always omitted, and `--remote` is optional — the
+tool has no reason to know or use the repo's GitHub location. This is a declared project
+*type*, not something auto-detected from the GitHub API: `remoteMatches` + "on the
+published branch" alone doesn't imply the repo is public, so a project with a real, correctly
+configured remote that happens to sit in a private repo needs this flag or its commits would
+otherwise scan as public.
 
 If any command prints `{"error": "config-missing", ...}`, tell the user to run
 `npx @natjswenson/devlog init` first. On `config-invalid`, show the message and offer to
