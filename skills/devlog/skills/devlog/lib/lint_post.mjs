@@ -10,6 +10,23 @@ export const REQUIRED_SECTIONS = ['Shipped', 'Gotchas', 'Sources'];
 
 const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+export const TAG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+// First-occurrence wins: keeps the first casing seen, drops later
+// case-insensitive duplicates. A same-case repeat is the reachable case in
+// practice — TAG_PATTERN already forbids the case-differing variant outright.
+export function dedupeCaseInsensitive(tags) {
+  const seen = new Set();
+  const out = [];
+  for (const t of tags) {
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
+
 // Minimal frontmatter parser: `--- ... ---` fence, `key: value` lines, flow
 // arrays for tags. Prototype-free target object; unknown keys are kept (the
 // contract does not forbid extras) but only allowlisted keys are checked.
