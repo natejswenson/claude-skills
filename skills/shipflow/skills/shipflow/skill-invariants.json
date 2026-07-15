@@ -65,6 +65,16 @@
       "id": "render-template-validates-substitutions",
       "pattern": "never assume a config field is pre-sanitized",
       "rationale": "Found by a Siege security audit (2026-07-15): renderTemplate did pure string substitution with zero escaping, so a repo-write-level (not admin-level) edit to .github/shipflow.json's branch names or release.releaseCredential could break out of the rendered YAML's quoting and make the auto-merge job's if: condition unconditionally true, or inject arbitrary new workflow steps — a privilege escalation via the credential the rendered workflow runs with."
+    },
+    {
+      "id": "expect-state-hash-mandatory",
+      "pattern": "is mandatory for a real \\(non-dry-run\\) apply",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-003): --expect-state-hash was optional, so a real apply could silently proceed with zero TOCTOU/drift protection if the caller simply omitted it. Now a hard CLI refusal unless the named --skip-hash-check escape hatch is passed explicitly."
+    },
+    {
+      "id": "force-requires-reason",
+      "pattern": "refuses any `--force` without an accompanying reason",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-002): --force had zero code-level friction beyond the flag itself, so a confused or prompt-injected agent could force through an unprotected merge or a tampered template with no audit trail. --force now requires --force-reason, echoed back in the apply result."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]

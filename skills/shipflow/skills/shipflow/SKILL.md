@@ -66,11 +66,11 @@ user; the CLI is the only thing that *does*.
    npx -y @natjswenson/shipflow apply --repo <path> --dry-run
    ```
 
-9. **Apply for real**, passing the `stateHash` from step 7's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan.
+9. **Apply for real**, passing the `stateHash` from step 7's plan output as `--expect-state-hash` — this is the TOCTOU guard: if repo state drifted between the plan you showed the user and this call, `apply` refuses to mutate anything and tells you to re-plan. **`--expect-state-hash` is mandatory for a real (non-dry-run) apply** — omitting it is a hard CLI refusal, not a silent skip of the check; the only way around it is the explicitly-named `--skip-hash-check` escape hatch, which you should never reach for as a matter of course.
    ```
    npx -y @natjswenson/shipflow apply --repo <path> --expect-state-hash <hash-from-step-7>
    ```
-   If a `handEditDetected` entry was confirmed for override in step 7, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override).
+   If a `handEditDetected` entry was confirmed for override in step 7, pass `--force <entry-id>` (repeatable — one flag per confirmed entry id, never a blanket override) **and** `--force-reason "<short justification>"` — the CLI refuses any `--force` without an accompanying reason, and that reason is echoed back in the apply result for auditability. Write a real justification tied to the user's actual confirmation (e.g. `--force-reason "user confirmed hand-edit override for the branch-rename migration on 2026-07-15"`), never a placeholder string.
 
 10. **Report the result.** Read `applied`/`skipped`/`errors` from the response. A `skipped` entry can be a deliberate refusal (empty checks, hand-edit) or an environment limitation shipflow can't do anything about (e.g. a deletion-ruleset skipped because the repo is private and not on a paid GitHub tier) — read each `reason` and relay it plainly rather than treating every `skipped` entry the same. If `renderedTemplateHashes` is non-empty, update `.github/shipflow.json`'s `renderedTemplateHashes` field with those values and tell the user to commit the config change *and* the rendered workflow file **together, in the same commit** — a split commit is exactly what causes a false `handEditDetected` on a clean checkout later.
 
@@ -104,11 +104,14 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 
 ## Error handling
 
-- **Empty `requiredChecks`:** `apply` refuses to wire up auto-merge with zero required checks. Don't work around this by suggesting `--force allow-no-checks` unless the user has explicitly and knowingly accepted an unprotected merge — surface the refusal message plainly first.
+- **Empty `requiredChecks`:** `apply` refuses to wire up auto-merge with zero required checks. Don't work around this by suggesting `--force allow-no-checks` (plus the now-mandatory `--force-reason`) unless the user has explicitly and knowingly accepted an unprotected merge — surface the refusal message plainly first.
 - **`handEditDetected`:** a template file's on-disk content doesn't match what shipflow last rendered *or* what it would freshly render — someone hand-edited it. Never silently pass `--force` for this; always show the user what changed and get explicit confirmation per entry.
 - **TOCTOU abort:** if `apply` returns a `toctou` error, repo state changed between plan and apply — re-run the plan step, don't retry the same `--expect-state-hash`.
 - **`gh auth` failures:** surface these immediately; branch protection and rulesets need repo-admin scope. Don't proceed partway through a plan on missing auth.
 - **`release.releaseCredential` left as (or defaulted to) `GITHUB_TOKEN`:** auto-merge and the required-check gate still work, but `label-release-pending` will silently never run — a `GITHUB_TOKEN`-attributed auto-merge's `pull_request: closed` event never triggers it, so no promotion will ever surface via `shipflow releases`. This fails silently, not loudly — there's no error to catch it — so it must be caught at setup time (step 5) rather than discovered later. If a user reports "releases never show up," check this first.
+- **`--expect-state-hash is required` refusal:** a real apply was attempted with neither `--expect-state-hash` nor `--skip-hash-check`. Go back and get (or re-fetch via `plan`) the hash — don't reach for `--skip-hash-check` just to make the error go away; that flag exists for a deliberate, documented exception, not as a default workaround.
+- **`--force was passed without --force-reason` refusal:** a `--force` flag was about to be sent with no accompanying justification. Stop and get (or write) an explicit reason tied to what the user actually confirmed before retrying — never pass a placeholder string just to satisfy the flag.
+- **A `gh`/`git` call hangs or times out:** every subprocess call has a 30-second timeout (`ETIMEDOUT` surfaces in the error message). A timeout on `detect`/`plan` usually means a real GitHub outage or rate-limit — retry once, and if it persists, tell the user rather than looping silently.
 
 ## Security rules
 
