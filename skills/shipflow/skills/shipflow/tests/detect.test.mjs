@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import {
   listWorkflowJobNames,
   findSettingsAsCodeArtifact,
   classifyProtectionOwner,
+  resolveOwnerRepo,
 } from '../lib/detect.mjs';
+import { readFileCapped } from '../lib/gh.mjs';
 
 function withTempRepo(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'shipflow-test-'));
@@ -111,4 +114,55 @@ test('classifyProtectionOwner returns "ambiguous" when protection exists but no 
     protection: { main: { requiredChecks: ['ci'] }, dev: null },
   });
   assert.equal(owner, 'ambiguous');
+});
+
+function withGitRemote(remoteUrl, fn) {
+  withTempRepo((dir) => {
+    spawnSync('git', ['init', '--quiet'], { cwd: dir });
+    spawnSync('git', ['remote', 'add', 'origin', remoteUrl], { cwd: dir });
+    fn(dir);
+  });
+}
+
+// Regression tests for findings from a Siege security audit (2026-07-15):
+// an all-dots owner/repo segment (e.g. from a crafted remote URL like
+// "github.com/../..") matched the [\w.-]+ capture and produced an
+// ownerRepo string that would normalize away the intended
+// repos/<owner>/<repo> prefix once interpolated into gh api paths.
+test('resolveOwnerRepo returns the ownerRepo for a normal remote', () => {
+  withGitRemote('https://github.com/natejswenson/claude-skills.git', (dir) => {
+    assert.equal(resolveOwnerRepo(dir), 'natejswenson/claude-skills');
+  });
+});
+
+test('resolveOwnerRepo rejects an all-dots owner segment', () => {
+  withGitRemote('https://github.com/../claude-skills.git', (dir) => {
+    assert.equal(resolveOwnerRepo(dir), null);
+  });
+});
+
+test('resolveOwnerRepo rejects an all-dots repo segment', () => {
+  withGitRemote('https://github.com/natejswenson/...git', (dir) => {
+    assert.equal(resolveOwnerRepo(dir), null);
+  });
+});
+
+// Regression test for a resource-exhaustion finding from the same audit:
+// .github/shipflow.json and other repo-tracked files detect.mjs reads are
+// repo-write-controlled, not admin-only — readFileCapped must refuse an
+// oversized file rather than let JSON.parse/readFileSync run unbounded.
+test('readFileCapped refuses a file over the safety cap', () => {
+  withTempRepo((dir) => {
+    const big = join(dir, 'big.json');
+    writeFileSync(big, 'x'.repeat(1_000_001));
+    assert.throws(() => readFileCapped(big), /exceeds the .* safety cap/);
+  });
+});
+
+test('readFileCapped reads a normal-sized file fine', () => {
+  withTempRepo((dir) => {
+    const small = join(dir, 'small.json');
+    writeFileSync(small, '{"ok":true}');
+    assert.equal(readFileCapped(small), '{"ok":true}');
+  });
 });

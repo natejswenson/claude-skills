@@ -14,6 +14,7 @@ import {
   dispatchReleaseWorkflow,
   renameDefaultBranch,
 } from '../lib/apply.mjs';
+import { readFileCapped } from '../lib/gh.mjs';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATE_PATH = join(PACKAGE_ROOT, 'templates', 'dev-to-main-automerge.yml.tmpl');
@@ -24,7 +25,10 @@ function readPackageVersion() {
 }
 
 function readConfig(path) {
-  return JSON.parse(readFileSync(path, 'utf8'));
+  // .github/shipflow.json lives in whatever repo --repo points at — a
+  // repo-write-editable file, not admin-only — so cap its size before
+  // parsing (see lib/gh.mjs's readFileCapped for why).
+  return JSON.parse(readFileCapped(path));
 }
 
 function defaultConfigPath(repoPath) {
