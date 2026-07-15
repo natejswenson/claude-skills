@@ -170,7 +170,9 @@ title: "<essay-style title in sentence case (capitalize only the first word and 
 date: <release date from scan>
 project: <project key>
 version: <version from scan>
-tags: [<2-5 lowercase topic tags>]
+tags: [<5-10 specific, lowercase tags — tools, techniques, and concepts actually
+  present in the post, not just broad topic labels, e.g. git, ci-cd,
+  release-engineering, github-actions, semver, changelog-automation>]
 summary: "<1-2 sentence hook that frames the how-to, not just what shipped>"
 ---
 

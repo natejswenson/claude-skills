@@ -7,6 +7,8 @@ import {
   splitSections,
   findUntaggedFences,
   extractSourceUrls,
+  TAG_PATTERN,
+  dedupeCaseInsensitive,
 } from '../lib/lint_post.mjs';
 
 // A post that satisfies the full deterministic contract. Tests mutate this.
@@ -15,7 +17,7 @@ title: "Testing the seams between generated files"
 date: 2026-07-11
 project: proj
 version: v0.5.0
-tags: [testing, ci-cd]
+tags: [testing, ci-cd, github-actions, vitest, node]
 summary: "What a contract test between two generated files actually buys you."
 ---
 
@@ -78,11 +80,40 @@ test('lintPost rejects changelog-style titles', () => {
   assert.ok(r.findings.some((f) => f.rule === 'title-style'));
 });
 
-test('lintPost enforces 2-5 tags', () => {
-  const one = lintPost(GOOD.replace('tags: [testing, ci-cd]', 'tags: [testing]'));
-  assert.ok(one.findings.some((f) => f.rule === 'tags-count'));
-  const six = lintPost(GOOD.replace('tags: [testing, ci-cd]', 'tags: [a, b, c, d, e, f]'));
-  assert.ok(six.findings.some((f) => f.rule === 'tags-count'));
+test('lintPost rejects fewer than 5 tags', () => {
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [a, b, c, d]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost rejects more than 10 tags', () => {
+  const eleven = Array.from({ length: 11 }, (_, i) => `tag${i}`).join(', ');
+  const post = GOOD.replace(/tags: \[.*\]/, `tags: [${eleven}]`);
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost accepts exactly 5 and exactly 10 tags', () => {
+  const five = GOOD.replace(/tags: \[.*\]/, 'tags: [a, b, c, d, e]');
+  assert.ok(!lintPost(five).findings.some((f) => f.rule === 'tags-count'));
+  const ten = Array.from({ length: 10 }, (_, i) => `tag${i}`).join(', ');
+  const tenPost = GOOD.replace(/tags: \[.*\]/, `tags: [${ten}]`);
+  assert.ok(!lintPost(tenPost).findings.some((f) => f.rule === 'tags-count'));
+});
+
+test('lintPost rejects a tag with an uppercase character', () => {
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [MCP, python, cli, testing, ci]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-character-pattern'));
+});
+
+test('lintPost rejects a case-insensitive duplicate tag', () => {
+  // Literal same-case repeat (not an uppercase variant) so this test isolates
+  // the tags-duplicate rule from tags-character-pattern.
+  const post = GOOD.replace(/tags: \[.*\]/, 'tags: [mcp, python, cli, testing, mcp]');
+  const { findings } = lintPost(post);
+  assert.ok(findings.some((f) => f.rule === 'tags-duplicate'));
+  assert.ok(!findings.some((f) => f.rule === 'tags-character-pattern'));
 });
 
 test('lintPost checks filename matches version', () => {
@@ -187,4 +218,33 @@ test('sources-inline tolerates trailing-slash and fragment differences', () => {
     .replace('https://docs.pact.io/)', 'https://docs.pact.io/#intro)');
   const r = lintPost(post, { minSources: 3, filename: 'v0.5.0.md' });
   assert.ok(!r.findings.some((f) => f.rule === 'sources-inline'), JSON.stringify(r.findings));
+});
+
+// ─── TAG_PATTERN ──────────────────────────────────────────────────────────────
+
+test('TAG_PATTERN accepts lowercase alphanumeric-and-hyphen tags', () => {
+  assert.equal(TAG_PATTERN.test('mcp'), true);
+  assert.equal(TAG_PATTERN.test('ci-cd'), true);
+  assert.equal(TAG_PATTERN.test('python3'), true);
+});
+
+test('TAG_PATTERN rejects uppercase, symbols, and the | delimiter', () => {
+  assert.equal(TAG_PATTERN.test('MCP'), false);
+  assert.equal(TAG_PATTERN.test('a|b'), false);
+  assert.equal(TAG_PATTERN.test('a b'), false);
+  assert.equal(TAG_PATTERN.test(''), false);
+});
+
+// ─── dedupeCaseInsensitive ──────────────────────────────────────────────────────
+
+test('dedupeCaseInsensitive collapses a literal same-case repeat, first occurrence wins', () => {
+  assert.deepEqual(dedupeCaseInsensitive(['mcp', 'python', 'mcp']), ['mcp', 'python']);
+});
+
+test('dedupeCaseInsensitive also folds a case-differing duplicate (defense-in-depth)', () => {
+  assert.deepEqual(dedupeCaseInsensitive(['mcp', 'MCP']), ['mcp']);
+});
+
+test('dedupeCaseInsensitive returns tags unchanged when there are no duplicates', () => {
+  assert.deepEqual(dedupeCaseInsensitive(['mcp', 'python', 'cli']), ['mcp', 'python', 'cli']);
 });

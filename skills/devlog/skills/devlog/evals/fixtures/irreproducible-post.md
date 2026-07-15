@@ -3,7 +3,7 @@ title: "How our pipeline learned to validate itself end-to-end"
 date: 2026-07-10
 project: fixture
 version: v2.1.0
-tags: [testing, data-pipelines, python]
+tags: [testing, data-pipelines, python, etl, validation]
 summary: "v2.1.0 added self-validating pipeline stages. A look at how the validation layer came together."
 ---
 
