@@ -85,7 +85,12 @@ function cmdPlan(args) {
     releaseCredentialName: config.release?.releaseCredential ?? null,
   });
   const templateSource = readFileSync(TEMPLATE_PATH, 'utf8');
-  const plan = computePlan(repoState, config, templateSource);
+  let plan;
+  try {
+    plan = computePlan(repoState, config, templateSource);
+  } catch (e) {
+    return fail(`plan: ${e.message}`);
+  }
   printJson({ plan, stateHash: repoState.stateHash });
 }
 
@@ -122,7 +127,12 @@ function cmdApply(args) {
     releaseCredentialName: config.release?.releaseCredential ?? null,
   });
   const templateSource = readFileSync(TEMPLATE_PATH, 'utf8');
-  const plan = computePlan(repoState, config, templateSource);
+  let plan;
+  try {
+    plan = computePlan(repoState, config, templateSource);
+  } catch (e) {
+    return fail(`apply: ${e.message}`);
+  }
 
   // The CLI-level TOCTOU gate: compare the freshly-detected state against
   // what the user confirmed at plan time (--expect-state-hash, captured

@@ -115,6 +115,7 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 - All `gh`/`git` invocations in the CLI are argv-style (`spawnSync` with an args array, no shell) — never construct a shell command string from user input when extending this skill.
 - `.github/shipflow.json` is committed policy, not secrets — never write credential *values* into it, only the *name* of a secret (`release.releaseCredential`).
 - Never write shipflow's config anywhere other than `.github/shipflow.json` in the target repo.
+- **`renderTemplate` validates every substituted value before writing YAML, and this must never be weakened.** `config.branches.dev`/`main` and `release.releaseCredential` are editable by anyone with repo *write* access (not just the admin who ran setup), yet they land in single-quoted YAML string comparisons and a `${{ secrets.X }}` expression with pure string substitution. An unvalidated branch name containing a quote (e.g. `dev' || 'x'=='x`) makes the auto-merge job's `if:` condition unconditionally true — auto-merge would enable on *any* PR to main, not just genuine dev-branch promotions; a value containing a newline can inject arbitrary new YAML steps into the committed, then-executed workflow. If you add a new substitution token, it needs a validator in `TOKEN_VALIDATORS` before it ships — never assume a config field is pre-sanitized.
 
 ## Edge cases
 
