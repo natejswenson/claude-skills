@@ -44,6 +44,24 @@ feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ·�
 - Merge style: **merge commit** for `dev → main` (keeps `dev` and `main` linked so `dev` never
   diverges and needs no reset). Feature → `dev` is typically squashed for a clean integration commit.
 
+## Shipflow-managed automation
+
+The `dev → main` auto-merge workflow and the release-ask flow are managed by the `shipflow` skill
+this repo ships, dogfooded on itself. `.github/shipflow.json` is the committed policy source of
+truth for that automation (branch names, merge methods, branch cleanup, release mode). Branch
+*protection* itself is **not** shipflow-owned here (`protectionOwner: "external"` — see Repo
+settings, below) — `.github/repo-settings.sh` stays the source of truth for that.
+
+- `.github/workflows/dev-to-main-automerge.yml` is **rendered by shipflow's `apply`**, not
+  hand-written. Never edit it directly — edit `.github/shipflow.json` and re-run
+  `npx -y @natjswenson/shipflow apply --repo .` (it refuses to overwrite a hand-edited file it
+  detects a hash mismatch on). If a re-render does change it, commit the file and the config's
+  updated `renderedTemplateHashes` entry together.
+- To check for drift between this config and live repo state at any time:
+  `npx -y @natjswenson/shipflow plan --repo .`.
+- To check for a release decision waiting on a merged promotion:
+  `npx -y @natjswenson/shipflow releases --repo .` (see step 4 below).
+
 ## Release process (step by step)
 
 **Auto-merge and release tagging are decoupled.** Promoting `dev → main` auto-merges on green; it
@@ -51,33 +69,45 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
 
 1. **Branch off `dev`**, do the work. Each skill must keep its own tests green (`ci / <skill>` runs them).
 2. **Land it on `dev`** — open a PR into `dev` and merge it, or push directly (dev is unprotected).
-3. **Promote: open a PR from `dev` into `main`.** The **`auto-merge dev to main`** workflow
-   (`.github/workflows/auto-merge.yml`) turns on GitHub native auto-merge, and the PR **merges
-   itself once all four `ci / <skill>` checks pass**. If any check fails, it never merges.
-   - **Hold a promotion** by opening the `dev → main` PR as a **draft** — it won't auto-merge until
-     you mark it *ready for review*.
-4. **AGENT RULE — after opening a `dev → main` PR, ASK whether to cut a release tag.** Do not assume.
-   List which skills changed in the promotion and ask the user if any need a `<skill>-v<version>`
-   tag cut. The auto-merge (bot `GITHUB_TOKEN`) does not trigger the per-skill release workflows, so
-   nothing is tagged unless this step is done on purpose.
-5. **If a release is wanted**, ensure that skill's version is bumped (`package.json` for node skills,
-   `SKILL.md` frontmatter `version:` for python skills, **and `plugin.json.version` in
+3. **Promote: open a PR from `dev` into `main`.** The shipflow-rendered **`auto-merge dev to main`**
+   workflow (`.github/workflows/dev-to-main-automerge.yml`) turns on GitHub native auto-merge, and
+   the PR **merges itself once all four `ci / <skill>` checks pass**. If any check fails, it never
+   merges.
+   - **Hold a promotion** by opening the `dev → main` PR as a **draft** — `gh pr merge --auto` will
+     not succeed against a draft. **Known gap (shipflow v0.2.0):** the rendered workflow's trigger
+     list omits `ready_for_review`, so marking the draft ready for review does **not** re-fire the
+     auto-merge job on its own — push an empty commit (or close/reopen) to force a `synchronize`/
+     `reopened` event once it's ready. Tracked as a follow-up against the shipflow skill.
+4. **No synchronous ask anymore.** The same workflow's `label-release-pending` job attaches a
+   durable `release-pending` label **once the promotion PR actually merges** (not when it's opened —
+   native auto-merge completes asynchronously with no live agent session attached at that moment).
+   A **separate, later** invocation checks for it:
+   ```
+   npx -y @natjswenson/shipflow releases --repo .
+   ```
+   For each promotion returned with `merged: true`, the agent lists which skills changed and asks
+   whether to cut a release. Declining is final for that promotion in this version — there's no
+   "defer" state, the label just stays (expected, not a bug; a later manual dispatch is still safe).
+5. **If a release is wanted**, first ensure that skill's version is bumped (`package.json` for node
+   skills, `SKILL.md` frontmatter `version:` for python skills, **and `plugin.json.version` in
    `skills/<skill>/.claude-plugin/plugin.json` for all skills**) with a matching `CHANGELOG.md` entry.
    `plugin.json.version` is a required-mutually-equal field — the Tier-1.5 `lint_plugin.py` step in
    that skill's `ci` job fails the `dev → main` PR if it diverges from the other present version
    fields, so this is normally caught before merge, not at release time (release runs via
    `workflow_dispatch`, which the PR-time lint doesn't gate — see the marketplace design doc's Data
-   Flow section). Then, after the PR merges, cut the release from `main` by dispatching that skill's
-   workflow:
+   Flow section).
+6. **Dispatch and clear the label together:**
    ```
-   gh workflow run <skill>.yml --ref main
+   npx -y @natjswenson/shipflow release-dispatch --repo . --pr <number> \
+     --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main
    ```
-   The `release` job runs the version-driven `_release` reusable workflow: it cuts the
-   `<skill>-v<version>` tag + a GitHub Release with notes from `CHANGELOG.md` (skipped if the tag
-   already exists), and — for skills with `npm-publish: true` — publishes to npm when that version
-   isn't on the registry yet. Both are idempotent (tag + `npm view` guards), so re-dispatching is
-   safe, and the npm publish is independent of the tag check (it catches the registry up if a tag
-   was cut without publishing).
+   This is a thin wrapper around `gh workflow run <skill>.yml --ref main` per changed skill, plus
+   clearing the `release-pending` label **only after every dispatch is confirmed successful** — a
+   partial failure leaves the label in place so the promotion resurfaces on the next `releases` check
+   (re-dispatching an already-released skill is a safe idempotent no-op). The `release` job runs the
+   version-driven `_release` reusable workflow: it cuts the `<skill>-v<version>` tag + a GitHub
+   Release with notes from `CHANGELOG.md` (skipped if the tag already exists), and — for skills with
+   `npm-publish: true` — publishes to npm when that version isn't on the registry yet.
 
    To cut only the GitHub tag/Release without npm, `gh release create` also works:
    ```
@@ -85,16 +115,19 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    gh release create "<skill>-v<version>" --target "$(gh api repos/<owner>/<repo>/commits/main --jq .sha)" \
      --title "<skill> v<version>" --notes-file /tmp/notes.md
    ```
+   (this bypasses `release-dispatch`, so clear the `release-pending` label by hand:
+   `gh pr edit <number> --remove-label release-pending`.)
 
 > The per-skill `release` job (`needs: ci`) runs on a real push to `main` **or** an on-demand
-> `workflow_dispatch` (step 5). The bot `GITHUB_TOKEN` auto-merge does not fire push events, so the
+> `workflow_dispatch` (step 6). The bot `GITHUB_TOKEN` auto-merge does not fire push events, so the
 > dispatch is the deliberate release trigger. Full publish-on-merge would still need re-coupling via
 > a `RELEASE_PAT` so the auto-merge push fires downstream workflows.
 
 ## CI architecture (how the gate works)
 
 - One reusable **`_release.yml`** (`workflow_call`) + one caller **`<skill>.yml`** per skill +
-  **`tools.yml`** (shared `tools/score_skill.py` scorer) + **`auto-merge.yml`**.
+  **`tools.yml`** (shared `tools/score_skill.py` scorer) + the shipflow-rendered
+  **`dev-to-main-automerge.yml`**.
 - Each caller has a **`ci` job** (Tier-1 `tools/score_skill.py` SKILL.md lint + the skill's own
   Tier-2 tests) and a **`release` job** (`needs: ci`, runs only on push to `main`).
 - **Why all four checks always pass on any PR:** the `pull_request` trigger is **un-filtered**, so
@@ -106,19 +139,26 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
 
 ## Repo settings (as code)
 
-`.github/repo-settings.sh` is the idempotent source of truth for repo + `main` protection
-(run by an admin with `gh`). Key settings:
+`.github/repo-settings.sh` is the idempotent source of truth for repo + `main`/`dev` **protection**
+(run by an admin with `gh`). Branch/auto-merge/release-label **automation** is a separate concern,
+owned by `.github/shipflow.json` (see Shipflow-managed automation, above) — shipflow's
+`protectionOwner: "external"` config means it defers to this script for protection and never
+installs a competing ruleset. Key settings here:
 
 - `allow_auto_merge: true`, `allow_merge_commit: true` — required for the `dev → main` auto-merge.
-- `delete_branch_on_merge: false` — **deliberate**: a `dev → main` PR's head is `dev`, so
-  delete-on-merge would delete the long-lived `dev` branch. Keep it off.
+- `delete_branch_on_merge: true` — **safe only because `dev` is separately deletion-protected**
+  (`allow_deletions: false` in its branch protection, set by this same script). A `dev → main` PR's head is `dev`,
+  so delete-on-merge would otherwise delete the long-lived `dev` branch; the deletion lock is what
+  stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks: `ci / devlog`, `ci / resume`, `ci / ghostwriter`, `ci / github-stats`.
   These names are the job `name:` values — **renaming a caller or its `ci` job silently
   un-requires it; update branch protection in the same change.**
 
-**Bootstrap note:** `auto-merge.yml` runs via `pull_request_target` from the *base* branch, so it
-only fires once it's on `main`. The first promotion that introduces it is merged by hand; every
-`dev → main` PR afterward auto-merges.
+**Bootstrap note:** `dev-to-main-automerge.yml` is a plain `pull_request`-triggered workflow (not
+`pull_request_target`), so unlike the auto-merge workflow it replaced, it needs **no manual-merge
+bootstrap** — GitHub evaluates `pull_request` workflows from the PR's merge ref, so the file fires
+correctly on the very first `dev → main` PR that introduces it, as long as it already exists on
+`dev` (the head).
 
 ## Adding a new skill
 
