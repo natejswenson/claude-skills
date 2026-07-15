@@ -106,10 +106,29 @@ function cmdApply(args) {
       config: { type: 'string' },
       'dry-run': { type: 'boolean', default: false },
       'expect-state-hash': { type: 'string' },
+      'skip-hash-check': { type: 'boolean', default: false },
       force: { type: 'string', multiple: true, default: [] },
+      'force-reason': { type: 'string' },
     },
   });
   if (!values.repo) return fail('apply: --repo is required');
+  if (values.force.length > 0 && !values['force-reason']) {
+    return fail(
+      'apply: --force was passed without --force-reason — every force override must carry a short, explicit human-readable justification (surfaced back in the apply result for auditability)'
+    );
+  }
+  // --expect-state-hash is the TOCTOU guard: without it, a real apply
+  // proceeds against whatever live state happens to exist at call time,
+  // with no confirmation that a human/agent actually reviewed that exact
+  // state via `plan` first. Omitting it silently used to just skip the
+  // check — now it's a hard refusal unless the caller explicitly opts out
+  // via --skip-hash-check (a named, greppable escape hatch, not a default).
+  // Found via a Siege security audit (2026-07-15, SIEGE-2026-07-15-003).
+  if (!values['dry-run'] && !values['expect-state-hash'] && !values['skip-hash-check']) {
+    return fail(
+      'apply: --expect-state-hash is required for a real apply — pass the stateHash a prior `plan` call returned, or --skip-hash-check to explicitly bypass the drift guard (not recommended)'
+    );
+  }
 
   const configPath = values.config ?? defaultConfigPath(values.repo);
   let config;
@@ -158,6 +177,7 @@ function cmdApply(args) {
     dryRun: values['dry-run'],
     currentStateHash: repoState.stateHash,
     force: values.force,
+    forceReason: values['force-reason'] ?? null,
     ownerRepo,
     repoPath: values.repo,
     config,
@@ -241,7 +261,7 @@ Usage: shipflow <command> [options]
 Commands:
   detect --repo <path> [--main <name>] [--dev <name>] [--release-credential <name>]
   plan --repo <path> [--config <path>]
-  apply --repo <path> [--config <path>] [--dry-run] [--expect-state-hash <hash>] [--force <id>]...
+  apply --repo <path> [--config <path>] [--dry-run] [--expect-state-hash <hash> | --skip-hash-check] [--force <id>]... [--force-reason <text>]
   releases --repo <path> [--config <path>]
   release-dispatch --repo <path> --pr <number> --workflow-file <file>... --ref <ref>
   rename-default-branch --repo <path> --branch <current-name> --to <new-name>

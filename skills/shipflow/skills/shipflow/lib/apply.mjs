@@ -30,7 +30,7 @@ export function classifyRulesetError(stderr) {
 }
 
 export function applyPlan(plan, opts) {
-  const { dryRun, currentStateHash, force = [], ownerRepo, repoPath, config } = opts;
+  const { dryRun, currentStateHash, force = [], forceReason = null, ownerRepo, repoPath, config } = opts;
 
   // TOCTOU guard — refuse before making ANY mutating call if live state has
   // drifted since the plan was computed. Idempotency is the primary safety
@@ -88,7 +88,12 @@ export function applyPlan(plan, opts) {
 
     const result = applyOne(entry, { ownerRepo, repoPath, config });
     if (result.ok) {
-      applied.push({ id: entry.id, description: entry.description });
+      const wasForced = force.includes(entry.id) || (entry.id.startsWith('template:') && force.includes('allow-no-checks'));
+      applied.push({
+        id: entry.id,
+        description: entry.description,
+        ...(wasForced ? { forced: true, forceReason } : {}),
+      });
       if (entry.id.startsWith('template:') && entry.renderedHash) {
         renderedTemplateHashes[entry.path] = entry.renderedHash;
       }
