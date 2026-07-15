@@ -2,6 +2,42 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.2.5 (2026-07-15) — mandatory TOCTOU guard, forced-override auditability, subprocess timeouts, YAML-validity CI check
+
+The four remaining findings from the same Siege audit as 0.2.3/0.2.4, all
+presented to the user for a fix-vs-accept decision and fixed on explicit
+go-ahead.
+
+- **High, fixed (SIEGE-2026-07-15-002):** `--force allow-no-checks` /
+  `--force <template-id>` had zero code-level friction beyond the flag
+  itself — "get explicit user confirmation before forcing" lived entirely in
+  SKILL.md prose, not in the CLI. `apply` now refuses any `--force` unless
+  accompanied by `--force-reason "<text>"`; the reason is echoed back on
+  each forced entry in the apply result (`{ forced: true, forceReason }`)
+  for auditability. This doesn't stop a determined bypass, but it raises
+  the bar from a single flag to an explicit, logged justification.
+- **Medium, fixed (SIEGE-2026-07-15-003):** `--expect-state-hash` (the
+  documented TOCTOU guard) was optional — omitting it silently proceeded
+  with zero drift protection. A real (non-dry-run) `apply` now hard-refuses
+  without it, unless the caller explicitly passes the new, named
+  `--skip-hash-check` escape hatch.
+- **Medium, fixed (SIEGE-2026-07-15-004):** no subprocess timeout was set
+  anywhere in `gh.mjs`'s `spawnSync` calls — a hung/rate-limited `gh api` or
+  stuck `git` call could hang the whole process indefinitely. All
+  `spawnArgs` calls now default to a 30s timeout, with the resulting
+  `ETIMEDOUT` surfaced in the returned `stderr`.
+- **Low, fixed (SIEGE-2026-07-15-005):** no test rendered the template and
+  validated the output as syntactically valid YAML — the exact bug class
+  that bit 0.2.1/0.2.2 (a silently-broken generated workflow) was caught
+  only by live production testing, not the unit suite. New
+  `tests/template-validity.test.mjs` parses the rendered workflow with the
+  `yaml` package (dev-only dependency, not shipped to consumers) across a
+  range of legal inputs.
+- New CLI integration test file (`tests/cli-apply-guards.test.mjs`) spawns
+  the real `bin/shipflow.js` to exercise both new refusals end-to-end.
+- This closes out the Siege security audit run before rolling shipflow out
+  to repos beyond `claude-skills` — zero Critical/High findings remain open.
+
 ## 0.2.4 (2026-07-15) — REST-path encoding, resolveOwnerRepo hardening, file-size cap
 
 Three more findings from the same Siege audit as 0.2.3, surfaced by an
