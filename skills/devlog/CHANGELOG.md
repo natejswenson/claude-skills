@@ -2,6 +2,22 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.8.1 (2026-07-16) — cover images: illustration over typography
+
+**Changed**
+- Rewrote the bundled cover style guide (`image-style/style-guide.example.md`) after the
+  first real batch of covers shipped bland and repetitive: a shared text-heavy layout
+  with a rotating stock shape (circle/square/slash). The guide now mandates ONE custom
+  inline-SVG illustration per post depicting the specific mechanism the release is about
+  — sized as the dominant visual element — with the title demoted to a secondary line.
+  Explicitly forbids reusing the same shape family/motif across posts and falling back to
+  a generic circle/square/checkmark when stuck.
+- `SKILL.md` Step 5's compose sub-step now states this mandate inline (not just "compose
+  using the style guide") so the failure mode can't silently regress even if the
+  installed style guide is later replaced with something weaker.
+- New `skill-invariants.json` entry (`cover-custom-illustration`) guards the "cover that
+  just re-renders the title in large text is a failure" line in `SKILL.md`.
+
 ## 0.8.0 (2026-07-16) — cover images
 
 **Added**
