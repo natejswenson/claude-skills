@@ -52,6 +52,12 @@ jobs:
       - if: steps.changes.outputs.devlog == 'true'
         run: npm install --no-fund
         working-directory: skills/devlog/skills/devlog
+      # renderCoverImage's tests launch real Chromium (unlike ghostwriter's Playwright
+      # tests, which fully mock the module) — a fresh runner needs both the browser and
+      # its OS-level dependencies installed before `npm test`.
+      - if: steps.changes.outputs.devlog == 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: skills/devlog/skills/devlog
       - if: steps.changes.outputs.devlog == 'true'
         run: npm test
         working-directory: skills/devlog/skills/devlog
