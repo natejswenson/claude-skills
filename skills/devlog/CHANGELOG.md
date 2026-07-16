@@ -2,6 +2,30 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.8.0 (2026-07-16) — cover images
+
+**Added**
+- Every post now gets an auto-generated 1600x900 cover image. Claude composes a
+  self-contained HTML/CSS (or inline SVG) document from the post's title/tags/summary/
+  `## Shipped` text plus an installed style guide and up to 3 reference images of
+  recently published covers — then `devlog render-cover` rasterizes it locally via
+  headless Chromium (`playwright`), embeds a bundled font, and quantizes the PNG. No
+  external API, no credentials, nothing ever leaves the machine.
+- New `SKILL.md` Step 5 sub-steps: `devlog cover-context` (style guide + references) →
+  Claude composes the markup → `devlog render-cover` → `publish-entry --cover`. A cover
+  render failure (timeout, Chromium not installed, missing font) never blocks publish —
+  the post ships with no cover, the same graceful degradation as any other failure.
+- New commands for backfilling covers onto already-published posts: `devlog
+  backfill-covers list` (deterministic, cross-project, oldest-first, extracts only
+  `## Shipped`) drives an agent loop of `cover-context` + compose + `render-cover` into a
+  project-namespaced staging directory, reviewed via a contact sheet, then `devlog
+  commit-covers` publishes the approved set (with `--force` for re-covering).
+- `devlog init` now installs the bundled style guide + font (`image-style/`) and checks
+  Chromium/font reachability, mirroring its existing SKILL.md/voice-profile install
+  pattern.
+- `publishEntry()` gains an optional `coverImageBuffer` param; new
+  `addCoverToExistingEntry()` in `lib/publish_entry.mjs` for the backfill path.
+
 ## 0.7.0 (2026-07-15) — private projects
 
 **Added**

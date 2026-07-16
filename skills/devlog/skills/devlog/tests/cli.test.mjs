@@ -5,8 +5,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, copyFileSync, unlinkSync } from 'node:fs';
+import { tmpdir, homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -48,10 +48,21 @@ function makeHome(t) {
   return { home, repo };
 }
 
+// Playwright resolves its browser cache from $HOME by default — with HOME overridden to
+// a fixture dir below, it would look for the already-installed Chromium in the wrong
+// place. PLAYWRIGHT_BROWSERS_PATH pins it back to this (real) machine's actual cache,
+// mirroring Playwright's own per-OS default so this works locally (macOS) and in CI
+// (ubuntu-latest) alike.
+const REAL_PLAYWRIGHT_BROWSERS_PATH = process.env.PLAYWRIGHT_BROWSERS_PATH || (
+  process.platform === 'darwin' ? join(homedir(), 'Library', 'Caches', 'ms-playwright')
+    : process.platform === 'win32' ? join(homedir(), 'AppData', 'Local', 'ms-playwright')
+      : join(homedir(), '.cache', 'ms-playwright')
+);
+
 function run(home, ...args) {
   const r = spawnSync(process.execPath, [BIN, ...args], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, USERPROFILE: home },
+    env: { ...process.env, HOME: home, USERPROFILE: home, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH },
   });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
@@ -169,4 +180,347 @@ test('publish-entry via CLI refuses a second publish of the same version', (t) =
   const second = run(home, 'publish-entry', '--clone', clone, '--project', 'proj', '--version', 'v9.9.9', '--entry', draft);
   assert.equal(second.status, 1);
   assert.match(parse(second).message, /immutable/);
+});
+
+// ─── cover-image commands ──────────────────────────────────────────────────────
+
+function makeCoverHome(t, projects = ['proj-a', 'proj-b']) {
+  const home = mkdtempSync(join(tmpdir(), 'devlog-cli-cover-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const configDir = join(home, '.claude', 'skills', 'devlog');
+  mkdirSync(configDir, { recursive: true });
+  writeFileSync(join(configDir, 'config.json'), JSON.stringify({
+    targetRepo: 'me/daily-dev-log',
+    branch: 'main',
+    gitAuthor: 'Test',
+    githubUser: 'me',
+    projects: projects.map((key) => ({ key, path: '/x', remote: `me/${key}` })),
+  }));
+
+  // The bundled style guide + font, installed the same way `devlog init` would.
+  const imageStyleDest = join(configDir, 'image-style');
+  mkdirSync(imageStyleDest, { recursive: true });
+  copyFileSync(join(SKILL_ROOT, 'image-style', 'font.ttf'), join(imageStyleDest, 'font.ttf'));
+  writeFileSync(join(imageStyleDest, 'style-guide.md'), '# Style guide\n\nUse flat colors.\n');
+
+  // A plain directory standing in for an established `git clone --depth=1` — none of
+  // cover-context/backfill-covers list/render-cover perform any git operation themselves.
+  const cloneDir = join(home, 'clone');
+  mkdirSync(cloneDir);
+
+  return { home, configDir, imageStyleDest, cloneDir };
+}
+
+function writeManifest(cloneDir, project, entries) {
+  const dir = join(cloneDir, project);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ entries }));
+}
+
+test('cover-context returns the style guide and an empty references array when no cover exists yet', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  writeManifest(cloneDir, 'proj-a', [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0' }]);
+
+  const out = run(home, 'cover-context', 'proj-a', 'v0.1.0', '--clone', cloneDir);
+  assert.equal(out.status, 0, out.stderr);
+  const body = parse(out);
+  assert.match(body.styleGuide, /Style guide/);
+  assert.deepEqual(body.references, []);
+});
+
+test('cover-context surfaces a distinct error field (not a thrown crash) when the style guide is missing', (t) => {
+  const { home, imageStyleDest, cloneDir } = makeCoverHome(t);
+  unlinkSync(join(imageStyleDest, 'style-guide.md'));
+  writeManifest(cloneDir, 'proj-a', []);
+
+  const out = run(home, 'cover-context', 'proj-a', 'v0.1.0', '--clone', cloneDir);
+  assert.equal(out.status, 1);
+  assert.equal(parse(out).error, 'style-guide-missing');
+});
+
+test('cover-context requires --clone', (t) => {
+  const { home } = makeCoverHome(t);
+  const out = run(home, 'cover-context', 'proj-a', 'v0.1.0');
+  assert.equal(out.status, 1);
+  assert.equal(parse(out).error, 'missing-flag');
+});
+
+test('render-cover writes a real 1600x900 PNG and a contact sheet, project-namespaced', (t) => {
+  const { home } = makeCoverHome(t);
+  const outDir = join(home, 'staging');
+  mkdirSync(outDir, { recursive: true });
+  const htmlPath = join(home, 'cover.html');
+  writeFileSync(htmlPath, '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#000"></body></html>');
+
+  const out = run(home, 'render-cover', htmlPath, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(out.status, 0, out.stderr);
+  const body = parse(out);
+  assert.equal(body.ok, true);
+  assert.ok(existsSync(join(outDir, 'proj-a', 'v0.1.0.png')));
+  assert.ok(existsSync(join(outDir, 'index.html')));
+  // Transient HTML source is deleted after a successful render.
+  assert.equal(existsSync(htmlPath), false);
+});
+
+test('render-cover project-namespaces staged output so two projects sharing a slug never collide', (t) => {
+  const { home } = makeCoverHome(t);
+  const outDir = join(home, 'staging');
+  mkdirSync(outDir, { recursive: true });
+  const html = () => '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#111"></body></html>';
+
+  const htmlA = join(home, 'a.html');
+  writeFileSync(htmlA, html());
+  const outA = run(home, 'render-cover', htmlA, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(outA.status, 0, outA.stderr);
+
+  const htmlB = join(home, 'b.html');
+  writeFileSync(htmlB, html());
+  const outB = run(home, 'render-cover', htmlB, '--project', 'proj-b', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(outB.status, 0, outB.stderr);
+
+  assert.ok(existsSync(join(outDir, 'proj-a', 'v0.1.0.png')));
+  assert.ok(existsSync(join(outDir, 'proj-b', 'v0.1.0.png')));
+});
+
+test('render-cover is idempotent: a second run against an already-valid PNG does not re-render', (t) => {
+  const { home } = makeCoverHome(t);
+  const outDir = join(home, 'staging');
+  mkdirSync(outDir, { recursive: true });
+  const htmlPath = () => {
+    const p = join(home, 'cover.html');
+    writeFileSync(p, '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;"></body></html>');
+    return p;
+  };
+
+  const first = run(home, 'render-cover', htmlPath(), '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(parse(first).rendered, true);
+
+  // A second run needs its own html-file argument (the first was deleted) but should
+  // short-circuit before ever reading it, since the PNG is already valid.
+  const second = run(home, 'render-cover', join(home, 'nonexistent.html'), '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(parse(second).rendered, false);
+});
+
+test('render-cover surfaces a render-failed error (not a crash) when the font is missing', (t) => {
+  const { home, imageStyleDest } = makeCoverHome(t);
+  unlinkSync(join(imageStyleDest, 'font.ttf'));
+  const outDir = join(home, 'staging');
+  mkdirSync(outDir, { recursive: true });
+  const htmlPath = join(home, 'cover.html');
+  writeFileSync(htmlPath, '<!DOCTYPE html><html><body></body></html>');
+
+  const out = run(home, 'render-cover', htmlPath, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(out.status, 1);
+  assert.equal(parse(out).error, 'render-failed');
+  // Left in place on failure, for debugging.
+  assert.ok(existsSync(htmlPath));
+});
+
+test('backfill-covers list merges across projects, extracts only ## Shipped, and sorts oldest-first with a project/slug tie-break', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  const mdA = '---\ntitle: "A"\ndate: 2026-07-05\nproject: proj-a\nversion: v0.2.0\ntags: [x]\nsummary: "s"\n---\n\n## Shipped\n\nShipped text A.\n\n## Changelog\n\nSecret commit list.\n';
+  const mdB1 = '---\ntitle: "B1"\ndate: 2026-07-05\nproject: proj-b\nversion: v0.1.0\ntags: [x]\nsummary: "s"\n---\n\n## Shipped\n\nShipped text B1.\n';
+  const mdA0 = '---\ntitle: "A0"\ndate: 2026-07-01\nproject: proj-a\nversion: v0.1.0\ntags: [x]\nsummary: "s"\n---\n\n## Shipped\n\nShipped text A0.\n';
+
+  writeManifest(cloneDir, 'proj-a', [
+    { date: '2026-07-05', file: 'v0.2.0.md', version: 'v0.2.0', title: 'A', tags: ['x'], summary: 's' },
+    { date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A0', tags: ['x'], summary: 's' },
+  ]);
+  writeManifest(cloneDir, 'proj-b', [
+    { date: '2026-07-05', file: 'v0.1.0.md', version: 'v0.1.0', title: 'B1', tags: ['x'], summary: 's' },
+  ]);
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.2.0.md'), mdA);
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.1.0.md'), mdA0);
+  writeFileSync(join(cloneDir, 'proj-b', 'v0.1.0.md'), mdB1);
+
+  const out = run(home, 'backfill-covers', 'list', '--clone', cloneDir);
+  assert.equal(out.status, 0, out.stderr);
+  const list = parse(out);
+
+  assert.deepEqual(list.map((c) => `${c.project}/${c.slug}`), ['proj-a/v0.1.0', 'proj-a/v0.2.0', 'proj-b/v0.1.0']);
+  const entryA = list.find((c) => c.project === 'proj-a' && c.slug === 'v0.2.0');
+  assert.equal(entryA.shipped, 'Shipped text A.');
+  assert.doesNotMatch(JSON.stringify(entryA), /Secret commit list/);
+});
+
+test('backfill-covers list --project filters to one project', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  writeManifest(cloneDir, 'proj-a', [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', tags: [], summary: 's' }]);
+  writeManifest(cloneDir, 'proj-b', [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'B', tags: [], summary: 's' }]);
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.1.0.md'), '---\ntitle: "A"\ndate: 2026-07-01\n---\n\n## Shipped\n\nx\n');
+  writeFileSync(join(cloneDir, 'proj-b', 'v0.1.0.md'), '---\ntitle: "B"\ndate: 2026-07-01\n---\n\n## Shipped\n\nx\n');
+
+  const out = run(home, 'backfill-covers', 'list', '--clone', cloneDir, '--project', 'proj-a');
+  assert.deepEqual(parse(out).map((c) => c.project), ['proj-a']);
+});
+
+test('backfill-covers list --out excludes an already-validly-staged candidate', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  writeManifest(cloneDir, 'proj-a', [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', tags: [], summary: 's' }]);
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.1.0.md'), '---\ntitle: "A"\ndate: 2026-07-01\n---\n\n## Shipped\n\nx\n');
+
+  const stagingDir = join(home, 'staging');
+  mkdirSync(join(stagingDir, 'proj-a'), { recursive: true });
+  writeFileSync(join(stagingDir, 'proj-a', 'v0.1.0.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+
+  const out = run(home, 'backfill-covers', 'list', '--clone', cloneDir, '--out', stagingDir);
+  assert.deepEqual(parse(out), []);
+});
+
+test('backfill-covers list throws a named error when a project directory exists but has no manifest.json', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  mkdirSync(join(cloneDir, 'proj-a'), { recursive: true });
+  const out = run(home, 'backfill-covers', 'list', '--clone', cloneDir);
+  assert.equal(out.status, 1);
+  assert.match(parse(out).message, /manifest\.json missing for project "proj-a"/);
+});
+
+// ─── commit-covers (real local git clone/commit/push, no real GitHub involved) ────
+//
+// commit-covers deliberately has NO --clone flag — it always builds
+// `https://github.com/<targetRepo>.git` itself. To exercise its real git clone/commit/push
+// path without touching the network or the real daily-dev-log repo, a fixture `~/.gitconfig`
+// rewrites that exact URL to a local bare repo via `url.<base>.insteadOf` — a pure
+// environment-level test technique, no production code path changed or bypassed.
+
+function makeBareDailyDevLog(t) {
+  const bareDir = mkdtempSync(join(tmpdir(), 'devlog-bare-'));
+  t.after(() => rmSync(bareDir, { recursive: true, force: true }));
+  const init = spawnSync('git', ['init', '--bare', '-b', 'main', bareDir], { encoding: 'utf8' });
+  assert.equal(init.status, 0, init.stderr);
+  return bareDir;
+}
+
+function seedDailyDevLog(t, bareDir, projectManifests) {
+  const work = mkdtempSync(join(tmpdir(), 'devlog-seed-'));
+  t.after(() => rmSync(work, { recursive: true, force: true }));
+  const init = spawnSync('git', ['init', '-b', 'main', work], { encoding: 'utf8' });
+  assert.equal(init.status, 0, init.stderr);
+  git(work, 'config', 'user.email', 't@example.com');
+  git(work, 'config', 'user.name', 'T');
+  git(work, 'config', 'commit.gpgsign', 'false');
+  for (const [project, manifest] of Object.entries(projectManifests)) {
+    mkdirSync(join(work, project), { recursive: true });
+    writeFileSync(join(work, project, 'manifest.json'), JSON.stringify(manifest));
+  }
+  git(work, 'add', '.');
+  git(work, 'commit', '-m', 'seed');
+  git(work, 'remote', 'add', 'origin', bareDir);
+  git(work, 'push', 'origin', 'main');
+}
+
+function makeCommitCoversHome(t, projectManifests) {
+  const { home } = { home: mkdtempSync(join(tmpdir(), 'devlog-cli-commit-')) };
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+
+  const bareDir = makeBareDailyDevLog(t);
+  seedDailyDevLog(t, bareDir, projectManifests);
+
+  const configDir = join(home, '.claude', 'skills', 'devlog');
+  mkdirSync(configDir, { recursive: true });
+  writeFileSync(join(configDir, 'config.json'), JSON.stringify({
+    targetRepo: 'me/daily-dev-log',
+    branch: 'main',
+    gitAuthor: 'Test',
+    githubUser: 'me',
+    projects: Object.keys(projectManifests).map((key) => ({ key, path: '/x', remote: `me/${key}` })),
+  }));
+
+  writeFileSync(join(home, '.gitconfig'),
+    `[url "file://${bareDir}"]\n\tinsteadOf = https://github.com/me/daily-dev-log.git\n` +
+    `[user]\n\tname = Test\n\temail = t@example.com\n[commit]\n\tgpgsign = false\n`);
+
+  return { home, bareDir };
+}
+
+function readBareManifest(bareDir, project) {
+  const r = spawnSync('git', ['-C', bareDir, 'show', `main:${project}/manifest.json`], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  return JSON.parse(r.stdout);
+}
+
+const fakePng = (label) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from(label)]);
+
+test('commit-covers writes a staged cover, pushes it, and the manifest cover field lands in the real remote', (t) => {
+  const { home, bareDir } = makeCommitCoversHome(t, {
+    'proj-a': { entries: [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', summary: 's', tags: [] }] },
+  });
+  const stagingDir = join(home, 'staging');
+  mkdirSync(join(stagingDir, 'proj-a'), { recursive: true });
+  writeFileSync(join(stagingDir, 'proj-a', 'v0.1.0.png'), fakePng('one'));
+
+  const out = run(home, 'commit-covers', stagingDir);
+  assert.equal(out.status, 0, out.stderr);
+  const body = parse(out);
+  assert.equal(body.ok, true);
+  assert.deepEqual(body.written, ['proj-a/v0.1.0']);
+
+  const manifest = readBareManifest(bareDir, 'proj-a');
+  assert.deepEqual(manifest.entries[0].cover, { file: 'v0.1.0.png', bytes: fakePng('one').length });
+});
+
+test('commit-covers pre-filter skips an already-covered entry without --force', (t) => {
+  const { home } = makeCommitCoversHome(t, {
+    'proj-a': { entries: [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', summary: 's', tags: [], cover: { file: 'v0.1.0.png', bytes: 3 } }] },
+  });
+  const stagingDir = join(home, 'staging');
+  mkdirSync(join(stagingDir, 'proj-a'), { recursive: true });
+  writeFileSync(join(stagingDir, 'proj-a', 'v0.1.0.png'), fakePng('new'));
+
+  const out = run(home, 'commit-covers', stagingDir);
+  const body = parse(out);
+  assert.deepEqual(body.skipped, ['proj-a/v0.1.0']);
+  assert.deepEqual(body.written, []);
+});
+
+test('commit-covers --force <project>/<slug> overwrites only the named entry', (t) => {
+  const { home, bareDir } = makeCommitCoversHome(t, {
+    'proj-a': { entries: [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', summary: 's', tags: [], cover: { file: 'v0.1.0.png', bytes: 3 } }] },
+  });
+  const stagingDir = join(home, 'staging');
+  mkdirSync(join(stagingDir, 'proj-a'), { recursive: true });
+  writeFileSync(join(stagingDir, 'proj-a', 'v0.1.0.png'), fakePng('forced-new'));
+
+  const out = run(home, 'commit-covers', stagingDir, '--force', 'proj-a/v0.1.0');
+  const body = parse(out);
+  assert.deepEqual(body.written, ['proj-a/v0.1.0']);
+  const manifest = readBareManifest(bareDir, 'proj-a');
+  assert.equal(manifest.entries[0].cover.bytes, fakePng('forced-new').length);
+});
+
+test('commit-covers reports a missing-manifest-row entry without aborting the rest of the run', (t) => {
+  const { home, bareDir } = makeCommitCoversHome(t, {
+    'proj-a': { entries: [{ date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', summary: 's', tags: [] }] },
+  });
+  const stagingDir = join(home, 'staging');
+  mkdirSync(join(stagingDir, 'proj-a'), { recursive: true });
+  // v9.9.9 has no matching manifest row at all.
+  writeFileSync(join(stagingDir, 'proj-a', 'v0.1.0.png'), fakePng('real'));
+  writeFileSync(join(stagingDir, 'proj-a', 'v9.9.9.png'), fakePng('orphan'));
+
+  const out = run(home, 'commit-covers', stagingDir);
+  const body = parse(out);
+  assert.deepEqual(body.written, ['proj-a/v0.1.0']);
+  assert.deepEqual(body.missingManifest, ['proj-a/v9.9.9']);
+
+  const manifest = readBareManifest(bareDir, 'proj-a');
+  assert.equal(manifest.entries.length, 1); // the orphan never became a manifest row
+});
+
+test('commit-covers requires a staging-dir argument and rejects a nonexistent one', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'devlog-cli-commit-empty-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const missingArg = run(home, 'commit-covers');
+  assert.equal(missingArg.status, 2);
+
+  const configDir = join(home, '.claude', 'skills', 'devlog');
+  mkdirSync(configDir, { recursive: true });
+  writeFileSync(join(configDir, 'config.json'), JSON.stringify({
+    targetRepo: 'me/daily-dev-log', branch: 'main', gitAuthor: 'T', githubUser: 'me', projects: [],
+  }));
+  const nonexistent = run(home, 'commit-covers', join(home, 'nope'));
+  assert.equal(nonexistent.status, 1);
+  assert.equal(parse(nonexistent).error, 'staging-dir-missing');
 });

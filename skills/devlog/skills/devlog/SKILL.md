@@ -294,15 +294,46 @@ critique, not a rubber stamp.
 Clone once, publish each entry through the CLI, push once. `targetRepo` and `branch` come
 from validated config — still single-quote every interpolated value.
 
+Each release also gets a cover image, composed inline in this same loop right before that
+release's own `publish-entry` call — a self-contained HTML/CSS (or inline SVG) document,
+rasterized locally, never sent to any external service:
+
 ```bash
 mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
 git -C '<abs-tmp>' clone --depth=1 'https://github.com/<targetRepo>.git'
 
 # Per release (refuses to overwrite an existing entry — on {"error": ...,
 # "message": "... immutable ..."} skip that release and note it):
+
+# 1. Style guide + up to 3 reference images of recently published covers.
+npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
+  --clone '<abs-tmp>/<repo-name>'
+# On {"error": "style-guide-missing", ...}: skip cover composition for this release
+# entirely — proceed straight to publish-entry with no --cover flag. Never block
+# publish on a missing style guide.
+
+# 2. Compose the cover using ONLY this release's title/tags/summary/`## Shipped` text
+#    (never the raw draft file, never `## Changelog`) plus the returned style guide and
+#    reference images. Write the result with the Write tool to
+#    '<abs-scratch>/<key>/<version>.html' — a full document starting with
+#    `<!DOCTYPE html>`, sized `html, body { margin:0; width:1600px; height:900px; }`,
+#    referencing the bundled font only as `font-family: 'DevlogCoverFont', sans-serif`.
+
+# 3. Rasterize it. On failure (render timeout / Chromium not installed / font missing),
+#    the .html is left in place for debugging — retry composing once with the error text
+#    fed back, or give up and proceed with no --cover flag.
+npx -y @natjswenson/devlog render-cover '<abs-scratch>/<key>/<version>.html' \
+  --project '<key>' --slug '<version>' --out '<abs-scratch>'
+# Show the rendered <abs-scratch>/<key>/<version>.png in this session before continuing —
+# this interactive review IS the quality gate for the cover, the same way Step 4 is for
+# the prose.
+
 npx -y @natjswenson/devlog publish-entry \
   --clone '<abs-tmp>/<repo-name>' --project '<key>' \
-  --version '<version>' --entry '<abs-draft-path>'
+  --version '<version>' --entry '<abs-draft-path>' \
+  --cover '<abs-scratch>/<key>/<version>.png'
+# Omit --cover entirely if no cover was produced for this release (missing style guide,
+# a render failure not worth a second attempt) — publish still proceeds normally.
 
 git -C '<abs-tmp>/<repo-name>' add .
 git -C '<abs-tmp>/<repo-name>' commit -m 'devlog: add release entries'

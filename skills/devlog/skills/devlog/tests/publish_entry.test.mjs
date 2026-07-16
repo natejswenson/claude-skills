@@ -4,7 +4,10 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { publishEntry } from '../lib/publish_entry.mjs';
+import { publishEntry, addCoverToExistingEntry } from '../lib/publish_entry.mjs';
+
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const fakePng = (label = 'x') => Buffer.concat([PNG_MAGIC, Buffer.from(label)]);
 
 function makeDirs(t) {
   const root = mkdtempSync(join(tmpdir(), 'devlog-publish-'));
@@ -192,5 +195,128 @@ test('publishEntry requires readable paths and complete frontmatter', (t) => {
   assert.throws(
     () => publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: bare }),
     /frontmatter must include/,
+  );
+});
+
+// ─── publishEntry: coverImageBuffer ───────────────────────────────────────────
+
+test('publishEntry writes the cover PNG and the manifest cover field when given a buffer', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  const buf = fakePng('cover-bytes');
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0'), coverImageBuffer: buf });
+
+  assert.equal(result.coverWritten, true);
+  assert.ok(existsSync(join(cloneDir, 'proj', 'v0.1.0.png')));
+  assert.deepEqual(readFileSync(join(cloneDir, 'proj', 'v0.1.0.png')), buf);
+  const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
+  assert.deepEqual(entry.cover, { file: 'v0.1.0.png', bytes: buf.length });
+});
+
+test('publishEntry omits the cover field entirely when no coverImageBuffer is given', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(result.coverWritten, false);
+  assert.equal(existsSync(join(cloneDir, 'proj', 'v0.1.0.png')), false);
+  const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
+  assert.equal('cover' in entry, false);
+});
+
+// ─── addCoverToExistingEntry ───────────────────────────────────────────────────
+
+function publishBareEntry(root, cloneDir, version = 'v0.1.0') {
+  return publishEntry({ cloneDir, project: 'proj', version, entryPath: draft(root, version) });
+}
+
+test('addCoverToExistingEntry writes the cover and sets the manifest cover field on a fresh entry', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  const buf = fakePng('a');
+  const result = addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: buf });
+
+  assert.equal(result.manifestUpdated, true);
+  assert.deepEqual(readFileSync(join(cloneDir, 'proj', 'v0.1.0.png')), buf);
+  const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
+  assert.deepEqual(entry.cover, { file: 'v0.1.0.png', bytes: buf.length });
+});
+
+test('addCoverToExistingEntry never touches <slug>.md and never pushes a new manifest row', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  const before = readFileSync(join(cloneDir, 'proj', 'v0.1.0.md'), 'utf8');
+  addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: fakePng() });
+  assert.equal(readFileSync(join(cloneDir, 'proj', 'v0.1.0.md'), 'utf8'), before);
+  assert.equal(readManifest(cloneDir).entries.length, 1);
+});
+
+test('addCoverToExistingEntry without force throws when the row already has a cover', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: fakePng('first') });
+  assert.throws(
+    () => addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: fakePng('second') }),
+    /already has a cover/,
+  );
+});
+
+test('addCoverToExistingEntry with force: true always overwrites, even when an already-valid PNG exists', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: fakePng('first') });
+  const second = fakePng('second-and-longer-payload');
+  const result = addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: second, force: true });
+
+  assert.equal(result.manifestUpdated, true);
+  assert.deepEqual(readFileSync(join(cloneDir, 'proj', 'v0.1.0.png')), second);
+  assert.equal(readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0').cover.bytes, second.length);
+});
+
+test('addCoverToExistingEntry (no force, no cover yet) adopts an existing valid clone-destination PNG instead of rewriting it', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  // Simulate an orphaned clone-destination PNG from a hypothetical prior interrupted call:
+  // present on disk, but the manifest row doesn't have `cover` yet.
+  const existing = fakePng('orphaned-but-valid');
+  writeFileSync(join(cloneDir, 'proj', 'v0.1.0.png'), existing);
+
+  const freshBuffer = fakePng('this-should-not-be-written');
+  const result = addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: freshBuffer });
+
+  assert.equal(result.manifestUpdated, true);
+  // Adopted, not rewritten: the file on disk is still the orphaned one, not freshBuffer.
+  assert.deepEqual(readFileSync(join(cloneDir, 'proj', 'v0.1.0.png')), existing);
+  assert.equal(readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0').cover.bytes, existing.length);
+});
+
+test('addCoverToExistingEntry (no force, no cover yet) discards a corrupt clone-destination PNG and writes fresh bytes', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  writeFileSync(join(cloneDir, 'proj', 'v0.1.0.png'), Buffer.from('not a real png'));
+
+  const freshBuffer = fakePng('fresh-and-valid');
+  const result = addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v0.1.0', coverImageBuffer: freshBuffer });
+
+  assert.equal(result.manifestUpdated, true);
+  assert.deepEqual(readFileSync(join(cloneDir, 'proj', 'v0.1.0.png')), freshBuffer);
+});
+
+test('addCoverToExistingEntry throws when no manifest row matches the given slug', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  assert.throws(
+    () => addCoverToExistingEntry({ cloneDir, project: 'proj', slug: 'v9.9.9', coverImageBuffer: fakePng() }),
+    /No manifest row for proj\/v9\.9\.9/,
+  );
+});
+
+test('addCoverToExistingEntry validates project key and slug shape', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishBareEntry(root, cloneDir);
+  assert.throws(
+    () => addCoverToExistingEntry({ cloneDir, project: '../escape', slug: 'v0.1.0', coverImageBuffer: fakePng() }),
+    /Invalid project key/,
+  );
+  assert.throws(
+    () => addCoverToExistingEntry({ cloneDir, project: 'proj', slug: '../escape', coverImageBuffer: fakePng() }),
+    /Invalid slug/,
   );
 });
