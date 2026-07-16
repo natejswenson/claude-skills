@@ -23,6 +23,12 @@
       "remote": "yourusername/your-monorepo",
       "pathFilter": "skills/devlog",
       "tagPrefix": "devlog-v"
+    },
+    {
+      "key": "personal",
+      "label": "Personal",
+      "path": "/Users/yourusername/code/private-project",
+      "private": true
     }
   ]
 }

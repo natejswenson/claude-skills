@@ -2,6 +2,68 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.8.1 (2026-07-16) — cover images: illustration over typography
+
+**Changed**
+- Rewrote the bundled cover style guide (`image-style/style-guide.example.md`) after the
+  first real batch of covers shipped bland and repetitive: a shared text-heavy layout
+  with a rotating stock shape (circle/square/slash). The guide now mandates ONE custom
+  inline-SVG illustration per post depicting the specific mechanism the release is about
+  — sized as the dominant visual element — with the title demoted to a secondary line.
+  Explicitly forbids reusing the same shape family/motif across posts and falling back to
+  a generic circle/square/checkmark when stuck.
+- `SKILL.md` Step 5's compose sub-step now states this mandate inline (not just "compose
+  using the style guide") so the failure mode can't silently regress even if the
+  installed style guide is later replaced with something weaker.
+- New `skill-invariants.json` entry (`cover-custom-illustration`) guards the "cover that
+  just re-renders the title in large text is a failure" line in `SKILL.md`.
+
+## 0.8.0 (2026-07-16) — cover images
+
+**Added**
+- Every post now gets an auto-generated 1600x900 cover image. Claude composes a
+  self-contained HTML/CSS (or inline SVG) document from the post's title/tags/summary/
+  `## Shipped` text plus an installed style guide and up to 3 reference images of
+  recently published covers — then `devlog render-cover` rasterizes it locally via
+  headless Chromium (`playwright`), embeds a bundled font, and quantizes the PNG. No
+  external API, no credentials, nothing ever leaves the machine.
+- New `SKILL.md` Step 5 sub-steps: `devlog cover-context` (style guide + references) →
+  Claude composes the markup → `devlog render-cover` → `publish-entry --cover`. A cover
+  render failure (timeout, Chromium not installed, missing font) never blocks publish —
+  the post ships with no cover, the same graceful degradation as any other failure.
+- New commands for backfilling covers onto already-published posts: `devlog
+  backfill-covers list` (deterministic, cross-project, oldest-first, extracts only
+  `## Shipped`) drives an agent loop of `cover-context` + compose + `render-cover` into a
+  project-namespaced staging directory, reviewed via a contact sheet, then `devlog
+  commit-covers` publishes the approved set (with `--force` for re-covering).
+- `devlog init` now installs the bundled style guide + font (`image-style/`) and checks
+  Chromium/font reachability, mirroring its existing SKILL.md/voice-profile install
+  pattern.
+- `publishEntry()` gains an optional `coverImageBuffer` param; new
+  `addCoverToExistingEntry()` in `lib/publish_entry.mjs` for the backfill path.
+
+## 0.7.0 (2026-07-15) — private projects
+
+**Added**
+- New `private` project flag (`add-project --private`, or the interactive "Is this repo
+  private?" prompt). A private project's `remote` becomes optional, and `scanProject`'s
+  `isPublic` check now short-circuits to `false` unconditionally for it — regardless of
+  whether `remote` matches `origin` and the commit is on the published branch. Previously
+  those two checks alone decided "public," which is a proxy for "the commit is reachable
+  from a correctly-configured remote," not "the GitHub repo is public." A project with a
+  real, correctly configured `remote` that happens to live in a private GitHub repo would
+  have scanned every commit as public and generated dead `github.com/.../commit/...` links
+  in the post. `private` is a declared type, not auto-detected via the GitHub API — no
+  extra network call per run, and it stays correct even for a project with no push target
+  at all.
+- `config`'s project listing shows `(private — no commit links)` instead of a broken
+  `remote: github.com/undefined` line for a private project with no `remote` set.
+
+**Fixed**
+- `validateConfig` previously required every project to have a valid `remote`
+  unconditionally; a private project can now omit it (still validated for shape if
+  supplied anyway).
+
 ## 0.6.0 (2026-07-12) — lessons from rewriting the whole back-catalog
 
 Every pre-0.5 entry (38 posts across devlog, ghostwriter, resume, local-fitness) was

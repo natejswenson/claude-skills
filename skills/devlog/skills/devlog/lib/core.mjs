@@ -154,7 +154,18 @@ export function validateConfig(config) {
     if (typeof p.path !== 'string' || SHELL_QUOTE_BREAK.test(p.path)) {
       throw new Error(`project.path invalid (must contain no shell metacharacters): ${JSON.stringify(p.path)}`);
     }
-    if (!RE_OWNER_REPO.test(p.remote)) {
+    if ('private' in p && typeof p.private !== 'boolean') {
+      throw new Error(`project.private must be a boolean if present: ${JSON.stringify(p.private)}`);
+    }
+    // A private project has no safe public commit surface, so `remote` is
+    // optional (it's never used to build a commit link — see scan.mjs's
+    // isPublic). If supplied anyway, for the maintainer's own reference, it
+    // must still be well-formed.
+    if (p.private) {
+      if ('remote' in p && p.remote !== undefined && !RE_OWNER_REPO.test(p.remote)) {
+        throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
+      }
+    } else if (!RE_OWNER_REPO.test(p.remote)) {
       throw new Error(`project.remote must match <owner>/<repo>: ${JSON.stringify(p.remote)}`);
     }
     if ('pathFilter' in p) {

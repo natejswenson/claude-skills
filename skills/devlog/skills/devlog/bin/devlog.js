@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import { spawn, spawnSync, execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, copyFileSync, realpathSync } from 'node:fs';
+import {
+  existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, realpathSync,
+  readdirSync, statSync, unlinkSync, rmSync, mkdtempSync,
+} from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import prompts from 'prompts';
 import kleur from 'kleur';
+import { chromium } from 'playwright';
 
 import {
   SHELL_QUOTE_BREAK,
@@ -28,9 +33,11 @@ import {
   resolveDeepDive,
 } from '../lib/core.mjs';
 import { scanAll } from '../lib/scan.mjs';
-import { lintPost } from '../lib/lint_post.mjs';
-import { publishEntry } from '../lib/publish_entry.mjs';
+import { lintPost, parseFrontmatter, splitSections } from '../lib/lint_post.mjs';
+import { publishEntry, addCoverToExistingEntry } from '../lib/publish_entry.mjs';
 import { addProject, removeProject, setField, SETTABLE_FIELDS } from '../lib/config_ops.mjs';
+import { loadStyleGuide, getRecentCovers, mergeManifestEntries } from '../lib/cover_gen.mjs';
+import { renderCoverImage } from '../lib/render_cover.mjs';
 
 // Re-export the shared validators so existing importers (tests, docs) keep a
 // single canonical entry point; the definitions live in lib/core.mjs.
@@ -56,6 +63,22 @@ const PREVIEW_DIR = join(PACKAGE_ROOT, 'preview');
 const VOICE_SRC_DIR = join(PACKAGE_ROOT, 'voice');
 const VOICE_DEST_DIR = join(CONFIG_DIR, 'voice');
 const GHOSTWRITER_VOICE_DIR = join(expandHome('~'), '.claude', 'ghostwriter', 'voice');
+const IMAGE_STYLE_SRC_DIR = join(PACKAGE_ROOT, 'image-style');
+const IMAGE_STYLE_DEST_DIR = join(CONFIG_DIR, 'image-style');
+
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+function isValidPngFile(path) {
+  try {
+    const buf = readFileSync(path);
+    return buf.length >= 8 && buf.subarray(0, 8).equals(PNG_MAGIC);
+  } catch {
+    return false;
+  }
+}
+
+function slugFromFile(file) {
+  return String(file || '').replace(/\.md$/, '');
+}
 
 const log = {
   info: (msg) => console.log(msg),
@@ -226,7 +249,13 @@ async function promptForProject(defaults = {}) {
       validate: VALIDATORS.label,
     },
     {
-      type: 'text',
+      type: 'confirm',
+      name: 'private',
+      message: 'Is this repo private? (no GitHub commit links will ever be generated)',
+      initial: defaults.private || false,
+    },
+    {
+      type: (_p, values) => (values.private ? null : 'text'),
       name: 'remote',
       message: 'Project GitHub remote (<owner>/<repo>):',
       initial: (_p, values) => detectProjectRemote(expandHome(values.path)) || initialRemote,
@@ -244,8 +273,9 @@ async function promptForProject(defaults = {}) {
   const out = {
     key: answers.key.trim(),
     path: expandHome(answers.path),
-    remote: answers.remote.trim(),
   };
+  if (answers.remote && answers.remote.trim()) out.remote = answers.remote.trim();
+  if (answers.private) out.private = true;
   if (answers.label && answers.label.trim()) out.label = answers.label.trim();
   const tagPrefix = (answers.tagPrefix || '').trim();
   if (tagPrefix) out.tagPrefix = tagPrefix;
@@ -376,6 +406,39 @@ async function cmdInit() {
     }
   }
 
+  // Install the bundled cover style guide + font — same install pattern as the voice
+  // profile above. Both are needed before any cover image can be composed/rendered.
+  if (!existsSync(IMAGE_STYLE_DEST_DIR)) {
+    mkdirSync(IMAGE_STYLE_DEST_DIR, { recursive: true, mode: 0o700 });
+  }
+  const styleGuideSrc = join(IMAGE_STYLE_SRC_DIR, 'style-guide.example.md');
+  const styleGuideDest = join(IMAGE_STYLE_DEST_DIR, 'style-guide.md');
+  if (existsSync(styleGuideSrc) && (await confirmOverwrite('image-style/style-guide.md', styleGuideDest))) {
+    copyFileSync(styleGuideSrc, styleGuideDest);
+    log.ok(`Installed image-style/style-guide.md → ${styleGuideDest}`);
+  }
+  const fontSrc = join(IMAGE_STYLE_SRC_DIR, 'font.ttf');
+  const fontDest = join(IMAGE_STYLE_DEST_DIR, 'font.ttf');
+  if (existsSync(fontSrc) && (await confirmOverwrite('image-style/font.ttf', fontDest))) {
+    copyFileSync(fontSrc, fontDest);
+    log.ok(`Installed image-style/font.ttf → ${fontDest}`);
+  }
+
+  // Cover-generation reachability checks. Informational only — neither failure blocks
+  // setup, since a missing Chromium/font only affects cover generation, not the rest of
+  // /devlog.
+  try {
+    const browser = await chromium.launch();
+    await browser.close();
+  } catch {
+    log.warn('Chromium is not installed — cover images will fail to render.');
+    log.hint('npx playwright install chromium');
+  }
+  if (!existsSync(fontDest) || statSync(fontDest).size === 0) {
+    log.warn('Cover font is missing or unreadable (0 bytes) — cover images will fail to render.');
+    log.hint('Re-run `devlog init` to reinstall it.');
+  }
+
   log.info('\n' + kleur.bold().green('Setup complete.') + '\n');
   log.info('Next steps:');
   if (config.projects.length === 0) {
@@ -402,6 +465,7 @@ async function cmdAddProject(rest) {
       label: { type: 'string' },
       'tag-prefix': { type: 'string' },
       'path-filter': { type: 'string' },
+      private: { type: 'boolean', default: false },
       yes: { type: 'boolean', default: false },
       json: { type: 'boolean', default: false },
     },
@@ -417,7 +481,9 @@ async function cmdAddProject(rest) {
     if (!existsSync(path)) emitJSON({ error: 'path-missing', message: `Path does not exist: ${path}` }, 1);
     const key = values.key || basename(path);
     const remote = values.remote || detectProjectRemote(path);
-    if (!remote) emitJSON({ error: 'remote-undetectable', message: 'No origin remote found; pass --remote <owner>/<repo>.' }, 1);
+    // A private project never links commits publicly, so an undetectable
+    // remote isn't fatal for it — only for a project that intends to be public.
+    if (!remote && !values.private) emitJSON({ error: 'remote-undetectable', message: 'No origin remote found; pass --remote <owner>/<repo>.' }, 1);
     try {
       const next = addProject(config, {
         key,
@@ -426,6 +492,7 @@ async function cmdAddProject(rest) {
         label: values.label,
         tagPrefix: values['tag-prefix'],
         pathFilter: values['path-filter'],
+        private: values.private,
       });
       atomicWriteJSON(CONFIG_PATH, next);
       emitJSON({ ok: true, added: next.projects.at(-1), projects: next.projects.map((p) => p.key) });
@@ -452,6 +519,7 @@ async function cmdAddProject(rest) {
       remote: newProject.remote,
       label: newProject.label,
       tagPrefix: newProject.tagPrefix,
+      private: newProject.private,
     });
     atomicWriteJSON(CONFIG_PATH, next);
     log.ok(`Added "${newProject.key}" to config.`);
@@ -572,23 +640,367 @@ function cmdPublishEntry(rest) {
       project: { type: 'string' },
       version: { type: 'string' },
       entry: { type: 'string' },
+      cover: { type: 'string' },
     },
     allowPositionals: false,
   });
   for (const flag of ['clone', 'project', 'version', 'entry']) {
     if (!values[flag]) emitJSON({ error: 'missing-flag', message: `publish-entry requires --${flag}` }, 1);
   }
+
+  let coverImageBuffer;
+  if (values.cover) {
+    try {
+      coverImageBuffer = readFileSync(expandHome(values.cover));
+    } catch (e) {
+      emitJSON({ error: 'cover-unreadable', message: e.message }, 1);
+    }
+  }
+
   try {
     const result = publishEntry({
       cloneDir: expandHome(values.clone),
       project: values.project,
       version: values.version,
       entryPath: expandHome(values.entry),
+      ...(coverImageBuffer ? { coverImageBuffer } : {}),
     });
     emitJSON({ ok: true, ...result });
   } catch (e) {
     emitJSON({ error: 'publish-failed', message: e.message }, 1);
   }
+}
+
+// ─── backfill-covers list ─────────────────────────────────────────────────────
+function cmdBackfillCovers(rest) {
+  const sub = rest[0];
+  if (sub !== 'list') {
+    emitJSON({ error: 'unknown-subcommand', message: 'Usage: devlog backfill-covers list --clone <cloneDir> [--project <key>] [--out <staging-dir>]' }, 2);
+    return;
+  }
+  const { values } = parseArgs({
+    args: rest.slice(1),
+    options: {
+      clone: { type: 'string' },
+      project: { type: 'string' },
+      out: { type: 'string' },
+    },
+    allowPositionals: false,
+  });
+  if (!values.clone) emitJSON({ error: 'missing-flag', message: 'backfill-covers list requires --clone' }, 1);
+  const config = readValidConfigOrExit({ json: true });
+  const cloneDir = expandHome(values.clone);
+
+  let merged;
+  try {
+    merged = mergeManifestEntries(cloneDir, config);
+  } catch (e) {
+    emitJSON({ error: 'manifest-error', message: e.message }, 1);
+    return;
+  }
+
+  let candidates = merged
+    .filter((e) => e && !e.cover)
+    .map((e) => ({ ...e, _slug: slugFromFile(e.file) }));
+
+  if (values.project) {
+    candidates = candidates.filter((e) => e.project === values.project);
+  }
+
+  // Resume support: skip candidates already validly staged this session.
+  if (values.out) {
+    const stagingDir = expandHome(values.out);
+    candidates = candidates.filter((e) => {
+      const p = join(stagingDir, e.project, `${e._slug}.png`);
+      return !(existsSync(p) && isValidPngFile(p));
+    });
+  }
+
+  // (date, project, slug) is the complete candidate-processing sort key — oldest first,
+  // ties broken by project then slug alphabetically, since manifest `date` is
+  // day-granularity and a same-day, cross-project collision is a real case at this scale.
+  candidates.sort((a, b) =>
+    String(a.date).localeCompare(String(b.date))
+    || a.project.localeCompare(b.project)
+    || a._slug.localeCompare(b._slug)
+  );
+
+  const out = candidates.map((e) => {
+    // Deterministically extract only the `## Shipped` section — never any other section
+    // (e.g. `## Changelog`) — so the agent never needs to open the candidate's raw .md.
+    let shipped = '';
+    try {
+      const raw = readFileSync(join(cloneDir, e.project, e.file), 'utf8');
+      const { body } = parseFrontmatter(raw);
+      const section = splitSections(body).find((s) => s.heading === 'Shipped');
+      shipped = section ? section.content.trim() : '';
+    } catch { /* best-effort; leave shipped empty if the .md can't be read */ }
+    return {
+      project: e.project,
+      slug: e._slug,
+      title: e.title || e._slug,
+      date: e.date,
+      tags: Array.isArray(e.tags) ? e.tags : [],
+      summary: e.summary || '',
+      shipped,
+    };
+  });
+
+  emitJSON(out);
+}
+
+// ─── cover-context ─────────────────────────────────────────────────────────────
+function cmdCoverContext(rest) {
+  const { positionals, values } = parseArgs({
+    args: rest,
+    options: {
+      clone: { type: 'string' },
+      staging: { type: 'string' },
+    },
+    allowPositionals: true,
+  });
+  const [project, slug] = positionals;
+  if (!project || !slug) {
+    emitJSON({ error: 'missing-arg', message: 'Usage: devlog cover-context <project> <slug> --clone <cloneDir> [--staging <staging-dir>]' }, 2);
+  }
+  if (!values.clone) emitJSON({ error: 'missing-flag', message: 'cover-context requires --clone' }, 1);
+
+  const config = readValidConfigOrExit({ json: true });
+
+  let styleGuide;
+  try {
+    styleGuide = loadStyleGuide();
+  } catch (e) {
+    emitJSON({ error: 'style-guide-missing', message: e.message }, 1);
+    return;
+  }
+
+  try {
+    const references = getRecentCovers({
+      cloneDir: expandHome(values.clone),
+      config,
+      stagingDir: values.staging ? expandHome(values.staging) : null,
+      n: 3,
+    });
+    emitJSON({ styleGuide, references });
+  } catch (e) {
+    // A configured project's manifest.json missing/unparseable: distinct, named error
+    // field — never collapsed into an empty references: [] array — but still does not
+    // block the rest of publish for the caller.
+    emitJSON({ styleGuide, references: [], error: 'reference-lookup-failed', message: e.message });
+  }
+}
+
+// ─── render-cover ──────────────────────────────────────────────────────────────
+function regenerateContactSheet(outDir) {
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const projects = readdirSync(outDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).sort();
+
+  let body = '';
+  for (const project of projects) {
+    const files = readdirSync(join(outDir, project)).filter((f) => f.endsWith('.png')).sort();
+    if (files.length === 0) continue;
+    body += `<h2>${escapeHtml(project)}</h2><div style="display:flex;flex-wrap:wrap;gap:12px;">`;
+    for (const f of files) {
+      const slug = f.replace(/\.png$/, '');
+      body += `<figure style="margin:0;width:320px;"><img src="${escapeHtml(`${project}/${f}`)}" style="width:100%;height:auto;border:1px solid #444;" loading="lazy"><figcaption>${escapeHtml(slug)}</figcaption></figure>`;
+    }
+    body += '</div>';
+  }
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>devlog cover contact sheet</title></head>` +
+    `<body style="font-family:sans-serif;background:#111;color:#eee;padding:24px;">${body || '<p>No covers staged yet.</p>'}</body></html>`;
+  writeFileSync(join(outDir, 'index.html'), html);
+}
+
+async function cmdRenderCover(rest) {
+  const { positionals, values } = parseArgs({
+    args: rest,
+    options: {
+      project: { type: 'string' },
+      slug: { type: 'string' },
+      out: { type: 'string' },
+    },
+    allowPositionals: true,
+  });
+  const htmlFile = positionals[0];
+  if (!htmlFile) emitJSON({ error: 'missing-arg', message: 'Usage: devlog render-cover <html-file> --project <key> --slug <slug> --out <dir>' }, 2);
+  for (const flag of ['project', 'slug', 'out']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `render-cover requires --${flag}` }, 1);
+  }
+  if (!RE_PROJECT_KEY.test(values.project) || values.project.includes('..')) {
+    emitJSON({ error: 'bad-flag', message: `Invalid --project: ${values.project}` }, 1);
+  }
+  if (values.slug.includes('/') || values.slug.includes('..') || values.slug === '') {
+    emitJSON({ error: 'bad-flag', message: `Invalid --slug: ${values.slug}` }, 1);
+  }
+
+  const outDir = expandHome(values.out);
+  const projectDir = join(outDir, values.project);
+  mkdirSync(projectDir, { recursive: true });
+  const pngPath = join(projectDir, `${values.slug}.png`);
+
+  // Idempotent re-run: an existing, valid PNG is left untouched — no re-render.
+  if (existsSync(pngPath) && isValidPngFile(pngPath)) {
+    regenerateContactSheet(outDir);
+    emitJSON({ ok: true, written: pngPath, rendered: false });
+    return;
+  }
+
+  let html;
+  try {
+    html = readFileSync(expandHome(htmlFile), 'utf8');
+  } catch (e) {
+    emitJSON({ error: 'html-unreadable', message: e.message }, 1);
+    return;
+  }
+
+  let png;
+  try {
+    png = await renderCoverImage(html, { width: 1600, height: 900 });
+  } catch (e) {
+    // Render failure (timeout / Chromium missing / font missing) — the HTML source is
+    // left in place for debugging, never deleted on failure.
+    emitJSON({ error: 'render-failed', message: e.message }, 1);
+    return;
+  }
+  writeFileSync(pngPath, png);
+
+  // Transient source document — deleted immediately after a successful render only.
+  try { unlinkSync(expandHome(htmlFile)); } catch { /* best-effort cleanup */ }
+
+  regenerateContactSheet(outDir);
+  emitJSON({ ok: true, written: pngPath, rendered: true });
+}
+
+// ─── commit-covers ──────────────────────────────────────────────────────────────
+async function cmdCommitCovers(rest) {
+  // --force takes an OPTIONAL value (bare --force = bulk; --force <slug-or-project/slug>
+  // = scoped), which node:util's parseArgs cannot express directly — parsed by hand.
+  let forcePresent = false;
+  let forceArg = null;
+  const positionals = [];
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (a === '--force') {
+      forcePresent = true;
+      if (i + 1 < rest.length && !rest[i + 1].startsWith('--')) forceArg = rest[++i];
+    } else if (a.startsWith('--')) {
+      emitJSON({ error: 'bad-flag', message: `Unknown flag: ${a}` }, 2);
+      return;
+    } else {
+      positionals.push(a);
+    }
+  }
+
+  const stagingDirArg = positionals[0];
+  if (!stagingDirArg) emitJSON({ error: 'missing-arg', message: 'Usage: devlog commit-covers <staging-dir> [--force [slug]]' }, 2);
+  const stagingDir = expandHome(stagingDirArg);
+  if (!existsSync(stagingDir)) emitJSON({ error: 'staging-dir-missing', message: `Staging dir not found: ${stagingDir}` }, 1);
+
+  const config = readValidConfigOrExit({ json: true });
+
+  const staged = [];
+  for (const d of readdirSync(stagingDir, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    for (const f of readdirSync(join(stagingDir, d.name))) {
+      if (!f.endsWith('.png')) continue;
+      staged.push({ project: d.name, slug: f.replace(/\.png$/, ''), path: join(stagingDir, d.name, f) });
+    }
+  }
+
+  // commit-covers takes NO --clone flag of any kind — deliberately, not an oversight (see
+  // design doc). It always establishes its own fresh clone at commit time, since it
+  // routinely runs well after the backfill/review session that produced the staging dir,
+  // and reusing an hours-or-days-old clone would risk mutating a manifest that's since
+  // moved on.
+  const cloneDir = mkdtempSync(join(tmpdir(), 'devlog-commit-covers-'));
+  const branch = config.branch || 'main';
+  const cloneUrl = `https://github.com/${config.targetRepo}.git`;
+  const cloneResult = spawnSync('git', ['clone', '--depth=1', '--branch', branch, cloneUrl, cloneDir], { encoding: 'utf8' });
+  if (cloneResult.status !== 0) {
+    rmSync(cloneDir, { recursive: true, force: true });
+    emitJSON({ error: 'clone-failed', message: cloneResult.stderr || 'git clone failed' }, 1);
+    return;
+  }
+
+  const summary = { written: [], skipped: [], failed: [], missingManifest: [] };
+  let bulkForceOverwriteCount = 0;
+
+  for (const s of staged) {
+    let merged;
+    try {
+      merged = mergeManifestEntries(cloneDir, config);
+    } catch (e) {
+      summary.failed.push({ project: s.project, slug: s.slug, message: e.message });
+      continue;
+    }
+    const row = merged.find((e) => e.project === s.project && slugFromFile(e.file) === s.slug);
+
+    // Missing/shifted manifest row at commit time: `list` and `commit-covers` read against
+    // two separately-established clones taken hours or days apart. Distinct from "found a
+    // row, and it already has cover" below — this is "no row at all for this slug under
+    // this project." Logged and skipped, never aborting the rest of the run.
+    if (!row) {
+      summary.missingManifest.push(`${s.project}/${s.slug}`);
+      continue;
+    }
+
+    // Scoped force: --force <project>/<slug>, or bare --force <slug> when that slug is
+    // staged under only one project (ambiguous otherwise — require the qualified form).
+    let forceThis = false;
+    if (forcePresent) {
+      if (forceArg === null) {
+        forceThis = true; // bulk
+        if (row.cover) bulkForceOverwriteCount++;
+      } else if (forceArg === `${s.project}/${s.slug}`) {
+        forceThis = true;
+      } else if (forceArg === s.slug) {
+        const ambiguous = staged.some((x) => x.slug === forceArg && x.project !== s.project);
+        if (ambiguous) {
+          summary.failed.push({ project: s.project, slug: s.slug, message: `--force ${forceArg} is ambiguous (staged under multiple projects) — use --force ${s.project}/${s.slug}` });
+          continue;
+        }
+        forceThis = true;
+      }
+    }
+
+    // Pre-filter: skip an already-covered entry without calling addCoverToExistingEntry()
+    // at all, UNLESS this exact entry is in scope for --force.
+    if (row.cover && !forceThis) {
+      summary.skipped.push(`${s.project}/${s.slug}`);
+      continue;
+    }
+
+    try {
+      const coverImageBuffer = readFileSync(s.path);
+      addCoverToExistingEntry({ cloneDir, project: s.project, slug: s.slug, coverImageBuffer, force: forceThis });
+      summary.written.push(`${s.project}/${s.slug}`);
+    } catch (e) {
+      summary.failed.push({ project: s.project, slug: s.slug, message: e.message });
+    }
+  }
+
+  if (summary.written.length > 0) {
+    const steps = [
+      ['add', '.'],
+      ['commit', '-m', `chore(devlog): add ${summary.written.length} cover image(s)`],
+    ];
+    for (const args of steps) {
+      const r = spawnSync('git', ['-C', cloneDir, ...args], { encoding: 'utf8' });
+      if (r.status !== 0) {
+        emitJSON({ ok: false, ...summary, bulkForceOverwriteCount, error: 'git-commit-failed', message: r.stderr }, 1);
+        return;
+      }
+    }
+    const push = spawnSync('git', ['-C', cloneDir, 'push', '--no-tags', 'origin', branch], { encoding: 'utf8' });
+    if (push.status !== 0) {
+      emitJSON({ ok: false, ...summary, bulkForceOverwriteCount, error: 'git-push-failed', message: push.stderr }, 1);
+      return;
+    }
+  }
+
+  rmSync(cloneDir, { recursive: true, force: true });
+  emitJSON({ ok: summary.failed.length === 0, ...summary, bulkForceOverwriteCount });
 }
 
 // ─── config (view) ───────────────────────────────────────────────────────────
@@ -646,7 +1058,11 @@ async function cmdConfig(rest) {
   for (const p of config.projects || []) {
     log.info(`  ${kleur.cyan(p.key)}${p.label ? `  (${p.label})` : ''}`);
     log.info(kleur.dim(`    path:   ${p.path}`));
-    log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+    if (p.private) {
+      log.info(kleur.dim(`    remote: (private — no commit links)${p.remote ? ` [${p.remote}]` : ''}`));
+    } else {
+      log.info(kleur.dim(`    remote: github.com/${p.remote}`));
+    }
     if (p.pathFilter) log.info(kleur.dim(`    scope:  ${p.pathFilter}/`));
     log.info(kleur.dim(`    tags:   ${p.tagPrefix || 'v'}*`));
   }
@@ -711,6 +1127,12 @@ Used by the /devlog skill:
   ${kleur.cyan('npx @natjswenson/devlog scan [--project <key>]')}   JSON plan of new releases needing entries
   ${kleur.cyan('npx @natjswenson/devlog lint-post <file>')}         Deterministic post-contract check
   ${kleur.cyan('npx @natjswenson/devlog publish-entry ...')}        Copy a drafted entry into the clone + update manifest (never overwrites)
+  ${kleur.cyan('npx @natjswenson/devlog cover-context <project> <slug> --clone <dir>')}  Style guide + reference-image paths for cover composition
+  ${kleur.cyan('npx @natjswenson/devlog render-cover <html> --project <key> --slug <s> --out <dir>')}  Rasterize a composed cover to PNG
+
+Backfilling covers onto existing posts:
+  ${kleur.cyan('npx @natjswenson/devlog backfill-covers list --clone <dir> [--out <staging-dir>]')}  List posts missing a cover
+  ${kleur.cyan('npx @natjswenson/devlog commit-covers <staging-dir> [--force [slug]]')}  Publish staged covers to already-published entries
 
 Preview:
   ${kleur.cyan('npx @natjswenson/devlog preview')}                  Run a local preview of your published dev log
@@ -760,6 +1182,18 @@ if (isMain) {
       break;
     case 'publish-entry':
       cmdPublishEntry(rest);
+      break;
+    case 'backfill-covers':
+      cmdBackfillCovers(rest);
+      break;
+    case 'cover-context':
+      cmdCoverContext(rest);
+      break;
+    case 'render-cover':
+      cmdRenderCover(rest);
+      break;
+    case 'commit-covers':
+      cmdCommitCovers(rest);
       break;
     case 'config':
       cmdConfig(rest);

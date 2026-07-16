@@ -60,7 +60,32 @@
       "id": "no-push-retry",
       "pattern": "do not retry automatically",
       "rationale": "A failed push is surfaced to the user, not retried blind."
+    },
+    {
+      "id": "private-project-no-links",
+      "pattern": "no post ever[\\s\\S]{0,10}links a commit for it",
+      "rationale": "A private project's commits must never scan as public just because remoteMatches + branch-contains happen to hold — losing this line reopens the dead-link-to-a-private-repo path."
+    },
+    {
+      "id": "cover-composition-scope",
+      "pattern": "never the raw draft file, never[\\s\\S]{0,10}## Changelog",
+      "rationale": "Cover composition must draw only from title/tags/summary/## Shipped — never the raw draft or Changelog — losing this line reopens off-scope content leaking into an auto-composed image."
+    },
+    {
+      "id": "cover-never-blocks-publish",
+      "pattern": "[Nn]ever block[\\s\\S]{0,10}publish on a missing style guide",
+      "rationale": "A missing/uninstalled style guide must degrade gracefully (no cover this run), never abort the whole publish."
+    },
+    {
+      "id": "cover-review-gate",
+      "pattern": "this interactive review IS the quality gate for the cover",
+      "rationale": "The rendered cover must be shown to the user before push, the same way Step 4 gates the prose — losing this line reopens publishing an unreviewed cover."
+    },
+    {
+      "id": "cover-custom-illustration",
+      "pattern": "cover that just re-renders the title in large text is a failure",
+      "rationale": "First shipped version of this feature produced a shared text-heavy template with a rotating stock shape — rejected as bland/repetitive. Losing this line reopens that regression."
     }
   ],
-  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init"]
+  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover"]
 }

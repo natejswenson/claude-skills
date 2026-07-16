@@ -3,7 +3,7 @@ title: "Retries that don't stampede: exponential backoff with jitter in 40 lines
 date: 2026-07-10
 project: fixture
 version: v1.3.0
-tags: [reliability, python, distributed-systems]
+tags: [reliability, python, distributed-systems, backoff, jitter]
 summary: "This release moved our flaky HTTP calls behind a retry wrapper. Here's how to build one with full jitter, and the two traps that bit me."
 ---
 
