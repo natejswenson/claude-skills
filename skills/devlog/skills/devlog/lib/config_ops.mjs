@@ -3,11 +3,14 @@
 // reading/writing ~/.claude/skills/devlog/config.json atomically.
 import { validateConfig, expandHome } from './core.mjs';
 
-export function addProject(config, { key, path, remote, label, tagPrefix, pathFilter }) {
+export function addProject(config, { key, path, remote, label, tagPrefix, pathFilter, private: isPrivate }) {
   if (config.projects.some((p) => p.key === key)) {
     throw new Error(`Project key "${key}" is already registered.`);
   }
-  const project = { key, path: expandHome(path), remote };
+  const project = { key, path: expandHome(path) };
+  // remote is required unless the project is private (see core.mjs validateConfig).
+  if (remote) project.remote = remote;
+  if (isPrivate) project.private = true;
   if (label) project.label = label;
   // Only persist tagPrefix when it differs from the default `v` (keeps configs clean).
   if (tagPrefix && tagPrefix !== 'v') project.tagPrefix = tagPrefix;

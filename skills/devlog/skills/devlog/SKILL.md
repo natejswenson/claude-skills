@@ -39,7 +39,7 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 | Intent | Command |
 |---|---|
 | Show config | `npx -y @natjswenson/devlog config --json` |
-| Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F]` |
+| Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
 | Remove a project | `npx -y @natjswenson/devlog remove-project <key> --yes` |
 | Change a setting | `npx -y @natjswenson/devlog set <field> <value>` (settable: `targetRepo`, `branch`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
 
@@ -50,6 +50,16 @@ get-url origin`. In a monorepo, suggest a `--path-filter` (the project's subdir)
 `AskUserQuestion` (options: "looks right" / sensible alternatives), then run with `--yes`
 and show the resulting project list. For **remove-project**, confirm once before running;
 tell the user published entries are not deleted.
+
+**Private repos.** If the user says the repo is private (or a source repo happens to be
+private on GitHub even though it's configured normally), pass `--private`. A private
+project's commits are never marked public in the scan (see Generate mode), so no post ever
+links a commit for it, `## Changelog` is always omitted, and `--remote` is optional — the
+tool has no reason to know or use the repo's GitHub location. This is a declared project
+*type*, not something auto-detected from the GitHub API: `remoteMatches` + "on the
+published branch" alone doesn't imply the repo is public, so a project with a real, correctly
+configured remote that happens to sit in a private repo needs this flag or its commits would
+otherwise scan as public.
 
 If any command prints `{"error": "config-missing", ...}`, tell the user to run
 `npx @natjswenson/devlog init` first. On `config-invalid`, show the message and offer to
@@ -170,7 +180,9 @@ title: "<essay-style title in sentence case (capitalize only the first word and 
 date: <release date from scan>
 project: <project key>
 version: <version from scan>
-tags: [<2-5 lowercase topic tags>]
+tags: [<5-10 specific, lowercase tags — tools, techniques, and concepts actually
+  present in the post, not just broad topic labels, e.g. git, ci-cd,
+  release-engineering, github-actions, semver, changelog-automation>]
 summary: "<1-2 sentence hook that frames the how-to, not just what shipped>"
 ---
 
@@ -282,15 +294,51 @@ critique, not a rubber stamp.
 Clone once, publish each entry through the CLI, push once. `targetRepo` and `branch` come
 from validated config — still single-quote every interpolated value.
 
+Each release also gets a cover image, composed inline in this same loop right before that
+release's own `publish-entry` call — a self-contained HTML/CSS (or inline SVG) document,
+rasterized locally, never sent to any external service:
+
 ```bash
 mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
 git -C '<abs-tmp>' clone --depth=1 'https://github.com/<targetRepo>.git'
 
 # Per release (refuses to overwrite an existing entry — on {"error": ...,
 # "message": "... immutable ..."} skip that release and note it):
+
+# 1. Style guide + up to 3 reference images of recently published covers.
+npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
+  --clone '<abs-tmp>/<repo-name>'
+# On {"error": "style-guide-missing", ...}: skip cover composition for this release
+# entirely — proceed straight to publish-entry with no --cover flag. Never block
+# publish on a missing style guide.
+
+# 2. Compose the cover using ONLY this release's title/tags/summary/`## Shipped` text
+#    (never the raw draft file, never `## Changelog`) plus the returned style guide and
+#    reference images. A cover that just re-renders the title in large text is a failure —
+#    find the one concrete mechanism this release is actually about (not the project name,
+#    not "a bug fix") and draw ONE custom inline-SVG illustration of it, sized as the
+#    dominant visual element of the canvas; title/kicker stay secondary. Two different
+#    releases should never produce visually similar covers — see the style guide's "one
+#    custom illustration per post" section before composing. Write the result with the
+#    Write tool to '<abs-scratch>/<key>/<version>.html' — a full document starting with
+#    `<!DOCTYPE html>`, sized `html, body { margin:0; width:1600px; height:900px; }`,
+#    referencing the bundled font only as `font-family: 'DevlogCoverFont', sans-serif`.
+
+# 3. Rasterize it. On failure (render timeout / Chromium not installed / font missing),
+#    the .html is left in place for debugging — retry composing once with the error text
+#    fed back, or give up and proceed with no --cover flag.
+npx -y @natjswenson/devlog render-cover '<abs-scratch>/<key>/<version>.html' \
+  --project '<key>' --slug '<version>' --out '<abs-scratch>'
+# Show the rendered <abs-scratch>/<key>/<version>.png in this session before continuing —
+# this interactive review IS the quality gate for the cover, the same way Step 4 is for
+# the prose.
+
 npx -y @natjswenson/devlog publish-entry \
   --clone '<abs-tmp>/<repo-name>' --project '<key>' \
-  --version '<version>' --entry '<abs-draft-path>'
+  --version '<version>' --entry '<abs-draft-path>' \
+  --cover '<abs-scratch>/<key>/<version>.png'
+# Omit --cover entirely if no cover was produced for this release (missing style guide,
+# a render failure not worth a second attempt) — publish still proceeds normally.
 
 git -C '<abs-tmp>/<repo-name>' add .
 git -C '<abs-tmp>/<repo-name>' commit -m 'devlog: add release entries'

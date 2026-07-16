@@ -10,6 +10,23 @@ export const REQUIRED_SECTIONS = ['Shipped', 'Gotchas', 'Sources'];
 
 const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+export const TAG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+// First-occurrence wins: keeps the first casing seen, drops later
+// case-insensitive duplicates. A same-case repeat is the reachable case in
+// practice — TAG_PATTERN already forbids the case-differing variant outright.
+export function dedupeCaseInsensitive(tags) {
+  const seen = new Set();
+  const out = [];
+  for (const t of tags) {
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out;
+}
+
 // Minimal frontmatter parser: `--- ... ---` fence, `key: value` lines, flow
 // arrays for tags. Prototype-free target object; unknown keys are kept (the
 // contract does not forbid extras) but only allowlisted keys are checked.
@@ -121,8 +138,18 @@ export function lintPost(content, { minSources = 3, filename = null } = {}) {
       add('title-style', 'Title must be essay-style, not a "release vX.Y.Z" label.');
     }
   }
-  if (Array.isArray(data.tags) && (data.tags.length < 2 || data.tags.length > 5)) {
-    add('tags-count', `Expected 2-5 topic tags, got ${data.tags.length}.`);
+  if (Array.isArray(data.tags) && (data.tags.length < 5 || data.tags.length > 10)) {
+    add('tags-count', `Expected 5-10 topic tags, got ${data.tags.length}.`);
+  }
+  if (Array.isArray(data.tags)) {
+    for (const t of data.tags) {
+      if (typeof t === 'string' && !TAG_PATTERN.test(t)) {
+        add('tags-character-pattern', `Tag "${t}" must be lowercase alphanumeric/hyphens only (^[a-z0-9][a-z0-9-]*$).`);
+      }
+    }
+    if (dedupeCaseInsensitive(data.tags).length !== data.tags.length) {
+      add('tags-duplicate', 'Tags contain a case-insensitive duplicate.');
+    }
   }
   if (filename && typeof data.version === 'string' && data.version) {
     const expected = `${data.version}.md`;

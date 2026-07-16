@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { addProject, removeProject, setField, SETTABLE_FIELDS } from '../lib/config_ops.mjs';
-import { resolveDeepDive } from '../lib/core.mjs';
+import { resolveDeepDive, validateConfig } from '../lib/core.mjs';
 
 function baseConfig() {
   return {
@@ -38,6 +38,33 @@ test('addProject rejects duplicate keys and invalid fields', () => {
   assert.throws(() => addProject(baseConfig(), { key: 'existing', path: '/tmp', remote: 'me/x' }), /already registered/);
   assert.throws(() => addProject(baseConfig(), { key: 'proj', path: '/tmp', remote: 'not-owner-repo' }), /remote/);
   assert.throws(() => addProject(baseConfig(), { key: 'proj', path: '/tmp/$(x)', remote: 'me/proj' }), /path/);
+});
+
+// ─── private projects ─────────────────────────────────────────────────────────
+
+test('addProject allows a private project with no remote at all', () => {
+  const next = addProject(baseConfig(), { key: 'personal', path: '/tmp', private: true });
+  const p = next.projects.at(-1);
+  assert.equal(p.private, true);
+  assert.equal('remote' in p, false);
+});
+
+test('addProject still validates remote shape for a private project that supplies one', () => {
+  assert.throws(
+    () => addProject(baseConfig(), { key: 'personal', path: '/tmp', private: true, remote: 'not-owner-repo' }),
+    /remote/,
+  );
+  const next = addProject(baseConfig(), { key: 'personal', path: '/tmp', private: true, remote: 'me/personal' });
+  assert.equal(next.projects.at(-1).remote, 'me/personal');
+});
+
+test('validateConfig rejects a non-boolean private field (e.g. a hand-edited config.json)', () => {
+  const config = { ...baseConfig(), projects: [{ key: 'personal', path: '/tmp', private: 'yes' }] };
+  assert.throws(() => validateConfig(config), /project.private must be a boolean/);
+});
+
+test('a non-private project still requires a valid remote', () => {
+  assert.throws(() => addProject(baseConfig(), { key: 'proj', path: '/tmp' }), /remote/);
 });
 
 // ─── removeProject ────────────────────────────────────────────────────────────
