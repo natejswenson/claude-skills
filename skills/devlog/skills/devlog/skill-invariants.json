@@ -80,6 +80,11 @@
       "id": "cover-review-gate",
       "pattern": "this interactive review IS the quality gate for the cover",
       "rationale": "The rendered cover must be shown to the user before push, the same way Step 4 gates the prose — losing this line reopens publishing an unreviewed cover."
+    },
+    {
+      "id": "cover-custom-illustration",
+      "pattern": "cover that just re-renders the title in large text is a failure",
+      "rationale": "First shipped version of this feature produced a shared text-heavy template with a rotating stock shape — rejected as bland/repetitive. Losing this line reopens that regression."
     }
   ],
   "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover"]

@@ -314,8 +314,13 @@ npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
 
 # 2. Compose the cover using ONLY this release's title/tags/summary/`## Shipped` text
 #    (never the raw draft file, never `## Changelog`) plus the returned style guide and
-#    reference images. Write the result with the Write tool to
-#    '<abs-scratch>/<key>/<version>.html' — a full document starting with
+#    reference images. A cover that just re-renders the title in large text is a failure —
+#    find the one concrete mechanism this release is actually about (not the project name,
+#    not "a bug fix") and draw ONE custom inline-SVG illustration of it, sized as the
+#    dominant visual element of the canvas; title/kicker stay secondary. Two different
+#    releases should never produce visually similar covers — see the style guide's "one
+#    custom illustration per post" section before composing. Write the result with the
+#    Write tool to '<abs-scratch>/<key>/<version>.html' — a full document starting with
 #    `<!DOCTYPE html>`, sized `html, body { margin:0; width:1600px; height:900px; }`,
 #    referencing the bundled font only as `font-family: 'DevlogCoverFont', sans-serif`.
 
