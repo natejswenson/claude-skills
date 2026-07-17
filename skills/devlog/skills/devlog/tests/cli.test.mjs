@@ -69,6 +69,10 @@ function run(home, ...args) {
 
 const parse = (out) => JSON.parse(out.stdout);
 
+// #hero-zone is now mandatory (render_cover.mjs's geometry guard) — every render-cover CLI
+// fixture below needs one positioned at the exact HERO_ZONE box to reach a real render.
+const HERO_ZONE_DIV = '<div id="hero-zone" style="position:absolute; left:150px; top:425px; width:1300px; height:400px;"></div>';
+
 test('scan --json (as SKILL.md spells it) emits a valid JSON plan', (t) => {
   const { home } = makeHome(t);
   // --no-fetch: fixture repo has no remote; entry-existence check will report
@@ -251,7 +255,7 @@ test('render-cover writes a real 1600x900 PNG and a contact sheet, project-names
   const outDir = join(home, 'staging');
   mkdirSync(outDir, { recursive: true });
   const htmlPath = join(home, 'cover.html');
-  writeFileSync(htmlPath, '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#000"></body></html>');
+  writeFileSync(htmlPath, `<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#000">${HERO_ZONE_DIV}</body></html>`);
 
   const out = run(home, 'render-cover', htmlPath, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
   assert.equal(out.status, 0, out.stderr);
@@ -267,7 +271,7 @@ test('render-cover project-namespaces staged output so two projects sharing a sl
   const { home } = makeCoverHome(t);
   const outDir = join(home, 'staging');
   mkdirSync(outDir, { recursive: true });
-  const html = () => '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#111"></body></html>';
+  const html = () => `<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:#111">${HERO_ZONE_DIV}</body></html>`;
 
   const htmlA = join(home, 'a.html');
   writeFileSync(htmlA, html());
@@ -289,7 +293,7 @@ test('render-cover is idempotent: a second run against an already-valid PNG does
   mkdirSync(outDir, { recursive: true });
   const htmlPath = () => {
     const p = join(home, 'cover.html');
-    writeFileSync(p, '<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;"></body></html>');
+    writeFileSync(p, `<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;">${HERO_ZONE_DIV}</body></html>`);
     return p;
   };
 
@@ -354,6 +358,24 @@ test('backfill-covers list --project filters to one project', (t) => {
 
   const out = run(home, 'backfill-covers', 'list', '--clone', cloneDir, '--project', 'proj-a');
   assert.deepEqual(parse(out).map((c) => c.project), ['proj-a']);
+});
+
+test('backfill-covers list --all lists every entry regardless of cover status; no flag stays missing-cover-only (COVER-Q-10)', (t) => {
+  const { home, cloneDir } = makeCoverHome(t);
+  writeManifest(cloneDir, 'proj-a', [
+    { date: '2026-07-01', file: 'v0.1.0.md', version: 'v0.1.0', title: 'A', tags: [], summary: 's', cover: { file: 'v0.1.0.png', bytes: 3 } },
+    { date: '2026-07-02', file: 'v0.2.0.md', version: 'v0.2.0', title: 'A2', tags: [], summary: 's', cover: false },
+    { date: '2026-07-03', file: 'v0.3.0.md', version: 'v0.3.0', title: 'A3', tags: [], summary: 's' }, // cover field absent entirely
+  ]);
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.1.0.md'), '---\ntitle: "A"\ndate: 2026-07-01\n---\n\n## Shipped\n\nx\n');
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.2.0.md'), '---\ntitle: "A2"\ndate: 2026-07-02\n---\n\n## Shipped\n\nx\n');
+  writeFileSync(join(cloneDir, 'proj-a', 'v0.3.0.md'), '---\ntitle: "A3"\ndate: 2026-07-03\n---\n\n## Shipped\n\nx\n');
+
+  const noFlag = run(home, 'backfill-covers', 'list', '--clone', cloneDir);
+  assert.deepEqual(parse(noFlag).map((c) => c.slug), ['v0.2.0', 'v0.3.0']);
+
+  const withAll = run(home, 'backfill-covers', 'list', '--clone', cloneDir, '--all');
+  assert.deepEqual(parse(withAll).map((c) => c.slug), ['v0.1.0', 'v0.2.0', 'v0.3.0']);
 });
 
 test('backfill-covers list --out excludes an already-validly-staged candidate', (t) => {

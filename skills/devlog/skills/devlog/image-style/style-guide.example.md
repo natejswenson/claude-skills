@@ -48,6 +48,37 @@ that's a sign to go back to step 2 and find the more specific concept — a post
 retrying a flaky network call and a post about deduplicating bank transactions should not
 end up with the same shape family.
 
+## Hero-zone grid contract
+
+The hero illustration renders inside a fixed bounding box: `x:150 y:425 width:1300 height:400` on the 1600×900 canvas (below the kicker/title area). Draw a container
+element with `id="hero-zone"` at exactly this position and size — `render-cover`
+mechanically checks the rendered `#hero-zone` rect against these numbers (within a 2px
+tolerance for subpixel rounding) and refuses to render if it doesn't match, or if
+`#hero-zone` is missing or duplicated. This is a hard requirement, not a suggestion —
+every post's hero renders inside the identical box so covers stay comparable.
+
+Every key point of the hero shape you draw *inside* `#hero-zone` should snap to a 25px coordinate grid (this is prose guidance, not mechanically checked — the guard verifies the outer box only) — pick coordinates as multiples of 25px from `#hero-zone`'s own top-left corner. This fixes near-misses and uneven spacing; it does not mean the shapes themselves must be simple, only that their key points land on a consistent rhythm.
+
+**Two named composition slots** — pick one per post:
+- **Single centered hero** — one freehand mechanism, nothing else, inside the hero zone.
+- **Two-node before/after** — a left node, a right node, and a connecting line, all
+  three freehand shapes (never catalog icons) — for a post about a transformation or a
+  fix.
+
+These are placement/proportion guidance, not literal templates — the actual shapes
+inside each slot are still freehand per post.
+
+**Catalog icons are never placed inside `#hero-zone`, in either slot.** The mechanism
+and both two-node shapes are always freehand SVG you draw yourself. A catalog icon
+(`image-style/icons.md`) may only appear as a small accent glyph in the kicker/title
+area, entirely outside the hero zone.
+
+**Optional kicker-area accent icon.** Independent of which of the two slots you picked, you may add one small accent glyph near the kicker/title area — either a catalog icon (`image-style/icons.md`) or a terminal/code aesthetic glyph (`$`, `>`, `//`, brackets). Never combine the catalog-icon accent and the terminal-glyph accent in the same cover.
+
+If you use a catalog-icon accent, it must be positioned with its bottom edge no lower than y:400 — a 25px buffer above the hero zone's y:425 top edge — so it can never clip into the hero zone and trip the geometry guard.
+
+For the two-node slot specifically: the accent icon's presence must not be read as belonging to either node; it sits in the kicker/title area purely as a page-level decoration, unrelated to the two-node layout below it.
+
 ## Technical requirements (non-negotiable)
 
 - Start the document with a literal `<!DOCTYPE html>` declaration, always.

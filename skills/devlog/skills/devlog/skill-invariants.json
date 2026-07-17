@@ -1,5 +1,5 @@
 {
-  "comment": "Prose guardrails in SKILL.md that must survive edits. Each pattern is a case-insensitive regex tested against the full SKILL.md text by tests/skill_contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
+  "comment": "Prose guardrails in SKILL.md that must survive edits (the `prose` array — each pattern is a case-insensitive regex tested against the full SKILL.md text) and code-level guards elsewhere in this skill's source (the `code` array — each pattern is tested against the file named by its own `file` field, not SKILL.md). Both are checked by tests/skill_contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
   "prose": [
     {
       "id": "immutable-entries",
@@ -84,7 +84,15 @@
     {
       "id": "cover-custom-illustration",
       "pattern": "cover that just re-renders the title in large text is a failure",
-      "rationale": "First shipped version of this feature produced a shared text-heavy template with a rotating stock shape — rejected as bland/repetitive. Losing this line reopens that regression."
+      "rationale": "First shipped version of this feature produced a shared text-heavy template with a rotating stock shape — rejected as bland/repetitive. Losing this line reopens that regression. Independent of, not superseded by, the v0.9.0 geometry guard (cover-catalog-hero-overlap-guard, below): that guard is a mechanical check on an agent's rendered composition each time a cover is rendered; this line is a prose guardrail against a future SKILL.md/style-guide edit silently reintroducing the bland-template regression at the instruction level. Two different regression surfaces, both still worth guarding."
+    }
+  ],
+  "code": [
+    {
+      "id": "cover-catalog-hero-overlap-guard",
+      "file": "lib/render_cover.mjs",
+      "pattern": "(?:getBoundingClientRect[\\s\\S]{0,400}hero-zone|hero-zone[\\s\\S]{0,400}getBoundingClientRect)",
+      "rationale": "The catalog-icon/hero-zone overlap check must stay wired into renderCoverImage() — losing it silently reopens the gap where a catalog icon (or two, connected by a line) can stand in for the required bespoke hero illustration."
     }
   ],
   "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover"]

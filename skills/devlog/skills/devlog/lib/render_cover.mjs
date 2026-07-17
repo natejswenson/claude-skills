@@ -16,6 +16,17 @@ export const DEFAULT_RENDER_TIMEOUT_MS = 15000;
 const FONT_PATH = join(homedir(), '.claude', 'skills', 'devlog', 'image-style', 'font.ttf');
 const QUANTIZE_TARGET_BYTES = 500 * 1024;
 
+// Fixed hero-zone bounding box on the 1600x900 canvas — the single source of truth this
+// design's prose (image-style/style-guide.example.md) must state identically, checked by
+// tests/skill_contract.test.mjs's COVER-Q-2 invariant rather than trusted to manual review.
+export const HERO_ZONE = { x: 150, y: 425, width: 1300, height: 400 };
+export const HERO_GRID_UNIT = 25;
+// getBoundingClientRect() subpixel/rounding tolerance — not a meaningful size/position
+// allowance. Exact-match (within this tolerance), never containment: a containment check
+// would let an agent draw a tiny #hero-zone in a corner and trivially clear the
+// catalog-overlap check below, since a tiny box is still "contained" in the larger one.
+const HERO_ZONE_TOLERANCE_PX = 2;
+
 // Deterministic Node code, never agent-authored text: reads the installed font file and
 // builds a base64 data URI. The font's bytes never pass through Claude's own text
 // generation — a qualitatively different (and much less reliable, at this size) operation
@@ -59,15 +70,88 @@ async function quantize(pngBuffer) {
   return best;
 }
 
+// Two rects overlap only on positive-area intersection — rects that merely touch along an
+// edge (zero-area overlap) do NOT count as intersecting.
+function rectsOverlap(a, b) {
+  const left = Math.max(a.x, b.x);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const top = Math.max(a.y, b.y);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
+  return right > left && bottom > top;
+}
+
+function withinTolerance(rect, fixed, toleranceExclusivePx) {
+  return (
+    Math.abs(rect.x - fixed.x) <= toleranceExclusivePx &&
+    Math.abs(rect.y - fixed.y) <= toleranceExclusivePx &&
+    Math.abs(rect.width - fixed.width) <= toleranceExclusivePx &&
+    Math.abs(rect.height - fixed.height) <= toleranceExclusivePx
+  );
+}
+
+/**
+ * @param {import('playwright').Page} page
+ * @returns {Promise<{overlaps: boolean, offendingIcons: string[]}>}
+ *
+ * #hero-zone is structurally mandatory, not an opt-in marker: throws if querySelectorAll
+ * finds zero elements (missing) or more than one (duplicate) — rather than silently
+ * skipping the check or resolving to the first DOM match. Once exactly one #hero-zone is
+ * confirmed, its rect is compared against the fixed HERO_ZONE constant (exact-match within
+ * HERO_ZONE_TOLERANCE_PX, not containment — see the constant's own comment) and throws a
+ * distinct geometry-mismatch error if it's outside tolerance, BEFORE computing catalog-icon
+ * overlap. Only past both of those checks does this function resolve normally to
+ * { overlaps, offendingIcons } — overlap-found and overlap-not-found are both successful
+ * resolutions of the check; it is the caller (renderCoverImage) that decides whether
+ * overlaps: true itself becomes a thrown error.
+ */
+export async function checkHeroZoneOverlap(page) {
+  const heroZoneRects = await page.evaluate(() =>
+    [...document.querySelectorAll('#hero-zone')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    })
+  );
+
+  if (heroZoneRects.length === 0) {
+    throw new Error('renderCoverImage: composed HTML has no #hero-zone element — a hero zone marker is required, not optional.');
+  }
+  if (heroZoneRects.length > 1) {
+    throw new Error(`renderCoverImage: composed HTML has ${heroZoneRects.length} elements sharing the #hero-zone id — exactly one is required.`);
+  }
+
+  const heroZoneRect = heroZoneRects[0];
+  if (!withinTolerance(heroZoneRect, HERO_ZONE, HERO_ZONE_TOLERANCE_PX)) {
+    throw new Error(
+      `renderCoverImage: #hero-zone rect (x:${heroZoneRect.x} y:${heroZoneRect.y} width:${heroZoneRect.width} height:${heroZoneRect.height}) ` +
+      `does not match the fixed HERO_ZONE box (x:${HERO_ZONE.x} y:${HERO_ZONE.y} width:${HERO_ZONE.width} height:${HERO_ZONE.height}) ` +
+      `within ${HERO_ZONE_TOLERANCE_PX}px tolerance.`
+    );
+  }
+
+  const iconRects = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-catalog-icon]')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { name: el.getAttribute('data-catalog-icon'), x: r.x, y: r.y, width: r.width, height: r.height };
+    })
+  );
+
+  const offendingIcons = iconRects.filter((icon) => rectsOverlap(icon, heroZoneRect)).map((icon) => icon.name);
+  return { overlaps: offendingIcons.length > 0, offendingIcons };
+}
+
 /**
  * @param {string} html full, self-contained HTML document (must start with <!DOCTYPE html>)
  * @param {{width:number, height:number, timeoutMs?:number, fontPath?:string, executablePath?:string}} opts
  * @returns {Promise<Buffer>} PNG bytes, exactly {width}x{height} pixels
  *
- * Throws on exactly three realistic failure modes: a render timeout; Chromium not being
- * installed; a missing/unreadable installed font file. Does NOT throw on malformed HTML —
- * Chromium's HTML5 parser is deliberately fault-tolerant and recovers into some DOM
- * regardless of input; a poorly composed document renders wrong, it doesn't fail to render.
+ * Throws on exactly four realistic failure modes: a render timeout; Chromium not being
+ * installed; a missing/unreadable installed font file; and (a deliberate widening of this
+ * already-documented throw contract) a #hero-zone structural/geometry problem — missing
+ * #hero-zone, duplicate #hero-zone, the #hero-zone rect not matching the fixed HERO_ZONE
+ * bounding box within tolerance, or a catalog icon overlapping the hero zone. Does NOT
+ * throw on malformed HTML — Chromium's HTML5 parser is deliberately fault-tolerant and
+ * recovers into some DOM regardless of input; a poorly composed document renders wrong, it
+ * doesn't fail to render.
  */
 export async function renderCoverImage(html, opts = {}) {
   const {
@@ -143,6 +227,17 @@ export async function renderCoverImage(html, opts = {}) {
         )
       ),
     ]);
+
+    // Geometry-enforced hero-zone guard, immediately before the screenshot: throws on a
+    // missing/duplicate #hero-zone, a #hero-zone rect that doesn't match the fixed
+    // HERO_ZONE box, or (below) a catalog icon whose rect overlaps the hero zone.
+    const { overlaps, offendingIcons } = await checkHeroZoneOverlap(page);
+    if (overlaps) {
+      throw new Error(
+        `renderCoverImage: catalog icon(s) [${offendingIcons.join(', ')}] overlaps hero zone — ` +
+        'catalog icons may only appear as an accent glyph outside #hero-zone, never inside it.'
+      );
+    }
 
     // Viewport-clipped screenshot (fullPage omitted/false, Playwright's default) — never
     // fullPage: true, which would capture the whole scrollable page rather than just the
