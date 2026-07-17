@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnArgs, ghApiJson, git, sha256, readFileCapped } from './gh.mjs';
+import { listPatterns } from './pattern-registry.mjs';
 
-const TEMPLATE_RELATIVE_PATH = '.github/workflows/dev-to-main-automerge.yml';
 const CONFIG_RELATIVE_PATH = '.github/shipflow.json';
 
 // Files/content patterns that indicate branch protection is already managed
@@ -93,8 +93,67 @@ export function listWorkflowJobNames(repoPath, trackedFiles) {
   return [...names].sort();
 }
 
-export function readTemplateFileHash(repoPath) {
-  const full = join(repoPath, TEMPLATE_RELATIVE_PATH);
+const GH_PR_MERGE_AUTO_RE = /gh pr merge --auto/;
+const HEAD_REF_EQ_RE = /head\.ref\s*==/;
+
+// One level finer than listWorkflowJobNames()'s whole-jobs:-section boundary: bounds
+// each INDIVIDUAL job's own line range (its jobNameRe-matching name line down to the
+// next line at that same or lesser indent — the next sibling job, or EOF) so a
+// head.ref == check in one job is never misattributed to a different job's
+// gh pr merge --auto step in the same file.
+export function scanWorkflowShapeSignals(repoPath, trackedFiles) {
+  let restricted = false;
+  let unrestricted = false;
+  for (const f of trackedFiles.filter((f) => /^\.github\/workflows\/.*\.ya?ml$/.test(f))) {
+    const full = join(repoPath, f);
+    if (!existsSync(full)) continue;
+    const lines = readFileCapped(full).split('\n');
+    const jobsLineIdx = lines.findIndex((l) => l.trim() === 'jobs:');
+    if (jobsLineIdx === -1) continue;
+    let i = jobsLineIdx + 1;
+    while (i < lines.length) {
+      // Mirrors listWorkflowJobNames's own dedent-out-of-block termination: a line
+      // that dedents all the way to column 0 ends the WHOLE jobs: section (a
+      // trailing env:/concurrency: block, or EOF), not just the current job — stop
+      // the outer scan entirely rather than treating it as another job candidate.
+      if (lines[i].trim() !== '' && /^\S/.test(lines[i])) break;
+      const nameMatch = lines[i].match(/^\s{2}([\w.-]+):\s*$/);
+      if (!nameMatch) { i++; continue; }
+      const jobStart = i;
+      let jobEnd = lines.length;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() === '') continue;
+        if (/^\S/.test(lines[j])) { jobEnd = j; break; }          // dedents to column 0 — end of jobs: section
+        if (lines[j].match(/^\s{2}([\w.-]+):\s*$/)) { jobEnd = j; break; } // next sibling job
+      }
+      const jobBlock = lines.slice(jobStart, jobEnd).join('\n');
+      if (GH_PR_MERGE_AUTO_RE.test(jobBlock)) {
+        if (HEAD_REF_EQ_RE.test(jobBlock)) restricted = true;
+        else unrestricted = true;
+      }
+      i = jobEnd;
+    }
+  }
+  return { hasRestrictedPromotionWorkflow: restricted, hasUnrestrictedAutomergeWorkflow: unrestricted };
+}
+
+export function hasTagsFromMain(repoPath, mainBranch) {
+  const r = git(['tag', '--merged', mainBranch], { cwd: repoPath });
+  return r.status === 0 && r.stdout.trim().length > 0;
+}
+
+export function hasGitflowMarker(repoPath) {
+  if (existsSync(join(repoPath, '.gitflow'))) return true;
+  return git(['config', '--get', 'gitflow.branch.develop'], { cwd: repoPath }).status === 0;
+}
+
+export function listConfiguredRemotes(repoPath) {
+  const r = git(['remote'], { cwd: repoPath });
+  return r.status === 0 ? r.stdout.split('\n').filter(Boolean) : [];
+}
+
+export function readTemplateFileHash(repoPath, targetPath) {
+  const full = join(repoPath, targetPath);
   if (!existsSync(full)) return { exists: false, sha256: null };
   const content = readFileCapped(full);
   return { exists: true, sha256: sha256(content) };
@@ -172,8 +231,18 @@ export function detectRepoState(repoPath, { branches = { main: 'main', dev: 'dev
   const localBranches = branchList.status === 0 ? branchList.stdout.split('\n').filter(Boolean) : [];
 
   const workflowJobNames = listWorkflowJobNames(repoPath, trackedFiles);
-  const templateFiles = { [TEMPLATE_RELATIVE_PATH]: readTemplateFileHash(repoPath) };
+  // Union of every registered pattern's templateTargetPaths — computed unconditionally
+  // with no resolved pattern in hand (there's no config yet on a genuine first run, so
+  // nothing to call resolvePattern(config) with). detect.mjs never imports a
+  // lib/patterns/<id>/index.mjs module directly, only listPatterns() — this is what
+  // keeps "adding a 4th pattern needs no changes to detect.mjs" true in practice.
+  const templateTargetPaths = listPatterns().flatMap((p) => p.templateTargetPaths);
+  const templateFiles = Object.fromEntries(
+    templateTargetPaths.map((path) => [path, readTemplateFileHash(repoPath, path)])
+  );
   const settingsAsCodeArtifact = findSettingsAsCodeArtifact(repoPath, trackedFiles);
+  const { hasRestrictedPromotionWorkflow, hasUnrestrictedAutomergeWorkflow } =
+    scanWorkflowShapeSignals(repoPath, trackedFiles);
 
   const protection = ownerRepo
     ? {
@@ -219,6 +288,11 @@ export function detectRepoState(repoPath, { branches = { main: 'main', dev: 'dev
     repoSettings,
     releasePendingLabelExists,
     stateHash,
+    hasTagsFromMain: hasTagsFromMain(repoPath, branches.main),
+    hasGitflowMarker: hasGitflowMarker(repoPath),
+    configuredRemotes: listConfiguredRemotes(repoPath),
+    hasRestrictedPromotionWorkflow,
+    hasUnrestrictedAutomergeWorkflow,
   };
 }
 
