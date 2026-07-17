@@ -1,0 +1,152 @@
+version: "1.0"
+ticket: "N/A"
+epic: "N/A"
+title: "shipflow: multi-pattern workflow templates (dev-main-promotion, github-flow, gitflow) with autodetection"
+date: "2026-07-16"
+
+api_surface:
+  - name: "listPatterns"
+    type: "function"
+    signature: "listPatterns(): Array<{ id: string }>"
+    params: []
+    returns: "Array of the registered pattern ids: dev-main-promotion, github-flow, gitflow"
+    description: "Enumerates every pattern module registered in pattern-registry.mjs. Used by SKILL.md to present template choices when detection is ambiguous or the repo is greenfield."
+  - name: "resolvePattern"
+    type: "function"
+    signature: "resolvePattern(config: Config): PatternModule"
+    params:
+      - name: "config"
+        type: "Config"
+        required: true
+    returns: "The pattern module matching config.workflowPattern, defaulting to the dev-main-promotion module when the field is absent"
+    description: "Backward-compatibility resolver. Never throws on a missing workflowPattern field — absence is a valid, meaningful state (pre-multi-pattern config), not an error."
+  - name: "scoreAll"
+    type: "function"
+    signature: "scoreAll(repoState: RepoState): Array<{ id: string, score: number, evidence: string[] }>"
+    params:
+      - name: "repoState"
+        type: "RepoState"
+        required: true
+    returns: "All three patterns' detect() results, sorted descending by score"
+    description: "Deterministic, pure scoring — no I/O. Only ever invoked during first-run setup against a repo with no existing .github/shipflow.json; a re-run never calls this."
+  - name: "pattern.detect"
+    type: "function"
+    signature: "detect(repoState: RepoState): { score: number, evidence: string[] }"
+    params:
+      - name: "repoState"
+        type: "RepoState"
+        required: true
+    returns: "A 0-1 confidence score plus the evidence strings that produced it"
+    description: "Per-pattern deterministic point-scoring function, implemented once per lib/patterns/<id>/index.mjs. Fixed rule table, no fuzzy matching or ML."
+  - name: "pattern.protectedBranches"
+    type: "function"
+    signature: "protectedBranches(config: Config): string[]"
+    params:
+      - name: "config"
+        type: "Config"
+        required: true
+    returns: "Branch names this pattern's deletion-protection ruleset must cover"
+    description: "[main] for github-flow; [dev, main] for dev-main-promotion; [developBranch, main] for gitflow. release/*/hotfix/* are deliberately excluded under gitflow — they are transient and cleaned up post-merge like feature branches."
+  - name: "pattern.templates"
+    type: "function"
+    signature: "templates(config: Config): Array<{ id: string, targetPath: string, templateSource: string, params: object }>"
+    params:
+      - name: "config"
+        type: "Config"
+        required: true
+    returns: "One entry per workflow file this pattern renders into the target repo's .github/workflows/"
+    description: "Replaces the single hardcoded TEMPLATE_RELATIVE_PATH constant in the pre-multi-pattern plan.mjs. dev-main-promotion and github-flow each return one entry; gitflow returns three (release-automerge, hotfix-automerge, hotfix-merge-back)."
+  - name: "pattern.planEntries"
+    type: "function"
+    signature: "planEntries(repoState: RepoState, config: Config): PlanEntry[]"
+    params:
+      - name: "repoState"
+        type: "RepoState"
+        required: true
+      - name: "config"
+        type: "Config"
+        required: true
+    returns: "Plan entries beyond the three common ones (delete-branch-on-merge, deletion-ruleset, release-pending-label) that plan.mjs already computes generically"
+    description: "v1 patterns have no additional entries beyond the three common ones and the per-template entries from pattern.templates — reserved for future patterns with pattern-unique mutations."
+  - name: ".github/shipflow.json (workflowPattern field)"
+    type: "interface"
+    signature: "new optional top-level config field"
+    params:
+      - name: "workflowPattern"
+        type: "\"dev-main-promotion\" | \"github-flow\" | \"gitflow\" | undefined"
+        required: false
+      - name: "patternConfig"
+        type: "{ gitflow?: { developBranch: string, releaseBranchPrefix: string, hotfixBranchPrefix: string } }"
+        required: false
+    returns: "n/a (config file)"
+    description: "Additive-only change to the existing schema (see the prior shipflow-skill-contract.yaml for the full pre-existing field set, all unchanged). Absence of workflowPattern is backward-compatible shorthand for dev-main-promotion, not an error state."
+
+invariants:
+  checkable:
+    - id: "INV-MP-1"
+      description: "A config with no workflowPattern field resolves to dev-main-promotion everywhere it is read — never undefined, never a crash, never a different implicit default"
+      verification: "resolvePattern({}) and resolvePattern({...no workflowPattern key}) both return the dev-main-promotion module"
+      check_method: "code-inspection"
+    - id: "INV-MP-2"
+      description: "deletion-ruleset's ref_name.include list is always derived from config.branchCleanup.protectedBranches, never a hardcoded [dev, main] literal"
+      verification: "Grep apply.mjs's deletion-ruleset branch for any literal reference to config.branches.dev/main instead of config.branchCleanup.protectedBranches"
+      check_method: "grep"
+    - id: "INV-MP-3"
+      description: "release/* and hotfix/* branches never appear in branchCleanup.protectedBranches under gitflow"
+      verification: "gitflow's protectedBranches(config) output contains exactly [developBranch, main] for any valid patternConfig.gitflow"
+      check_method: "code-inspection"
+    - id: "INV-MP-4"
+      description: "Detection (scoreAll) only runs when existingConfig is null; a re-run with an existing config never calls it"
+      verification: "SKILL.md / setup-wizard code path: scoreAll is only reachable from the first-run branch, never the re-run/audit branch"
+      check_method: "code-inspection"
+    - id: "INV-MP-5"
+      description: "Relocating the dev-main-promotion template file under templates/dev-main-promotion/ does not invalidate any already-recorded renderedTemplateHashes entry"
+      verification: "renderedTemplateHashes keys are the target-repo output path (.github/workflows/dev-to-main-automerge.yml), never the skill package's internal template source path"
+      check_method: "code-inspection"
+  testable:
+    - id: "INV-MP-6"
+      description: "Given a synthetic repoState with a develop branch and an open release/1.2.0 branch, scoreAll ranks gitflow above the other two"
+      verification: "Unit test against pattern-registry.mjs with a fixture repoState"
+      test_tag: "contract:detect-ranking:inv-mp-6"
+    - id: "INV-MP-7"
+      description: "Given a synthetic repoState with only main and no other signals, all three pattern scores fall below the greenfield threshold (0.4)"
+      verification: "Unit test asserting scoreAll(...)[0].score < 0.4 for a bare-main fixture"
+      test_tag: "contract:greenfield-threshold:inv-mp-7"
+    - id: "INV-MP-8"
+      description: "hotfix-merge-back's conflict path never force-pushes or silently resolves a conflicting merge into develop; it opens a PR instead"
+      verification: "Integration test: seed develop with a conflicting commit relative to main, run the hotfix-merge-back workflow logic, assert a PR was opened and no push to develop occurred"
+      test_tag: "contract:hotfix-mergeback-conflict:inv-mp-8"
+    - id: "INV-MP-9"
+      description: "Running apply.mjs twice against an unchanged github-flow-pattern repo produces zero mutating calls on the second run"
+      verification: "Integration test against a sandbox repo configured with workflowPattern: github-flow, mirroring the existing dev-main-promotion idempotency test (INV-9 in the prior contract)"
+      test_tag: "contract:idempotency-github-flow:inv-mp-9"
+    - id: "INV-MP-10"
+      description: "A repo with both a dev branch and open release/*/hotfix/* branches scores as ambiguous (no auto-select) rather than silently picking dev-main-promotion or gitflow"
+      verification: "Unit test with a fixture repoState containing both signal sets, assert the top two scores are within the 0.3 confidence margin"
+      test_tag: "contract:ambiguous-mixed-signals:inv-mp-10"
+
+integration_points:
+  - "lib/detect.mjs — gains a call into pattern-registry.mjs's scoreAll during first-run detection; repoState shape itself is unchanged"
+  - "lib/plan.mjs — computeTemplatePlanEntry (singular) generalizes to loop over pattern.templates(config) (plural); the 3 common plan entries now read pattern.protectedBranches(config) instead of a hardcoded branch pair"
+  - "lib/apply.mjs — deletion-ruleset's ref_name.include list reads config.branchCleanup.protectedBranches instead of literal config.branches.dev/main"
+  - "SKILL.md — first-run setup gains a pattern-resolution step (confident auto-select vs. ambiguous/greenfield ask) before the existing branch-names/checks/protectionOwner interview; re-run/audit flow is unchanged"
+
+ambiguity_resolutions:
+  - id: "AMB-MP-1"
+    decision: "Ship exactly 3 templates (dev-main-promotion, github-flow, gitflow) rather than covering all 5 commonly-named patterns"
+    confidence: "high"
+    alternatives: ["5 templates covering GitHub Flow, GitFlow, GitLab Flow, Trunk-Based Development, and Release Flow", "2 templates, deferring GitFlow"]
+    reasoning: "Research showed Trunk-Based Development collapses into github-flow for everything shipflow automates (branch protection/auto-merge/release-tagging), and GitLab Flow/Release Flow have no evidence of demand for this design's target users. User explicitly chose to include GitFlow despite its declining (~22%) adoption, given the registry design makes adding a 4th pattern later a contained change."
+    reversibility: "High — the registry architecture means dropping or adding a pattern later doesn't touch the dispatch mechanics in detect.mjs/plan.mjs/apply.mjs"
+  - id: "AMB-MP-2"
+    decision: "Automate GitFlow's hotfix dual-merge (main + develop) rather than leaving it as documented convention only"
+    confidence: "high"
+    alternatives: ["Convention-only: scaffold hotfix branch protection, document the manual merge-back step, matching the existing featureToDevMethod precedent"]
+    reasoning: "Research (Atlassian's GitFlow reference, git-flow CLI's own hotfix finish command, existing GitHub Actions like gitflow-workflow-action) confirmed the dual-merge is the defining semantic of a hotfix branch, not an optional step — leaving it manual is a known error-prone anti-pattern (the develop-side merge gets silently skipped). Automating it via a closed-PR-triggered follow-up job avoids the bespoke polling/blocking-job complexity this repo's prior design already rejected (AMB-3 in the 2026-07-14 contract) for a different reason."
+    reversibility: "Medium — the merge-back job is a separate, independently-toggleable template file; dropping it later would revert gitflow's hotfix handling to convention-only without touching the other two patterns"
+  - id: "AMB-MP-3"
+    decision: "workflowPattern defaults to dev-main-promotion when absent, with no config-file migration required for already-adopted repos"
+    confidence: "high"
+    alternatives: ["Require a one-time migration step that writes workflowPattern explicitly into every existing .github/shipflow.json"]
+    reasoning: "This repo's own live config has no workflowPattern field; a required migration would break production automation on this exact repo the moment this design ships. An implicit default is zero-risk and matches how every other config field in this schema already behaves when absent (e.g. protectionOwner's pre-detection default)."
+    reversibility: "High — an explicit workflowPattern field can be written at any later point (e.g. during a re-run where the user opts into reconfiguration) without needing a special one-time migration path"
