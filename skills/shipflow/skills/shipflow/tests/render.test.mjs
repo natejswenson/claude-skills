@@ -170,6 +170,26 @@ test('renderTemplate rejects a release/hotfix branch prefix containing a quote o
   }), /unsafe value/);
 });
 
+// Regression test: RELEASE_BRANCH_PREFIX/HOTFIX_BRANCH_PREFIX substitute into a
+// startsWith(head.ref, '{{...}}') guard, not an == equality comparison like
+// DEV_BRANCH/MAIN_BRANCH — every string starts with the empty string, so an
+// empty prefix would fail OPEN (matching any PR into main) rather than fail
+// closed, the same severity class as the prior quote-injection Critical
+// finding. Found during pre-PR red-team review of the gitflow implementation.
+test('renderTemplate rejects an empty release/hotfix branch prefix (fails open on startsWith, unlike an == comparison)', () => {
+  assert.throws(() => renderTemplate('{{RELEASE_BRANCH_PREFIX}}', {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT', releaseBranchPrefix: '',
+    hotfixBranchPrefix: 'hotfix/',
+  }), /unsafe value.*RELEASE_BRANCH_PREFIX/);
+
+  assert.throws(() => renderTemplate('{{HOTFIX_BRANCH_PREFIX}}', {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT', releaseBranchPrefix: 'release/',
+    hotfixBranchPrefix: '',
+  }), /unsafe value.*HOTFIX_BRANCH_PREFIX/);
+});
+
 test('assertTokenValidatorsComplete throws when a TOKEN_TO_PARAM key has no matching TOKEN_VALIDATORS key', () => {
   assert.throws(
     () => assertTokenValidatorsComplete({ FOO: 'foo', BAR: 'bar' }, { FOO: () => true }),
