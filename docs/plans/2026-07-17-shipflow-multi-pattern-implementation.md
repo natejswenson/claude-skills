@@ -166,9 +166,12 @@ lives. Existing tests must stay green throughout.
 - Create: `lib/patterns/dev-main-promotion/index.mjs`
 - Create: `templates/dev-main-promotion/dev-to-main-automerge.yml.tmpl` (moved from
   `templates/dev-to-main-automerge.yml.tmpl`)
+- Modify: `tests/render.test.mjs` — repoint its module-level `AUTOMERGE_TEMPLATE_SOURCE`
+  `readFileSync` path (see Step 1a below)
+- Modify: `tests/template-validity.test.mjs` — repoint the same constant (see Step 1a)
 - Test: `tests/patterns/dev-main-promotion.test.mjs` (new)
-- Tests to verify unchanged: `tests/detect.test.mjs`, `tests/plan.test.mjs`, `tests/apply.test.mjs`,
-  `tests/template-validity.test.mjs`
+- Tests to verify unchanged (after Step 1a): `tests/detect.test.mjs`, `tests/plan.test.mjs`,
+  `tests/apply.test.mjs`
 
 **Step 1: Move the template file**
 
@@ -176,6 +179,26 @@ lives. Existing tests must stay green throughout.
 mkdir -p templates/dev-main-promotion
 git mv templates/dev-to-main-automerge.yml.tmpl templates/dev-main-promotion/dev-to-main-automerge.yml.tmpl
 ```
+
+**Step 1a: Fix the two test files with a module-level hardcoded read of the old path.**
+`tests/render.test.mjs` and `tests/template-validity.test.mjs` both do, at module load (not
+inside a test — a crash here fails every test in the file, not one assertion):
+
+```js
+const AUTOMERGE_TEMPLATE_SOURCE = readFileSync(
+  join(SKILL_ROOT, 'templates', 'dev-to-main-automerge.yml.tmpl'),
+  'utf8'
+);
+```
+
+The `git mv` above makes this path `ENOENT`. In BOTH files, change the path segment to
+`'templates', 'dev-main-promotion', 'dev-to-main-automerge.yml.tmpl'`. Do this in the SAME commit
+as the `git mv` — do not defer it, or `npm test` fails at module load for the rest of this task
+list, masking every other task's real pass/fail signal.
+
+Run `npm test` immediately after this one-line change in both files (before writing any other
+code in this task) to confirm the suite is back to its pre-move green baseline (57 passing) —
+this is a checkpoint, not the task's real Step 2/3/4 below.
 
 **Step 2: Write the failing test for the new module**
 
@@ -326,6 +349,16 @@ instead — see the note at the end of Task 8.)
 
 ## Task 3: `pattern-registry.mjs` — registry + signal computation + classification
 
+**Execution order note (do this first):** `pattern-registry.mjs`'s top-level
+`import * as githubFlow from './patterns/github-flow/index.mjs'` (and gitflow's) is a real ESM
+import, not lazy — it resolves at module load, before any test runs. **Do Task 4 (below) first**
+— create the two minimal stub modules — before writing this task's Step 3 implementation, or
+Step 4's verification hits a hard module-resolution error instead of the "worked examples fail
+against a zero-scoring stub" outcome this task expects. Task 4 is deliberately placed after this
+task in the document for narrative flow (it's easier to explain "here's the registry, and here's
+what unblocks it" in that order) — but mechanically, build order is: Task 4's stubs, then this
+task's Steps 1-4.
+
 **Files:**
 - Create: `lib/pattern-registry.mjs`
 - Test: `tests/pattern-registry.test.mjs`
@@ -419,6 +452,34 @@ test('classify is exhaustive by construction: confident, else greenfield, else a
   assert.strictEqual(classify([{ score: 0.5 }, { score: 0.4 }]), 'ambiguous'); // top<0.7
   assert.strictEqual(classify([{ score: 0.9 }, { score: 0.7 }]), 'ambiguous'); // gap not >0.3
 });
+
+// --- Branch-name remote-prefix normalization (the design's F1 fix, round 5) ---
+// computeDetectionSignals takes a full repoState (single param, per the contract's
+// scoreAll(repoState) signature) — repoState.configuredRemotes is populated by
+// detect.mjs (Task 7), not fetched here, so this is a pure function test with no
+// git calls of its own.
+
+test('computeDetectionSignals strips an exact configured-remote-name prefix (origin/dev -> dev)', () => {
+  const repoState = {
+    branches: { local: ['main', 'origin/dev'] },
+    configuredRemotes: ['origin'],
+    hasGitflowMarker: false, hasRestrictedPromotionWorkflow: false,
+    hasUnrestrictedAutomergeWorkflow: false, hasTagsFromMain: false,
+  };
+  const signals = computeDetectionSignals(repoState);
+  assert.strictEqual(signals.hasDevBranch, true);
+});
+
+test('computeDetectionSignals leaves a local release/*  branch untouched (no blind strip-to-first-slash)', () => {
+  const repoState = {
+    branches: { local: ['main', 'release/1.2.0'] },
+    configuredRemotes: ['origin'], // 'release' is not a configured remote name
+    hasGitflowMarker: false, hasRestrictedPromotionWorkflow: false,
+    hasUnrestrictedAutomergeWorkflow: false, hasTagsFromMain: false,
+  };
+  const signals = computeDetectionSignals(repoState);
+  assert.strictEqual(signals.hasReleaseOrHotfixBranch, true);
+});
 ```
 
 **Step 2: Run to verify it fails**
@@ -435,9 +496,8 @@ externally but internally separates signal computation from scoring so tests CAN
 
 ```js
 import * as devMainPromotion from './patterns/dev-main-promotion/index.mjs';
-import * as githubFlow from './patterns/github-flow/index.mjs';       // Task 10
-import * as gitflow from './patterns/gitflow/index.mjs';               // Task 14
-import { git } from './gh.mjs';
+import * as githubFlow from './patterns/github-flow/index.mjs';       // real logic lands in Task 9
+import * as gitflow from './patterns/gitflow/index.mjs';               // real logic lands in Task 11
 
 const PATTERNS = [devMainPromotion, githubFlow, gitflow];
 
@@ -452,13 +512,11 @@ export function resolvePattern(config) {
   return found;
 }
 
-const REMOTE_PREFIX_CACHE = new WeakMap();
-
-function listConfiguredRemotes(repoPath) {
-  const r = git(['remote'], { cwd: repoPath });
-  return r.status === 0 ? r.stdout.split('\n').filter(Boolean) : [];
-}
-
+// Strips a leading '<remote>/' ONLY when it exactly matches one of repoState's
+// configuredRemotes — never a blind "strip to first slash," which would corrupt a
+// purely local release/1.2.0 into 1.2.0. configuredRemotes is populated by
+// detect.mjs (Task 7) via `git remote` — this function takes the already-collected
+// repoState, no git calls of its own, keeping it a pure, easily-testable function.
 function normalizeBranchName(name, remotes) {
   for (const remote of remotes) {
     if (name.startsWith(`${remote}/`)) return name.slice(remote.length + 1);
@@ -470,11 +528,12 @@ const DEV_BRANCH_RE = /^(dev|develop|staging)$/;
 const RELEASE_HOTFIX_RE = /^(release|hotfix)\//;
 
 // Computes the 6 shared boolean signals every pattern's detect() consumes. Pure
-// given its inputs — repoState must already carry the raw material (branches,
-// tags, .gitflow marker, workflow-shape scan) that detect.mjs's collection step
-// gathers (see Task 7).
-export function computeDetectionSignals(repoState, repoPath) {
-  const remotes = listConfiguredRemotes(repoPath);
+// given its single repoState input (matches the contract's scoreAll(repoState)
+// signature — repoPath/git calls stay confined to detect.mjs's collection step,
+// Task 7 — repoState must already carry the raw material (branches,
+// configuredRemotes, tags, .gitflow marker, workflow-shape scan) that step gathers.
+export function computeDetectionSignals(repoState) {
+  const remotes = repoState.configuredRemotes ?? [];
   const normalized = (repoState.branches?.local ?? []).map((b) => normalizeBranchName(b, remotes));
   return {
     hasDevBranch: normalized.some((b) => DEV_BRANCH_RE.test(b)),
@@ -490,11 +549,19 @@ function scoreFromSignals(signals) {
   return PATTERNS.map((p) => ({ id: p.id, ...p.detect(signals) })).sort((a, b) => b.score - a.score);
 }
 
-export function scoreAll(repoState, repoPath) {
-  return scoreFromSignals(computeDetectionSignals(repoState, repoPath));
+export function scoreAll(repoState) {
+  return scoreFromSignals(computeDetectionSignals(repoState));
 }
 // Test-only seam: exercise scoring against a hand-built DetectionSignals object
-// without needing a real repoPath/git call. Not part of the public CLI-facing API.
+// directly, bypassing computeDetectionSignals/repoState entirely. Not part of the
+// public CLI-facing API — the 5 worked-example tests above use this seam because
+// they're testing the SCORING rules in isolation; the two normalization tests
+// above instead call computeDetectionSignals(repoState) directly, since THAT is
+// what those tests are about. Attaching a property to an exported `function`
+// declaration works fine in ESM (the export binding is the function object
+// itself, and function objects are ordinary mutable objects) — this is not the
+// same footgun as trying to reassign a `const`-exported binding from outside the
+// module, which ESM does forbid.
 scoreAll.__scoreFromSignals = scoreFromSignals;
 
 // Confident: top >= 0.7 AND (top - second) > 0.3. Greenfield: top < 0.4. Else
@@ -512,12 +579,15 @@ export function classify(ranked) {
 **Step 4: Run to verify it passes**
 
 Run: `node --test tests/pattern-registry.test.mjs`
-Expected: PASS once Tasks 10 and 14 (github-flow/gitflow modules) also exist — for now, stub
-`github-flow`/`gitflow` modules with `id`/`templateTargetPaths`/a `detect` returning `{score: 0,
-evidence: []}` /`protectedBranches`/`templates`/`planEntries` returning empty, so this task's tests
-can run in isolation. Task 10/14 replace the stubs with real logic and re-run these same tests to
-confirm the worked examples still hold (they're written against the FINAL scoring rules already,
-so no changes needed here once the stubs are replaced).
+Expected: PASS once Task 4's stub `github-flow`/`gitflow` modules exist (`id`/`templateTargetPaths`/
+a `detect` returning `{score: 0, evidence: []}` /`protectedBranches`/`templates`/`planEntries`
+returning empty) — see the Execution order note at the top of this task. The `listPatterns`/
+`resolvePattern`/normalization tests pass immediately against the stubs; the 5 worked-example
+tests that depend on github-flow/gitflow's REAL scoring (bare-repo Greenfield, clean-github-flow-
+signal, clean-gitflow-signal, ambiguous-residual) will still fail until Task 9 and Task 11 replace
+the stubs with real logic — Task 10 (github-flow) and Task 12 (full-suite re-verification) are
+where those specific assertions turn green. This is expected, not a bug at this point in the
+sequence.
 
 **Step 5: Commit**
 
@@ -700,25 +770,46 @@ export function computePlan(repoState, config, templateSources) {
   return { creates, updates, noops, sourceStateHash: repoState.stateHash, liveRequiredChecks, protectedBranches: protectedBranchList };
 }
 
+// entry is one {id, targetPath, templateSourcePath, params} item from
+// pattern.templates(config); templateSource is that entry's already-read-off-disk
+// content (looked up from the caller-supplied templateSources map above).
+//
+// IMPORTANT: the returned plan entry's `id` field is NOT entry.id (the pattern
+// module's own template identifier, e.g. 'release-automerge') — it MUST stay the
+// pre-existing 'template:' + targetPath convention, because apply.mjs's dispatch
+// (`entry.id.startsWith('template:')`) and the empty-required-checks refusal both
+// key off that exact prefix today. Reusing the pattern module's own template id
+// verbatim here would silently break both of those existing mechanisms.
 function computeTemplatePlanEntry(repoState, config, entry, templateSource) {
-  // Import renderTemplate lazily-by-reference to avoid a cycle if render.mjs ever
-  // needs plan.mjs — currently it doesn't, so a top-level import is fine; keep this
-  // comment if that ever changes.
-  const { renderTemplate } = /* top-level import in the real file */ { renderTemplate: null };
-  // ... identical hash-diff / hand-edit-detection logic to the pre-existing
-  // computeTemplatePlanEntry (single-template version), just parameterized by
-  // entry.targetPath / entry.params instead of the hardcoded TEMPLATE_PATH /
-  // dev-main-promotion-specific params object. Port the existing function body
-  // verbatim, replacing every reference to the old hardcoded constants with the
-  // entry's own fields, and every reference to config.branches.dev/main directly
-  // with entry.params (already fully resolved by the pattern module).
+  const planId = 'template:' + entry.targetPath;
+  const renderedContent = renderTemplate(templateSource, entry.params);
+  const freshHash = sha256(renderedContent);
+  const onDisk = repoState.templateFiles?.[entry.targetPath];
+  const lastRenderedHash = config.renderedTemplateHashes?.[entry.targetPath] ?? null;
+
+  if (!onDisk || !onDisk.exists) {
+    return { id: planId, kind: 'create', path: entry.targetPath, description: `write ${entry.targetPath}`, renderedHash: freshHash, content: renderedContent };
+  }
+  if (onDisk.sha256 === freshHash) {
+    return { id: planId, kind: 'noop', path: entry.targetPath, description: `${entry.targetPath} already matches config` };
+  }
+  if (onDisk.sha256 === lastRenderedHash) {
+    return { id: planId, kind: 'update', path: entry.targetPath, description: `re-render ${entry.targetPath} (config changed)`, renderedHash: freshHash, content: renderedContent, handEditDetected: false };
+  }
+  return {
+    id: planId, kind: 'update', path: entry.targetPath,
+    description: `${entry.targetPath} was hand-edited — blocked pending --force`,
+    renderedHash: freshHash, content: renderedContent, handEditDetected: true,
+  };
 }
 ```
 
-(The `computeTemplatePlanEntry` port should copy the EXISTING function's hash-diff/hand-edit logic
-verbatim from the current `lib/plan.mjs` — only the input shape changes, not the algorithm. Move
-the actual `import { renderTemplate } from './render.mjs'` to the top of the file properly; the
-inline placeholder above is illustrative of "port, don't redesign," not literal code to ship.)
+This is the SAME hash-diff/hand-edit-detection algorithm as the pre-existing (single-template)
+`computeTemplatePlanEntry` in the current `lib/plan.mjs` — only the inputs changed (an `entry`
+object instead of hardcoded constants, `templateSource` looked up per-entry instead of a single
+module-level string). Move `import { renderTemplate } from './render.mjs'` and
+`import { sha256 } from './gh.mjs'` to the top of the file if they aren't already there from the
+pre-existing version.
 
 **Step 4: Run to verify it passes**
 
@@ -744,50 +835,74 @@ git commit -m "refactor(shipflow): generalize computePlan for multi-pattern temp
 - Modify: `lib/apply.mjs`
 - Test: `tests/apply.test.mjs` (extend/update call sites)
 
-**Step 1: Update failing/changed tests**
+**Note on testability:** `applyOne` is a private, non-exported function in the current
+`lib/apply.mjs`, and `tests/apply.test.mjs` today only tests the pure, exported
+`classifyRulesetError` — there is no existing gh-mocking infrastructure in this file to invoke
+`applyOne`'s network path directly, and there shouldn't need to be one just for this change.
+Instead of testing the mutation through `applyOne`, **extract the ruleset request-body
+construction into its own small, pure, exported function** — this is both easier to test (matches
+this file's existing `classifyRulesetError` style exactly: pure, no I/O, directly assertable) and
+is what actually closes Round 8's F2 finding cleanly: a pure function computing the body from
+`protectedBranchList` can't accidentally read a stale stored config value, because it doesn't take
+`config` at all.
 
-Existing `deletion-ruleset` tests in `tests/apply.test.mjs` currently assert
-`refs/heads/${config.branches.dev}`/`refs/heads/${config.branches.main}` literally. Update them to
-instead assert against `config.branchCleanup.protectedBranches` (or, if that test fixture doesn't
-set it, against `resolvePattern(config).protectedBranches(config)` computed independently in the
-test) — the mutation must read the SAME list `plan.mjs`'s `Plan.protectedBranches` computed, not a
-separately-stored config value (this closes Round 8's F2 finding). Add one new test:
+**Step 1: Write the failing test**
+
+Add to `tests/apply.test.mjs`:
 
 ```js
-test('deletion-ruleset ref_name.include is derived from protectedBranches(config), not a hardcoded [dev, main]', () => {
-  // gitflow config with branches.dev = 'develop'
-  const config = { workflowPattern: 'gitflow', branches: { dev: 'develop', main: 'main' }, protectionOwner: 'shipflow' };
-  // ... invoke applyOne's deletion-ruleset path (via a test seam or by checking the
-  // constructed request body before the gh call, per this file's existing mocking style) ...
-  // assert the ref_name.include list is exactly ['refs/heads/develop', 'refs/heads/main']
+import { classifyRulesetError, buildDeletionRulesetBody } from '../lib/apply.mjs';
+
+test('buildDeletionRulesetBody derives ref_name.include from the given branch list, not a hardcoded [dev, main]', () => {
+  const body = buildDeletionRulesetBody(['develop', 'main']);
+  assert.deepStrictEqual(body.conditions.ref_name.include, ['refs/heads/develop', 'refs/heads/main']);
+  assert.strictEqual(body.name, 'shipflow-branch-deletion-protection');
+  assert.strictEqual(body.rules[0].type, 'deletion');
+});
+
+test('buildDeletionRulesetBody works for github-flow\'s single-branch case', () => {
+  const body = buildDeletionRulesetBody(['main']);
+  assert.deepStrictEqual(body.conditions.ref_name.include, ['refs/heads/main']);
 });
 ```
 
 **Step 2: Run to verify failure**
 
 Run: `node --test tests/apply.test.mjs`
-Expected: FAIL on the updated assertions.
+Expected: FAIL — `buildDeletionRulesetBody` isn't exported yet.
 
 **Step 3: Implement**
 
-In `lib/apply.mjs`'s `applyOne`, change the `deletion-ruleset` branch to call
-`resolvePattern(config).protectedBranches(config)` fresh (never read a stored
-`config.branchCleanup.protectedBranches` value for the actual mutation — per Round 8's F2 fix):
+In `lib/apply.mjs`, extract the existing inline `JSON.stringify({...})` object construction (today
+built directly inside `applyOne`'s `deletion-ruleset` branch, using hardcoded
+`config.branches.dev`/`config.branches.main`) into its own pure, exported function, and change the
+`deletion-ruleset` branch to call `resolvePattern(config).protectedBranches(config)` **fresh** —
+never a stored `config.branchCleanup.protectedBranches` value — and pass the result in:
 
 ```js
 import { resolvePattern } from './pattern-registry.mjs';
 
-// inside applyOne(entry, { ownerRepo, repoPath, config }):
-if (entry.id === 'deletion-ruleset') {
-  const protectedBranchList = resolvePattern(config).protectedBranches(config);
-  const body = JSON.stringify({
+// Pure — no I/O, no gh calls. Exported so it's directly unit-testable without
+// mocking the network layer, matching this file's existing classifyRulesetError
+// pattern. protectedBranchList must come from a FRESH call to the resolved
+// pattern's protectedBranches(config) — never from a stored config field — so
+// this function intentionally takes a plain string array, not a config object,
+// making "read a stale stored value" structurally impossible to do by accident.
+export function buildDeletionRulesetBody(protectedBranchList) {
+  return {
     name: 'shipflow-branch-deletion-protection',
     target: 'branch',
     enforcement: 'active',
     conditions: { ref_name: { include: protectedBranchList.map((b) => `refs/heads/${b}`), exclude: [] } },
     rules: [{ type: 'deletion' }],
-  });
-  // ... rest unchanged ...
+  };
+}
+
+// inside applyOne(entry, { ownerRepo, repoPath, config }):
+if (entry.id === 'deletion-ruleset') {
+  const protectedBranchList = resolvePattern(config).protectedBranches(config);
+  const body = JSON.stringify(buildDeletionRulesetBody(protectedBranchList));
+  // ... rest unchanged (the spawnArgs('gh', ['api', ...], { input: body }) call) ...
 }
 ```
 
@@ -820,39 +935,100 @@ git commit -m "refactor(shipflow): apply.mjs computes protectedBranches fresh fr
 
 Add to `tests/detect.test.mjs`:
 
+Reuse `tests/detect.test.mjs`'s existing `withTempRepo(fn)` helper (it builds a throwaway git repo
+in a temp dir and passes its path to `fn`) — every test below is written as a callback passed to
+that helper, matching the file's established style:
+
 ```js
 test('detectRepoState templateFiles covers every pattern\'s templateTargetPaths, not one hardcoded key', () => {
-  const repoState = detectRepoState(fixtureRepoPath, { branches: { main: 'main', dev: 'dev' } });
-  const expectedKeys = listPatterns().flatMap((p) => p.templateTargetPaths);
-  assert.deepStrictEqual(Object.keys(repoState.templateFiles).sort(), expectedKeys.sort());
+  withTempRepo((dir) => {
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    const expectedKeys = listPatterns().flatMap((p) => p.templateTargetPaths);
+    assert.deepStrictEqual(Object.keys(repoState.templateFiles).sort(), expectedKeys.sort());
+  });
 });
 
 test('detectRepoState reports hasTagsFromMain', () => {
-  // fixture repo with at least one tag reachable from main
-  const repoState = detectRepoState(fixtureRepoPathWithTags, { branches: { main: 'main', dev: 'dev' } });
-  assert.strictEqual(repoState.hasTagsFromMain, true);
+  withTempRepo((dir) => {
+    git(['tag', 'v0.1.0'], { cwd: dir });
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    assert.strictEqual(repoState.hasTagsFromMain, true);
+  });
 });
 
 test('detectRepoState reports hasGitflowMarker via a .gitflow file', () => {
-  // fixture repo with a .gitflow file at root
-  const repoState = detectRepoState(fixtureRepoPathWithGitflowMarker, { branches: { main: 'main', dev: 'dev' } });
-  assert.strictEqual(repoState.hasGitflowMarker, true);
+  withTempRepo((dir) => {
+    writeFileSync(join(dir, '.gitflow'), '[gitflow "branch"]\n\tmaster = main\n\tdevelop = develop\n');
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    assert.strictEqual(repoState.hasGitflowMarker, true);
+  });
 });
 
-test('detectRepoState scans for a restricted-vs-unrestricted promotion workflow within one job\'s own line range', () => {
-  // fixture workflow: job A has gh pr merge --auto with head.ref == 'dev'; job B
-  // (separate, unrelated) has some other head.ref == check for a different purpose.
-  // Assert hasRestrictedPromotionWorkflow is true (job A's own condition) and that
-  // job B's unrelated condition is NOT what satisfied it — construct a second fixture
-  // where job A's gh pr merge --auto has NO head.ref guard, but job B does, and
-  // assert hasRestrictedPromotionWorkflow is FALSE for that fixture (proving the scan
-  // doesn't cross job boundaries).
+test('detectRepoState scans a workflow\'s own job block, never a different job\'s head.ref == condition', () => {
+  withTempRepo((dir) => {
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    // Job A: gh pr merge --auto guarded by its own head.ref == 'dev'. Job B: an
+    // unrelated job that also happens to contain a head.ref == check, for a
+    // different purpose — this must NOT be attributed to job A.
+    writeFileSync(join(dir, '.github', 'workflows', 'mixed.yml'), `
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  auto-merge:
+    if: github.event.pull_request.head.ref == 'dev'
+    steps:
+      - run: gh pr merge --auto --merge "$PR"
+  unrelated-job:
+    if: github.event.pull_request.head.ref == 'something-else'
+    steps:
+      - run: echo hi
+`);
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    assert.strictEqual(repoState.hasRestrictedPromotionWorkflow, true);
+    assert.strictEqual(repoState.hasUnrestrictedAutomergeWorkflow, false);
+  });
+});
+
+test('detectRepoState does NOT misattribute an unrelated job\'s head.ref == to an unrestricted auto-merge job in the same file', () => {
+  withTempRepo((dir) => {
+    mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
+    // Job A: gh pr merge --auto with NO head.ref guard of its own (unrestricted).
+    // Job B: unrelated, has a head.ref == check for something else entirely. If the
+    // scan incorrectly spans the whole jobs: section (the bug this test guards
+    // against), job B's condition would get misattributed to job A, and
+    // hasRestrictedPromotionWorkflow would wrongly read true.
+    writeFileSync(join(dir, '.github', 'workflows', 'mixed2.yml'), `
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  auto-merge:
+    steps:
+      - run: gh pr merge --auto --merge "$PR"
+  unrelated-job:
+    if: github.event.pull_request.head.ref == 'something-else'
+    steps:
+      - run: echo hi
+`);
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    assert.strictEqual(repoState.hasUnrestrictedAutomergeWorkflow, true);
+    assert.strictEqual(repoState.hasRestrictedPromotionWorkflow, false);
+  });
+});
+
+test('detectRepoState reports configuredRemotes for pattern-registry.mjs\'s branch normalization', () => {
+  withTempRepo((dir) => {
+    git(['remote', 'add', 'origin', 'https://example.invalid/x/y.git'], { cwd: dir });
+    const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
+    assert.deepStrictEqual(repoState.configuredRemotes, ['origin']);
+  });
 });
 ```
 
-Reuse whatever fixture-repo-building helper `tests/detect.test.mjs` already has (it likely builds
-a throwaway git repo in a temp dir per test, given the existing branch/workflow-file tests) —
-extend that helper rather than writing a new one.
+Import `mkdirSync`, `writeFileSync` from `node:fs` and `join` from `node:path` at the top of the
+test file if not already imported; import `listPatterns` from `../lib/pattern-registry.mjs` and
+`git` from `../lib/gh.mjs` alongside the existing imports.
 
 **Step 2: Run to verify failure**
 
@@ -871,12 +1047,18 @@ In `lib/detect.mjs`:
    stdout means true.
 3. Add `hasGitflowMarker`: `existsSync(join(repoPath, '.gitflow'))` OR
    `git(['config', '--get', 'gitflow.branch.develop'], { cwd: repoPath }).status === 0`.
-4. Add the new job-block-scoped workflow-shape heuristic (`hasRestrictedPromotionWorkflow`/
+4. Add `configuredRemotes`: `git(['remote'], { cwd: repoPath })`, split into lines, filtered
+   non-empty — this is what lets `pattern-registry.mjs`'s `computeDetectionSignals` stay a pure,
+   single-`repoState`-argument function with no git calls of its own (see Task 3's fix).
+5. Add the new job-block-scoped workflow-shape heuristic (`hasRestrictedPromotionWorkflow`/
    `hasUnrestrictedAutomergeWorkflow`) — a new function alongside the existing
    `listWorkflowJobNames`, scanning each workflow file's individual job blocks (using the SAME
    `jobNameRe` the existing function already defines, but bounding each job's own line range rather
    than the whole `jobs:` section) for a `gh pr merge --auto` step, then checking whether a
-   `head.ref ==` comparison appears within that same job's line range:
+   `head.ref ==` comparison appears within that same job's line range. **The outer scan loop must
+   stop at the same column-0 dedent `listWorkflowJobNames` already stops at** — without that, a
+   trailing top-level section after `jobs:` (e.g. `env:`/`concurrency:`) gets mis-scanned as more
+   job candidates:
 
 ```js
 const GH_PR_MERGE_AUTO_RE = /gh pr merge --auto/;
@@ -898,13 +1080,19 @@ export function scanWorkflowShapeSignals(repoPath, trackedFiles) {
     if (jobsLineIdx === -1) continue;
     let i = jobsLineIdx + 1;
     while (i < lines.length) {
+      // Mirrors listWorkflowJobNames's own dedent-out-of-block termination: a line
+      // that dedents all the way to column 0 ends the WHOLE jobs: section (a
+      // trailing env:/concurrency: block, or EOF), not just the current job — stop
+      // the outer scan entirely rather than treating it as another job candidate.
+      if (lines[i].trim() !== '' && /^\S/.test(lines[i])) break;
       const nameMatch = lines[i].match(/^\s{2}([\w.-]+):\s*$/);
       if (!nameMatch) { i++; continue; }
       const jobStart = i;
       let jobEnd = lines.length;
       for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim() !== '' && /^\s{0,2}\S/.test(lines[j]) && lines[j].match(/^\s{2}([\w.-]+):\s*$/)) { jobEnd = j; break; }
-        if (lines[j].trim() !== '' && /^\S/.test(lines[j])) { jobEnd = j; break; }
+        if (lines[j].trim() === '') continue;
+        if (/^\S/.test(lines[j])) { jobEnd = j; break; }          // dedents to column 0 — end of jobs: section
+        if (lines[j].match(/^\s{2}([\w.-]+):\s*$/)) { jobEnd = j; break; } // next sibling job
       }
       const jobBlock = lines.slice(jobStart, jobEnd).join('\n');
       if (GH_PR_MERGE_AUTO_RE.test(jobBlock)) {
@@ -918,13 +1106,15 @@ export function scanWorkflowShapeSignals(repoPath, trackedFiles) {
 }
 ```
 
-5. Wire all of the above into `detectRepoState`'s return object.
+6. Wire all of the above (`templateFiles` union, `hasTagsFromMain`, `hasGitflowMarker`,
+   `configuredRemotes`, `hasRestrictedPromotionWorkflow`/`hasUnrestrictedAutomergeWorkflow`) into
+   `detectRepoState`'s return object as top-level fields.
 
 **Step 4: Run to verify it passes**
 
 Run: `npm test`
-Expected: all tests pass, including the new job-boundary fixture proving no cross-job
-misattribution.
+Expected: all tests pass, including both job-boundary fixtures (restricted-correctly-attributed,
+and unrestricted-not-misattributed) proving the scan never crosses a job's own line-range boundary.
 
 **Step 5: Commit**
 
@@ -942,7 +1132,7 @@ git commit -m "refactor(shipflow): generalize detect.mjs for multi-pattern templ
 - Test: `tests/cli-apply-guards.test.mjs` (verify still passes; extend if it directly exercises
   `TEMPLATE_PATH`)
 
-**Step 1: Implement**
+**Step 1: Implement `cmdPlan`/`cmdApply`'s templateSources wiring**
 
 Replace the single hardcoded `TEMPLATE_PATH`/`readFileSync(TEMPLATE_PATH, 'utf8')` in `cmdPlan`/
 `cmdApply` with: resolve the pattern via `resolvePattern(config)`, call `pattern.templates(config)`,
@@ -950,7 +1140,7 @@ and build a `templateSources` map by reading each entry's `templateSourcePath` o
 `entry.id`:
 
 ```js
-import { resolvePattern } from '../lib/pattern-registry.mjs';
+import { resolvePattern, scoreAll } from '../lib/pattern-registry.mjs';
 
 function buildTemplateSources(config) {
   const pattern = resolvePattern(config);
@@ -970,6 +1160,25 @@ function buildTemplateSources(config) {
 ```
 
 Remove the now-unused `TEMPLATE_PATH` constant.
+
+**Step 1a: Wire `scoreAll` into `cmdDetect`'s printed output.**
+
+This is the actual autodetection surface `SKILL.md`'s first-run interview (Task 13) reads from —
+no other task implements it, so it belongs here, alongside the other `bin/shipflow.js` changes.
+`cmdDetect` currently prints `{ ...repoState, protectionOwnerClassification }`. Add a ranked-pattern
+field, computed unconditionally (it's cheap — pure scoring over already-collected `repoState`):
+
+```js
+function cmdDetect(args) {
+  // ...existing parseArgs/repoState/protectionOwner code, unchanged...
+  const rankedPatterns = scoreAll(repoState);
+  printJson({ ...repoState, protectionOwnerClassification: protectionOwner, rankedPatterns });
+}
+```
+
+Add one test to `tests/cli-apply-guards.test.mjs` (or a new `tests/cli-detect.test.mjs` if that
+file is scoped to `apply`-only guards — check its existing scope first) asserting `detect`'s
+printed JSON includes a `rankedPatterns` array with all 3 pattern ids present.
 
 **Step 2: Run the full suite**
 
@@ -1381,9 +1590,10 @@ tied to which task's test caught the regression.
 resolve the workflow pattern before asking about branch names/checks, since a `github-flow` repo
 never asks about a `dev` branch at all. Concretely:
 
-- Run `detect` (unchanged CLI call) — it now returns `scoreAll`-shaped ranking data in its output
-  (wire this into `cmdDetect`'s printed JSON as part of Task 7/8, if not already covered — verify
-  and add if missing).
+- Run `detect` (unchanged CLI call) — its printed JSON now includes a `rankedPatterns` array (see
+  Task 8, Step 1a) — sorted-descending `{id, score, evidence}` entries for all 3 patterns. Apply
+  `classify(rankedPatterns)`'s rule (confident/greenfield/ambiguous) to decide which of the two
+  branches below to take.
 - If classification is `confident`: state what was detected and why (the `evidence` array) — "I
   detected this repo is using **`<pattern-id>`** because: `<evidence bullets>`. I'll set
   `workflowPattern` to this — confirm before I proceed, or tell me if you'd rather pick a different
