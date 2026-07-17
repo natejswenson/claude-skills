@@ -126,14 +126,20 @@ test('sourceStateHash pins repoState.stateHash', () => {
   assert.equal(plan.sourceStateHash, 'xyz789');
 });
 
-test('computePlan accepts a templateSources map (plural) keyed by template id', () => {
+test('computePlan accepts a templateSources map (plural) keyed by template id, and actually renders that entry\'s source', () => {
   const config = { workflowPattern: 'dev-main-promotion', branches: { dev: 'dev', main: 'main' },
     mergeMethod: { devToMainMethod: 'merge' }, release: { releaseCredential: 'RELEASE_PAT' },
     branchCleanup: {}, protectionOwner: 'external' };
   const repoState = { stateHash: 'x',
     templateFiles: {}, repoSettings: {}, rulesets: [], protection: {}, releasePendingLabelExists: true };
   const plan = computePlan(repoState, config, { 'dev-to-main-automerge': 'name: {{DEV_BRANCH}}' });
-  assert.ok(Array.isArray(plan.creates) || Array.isArray(plan.updates) || Array.isArray(plan.noops));
+  const entry = plan.creates.find((e) => e.id.startsWith('template:'));
+  assert.ok(entry, 'expected a template plan entry');
+  // Asserting the rendered CONTENT (not just "some array exists") is what actually
+  // proves the templateSources[id] lookup routed to the right map entry — a weaker
+  // assertion here would pass even if the lookup were silently misrouted.
+  assert.strictEqual(entry.content, 'name: dev');
+  assert.ok(Array.isArray(plan.creates) && Array.isArray(plan.updates) && Array.isArray(plan.noops));
 });
 
 test('computePlan returns Plan.protectedBranches computed from the resolved pattern', () => {
