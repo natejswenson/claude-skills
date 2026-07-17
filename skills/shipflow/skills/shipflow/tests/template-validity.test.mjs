@@ -21,6 +21,10 @@ const AUTOMERGE_TEMPLATE_SOURCE = readFileSync(
   join(SKILL_ROOT, 'templates', 'dev-main-promotion', 'dev-to-main-automerge.yml.tmpl'),
   'utf8'
 );
+const GITHUB_FLOW_TEMPLATE_SOURCE = readFileSync(
+  join(SKILL_ROOT, 'templates', 'github-flow', 'main-automerge.yml.tmpl'),
+  'utf8'
+);
 
 test('the rendered dev-to-main-automerge workflow is syntactically valid YAML', () => {
   const rendered = renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
@@ -44,6 +48,31 @@ test('the rendered workflow stays valid YAML across a range of legal branch/secr
   ];
   for (const params of cases) {
     const rendered = renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, params);
+    assert.doesNotThrow(() => parseYaml(rendered), `expected valid YAML for params: ${JSON.stringify(params)}`);
+  }
+});
+
+test('the rendered github-flow main-automerge workflow is syntactically valid YAML', () => {
+  const rendered = renderTemplate(GITHUB_FLOW_TEMPLATE_SOURCE, {
+    mainBranch: 'main',
+    mergeFlag: '--merge',
+    releaseCredentialSecret: 'SHIPFLOW_AUTOMERGE_PAT',
+  });
+
+  const doc = parseYaml(rendered);
+  assert.ok(doc && typeof doc === 'object', 'expected the rendered template to parse to an object');
+  assert.ok(doc.jobs, 'expected a top-level jobs: key');
+  assert.ok(doc.jobs['auto-merge'], 'expected a jobs.auto-merge entry');
+  assert.ok(doc.jobs['label-release-pending'], 'expected a jobs.label-release-pending entry');
+});
+
+test('the rendered github-flow workflow stays valid YAML across a range of legal branch/secret names', () => {
+  const cases = [
+    { mainBranch: 'trunk', mergeFlag: '--squash', releaseCredentialSecret: 'GH_AUTOMERGE_PAT' },
+    { mainBranch: 'main', mergeFlag: '--rebase', releaseCredentialSecret: '_LEADING_UNDERSCORE' },
+  ];
+  for (const params of cases) {
+    const rendered = renderTemplate(GITHUB_FLOW_TEMPLATE_SOURCE, params);
     assert.doesNotThrow(() => parseYaml(rendered), `expected valid YAML for params: ${JSON.stringify(params)}`);
   }
 });
