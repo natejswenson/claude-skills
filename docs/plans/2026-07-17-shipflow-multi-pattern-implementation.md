@@ -1486,6 +1486,15 @@ not the test (the test encodes the quality-gated design, not a moving target).
 
 **Step 1: Write failing tests**
 
+This is a new test file — import what's under test at the top, mirroring Task 2's explicit
+import line:
+
+```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { protectedBranches, detect, templates } from '../../lib/patterns/gitflow/index.mjs';
+```
+
 ```js
 test('protectedBranches returns [config.branches.dev, main] — release/hotfix branches excluded', () => {
   assert.deepStrictEqual(
