@@ -9,7 +9,7 @@ const TEMPLATE = 'dev={{DEV_BRANCH}} main={{MAIN_BRANCH}} flag={{MERGE_FLAG}}';
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const AUTOMERGE_TEMPLATE_SOURCE = readFileSync(
-  join(SKILL_ROOT, 'templates', 'dev-to-main-automerge.yml.tmpl'),
+  join(SKILL_ROOT, 'templates', 'dev-main-promotion', 'dev-to-main-automerge.yml.tmpl'),
   'utf8'
 );
 
