@@ -1,0 +1,129 @@
+version: "1.0"
+ticket: "N/A"
+epic: "N/A"
+title: "devlog: icon catalog + geometry-enforced hero zone for cover-image quality"
+date: "2026-07-17"
+
+api_surface:
+  - name: "renderCover"
+    type: "function"
+    signature: "renderCover(html: string, options?: { width?: number, height?: number }): Promise<Buffer>"
+    params:
+      - name: "html"
+        type: "string"
+        required: true
+      - name: "options"
+        type: "{ width?: number, height?: number }"
+        required: false
+    returns: "PNG buffer (unchanged signature from v0.8.1)"
+    description: "No signature change. NEW behavior: immediately before page.screenshot(), calls the new checkHeroZoneOverlap(page) helper and throws a descriptive Error (message matches /catalog icon .* overlaps hero zone/i) if it reports any overlap. A composed HTML document with no [data-catalog-icon] elements at all (pure freehand hero, no secondary icons) never triggers this check — it is opt-in by usage, not mandatory per cover."
+  - name: "checkHeroZoneOverlap"
+    type: "function"
+    signature: "checkHeroZoneOverlap(page: Page): Promise<{ overlaps: boolean, offendingIcons: string[] }>"
+    params:
+      - name: "page"
+        type: "playwright.Page"
+        required: true
+    returns: "overlaps: true if any [data-catalog-icon] element's getBoundingClientRect() intersects the #hero-zone element's rect; offendingIcons: the data-catalog-icon values that triggered it"
+    description: "New, separately exported so it's unit-testable without invoking the full render pipeline. Requires a #hero-zone element in the composed HTML — if absent, treated as no hero zone declared and the check is skipped entirely (never a hard requirement on posts authored before this system existed, e.g. during any partial/interrupted backfill)."
+  - name: "loadStyleGuide"
+    type: "function"
+    signature: "loadStyleGuide(): { text: string, iconCatalog: string | null }"
+    params: []
+    returns: "text: the existing style-guide.md content (unchanged). iconCatalog: the content of image-style/icons.md if it exists, else null."
+    description: "Widened return shape (previously text-only, exact prior shape TBD by the implementer against current cover_gen.mjs — this contract only commits to the new iconCatalog field being additive, not to renaming or removing whatever the existing return shape already exposes). Missing icons.md degrades to iconCatalog: null and composition proceeds without a catalog — mirrors the existing cover-never-blocks-publish invariant for a missing style guide, extended to the new file."
+  - name: "cmdCoverContext (CLI: devlog cover-context)"
+    type: "cli-command"
+    signature: "devlog cover-context <project> <slug> --clone <cloneDir> [--staging <staging-dir>]"
+    params:
+      - name: "project"
+        type: "string"
+        required: true
+      - name: "slug"
+        type: "string"
+        required: true
+      - name: "--clone"
+        type: "string (path)"
+        required: true
+      - name: "--staging"
+        type: "string (path)"
+        required: false
+    returns: "JSON: { styleGuide, references, iconCatalog } — existing shape plus the new iconCatalog field from loadStyleGuide()"
+    description: "No new flag. Same command, additive field in its JSON output only."
+
+invariants:
+  checkable:
+    - id: "COVER-Q-1"
+      description: "image-style/icons.md exists at both the repo path (skills/devlog/skills/devlog/image-style/) and the installed path (~/.claude/skills/devlog/image-style/), and every catalog entry has real inline <svg> markup — no placeholder/TODO icon bodies"
+      verification: "Read the file, confirm every named icon entry contains an <svg>...</svg> block with at least one real path/circle/rect/line/polygon element"
+      check_method: "code-inspection"
+    - id: "COVER-Q-2"
+      description: "The hero-zone bounding box (x:150 y:425 width:1300 height:400) and the 25px coordinate grid are defined exactly once, as exported constants in lib/render_cover.mjs (e.g. HERO_ZONE, HERO_GRID_UNIT), and style-guide.md's prose states the identical numbers rather than an independently-maintained copy — prevents the prose/code drift risk a reviewer would otherwise have to catch by eye"
+      verification: "Grep render_cover.mjs for the exported constants; grep style-guide.md for the same four numbers (150, 425, 1300, 400) and the grid value (25); a mismatch is a build-time-catchable bug, not just a style nit"
+      check_method: "grep"
+    - id: "COVER-Q-3"
+      description: "skill-invariants.json's existing cover-custom-illustration entry (SKILL.md prose: \"a cover that just re-renders the title in large text is a failure\") is preserved with its pattern unchanged; only its rationale is extended to note independence from (not supersession by) the new geometry guard"
+      verification: "Diff skill-invariants.json before/after this change: the cover-custom-illustration entry's id and pattern fields are byte-identical; only rationale differs"
+      check_method: "code-inspection"
+    - id: "COVER-Q-4"
+      description: "A new skill-invariants.json code array (schema extension — entries reference a file other than SKILL.md) contains cover-catalog-hero-overlap-guard, asserting the getBoundingClientRect/overlap-throw mechanism exists in lib/render_cover.mjs"
+      verification: "skill-invariants.json parses as valid JSON with a top-level code array; tests/skill_contract.test.mjs's invariant loop is extended to check code-array entries against their named file (not only SKILL.md), and demonstrably fails if the overlap-check code is deleted from render_cover.mjs"
+      check_method: "code-inspection"
+  testable:
+    - id: "COVER-Q-5"
+      description: "renderCover() throws when a [data-catalog-icon] element's rendered rect intersects #hero-zone's rect"
+      verification: "Unit test: synthetic HTML fixture with a #hero-zone div and a [data-catalog-icon] element positioned with overlapping coordinates; renderCover(html) rejects with the overlap error"
+      test_tag: "contract:cover-quality:cover-q-5"
+    - id: "COVER-Q-6"
+      description: "renderCover() succeeds when the same catalog icon is positioned entirely outside #hero-zone's rect"
+      verification: "Unit test: identical fixture with non-overlapping coordinates; renderCover(html) resolves to a PNG buffer, no throw"
+      test_tag: "contract:cover-quality:cover-q-6"
+    - id: "COVER-Q-7"
+      description: "loadStyleGuide() degrades gracefully (iconCatalog: null, no throw) when image-style/icons.md is absent, and composition/publish proceeds without a catalog rather than blocking"
+      verification: "Unit test: stub filesystem with no icons.md present; loadStyleGuide() returns iconCatalog: null; downstream cover-context/publish-entry paths do not throw on this null"
+      test_tag: "contract:cover-quality:cover-q-7"
+    - id: "COVER-Q-8"
+      description: "tests/skill_contract.test.mjs's extended invariant loop is a real regression test for COVER-Q-4, not just schema validation — it fails red if the overlap-guard code is removed from render_cover.mjs"
+      verification: "Temporarily stub/remove the overlap-check code path in a test double of render_cover.mjs's source and confirm the invariant test fails; restore and confirm it passes"
+      test_tag: "contract:cover-quality:cover-q-8"
+
+integration_points:
+  - "lib/render_cover.mjs — new exported HERO_ZONE/HERO_GRID_UNIT constants, new exported checkHeroZoneOverlap(page) helper, and a call to it inserted immediately before page.screenshot() inside renderCover()."
+  - "lib/cover_gen.mjs — loadStyleGuide() (or the equivalent existing function reading style-guide.md) widens its return shape to also read and include image-style/icons.md content as iconCatalog, with the same missing-file-degrades-to-null pattern already used for a missing style guide."
+  - "bin/devlog.js — cmdCoverContext's JSON output gains the iconCatalog field (via the widened loadStyleGuide() return). cmdInit's installer block gains image-style/icons.md alongside the existing font.ttf/style-guide.example.md install step."
+  - "SKILL.md (Step 5, cover composition) — instructions updated to reference the icon catalog (secondary elements only, never the hero) and the hero-zone grid contract (three named composition slots: single centered hero, hero + supporting element, two-node before/after)."
+  - "image-style/style-guide.example.md and the installed image-style/style-guide.md — both gain the hero-zone bounding box, the 25px grid, and the three composition slots; both copies must stay in sync exactly as they already do today (installer copies example -> installed verbatim)."
+  - "image-style/icons.md (NEW file, both repo and installed paths) — the 20-icon catalog and topic-to-icon cheat-sheet."
+  - "skill-invariants.json — cover-custom-illustration rationale extended (COVER-Q-3); new code array added with cover-catalog-hero-overlap-guard (COVER-Q-4)."
+  - "tests/skill_contract.test.mjs — invariant-checking loop extended to also validate code-array entries against their named file, not only SKILL.md prose."
+  - "tests/render_cover.test.mjs — new cases for COVER-Q-5/COVER-Q-6."
+  - "tests/cover_gen.test.mjs — new case for COVER-Q-7."
+  - "package.json and .claude-plugin/plugin.json — version bump 0.8.1 -> 0.9.0."
+  - "CHANGELOG.md — new 0.9.0 entry."
+  - "daily-dev-log (external repo, not part of this skill's source) — all ~51 existing published covers regenerated and pushed under the new system; not a code change to devlog itself, but the concrete deliverable the user asked for."
+
+ambiguity_resolutions:
+  - id: "AMB-CQ-1"
+    decision: "Hero-zone coordinates and grid unit live as exported constants in lib/render_cover.mjs; style-guide.md's prose must state the identical numbers, checked mechanically (COVER-Q-2) rather than trusted to manual review."
+    confidence: "high"
+    alternatives: ["State the numbers independently in prose and in code with no cross-check, relying on a human reviewer to notice drift"]
+    reasoning: "The whole premise of this design is that a prose-only safeguard (the existing cover-custom-illustration regex) already proved insufficient once. Letting the hero-zone numbers exist as an unchecked duplicate between prose and code would reintroduce the identical class of silent-drift risk this design otherwise closes."
+    reversibility: "high"
+  - id: "AMB-CQ-2"
+    decision: "Any geometric intersection between a catalog icon's rect and the hero zone's rect fails the check — binary, no tolerance percentage."
+    confidence: "high"
+    alternatives: ["Allow up to some percentage overlap before failing, to tolerate minor incidental overlap"]
+    reasoning: "The guard exists to guarantee catalog icons never substitute for or crowd into the one required bespoke illustration. Any tolerance threshold would need its own justification and tuning with no evidence it's needed; binary is simpler, stricter, and matches the actual intent (catalog icons belong in the remaining canvas, full stop)."
+    reversibility: "high"
+  - id: "AMB-CQ-3"
+    decision: "Full ghostwriter-style fixed template family rejected as the primary composition mechanism; the hero illustration stays freehand, only gaining a grid/bounding-box contract, not a set of named layouts with fixed shapes."
+    confidence: "high"
+    alternatives: ["Adopt ghostwriter's full template-family pattern (a small fixed set of complete layouts, agent fills in icons only, no freehand drawing)"]
+    reasoning: "devlog has a hard requirement ghostwriter's format does not: two different posts' covers must never look visually similar. A template family converges toward recognizable 'types' by design (this is observably true of ghostwriter's own card family) — acceptable for LinkedIn cards, a direct regression of the exact 'bland/repetitive' bug already fixed once this cycle for devlog specifically."
+    reversibility: "medium — would require re-authoring SKILL.md's composition instructions and could not cleanly reuse covers rendered under the freehand-hero system without a second regeneration pass"
+  - id: "AMB-CQ-4"
+    decision: "Backfill verification uses one sampled cover per project (~6 of 51) for subjective review, not full manual review of all 51 and not fully automated judge-only scoring."
+    confidence: "high (explicit user decision)"
+    alternatives: ["Full manual review of every regenerated cover", "Automated adversarial judge-agent scoring with minimal human review"]
+    reasoning: "The new geometry guard (COVER-Q-5) mechanically catches the specific structural regression (catalog icon standing in for the hero) that a human spot-check might miss across 51 covers; the remaining subjective question ('does this look good and distinct') is exactly what a small human sample is suited for, without the full time cost of reviewing all 51 individually."
+    reversibility: "high — if the sampled review starts finding real problems, escalating to full review for the affected project(s) is a one-line process change, not a code change"
