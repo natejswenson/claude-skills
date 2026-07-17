@@ -1,0 +1,65 @@
+name: auto-merge release/*  to {{MAIN_BRANCH}}
+
+# Rendered by shipflow's apply.mjs from this template. Do not hand-edit
+# without also updating .github/shipflow.json's renderedTemplateHashes entry
+# for this file, or shipflow's next apply will refuse to overwrite it
+# (handEditDetected) until an explicit --force is passed. Commit both files
+# together in the same commit.
+#
+# GH_TOKEN uses config.release.releaseCredential, NOT a hardcoded
+# secrets.GITHUB_TOKEN, because of GitHub's loop-prevention rule: a PR
+# auto-merged via `gh pr merge --auto` run under the default GITHUB_TOKEN
+# completes (later, asynchronously, once checks pass) attributed to the
+# github-actions[bot] identity — and a `pull_request: closed` event
+# resulting from that bot-attributed merge does NOT trigger this or any
+# other workflow's `on: pull_request` handlers. Confirmed empirically:
+# an identical PR merged by a real, PAT-authenticated actor fired the
+# closed-event trigger immediately; one completed by GITHUB_TOKEN-enabled
+# auto-merge fired no run at all. releaseCredential must therefore name a
+# real PAT/App-installation-token secret (not GITHUB_TOKEN) for
+# label-release-pending to ever actually run.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+    branches: [{{MAIN_BRANCH}}]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Enables native GitHub auto-merge on open/reopen/synchronize — this job
+  # does NOT wait for checks itself; it turns on auto-merge and exits. The
+  # actual merge happens asynchronously, later, whenever GitHub's own
+  # required-checks gate is satisfied (see the design's discussion of why a
+  # bespoke polling/blocking job was rejected).
+  auto-merge:
+    if: >-
+      github.event.action != 'closed' &&
+      startsWith(github.event.pull_request.head.ref, '{{RELEASE_BRANCH_PREFIX}}')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge
+        run: gh pr merge --auto {{MERGE_FLAG}} "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}
+
+  # Fires once, when the release PR actually merges (a separate event from
+  # the job above, which only *enables* auto-merge). Applies a durable
+  # release-pending label so a later, disconnected shipflow invocation can
+  # find this promotion and ask about a release — the merge completion has
+  # no live Claude session attached to react to it directly.
+  label-release-pending:
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, '{{RELEASE_BRANCH_PREFIX}}')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Apply release-pending label
+        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label release-pending --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}

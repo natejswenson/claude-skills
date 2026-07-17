@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderTemplate, mergeMethodToFlag } from '../lib/render.mjs';
+import { renderTemplate, mergeMethodToFlag, assertTokenValidatorsComplete } from '../lib/render.mjs';
 
 const TEMPLATE = 'dev={{DEV_BRANCH}} main={{MAIN_BRANCH}} flag={{MERGE_FLAG}}';
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const AUTOMERGE_TEMPLATE_SOURCE = readFileSync(
-  join(SKILL_ROOT, 'templates', 'dev-to-main-automerge.yml.tmpl'),
+  join(SKILL_ROOT, 'templates', 'dev-main-promotion', 'dev-to-main-automerge.yml.tmpl'),
   'utf8'
 );
 
@@ -151,4 +151,52 @@ test('renderTemplate still accepts ordinary branch names and secret names', () =
     releaseCredentialSecret: 'SHIPFLOW_AUTOMERGE_PAT',
   });
   assert.match(rendered, /feature\/dev-branch/);
+});
+
+test('renderTemplate substitutes RELEASE_BRANCH_PREFIX and HOTFIX_BRANCH_PREFIX', () => {
+  const out = renderTemplate("release={{RELEASE_BRANCH_PREFIX}} hotfix={{HOTFIX_BRANCH_PREFIX}}", {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT',
+    releaseBranchPrefix: 'release/', hotfixBranchPrefix: 'hotfix/',
+  });
+  assert.strictEqual(out, 'release=release/ hotfix=hotfix/');
+});
+
+test('renderTemplate rejects a release/hotfix branch prefix containing a quote or newline', () => {
+  assert.throws(() => renderTemplate('{{RELEASE_BRANCH_PREFIX}}', {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT', releaseBranchPrefix: "release/' || 'x'=='x",
+    hotfixBranchPrefix: 'hotfix/',
+  }), /unsafe value/);
+});
+
+// Regression test: RELEASE_BRANCH_PREFIX/HOTFIX_BRANCH_PREFIX substitute into a
+// startsWith(head.ref, '{{...}}') guard, not an == equality comparison like
+// DEV_BRANCH/MAIN_BRANCH — every string starts with the empty string, so an
+// empty prefix would fail OPEN (matching any PR into main) rather than fail
+// closed, the same severity class as the prior quote-injection Critical
+// finding. Found during pre-PR red-team review of the gitflow implementation.
+test('renderTemplate rejects an empty release/hotfix branch prefix (fails open on startsWith, unlike an == comparison)', () => {
+  assert.throws(() => renderTemplate('{{RELEASE_BRANCH_PREFIX}}', {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT', releaseBranchPrefix: '',
+    hotfixBranchPrefix: 'hotfix/',
+  }), /unsafe value.*RELEASE_BRANCH_PREFIX/);
+
+  assert.throws(() => renderTemplate('{{HOTFIX_BRANCH_PREFIX}}', {
+    devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge',
+    releaseCredentialSecret: 'RELEASE_PAT', releaseBranchPrefix: 'release/',
+    hotfixBranchPrefix: '',
+  }), /unsafe value.*HOTFIX_BRANCH_PREFIX/);
+});
+
+test('assertTokenValidatorsComplete throws when a TOKEN_TO_PARAM key has no matching TOKEN_VALIDATORS key', () => {
+  assert.throws(
+    () => assertTokenValidatorsComplete({ FOO: 'foo', BAR: 'bar' }, { FOO: () => true }),
+    /BAR/
+  );
+});
+
+test('assertTokenValidatorsComplete does not throw when every key is covered', () => {
+  assert.doesNotThrow(() => assertTokenValidatorsComplete({ FOO: 'foo' }, { FOO: () => true }));
 });
