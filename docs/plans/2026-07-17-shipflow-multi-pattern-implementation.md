@@ -817,7 +817,10 @@ This is the SAME hash-diff/hand-edit-detection algorithm as the pre-existing (si
 object instead of hardcoded constants, `templateSource` looked up per-entry instead of a single
 module-level string). Move `import { renderTemplate } from './render.mjs'` and
 `import { sha256 } from './gh.mjs'` to the top of the file if they aren't already there from the
-pre-existing version.
+pre-existing version. The pre-existing version's import line is
+`import { renderTemplate, mergeMethodToFlag } from './render.mjs';` — drop `mergeMethodToFlag`
+from it: every `mergeMethodToFlag` call now lives inside each pattern module's own `templates(config)`
+(see Tasks 2/9/11), so `plan.mjs` itself has no remaining caller for it after this rewrite.
 
 **Step 4: Run to verify it passes**
 
@@ -1085,7 +1088,11 @@ test('detectRepoState reports configuredRemotes for pattern-registry.mjs\'s bran
 `spawnSync` is already imported in this file (it backs the existing `withGitRemote` helper) — no
 new import needed for it. Import `mkdirSync`, `writeFileSync` from `node:fs` and `join` from
 `node:path` at the top of the test file if not already imported; import `listPatterns` from
-`../lib/pattern-registry.mjs` and `git` from `../lib/gh.mjs` alongside the existing imports.
+`../lib/pattern-registry.mjs` and `git` from `../lib/gh.mjs` alongside the existing imports. Add
+`detectRepoState` to the existing `../lib/detect.mjs` import (line 7's import currently lists only
+`listWorkflowJobNames`, `findSettingsAsCodeArtifact`, `classifyProtectionOwner`,
+`resolveOwnerRepo` — every test above calls `detectRepoState` directly, so it must be added to
+that same import statement or all of them throw `ReferenceError`).
 
 **Step 2: Run to verify failure**
 
@@ -1751,8 +1758,19 @@ test('hotfix-merge-back: a genuine conflict never force-pushes and opens a PR in
     chmodSync(join(binDir, 'gh'), 0o755);
     const env = { ...process.env, PATH: `${binDir}:${process.env.PATH}` };
 
+    // fallbackScript contains a literal `${{ github.run_id }}` GitHub Actions
+    // expression (inside the shipflow/merge-back-...-${{ github.run_id }} branch
+    // name) — in real GitHub Actions the runner textually pre-substitutes every
+    // `${{ ... }}` expression BEFORE handing the script to bash; renderTemplate's
+    // own token regex (\{\{(\w+)\}\}, no leading `$`, no space after `{{`)
+    // deliberately does not touch it, so it survives extraction unresolved. Running
+    // it through bash as-is is a bad substitution (bash reads `${{` as a parameter
+    // expansion). Stand in for the runner's own pre-substitution step with a fixed
+    // literal, exactly as the real runner would substitute a real run id:
+    const executableFallback = fallbackScript.replace('${{ github.run_id }}', '999');
+
     writeFileSync(join(root, 'merge.sh'), mergeScript);
-    writeFileSync(join(root, 'fallback.sh'), fallbackScript);
+    writeFileSync(join(root, 'fallback.sh'), executableFallback);
 
     const mergeResult = spawnSync('bash', ['-e', '-o', 'pipefail', join(root, 'merge.sh')], { cwd: workDir, env, encoding: 'utf8' });
     assert.notStrictEqual(mergeResult.status, 0, 'the conflicting merge must fail, not silently resolve');
