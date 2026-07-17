@@ -375,7 +375,9 @@ import { listPatterns, resolvePattern, scoreAll, computeDetectionSignals, classi
 
 test('listPatterns returns all 3 patterns with their templateTargetPaths', () => {
   const patterns = listPatterns();
-  assert.deepStrictEqual(patterns.map((p) => p.id).sort(), ['dev-main-promotion', 'github-flow', 'gitflow']);
+  // Lexicographic sort: 'gitflow' < 'github-flow' ('f' < 'h' at index 3). Found during
+  // actual implementation (Task 3) — the plan's original assertion here was wrong.
+  assert.deepStrictEqual(patterns.map((p) => p.id).sort(), ['dev-main-promotion', 'gitflow', 'github-flow']);
   const devMain = patterns.find((p) => p.id === 'dev-main-promotion');
   assert.deepStrictEqual(devMain.templateTargetPaths, ['.github/workflows/dev-to-main-automerge.yml']);
 });
