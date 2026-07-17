@@ -16,3 +16,6 @@ htmlcov/
 
 # Skill outputs / scratch
 onetap-out/
+
+# Git worktrees
+.worktrees/
