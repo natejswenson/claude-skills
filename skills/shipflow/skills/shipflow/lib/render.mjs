@@ -35,11 +35,16 @@ const UNSAFE_YAML_STRING_RE = /['\r\n]/;
 // with a digit (case-insensitivity aside, this is the full safe charset).
 const SAFE_SECRET_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
+// Prefix tokens for gitflow's release/*  and hotfix/*  head.ref match guards. Same
+// UNSAFE_YAML_STRING_RE validation as DEV_BRANCH/MAIN_BRANCH — these substitute into
+// an identical single-quoted YAML string-comparison context.
 const TOKEN_VALIDATORS = Object.freeze({
   DEV_BRANCH: (v) => !UNSAFE_YAML_STRING_RE.test(v),
   MAIN_BRANCH: (v) => !UNSAFE_YAML_STRING_RE.test(v),
   MERGE_FLAG: () => true, // closed enum from mergeMethodToFlag — never attacker-shaped
   RELEASE_CREDENTIAL_SECRET: (v) => SAFE_SECRET_NAME_RE.test(v),
+  RELEASE_BRANCH_PREFIX: (v) => !UNSAFE_YAML_STRING_RE.test(v),
+  HOTFIX_BRANCH_PREFIX: (v) => !UNSAFE_YAML_STRING_RE.test(v),
 });
 
 // params: { devBranch, mainBranch, mergeFlag, releaseCredentialSecret }
@@ -80,7 +85,23 @@ const TOKEN_TO_PARAM = Object.freeze({
   MAIN_BRANCH: 'mainBranch',
   MERGE_FLAG: 'mergeFlag',
   RELEASE_CREDENTIAL_SECRET: 'releaseCredentialSecret',
+  RELEASE_BRANCH_PREFIX: 'releaseBranchPrefix',
+  HOTFIX_BRANCH_PREFIX: 'hotfixBranchPrefix',
 });
+
+// INV-MP-12: every TOKEN_TO_PARAM key must have a matching TOKEN_VALIDATORS key, or a
+// substituted value could reach a template with zero validation (the exact class of
+// gap a 2026-07-15 Siege audit found and fixed). Called once at module load against
+// the real exported objects; also independently callable so a unit test can assert
+// the logic itself (not just today's two maps happening to agree) by passing in
+// deliberately-mismatched local fixture objects.
+export function assertTokenValidatorsComplete(tokenToParam, tokenValidators) {
+  const missing = Object.keys(tokenToParam).filter((key) => !(key in tokenValidators));
+  if (missing.length > 0) {
+    throw new Error(`assertTokenValidatorsComplete: TOKEN_VALIDATORS missing entr(y/ies) for: ${missing.join(', ')}`);
+  }
+}
+assertTokenValidatorsComplete(TOKEN_TO_PARAM, TOKEN_VALIDATORS);
 
 export function mergeMethodToFlag(devToMainMethod) {
   switch (devToMainMethod) {
