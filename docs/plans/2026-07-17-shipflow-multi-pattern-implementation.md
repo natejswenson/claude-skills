@@ -730,14 +730,19 @@ export function computePlan(repoState, config, templateSources) {
   }
 
   // 2. deletion-ruleset — protects protectedBranchList, not a hardcoded [dev, main].
+  // Description strings below are copied VERBATIM from the pre-existing (single-pattern)
+  // plan.mjs, not rephrased — this repo's own live .github/shipflow.json has
+  // protectionOwner: "external", so Task 8/15's dogfood smoke test
+  // (`node bin/shipflow.js plan --repo .../claude-skills`) exercises this exact else-branch
+  // and must reproduce byte-identical plan-entry text, not just equivalent behavior.
   if (config.protectionOwner === 'shipflow') {
     if ((repoState.rulesets ?? []).length > 0) {
-      noops.push({ id: 'deletion-ruleset', description: 'a ruleset already exists (coarse check)' });
+      noops.push({ id: 'deletion-ruleset', description: 'a ruleset already exists (coarse check — see plan.mjs comment)' });
     } else {
       creates.push({ id: 'deletion-ruleset', description: `create a ruleset protecting ${protectedBranchList.join('/')} from deletion` });
     }
   } else {
-    noops.push({ id: 'deletion-ruleset', description: `protectionOwner is "${config.protectionOwner}" — deferring to existing mechanism` });
+    noops.push({ id: 'deletion-ruleset', description: `protectionOwner is "${config.protectionOwner}" — deferring to existing mechanism, shipflow installs nothing` });
   }
 
   // 3. per-pattern templates — generalized from one hardcoded entry to N.
@@ -1389,6 +1394,55 @@ Extend the existing YAML-validity test to also render and validate
 `templates/github-flow/main-automerge.yml.tmpl` across a range of branch/secret names (mirror the
 existing dev-main-promotion coverage in that file).
 
+**Step 5a: INV-MP-9 idempotency test (`tests/patterns/github-flow.test.mjs`)**
+
+The contract's INV-MP-9 asks for "running `apply.mjs` twice against an unchanged github-flow
+repo produces zero mutating calls on the second run," mirroring the prior contract's INV-9. That
+precedent was never actually automated in this codebase — `tests/apply.test.mjs` today only covers
+the pure `classifyRulesetError` helper, and there is no existing harness for stubbing `gh`'s live
+API calls (`apply.mjs`'s actual mutations shell out to the real `gh` binary via `lib/gh.mjs`'s
+`spawnArgs`). Building that harness is a real but separate, cross-cutting investment — out of
+scope for this plan (see the Deferred Minor findings section's item 18 below for the explicit
+acknowledgment).
+
+What IS cheaply and honestly testable without new infrastructure: `computePlan` is pure (no I/O),
+so a repoState fabricated to already reflect a prior successful apply must compute to an
+all-noop plan — this is the plan-computation-layer half of idempotency, and it exercises the
+exact same code every command runs before deciding whether to mutate anything:
+
+```js
+import { readFileSync } from 'node:fs';
+import { computePlan } from '../../lib/plan.mjs';
+import { renderTemplate } from '../../lib/render.mjs';
+import { sha256 } from '../../lib/gh.mjs';
+
+test('computePlan produces an all-noop plan for github-flow once repoState reflects a converged apply (INV-MP-9, plan layer)', () => {
+  const config = {
+    workflowPattern: 'github-flow',
+    branches: { main: 'main' },
+    mergeMethod: { devToMainMethod: 'merge' },
+    release: { releaseCredential: 'RELEASE_PAT' },
+    branchCleanup: {},
+    protectionOwner: 'external',
+  };
+  const [entry] = templates(config);
+  const templateSource = readFileSync(entry.templateSourcePath, 'utf8');
+  const renderedContent = renderTemplate(templateSource, entry.params);
+  const repoState = {
+    stateHash: 'x',
+    repoSettings: { deleteBranchOnMerge: true },
+    rulesets: [],
+    protection: {},
+    releasePendingLabelExists: true,
+    templateFiles: { [entry.targetPath]: { exists: true, sha256: sha256(renderedContent) } },
+  };
+  const plan = computePlan(repoState, config, { [entry.id]: templateSource });
+  assert.strictEqual(plan.creates.length, 0);
+  assert.strictEqual(plan.updates.length, 0);
+  assert.strictEqual(plan.noops.length, 4);
+});
+```
+
 **Step 6: Run full suite + commit**
 
 Run: `npm test` → expect all pass.
@@ -1613,6 +1667,114 @@ Run: `node --test tests/patterns/gitflow.test.mjs` → PASS.
 Extend `tests/template-validity.test.mjs` to render and YAML-validate all 4 gitflow templates
 across a range of branch-prefix/secret-name inputs.
 
+**Step 5a: INV-MP-8 integration test — merge-back never force-pushes, opens a PR on failure**
+
+This is genuinely new logic (unlike INV-MP-9's precedent-mirroring situation in Task 9), and it's
+testable without any live GitHub API: the conflict/push-failure fallback only ever shells out to
+local `git` plus one `gh pr create` call, so a PATH-stubbed fake `gh` plus two real local git repos
+(acting as "origin" and a working checkout) is enough to exercise it for real. Add to
+`tests/patterns/gitflow.test.mjs`:
+
+```js
+import { mkdtempSync, writeFileSync, rmSync, chmodSync, readFileSync as readFileSyncFs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { renderTemplate } from '../../lib/render.mjs';
+
+// The template's YAML has no parser in this codebase's style (see detect.mjs's own
+// no-YAML-parser precedent) — extract each named step's `run: |` block by locating
+// its `name:` line, then its `run: |` line, then every subsequent line indented
+// deeper than `run:` itself, matching listWorkflowJobNames'/scanWorkflowShapeSignals'
+// existing dedent-detection approach rather than introducing a new one.
+function extractRunBlock(yamlText, nameSubstring) {
+  const lines = yamlText.split('\n');
+  const nameIdx = lines.findIndex((l) => l.includes(nameSubstring));
+  const runIdx = lines.findIndex((l, i) => i > nameIdx && l.trim() === 'run: |');
+  const runIndent = lines[runIdx].match(/^(\s*)/)[1].length;
+  const body = [];
+  for (let i = runIdx + 1; i < lines.length; i++) {
+    const indent = lines[i].match(/^(\s*)/)[1].length;
+    if (lines[i].trim() !== '' && indent <= runIndent) break;
+    body.push(lines[i].slice(runIndent + 2));
+  }
+  return body.join('\n');
+}
+
+test('hotfix-merge-back: a genuine conflict never force-pushes and opens a PR instead (INV-MP-8)', () => {
+  const config = {
+    branches: { dev: 'dev', main: 'main' },
+    mergeMethod: { devToMainMethod: 'merge' },
+    release: { releaseCredential: 'RELEASE_PAT' },
+    patternConfig: { gitflow: { releaseBranchPrefix: 'release/', hotfixBranchPrefix: 'hotfix/' } },
+  };
+  const entry = templates(config).find((e) => e.id === 'hotfix-merge-back');
+  const templateSource = readFileSyncFs(entry.templateSourcePath, 'utf8');
+  const rendered = renderTemplate(templateSource, entry.params);
+
+  // Static check: the invariant's literal claim — no force-push flag anywhere in
+  // either run: block, independent of whether the dynamic conflict path below
+  // happens to exercise every line.
+  assert.doesNotMatch(rendered, /git push[^\n]*(--force|-f\b)/);
+
+  const mergeScript = extractRunBlock(rendered, 'Attempt a clean merge');
+  const fallbackScript = extractRunBlock(rendered, 'On any failure');
+
+  const root = mkdtempSync(join(tmpdir(), 'shipflow-mergeback-'));
+  const originDir = join(root, 'origin.git');
+  const workDir = join(root, 'work');
+  const binDir = join(root, 'bin');
+  const ghLog = join(root, 'gh-calls.log');
+  try {
+    spawnSync('git', ['init', '--quiet', '--bare', '-b', 'main', originDir]);
+    spawnSync('git', ['clone', '--quiet', originDir, workDir]);
+    const gitIn = (args) => spawnSync('git', args, { cwd: workDir, encoding: 'utf8' });
+    gitIn(['config', 'user.email', 'test@example.invalid']);
+    gitIn(['config', 'user.name', 'Shipflow Test']);
+    writeFileSync(join(workDir, 'shared.txt'), 'base\n');
+    gitIn(['add', 'shared.txt']);
+    gitIn(['commit', '--quiet', '-m', 'base']);
+    gitIn(['push', '--quiet', 'origin', 'main']);
+    gitIn(['checkout', '--quiet', '-b', 'dev']);
+    writeFileSync(join(workDir, 'shared.txt'), 'dev-side change\n');
+    gitIn(['commit', '--quiet', '-am', 'dev change']);
+    gitIn(['push', '--quiet', 'origin', 'dev']);
+    gitIn(['checkout', '--quiet', 'main']);
+    writeFileSync(join(workDir, 'shared.txt'), 'main-side conflicting change\n');
+    gitIn(['commit', '--quiet', '-am', 'main change']);
+    gitIn(['push', '--quiet', 'origin', 'main']);
+    gitIn(['fetch', '--quiet', 'origin']);
+    const devHeadBefore = gitIn(['rev-parse', 'origin/dev']).stdout.trim();
+
+    // Fake `gh` on PATH: records argv instead of touching the network.
+    mkdirSync(binDir, { recursive: true });
+    writeFileSync(join(binDir, 'gh'), '#!/bin/sh\necho "$@" >> ' + JSON.stringify(ghLog) + '\n');
+    chmodSync(join(binDir, 'gh'), 0o755);
+    const env = { ...process.env, PATH: `${binDir}:${process.env.PATH}` };
+
+    writeFileSync(join(root, 'merge.sh'), mergeScript);
+    writeFileSync(join(root, 'fallback.sh'), fallbackScript);
+
+    const mergeResult = spawnSync('bash', ['-e', '-o', 'pipefail', join(root, 'merge.sh')], { cwd: workDir, env, encoding: 'utf8' });
+    assert.notStrictEqual(mergeResult.status, 0, 'the conflicting merge must fail, not silently resolve');
+
+    const fallbackResult = spawnSync('bash', ['-e', '-o', 'pipefail', join(root, 'fallback.sh')], { cwd: workDir, env, encoding: 'utf8' });
+    assert.strictEqual(fallbackResult.status, 0);
+
+    const ghCalls = readFileSyncFs(ghLog, 'utf8');
+    assert.match(ghCalls, /pr create/);
+    assert.match(ghCalls, /--base dev/);
+
+    const devHeadAfter = gitIn(['rev-parse', 'origin/dev']).stdout.trim();
+    assert.strictEqual(devHeadAfter, devHeadBefore, 'origin/dev must be untouched — no merge landed and no force-push occurred');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+```
+
+Import `join` from `node:path` and `mkdirSync` alongside the file's existing `node:fs` imports if not
+already present.
+
 ```bash
 git add lib/patterns/gitflow templates/gitflow tests/patterns/gitflow.test.mjs tests/template-validity.test.mjs
 git commit -m "feat(shipflow): implement gitflow pattern module + 4 templates (release/hotfix automerge + merge-back)"
@@ -1810,3 +1972,21 @@ The following 2 items were logged during this **implementation plan's own** qual
     now since Tasks 4/9/11 land within the same feature branch shortly after Task 3, at which
     point the comments become accurate history rather than a forward reference. If Task 9/11 end
     up landing much later or differently shaped, update or remove these comments then.
+
+The following item was logged during this plan's quality-gate **round 3** — a genuine, acknowledged
+gap rather than a nit, called out explicitly per this repo's "no silent caps" norm rather than left
+implicit:
+
+18. **INV-MP-9 is only satisfied at the plan-computation layer, not the full `apply.mjs`/live-`gh`
+    layer.** Task 9's Step 5a test proves `computePlan` returns an all-noop plan for github-flow
+    when `repoState` already reflects a converged apply — real coverage, not a stub. It does NOT
+    prove `apply.mjs` itself makes zero live `gh api` calls on a second run, because no test in this
+    codebase mocks or stubs `lib/gh.mjs`'s `spawnArgs('gh', ...)` calls today — `tests/apply.test.mjs`
+    only covers the pure `classifyRulesetError` helper, and the prior contract's equivalent
+    invariant (INV-9, "running apply.mjs twice... zero mutating calls on the second run") was never
+    actually automated either (confirmed: no `contract:idempotency:inv-9`-tagged test exists in the
+    live suite). Closing this properly needs a `gh`-call-recording/stub harness in `lib/gh.mjs` or
+    `tests/`, which is cross-cutting test infrastructure affecting every pattern (not just
+    github-flow) — genuinely out of scope for a plan whose job is to generalize the existing
+    single-pattern behavior, not to backfill a pre-existing test gap this feature didn't create.
+    Worth a follow-up ticket if `apply.mjs`-level idempotency testing becomes a priority.
