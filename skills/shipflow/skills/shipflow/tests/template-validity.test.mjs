@@ -25,6 +25,20 @@ const GITHUB_FLOW_TEMPLATE_SOURCE = readFileSync(
   join(SKILL_ROOT, 'templates', 'github-flow', 'main-automerge.yml.tmpl'),
   'utf8'
 );
+const GITFLOW_TEMPLATES = {
+  'release-automerge': readFileSync(join(SKILL_ROOT, 'templates', 'gitflow', 'release-automerge.yml.tmpl'), 'utf8'),
+  'hotfix-automerge': readFileSync(join(SKILL_ROOT, 'templates', 'gitflow', 'hotfix-automerge.yml.tmpl'), 'utf8'),
+  'hotfix-merge-back': readFileSync(join(SKILL_ROOT, 'templates', 'gitflow', 'hotfix-merge-back.yml.tmpl'), 'utf8'),
+  'release-merge-back': readFileSync(join(SKILL_ROOT, 'templates', 'gitflow', 'release-merge-back.yml.tmpl'), 'utf8'),
+};
+const GITFLOW_BASE_PARAMS = {
+  devBranch: 'develop',
+  mainBranch: 'main',
+  mergeFlag: '--merge',
+  releaseCredentialSecret: 'SHIPFLOW_AUTOMERGE_PAT',
+  releaseBranchPrefix: 'release/',
+  hotfixBranchPrefix: 'hotfix/',
+};
 
 test('the rendered dev-to-main-automerge workflow is syntactically valid YAML', () => {
   const rendered = renderTemplate(AUTOMERGE_TEMPLATE_SOURCE, {
@@ -76,3 +90,24 @@ test('the rendered github-flow workflow stays valid YAML across a range of legal
     assert.doesNotThrow(() => parseYaml(rendered), `expected valid YAML for params: ${JSON.stringify(params)}`);
   }
 });
+
+for (const [name, source] of Object.entries(GITFLOW_TEMPLATES)) {
+  test(`the rendered gitflow ${name} workflow is syntactically valid YAML`, () => {
+    const rendered = renderTemplate(source, GITFLOW_BASE_PARAMS);
+    assert.doesNotThrow(() => parseYaml(rendered), `expected valid YAML for ${name}`);
+    const doc = parseYaml(rendered);
+    assert.ok(doc && typeof doc === 'object', 'expected the rendered template to parse to an object');
+    assert.ok(doc.jobs, 'expected a top-level jobs: key');
+  });
+
+  test(`the rendered gitflow ${name} workflow stays valid YAML across a range of legal branch-prefix/secret-name inputs`, () => {
+    const cases = [
+      { ...GITFLOW_BASE_PARAMS, devBranch: 'dev', mainBranch: 'trunk', mergeFlag: '--squash', releaseCredentialSecret: 'GH_AUTOMERGE_PAT' },
+      { ...GITFLOW_BASE_PARAMS, releaseBranchPrefix: 'releases/', hotfixBranchPrefix: 'hotfixes/', releaseCredentialSecret: '_LEADING_UNDERSCORE' },
+    ];
+    for (const params of cases) {
+      const rendered = renderTemplate(source, params);
+      assert.doesNotThrow(() => parseYaml(rendered), `expected valid YAML for ${name} with params: ${JSON.stringify(params)}`);
+    }
+  });
+}
