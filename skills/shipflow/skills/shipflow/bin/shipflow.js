@@ -15,9 +15,18 @@ import {
   renameDefaultBranch,
 } from '../lib/apply.mjs';
 import { readFileCapped } from '../lib/gh.mjs';
+import { resolvePattern, scoreAll } from '../lib/pattern-registry.mjs';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const TEMPLATE_PATH = join(PACKAGE_ROOT, 'templates', 'dev-to-main-automerge.yml.tmpl');
+
+function buildTemplateSources(config) {
+  const pattern = resolvePattern(config);
+  const sources = {};
+  for (const entry of pattern.templates(config)) {
+    sources[entry.id] = readFileSync(entry.templateSourcePath, 'utf8');
+  }
+  return sources;
+}
 
 function readPackageVersion() {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
@@ -63,7 +72,8 @@ function cmdDetect(args) {
     releaseCredentialName: values['release-credential'] ?? null,
   });
   const protectionOwner = classifyProtectionOwner(repoState);
-  printJson({ ...repoState, protectionOwnerClassification: protectionOwner });
+  const rankedPatterns = scoreAll(repoState);
+  printJson({ ...repoState, protectionOwnerClassification: protectionOwner, rankedPatterns });
 }
 
 function cmdPlan(args) {
@@ -88,10 +98,10 @@ function cmdPlan(args) {
     branches: config.branches,
     releaseCredentialName: config.release?.releaseCredential ?? null,
   });
-  const templateSource = readFileSync(TEMPLATE_PATH, 'utf8');
+  const templateSources = buildTemplateSources(config);
   let plan;
   try {
-    plan = computePlan(repoState, config, templateSource);
+    plan = computePlan(repoState, config, templateSources);
   } catch (e) {
     return fail(`plan: ${e.message}`);
   }
@@ -149,10 +159,10 @@ function cmdApply(args) {
     branches: config.branches,
     releaseCredentialName: config.release?.releaseCredential ?? null,
   });
-  const templateSource = readFileSync(TEMPLATE_PATH, 'utf8');
+  const templateSources = buildTemplateSources(config);
   let plan;
   try {
-    plan = computePlan(repoState, config, templateSource);
+    plan = computePlan(repoState, config, templateSources);
   } catch (e) {
     return fail(`apply: ${e.message}`);
   }

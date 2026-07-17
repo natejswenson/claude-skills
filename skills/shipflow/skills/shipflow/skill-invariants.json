@@ -80,6 +80,11 @@
       "id": "npx-must-pin-latest",
       "pattern": "always with the explicit\\s+`@latest` tag, never bare",
       "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest."
+    },
+    {
+      "id": "ambiguous-pattern-no-silent-pick",
+      "pattern": "present all 3 (templates|patterns).{0,60}ask the user to choose",
+      "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]

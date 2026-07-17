@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnArgs, ghApiJson } from './gh.mjs';
+import { resolvePattern } from './pattern-registry.mjs';
 
 // applyPlan(plan, opts): opts extends the schematic { dryRun, currentStateHash,
 // force } from the design contract with the execution context (ownerRepo,
@@ -27,6 +28,22 @@ export function classifyRulesetError(stderr) {
     };
   }
   return { tierGated: false, reason: null };
+}
+
+// Pure — no I/O, no gh calls. Exported so it's directly unit-testable without
+// mocking the network layer, matching this file's existing classifyRulesetError
+// pattern. protectedBranchList must come from a FRESH call to the resolved
+// pattern's protectedBranches(config) — never from a stored config field — so
+// this function intentionally takes a plain string array, not a config object,
+// making "read a stale stored value" structurally impossible to do by accident.
+export function buildDeletionRulesetBody(protectedBranchList) {
+  return {
+    name: 'shipflow-branch-deletion-protection',
+    target: 'branch',
+    enforcement: 'active',
+    conditions: { ref_name: { include: protectedBranchList.map((b) => `refs/heads/${b}`), exclude: [] } },
+    rules: [{ type: 'deletion' }],
+  };
 }
 
 export function applyPlan(plan, opts) {
@@ -114,15 +131,8 @@ function applyOne(entry, { ownerRepo, repoPath, config }) {
   }
 
   if (entry.id === 'deletion-ruleset') {
-    const body = JSON.stringify({
-      name: 'shipflow-branch-deletion-protection',
-      target: 'branch',
-      enforcement: 'active',
-      conditions: {
-        ref_name: { include: [`refs/heads/${config.branches.dev}`, `refs/heads/${config.branches.main}`], exclude: [] },
-      },
-      rules: [{ type: 'deletion' }],
-    });
+    const protectedBranchList = resolvePattern(config).protectedBranches(config);
+    const body = JSON.stringify(buildDeletionRulesetBody(protectedBranchList));
     const r = spawnArgs('gh', ['api', `repos/${ownerRepo}/rulesets`, '-X', 'POST', '--input', '-'], { input: body });
     if (r.status === 0) return { ok: true };
     const { tierGated, reason } = classifyRulesetError(r.stderr);

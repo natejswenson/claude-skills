@@ -1,0 +1,54 @@
+name: merge {{MAIN_BRANCH}} back to {{DEV_BRANCH}} after a release
+
+# Rendered by shipflow's apply.mjs. See dev-to-main-automerge.yml.tmpl's header
+# comment for the general hand-edit/renderedTemplateHashes discipline — same rules
+# apply here.
+#
+# GitFlow's release branches merge into BOTH main and develop — this is the
+# defining semantic of a release, not an optional convention (confirmed via
+# research: git-flow CLI's own `release finish` command does both merges
+# atomically, mirroring hotfix finish). This job runs the develop-side merge
+# automatically once the main-side merge (release-automerge.yml) lands.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [{{MAIN_BRANCH}}]
+
+permissions:
+  contents: write
+
+jobs:
+  merge-back-to-dev:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, '{{RELEASE_BRANCH_PREFIX}}')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}
+      - name: Attempt a clean merge of {{MAIN_BRANCH}} into {{DEV_BRANCH}}
+        id: merge
+        continue-on-error: true
+        run: |
+          git config user.name "shipflow"
+          git config user.email "shipflow@users.noreply.github.com"
+          git checkout {{DEV_BRANCH}}
+          git merge origin/{{MAIN_BRANCH}} --no-edit
+          git push origin {{DEV_BRANCH}}
+        env:
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}
+      - name: On any failure (conflict, rejected push, or otherwise), open a PR for manual resolution
+        if: steps.merge.outcome == 'failure'
+        run: |
+          git merge --abort || true
+          BRANCH="shipflow/merge-back-{{MAIN_BRANCH}}-to-{{DEV_BRANCH}}-${{ github.run_id }}"
+          git checkout -b "$BRANCH" origin/{{MAIN_BRANCH}}
+          git push origin "$BRANCH"
+          gh pr create --base {{DEV_BRANCH}} --head "$BRANCH" \
+            --title "Manual merge-back needed: {{MAIN_BRANCH}} -> {{DEV_BRANCH}}" \
+            --body "Automatic merge-back failed (conflict or rejected push) after a hotfix/release merged to {{MAIN_BRANCH}}. Resolve and merge this PR manually."
+        env:
+          GH_TOKEN: ${{ secrets.{{RELEASE_CREDENTIAL_SECRET}} }}
