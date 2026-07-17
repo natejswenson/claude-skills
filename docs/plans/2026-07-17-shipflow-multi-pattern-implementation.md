@@ -672,7 +672,10 @@ test('computePlan returns Plan.protectedBranches computed from the resolved patt
     mergeMethod: { devToMainMethod: 'merge' }, release: {}, branchCleanup: {}, protectionOwner: 'external' };
   const repoState = { stateHash: 'x', templateFiles: {}, repoSettings: {}, rulesets: [], protection: {},
     releasePendingLabelExists: true };
-  const plan = computePlan(repoState, config, {});
+  // dev-main-promotion's one template entry is keyed 'dev-to-main-automerge' — computePlan
+  // throws on a missing templateSources key (Step 3 below), so this map can't be empty even
+  // though this test only cares about the protectedBranches field, not the template output.
+  const plan = computePlan(repoState, config, { 'dev-to-main-automerge': 'name: {{DEV_BRANCH}}' });
   assert.deepStrictEqual(plan.protectedBranches, ['develop', 'main']);
 });
 ```
@@ -935,13 +938,52 @@ git commit -m "refactor(shipflow): apply.mjs computes protectedBranches fresh fr
 
 Add to `tests/detect.test.mjs`:
 
-Reuse `tests/detect.test.mjs`'s existing `withTempRepo(fn)` helper (it builds a throwaway git repo
-in a temp dir and passes its path to `fn`) — every test below is written as a callback passed to
-that helper, matching the file's established style:
+The existing `withTempRepo(fn)` helper does NOT `git init` — it only `mkdtempSync`s a throwaway
+directory. That's sufficient for the file's existing tests because they all call low-level
+functions directly with an explicit tracked-files array (`listWorkflowJobNames(dir, ['...'])`,
+`findSettingsAsCodeArtifact(dir, ['...'])`) rather than going through `detectRepoState`, so none
+of them ever shell out to `git`. The tests below call `detectRepoState(dir, ...)` directly, which
+internally runs `git ls-files`, `git tag --merged`, and `git remote` — none of which work (or
+worse, silently return empty/false rather than crashing, since `lib/gh.mjs`'s `git()` wrapper never
+throws on a non-zero exit) against a directory with no `.git` at all. Add a second helper,
+`withTempGitRepo(fn)`, that actually initializes a repo with one commit so these calls have
+something real to operate on:
+
+```js
+function withTempGitRepo(fn) {
+  withTempRepo((dir) => {
+    // -b main pins the initial branch name explicitly rather than relying on the
+    // ambient init.defaultBranch config (which varies by machine/CI image) — every
+    // test below asserts against config.branches.main === 'main', so the repo's
+    // actual default branch must match that literally, not "whatever this git
+    // install happens to default to".
+    spawnSync('git', ['init', '--quiet', '-b', 'main'], { cwd: dir });
+    spawnSync('git', ['config', 'user.email', 'test@example.invalid'], { cwd: dir });
+    spawnSync('git', ['config', 'user.name', 'Shipflow Test'], { cwd: dir });
+    // git tag/tag --merged both require at least one commit to exist (there is no
+    // valid HEAD to tag or compare against in a brand-new repo) — a placeholder
+    // commit gives every test below a real commit to build on.
+    writeFileSync(join(dir, 'README.md'), '# fixture repo\n');
+    spawnSync('git', ['add', 'README.md'], { cwd: dir });
+    spawnSync('git', ['commit', '--quiet', '-m', 'init'], { cwd: dir });
+    fn(dir);
+  });
+}
+```
+
+`git ls-files` (what `listTrackedFiles` shells out to) only reflects the **index** — files that
+have been `git add`ed, not merely written to disk. Any test below that writes new fixture files
+AND expects `detectRepoState` to see them via tracked-file scanning (the two job-block tests) must
+`git add` those files before calling `detectRepoState`; a test that only needs the repo to exist
+(e.g. to make `git tag`/`git remote` succeed) does not.
+
+Every test below is written as a callback passed to `withTempGitRepo`, not the plain
+`withTempRepo` (`withTempRepo` stays as-is for the file's pre-existing tests — do not change
+those):
 
 ```js
 test('detectRepoState templateFiles covers every pattern\'s templateTargetPaths, not one hardcoded key', () => {
-  withTempRepo((dir) => {
+  withTempGitRepo((dir) => {
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
     const expectedKeys = listPatterns().flatMap((p) => p.templateTargetPaths);
     assert.deepStrictEqual(Object.keys(repoState.templateFiles).sort(), expectedKeys.sort());
@@ -949,7 +991,7 @@ test('detectRepoState templateFiles covers every pattern\'s templateTargetPaths,
 });
 
 test('detectRepoState reports hasTagsFromMain', () => {
-  withTempRepo((dir) => {
+  withTempGitRepo((dir) => {
     git(['tag', 'v0.1.0'], { cwd: dir });
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
     assert.strictEqual(repoState.hasTagsFromMain, true);
@@ -957,6 +999,11 @@ test('detectRepoState reports hasTagsFromMain', () => {
 });
 
 test('detectRepoState reports hasGitflowMarker via a .gitflow file', () => {
+  // Plain withTempRepo is fine here — hasGitflowMarker is a pure existsSync check
+  // (or a git-config read that fails closed to false), not tracked-file-list-backed,
+  // so this test never needed a real repo. Left as withTempRepo deliberately, to
+  // keep the "which helper does this test actually need" reasoning explicit rather
+  // than defaulting every test to the heavier fixture.
   withTempRepo((dir) => {
     writeFileSync(join(dir, '.gitflow'), '[gitflow "branch"]\n\tmaster = main\n\tdevelop = develop\n');
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
@@ -965,7 +1012,7 @@ test('detectRepoState reports hasGitflowMarker via a .gitflow file', () => {
 });
 
 test('detectRepoState scans a workflow\'s own job block, never a different job\'s head.ref == condition', () => {
-  withTempRepo((dir) => {
+  withTempGitRepo((dir) => {
     mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
     // Job A: gh pr merge --auto guarded by its own head.ref == 'dev'. Job B: an
     // unrelated job that also happens to contain a head.ref == check, for a
@@ -984,6 +1031,9 @@ jobs:
     steps:
       - run: echo hi
 `);
+    // detectRepoState finds workflow files via git ls-files (listTrackedFiles) —
+    // they must be staged, not just written to disk, or the scanner never sees them.
+    spawnSync('git', ['add', '-A'], { cwd: dir });
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
     assert.strictEqual(repoState.hasRestrictedPromotionWorkflow, true);
     assert.strictEqual(repoState.hasUnrestrictedAutomergeWorkflow, false);
@@ -991,7 +1041,7 @@ jobs:
 });
 
 test('detectRepoState does NOT misattribute an unrelated job\'s head.ref == to an unrestricted auto-merge job in the same file', () => {
-  withTempRepo((dir) => {
+  withTempGitRepo((dir) => {
     mkdirSync(join(dir, '.github', 'workflows'), { recursive: true });
     // Job A: gh pr merge --auto with NO head.ref guard of its own (unrestricted).
     // Job B: unrelated, has a head.ref == check for something else entirely. If the
@@ -1011,6 +1061,7 @@ jobs:
     steps:
       - run: echo hi
 `);
+    spawnSync('git', ['add', '-A'], { cwd: dir });
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
     assert.strictEqual(repoState.hasUnrestrictedAutomergeWorkflow, true);
     assert.strictEqual(repoState.hasRestrictedPromotionWorkflow, false);
@@ -1018,7 +1069,7 @@ jobs:
 });
 
 test('detectRepoState reports configuredRemotes for pattern-registry.mjs\'s branch normalization', () => {
-  withTempRepo((dir) => {
+  withTempGitRepo((dir) => {
     git(['remote', 'add', 'origin', 'https://example.invalid/x/y.git'], { cwd: dir });
     const repoState = detectRepoState(dir, { branches: { main: 'main', dev: 'dev' } });
     assert.deepStrictEqual(repoState.configuredRemotes, ['origin']);
@@ -1026,9 +1077,10 @@ test('detectRepoState reports configuredRemotes for pattern-registry.mjs\'s bran
 });
 ```
 
-Import `mkdirSync`, `writeFileSync` from `node:fs` and `join` from `node:path` at the top of the
-test file if not already imported; import `listPatterns` from `../lib/pattern-registry.mjs` and
-`git` from `../lib/gh.mjs` alongside the existing imports.
+`spawnSync` is already imported in this file (it backs the existing `withGitRemote` helper) — no
+new import needed for it. Import `mkdirSync`, `writeFileSync` from `node:fs` and `join` from
+`node:path` at the top of the test file if not already imported; import `listPatterns` from
+`../lib/pattern-registry.mjs` and `git` from `../lib/gh.mjs` alongside the existing imports.
 
 **Step 2: Run to verify failure**
 
@@ -1166,7 +1218,13 @@ Remove the now-unused `TEMPLATE_PATH` constant.
 This is the actual autodetection surface `SKILL.md`'s first-run interview (Task 13) reads from —
 no other task implements it, so it belongs here, alongside the other `bin/shipflow.js` changes.
 `cmdDetect` currently prints `{ ...repoState, protectionOwnerClassification }`. Add a ranked-pattern
-field, computed unconditionally (it's cheap — pure scoring over already-collected `repoState`):
+field, computed unconditionally (it's cheap — pure scoring over already-collected `repoState`).
+
+Computing it unconditionally here does not conflict with the contract's INV-MP-4 ("detection only
+runs when existingConfig is null"): that invariant constrains the SKILL.md setup-wizard's own
+control flow (its re-run/audit branch must never invoke autodetection), not this CLI subcommand.
+`cmdDetect` is a standalone, always-invocable diagnostic primitive — same category as `cmdPlan` —
+and the wizard's re-run branch simply never calls it. See the contract's amended INV-MP-4 wording.
 
 ```js
 function cmdDetect(args) {
@@ -1739,3 +1797,16 @@ nearby code in the tasks above, but don't block the plan on them:
     fine).
 14–15. (Two additional wording nits from round 3/4 already folded into the design doc's final
     text during the quality-gate fix rounds — no further action.)
+
+The following 2 items were logged during this **implementation plan's own** quality-gate round 2
+(as distinct from the 15 above, which came from the design's gate):
+
+16. Task 8's "check its existing scope first" hedge for whether `tests/cli-apply-guards.test.mjs`
+    or a new `tests/cli-detect.test.mjs` is the right home for the new `rankedPatterns` test —
+    left as an implementer judgment call deliberately; either file location is correct, this is a
+    style/organization choice with no behavioral stakes.
+17. Task 3's shipped code comments referencing ephemeral plan task numbers (e.g. `// real logic
+    lands in Task 9`) will read oddly once this plan is archived post-merge — low-value to scrub
+    now since Tasks 4/9/11 land within the same feature branch shortly after Task 3, at which
+    point the comments become accurate history rather than a forward reference. If Task 9/11 end
+    up landing much later or differently shaped, update or remove these comments then.
