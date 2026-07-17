@@ -2,6 +2,42 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.9.0 (2026-07-17) — cover images: icon catalog + geometry-enforced hero zone
+
+**Added**
+- `image-style/icons.md`: a 20-icon catalog (agents/LLM, testing, CI/CD, git,
+  accessibility, debugging, CLI, config, deploy, database, API, search, auth,
+  monitoring, cover/image tooling, performance, parsing, caching, UI, networking) —
+  real inline SVG, stroke-only, for the optional kicker-area accent glyph only. Never
+  the hero illustration itself. Installed by `devlog init` alongside the existing
+  style guide/font.
+- A fixed hero-zone bounding box (`x:150 y:425 width:1300 height:400`) and 25px
+  coordinate grid, documented in `image-style/style-guide.example.md`, with two named
+  composition slots: single centered hero, and two-node before/after.
+- `lib/render_cover.mjs` now mechanically enforces the hero zone via a new
+  `checkHeroZoneOverlap()` check, run immediately before the screenshot: throws if
+  `#hero-zone` is missing, duplicated, positioned/sized outside a 2px tolerance of the
+  fixed box, or if any catalog icon's rendered rect overlaps it. This replaces a
+  prose-only safeguard (a regex checking one sentence still exists in `SKILL.md`) with
+  a real pixel-geometry check against actual rendered layout — a sibling investigation
+  found the prose-only check could never catch an agent composing two catalog icons
+  connected by a line and calling that the hero. `renderCoverImage()`'s documented
+  throw contract widens from three failure modes to four accordingly.
+- `devlog backfill-covers list` gains an `--all` flag: lists every manifest entry
+  regardless of cover status (the default stays missing-cover-only). Needed because
+  the ~51 real entries in a typical `daily-dev-log` already have covers from a prior
+  batch — without `--all`, there is nothing to iterate over for a cover-quality
+  backfill.
+- `cover-context`'s underlying `loadStyleGuide()` now also returns the icon catalog
+  content (`iconCatalog`, `null` if `icons.md` isn't installed) alongside the style
+  guide text — no new CLI flag, just a widened response.
+
+**Changed**
+- `skill-invariants.json` gains a `code` array (alongside the existing `prose` array)
+  for guardrails checked against arbitrary source files, not just `SKILL.md` — first
+  entry: `cover-catalog-hero-overlap-guard`, asserting the new geometry check stays
+  wired into `render_cover.mjs`.
+
 ## 0.8.1 (2026-07-16) — cover images: illustration over typography
 
 **Changed**
