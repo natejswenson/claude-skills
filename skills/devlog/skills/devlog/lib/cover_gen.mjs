@@ -7,19 +7,32 @@ import { CONFIG_DIR } from './core.mjs';
 
 const IMAGE_STYLE_DIR = join(CONFIG_DIR, 'image-style');
 const STYLE_GUIDE_PATH = join(IMAGE_STYLE_DIR, 'style-guide.md');
+const ICON_CATALOG_PATH = join(IMAGE_STYLE_DIR, 'icons.md');
 
 function slugFromFile(file) {
   return String(file || '').replace(/\.md$/, '');
 }
 
-// Pure. Reads the installed style guide. There is no graceful degradation here — Claude
-// has nothing to compose from without it; callers (devlog cover-context) catch the throw
-// and surface it as a distinct error, never blocking the rest of publish.
-export function loadStyleGuide() {
-  if (!existsSync(STYLE_GUIDE_PATH)) {
-    throw new Error(`Cover style guide not found at ${STYLE_GUIDE_PATH} — run \`devlog init\` to install it.`);
+// Pure, given explicit paths — exported separately so tests can exercise the
+// missing-icons.md degradation deterministically against a temp directory, without
+// touching this machine's real installed state at CONFIG_DIR.
+export function resolveStyleGuideAndCatalog(styleGuidePath, iconCatalogPath) {
+  if (!existsSync(styleGuidePath)) {
+    throw new Error(`Cover style guide not found at ${styleGuidePath} — run \`devlog init\` to install it.`);
   }
-  return readFileSync(STYLE_GUIDE_PATH, 'utf8');
+  const text = readFileSync(styleGuidePath, 'utf8');
+  const iconCatalog = existsSync(iconCatalogPath) ? readFileSync(iconCatalogPath, 'utf8') : null;
+  return { text, iconCatalog };
+}
+
+// Reads the installed style guide (no graceful degradation — Claude has nothing to
+// compose from without it; callers (devlog cover-context) catch the throw and surface it
+// as a distinct error, never blocking the rest of publish) plus the installed icon catalog
+// (graceful degradation here: iconCatalog: null when icons.md isn't installed, mirroring
+// the missing-style-guide handling pattern, just one level down — composition proceeds
+// without a catalog rather than blocking).
+export function loadStyleGuide() {
+  return resolveStyleGuideAndCatalog(STYLE_GUIDE_PATH, ICON_CATALOG_PATH);
 }
 
 // Read one project's manifest.json out of an already-established clone.

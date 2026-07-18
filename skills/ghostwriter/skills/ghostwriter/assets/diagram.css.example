@@ -1,3 +1,4 @@
+/* diagram.css vNEXT — sync ~/.claude/ghostwriter/assets/diagram.css from this file */
 /* Image brand style guide (TEMPLATE).
  *
  * Copy this to assets/diagram.css and make it yours — palette, fonts, and the
@@ -84,6 +85,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
+  /* one line only — backstop truncation; the lint FAILs a wrapped eyebrow, shorten the copy */
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .card h1 {
   font: 800 84px/1.04 var(--font);
@@ -225,7 +228,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   letter-spacing: -0.04em; color: var(--ink);
   max-width: 100%; text-wrap: balance;
 }
-.card.date .date-sub { font: 500 38px/1.3 var(--font); color: var(--ink); opacity: 0.82; }
+.card.date .date-sub { font: 500 38px/1.3 var(--font); color: var(--ink); opacity: 0.82; text-wrap: balance; }
 /* Byline stamped along the bottom, centered like the deco rule above it. */
 .card.date .inner .footer {
   position: static; left: auto; bottom: auto; justify-content: center;
@@ -287,7 +290,10 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card .step .val {
   font: 800 44px/1 var(--font); letter-spacing: -0.02em; color: var(--text);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;   /* a value must never wrap over its neighbour */
 }
+/* long values (>7 chars): add class="val long" — smaller so neighbours can't collide */
+.card .step .val.long { font-size: 32px; }
 .card .step .bar {
   width: 200px; border-radius: 14px 14px 0 0;
   background: linear-gradient(180deg, var(--surface-2), var(--surface));
@@ -310,6 +316,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card .dates span {
   width: 200px; text-align: center;
   font: 600 24px/1 var(--mono); color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
+  text-wrap: balance;   /* a wrapped date splits into two even lines, not a widow */
 }
 .card.ramp .kicker { margin-top: 44px; font: 500 38px/1.4 var(--font); color: var(--muted); text-wrap: balance; }
 .card.ramp .kicker b { color: var(--text); font-weight: 700; }
@@ -558,9 +565,11 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   display: flex; flex-direction: column;
   font: 500 33px/1.7 var(--mono); color: var(--text);
 }
-.card.code .line { display: flex; align-items: baseline; gap: 30px; padding: 0 44px; }
+.card.code .line { display: flex; align-items: baseline; gap: 30px; padding: 0 44px; min-width: 0; }
 .card.code .line .no { flex: none; width: 1.6em; text-align: right; color: var(--muted); opacity: 0.45; user-select: none; }
-.card.code .line .src { white-space: pre; }
+/* overlong lines degrade VISIBLY with an ellipsis (works with white-space: pre) instead of a
+   silent right-edge amputation that reads as broken syntax; keep lines <=~42 chars */
+.card.code .line .src { white-space: pre; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* the single focal line — a faint accent band with an inset rail, full-bleed to the edges */
 .card.code .line.hot { background: rgba(88,166,255,0.10); box-shadow: inset 4px 0 0 var(--accent); }
 
@@ -664,6 +673,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 /* lead: a supporting paragraph under the headline; wrap key phrases in <strong>. */
 .card.light .lead {
   font: 400 31px/1.42 var(--font); color: var(--ink-2); margin: 0; max-width: 44ch;
+  overflow-wrap: anywhere; text-wrap: pretty;
 }
 .card.light .lead strong { color: var(--ink); font-weight: 700; }
 
@@ -680,13 +690,13 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 
 /* concept: a before/after (or A | B) node row inside a panel. Each .node holds a
    .glyph icon chip, a .ntitle, and a .ncap; a .to draws a divider between them. */
-.card.light .concept { display: flex; align-items: center; gap: 34px; }
-.card.light .concept .node { display: flex; flex-direction: column; align-items: center; gap: 16px; flex: 1; }
+.card.light .concept { display: flex; align-items: stretch; gap: 34px; }
+.card.light .concept .node { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 16px; flex: 1; }
 .card.light .concept .glyph { width: 84px; height: 84px; border-radius: 22px; display: flex; align-items: center; justify-content: center; }
 .card.light .concept .glyph svg { width: 44px; height: 44px; }
-.card.light .concept .ntitle { font: 700 30px/1 var(--font); color: var(--ink); }
+.card.light .concept .ntitle { font: 700 30px/1.15 var(--font); color: var(--ink); text-align: center; text-wrap: balance; }
 .card.light .concept .ncap { font: 400 24px/1.3 var(--font); color: var(--muted); text-align: center; }
-.card.light .concept .to { flex: none; width: 1px; height: 96px; background: var(--border); }
+.card.light .concept .to { flex: none; align-self: center; width: 1px; height: 96px; background: var(--border); }
 
 /* band: a dark callout strip for the one-line thesis. <em> highlights a word;
    .dots holds up to four accent dots on the right. */
@@ -694,7 +704,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   background: var(--band); border-radius: 18px; padding: 30px 36px;
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
-.card.light .band .btext { color: #fff; font: 600 34px/1.2 var(--font); letter-spacing: -.01em; }
+.card.light .band .btext { color: #fff; font: 600 34px/1.2 var(--font); letter-spacing: -.01em; text-wrap: balance; }
 .card.light .band .btext em { font-style: normal; color: #6FE39A; }
 .card.light .band .dots { display: flex; gap: 14px; flex: none; }
 .card.light .band .dots span { width: 22px; height: 22px; border-radius: 50%; }
@@ -710,7 +720,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 /* caption: an anchored footer line with a leading accent dot, ruled off the top. */
 .card.light .caption {
   margin-top: auto; border-top: 1px solid var(--border); padding-top: 26px;
-  text-align: center; font: 600 26px/1 var(--font); color: var(--ink-2);
+  text-align: center; font: 600 26px/1.25 var(--font); color: var(--ink-2);
+  text-wrap: balance;
 }
 .card.light .caption .d { color: var(--accent-2); }
 
@@ -722,6 +733,14 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 }
 .card.brief .eyebrow { color: var(--accent-2); }       /* green eyebrow */
 .card.brief h1 { font-size: 70px; color: var(--ink); } /* restrained headline */
+/* slack distributes EVENLY between blocks (no pooled void above the caption) */
+#canvas.card.brief.light { justify-content: space-between; }
+.card.brief.light .caption { margin-top: 0; }
+/* one family, one green: every light card's eyebrow takes the secondary accent */
+.card.flow.light .eyebrow, .card.matrix.light .eyebrow, .card.ramp.light .eyebrow,
+.card.stem.light .eyebrow, .card.date.light .eyebrow, .card.code.light .eyebrow {
+  color: var(--accent-2);
+}
 
 /* ---- flow card (light): an ordered pipeline of stage chips threaded on a spine,
    each chip carrying a topic icon. Class: `card flow light`. Keeps the auto-numbered
@@ -730,7 +749,17 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 /* portrait 4:5 + the brief's rhythm: top-aligned header, a filled body, footer caption */
 #canvas.card.flow.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
 .card.flow.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
-.card.flow.light .flow { flex: 1 1 auto; margin: 0; justify-content: space-between; gap: 22px; }
+/* hug the stages and center the block (no stretched gaps when content is short) */
+.card.flow.light .flow { flex: 0 1 auto; margin: auto 0; justify-content: center; gap: 40px; }
+/* caption anchors flush to the bottom; the flow's own auto margins split the slack
+   evenly (with margin-top:auto the caption would grab a second share and skew 1:2) */
+.card.flow.light .caption { margin-top: 0; }
+/* count-adaptive (automatic): 3 stages scale up to own the frame; 5 compress to fit */
+.card.flow.light .flow:has(> .fnode:nth-child(3):last-child) .fnode { padding: 40px 44px; }
+.card.flow.light .flow:has(> .fnode:nth-child(3):last-child) .fnode .t { font-size: 42px; }
+.card.flow.light .flow:has(> .fnode:nth-child(3):last-child) .fnode .fic { width: 80px; height: 80px; }
+.card.flow.light .flow:has(> .fnode:nth-child(5)) { gap: 16px; }
+.card.flow.light .flow:has(> .fnode:nth-child(5)) .fnode { padding: 18px 26px; }
 .card.flow.light .fnode {
   flex-direction: row; align-items: center; gap: 24px;
   border-radius: 16px; padding: 26px 32px;
@@ -751,13 +780,14 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.howto.light .eyebrow { color: var(--accent-2); }            /* green eyebrow, like brief/flow */
 .card.howto.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; letter-spacing: -0.02em; }
 
-/* steps: fills the body under the header; reserves a left gutter for the badges; seeds
+/* steps: hugs its content and centers in the body (so the ::before spine spans only the
+   steps — no bare rail above/below); reserves a left gutter for the badges; seeds
    the step counter; hosts the spine. */
 .card.howto.light .steps {
   position: relative; counter-reset: step;
   display: flex; flex-direction: column; align-items: stretch;
-  flex: 1 1 auto; width: 100%; gap: 26px; margin: 0; padding-left: 80px;
-  justify-content: center;   /* cluster the steps and center them so 3–5 steps stay balanced */
+  flex: 0 1 auto; width: 100%; gap: 26px; margin: auto 0; padding-left: 80px;
+  justify-content: center;
 }
 .card.howto.light .steps::before {
   content: ""; position: absolute; left: 28px; top: 6px; bottom: 6px; width: 2px; border-radius: 2px;
@@ -795,8 +825,19 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.howto.light .step .cmd {
   align-self: flex-start; font: 600 22px/1.3 var(--mono); color: var(--ink-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-  padding: 8px 14px; letter-spacing: -0.01em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 8px 14px; letter-spacing: -0.01em; max-width: 100%;
+  /* a two-line command is saveable; an ellipsized one is dead weight (lint warns at 2 lines) */
+  white-space: normal; overflow-wrap: anywhere;
 }
+/* count-adaptive (automatic): 3 steps scale up to own the frame; 5 compress to fit */
+.card.howto.light .steps:has(> .step:nth-child(3):last-child) { gap: 34px; }
+.card.howto.light .steps:has(> .step:nth-child(3):last-child) .step { padding: 32px 34px; }
+.card.howto.light .steps:has(> .step:nth-child(3):last-child) .step .t { font-size: 40px; }
+.card.howto.light .steps:has(> .step:nth-child(3):last-child) .step .e { font-size: 27px; }
+.card.howto.light .steps:has(> .step:nth-child(3):last-child) .step .sic { width: 76px; height: 76px; }
+.card.howto.light .steps:has(> .step:nth-child(5)) { gap: 18px; }
+.card.howto.light .steps:has(> .step:nth-child(5)) .step { padding: 18px 26px; }
+.card.howto.light .steps:has(> .step:nth-child(5)) .step .t { font-size: 31px; }
 
 /* ---- HOW-TO family, variant: GRID — the same numbered how-to as a 2×2 tile grid.
    Reach for it with exactly 4 steps when a compact, symmetric block reads better than a
@@ -805,11 +846,14 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.howto-grid.light .eyebrow { color: var(--accent-2); }
 .card.howto-grid.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; letter-spacing: -0.02em; }
 .card.howto-grid.light .gsteps {
-  flex: 1 1 auto; width: 100%; display: grid; grid-template-columns: 1fr 1fr;
+  /* minmax(0,1fr) so a long unbreakable token can never blow a column past the frame */
+  flex: 1 1 auto; width: 100%; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap: 24px; align-content: center; counter-reset: step;
 }
+/* 3 tiles (automatic): the last tile spans the full row — no lopsided hole */
+.card.howto-grid.light .gsteps:has(> .gstep:nth-child(3):last-child) .gstep:last-child { grid-column: 1 / -1; }
 .card.howto-grid.light .gstep {
-  counter-increment: step;
+  counter-increment: step; min-width: 0;
   background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
   padding: 32px 34px; display: flex; flex-direction: column; gap: 18px;
   box-shadow: 0 14px 32px -26px rgba(16,20,28,.34);
@@ -828,7 +872,8 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.howto-grid.light .gstep .cmd {
   align-self: flex-start; font: 600 21px/1.3 var(--mono); color: var(--ink-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-  padding: 7px 13px; letter-spacing: -0.01em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 7px 13px; letter-spacing: -0.01em; max-width: 100%;
+  white-space: normal; overflow-wrap: anywhere;   /* wrap, never ellipsize, a command */
 }
 
 /* ---- HOW-TO family, variant: CHECKLIST — a saveable "do these" checklist on one panel,
@@ -838,11 +883,21 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 #canvas.card.howto-check.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
 .card.howto-check.light .eyebrow { color: var(--accent-2); }
 .card.howto-check.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; letter-spacing: -0.02em; }
+/* caption flush bottom — the checklist's auto margins alone center the panel evenly */
+.card.howto-check.light .caption { margin-top: 0; }
 .card.howto-check.light .checklist {
-  flex: 1 1 auto; width: 100%; display: flex; flex-direction: column; justify-content: center;
+  /* the white panel hugs its rows and centers (no tall empty panel around sparse content) */
+  flex: 0 1 auto; margin: auto 0; width: 100%; display: flex; flex-direction: column; justify-content: center;
   background: var(--surface); border: 1px solid var(--border); border-radius: 26px;
   padding: 14px 44px; box-shadow: 0 18px 40px -28px rgba(16,20,28,.28);
 }
+/* count-adaptive (automatic): 3 rows scale up; 6 rows compress to fit */
+.card.howto-check.light .checklist:has(> .check:nth-child(3):last-child) .check { padding: 44px 0; }
+.card.howto-check.light .checklist:has(> .check:nth-child(3):last-child) .check .ck { width: 70px; height: 70px; }
+.card.howto-check.light .checklist:has(> .check:nth-child(3):last-child) .check .ct { font-size: 42px; }
+.card.howto-check.light .checklist:has(> .check:nth-child(3):last-child) .check .ce { font-size: 28px; }
+.card.howto-check.light .checklist:has(> .check:nth-child(6)) .check { padding: 20px 0; }
+.card.howto-check.light .checklist:has(> .check:nth-child(6)) .check .ct { font-size: 32px; }
 .card.howto-check.light .check { display: flex; align-items: center; gap: 28px; padding: 30px 0; }
 .card.howto-check.light .check + .check { border-top: 1px solid var(--border); }
 .card.howto-check.light .check .ck { flex: none; width: 58px; height: 58px; border-radius: 50%; background: #EAF7EF; display: flex; align-items: center; justify-content: center; }
@@ -854,7 +909,7 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   align-self: flex-start; font: 600 21px/1.3 var(--mono); color: var(--ink-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
   padding: 7px 13px; letter-spacing: -0.01em; margin-top: 4px;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%; white-space: normal; overflow-wrap: anywhere;   /* wrap, never ellipsize */
 }
 
 /* ---- HOW-TO family, variant: STACK — an editorial big-number list, each step a full-width
@@ -879,8 +934,24 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   align-self: flex-start; font: 600 22px/1.3 var(--mono); color: var(--ink-2);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
   padding: 8px 14px; letter-spacing: -0.01em; margin-top: 4px;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%; white-space: normal; overflow-wrap: anywhere;   /* wrap, never ellipsize */
 }
+
+/* 3-step scale-up — AUTOMATIC when the stack has exactly three rows (the base sizes are
+   tuned for four): the rows scale up to fill the hero zone instead of floating in
+   whitespace. `class="stack n3"` still works as a manual alias. */
+.card.howto-stack.light .stack.n3,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) { justify-content: space-evenly; }
+.card.howto-stack.light .stack.n3 .sstep,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) .sstep { padding: 46px 4px; gap: 42px; }
+.card.howto-stack.light .stack.n3 .sstep::before,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) .sstep::before { font-size: 112px; width: 156px; }
+.card.howto-stack.light .stack.n3 .st,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) .st { font-size: 48px; }
+.card.howto-stack.light .stack.n3 .se,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) .se { font-size: 29px; line-height: 1.42; }
+.card.howto-stack.light .stack.n3 .cmd,
+.card.howto-stack.light .stack:has(> .sstep:nth-child(3):last-child) .cmd { font-size: 26px; padding: 10px 16px; }
 
 /* ---- matrix card (light): an N-column comparison on one elevated panel. The
    column-accent classes (.green/.grey/.pink) still colour the headers; only the
@@ -888,11 +959,20 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 #canvas.card.matrix.light { height: 1500px; padding: 78px 80px 70px; gap: 30px; justify-content: flex-start; }
 .card.matrix.light h1 { color: var(--ink); font-size: 70px; line-height: 1.05; margin: 2px 0 0; }
 .card.matrix.light .grid {
-  flex: 1 1 auto; align-content: space-between; margin: 0;
+  flex: 1 1 auto; align-content: center; margin: 0;
   grid-template-columns: 1.15fr 1fr 1fr 1fr;
   column-gap: 16px; row-gap: 18px;
   padding: 10px 0;
 }
+/* SET the column template to match the option count — the default above is 3 options
+   (label gutter + 3). 2 options: class="grid cols2"; 4 options: class="grid cols4". */
+.card.matrix.light .grid.cols2 { grid-template-columns: 1.15fr 1fr 1fr; }
+.card.matrix.light .grid.cols4 { grid-template-columns: 1.15fr 1fr 1fr 1fr 1fr; }
+/* dense: 6–7 value rows — tighter rows so the grid stays inside the frame
+   (real budget is <=5 rows; dense also demands a 2-line max headline) */
+.card.matrix.light .grid.dense { row-gap: 12px; }
+.card.matrix.light .grid.dense .v, .card.matrix.light .grid.dense .vt { min-height: 84px; }
+.card.matrix.light .grid.dense .vt { font-size: 27px; }
 /* column headers as solid colour pills (strong column identity) */
 .card.matrix.light .col-h {
   align-self: stretch; display: flex; align-items: center; justify-content: center;
@@ -970,35 +1050,47 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.stem.light .block.b2 { background: #22C55E; }   /* green  */
 .card.stem.light .block.b3 { background: #EC4899; }   /* pink   */
 .card.stem.light .block.b4 { background: #F5B82E; }   /* yellow */
-/* topic graphic — the post's real diagram; fills the card under the motif + header */
-.card.stem.light .topic { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 22px; }
+/* topic graphic — the post's real diagram; fills the card under the motif + header.
+   Centered with an even gap so sparse content clusters instead of pinning to the edges. */
+.card.stem.light .topic { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 34px; }
+/* sparse scale-up (automatic): a lone panel grows into the hero zone */
+.card.stem.light .topic:has(> .panel:only-child) .panel { padding: 56px 60px; }
+.card.stem.light .topic:has(> .panel:only-child) .ntitle { font-size: 40px; }
+.card.stem.light .topic:has(> .panel:only-child) .ncap { font-size: 30px; }
+.card.stem.light .topic:has(> .panel:only-child) .glyph { width: 110px; height: 110px; }
 
 /* ---- date card (light): the ADMIT-ONE ticket as the centerpiece topic graphic on a
    light canvas. Portrait 4:5 with the family header (eyebrow/byline/headline/lead) and
    a caption; the ticket keeps its accent stock, dark-ink stamp, serials and scallops.
    Class: `card date light`. ---- */
 #canvas.card.date.light {
-  height: 1500px; padding: 78px 80px 70px; gap: 28px;
-  justify-content: flex-start; align-items: stretch; text-align: left;
+  /* centered with an even gap — slack distributes instead of pooling into two voids */
+  height: 1500px; padding: 78px 80px 70px; gap: 48px;
+  justify-content: center; align-items: stretch; text-align: left;
   background: var(--bg);
 }
 .card.date.light .toprow { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 24px; }
 .card.date.light .toprow .footer { position: static; left: auto; bottom: auto; margin: 0 0 0 auto; gap: 16px; font-size: 26px; color: var(--muted); opacity: 1; }
 .card.date.light .toprow .footer.brand::before { width: 52px; height: 52px; box-shadow: none; }
 .card.date.light h1 { color: var(--ink); font-size: 60px; line-height: 1.05; margin: 2px 0 0; text-align: left; }
-.card.date.light .ticket { width: 88%; align-self: center; margin: auto 0; box-shadow: 0 30px 60px -22px rgba(16,20,28,0.42); }
+.card.date.light .ticket { width: 88%; align-self: center; margin: 0; box-shadow: 0 30px 60px -22px rgba(16,20,28,0.42); }
 .card.date.light .caption { margin-top: 0; text-align: center; }
 
 /* ---- code + Claude-session cards (light): the terminal stays DARK as an elevated
    surface floating on the light canvas (the modern docs pattern). Portrait 4:5 with the
    family header + caption. Class: `card code light` (and the Claude-session variant). ---- */
 #canvas.card.code.light {
-  height: 1500px; padding: 78px 80px 70px; gap: 26px; justify-content: flex-start;
+  height: 1500px; padding: 78px 80px 70px; gap: 26px; justify-content: center;
   background: var(--bg);
 }
 .card.code.light h1 { color: var(--ink); font-size: 58px; line-height: 1.05; margin: 2px 0 0; }
 .card.code.light .terminal {
-  flex: 1 1 auto; min-height: 0;
+  /* hug the snippet (don't stretch to fill): a short session reads as a confident hero,
+     a typical one no longer goes bottom-heavy; the min-height keeps it substantial */
+  flex: 0 1 auto; min-height: 560px;
+  /* auto margins center the window between the header and the bottom-anchored caption
+     (without them the caption floats mid-canvas on a short snippet) */
+  margin: auto 0;
   background: #0D1117; border: 1px solid #30363D;
   box-shadow: 0 34px 64px -26px rgba(16,20,28,0.45);
   /* hold the terminal's own dark palette regardless of the light page theme */

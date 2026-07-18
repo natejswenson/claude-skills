@@ -4,6 +4,73 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-07-17
+
+Driven by mining every past invocation transcript: the three recurring failure classes were a
+silently-dead research job, zero performance feedback, and in-session corrections that didn't stick.
+
+### Added
+- **`scripts/install_radar.sh`** — renders the release-radar launchd plist from the repo's
+  *resolved current* path and retires stale agents. The radar died silently twice when the repo
+  moved (launchd kept firing the old absolute path, exit 127); repair is now a one-liner, and
+  SKILL.md offers it when the log shows the job failing.
+- **Publish log** — every successful publish appends `{date, urn, url, slug, format, chars,
+  first_line, lane}` to `~/.claude/ghostwriter/published.jsonl` (new `--lane` flag on
+  `linkedin_post.py`). Previously nothing persisted — not even that a post shipped.
+- **Outcome feedback loop** — new `scripts/post_outcome.py` records a self-reported
+  great/normal/flopped per post; Generate opens with a max-one-question check-in and biases
+  topic/format choices with the accumulated outcomes. This is the only LinkedIn-ToS-compliant
+  performance signal (no member analytics API; scraping banned).
+- **Discussion radar** — the research prompt now also surfaces 1–2 source-backed debates in the
+  user's opinion/career lanes, which previously had no research feed.
+- **Radar freshness surfacing** — Generate states digest provenance up front, labels every menu
+  idea with its source + date, and falls back to live search (saying so) when the digest is >4
+  days old.
+- Five new Tier-1 prose invariants pin the new guardrails (voice-feedback persistence, outcome
+  loop, ending self-check, visual pick-before-build).
+
+### Changed
+- **Voice feedback persists immediately** — any in-session style correction is appended to
+  `voice-notes.md` in the same turn, *before* redrafting (a real session lost the same
+  correction twice).
+- **Pre-show self-check** — endings (the #1 flagged AI tell), fabrication, length, and banned
+  tics are verified before the user ever sees a draft.
+- **Visual form is settled with ONE question** before anything renders (text-only / card /
+  carousel, recommendation first, informed by outcome history) — replaces the offer-build-pivot
+  flow that wasted a full card render.
+- **Length rule reconciled** — SKILL.md now states the voice-notes 50–120-word default wins;
+  algorithm.md's ~900–1,500-char range applies only when a post genuinely needs the room.
+- Radar budget raised to $1.00 (two healthy runs died at the $0.50 cap) and the research prompt
+  gained a hard fetch-to-confirm gate: an item whose primary source wasn't retrieved this run
+  does not go in the digest, and nothing future-dated ever does.
+
+### Added — graphics quality overhaul
+An 11-agent render-matrix audit of all 13 card templates at sparse/typical/stress content
+volumes found 40 first-render defects (21 severe: dead-space voids, clipped bands, ellipsized
+command chips, wrapped eyebrows, default template icons shipping). Fixes:
+- **`scripts/card_lint.py`** — render-time quality gate. Static layer catches template default
+  icons, surviving `ICONS:` comments, placeholder copy, and carousel page-counter drift; DOM
+  layer (Playwright) measures clip-overflow, fired ellipses, eyebrow/headline wrap counts,
+  dead bands >180px, per-template count budgets, and chip truncation. Runs automatically inside
+  `render_image.py` (WARN/FAIL to stderr; `--strict` makes FAILs fatal, `--no-lint` skips).
+- **Count-adaptive CSS variants** across the family (generalizing the `n3` pattern via `:has()`)
+  so sparse cards scale up to fill the frame instead of floating in whitespace; overflow-wrap
+  and spacing fixes for the stress cases; caption/terminal anchoring fixes (flow, howto-check,
+  code).
+- **Content-budget contract in SKILL.md** — a per-template table of step/row counts and
+  max chars per field (derived from the actual CSS geometry and mirrored by the lint), a
+  mandatory read-the-PNG-as-art-director-before-showing step, a never-ship-default-icons rule,
+  and voice rules extended to card copy.
+- Every template header now carries its CONTENT BUDGET block; `render_image.py` defaults to
+  the correct 1200×1500 portrait size.
+
+### Tested
+- `record_publish` / `post_outcome` covered end-to-end (append on real publish, nothing on
+  dry-run, outcome round-trip, unscored-latest selection); an autouse fixture isolates the real
+  `published.jsonl` from test runs. Suite remains at 100% coverage.
+- `card_lint` fully covered (`tests/test_card_lint.py`); a fresh-eyes agent authoring a card
+  cold from the updated docs produced a first render with zero art-director findings.
+
 ## [0.10.0] - 2026-07-11
 
 ### Added

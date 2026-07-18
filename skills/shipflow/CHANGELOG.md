@@ -2,6 +2,42 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## Unreleased — multi-pattern workflow templates
+
+Generalizes shipflow from one hardcoded branching pattern to a registry of three
+selectable patterns, with deterministic autodetection. Backward compatible: a repo's
+existing `.github/shipflow.json` with no `workflowPattern` field keeps resolving to
+`dev-main-promotion` with identical behavior — confirmed against this repo's own live
+config (a `noops`-only plan, byte-identical to before this change).
+
+- **Added: `github-flow` pattern** — a single long-lived `main`; every PR merges (and
+  auto-merges) directly to it, no separate promotion branch. New
+  `main-automerge.yml.tmpl` template.
+- **Added: `gitflow` pattern** — `develop` + `main` + transient `release/*`/`hotfix/*`
+  branches, for software maintaining multiple released versions concurrently. New
+  `release-automerge.yml.tmpl`/`hotfix-automerge.yml.tmpl` templates (prefix-matched
+  `head.ref` guards) and `hotfix-merge-back.yml.tmpl`/`release-merge-back.yml.tmpl`
+  (GitFlow's defining dual-merge-back semantic: a hotfix/release merges into both
+  `main` and `develop`; a merge-back conflict or push failure opens a PR for manual
+  resolution instead of force-pushing or silently dropping the merge).
+- **Added: deterministic autodetection.** `shipflow detect` now returns a
+  `rankedPatterns` array (every pattern's score + evidence). Classification is
+  `confident` (top score `>= 0.7` and a `> 0.3` gap over second place), `greenfield`
+  (top score `< 0.4`), or `ambiguous` (the residual case) — the first-run interview
+  confirms a confident detection's evidence with the user rather than silently
+  applying it, and presents all 3 patterns for an explicit choice otherwise.
+- **Added: `workflowPattern` + `patternConfig` config fields.** `patternConfig.gitflow`
+  holds `releaseBranchPrefix`/`hotfixBranchPrefix` (default `release/`/`hotfix/`).
+  `branches.dev` remains the sole source of truth for gitflow's develop-branch name —
+  no separate `developBranch` field.
+- **Architecture:** new `lib/pattern-registry.mjs` (`listPatterns`/`resolvePattern`/
+  `scoreAll`) and one `lib/patterns/<id>/index.mjs` module per pattern. `detect.mjs`,
+  `plan.mjs`, and `apply.mjs` are now thin dispatchers over whatever the registry
+  returns, instead of hardcoding `dev-main-promotion`'s logic inline — adding a 4th
+  pattern in the future needs no changes to any of the three.
+- Existing single-pattern behavior (branch protection, auto-merge, branch cleanup,
+  release tagging) is unchanged for repos already on `dev-main-promotion`.
+
 ## 0.2.6 (2026-07-15) — pin `@latest` on every invocation; docs pass
 
 Self-discovered during the PAT-wiring dogfood step that immediately followed
