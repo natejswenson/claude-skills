@@ -33,6 +33,9 @@ ENV_PATH = HOME_ENV if HOME_ENV.exists() else REPO / ".env"
 POSTS_URL = "https://api.linkedin.com/rest/posts"
 IMAGES_URL = "https://api.linkedin.com/rest/images"
 DOCUMENTS_URL = "https://api.linkedin.com/rest/documents"
+# One JSON line per published post; scripts/post_outcome.py adds outcomes later and the
+# skill reads it to bias topic/format choices. Lives with the personal data, not the repo.
+PUBLISHED_LOG = Path.home() / ".claude" / "ghostwriter" / "published.jsonl"
 
 
 def load_env(path: Path = ENV_PATH) -> dict:
@@ -196,7 +199,35 @@ def warn_if_token_expiring(env: dict) -> None:
         )
 
 
-def publish(env: dict, payload: dict) -> None:
+def record_publish(
+    post_id: str | None,
+    args,
+    text: str,
+    log_path: Path | None = None,
+) -> None:
+    """Append the publish record. Never fails the publish — the post is already live."""
+    if log_path is None:
+        log_path = PUBLISHED_LOG
+    fmt = "image" if args.image else ("carousel" if args.document else "text")
+    record = {
+        "date": time.strftime("%Y-%m-%d"),
+        "urn": post_id or "",
+        "url": f"https://www.linkedin.com/feed/update/{post_id}" if post_id else "",
+        "slug": Path(args.file).stem if args.file else "",
+        "format": fmt,
+        "chars": len(text),
+        "first_line": text.splitlines()[0][:120],
+        "lane": getattr(args, "lane", "") or "",
+    }
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except OSError as e:
+        print(f"WARNING: could not write {log_path}: {e}", file=sys.stderr)
+
+
+def publish(env: dict, payload: dict) -> str | None:
     token = env.get("LINKEDIN_ACCESS_TOKEN", "")
     version = env.get("LINKEDIN_API_VERSION", "202605")
     if not token:
@@ -216,6 +247,7 @@ def publish(env: dict, payload: dict) -> None:
             if post_id:
                 print(f"Post ID: {post_id}")
                 print(f"URL: https://www.linkedin.com/feed/update/{post_id}")
+            return post_id
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
         print(f"ERROR: LinkedIn returned HTTP {e.code}", file=sys.stderr)
@@ -283,6 +315,12 @@ def main() -> None:
         "--title",
         default="",
         help="Title for the attached document/carousel (shown above the slides). Recommended with --document.",
+    )
+    ap.add_argument(
+        "--lane",
+        default="",
+        help="Optional content lane for the publish log (e.g. release-howto, "
+        "personal-project, opinion, career, personal).",
     )
     ap.add_argument(
         "--dry-run",
@@ -371,7 +409,10 @@ def main() -> None:
         upload_file_bytes(upload_url, env.get("LINKEDIN_ACCESS_TOKEN", ""), document_path)
         print(f"Uploaded document: {document_urn}")
 
-    publish(env, build_payload(author, text, image_urn, args.alt, document_urn, args.title))
+    post_id = publish(
+        env, build_payload(author, text, image_urn, args.alt, document_urn, args.title)
+    )
+    record_publish(post_id, args, text)
 
 
 if __name__ == "__main__":

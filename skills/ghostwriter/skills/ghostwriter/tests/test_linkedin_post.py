@@ -562,3 +562,82 @@ def test_main_file_real_verify_too_few_hosts_blocks(monkeypatch, tmp_path):
     with pytest.raises(SystemExit) as e:
         lp.main()
     assert "distinct live source host" in str(e.value)
+
+
+# ------------------------------------------------------------- record_publish
+def _pub_args(**kw):
+    base = {"file": None, "text": None, "image": None, "document": None, "lane": ""}
+    base.update(kw)
+    return type("A", (), base)()
+
+
+def test_record_publish_appends_valid_record(tmp_path):
+    log = tmp_path / "published.jsonl"
+    args = _pub_args(file="drafts/2026-07-17-my-post.md", lane="release-howto")
+    lp.record_publish("urn:li:share:42", args, "First line\nrest", log_path=log)
+    rec = json.loads(log.read_text(encoding="utf-8").strip())
+    assert rec["urn"] == "urn:li:share:42"
+    assert rec["url"].endswith("urn:li:share:42")
+    assert rec["slug"] == "2026-07-17-my-post"
+    assert rec["format"] == "text"
+    assert rec["chars"] == len("First line\nrest")
+    assert rec["first_line"] == "First line"
+    assert rec["lane"] == "release-howto"
+    assert rec["date"]
+
+
+def test_record_publish_infers_media_formats(tmp_path):
+    log = tmp_path / "published.jsonl"
+    lp.record_publish("id1", _pub_args(image="i.png"), "t", log_path=log)
+    lp.record_publish("id2", _pub_args(document="d.pdf"), "t", log_path=log)
+    recs = [json.loads(l) for l in log.read_text(encoding="utf-8").splitlines()]
+    assert [r["format"] for r in recs] == ["image", "carousel"]
+
+
+def test_record_publish_no_post_id_still_records(tmp_path):
+    log = tmp_path / "published.jsonl"
+    lp.record_publish(None, _pub_args(), "hello", log_path=log)
+    rec = json.loads(log.read_text(encoding="utf-8").strip())
+    assert rec["urn"] == "" and rec["url"] == ""
+
+
+def test_record_publish_write_failure_warns_not_raises(tmp_path, capsys):
+    blocked = tmp_path / "as_dir.jsonl"
+    blocked.mkdir()  # open("a") on a directory -> OSError
+    lp.record_publish("id", _pub_args(), "t", log_path=blocked)
+    assert "WARNING: could not write" in capsys.readouterr().err
+
+
+def test_main_full_publish_appends_log(monkeypatch, capsys, tmp_path):
+    """End-to-end: a successful --file publish writes exactly one log record."""
+    log = tmp_path / "published.jsonl"
+    monkeypatch.setattr(lp, "PUBLISHED_LOG", log)
+    draft = tmp_path / "2026-07-17-e2e.md"
+    draft.write_text("body", encoding="utf-8")
+    (tmp_path / "2026-07-17-e2e.sources.json").write_text(
+        json.dumps({"external_claims": False, "claims": []}), encoding="utf-8"
+    )
+    _env(
+        monkeypatch,
+        {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"},
+    )
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(lp, "publish", lambda env, payload: "urn:li:share:99")
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--file", str(draft), "--lane", "personal"]
+    )
+    lp.main()
+    recs = [json.loads(l) for l in log.read_text(encoding="utf-8").splitlines()]
+    assert len(recs) == 1
+    assert recs[0]["urn"] == "urn:li:share:99"
+    assert recs[0]["slug"] == "2026-07-17-e2e"
+    assert recs[0]["lane"] == "personal"
+
+
+def test_main_dry_run_appends_nothing(monkeypatch, capsys, tmp_path):
+    log = tmp_path / "published.jsonl"
+    monkeypatch.setattr(lp, "PUBLISHED_LOG", log)
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1"})
+    monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--dry-run"])
+    lp.main()
+    assert not log.exists()

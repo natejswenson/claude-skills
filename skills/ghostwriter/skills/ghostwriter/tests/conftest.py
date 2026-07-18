@@ -13,3 +13,16 @@ for _sub in ("scripts", "evals"):
     _p = str(SKILL_ROOT / _sub)
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolate_published_log(tmp_path, monkeypatch):
+    """Never let a test append to the user's real ~/.claude/ghostwriter/published.jsonl."""
+    import linkedin_post
+
+    monkeypatch.setattr(
+        linkedin_post, "PUBLISHED_LOG", tmp_path / "published.jsonl"
+    )
