@@ -1118,3 +1118,158 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.slide.cta.light {
   background: radial-gradient(1000px 740px at 50% 0%, rgba(31,157,69,0.09), transparent 62%), var(--bg);
 }
+
+/* ============================================================================
+   PRESS DESIGN SYSTEM — the editorial-poster brand (v0.12.0)
+   Warm paper canvas, huge black type, serif standfirst, ONE loud signature
+   accent, heavy ink rules, giant numerals, an issue-numbered masthead and a
+   personal monogram stamp. This is a COMPOSABLE system, not a template: pick
+   the components the post's content needs and assemble a bespoke card (see
+   assets/card-language.md for the vocabulary + composition rules).
+   Personalize in ~/.claude/ghostwriter/assets/diagram.css: --press-sig (your
+   signature color), --stamp (your monogram), --byline/--avatar as always.
+   ============================================================================ */
+.card.press {
+  --paper:#F5F0E6;            /* warm paper canvas */
+  --ink:#181510;              /* near-black ink */
+  --dim:#6E675C;              /* secondary ink */
+  --press-sig:#E8501F;        /* THE signature accent — one loud color, used sparingly */
+  --rule:#181510;             /* heavy editorial rules */
+  --serif: "New York", ui-serif, Georgia, "Times New Roman", serif;
+  --stamp: "YN";              /* your monogram initials (2 chars) */
+  color: var(--ink);
+}
+#canvas.card.press {
+  width: 1200px; height: 1500px; padding: 64px 84px 60px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 0;
+  background: var(--paper); position: relative; overflow: hidden;
+}
+#canvas.card.press::after { content: none; }
+
+/* masthead: heavy top rule, monogram stamp, issue-line eyebrow, avatar byline */
+.card.press .mast { border-top: 8px solid var(--rule); padding-top: 22px;
+  display: flex; align-items: center; gap: 22px; }
+.card.press .stamp { flex: none; width: 62px; height: 62px; border: 3px solid var(--press-sig);
+  display: flex; align-items: center; justify-content: center;
+  font: 800 26px/1 var(--font); letter-spacing: .04em; color: var(--press-sig);
+  transform: rotate(-4deg); }
+.card.press .stamp::before { content: var(--stamp); }
+.card.press .eyebrow { font: 700 27px/1.2 var(--font); letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.card.press .eyebrow .no { color: var(--press-sig); }
+.card.press .mast .footer { position: static; margin-left: auto; display: inline-flex;
+  align-items: center; gap: 14px; font: 500 24px/1 var(--mono); color: var(--dim); }
+.card.press .footer.brand::before { content: ""; width: 52px; height: 52px; border-radius: 50%;
+  background: var(--avatar) center/cover no-repeat; }
+
+/* headline: giant black type; wrap the ONE pivot phrase in <span class="sig"> */
+.card.press h1 { font: 900 104px/0.98 var(--font); letter-spacing: -0.035em; margin: 0;
+  color: var(--ink); text-wrap: balance; }
+.card.press h1 .sig { color: var(--press-sig); }
+.card.press h1.compact { font-size: 84px; }   /* longer headlines (2 lines × ~20 chars) */
+
+/* standfirst: the serif-italic lead behind a signature drop rule */
+.card.press .stand { font: 400 33px/1.45 var(--serif); font-style: italic; color: var(--ink);
+  margin: 0; max-width: 46ch; border-left: 5px solid var(--press-sig); padding-left: 30px; }
+.card.press .stand strong { font-style: normal; font-weight: 700; }
+
+/* ledger: numbered step rows split by ink rules — the how-to workhorse (3–4 rows) */
+.card.press .ledger { display: flex; flex-direction: column; }
+.card.press .lrow { display: flex; align-items: flex-start; gap: 34px; padding: 26px 0;
+  border-top: 2px solid var(--rule); }
+.card.press .lno { flex: none; width: 128px; font: 900 96px/0.9 var(--font);
+  letter-spacing: -.04em; color: var(--press-sig); }
+.card.press .lbody { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding-top: 10px; }
+.card.press .lt { font: 800 40px/1.1 var(--font); letter-spacing: -.015em; color: var(--ink); }
+.card.press .le { font: 400 27px/1.4 var(--serif); color: var(--dim); max-width: 52ch; }
+
+/* cmdbar: the real command/flag as a full-ink inset bar (≤44 chars, one line) */
+.card.press .cmdbar { align-self: flex-start; margin-top: 8px; background: var(--ink);
+  color: var(--paper); font: 600 24px/1 var(--mono); padding: 18px 26px; white-space: nowrap; }
+
+/* duel: a two-column comparison split by rules; mark the columns .lose / .win */
+.card.press .duel { border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule);
+  display: flex; align-items: stretch; }
+.card.press .side { flex: 1; padding: 34px 36px; display: flex; flex-direction: column; gap: 12px; }
+.card.press .side + .side { border-left: 2px solid var(--rule); }
+.card.press .side .verdict { font: 700 23px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; }
+.card.press .side.lose .verdict { color: var(--dim); }
+.card.press .side.win .verdict { color: var(--press-sig); }
+.card.press .side .who { font: 800 40px/1.1 var(--font); letter-spacing: -.015em; }
+.card.press .side .how { font: 400 28px/1.4 var(--serif); font-style: italic; color: var(--dim); }
+.card.press .side.win .how { color: var(--ink); }
+
+/* pull: a centered editorial pull quote with a short signature rule under it */
+.card.press .pull { text-align: center; padding: 6px 40px; }
+.card.press .pull .q { font: 700 46px/1.2 var(--serif); color: var(--ink); text-wrap: balance; }
+.card.press .pull .q .sig { color: var(--press-sig); }
+.card.press .pull .qrule { width: 120px; height: 4px; background: var(--press-sig); margin: 22px auto 0; }
+
+/* marginal: the footnote gotcha — signature asterisk, serif italic, inline <em> for code */
+.card.press .marginal { border-top: 2px solid var(--rule); padding-top: 24px;
+  font: 400 29px/1.4 var(--serif); font-style: italic; color: var(--ink); }
+.card.press .marginal .ast { color: var(--press-sig); font-style: normal;
+  font: 800 32px/1 var(--font); margin-right: 10px; }
+.card.press .marginal em { font-style: normal; font-family: var(--mono); font-size: 25px;
+  background: rgba(24,21,16,.08); padding: 2px 8px; }
+
+/* colophon: the anchored outcome line over a heavy bottom rule */
+.card.press .colophon { border-top: 8px solid var(--rule); padding-top: 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  font: 700 24px/1.3 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.card.press .colophon .out { color: var(--dim); font-weight: 600; letter-spacing: .02em;
+  text-transform: none; font-family: var(--serif); font-style: italic; font-size: 26px; }
+
+/* bigstat: one giant number as the hero (stat posts) — figure + unit + serif kicker */
+.card.press .bigstat { text-align: center; padding: 10px 0; }
+.card.press .bigstat .fig { font: 900 220px/0.95 var(--font); letter-spacing: -.05em; color: var(--press-sig); }
+.card.press .bigstat .fig .unit { font-size: 90px; letter-spacing: -.02em; color: var(--ink); margin-left: 10px; }
+.card.press .bigstat .kicker { margin-top: 18px; font: 400 30px/1.4 var(--serif); font-style: italic; color: var(--dim); }
+
+/* facts: a 2–4 column mini stat row over hairline rules (the "specs" strip) */
+.card.press .facts { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 40px;
+  border-top: 2px solid var(--rule); padding-top: 26px; }
+.card.press .fact { display: flex; flex-direction: column; gap: 10px; }
+.card.press .flabel { font: 700 22px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--press-sig); }
+.card.press .fval { font: 800 36px/1.1 var(--font); color: var(--ink); }
+.card.press .fcap { font: 400 24px/1.35 var(--serif); font-style: italic; color: var(--dim); }
+
+/* tiles: a 2×2 numbered tile grid split by hairlines (compact 4-step how-tos) */
+.card.press .tiles { display: grid; grid-template-columns: 1fr 1fr;
+  border-top: 2px solid var(--rule); border-left: 2px solid var(--rule); }
+.card.press .tile { border-right: 2px solid var(--rule); border-bottom: 2px solid var(--rule);
+  padding: 30px 32px; display: flex; flex-direction: column; gap: 10px; }
+.card.press .tile .tno { font: 900 64px/1 var(--font); letter-spacing: -.03em; color: var(--press-sig); }
+.card.press .tile .tt { font: 800 32px/1.15 var(--font); color: var(--ink); }
+.card.press .tile .te { font: 400 24px/1.35 var(--serif); color: var(--dim); }
+
+/* term: a dark terminal panel floating on the paper (code posts). One .tl per row;
+   mark the money line .hot (signature). Keep ≤10 rows, ≤42 chars. */
+.card.press .term { background: var(--ink); padding: 36px 40px; display: flex;
+  flex-direction: column; gap: 14px; }
+.card.press .term .tl { font: 500 26px/1.4 var(--mono); color: #EFE9DC; white-space: pre; }
+.card.press .term .tl.dim { color: #8A8478; }
+.card.press .term .tl.hot { color: #FF8A5C; }
+
+/* bars: an editorial horizontal bar chart — label · ruled track · value. Set each
+   fill width inline (style="width:NN%"); the payoff row takes .win (signature fill). */
+.card.press .bars { display: flex; flex-direction: column; gap: 24px; }
+.card.press .brow { display: grid; grid-template-columns: 260px 1fr 130px; align-items: center; gap: 24px; }
+.card.press .blabel { font: 700 26px/1.2 var(--font); color: var(--ink); }
+.card.press .btrack { height: 44px; border: 2px solid var(--rule); padding: 5px; }
+.card.press .bfill { height: 100%; background: var(--dim); }
+.card.press .brow.win .bfill { background: var(--press-sig); }
+.card.press .bval { font: 800 30px/1 var(--font); color: var(--ink); text-align: right; }
+
+/* carousel slides, press skin: add `press` to every .slide — the token-driven
+   type rules (cover/point/recap/cta) adapt; backgrounds go flat paper with rules. */
+.card.slide.press {
+  --bg: #F5F0E6; --surface: #ECE5D6; --surface-2: #E4DCCA; --border: #181510;
+  --text: #181510; --muted: #6E675C; --accent: #E8501F; --accent-2: #E8501F;
+  background: var(--bg);
+}
+.card.slide.press::after { border-width: 0; border-top: 8px solid var(--border);
+  border-bottom: 8px solid var(--border); top: 56px; bottom: 56px; left: 84px; right: 84px; }
+.card.slide.press .rail { background: var(--surface-2); }
+.card.slide.press.cta .action { color: #F5F0E6; border-radius: 0; }
