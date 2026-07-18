@@ -42,6 +42,30 @@
       "file": "SKILL.md",
       "pattern": "after .{0,40}save.{0,200}before .{0,40}show",
       "rationale": "Generate flow ordering is load-bearing: research must run AFTER Save (the slug/sidecar path exists) and BEFORE Show (the shown draft is already source-backed)."
+    },
+    {
+      "id": "voice-feedback-persists-same-turn",
+      "file": "SKILL.md",
+      "pattern": "voice-notes\\.md[^.]{0,80}same turn,?\\s*before redrafting",
+      "rationale": "In-session voice corrections were lost twice in one real session (the user had to repeat the no-AI-closings rule). Persist-before-redraft lives only in this prose; deleting it regresses to corrections evaporating at session end."
+    },
+    {
+      "id": "outcome-checkin-loop",
+      "file": "SKILL.md",
+      "pattern": "post_outcome\\.py",
+      "rationale": "The publish log + self-reported outcomes are the ONLY compliant performance signal (no LinkedIn member analytics API; scraping banned by ToS). Dropping the check-in reference severs the skill's feedback loop and reverts topic/format choice to blind priors."
+    },
+    {
+      "id": "ending-self-check",
+      "file": "SKILL.md",
+      "pattern": "stops? on the\\s+last real point",
+      "rationale": "AI-sounding endings are the user's #1, most-repeated content complaint across sessions. The pre-show ending check is prose-only; the voice_judge eval samples it but nothing else forces it at draft time."
+    },
+    {
+      "id": "visual-pick-before-build",
+      "file": "SKILL.md",
+      "pattern": "never render a form\\s+the user\\s+didn.t\\s+choose",
+      "rationale": "Rendering a visual before asking wasted a full card build in a real session (user wanted a carousel). One form question before any authoring is prose-only."
     }
   ]
 }
