@@ -96,13 +96,17 @@ def build_html(kind: str, src: Path) -> str:
     return inline_assets(html)
 
 
-def render(kind: str, html: str, out: Path, width: int, height: int) -> None:
+def render(kind: str, html: str, out: Path, width: int, height: int, lint: bool = False):
+    """Render to `out`. When `lint` is true (cards only), run the card_lint DOM
+    checks on the live page before the screenshot and return the findings —
+    a lint bug can never kill a render (wrapped, non-fatal)."""
     try:
         from playwright.sync_api import sync_playwright
     except ModuleNotFoundError:
         sys.exit(f"ERROR: playwright not installed.\n{INSTALL_HINT}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
+    findings: list = []
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch()
@@ -122,6 +126,12 @@ def render(kind: str, html: str, out: Path, width: int, height: int) -> None:
                     browser.close()
                     sys.exit(f"ERROR: mermaid failed to render:\n{err}")
             page.wait_for_selector("#canvas", timeout=5000)
+            if lint and kind == "card":
+                try:
+                    import card_lint
+                    findings = card_lint.lint_page(page)
+                except Exception as le:  # noqa: BLE001 — lint must never kill a render
+                    print(f"LINT ERROR (non-fatal): {le}", file=sys.stderr)
             page.locator("#canvas").screenshot(path=str(out))
             browser.close()
     except Exception as e:  # noqa: BLE001 — give a useful message, not a trace
@@ -129,6 +139,7 @@ def render(kind: str, html: str, out: Path, width: int, height: int) -> None:
         if "Executable doesn't exist" in msg or "playwright install" in msg:
             sys.exit(f"ERROR: Chromium not installed.\n{INSTALL_HINT}")
         sys.exit(f"ERROR while rendering: {msg}")
+    return findings
 
 
 def main() -> None:
@@ -138,13 +149,25 @@ def main() -> None:
     ap.add_argument("--out", required=True, help="Output .png path (under images/)")
     ap.add_argument(
         "--size",
-        default="1280x1280",
-        help="Viewport WxH (cards are fixed 1200x1200; mermaid auto-fits). Default 1280x1280.",
+        default="1200x1500",
+        help="Viewport WxH hint only — the screenshot crops to #canvas, which sizes "
+             "itself from CSS. Default 1200x1500.",
     )
     ap.add_argument(
         "--no-open",
         action="store_true",
         help="Don't pop the PNG open in the image viewer after rendering (default: open it).",
+    )
+    ap.add_argument(
+        "--no-lint",
+        action="store_true",
+        help="Skip the card layout/content lint (cards are linted by default; "
+             "findings go to stderr and never change the exit code).",
+    )
+    ap.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 2 if the lint reports any FAIL (use for pre-publish renders).",
     )
     args = ap.parse_args()
 
@@ -163,10 +186,23 @@ def main() -> None:
         sys.exit(f"ERROR: --size must look like 1200x1200, got {args.size!r}")
 
     html = build_html(args.type, src)
-    render(args.type, html, out, w, h)
+    lint_on = args.type == "card" and not args.no_lint
+    findings = render(args.type, html, out, w, h, lint_on) or []
+    if lint_on:
+        try:
+            import card_lint
+            findings = card_lint.static_checks(
+                src.read_text(encoding="utf-8"), src
+            ) + list(findings)
+        except Exception as e:  # noqa: BLE001 — lint must never kill a render
+            print(f"LINT ERROR (non-fatal): {e}", file=sys.stderr)
     if not args.no_open:
         open_in_viewer(out)
     print(f"Rendered {args.type} -> {out}  (viewport {w}x{h} @2x){'' if args.no_open else ' — opened in viewer'}")
+    for f in findings:
+        print(f"{f.level} {f.code}: {f.message}", file=sys.stderr)
+    if args.strict and any(f.level == "FAIL" for f in findings):
+        sys.exit(2)
 
 
 if __name__ == "__main__":

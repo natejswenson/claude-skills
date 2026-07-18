@@ -21,6 +21,12 @@
   All colour/type/spacing comes from diagram.css (.card.howto.light) — don't add one-off
   inline CSS; extend diagram.css if you need a new treatment.
 
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    3–5 steps · .t <=38 chars · .e <=60 · .cmd <=45
+    5 steps => one-line titles + a one-line h1. 3 steps auto-scale, 5 auto-compress —
+    nothing to add.
+
   ICONS: the .sic <svg> in each step below is an EXAMPLE. Replace each with a topic icon
   from assets/card-icons.md that fits THAT step (use the "topic → icon" cheat-sheet at the
   top of that file), then delete this ICONS comment. Never ship the default icons.

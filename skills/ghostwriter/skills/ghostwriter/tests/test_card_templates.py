@@ -11,7 +11,10 @@ now fails here instead of shipping a silently-broken graphic.
 The stylesheet under test is the committed `assets/diagram.css.example` (the
 personal `~/.claude/ghostwriter/assets/diagram.css` is gitignored and per-user;
 the `.example` is the shipped source of truth and the two are kept in sync by
-hand — see SKILL.md's Visuals section).
+hand — see SKILL.md's Visuals section). Cards are portrait 1200×1500 and that is
+now `render_image.py`'s default `--size` (a viewport hint — the screenshot crops
+to `#canvas`); SKILL.md's Visuals section carries the authoritative CONTENT
+BUDGET table, and every typed template header must quote its budget block.
 """
 from __future__ import annotations
 
@@ -91,6 +94,20 @@ def test_every_card_type_has_canvas_sizing(tpl: Path):
     assert re.search(rf"#canvas\.card\.{re.escape(ctype)}\b", CSS), (
         f"{tpl.name} uses card type '{ctype}' but diagram.css.example has no "
         f"`#canvas.card.{ctype}...` sizing rule — the render would size wrong."
+    )
+
+
+@pytest.mark.parametrize(
+    "tpl", sorted(ASSETS.glob("card-template-*.html")), ids=lambda p: p.name
+)
+def test_every_template_header_has_content_budget(tpl: Path):
+    """Every typed template's header comment must carry a CONTENT BUDGET block
+    quoting the same numeric limits as SKILL.md's Visuals table (and enforced by
+    the render lint). A template shipped without it regresses authors to guessing
+    how much content fits the 1200×1500 frame."""
+    assert "CONTENT BUDGET" in tpl.read_text(encoding="utf-8"), (
+        f"{tpl.name} header is missing its CONTENT BUDGET block — copy the "
+        f"limits for this card type from SKILL.md's Visuals content-budget table."
     )
 
 

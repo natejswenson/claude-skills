@@ -9,6 +9,10 @@
     render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
   Retheme the ticket stock by setting --ticket on #canvas (var(--accent-2) green, etc.).
   Styling lives in diagram.css (.card.date.light and the .ticket children).
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    date-sub <=40 chars · long months wrap the day to a second line (by design).
 -->
 <html lang="en">
 <head>
