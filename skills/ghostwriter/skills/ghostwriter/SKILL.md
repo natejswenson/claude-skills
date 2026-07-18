@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.11.0
+version: 0.12.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -202,14 +202,15 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
    to repeat it next session.
 8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
-   ask a single `AskUserQuestion`: **text-only** / **single card** (name the layout you'd pick) /
-   **carousel** — with your recommendation first, chosen from the post's shape and the outcome
-   history: how-to / educational → **carousel** (highest-reach native format, see
-   `voice/algorithm.md`) or a how-to card; one punchy idea → card; personal story → text-only.
-   A strong text post beats a weak image, so text-only is always a respectable pick. Only after
+   ask a single `AskUserQuestion`: **text-only** / **single card** (name the Press hero
+   component you'd compose around, e.g. "a duel" or "a ledger") / **carousel** — with your
+   recommendation first, chosen from the post's shape and the outcome history: how-to /
+   educational → **carousel** (highest-reach native format, see `voice/algorithm.md`) or a
+   composed Press card; one punchy idea → card; personal story → text-only. A strong text post
+   beats a weak image, so text-only is always a respectable pick. Only after
    the pick do you author and render (see **Visuals**); never render a form the user didn't
-   choose. For how-to cards, **rotate the four layouts** (spine / grid / checklist / stack) so
-   posts don't repeat (see **Visuals → the card-type table**).
+   choose. Cards are **composed, not templated**: read `assets/card-language.md`, check
+   `images/card-history.jsonl`, and differ from the last 3 cards on ≥2 variation axes.
 
 ### How-to posts (technical, from AI releases)
 
@@ -227,9 +228,11 @@ write a genuine how-to — not a news recap.
   exactly the case the source gate is for: the `*.sources.json` sidecar + `verify_sources.py` step
   (step 6) is mandatory. **Never fabricate** or imply the user personally ran a release they
   haven't — write the steps generically ("map which jobs call X"), not as a first-person story.
-- **Default visual: the how-to card family** (step 8) — a single high-quality image. **Rotate the
-  four layouts** (`howto` spine / `howto-grid` / `howto-check` / `howto-stack`) so how-to posts
-  never look the same twice in a row; pick by step count (see Visuals → the card-type table).
+- **Default visual: a composed Press card** (step 8) — a single high-quality image, usually
+  built around a **ledger** (numbered steps + the real command in a `.cmdbar`) or **tiles**
+  (exactly 4 compact steps). Compose it fresh per `assets/card-language.md` and vary the
+  composition against `images/card-history.jsonl` so how-to posts never look the same twice
+  in a row.
 
 ### Visuals (optional — diagrams & cards)
 
@@ -240,14 +243,26 @@ reports Playwright/Chromium is missing, point them at the install step and stop)
 the user's personal brand guide, shared across every install of the skill. On first use, if it
 doesn't exist, copy it from the template: `mkdir -p ~/.claude/ghostwriter/assets && cp
 assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set their `--byline`
-(shown at the bottom of every visual) and tweak the palette. Cards use
+(shown at the bottom of every visual), their Press identity (`--press-sig` signature color +
+`--stamp` monogram initials), and tweak the palette. Cards use
 `<div class="footer brand"></div>` to pull the byline automatically — don't hardcode it.
 
-- **The light card system.** Every designed card uses the modern **light** system: a light
-  canvas, layered white panels, a dark callout band, real line icons, and a restrained hierarchy.
-  Cards are **portrait 4:5 (1200×1500)** and share one rhythm — eyebrow + byline → restrained
-  headline → a **lead** paragraph (bold the key phrase) → the **topic graphic** that fills the
-  body → an anchored **footer caption**. Two rules keep them premium:
+- **The Press system (THE brand — default for every card).** Editorial-poster identity: warm
+  paper canvas, huge black type, serif standfirst, ONE loud signature accent, heavy ink rules,
+  giant numerals, an issue-numbered masthead with the personal monogram stamp. Cards are
+  **portrait 4:5 (1200×1500)** and **composed, not templated**: read
+  `assets/card-language.md` (the component vocabulary, composition rules, and variation axes),
+  pick the 2–3 body components that *prove the post's point* (a duel proves a decision, a
+  ledger proves a method, a big stat proves a claim, a terminal proves it's real), and author
+  a bespoke `images/<slug>.html`. `assets/card-template-press.html` is one example composition
+  (the how-to ledger shape), not the shape. **Anti-sameness contract:** before authoring, read
+  `images/card-history.jsonl` and differ from the last 3 approved cards on **≥2 variation
+  axes** (hero component, headline treatment, density, numeral presence, support texture);
+  after the user approves the render, append the card's fingerprint line to that file.
+- **The legacy light gallery (reference compositions).** The pre-Press light-system templates
+  below remain shipped and renderable — use them as *structural references* when a Press
+  composition wants a proven skeleton, or when the user explicitly asks for the light look.
+  Two rules still apply when one is used:
     - **The topic graphic is the hero (~3/4); any type-motif is a small accent.** Don't let
       decoration (e.g. the STEM blocks) dominate — the real diagram of THIS post carries the card.
     - **Icons must fit the post.** The `<svg>` icons in every template are EXAMPLES, flagged with
@@ -255,11 +270,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
       in for each card — **never ship a template's default icons or placeholder strings**; delete
       the `ICONS:` comment once swapped (the render lint fails the card otherwise). Meaningful and
       few (2–4) beats many.
-- **Pick the form — glance at this table first, then read the matching bullet below.**
+- **Pick the form — Press composition first; the gallery table below maps legacy shapes.**
 
   | Post shape | Template | One-liner |
   |---|---|---|
-  | **How-to — default / 3–5 steps** | **`howto`** | numbered spine, icon + command chips |
+  | **ANY (the default) — compose it** | **`press`** | brand system; pick hero: ledger / duel / pull / bigstat / tiles / term / bars |
+  | How-to — 3–5 steps (legacy) | `howto` | numbered spine, icon + command chips |
   | How-to — 4 steps, compact | `howto-grid` | 2×2 numbered tiles |
   | How-to — 4–5 quick steps | `howto-check` | saveable green checklist |
   | How-to — 3–4 punchy steps | `howto-stack` | editorial big-number rows |
@@ -275,6 +291,10 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 
   A **Mermaid diagram** (`--type mermaid`, a `.mmd`) also works for structured/technical content;
   a **designed card** (`--type card`, an `.html`) is the default for one punchy idea. Card templates:
+  - `assets/card-template-press.html` — **press (THE default)**: one example composition of the
+    Press brand system. Don't fill it in — compose: `assets/card-language.md` documents every
+    component (`.ledger`, `.duel`, `.pull`, `.bigstat`, `.facts`, `.tiles`, `.term`, `.bars`,
+    `.stand`, `.marginal`), the composition rules, and the variation axes.
   - **The how-to family (4 on-brand layouts — rotate them; never use the same how-to card twice
     in a row).** All share the light system (eyebrow + byline, headline, `.lead`, optional `.band`
     gotcha, `.caption` outcome) and put the real command/flag in a monospace `<code class="cmd">`
@@ -324,6 +344,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 
   | Template | Count | Field limits | Notes |
   |---|---|---|---|
+  | `press` | 2–3 body components | eyebrow ≤24 · h1 ≤2 lines (~13/line; `compact` ~20) · `.stand` ≤3 lines · `.lt` ≤38 · `.le` ≤60 · `.cmdbar` ≤44 one line · `.marginal` ≤2 lines · `.colophon .out` ≤52 | full budgets per component in `assets/card-language.md` |
   | all light cards | — | eyebrow ≤24, one line · h1 ≤2 lines (~28/line) · caption ≤60 | |
   | `howto` | 3–5 steps | `.t` ≤38 · `.e` ≤60 · `.cmd` ≤45 | 5 steps ⇒ one-line titles + one-line h1 |
   | `howto-stack` | 3–4 | `.st` ≤32 one line · `.se` ≤64 · `.cmd` ≤45 | 4 steps ⇒ ≤2 cmd chips total; 3 steps auto-scale |
@@ -348,8 +369,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
   — `--size 1200x1500` is the default (a viewport hint; the screenshot crops to `#canvas`, and
   Mermaid auto-fits), so cards need no size flag. Pass `--strict` on the pre-publish render so any
-  lint FAIL exits non-zero. This **auto-opens the PNG in the user's image viewer** so they can
-  actually see it (pass `--no-open` only for headless/batch use).
+  lint FAIL exits non-zero. **Never pass `--no-open` in an interactive Generate session** — the
+  command auto-opens the PNG in the user's own image viewer by default, and that auto-open (not a
+  chat-embedded copy) is how the user actually sees it full-size on their own screen. `--no-open`
+  is for headless/batch/CI use only; adding it "to be safe" during a normal session just makes the
+  user ask to see something that should have opened on its own — if a render command in this file
+  ever produced a PNG without opening it, run `open images/<slug>.png` (macOS) immediately after.
 - **MANDATORY: after every render, Read the PNG yourself and judge it like an art director BEFORE
   showing the user** — check: content fills the 1500px frame with even rhythm (no band of dead
   space > ~180px), nothing clipped at any edge, no ellipsized command or code, eyebrow and titles
@@ -358,7 +383,9 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   every FAIL as a defect, not a suggestion.
 - **Show the user the rendered PNG** and iterate (tweak the source or
   `~/.claude/ghostwriter/assets/diagram.css`) until they approve it. Don't claim it looks good
-  without showing the image.
+  without showing the image. **On approval, append the card's fingerprint to
+  `images/card-history.jsonl`** (see `assets/card-language.md`) — that file is what keeps the
+  next card from repeating this one.
 - **Write alt text** describing the visual; you'll pass it to the publish step.
 
 #### Carousels (multi-slide documents — highest reach)
@@ -369,6 +396,8 @@ the best visual for educational / how-to / step-by-step posts. The template is *
 
 1. **Author** `images/<slug>-carousel.html` from `assets/card-template-carousel.html`, following
    the blueprint: **cover (hook) → 4–6 numbered `.point` slides → a `.recap` list → a `.cta`**.
+   Add `press` to every slide's class list so the deck wears the brand (paper canvas, ink
+   rules, the signature accent).
    One idea per slide, **≤~30 words/slide**, **7–9 slides**. Set `--i` (this slide's number) and
    `--n` (total) on every `.slide` via `style="…"` — they drive the **progress bar** only. The
    `NN / TOTAL` page counter is literal text you keep in sync by hand; keep `--n` equal to your
