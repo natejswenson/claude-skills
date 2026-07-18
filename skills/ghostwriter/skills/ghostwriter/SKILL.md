@@ -369,8 +369,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
   — `--size 1200x1500` is the default (a viewport hint; the screenshot crops to `#canvas`, and
   Mermaid auto-fits), so cards need no size flag. Pass `--strict` on the pre-publish render so any
-  lint FAIL exits non-zero. This **auto-opens the PNG in the user's image viewer** so they can
-  actually see it (pass `--no-open` only for headless/batch use).
+  lint FAIL exits non-zero. **Never pass `--no-open` in an interactive Generate session** — the
+  command auto-opens the PNG in the user's own image viewer by default, and that auto-open (not a
+  chat-embedded copy) is how the user actually sees it full-size on their own screen. `--no-open`
+  is for headless/batch/CI use only; adding it "to be safe" during a normal session just makes the
+  user ask to see something that should have opened on its own — if a render command in this file
+  ever produced a PNG without opening it, run `open images/<slug>.png` (macOS) immediately after.
 - **MANDATORY: after every render, Read the PNG yourself and judge it like an art director BEFORE
   showing the user** — check: content fills the 1500px frame with even rhythm (no band of dead
   space > ~180px), nothing clipped at any edge, no ellipsized command or code, eyebrow and titles
