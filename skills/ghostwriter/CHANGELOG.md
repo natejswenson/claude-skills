@@ -4,6 +4,32 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-07-18
+
+Graphics were the user's stated engagement bottleneck: every card shipped the same light-SaaS
+skeleton, anonymous at feed distance. 0.12.0 replaces template-filling with a real brand.
+
+### Added
+- **The PRESS design system** — an editorial-poster brand (warm paper, huge black type, serif
+  standfirst, one loud signature accent, heavy ink rules, giant numerals, an issue-numbered
+  masthead + personal monogram stamp). Chosen by the user from three rendered candidate
+  directions expressing the same real post. New section in `assets/diagram.css.example`;
+  personalized per user via `--press-sig` (signature color) and `--stamp` (monogram).
+- **Composable card language** — new `assets/card-language.md`: 11 body components (ledger,
+  duel, pull quote, big stat, facts strip, tiles, terminal, bars, standfirst, marginal,
+  command bar), composition rules, per-component budgets, and five **variation axes**. Cards
+  are now *composed* per post, not filled into one of 13 fixed templates.
+- **Anti-sameness contract** — each approved card's composition fingerprint is appended to
+  `images/card-history.jsonl`; the next card must differ from the last 3 on ≥2 variation axes.
+- **`assets/card-template-press.html`** — one annotated example composition (auto-covered by
+  the template test contract and the render lint's placeholder catches).
+- **Press carousel skin** — add `press` to each slide; cover/point/recap/cta adapt to paper +
+  ink rules automatically.
+
+### Changed
+- SKILL.md Visuals flow is composition-first; the 13 light-system templates are demoted to a
+  **legacy reference gallery** (still shipped, tested, and renderable).
+
 ## [0.11.0] - 2026-07-17
 
 Driven by mining every past invocation transcript: the three recurring failure classes were a
