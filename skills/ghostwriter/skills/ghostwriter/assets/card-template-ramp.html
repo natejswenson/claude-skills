@@ -6,6 +6,12 @@
   scale — the labeled .val figures carry the truth, so keep them accurate.
   The byline sits inline in the .toprow (top-right, beside the eyebrow) so a feed crop
   of the bottom can't remove your attribution — keep it there, don't move it down.
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    3 bars · .val <=7 chars (longer: add class="val long") · dates <=10 chars ·
+    units go in the kicker, not the value.
+    Trendline geometry: each circle's cy = 498 − that bar's height (lint warns on drift).
 -->
 <html lang="en">
 <head>

@@ -19,6 +19,12 @@
    * Numbers/labels must be accurate — never invent figures (authenticity rule).
   All colour/type/spacing comes from diagram.css (.card.matrix rules) — don't add
   one-off inline CSS; extend diagram.css if you need a new treatment.
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    2–4 options, <=5 value rows · SET cols2/cols4 on the .grid to MATCH the option
+    count — the default template is 3 options (label gutter + 3 columns).
+    6–7 rows => class="grid dense" + a 2-line headline max.
 -->
 <html lang="en">
 <head>
