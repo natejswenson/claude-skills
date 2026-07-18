@@ -252,8 +252,9 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
       decoration (e.g. the STEM blocks) dominate — the real diagram of THIS post carries the card.
     - **Icons must fit the post.** The `<svg>` icons in every template are EXAMPLES, flagged with
       an `ICONS: …` comment. Pick topic-matching glyphs from `assets/card-icons.md` and swap them
-      in for each card — **never ship a template's default icons.** Meaningful and few (2–4)
-      beats many.
+      in for each card — **never ship a template's default icons or placeholder strings**; delete
+      the `ICONS:` comment once swapped (the render lint fails the card otherwise). Meaningful and
+      few (2–4) beats many.
 - **Pick the form — glance at this table first, then read the matching bullet below.**
 
   | Post shape | Template | One-liner |
@@ -294,11 +295,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   - `assets/card-template-flow.html` — **flow type** (architecture / pipeline): light stage chips
     threaded on a numbered spine, each with a **topic icon** + a bold title + one muted example
     (layer classes `.det` green / `.tools` teal / `.agent` blue / `.out` grey). **Prefer over a
-    Mermaid diagram for architecture posts.** ~4–5 stages; sub-steps inline as `A -> B -> C`.
+    Mermaid diagram for architecture posts.** 3–5 stages; sub-steps inline as `A -> B -> C`.
   - `assets/card-template-matrix.html` — **matrix type** (comparison): a premium scorecard —
     solid colour header pills (`.col-h .green/.grey/.pink`), every value in a contained tile
     (`.v` number / `.vt` phrase), the winning cell per row marked `.best` for an instant verdict;
-    `.switch` rows group. ≤4 columns, ≤7 rows; translate insider units into plain words.
+    `.switch` rows group. Set `cols2`/`cols4` to match the option count (3 is the default);
+    translate insider units into plain words.
   - `assets/card-template-ramp.html` — **ramp type** (accelerating progression): a light analytics
     chart — neutral rising bars to an accent payoff bar, a trend line, a delta pill. Bars are
     illustrative; the labeled figures must be accurate.
@@ -317,13 +319,43 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
   Card styling lives in `~/.claude/ghostwriter/assets/diagram.css` (the brand guide) — use its
   classes, don't add one-off inline CSS. Let the user choose the form if unsure.
+- **CONTENT BUDGET (hard limits — the same numbers live in every template header, and the render
+  lint enforces the measurable ones):**
+
+  | Template | Count | Field limits | Notes |
+  |---|---|---|---|
+  | all light cards | — | eyebrow ≤24, one line · h1 ≤2 lines (~28/line) · caption ≤60 | |
+  | `howto` | 3–5 steps | `.t` ≤38 · `.e` ≤60 · `.cmd` ≤45 | 5 steps ⇒ one-line titles + one-line h1 |
+  | `howto-stack` | 3–4 | `.st` ≤32 one line · `.se` ≤64 · `.cmd` ≤45 | 4 steps ⇒ ≤2 cmd chips total; 3 steps auto-scale |
+  | `howto-grid` | exactly 4 (3 auto-spans) | `.gt` ≤22/line, ≤2 lines · `.cmd` ≤30 | |
+  | `howto-check` | 4–6 | `.ct` ≤34 one line · `.ce` ≤66 | 6 rows ⇒ one-line titles AND details |
+  | `flow` (light) | 3–5 stages | `.t` ≤34 | 5 ⇒ h1 ≤2 lines, one-line titles |
+  | `matrix` (light) | 2–4 options, ≤5 rows | set `cols2`/`cols4` to match | 6–7 rows ⇒ class `dense` |
+  | `ramp` | 3 bars | `.val` ≤7 chars, dates ≤10 | units go in the kicker |
+  | `brief` | keep all blocks | h1 ≤2 · lead ≤3 lines · scol `.cap` 1 line | |
+  | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
+  | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
+  | `date` | — | date-sub ≤40 chars | |
+  | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
+
+  Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)
+  are automatic or one class — the budget table says which.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
   as `~/.claude/ghostwriter/voice/voice-notes.md` — a misleading diagram is worse than none).
+  **Card copy follows the voice rules too**: the voice-notes bans (em dashes, hedge words,
+  clever-symmetry lines) apply to every headline, lead, band, and caption, not just the post body.
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
-  — **for the portrait light cards add `--size 1200x1500`** (Mermaid auto-fits; only the legacy
-  square `card-template.html` omits it). This **auto-opens the PNG in the user's image viewer** so
-  they can actually see it (pass `--no-open` only for headless/batch use).
+  — `--size 1200x1500` is the default (a viewport hint; the screenshot crops to `#canvas`, and
+  Mermaid auto-fits), so cards need no size flag. Pass `--strict` on the pre-publish render so any
+  lint FAIL exits non-zero. This **auto-opens the PNG in the user's image viewer** so they can
+  actually see it (pass `--no-open` only for headless/batch use).
+- **MANDATORY: after every render, Read the PNG yourself and judge it like an art director BEFORE
+  showing the user** — check: content fills the 1500px frame with even rhythm (no band of dead
+  space > ~180px), nothing clipped at any edge, no ellipsized command or code, eyebrow and titles
+  on one line, no widow words, one dominant accent. Fix and re-render until you'd publish it; the
+  user sees only cards that already pass. The render command prints WARN/FAIL lint lines — treat
+  every FAIL as a defect, not a suggestion.
 - **Show the user the rendered PNG** and iterate (tweak the source or
   `~/.claude/ghostwriter/assets/diagram.css`) until they approve it. Don't claim it looks good
   without showing the image.

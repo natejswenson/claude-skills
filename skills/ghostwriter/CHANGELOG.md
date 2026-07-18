@@ -44,10 +44,32 @@ silently-dead research job, zero performance feedback, and in-session correction
   gained a hard fetch-to-confirm gate: an item whose primary source wasn't retrieved this run
   does not go in the digest, and nothing future-dated ever does.
 
+### Added — graphics quality overhaul
+An 11-agent render-matrix audit of all 13 card templates at sparse/typical/stress content
+volumes found 40 first-render defects (21 severe: dead-space voids, clipped bands, ellipsized
+command chips, wrapped eyebrows, default template icons shipping). Fixes:
+- **`scripts/card_lint.py`** — render-time quality gate. Static layer catches template default
+  icons, surviving `ICONS:` comments, placeholder copy, and carousel page-counter drift; DOM
+  layer (Playwright) measures clip-overflow, fired ellipses, eyebrow/headline wrap counts,
+  dead bands >180px, per-template count budgets, and chip truncation. Runs automatically inside
+  `render_image.py` (WARN/FAIL to stderr; `--strict` makes FAILs fatal, `--no-lint` skips).
+- **Count-adaptive CSS variants** across the family (generalizing the `n3` pattern via `:has()`)
+  so sparse cards scale up to fill the frame instead of floating in whitespace; overflow-wrap
+  and spacing fixes for the stress cases; caption/terminal anchoring fixes (flow, howto-check,
+  code).
+- **Content-budget contract in SKILL.md** — a per-template table of step/row counts and
+  max chars per field (derived from the actual CSS geometry and mirrored by the lint), a
+  mandatory read-the-PNG-as-art-director-before-showing step, a never-ship-default-icons rule,
+  and voice rules extended to card copy.
+- Every template header now carries its CONTENT BUDGET block; `render_image.py` defaults to
+  the correct 1200×1500 portrait size.
+
 ### Tested
 - `record_publish` / `post_outcome` covered end-to-end (append on real publish, nothing on
   dry-run, outcome round-trip, unscored-latest selection); an autouse fixture isolates the real
   `published.jsonl` from test runs. Suite remains at 100% coverage.
+- `card_lint` fully covered (`tests/test_card_lint.py`); a fresh-eyes agent authoring a card
+  cold from the updated docs produced a first render with zero art-director findings.
 
 ## [0.10.0] - 2026-07-11
 
