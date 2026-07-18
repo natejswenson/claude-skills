@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, utimesSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { loadStyleGuide, getRecentCovers, mergeManifestEntries } from '../lib/cover_gen.mjs';
+import { loadStyleGuide, resolveStyleGuideAndCatalog, getRecentCovers, mergeManifestEntries } from '../lib/cover_gen.mjs';
 import { CONFIG_DIR } from '../lib/core.mjs';
 
 function makeDirs(t) {
@@ -27,12 +27,44 @@ test('loadStyleGuide reflects whether the real install exists at CONFIG_DIR', ()
   // Not asserting a specific outcome (depends on this machine's real ~/.claude state) —
   // just that the function does not throw an unexpected error shape either way.
   try {
-    const text = loadStyleGuide();
+    const { text } = loadStyleGuide();
     assert.equal(typeof text, 'string');
   } catch (e) {
     assert.match(e.message, /Cover style guide not found/);
   }
   void CONFIG_DIR;
+});
+
+test('resolveStyleGuideAndCatalog degrades to iconCatalog: null when icons.md is absent (COVER-Q-7)', (t) => {
+  const { cloneDir: dir } = makeDirs(t); // any temp dir works; only used as scratch space here
+  const styleGuidePath = join(dir, 'style-guide.md');
+  const iconCatalogPath = join(dir, 'icons.md'); // deliberately never written
+  writeFileSync(styleGuidePath, '# Style guide\n');
+
+  const { text, iconCatalog } = resolveStyleGuideAndCatalog(styleGuidePath, iconCatalogPath);
+  assert.equal(text, '# Style guide\n');
+  assert.equal(iconCatalog, null);
+});
+
+test('resolveStyleGuideAndCatalog returns the icon catalog content when icons.md exists (COVER-Q-7)', (t) => {
+  const { cloneDir: dir } = makeDirs(t);
+  const styleGuidePath = join(dir, 'style-guide.md');
+  const iconCatalogPath = join(dir, 'icons.md');
+  writeFileSync(styleGuidePath, '# Style guide\n');
+  writeFileSync(iconCatalogPath, '# Icons\n');
+
+  const { text, iconCatalog } = resolveStyleGuideAndCatalog(styleGuidePath, iconCatalogPath);
+  assert.equal(text, '# Style guide\n');
+  assert.equal(iconCatalog, '# Icons\n');
+});
+
+test('resolveStyleGuideAndCatalog throws when the style guide itself is missing, regardless of the icon catalog', (t) => {
+  const { cloneDir: dir } = makeDirs(t);
+  const styleGuidePath = join(dir, 'style-guide.md'); // deliberately never written
+  const iconCatalogPath = join(dir, 'icons.md');
+  writeFileSync(iconCatalogPath, '# Icons\n');
+
+  assert.throws(() => resolveStyleGuideAndCatalog(styleGuidePath, iconCatalogPath), /Cover style guide not found/);
 });
 
 test('mergeManifestEntries merges multiple projects, tagging each entry with its project', (t) => {

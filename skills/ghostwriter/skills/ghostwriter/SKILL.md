@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.10.0
+version: 0.11.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -94,6 +94,17 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
 
+**Outcome check-in (max one, fast — the feedback loop).** Before anything else, read
+`~/.claude/ghostwriter/published.jsonl` (written automatically on every publish). If the newest
+record is **≥2 days old and has no `outcome`**, ask ONE `AskUserQuestion` — *"How did
+'<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
+`python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. Never ask more
+than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
+outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
+from repeated `flopped`, and let format outcomes steer the visual-form recommendation (step 8).
+Say why when it's relevant ("your last carousel did great"). This is the only compliant
+performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
+
 1. **Short-circuit if the topic is already concrete.** If the user named a specific topic, pointed
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
@@ -103,12 +114,22 @@ post's real anchor, so there's no generic interview.
    **single `AskUserQuestion`** (single-select; the auto "Other" lets them type their own topic).
    Aim for **~5–6 options**, each a short title + its one-line hook, **led by recent-AI-release
    how-tos** (the priority lane):
+   - **First, check radar health — never serve stale research silently.** Read the newest
+     `research/release-radar-*.md` date and the tail of `research/.radar.log`. Tell the user the
+     provenance in one line before (or in the intro of) the menu: fresh → *"ideas from the Jul 17
+     radar"*; **stale (>4 days) or missing** → say so, note whether the log shows the scheduled
+     job failing, and fall back to a live search (below). If the job is broken (e.g. exit 127 —
+     usually the repo moved), offer to repair it: `bash scripts/install_radar.sh` re-renders the
+     launchd agent against the repo's current path. **Label every menu option with its source**
+     (radar + digest date / live search + today / your repo / interests) so the user can judge
+     freshness at a glance.
    - **~3–4 how-to ideas from the newest `research/release-radar-*.md` digest** — reuse each item's
      title + "suggested angle" (already how-to-shaped and source-backed). The pick's facts +
      suggested angle are the anchor, pre-sourced by the twice-weekly research job
      (`scripts/release_radar.sh`), which scans the **broader AI industry**, not just Anthropic.
-     Never add experience claims the digest didn't establish. **No digest yet?** Do a quick live web
-     search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
+     Never add experience claims the digest didn't establish. The digest's **Discussion radar**
+     items feed the opinion/hot-take slot below the same way. **No fresh digest?** Do a quick live
+     web search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
      noteworthy developments, and use those for the how-to slots.
    - **~1 personal-project idea** — run `python3 scripts/recent_projects.py`, take the top repo with
      recent Claude Code sessions, and read its recent `git log` + last session summary for the
@@ -135,7 +156,7 @@ post's real anchor, so there's no generic interview.
    proceed with what you have (`~/.claude/ghostwriter/voice/interests.md` plus the defaults). Write the
    post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Apply the
    **Engagement craft** rules below AND the reach rules in `voice/algorithm.md` (hook in the
-   first ~210 chars, ~900–1,500 chars, optimize for *saves*, no links in the body). Aim for one
+   first ~210 chars, default 50–120 words, optimize for *saves*, no links in the body). Aim for one
    strong post, not three mediocre options.
    **Never fabricate or exaggerate** details that aren't true to the user's real experience —
    authenticity over drama (see voice-notes.md).
@@ -165,17 +186,30 @@ post's real anchor, so there's no generic interview.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
      sidecar before publishing.
-7. **Show the user the full draft** in chat and ask: *"Publish this to LinkedIn, edit it, or
-   scrap it?"* Wait for their answer. Do not publish unprompted.
-8. **Optionally offer a visual.** After the text is settled, *offer* (never assume):
-   *"Want a diagram or card to go with it? (optional)"* If they decline or don't ask, the post
-   stays **text-only** — a strong text post outperforms a weak image, so that's a fine default.
-   Only build a visual if it genuinely earns dwell time (a real diagram people study), not as
-   decoration. For **how-to posts, the default visual is the how-to card family** — a single
-   high-quality image; **rotate its four layouts** (spine / grid / checklist / stack) so posts don't
-   repeat (see **Visuals → the card-type table**). A multi-slide carousel stays
-   available for step-by-step posts that truly need more room — offer it only if the user asks (see
-   **Visuals → Carousels** and `voice/algorithm.md`).
+7. **Pre-show self-check, then show the draft.** Before the user sees it, verify against
+   `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
+   - **The ending** — the #1 AI tell, flagged more than anything else. The post stops on the
+     last real point. No inverted-parallel closer, no clever-symmetry aphorism, no reflexive
+     "what's your…?" CTA.
+   - **Nothing fabricated** — no invented details, motivations, or timeline drama the user
+     didn't actually live.
+   - **Length** — default 50–120 words (see Engagement craft).
+   - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words.
+   Fix what fails, then **show the full draft** in chat and ask: *"Publish this to LinkedIn,
+   edit it, or scrap it?"* Wait for their answer. Do not publish unprompted.
+   **Any voice/style feedback the user gives — append it to
+   `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
+   you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
+   to repeat it next session.
+8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
+   ask a single `AskUserQuestion`: **text-only** / **single card** (name the layout you'd pick) /
+   **carousel** — with your recommendation first, chosen from the post's shape and the outcome
+   history: how-to / educational → **carousel** (highest-reach native format, see
+   `voice/algorithm.md`) or a how-to card; one punchy idea → card; personal story → text-only.
+   A strong text post beats a weak image, so text-only is always a respectable pick. Only after
+   the pick do you author and render (see **Visuals**); never render a form the user didn't
+   choose. For how-to cards, **rotate the four layouts** (spine / grid / checklist / stack) so
+   posts don't repeat (see **Visuals → the card-type table**).
 
 ### How-to posts (technical, from AI releases)
 
@@ -218,8 +252,9 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
       decoration (e.g. the STEM blocks) dominate — the real diagram of THIS post carries the card.
     - **Icons must fit the post.** The `<svg>` icons in every template are EXAMPLES, flagged with
       an `ICONS: …` comment. Pick topic-matching glyphs from `assets/card-icons.md` and swap them
-      in for each card — **never ship a template's default icons.** Meaningful and few (2–4)
-      beats many.
+      in for each card — **never ship a template's default icons or placeholder strings**; delete
+      the `ICONS:` comment once swapped (the render lint fails the card otherwise). Meaningful and
+      few (2–4) beats many.
 - **Pick the form — glance at this table first, then read the matching bullet below.**
 
   | Post shape | Template | One-liner |
@@ -260,11 +295,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   - `assets/card-template-flow.html` — **flow type** (architecture / pipeline): light stage chips
     threaded on a numbered spine, each with a **topic icon** + a bold title + one muted example
     (layer classes `.det` green / `.tools` teal / `.agent` blue / `.out` grey). **Prefer over a
-    Mermaid diagram for architecture posts.** ~4–5 stages; sub-steps inline as `A -> B -> C`.
+    Mermaid diagram for architecture posts.** 3–5 stages; sub-steps inline as `A -> B -> C`.
   - `assets/card-template-matrix.html` — **matrix type** (comparison): a premium scorecard —
     solid colour header pills (`.col-h .green/.grey/.pink`), every value in a contained tile
     (`.v` number / `.vt` phrase), the winning cell per row marked `.best` for an instant verdict;
-    `.switch` rows group. ≤4 columns, ≤7 rows; translate insider units into plain words.
+    `.switch` rows group. Set `cols2`/`cols4` to match the option count (3 is the default);
+    translate insider units into plain words.
   - `assets/card-template-ramp.html` — **ramp type** (accelerating progression): a light analytics
     chart — neutral rising bars to an accent payoff bar, a trend line, a delta pill. Bars are
     illustrative; the labeled figures must be accurate.
@@ -283,13 +319,43 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
   Card styling lives in `~/.claude/ghostwriter/assets/diagram.css` (the brand guide) — use its
   classes, don't add one-off inline CSS. Let the user choose the form if unsure.
+- **CONTENT BUDGET (hard limits — the same numbers live in every template header, and the render
+  lint enforces the measurable ones):**
+
+  | Template | Count | Field limits | Notes |
+  |---|---|---|---|
+  | all light cards | — | eyebrow ≤24, one line · h1 ≤2 lines (~28/line) · caption ≤60 | |
+  | `howto` | 3–5 steps | `.t` ≤38 · `.e` ≤60 · `.cmd` ≤45 | 5 steps ⇒ one-line titles + one-line h1 |
+  | `howto-stack` | 3–4 | `.st` ≤32 one line · `.se` ≤64 · `.cmd` ≤45 | 4 steps ⇒ ≤2 cmd chips total; 3 steps auto-scale |
+  | `howto-grid` | exactly 4 (3 auto-spans) | `.gt` ≤22/line, ≤2 lines · `.cmd` ≤30 | |
+  | `howto-check` | 4–6 | `.ct` ≤34 one line · `.ce` ≤66 | 6 rows ⇒ one-line titles AND details |
+  | `flow` (light) | 3–5 stages | `.t` ≤34 | 5 ⇒ h1 ≤2 lines, one-line titles |
+  | `matrix` (light) | 2–4 options, ≤5 rows | set `cols2`/`cols4` to match | 6–7 rows ⇒ class `dense` |
+  | `ramp` | 3 bars | `.val` ≤7 chars, dates ≤10 | units go in the kicker |
+  | `brief` | keep all blocks | h1 ≤2 · lead ≤3 lines · scol `.cap` 1 line | |
+  | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
+  | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
+  | `date` | — | date-sub ≤40 chars | |
+  | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
+
+  Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)
+  are automatic or one class — the budget table says which.
 - **Author the source** into `images/<slug>.mmd` or `images/<slug>.html`. Keep it to one idea;
   **never invent structure, numbers, or relationships that aren't true** (same authenticity rule
   as `~/.claude/ghostwriter/voice/voice-notes.md` — a misleading diagram is worse than none).
+  **Card copy follows the voice rules too**: the voice-notes bans (em dashes, hedge words,
+  clever-symmetry lines) apply to every headline, lead, band, and caption, not just the post body.
 - **Render:** `.venv/bin/python scripts/render_image.py --type <mermaid|card> --in images/<slug>.<ext> --out images/<slug>.png`
-  — **for the portrait light cards add `--size 1200x1500`** (Mermaid auto-fits; only the legacy
-  square `card-template.html` omits it). This **auto-opens the PNG in the user's image viewer** so
-  they can actually see it (pass `--no-open` only for headless/batch use).
+  — `--size 1200x1500` is the default (a viewport hint; the screenshot crops to `#canvas`, and
+  Mermaid auto-fits), so cards need no size flag. Pass `--strict` on the pre-publish render so any
+  lint FAIL exits non-zero. This **auto-opens the PNG in the user's image viewer** so they can
+  actually see it (pass `--no-open` only for headless/batch use).
+- **MANDATORY: after every render, Read the PNG yourself and judge it like an art director BEFORE
+  showing the user** — check: content fills the 1500px frame with even rhythm (no band of dead
+  space > ~180px), nothing clipped at any edge, no ellipsized command or code, eyebrow and titles
+  on one line, no widow words, one dominant accent. Fix and re-render until you'd publish it; the
+  user sees only cards that already pass. The render command prints WARN/FAIL lint lines — treat
+  every FAIL as a defect, not a suggestion.
 - **Show the user the rendered PNG** and iterate (tweak the source or
   `~/.claude/ghostwriter/assets/diagram.css`) until they approve it. Don't claim it looks good
   without showing the image.
@@ -339,8 +405,9 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
   truly is the strongest ending — never a reflexive "Thoughts? 👇" (voice-notes forbids it).
 - **Sound human.** No "In today's fast-paced world", no "game-changer", no "delve", no
   manufactured humility. If it reads like AI, rewrite it. Match the profile's "Never do" list.
-- **Length: ~900–1,500 characters** (~150–250 words) is the reach sweet spot. Hard cap 3000
-  (the script enforces it).
+- **Length: default 50–120 words** — the voice-notes default wins over algorithm.md's longer
+  ~900–1,500-char "sweet spot," which applies only when the post genuinely needs the room (e.g.
+  a multi-step how-to) and never as padding. Hard cap 3000 chars (the script enforces it).
 - **Hashtags: 0–3, specific.** They barely help now and 6+ hurt; default to none unless the
   voice profile says otherwise.
 
@@ -352,7 +419,10 @@ Only after the user explicitly approves a specific draft.
 
 1. **Preview the payload** (optional sanity check):
    `python3 scripts/linkedin_post.py --file drafts/<file>.md --dry-run`
-2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md`
+2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md --lane <lane>`
+   — pass the post's content lane (`release-howto` / `personal-project` / `opinion` / `career` /
+   `personal`) so the publish log (`~/.claude/ghostwriter/published.jsonl`, written automatically
+   on success) can feed the outcome loop. Omitting `--lane` still publishes.
    - **Source gate runs automatically.** A real (non-dry-run) `--file` publish is refused unless the
      draft's `*.sources.json` sidecar passes `verify_sources.py` (≥3 distinct live hosts, every claim
      sourced, or `external_claims:false`). If it fails, **fix the sidecar / redo the research step,

@@ -28,27 +28,27 @@ function baseRepoState(overrides = {}) {
 }
 
 test('delete-branch-on-merge is a noop when already set correctly', () => {
-  const plan = computePlan(baseRepoState(), BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(baseRepoState(), BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.ok(plan.noops.some((e) => e.id === 'delete-branch-on-merge'));
 });
 
 test('delete-branch-on-merge is an update when not yet set', () => {
   const repoState = baseRepoState({ repoSettings: { deleteBranchOnMerge: false } });
-  const plan = computePlan(repoState, BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(repoState, BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   const entry = plan.updates.find((e) => e.id === 'delete-branch-on-merge');
   assert.ok(entry);
   assert.equal(entry.desired, true);
 });
 
 test('deletion-ruleset defers to external protection without creating anything', () => {
-  const plan = computePlan(baseRepoState(), { ...BASE_CONFIG, protectionOwner: 'external' }, TEMPLATE);
+  const plan = computePlan(baseRepoState(), { ...BASE_CONFIG, protectionOwner: 'external' }, { 'dev-to-main-automerge': TEMPLATE });
   const entry = plan.noops.find((e) => e.id === 'deletion-ruleset');
   assert.ok(entry, 'expected a noop entry deferring to external protection');
   assert.ok(!plan.creates.some((e) => e.id === 'deletion-ruleset'));
 });
 
 test('deletion-ruleset is a create when shipflow owns protection and no ruleset exists', () => {
-  const plan = computePlan(baseRepoState({ rulesets: [] }), { ...BASE_CONFIG, protectionOwner: 'shipflow' }, TEMPLATE);
+  const plan = computePlan(baseRepoState({ rulesets: [] }), { ...BASE_CONFIG, protectionOwner: 'shipflow' }, { 'dev-to-main-automerge': TEMPLATE });
   assert.ok(plan.creates.some((e) => e.id === 'deletion-ruleset'));
 });
 
@@ -56,13 +56,13 @@ test('deletion-ruleset is a noop when shipflow owns protection and a ruleset alr
   const plan = computePlan(
     baseRepoState({ rulesets: [{ id: 1, requiredChecks: [] }] }),
     { ...BASE_CONFIG, protectionOwner: 'shipflow' },
-    TEMPLATE
+    { 'dev-to-main-automerge': TEMPLATE }
   );
   assert.ok(plan.noops.some((e) => e.id === 'deletion-ruleset'));
 });
 
 test('template entry is a create when the file does not exist on disk', () => {
-  const plan = computePlan(baseRepoState(), BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(baseRepoState(), BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   const entry = plan.creates.find((e) => e.id.startsWith('template:'));
   assert.ok(entry);
   assert.equal(entry.content, renderTemplate(TEMPLATE, { devBranch: 'dev', mainBranch: 'main', mergeFlag: '--merge' }));
@@ -73,7 +73,7 @@ test('template entry is a noop when on-disk content already matches a fresh rend
   const repoState = baseRepoState({
     templateFiles: { '.github/workflows/dev-to-main-automerge.yml': { exists: true, sha256: sha256(rendered) } },
   });
-  const plan = computePlan(repoState, BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(repoState, BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.ok(plan.noops.some((e) => e.id.startsWith('template:')));
 });
 
@@ -87,7 +87,7 @@ test('template entry is a clean update (not hand-edit) when on-disk matches the 
     mergeMethod: { devToMainMethod: 'merge' }, // changed from squash -> merge since the last render
     renderedTemplateHashes: { '.github/workflows/dev-to-main-automerge.yml': sha256(oldRendered) },
   };
-  const plan = computePlan(repoState, config, TEMPLATE);
+  const plan = computePlan(repoState, config, { 'dev-to-main-automerge': TEMPLATE });
   const entry = plan.updates.find((e) => e.id.startsWith('template:'));
   assert.ok(entry);
   assert.equal(entry.handEditDetected, false);
@@ -98,17 +98,17 @@ test('template entry is flagged handEditDetected when on-disk matches neither a 
     templateFiles: { '.github/workflows/dev-to-main-automerge.yml': { exists: true, sha256: 'someone-hand-edited-this' } },
   });
   const config = { ...BASE_CONFIG, renderedTemplateHashes: { '.github/workflows/dev-to-main-automerge.yml': 'a-different-old-hash' } };
-  const plan = computePlan(repoState, config, TEMPLATE);
+  const plan = computePlan(repoState, config, { 'dev-to-main-automerge': TEMPLATE });
   const entry = plan.updates.find((e) => e.id.startsWith('template:'));
   assert.ok(entry);
   assert.equal(entry.handEditDetected, true);
 });
 
 test('release-pending-label is a create when absent, noop when present', () => {
-  const planAbsent = computePlan(baseRepoState({ releasePendingLabelExists: false }), BASE_CONFIG, TEMPLATE);
+  const planAbsent = computePlan(baseRepoState({ releasePendingLabelExists: false }), BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.ok(planAbsent.creates.some((e) => e.id === 'release-pending-label'));
 
-  const planPresent = computePlan(baseRepoState({ releasePendingLabelExists: true }), BASE_CONFIG, TEMPLATE);
+  const planPresent = computePlan(baseRepoState({ releasePendingLabelExists: true }), BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.ok(planPresent.noops.some((e) => e.id === 'release-pending-label'));
 });
 
@@ -117,13 +117,38 @@ test('liveRequiredChecks unions classic-protection and ruleset checks, deduped a
     protection: { main: { requiredChecks: ['b', 'a'] }, dev: { requiredChecks: [] } },
     rulesets: [{ id: 1, requiredChecks: ['a', 'c'] }],
   });
-  const plan = computePlan(repoState, BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(repoState, BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.deepEqual(plan.liveRequiredChecks, ['a', 'b', 'c']);
 });
 
 test('sourceStateHash pins repoState.stateHash', () => {
-  const plan = computePlan(baseRepoState({ stateHash: 'xyz789' }), BASE_CONFIG, TEMPLATE);
+  const plan = computePlan(baseRepoState({ stateHash: 'xyz789' }), BASE_CONFIG, { 'dev-to-main-automerge': TEMPLATE });
   assert.equal(plan.sourceStateHash, 'xyz789');
+});
+
+test('computePlan accepts a templateSources map (plural) keyed by template id, and actually renders that entry\'s source', () => {
+  const config = { workflowPattern: 'dev-main-promotion', branches: { dev: 'dev', main: 'main' },
+    mergeMethod: { devToMainMethod: 'merge' }, release: { releaseCredential: 'RELEASE_PAT' },
+    branchCleanup: {}, protectionOwner: 'external' };
+  const repoState = { stateHash: 'x',
+    templateFiles: {}, repoSettings: {}, rulesets: [], protection: {}, releasePendingLabelExists: true };
+  const plan = computePlan(repoState, config, { 'dev-to-main-automerge': 'name: {{DEV_BRANCH}}' });
+  const entry = plan.creates.find((e) => e.id.startsWith('template:'));
+  assert.ok(entry, 'expected a template plan entry');
+  // Asserting the rendered CONTENT (not just "some array exists") is what actually
+  // proves the templateSources[id] lookup routed to the right map entry — a weaker
+  // assertion here would pass even if the lookup were silently misrouted.
+  assert.strictEqual(entry.content, 'name: dev');
+  assert.ok(Array.isArray(plan.creates) && Array.isArray(plan.updates) && Array.isArray(plan.noops));
+});
+
+test('computePlan returns Plan.protectedBranches computed from the resolved pattern', () => {
+  const config = { workflowPattern: 'dev-main-promotion', branches: { dev: 'develop', main: 'main' },
+    mergeMethod: { devToMainMethod: 'merge' }, release: {}, branchCleanup: {}, protectionOwner: 'external' };
+  const repoState = { stateHash: 'x', templateFiles: {}, repoSettings: {}, rulesets: [], protection: {},
+    releasePendingLabelExists: true };
+  const plan = computePlan(repoState, config, { 'dev-to-main-automerge': 'name: {{DEV_BRANCH}}' });
+  assert.deepStrictEqual(plan.protectedBranches, ['develop', 'main']);
 });
 
 test('computePlan has no side effects — repoState and config are not mutated', () => {
@@ -131,7 +156,7 @@ test('computePlan has no side effects — repoState and config are not mutated',
   const config = JSON.parse(JSON.stringify(BASE_CONFIG));
   const repoStateSnapshot = JSON.parse(JSON.stringify(repoState));
   const configSnapshot = JSON.parse(JSON.stringify(config));
-  computePlan(repoState, config, TEMPLATE);
+  computePlan(repoState, config, { 'dev-to-main-automerge': TEMPLATE });
   assert.deepEqual(repoState, repoStateSnapshot);
   assert.deepEqual(config, configSnapshot);
 });

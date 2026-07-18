@@ -66,8 +66,11 @@ digest to `research/` — each item paired with a suggested, voice-aware angle. 
 
 - *"Draft a post from item 2 in the radar."*
 
-Run it by hand (`bash scripts/release_radar.sh`) or schedule it with the included macOS
-launchd template (`scripts/release_radar.plist.example` — see its header for setup).
+Run it by hand (`bash scripts/release_radar.sh`) or schedule it with
+`bash scripts/install_radar.sh`, which renders the launchd template
+(`scripts/release_radar.plist.example`) against the repo's current absolute path and loads it.
+**Re-run the installer whenever the repo moves** — launchd keeps firing the old absolute path
+otherwise, and the radar dies silently (exit 127 in `research/.radar.log`).
 
 > **Prerequisites:** the radar shells out to the [`claude` CLI](https://docs.claude.com), so it
 > must be installed and on your `PATH`. The desktop notification and the launchd schedule are
@@ -123,6 +126,7 @@ PNG **opens in your image viewer automatically** (pass `--no-open` to skip).
 | `scripts/release_radar.sh` | Optional research run that builds a digest of recent developments |
 | `scripts/release_radar_prompt.md` | What the radar searches for — edit for your field |
 | `scripts/release_radar.plist.example` | macOS launchd template to schedule the radar |
+| `scripts/install_radar.sh` | Renders + loads the launchd agent for the repo's current path |
 | `scripts/render_image.py` | Optional: renders a Mermaid diagram or HTML card to a PNG |
 | `assets/diagram.css.example` | Brand-guide template — copy to `assets/diagram.css` (gitignored) and set your byline/palette |
 | `assets/` | Diagram templates + vendored `mermaid.min.js` |

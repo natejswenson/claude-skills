@@ -313,18 +313,30 @@ npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
 # publish on a missing style guide.
 
 # 2. Compose the cover using ONLY this release's title/tags/summary/`## Shipped` text
-#    (never the raw draft file, never `## Changelog`) plus the returned style guide and
-#    reference images. A cover that just re-renders the title in large text is a failure —
-#    find the one concrete mechanism this release is actually about (not the project name,
-#    not "a bug fix") and draw ONE custom inline-SVG illustration of it, sized as the
-#    dominant visual element of the canvas; title/kicker stay secondary. Two different
-#    releases should never produce visually similar covers — see the style guide's "one
-#    custom illustration per post" section before composing. Write the result with the
-#    Write tool to '<abs-scratch>/<key>/<version>.html' — a full document starting with
-#    `<!DOCTYPE html>`, sized `html, body { margin:0; width:1600px; height:900px; }`,
-#    referencing the bundled font only as `font-family: 'DevlogCoverFont', sans-serif`.
+#    (never the raw draft file, never `## Changelog`) plus the returned style guide,
+#    icon catalog, and reference images. A cover that just re-renders the title in large text is a failure —
+#    find the one concrete mechanism this release is actually about
+#    (not the project name, not "a bug fix") and draw ONE custom inline-SVG illustration
+#    of it, sized as the dominant visual element of the canvas; title/kicker stay
+#    secondary. Two different releases should never produce visually similar covers.
+#
+#    Draw the illustration inside a `#hero-zone` container at exactly
+#    `x:150 y:425 width:1300 height:400` (render-cover mechanically checks this box and
+#    refuses to render otherwise) — pick ONE of two composition slots per post: single
+#    centered hero (one freehand mechanism, nothing else), or two-node before/after (a
+#    left node, a right node, a connecting line, all freehand). Snap interior key points
+#    to a 25px coordinate grid. Catalog icons (image-style/icons.md) are never placed
+#    inside `#hero-zone` — they may only appear as an optional small accent glyph near
+#    the kicker/title area, entirely outside the hero zone, its bottom edge no lower than
+#    y:400. See the style guide's hero-zone grid contract section before composing.
+#    Write the result with the Write tool to '<abs-scratch>/<key>/<version>.html' — a
+#    full document starting with `<!DOCTYPE html>`, sized
+#    `html, body { margin:0; width:1600px; height:900px; }`, referencing the bundled
+#    font only as `font-family: 'DevlogCoverFont', sans-serif`.
 
-# 3. Rasterize it. On failure (render timeout / Chromium not installed / font missing),
+# 3. Rasterize it. On failure (render timeout / Chromium not installed / font missing /
+#    a #hero-zone problem — missing, duplicate, wrong position/size, or a catalog icon
+#    overlapping it),
 #    the .html is left in place for debugging — retry composing once with the error text
 #    fed back, or give up and proceed with no --cover flag.
 npx -y @natjswenson/devlog render-cover '<abs-scratch>/<key>/<version>.html' \

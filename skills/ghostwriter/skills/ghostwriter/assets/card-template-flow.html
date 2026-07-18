@@ -18,6 +18,11 @@
    * Keep it to ONE flow, ~4-5 stages, one example each, so it stays calm at phone size.
   All colour/type/spacing comes from diagram.css (.card.flow.light) — don't add one-off
   inline CSS; extend diagram.css if you need a new treatment.
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    3–5 stages · .t <=34 chars
+    5 stages => h1 <=2 lines + one-line titles. 3 stages auto-scale, 5 auto-compress.
 -->
 <html lang="en">
 <head>

@@ -423,6 +423,12 @@ async function cmdInit() {
     copyFileSync(fontSrc, fontDest);
     log.ok(`Installed image-style/font.ttf → ${fontDest}`);
   }
+  const iconsSrc = join(IMAGE_STYLE_SRC_DIR, 'icons.md');
+  const iconsDest = join(IMAGE_STYLE_DEST_DIR, 'icons.md');
+  if (existsSync(iconsSrc) && (await confirmOverwrite('image-style/icons.md', iconsDest))) {
+    copyFileSync(iconsSrc, iconsDest);
+    log.ok(`Installed image-style/icons.md → ${iconsDest}`);
+  }
 
   // Cover-generation reachability checks. Informational only — neither failure blocks
   // setup, since a missing Chromium/font only affects cover generation, not the rest of
@@ -675,7 +681,7 @@ function cmdPublishEntry(rest) {
 function cmdBackfillCovers(rest) {
   const sub = rest[0];
   if (sub !== 'list') {
-    emitJSON({ error: 'unknown-subcommand', message: 'Usage: devlog backfill-covers list --clone <cloneDir> [--project <key>] [--out <staging-dir>]' }, 2);
+    emitJSON({ error: 'unknown-subcommand', message: 'Usage: devlog backfill-covers list --clone <cloneDir> [--project <key>] [--out <staging-dir>] [--all]' }, 2);
     return;
   }
   const { values } = parseArgs({
@@ -684,6 +690,7 @@ function cmdBackfillCovers(rest) {
       clone: { type: 'string' },
       project: { type: 'string' },
       out: { type: 'string' },
+      all: { type: 'boolean', default: false },
     },
     allowPositionals: false,
   });
@@ -699,8 +706,11 @@ function cmdBackfillCovers(rest) {
     return;
   }
 
+  // Default (no --all): missing-cover-only, this command's original purpose. With --all,
+  // every manifest entry qualifies regardless of cover status — what a cover-quality
+  // backfill needs, since every real entry already has cover: true from a prior batch.
   let candidates = merged
-    .filter((e) => e && !e.cover)
+    .filter((e) => e && (values.all || !e.cover))
     .map((e) => ({ ...e, _slug: slugFromFile(e.file) }));
 
   if (values.project) {
@@ -767,9 +777,12 @@ function cmdCoverContext(rest) {
 
   const config = readValidConfigOrExit({ json: true });
 
-  let styleGuide;
+  // `let`, declared outside both try blocks below — NOT `const` inside the first one.
+  // Both blocks' emitJSON calls need text/iconCatalog, and a `const` destructure scoped to
+  // the first try alone would leave them unreachable (a ReferenceError) inside the second.
+  let text, iconCatalog;
   try {
-    styleGuide = loadStyleGuide();
+    ({ text, iconCatalog } = loadStyleGuide());
   } catch (e) {
     emitJSON({ error: 'style-guide-missing', message: e.message }, 1);
     return;
@@ -782,12 +795,12 @@ function cmdCoverContext(rest) {
       stagingDir: values.staging ? expandHome(values.staging) : null,
       n: 3,
     });
-    emitJSON({ styleGuide, references });
+    emitJSON({ styleGuide: text, references, iconCatalog });
   } catch (e) {
     // A configured project's manifest.json missing/unparseable: distinct, named error
     // field — never collapsed into an empty references: [] array — but still does not
     // block the rest of publish for the caller.
-    emitJSON({ styleGuide, references: [], error: 'reference-lookup-failed', message: e.message });
+    emitJSON({ styleGuide: text, references: [], error: 'reference-lookup-failed', message: e.message, iconCatalog });
   }
 }
 
