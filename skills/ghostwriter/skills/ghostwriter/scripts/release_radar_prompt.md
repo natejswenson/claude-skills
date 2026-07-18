@@ -37,6 +37,13 @@ Use WebSearch to find what shipped, then confirm each item against a **primary s
 vendor's own announcement, docs, or changelog) before including it. If a claim only appears on a
 third-party hype site, drop it. Note each item's vendor/source in the digest.
 
+**Hard verification gate — an item you did not confirm does not exist.** For every item, you must
+have actually retrieved the primary source this run and seen it state the fact — a search snippet,
+your own prior knowledge, or a plausible-sounding headline is NOT confirmation. Never include a
+release you couldn't fetch, and never include anything dated in the future. A short digest of
+verified items beats a full one with a hallucinated release — one invented item poisons the whole
+downstream post pipeline.
+
 ## Window & dedup
 
 - Look at the **most recent ~1–2 weeks** of releases.
@@ -75,7 +82,23 @@ _Research only. Pick an item and tell the ghostwriter "draft a post from item N 
 - **Suggested angle:** <a prescriptive, Nate-voice hook — the implication, not the news>
 
 ## 2. ...
+
+---
+
+## Discussion radar
+
+### D1. <short title>
+- **The debate:** <one line on what practitioners are actually arguing about> — <source URL(s)>
+- **Suggested angle:** <the specific position Nate could argue, prescriptive, from his ops/agent-builder seat>
 ```
 
-Include **2–4 items**. If nothing genuinely post-worthy shipped this cycle, write a
+Include **2–4 release items**. If nothing genuinely post-worthy shipped this cycle, write a
 single line saying so under the title instead of padding with weak items. Keep it tight.
+
+**Discussion radar (1–2 items):** the release lane misses the opinion/career posts that do well
+for Nate, so also surface one or two live, genuinely-debated questions in his lanes — how AI is
+changing DevOps/SRE/platform work, agent reliability in production, engineering-career shifts
+(IC paths, hiring, skills). Same source discipline: it must be traceable to real primary
+material (a named company's policy/post, a published study, a specific talk or RFC — not vibes
+or an unattributed hot take). Same verification gate applies. If nothing real is being debated,
+omit the section rather than inventing a controversy.

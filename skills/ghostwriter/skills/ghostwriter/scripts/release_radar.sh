@@ -42,7 +42,7 @@ Today is ${TODAY}. Write the digest to ${DIGEST}."
 # (no TTY => prompts would auto-deny); tools are restricted to research + file writes.
 claude -p "$PROMPT" \
   --model claude-sonnet-4-6 \
-  --max-budget-usd 0.50 \
+  --max-budget-usd 1.00 \
   --permission-mode acceptEdits \
   --allowedTools "WebSearch,Read,Write" \
   >>"$LOG" 2>&1
