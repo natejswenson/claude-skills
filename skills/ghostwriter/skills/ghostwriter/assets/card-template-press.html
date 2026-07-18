@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<!--
+  PRESS card — the editorial-poster brand system. This file is ONE example
+  composition (masthead → headline → standfirst → ledger → marginal → colophon,
+  the how-to shape). Press is COMPOSABLE: swap the middle for .duel / .pull /
+  .bigstat / .facts / .tiles / .term / .bars to fit the post — read
+  assets/card-language.md for the full vocabulary, composition rules, and the
+  variation axes. Render portrait 4:5 (the default --size 1200x1500).
+
+  CONTENT BUDGET (hard limits; the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line       h1 <=2 lines (~13 chars/line; add class
+    "compact" for ~20 chars/line)      stand <=3 lines (~46ch measure)
+    ledger 3-4 rows: .lt <=38 · .le <=60 · .cmdbar <=44 chars one line
+    marginal <=2 lines                 colophon .out <=52 chars
+    pick 2-3 body components between the masthead and the colophon - never
+    stack more; whitespace is part of the brand.
+
+  CLASS LEGEND: h1 .sig = the ONE signature-colored pivot phrase · .stand =
+  serif standfirst · .lrow = numbered ledger row (.lno auto-width numeral) ·
+  .cmdbar = ink command bar · .marginal = footnote gotcha (.ast asterisk,
+  <em> inline code) · .colophon = outcome line. The .stamp pulls your monogram
+  from --stamp; the byline/avatar from --byline/--avatar (diagram.css).
+-->
+<body>
+  <div id="canvas" class="card press">
+    <div class="mast">
+      <div class="stamp"></div>
+      <div class="eyebrow">Eyebrow Label · <span class="no">No. 001</span></div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>One sharp headline <span class="sig">pivot phrase.</span></h1>
+
+    <p class="stand">Two or three serif sentences that set up the idea, with the
+      <strong>key claim bolded</strong>. Keep it to three rendered lines.</p>
+
+    <div class="ledger">
+      <div class="lrow">
+        <div class="lno">01</div>
+        <div class="lbody">
+          <span class="lt">Step title</span>
+          <span class="le">One-line detail</span>
+        </div>
+      </div>
+      <div class="lrow">
+        <div class="lno">02</div>
+        <div class="lbody">
+          <span class="lt">Step title</span>
+          <code class="cmdbar">the --actual command or config</code>
+        </div>
+      </div>
+      <div class="lrow">
+        <div class="lno">03</div>
+        <div class="lbody">
+          <span class="lt">Step title</span>
+          <span class="le">One-line detail</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="marginal"><span class="ast">*</span><em>inline-code</em> the one real
+      gotcha, written as a footnote, so a reader saves the card.</div>
+
+    <div class="colophon">
+      <span>The outcome</span>
+      <span class="out">what the reader gets, in one serif line</span>
+    </div>
+  </div>
+</body>
+</html>
