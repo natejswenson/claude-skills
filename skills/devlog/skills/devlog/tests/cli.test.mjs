@@ -133,8 +133,11 @@ test('set / add-project --yes / remove-project --yes round-trip through the CLI'
   assert.equal(set.status, 0, set.stdout);
   assert.equal(parse(set).config.deepDive.minSources, 4);
 
+  // A leading-dash value is rejected at the arg-parsing layer — as structured
+  // bad-flag JSON (exit 2), not an uncaught parseArgs stack trace.
   const badSet = run(home, 'set', 'branch', '-bad');
-  assert.equal(badSet.status, 1);
+  assert.equal(badSet.status, 2);
+  assert.equal(parse(badSet).error, 'bad-flag');
 
   // add-project auto-detects the key from the path basename; the fixture repo
   // has no origin, so --remote is required.
@@ -263,8 +266,32 @@ test('render-cover writes a real 1600x900 PNG and a contact sheet, project-names
   assert.equal(body.ok, true);
   assert.ok(existsSync(join(outDir, 'proj-a', 'v0.1.0.png')));
   assert.ok(existsSync(join(outDir, 'index.html')));
-  // Transient HTML source is deleted after a successful render.
-  assert.equal(existsSync(htmlPath), false);
+  // The HTML source survives a successful render — it's what makes
+  // "tweak the HTML, re-run render-cover" possible.
+  assert.equal(existsSync(htmlPath), true);
+});
+
+test('render-cover re-renders when the HTML is present, overwriting a stale PNG', (t) => {
+  const { home } = makeCoverHome(t);
+  const outDir = join(home, 'staging');
+  mkdirSync(outDir, { recursive: true });
+  const htmlPath = join(home, 'cover.html');
+  const doc = (bg) => `<!DOCTYPE html><html><body style="margin:0;width:1600px;height:900px;background:${bg}">${HERO_ZONE_DIV}</body></html>`;
+
+  writeFileSync(htmlPath, doc('#000'));
+  const first = run(home, 'render-cover', htmlPath, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(parse(first).rendered, true);
+  const pngPath = join(outDir, 'proj-a', 'v0.1.0.png');
+  const firstBytes = readFileSync(pngPath);
+
+  // Edit the HTML, re-run: must re-render (the old PNG-exists short-circuit
+  // silently kept the stale image and cost real runs a debugging dance).
+  writeFileSync(htmlPath, doc('#fff'));
+  const second = run(home, 'render-cover', htmlPath, '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(parse(second).rendered, true);
+  assert.ok(!firstBytes.equals(readFileSync(pngPath)), 'PNG bytes must change after the HTML edit');
 });
 
 test('render-cover project-namespaces staged output so two projects sharing a slug never collide', (t) => {
@@ -300,8 +327,8 @@ test('render-cover is idempotent: a second run against an already-valid PNG does
   const first = run(home, 'render-cover', htmlPath(), '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
   assert.equal(parse(first).rendered, true);
 
-  // A second run needs its own html-file argument (the first was deleted) but should
-  // short-circuit before ever reading it, since the PNG is already valid.
+  // With the HTML gone and a valid PNG in place, a re-run is a no-op:
+  // rendered false, exit 0 — the resume-after-success case.
   const second = run(home, 'render-cover', join(home, 'nonexistent.html'), '--project', 'proj-a', '--slug', 'v0.1.0', '--out', outDir);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(parse(second).rendered, false);

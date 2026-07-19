@@ -82,6 +82,26 @@
       "rationale": "The rendered cover must be shown to the user before push, the same way Step 4 gates the prose — losing this line reopens publishing an unreviewed cover."
     },
     {
+      "id": "ground-truth-gate",
+      "pattern": "verify each one with a git command run NOW",
+      "rationale": "The 6-run audit found a post that published a provably false premise about the author's own repo (resume/v1.0.1: 'two of four packages never got tags' — all four existed). Every repo-fact claim must be re-verified against git in-session before publish; losing this line reopens the fabricated-premise path."
+    },
+    {
+      "id": "no-unrun-output",
+      "pattern": "never label output as real[\\s\\S]{0,120}unless the command that produced it ran in\\s+this session",
+      "rationale": "Two audited posts claimed 'real output' over commands that never ran (v0.6.0's phantom fixtures, v0.10.0's internally-impossible scan table). Output honesty must be a hard rule, not a stylistic preference."
+    },
+    {
+      "id": "tombstone-never-republish",
+      "pattern": "editorially retired[\\s\\S]{0,80}skip it silently, never regenerate",
+      "rationale": "Deleted/moved entries re-armed generation three times in the first six runs (ghostwriter v0.8.1 twice, market-research v0.1.0). The tombstoned state must always mean 'never regenerate'."
+    },
+    {
+      "id": "one-commit-one-changelog",
+      "pattern": "refuses a draft whose Changelog repeats a commit",
+      "rationale": "Monorepo twin releases shipped identical Changelogs (resume v1.0.1 + ghostwriter v0.8.1); a commit belongs to exactly one post's Changelog and publish-entry enforces it."
+    },
+    {
       "id": "cover-custom-illustration",
       "pattern": "cover that just re-renders the title in large text is a failure",
       "rationale": "First shipped version of this feature produced a shared text-heavy template with a rotating stock shape — rejected as bland/repetitive. Losing this line reopens that regression. Independent of, not superseded by, the v0.9.0 geometry guard (cover-catalog-hero-overlap-guard, below): that guard is a mechanical check on an agent's rendered composition each time a cover is rendered; this line is a prose guardrail against a future SKILL.md/style-guide edit silently reintroducing the bland-template regression at the instruction level. Two different regression surfaces, both still worth guarding."
@@ -95,5 +115,5 @@
       "rationale": "The catalog-icon/hero-zone overlap check must stay wired into renderCoverImage() — losing it silently reopens the gap where a catalog icon (or two, connected by a line) can stand in for the required bespoke hero illustration."
     }
   ],
-  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover"]
+  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover", "tombstone", "sync-entry", "assemble-post"]
 }

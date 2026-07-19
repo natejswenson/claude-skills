@@ -110,8 +110,42 @@ export function extractSourceUrls(sectionContent) {
   return urls;
 }
 
+// Voice-contract bans that are safe to check deterministically (the fuller
+// contract — hedge words, staccato rhythm, closers — stays with the judge,
+// where context can tell a false positive from a violation). Phrases are the
+// user's own explicit bans from voice-notes.md.
+export const VOICE_BANNED_PHRASES = [
+  /\bhonestly,/i,
+  /\bI keep seeing\b/i,
+  /isn't a bug, it's/i,
+  /not a bug, a feature/i,
+  /\bthe problem isn't\b/i,
+  /here's what stuck with me/i,
+];
+
+// Sections whose text is template punctuation or verbatim quoted data, exempt
+// from voice rules per SKILL.md (the `## Sources` em dash is fixed template
+// punctuation; `## Changelog` quotes commit subjects as-is).
+const VOICE_EXEMPT_SECTIONS = new Set(['Sources', 'Changelog']);
+
+// Prose lines of the non-exempt sections: fenced code excluded.
+function voiceCheckableLines(sections) {
+  const out = [];
+  for (const s of sections) {
+    if (VOICE_EXEMPT_SECTIONS.has(s.heading)) continue;
+    let inFence = false;
+    for (const line of s.content.split('\n')) {
+      if (/^```/.test(line)) { inFence = !inFence; continue; }
+      if (!inFence) out.push({ heading: s.heading, line });
+    }
+  }
+  return out;
+}
+
 // Lint a post. Returns { ok, findings: [{ rule, message }] }.
-export function lintPost(content, { minSources = 3, filename = null } = {}) {
+// `voice: true` adds the deterministic voice-contract rules — opt-in so the
+// eval harness and non-voice callers keep their existing behavior.
+export function lintPost(content, { minSources = 3, filename = null, voice = false } = {}) {
   const findings = [];
   const add = (rule, message) => findings.push({ rule, message });
 
@@ -192,6 +226,18 @@ export function lintPost(content, { minSources = 3, filename = null } = {}) {
 
   for (const line of findUntaggedFences(body)) {
     add('fence-untagged', `Code fence at body line ${line} has no language tag.`);
+  }
+
+  if (voice) {
+    for (const { heading, line } of voiceCheckableLines(sections)) {
+      if (line.includes('—')) {
+        add('voice-em-dash', `Em dash in \`## ${heading}\` prose ("${line.trim().slice(0, 60)}…") — the voice contract bans them; use a comma, semicolon, or split the sentence.`);
+      }
+      for (const re of VOICE_BANNED_PHRASES) {
+        const m = re.exec(line);
+        if (m) add('voice-banned-phrase', `Banned phrase "${m[0]}" in \`## ${heading}\` — rewrite per voice-notes.md.`);
+      }
+    }
   }
 
   return { ok: findings.length === 0, findings };

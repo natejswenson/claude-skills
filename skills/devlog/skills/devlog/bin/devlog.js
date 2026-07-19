@@ -2,7 +2,7 @@
 import { spawn, spawnSync, execSync } from 'node:child_process';
 import {
   existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, realpathSync,
-  readdirSync, statSync, unlinkSync, rmSync, mkdtempSync,
+  readdirSync, statSync, rmSync, mkdtempSync,
 } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,9 +32,10 @@ import {
   validateConfig,
   resolveDeepDive,
 } from '../lib/core.mjs';
-import { scanAll } from '../lib/scan.mjs';
+import { scanAll, summarizeScan } from '../lib/scan.mjs';
 import { lintPost, parseFrontmatter, splitSections } from '../lib/lint_post.mjs';
-import { publishEntry, addCoverToExistingEntry } from '../lib/publish_entry.mjs';
+import { publishEntry, addCoverToExistingEntry, tombstoneEntry, syncEntryFromFrontmatter } from '../lib/publish_entry.mjs';
+import { writeAssembledBlocks } from '../lib/assemble_post.mjs';
 import { addProject, removeProject, setField, SETTABLE_FIELDS } from '../lib/config_ops.mjs';
 import { loadStyleGuide, getRecentCovers, mergeManifestEntries } from '../lib/cover_gen.mjs';
 import { renderCoverImage } from '../lib/render_cover.mjs';
@@ -108,6 +109,18 @@ function tryExec(cmd) {
 function emitJSON(obj, exitCode = 0) {
   console.log(JSON.stringify(obj, null, 2));
   process.exit(exitCode);
+}
+
+// parseArgs is strict by default, so an unknown flag (`render-cover --force`)
+// used to die with a raw ERR_PARSE_ARGS_UNKNOWN_OPTION stack trace instead of
+// the JSON error shape every agent-facing command promises. Same contract as
+// commit-covers' hand-rolled parser: unknown/malformed flags → bad-flag JSON.
+function safeParseArgs(spec) {
+  try {
+    return parseArgs(spec);
+  } catch (e) {
+    emitJSON({ error: 'bad-flag', message: e.message }, 2);
+  }
 }
 
 function readValidConfigOrExit({ json = false } = {}) {
@@ -462,7 +475,7 @@ async function cmdInit() {
 
 // ─── add-project ─────────────────────────────────────────────────────────────
 async function cmdAddProject(rest) {
-  const { values } = parseArgs({
+  const { values } = safeParseArgs({
     args: rest,
     options: {
       path: { type: 'string' },
@@ -541,7 +554,7 @@ async function cmdAddProject(rest) {
 
 // ─── remove-project ──────────────────────────────────────────────────────────
 async function cmdRemoveProject(rest) {
-  const { values, positionals } = parseArgs({
+  const { values, positionals } = safeParseArgs({
     args: rest,
     options: { yes: { type: 'boolean', default: false } },
     allowPositionals: true,
@@ -571,7 +584,7 @@ async function cmdRemoveProject(rest) {
 
 // ─── set ─────────────────────────────────────────────────────────────────────
 function cmdSet(rest) {
-  const { positionals } = parseArgs({ args: rest, options: {}, allowPositionals: true });
+  const { positionals } = safeParseArgs({ args: rest, options: {}, allowPositionals: true });
   const [field, value] = positionals;
   const config = readValidConfigOrExit({ json: true });
   if (!field || value === undefined) {
@@ -588,11 +601,14 @@ function cmdSet(rest) {
 
 // ─── scan ────────────────────────────────────────────────────────────────────
 function cmdScan(rest) {
-  const { values } = parseArgs({
+  const { values } = safeParseArgs({
     args: rest,
     options: {
       project: { type: 'string' },
       'no-fetch': { type: 'boolean', default: false },
+      // Plan-table view: per release, commitCount instead of the commit list
+      // and diffstat; skippedTags collapsed to per-reason counts.
+      summary: { type: 'boolean', default: false },
       // scan always emits JSON; the flag is accepted so `scan --json` (as
       // SKILL.md spells it) is never a crash.
       json: { type: 'boolean', default: true },
@@ -600,19 +616,29 @@ function cmdScan(rest) {
     allowPositionals: false,
   });
   const config = readValidConfigOrExit({ json: true });
-  const result = scanAll(config, { projectKey: values.project || null, fetch: !values['no-fetch'] });
+  let result = scanAll(config, { projectKey: values.project || null, fetch: !values['no-fetch'] });
+  if (values.summary) result = summarizeScan(result);
+  // Which CLI actually ran: npx caches aggressively, and a stale install has
+  // silently missed shipped fixes before — the skill compares this against the
+  // version its own instructions shipped with.
+  if (!result.error) result.cliVersion = readPackageVersion();
   emitJSON(result, result.error ? 1 : 0);
 }
 
 // ─── lint-post ───────────────────────────────────────────────────────────────
 function cmdLintPost(rest) {
-  const { values, positionals } = parseArgs({
+  const { values, positionals } = safeParseArgs({
     args: rest,
-    options: { 'min-sources': { type: 'string' } },
+    options: {
+      'min-sources': { type: 'string' },
+      // Deterministic voice-contract rules (em dashes, banned phrases) —
+      // opt-in so non-voice callers and the eval harness keep their behavior.
+      voice: { type: 'boolean', default: false },
+    },
     allowPositionals: true,
   });
   const file = positionals[0];
-  if (!file) emitJSON({ error: 'missing-arg', message: 'Usage: devlog lint-post <file> [--min-sources N]' }, 2);
+  if (!file) emitJSON({ error: 'missing-arg', message: 'Usage: devlog lint-post <file> [--min-sources N] [--voice]' }, 2);
 
   let minSources;
   if (values['min-sources'] !== undefined) {
@@ -633,13 +659,13 @@ function cmdLintPost(rest) {
   } catch (e) {
     emitJSON({ error: 'unreadable', message: e.message }, 2);
   }
-  const result = lintPost(content, { minSources, filename: file });
+  const result = lintPost(content, { minSources, filename: file, voice: values.voice });
   emitJSON({ ...result, minSources }, result.ok ? 0 : 1);
 }
 
 // ─── publish-entry ───────────────────────────────────────────────────────────
 function cmdPublishEntry(rest) {
-  const { values } = parseArgs({
+  const { values } = safeParseArgs({
     args: rest,
     options: {
       clone: { type: 'string' },
@@ -677,6 +703,92 @@ function cmdPublishEntry(rest) {
   }
 }
 
+// ─── tombstone ───────────────────────────────────────────────────────────────
+// Editorially retire a (project, version) identity after its entry was moved,
+// consolidated, or deleted by hand — scan then reports `entry-tombstoned` and
+// publish-entry refuses it forever.
+function cmdTombstone(rest) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: {
+      clone: { type: 'string' },
+      project: { type: 'string' },
+      version: { type: 'string' },
+      reason: { type: 'string' },
+    },
+    allowPositionals: false,
+  });
+  for (const flag of ['clone', 'project', 'version', 'reason']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `tombstone requires --${flag}` }, 1);
+  }
+  try {
+    const result = tombstoneEntry({
+      cloneDir: expandHome(values.clone),
+      project: values.project,
+      version: values.version,
+      reason: values.reason,
+    });
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: 'tombstone-failed', message: e.message }, 1);
+  }
+}
+
+// ─── sync-entry ──────────────────────────────────────────────────────────────
+// Resync a published entry's manifest row (title/summary/date/tags) from its
+// .md frontmatter after a deliberate post-publish edit.
+function cmdSyncEntry(rest) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: {
+      clone: { type: 'string' },
+      project: { type: 'string' },
+      slug: { type: 'string' },
+    },
+    allowPositionals: false,
+  });
+  for (const flag of ['clone', 'project', 'slug']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `sync-entry requires --${flag}` }, 1);
+  }
+  try {
+    const result = syncEntryFromFrontmatter({
+      cloneDir: expandHome(values.clone),
+      project: values.project,
+      slug: values.slug,
+    });
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: 'sync-failed', message: e.message }, 1);
+  }
+}
+
+// ─── assemble-post ───────────────────────────────────────────────────────────
+// Extract a draft's fenced code blocks, in order, into numbered files so the
+// Step 4 assemble-and-run check is mechanical instead of hand-copied.
+function cmdAssemblePost(rest) {
+  const { values, positionals } = safeParseArgs({
+    args: rest,
+    options: { out: { type: 'string' } },
+    allowPositionals: true,
+  });
+  const file = positionals[0];
+  if (!file) emitJSON({ error: 'missing-arg', message: 'Usage: devlog assemble-post <draft> --out <dir>' }, 2);
+  if (!values.out) emitJSON({ error: 'missing-flag', message: 'assemble-post requires --out' }, 1);
+
+  let content;
+  try {
+    content = readFileSync(expandHome(file), 'utf8');
+  } catch (e) {
+    emitJSON({ error: 'unreadable', message: e.message }, 2);
+  }
+  try {
+    const result = writeAssembledBlocks(content, expandHome(values.out));
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: 'assemble-failed', message: e.message }, 1);
+  }
+}
+
 // ─── backfill-covers list ─────────────────────────────────────────────────────
 function cmdBackfillCovers(rest) {
   const sub = rest[0];
@@ -684,7 +796,7 @@ function cmdBackfillCovers(rest) {
     emitJSON({ error: 'unknown-subcommand', message: 'Usage: devlog backfill-covers list --clone <cloneDir> [--project <key>] [--out <staging-dir>] [--all]' }, 2);
     return;
   }
-  const { values } = parseArgs({
+  const { values } = safeParseArgs({
     args: rest.slice(1),
     options: {
       clone: { type: 'string' },
@@ -761,7 +873,7 @@ function cmdBackfillCovers(rest) {
 
 // ─── cover-context ─────────────────────────────────────────────────────────────
 function cmdCoverContext(rest) {
-  const { positionals, values } = parseArgs({
+  const { positionals, values } = safeParseArgs({
     args: rest,
     options: {
       clone: { type: 'string' },
@@ -826,7 +938,7 @@ function regenerateContactSheet(outDir) {
 }
 
 async function cmdRenderCover(rest) {
-  const { positionals, values } = parseArgs({
+  const { positionals, values } = safeParseArgs({
     args: rest,
     options: {
       project: { type: 'string' },
@@ -852,17 +964,21 @@ async function cmdRenderCover(rest) {
   mkdirSync(projectDir, { recursive: true });
   const pngPath = join(projectDir, `${values.slug}.png`);
 
-  // Idempotent re-run: an existing, valid PNG is left untouched — no re-render.
-  if (existsSync(pngPath) && isValidPngFile(pngPath)) {
-    regenerateContactSheet(outDir);
-    emitJSON({ ok: true, written: pngPath, rendered: false });
-    return;
-  }
-
+  // The HTML file is the source of truth: whenever it's present, render it —
+  // overwriting any stale PNG from a previous attempt. (The old
+  // PNG-exists short-circuit silently ignored freshly edited HTML, which cost
+  // every real retry loop an ls/mtime/md5 debugging dance and a guessed-at
+  // `--force` flag that didn't exist.) Only when the HTML is gone does an
+  // existing valid PNG mean "already rendered, nothing to do".
   let html;
   try {
     html = readFileSync(expandHome(htmlFile), 'utf8');
   } catch (e) {
+    if (existsSync(pngPath) && isValidPngFile(pngPath)) {
+      regenerateContactSheet(outDir);
+      emitJSON({ ok: true, written: pngPath, rendered: false });
+      return;
+    }
     emitJSON({ error: 'html-unreadable', message: e.message }, 1);
     return;
   }
@@ -878,9 +994,10 @@ async function cmdRenderCover(rest) {
   }
   writeFileSync(pngPath, png);
 
-  // Transient source document — deleted immediately after a successful render only.
-  try { unlinkSync(expandHome(htmlFile)); } catch { /* best-effort cleanup */ }
-
+  // The HTML source deliberately stays on disk (it lives in the run's scratch
+  // dir and dies with it): keeping it is what makes "tweak the HTML, re-run
+  // render-cover" work at all — deleting it on success broke every
+  // post-render Edit attempt in real runs.
   regenerateContactSheet(outDir);
   emitJSON({ ok: true, written: pngPath, rendered: true });
 }
@@ -1018,7 +1135,7 @@ async function cmdCommitCovers(rest) {
 
 // ─── config (view) ───────────────────────────────────────────────────────────
 async function cmdConfig(rest) {
-  const { values } = parseArgs({
+  const { values } = safeParseArgs({
     args: rest,
     options: { json: { type: 'boolean', default: false } },
     allowPositionals: false,
@@ -1137,11 +1254,16 @@ Setup & config:
   ${kleur.cyan('npx @natjswenson/devlog config [--json]')}          Show current config (with validation)
 
 Used by the /devlog skill:
-  ${kleur.cyan('npx @natjswenson/devlog scan [--project <key>]')}   JSON plan of new releases needing entries
-  ${kleur.cyan('npx @natjswenson/devlog lint-post <file>')}         Deterministic post-contract check
+  ${kleur.cyan('npx @natjswenson/devlog scan [--project <key>] [--summary]')}   JSON plan of new releases needing entries
+  ${kleur.cyan('npx @natjswenson/devlog lint-post <file> [--voice]')}  Deterministic post-contract check (+ voice rules)
+  ${kleur.cyan('npx @natjswenson/devlog assemble-post <draft> --out <dir>')}  Extract the draft's code blocks for the run-it check
   ${kleur.cyan('npx @natjswenson/devlog publish-entry ...')}        Copy a drafted entry into the clone + update manifest (never overwrites)
   ${kleur.cyan('npx @natjswenson/devlog cover-context <project> <slug> --clone <dir>')}  Style guide + reference-image paths for cover composition
   ${kleur.cyan('npx @natjswenson/devlog render-cover <html> --project <key> --slug <s> --out <dir>')}  Rasterize a composed cover to PNG
+
+Editorial maintenance:
+  ${kleur.cyan('npx @natjswenson/devlog tombstone --clone <dir> --project <key> --version <v> --reason <why>')}  Retire a moved/consolidated entry's identity
+  ${kleur.cyan('npx @natjswenson/devlog sync-entry --clone <dir> --project <key> --slug <v>')}  Resync a manifest row from an edited entry's frontmatter
 
 Backfilling covers onto existing posts:
   ${kleur.cyan('npx @natjswenson/devlog backfill-covers list --clone <dir> [--out <staging-dir>]')}  List posts missing a cover
@@ -1195,6 +1317,15 @@ if (isMain) {
       break;
     case 'publish-entry':
       cmdPublishEntry(rest);
+      break;
+    case 'tombstone':
+      cmdTombstone(rest);
+      break;
+    case 'sync-entry':
+      cmdSyncEntry(rest);
+      break;
+    case 'assemble-post':
+      cmdAssemblePost(rest);
       break;
     case 'backfill-covers':
       cmdBackfillCovers(rest);

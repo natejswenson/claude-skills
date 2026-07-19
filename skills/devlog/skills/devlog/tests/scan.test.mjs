@@ -12,6 +12,8 @@ import {
   selectReleases,
   scanProject,
   scanAll,
+  summarizeScan,
+  emptyExisting,
 } from '../lib/scan.mjs';
 import { remoteUrlMatches } from '../lib/core.mjs';
 
@@ -134,7 +136,7 @@ test('scanProject skips existing entries but still uses them as range base', (t)
   commit(dir, 'b.txt', 'feat: second');
   git(dir, 'tag', 'v0.2.0');
 
-  const out = scanProject(project(dir), { fetch: false, existingFiles: new Set(['v0.1.0.md']) });
+  const out = scanProject(project(dir), { fetch: false, existing: { ...emptyExisting(), files: new Set(['v0.1.0.md']) } });
   assert.equal(out.newReleases.length, 1);
   assert.equal(out.newReleases[0].version, 'v0.2.0');
   // v0.1.0 is skipped as an entry but MUST remain the range base.
@@ -154,7 +156,7 @@ test('scanProject: prevTag skips prerelease and non-release tags', (t) => {
   commit(dir, 'd.txt', 'feat: final');
   git(dir, 'tag', 'v0.3.0');
 
-  const out = scanProject(project(dir), { fetch: false, existingFiles: new Set(['v0.2.0.md']) });
+  const out = scanProject(project(dir), { fetch: false, existing: { ...emptyExisting(), files: new Set(['v0.2.0.md']) } });
   const rel = out.newReleases.find((r) => r.version === 'v0.3.0');
   assert.equal(rel.prevTag, 'v0.2.0'); // NOT version-bump or the rc
   // Range spans back to v0.2.0, so the rc-era commits are included.
@@ -329,4 +331,98 @@ test('scanAll defaults targetDir to empty (repo root) when unset', (t) => {
   });
   assert.deepEqual(calls, ['']);
   assert.equal(out.targetDir, '');
+});
+
+test('scanProject reports entry-tombstoned, taking precedence over entry-exists', (t) => {
+  const dir = makeRepo(t);
+  commit(dir, 'a.txt', 'feat: first');
+  git(dir, 'tag', 'v0.1.0');
+  commit(dir, 'b.txt', 'feat: second');
+  git(dir, 'tag', 'v0.2.0');
+
+  // A tombstone row carries a `file` field too, so v0.1.0 appears in BOTH
+  // sets — the tombstone reason must win.
+  const existing = {
+    ...emptyExisting(),
+    files: new Set(['v0.1.0.md']),
+    removedVersions: new Set(['v0.1.0']),
+    versions: new Set(),
+  };
+  const out = scanProject(project(dir), { fetch: false, existing });
+  assert.equal(out.newReleases.length, 1);
+  assert.equal(out.newReleases[0].version, 'v0.2.0');
+  assert.ok(out.skippedTags.some((s) => s.tag === 'v0.1.0' && s.reason === 'entry-tombstoned'));
+  assert.ok(!out.skippedTags.some((s) => s.reason === 'entry-exists'));
+});
+
+test('scanProject skips manifest-known versions even when the filename differs', (t) => {
+  const dir = makeRepo(t);
+  commit(dir, 'a.txt', 'feat: first');
+  git(dir, 'tag', 'v0.1.0');
+
+  // The entry was editorially renamed (e.g. date-based filename) but its
+  // manifest row keeps the version — identity is project+version, not a path.
+  const existing = { ...emptyExisting(), versions: new Set(['v0.1.0']) };
+  const out = scanProject(project(dir), { fetch: false, existing });
+  assert.equal(out.newReleases.length, 0);
+  assert.ok(out.skippedTags.some((s) => s.tag === 'v0.1.0' && s.reason === 'entry-exists'));
+});
+
+test('scanAll echoes publishedEntries and tolerates a legacy partial getExisting shape', (t) => {
+  const dir = makeRepo(t);
+  commit(dir, 'a.txt', 'feat: first');
+  git(dir, 'tag', 'v0.1.0');
+  fakePublish(dir, 'me/proj', 'main');
+
+  const config = {
+    targetRepo: 'me/dev-log',
+    projects: [project(dir)],
+  };
+
+  const entries = [{ version: 'v0.0.9', title: 'Older post', tags: ['git'] }];
+  const full = scanAll(config, {
+    fetch: false,
+    getExisting: () => ({ ...emptyExisting(), entries, status: 'ok' }),
+  });
+  assert.deepEqual(full.projects[0].publishedEntries, entries);
+
+  // A legacy double returning only { files, status } must not crash the
+  // tombstone checks — and yields an empty publishedEntries.
+  const legacy = scanAll(config, {
+    fetch: false,
+    getExisting: () => ({ files: new Set(), status: 'ok' }),
+  });
+  assert.deepEqual(legacy.projects[0].publishedEntries, []);
+  assert.equal(legacy.projects[0].newReleases.length, 1);
+});
+
+test('summarizeScan collapses commits to counts and skippedTags to per-reason tallies', () => {
+  const result = {
+    targetRepo: 'me/dev-log',
+    targetDir: '',
+    branch: 'main',
+    projects: [{
+      key: 'proj',
+      newReleases: [{
+        tag: 'v0.2.0', version: 'v0.2.0', date: '2026-07-01', prevTag: 'v0.1.0',
+        commits: [{ hash: 'a', subject: 's', date: 'd', public: true }, { hash: 'b', subject: 's2', date: 'd', public: true }],
+        diffstat: ' 3 files changed',
+      }],
+      skippedTags: [
+        { tag: 'v0.1.0', reason: 'entry-exists' },
+        { tag: 'v0.0.9', reason: 'entry-exists' },
+        { tag: 'v0.1.0-rc.1', reason: 'prerelease' },
+      ],
+      publishedEntries: [{ version: 'v0.1.0', title: 'T', tags: [] }],
+    }],
+    totalNewReleases: 1,
+  };
+  const summary = summarizeScan(result);
+  const p = summary.projects[0];
+  assert.deepEqual(p.newReleases, [{ tag: 'v0.2.0', version: 'v0.2.0', date: '2026-07-01', prevTag: 'v0.1.0', commitCount: 2 }]);
+  assert.deepEqual(p.skippedTags, { 'entry-exists': 2, prerelease: 1 });
+  assert.deepEqual(p.publishedEntries, result.projects[0].publishedEntries);
+  assert.equal(summary.totalNewReleases, 1);
+  // Error results pass through untouched.
+  assert.deepEqual(summarizeScan({ error: 'unknown-project: x' }), { error: 'unknown-project: x' });
 });
