@@ -2,8 +2,9 @@
 
 Twenty small, secondary/accent icons — **never the hero illustration itself**. Each is a
 real inline SVG, 24×24 viewBox, stroke-only (`stroke="currentColor" fill="none"`), so it
-recolors for free via CSS `color: #ededed` or `color: #fff503` (the accent yellow) —
-never `fill`. Wrap every usage in a container carrying `data-catalog-icon="<name>"`
+recolors for free via CSS `color: #181510` (ink) or `color: #6E675C` (dim) — never
+`fill`, and never the signature orange: per the style guide, the accent icon is
+structure, not the cover's one loud moment. Wrap every usage in a container carrying `data-catalog-icon="<name>"`
 (the exact `<name>` from the table below) — `render-cover`'s geometry guard reads this
 attribute to confirm no catalog icon has drifted into the hero zone.
 

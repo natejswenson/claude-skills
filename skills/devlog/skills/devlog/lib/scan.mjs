@@ -191,8 +191,9 @@ function splitLogLine(line) {
 // project has no entries yet; any other failure is surfaced so the caller
 // knows the entry-exists filter may be incomplete (publish-entry still refuses
 // overwrites against the fresh clone, so a stale scan cannot clobber anything).
-export function fetchExistingEntries(targetRepo, branch, projectKey) {
-  const r = spawnArgs('gh', ['api', `repos/${targetRepo}/contents/${projectKey}?ref=${branch}`, '--jq', '.[].name']);
+export function fetchExistingEntries(targetRepo, branch, projectKey, targetDir = '') {
+  const contentPath = targetDir ? `${targetDir}/${projectKey}` : projectKey;
+  const r = spawnArgs('gh', ['api', `repos/${targetRepo}/contents/${contentPath}?ref=${branch}`, '--jq', '.[].name']);
   if (r.status === 0) {
     return { files: new Set(r.stdout.split('\n').filter(Boolean)), status: 'ok' };
   }
@@ -218,7 +219,7 @@ export function scanAll(config, { projectKey = null, fetch = true, getExisting =
   }
 
   const results = projects.map((project) => {
-    const existing = getExisting(config.targetRepo, branch, project.key);
+    const existing = getExisting(config.targetRepo, branch, project.key, config.targetDir || '');
     const scanned = scanProject(project, { branch, fetch, existingFiles: existing.files });
     scanned.existenceCheck = existing.status;
     return scanned;
@@ -226,6 +227,9 @@ export function scanAll(config, { projectKey = null, fetch = true, getExisting =
 
   return {
     targetRepo: config.targetRepo,
+    // Subdirectory of targetRepo holding the content tree ('' = repo root) — the
+    // skill appends it to the publish clone path (`--clone <clone>/<targetDir>`).
+    targetDir: config.targetDir || '',
     branch,
     deepDive: resolveDeepDive(config),
     voicePath: config.voicePath || null,
