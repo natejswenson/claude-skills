@@ -280,8 +280,11 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
      is often reachable from this session — call it and capture real output); else take the
      user's **paste or screenshot** (offered in the step-8 question). Save the raw capture —
      transcribing a screenshot faithfully if that's what you got — to
-     `images/<slug>.source.txt`, and iterate every render against that file, not against
-     memory of it.
+     `images/<slug>.source.txt` (gitignored, stays local), and iterate every render against
+     that file, not against memory of it. **The card gets published: scrub secrets before
+     transcribing** — tokens, keys, emails, home-directory paths, private hostnames get
+     redacted or generalized in the card even though the capture keeps them (same "never
+     print secrets" guardrail).
   2. **Author as condensation, never invention.** Keep the session's anatomy — the prompt
      row, the tool-call indicator line, the real table with its actual metric names, values,
      baselines, and deltas, the verdict, the closing directive (see `assets/card-language.md`

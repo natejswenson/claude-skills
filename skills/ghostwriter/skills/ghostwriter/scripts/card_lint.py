@@ -69,7 +69,8 @@ TEMPLATE_ICON_PATHS = _harvest_icon_paths()
 _TEMPLATE_NAME = re.compile(r"card-template-.*\.html$")
 _SLIDE_START = re.compile(r'<div\s+class="[^"]*\bslide\b[^"]*"[^>]*>')
 _TAG = re.compile(r"<[^>]+>")
-_TERM_ROW = re.compile(r'<div\s+class="tl[^"]*"[^>]*>(.*?)</div>', re.S)
+_TERM_ROW = re.compile(
+    r'<div\b[^>]*\bclass="[^"]*\btl\b[^"]*"[^>]*>(.*?)</div>', re.S)
 # Box-drawing glyphs — a row containing any of these is part of an ASCII table.
 _BOX_CHARS = set("┌┐└┘├┤┬┴┼─│")
 
@@ -131,19 +132,27 @@ def _term_checks(html: str) -> list[Finding]:
     if not rows:
         return findings
 
-    box_rows = [(i, r) for i, r in enumerate(rows, start=1)
-                if _BOX_CHARS & set(r)]
-    widths = {len(r.rstrip()) for _, r in box_rows}
-    if len(widths) > 1:
-        detail = ", ".join(
-            f"row {i}: {len(r.rstrip())} chars" for i, r in box_rows
-        )
-        findings.append(Finding(
-            "FAIL", "term-misaligned",
-            "the terminal's box-drawing table rows have unequal widths ("
-            f"{detail}) — a real CLI table aligns every border and cell; pad "
-            "each row to one shared width",
-        ))
+    # Alignment is judged per table: a table is a contiguous run of box-drawing
+    # rows, so two separate tables (or two .term panels) may differ in width.
+    runs: list[list[tuple[int, str]]] = []
+    for i, r in enumerate(rows, start=1):
+        if _BOX_CHARS & set(r):
+            if runs and runs[-1][-1][0] == i - 1:
+                runs[-1].append((i, r))
+            else:
+                runs.append([(i, r)])
+    for run in runs:
+        widths = {len(r.rstrip()) for _, r in run}
+        if len(widths) > 1:
+            detail = ", ".join(
+                f"row {i}: {len(r.rstrip())} chars" for i, r in run
+            )
+            findings.append(Finding(
+                "FAIL", "term-misaligned",
+                "the terminal's box-drawing table rows have unequal widths ("
+                f"{detail}) — a real CLI table aligns every border and cell; "
+                "pad each row to one shared width",
+            ))
 
     if len(rows) > TERM_MAX_ROWS:
         findings.append(Finding(

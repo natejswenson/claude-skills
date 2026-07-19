@@ -174,6 +174,31 @@ def test_term_prose_rows_dont_join_alignment_check():
     assert findings == []
 
 
+def test_term_rows_match_regardless_of_attr_and_class_order():
+    # class not the first attribute, tl not the first class — still linted.
+    rows = ALIGNED_TABLE[:2] + ["│ bad │"]
+    body = "".join(
+        f'<div style="opacity:.9" class="dim tl">{r}</div>' for r in rows
+    )
+    html = card(f'<div class="term">{body}</div>', cls="card press")
+    assert codes(cl.static_checks(html, "images/x.html"), "FAIL") == ["term-misaligned"]
+
+
+def test_term_two_tables_may_differ_in_width():
+    # Two contiguous runs (split by a prose row) are separate tables — each is
+    # internally aligned, so different widths across them are fine.
+    narrow = ["┌───┐", "│ x │", "└───┘"]
+    rows = ALIGNED_TABLE + ["verdict line, no box chars"] + narrow
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert findings == []
+
+
+def test_term_misalignment_within_second_table_still_fails():
+    rows = ALIGNED_TABLE + ["prose"] + ["┌───┐", "│ xx │", "└───┘"]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert codes(findings, "FAIL") == ["term-misaligned"]
+
+
 def test_term_row_budget_warns_past_20():
     rows = [f"line {i}" for i in range(cl.TERM_MAX_ROWS + 1)]
     findings = cl.static_checks(term_card(rows), "images/x.html")

@@ -24,9 +24,14 @@ output the raw material, not the correction.
   phrasing, dead whitespace) and fixed *before* the user sees it. "Closer" from the user is
   defined as the failure mode.
 - **`term-misaligned` lint (FAIL)** — box-drawing table rows inside `.term` must share one
-  character width. Run against the session's hand-approved published card, it caught a real
-  1-char border misalignment that 9 rounds of eyeballing missed. Plus `term-rows` /
-  `term-width` WARNs enforcing the new hero budget.
+  character width, judged per table (a contiguous run of box rows), so two tables in one
+  terminal may differ. Matches `.tl` rows regardless of attribute or class order. Run against
+  the session's hand-approved published card, it caught a real 1-char border misalignment
+  that 9 rounds of eyeballing missed. Plus `term-rows` / `term-width` WARNs enforcing the
+  new hero budget.
+- **Secrets scrub on transcription** — captures are gitignored and stay local, but the card
+  is published: tokens, keys, emails, home paths, and private hostnames are redacted or
+  generalized in the card even when the raw capture keeps them.
 - **Hero-terminal budget** — `.term` now has two modes in `assets/card-language.md` and the
   SKILL.md budget table: accent (≤10 rows × 42 chars, unchanged) and hero (≤20 rows × 56
   chars, up to ~⅔ of the card). The published card that finally satisfied the user was 18
