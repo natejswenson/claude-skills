@@ -4,6 +4,51 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-07-18
+
+A real session (drafting the "hardass running coach" post) burned ~9 review rounds because the
+terminal card was invented instead of transcribed: the user had to say "make it look like my
+ACTUAL agent," paste a screenshot, and hand-feed real numbers row by row. 0.13.0 makes real
+output the raw material, not the correction.
+
+### Added
+- **Real-output cards (the fidelity contract)** — new SKILL.md section: any card showing the
+  user's own agent/CLI/code (hero `term`, `code`, `claude`) must be a *transcription of a real
+  session*. Capture first (run the user's CLI/MCP tool yourself, or take their paste/screenshot),
+  save the raw capture to `images/<slug>.source.txt`, author as condensation (cut whole rows,
+  never smooth texture into prose), print `—` for missing values or ask for ONE real number —
+  never invent, especially health/personal metrics. Guarded by a new prose invariant
+  (`real-output-transcription`).
+- **Mirror check** — when the user supplied a reference screenshot/paste, every render is
+  self-compared against it (missing prompt/tool-call lines, missing table columns, invented
+  phrasing, dead whitespace) and fixed *before* the user sees it. "Closer" from the user is
+  defined as the failure mode.
+- **`term-misaligned` lint (FAIL)** — box-drawing table rows inside `.term` must share one
+  character width. Run against the session's hand-approved published card, it caught a real
+  1-char border misalignment that 9 rounds of eyeballing missed. Plus `term-rows` /
+  `term-width` WARNs enforcing the new hero budget.
+- **Hero-terminal budget** — `.term` now has two modes in `assets/card-language.md` and the
+  SKILL.md budget table: accent (≤10 rows × 42 chars, unchanged) and hero (≤20 rows × 56
+  chars, up to ~⅔ of the card). The published card that finally satisfied the user was 18
+  rows × 56 chars — the old budget outlawed the card the user actually wanted.
+- **"The hero terminal" section in `assets/card-language.md`** — the anatomy of a believable
+  session: highlighted `.tl.prompt` row, verbatim tool-call indicator line, box-drawing table
+  with real metrics/baselines/deltas, one `.hot` verdict, closing directive.
+- **Hook + save pre-show checks** — the step-7 self-check now verifies the post's most
+  specific number/tension sits in the first ~210 chars and that the post has a nameable
+  save-worthy artifact (or is deliberately a personal post), tightening the reach loop.
+
+### Changed
+- **Step 8 asks ONE question, including output provenance** — when the post is about the
+  user's own agent, the single visual question also settles where the real output comes from
+  (live capture / paste-screenshot / compose from draft facts). No second round-trip.
+- **`.term` CSS upgraded in `diagram.css.example`** — ported the battle-tested block the
+  session hand-tuned into the personal brand file: dark navy panel (`#141A26`), tighter row
+  gap, and the `.tl.prompt` full-bleed highlighted command bar. The shipped example and the
+  personal file no longer diverge on the terminal look.
+- The capture's 1–2 strongest real numbers now feed the post body too (re-running the source
+  gate if that adds an external claim) — real specifics are what get posts saved and shared.
+
 ## [0.12.0] - 2026-07-18
 
 Graphics were the user's stated engagement bottleneck: every card shipped the same light-SaaS

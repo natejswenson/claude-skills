@@ -22,6 +22,7 @@ render_image.py runs both layers automatically on every card render
 from __future__ import annotations
 
 import argparse
+import html as html_mod
 import json
 import re
 import sys
@@ -68,6 +69,14 @@ TEMPLATE_ICON_PATHS = _harvest_icon_paths()
 _TEMPLATE_NAME = re.compile(r"card-template-.*\.html$")
 _SLIDE_START = re.compile(r'<div\s+class="[^"]*\bslide\b[^"]*"[^>]*>')
 _TAG = re.compile(r"<[^>]+>")
+_TERM_ROW = re.compile(r'<div\s+class="tl[^"]*"[^>]*>(.*?)</div>', re.S)
+# Box-drawing glyphs — a row containing any of these is part of an ASCII table.
+_BOX_CHARS = set("┌┐└┘├┤┬┴┼─│")
+
+# The hero-terminal budget (card-language.md → Terminal): a real transcript may
+# run to ~20 rows / ~56 chars; past that it shrinks or clips in the feed.
+TERM_MAX_ROWS = 20
+TERM_MAX_CHARS = 58
 
 
 def _is_template_file(path: Path | str | None) -> bool:
@@ -105,7 +114,50 @@ def static_checks(html: str, path: Path | str | None = None) -> list[Finding]:
                     "FAIL", "placeholder-copy",
                     f"template placeholder copy survives: {s!r}",
                 ))
+        findings.extend(_term_checks(html))
     findings.extend(_carousel_checks(html))
+    return findings
+
+
+def _term_checks(html: str) -> list[Finding]:
+    """Fidelity checks on Press `.term` rows (`<div class="tl …">`): box-drawing
+    table rows must align to one shared width, and the whole panel must stay
+    inside the hero-terminal budget."""
+    findings: list[Finding] = []
+    rows = [
+        html_mod.unescape(_TAG.sub("", m.group(1)))
+        for m in _TERM_ROW.finditer(html)
+    ]
+    if not rows:
+        return findings
+
+    box_rows = [(i, r) for i, r in enumerate(rows, start=1)
+                if _BOX_CHARS & set(r)]
+    widths = {len(r.rstrip()) for _, r in box_rows}
+    if len(widths) > 1:
+        detail = ", ".join(
+            f"row {i}: {len(r.rstrip())} chars" for i, r in box_rows
+        )
+        findings.append(Finding(
+            "FAIL", "term-misaligned",
+            "the terminal's box-drawing table rows have unequal widths ("
+            f"{detail}) — a real CLI table aligns every border and cell; pad "
+            "each row to one shared width",
+        ))
+
+    if len(rows) > TERM_MAX_ROWS:
+        findings.append(Finding(
+            "WARN", "term-rows",
+            f"{len(rows)} .tl rows — the hero-terminal budget is ≤{TERM_MAX_ROWS}; "
+            "cut whole rows (keep the prompt, tool-call line, table, verdict)",
+        ))
+    widest = max(rows, key=lambda r: len(r.rstrip()))
+    if len(widest.rstrip()) > TERM_MAX_CHARS:
+        findings.append(Finding(
+            "WARN", "term-width",
+            f"a .tl row is {len(widest.rstrip())} chars (>{TERM_MAX_CHARS}) — "
+            "it will shrink or clip at feed size; tighten the widest row",
+        ))
     return findings
 
 

@@ -1244,12 +1244,16 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.press .tile .tt { font: 800 32px/1.15 var(--font); color: var(--ink); }
 .card.press .tile .te { font: 400 24px/1.35 var(--serif); color: var(--dim); }
 
-/* term: a dark terminal panel floating on the paper (code posts). One .tl per row;
-   mark the money line .hot (signature). Keep ≤10 rows, ≤42 chars. */
-.card.press .term { background: var(--ink); padding: 36px 40px; display: flex;
-  flex-direction: column; gap: 14px; }
+/* term: a dark terminal panel floating on the paper (code / session posts). One .tl
+   per row; mark the money line .hot (signature). As an accent keep ≤10 rows, ≤42
+   chars; as the HERO a real transcript may run to ~20 rows, ≤56 chars (tables,
+   wrapped prose) — keep every row inside the panel, no clipping. .tl.prompt
+   full-bleeds a highlighted bar for the live command row, like a real shell. */
+.card.press .term { background: #141A26; padding: 28px 40px; display: flex;
+  flex-direction: column; gap: 9px; }
 .card.press .term .tl { font: 500 26px/1.4 var(--mono); color: #EFE9DC; white-space: pre; }
 .card.press .term .tl.dim { color: #8A8478; }
+.card.press .term .tl.prompt { background: #1E2738; margin: -8px -40px 6px; padding: 10px 40px; }
 .card.press .term .tl.hot { color: #FF8A5C; }
 
 /* bars: an editorial horizontal bar chart — label · ruled track · value. Set each

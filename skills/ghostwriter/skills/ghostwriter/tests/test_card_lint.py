@@ -135,6 +135,63 @@ def test_clean_authored_card_has_no_static_findings():
     assert findings == []
 
 
+# ------------------------------------------------------------------ term checks
+def term_card(rows: list[str]) -> str:
+    body = "".join(f'<div class="tl dim">{r}</div>' for r in rows)
+    return card(f'<div class="term">{body}</div>', cls="card press")
+
+
+ALIGNED_TABLE = [
+    "┌──────┬─────┐",
+    "│ RHR  │ 54  │",
+    "└──────┴─────┘",
+]
+
+
+def test_term_aligned_table_is_clean():
+    findings = cl.static_checks(term_card(ALIGNED_TABLE), "images/x.html")
+    assert findings == []
+
+
+def test_term_misaligned_table_fails():
+    rows = ALIGNED_TABLE[:1] + ["│ RHR │ 54  │"] + ALIGNED_TABLE[2:]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert codes(findings, "FAIL") == ["term-misaligned"]
+    assert "unequal widths" in findings[0].message
+
+
+def test_term_rows_measured_after_entity_unescape():
+    # &#9474; is │ — the entity must count as ONE char, not eight.
+    rows = ["&#9474; RHR  &#9474; 54  &#9474;",
+            "│ TSB  │ -33 │"]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert findings == []
+
+
+def test_term_prose_rows_dont_join_alignment_check():
+    rows = ALIGNED_TABLE + ["That's not a bad week. It's a pattern."]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert findings == []
+
+
+def test_term_row_budget_warns_past_20():
+    rows = [f"line {i}" for i in range(cl.TERM_MAX_ROWS + 1)]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert codes(findings, "WARN") == ["term-rows"]
+
+
+def test_term_width_budget_warns_past_58():
+    rows = ["x" * (cl.TERM_MAX_CHARS + 1)]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert codes(findings, "WARN") == ["term-width"]
+
+
+def test_term_template_file_is_exempt():
+    rows = ALIGNED_TABLE[:1] + ["│ bad │"]
+    findings = cl.static_checks(term_card(rows), "card-template-press.html")
+    assert findings == []
+
+
 # -------------------------------------------------------------- carousel checks
 def test_carousel_clean_eight_slides():
     assert cl.static_checks(carousel(8), "images/x-carousel.html") == []
