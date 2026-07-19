@@ -2,6 +2,75 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.11.0 (2026-07-19) — everything the six-run audit found
+
+A three-way audit of the first six real `/devlog` runs (content graded against git
+ground truth, run archaeology in both target repos, session-transcript mining) drove
+this release end to end.
+
+**Added**
+- **Tombstones — entry identity is now project+version in the manifest, not a file
+  path.** `devlog tombstone --clone <root> --project <key> --version <v> --reason <why>`
+  marks an editorially moved/consolidated/deleted entry's identity as retired
+  (`removed: true` row; a dead row's frozen `no` is kept so numbers are never reused).
+  `scan` now fetches each project's `manifest.json` (directory-listing fallback for
+  legacy dirs) and reports retired versions as `entry-tombstoned`; `publish-entry`
+  refuses them. This kills the failure class that re-armed three deleted entries across
+  the first six runs (ghostwriter v0.8.1 twice, market-research v0.1.0 — the latter was
+  live-armed at audit time: the entry had been hand-moved to `personal/2026-07-17` and
+  the next run would have republished it).
+- **`devlog sync-entry`** — the legitimate post-publish edit path: resyncs a manifest
+  row's title/summary/date/tags from the published entry's frontmatter (never `no`/
+  `version`/`file`/`cover`) and reports `coverStale`. The v0.8.1 reframe left the
+  manifest stale for six hours while four "rebuild" commits chased a phantom CDN issue;
+  this is the command that should have existed.
+- **`devlog assemble-post <draft> --out <dir>`** — extracts a draft's fenced code blocks,
+  in order, as numbered files (`text` fences are expected output, listed but not
+  written). SKILL.md Step 4's assemble-and-run check is now mechanical; the audit proved
+  the honor-system version was skipped exactly when it mattered (two posts shipped
+  claiming "real output" over code that could not run).
+- **Ground-truth gate in SKILL.md Step 4**: every claim about the author's own repo must
+  be re-verified with a git command run in-session; a specific number is publishable
+  only if it appears in a commit/diff/source; output may be labeled real only if the
+  command ran this session. One audited post had published a provably false premise.
+- **`lint-post --voice`** — opt-in deterministic voice rules: `voice-em-dash` (prose em
+  dashes; `## Sources`/`## Changelog`/fenced code exempt per the existing carve-outs)
+  and `voice-banned-phrase` (the explicit bans from voice-notes.md). Replaces the ad-hoc
+  grep pass every run hand-rolled.
+- **Cross-entry Changelog collision refusal**: `publish-entry` refuses a draft whose
+  `## Changelog` lists a commit an existing entry already lists (monorepo twin releases
+  had shipped identical Changelogs). Hashes are matched by 7-char short form across link
+  text and `/commit/` URLs.
+- **`scan --summary`** — the plan-table view: `commitCount` instead of commit lists and
+  diffstats, per-reason `skippedTags` tallies. Full detail stays one
+  `scan --project <key>` away.
+- `scan` output now includes `cliVersion` (stale-npx tripwire — three real runs hit a
+  stale cached install) and per-project `publishedEntries` (`version`/`title`/`tags` of
+  every live entry — the catalog-level topic-dedup input; two near-duplicate guides had
+  shipped one day apart).
+
+**Changed**
+- **`render-cover` re-renders whenever the HTML file is present**, overwriting a stale
+  PNG, and **no longer deletes the HTML on success**. The old PNG-exists short-circuit
+  silently ignored freshly edited HTML (both real retry loops burned ~6 tool calls
+  diagnosing it, including a guessed-at `--force` that didn't exist), and the
+  post-success delete broke every later Edit attempt. The no-op path now only applies
+  when the HTML is gone and a valid PNG exists.
+- All agent-facing commands now report unknown/malformed flags as
+  `{"error": "bad-flag"}` JSON (exit 2) instead of dying with a raw
+  `ERR_PARSE_ARGS_UNKNOWN_OPTION` stack trace.
+- SKILL.md: every CLI invocation pins `@latest`; Step 1 leads with `scan --summary`;
+  Step 3b dedupes topics against the whole published catalog and forbids inventing a
+  second angle for a twin release the history doesn't support; Step 3c disqualifies
+  content-farm sources from `minSources`; Step 5 writes a `run-state.json` for
+  mid-run-compaction recovery, reads at most one reference cover image, and documents
+  the re-render recipe; new edge cases cover `entry-tombstoned`, hand-moved entries
+  (tombstone them), and hand-edited entries (sync-entry).
+- `mergeManifestEntries`/`backfill-covers`/the preview manifest validator skip
+  `removed: true` rows.
+- Four new prose invariants in `skill-invariants.json` (ground-truth-gate,
+  no-unrun-output, tombstone-never-republish, one-commit-one-changelog).
+
 ## 0.10.0 (2026-07-19) — publish into a subdirectory of the target repo
 
 **Added**
