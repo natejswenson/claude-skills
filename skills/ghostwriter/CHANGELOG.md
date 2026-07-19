@@ -4,6 +4,41 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-07-18
+
+A conversational-UX pass on the non-deterministic layer (SKILL.md only — no script changes).
+Goal: a `/ghostwriter` session with the fewest possible round trips and the most legible
+in-chat surfaces Claude Code offers.
+
+### Added
+- **One dialog to start** — when the outcome check-in is due AND the idea menu is being offered,
+  they share a single `AskUserQuestion` call (two questions, one dialog) instead of two
+  sequential question dialogs. Guarded by new prose invariant `one-dialog-start`.
+- **Preview panes on the idea menu** — every menu option now carries an `AskUserQuestion`
+  `preview`: the working hook line (the post's first ~2 lines as they'd read), the suggested
+  angle, and a source-freshness line (`radar · Jul 17 · anthropic.com`).
+- **Preview sketches on the visual-form question** — each step-8 option shows an ASCII sketch of
+  what THIS post would get: the proposed Press composition as labeled blocks, the carousel slide
+  strip with real slide titles, or the text-only above-the-fold lines. Sketches are text, not
+  builds; `visual-pick-before-build` unchanged.
+- **LinkedIn-true draft view** — every draft is shown with a visible
+  `┄┄┄ …see more (fold ~210 chars) ┄┄┄` marker at the line break nearest char 210, plus a
+  `N words · save: <what the reader keeps> · lane: <lane>` metadata line. Re-shows after an edit
+  lead with `Changed: <one-line summary>` so the user never re-reads the post hunting for the
+  edit. Guarded by new prose invariant `fold-marked-draft-show`.
+- **Tappable publish decision** — the post-draft ask is now an `AskUserQuestion`
+  (Publish / Edit / Scrap; "Other" takes typed edit instructions directly) instead of a prose
+  question. Approval semantics unchanged: the tap follows a full display of the exact draft text.
+- **Source-gate narration** — step 6 emits one short status line per claim as it resolves and a
+  one-line close (`3 claims · 5 distinct hosts · gate passed`) instead of going silent through
+  the slowest step of the flow.
+
+### Fixed
+- **Idea menu asked for more options than the tool allows** — SKILL.md said "aim for ~5–6
+  options," but `AskUserQuestion` hard-caps a question at 4 options (+ the automatic "Other").
+  The menu now specifies exactly 4 rich options (2 radar how-tos, 1 personal-project,
+  1 interests/hot-take, with backfill from the radar lane when a lane has nothing real).
+
 ## [0.13.0] - 2026-07-18
 
 A real session (drafting the "hardass running coach" post) burned ~9 review rounds because the

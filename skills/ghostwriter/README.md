@@ -57,6 +57,29 @@ Just ask Claude things like:
 
 Claude drafts it in your voice, shows it to you, and on your OK runs the publish step.
 
+## The in-session experience
+
+The conversational flow is built around the fewest possible round trips (as of 0.14.0):
+
+- **One dialog to start.** With no topic given, Claude opens a single question dialog holding
+  everything due: a quick "how did your last post do?" check-in (great / normal / flopped — it
+  feeds future topic and format picks) and a menu of **4 ready-to-write ideas**, each with a
+  preview pane showing the working hook, the angle, and its source + freshness (release radar,
+  live search, your recent repos, or your interests file). Tap one and drafting starts —
+  there's no interview.
+- **Visible research.** Every external claim is verified against ≥3 live sources before you see
+  the draft, and the gate narrates as it works (`checking: … ✓`) instead of going silent.
+- **LinkedIn-true draft view.** The draft is shown with the ~210-character "…see more" fold
+  marked, plus a word count and the "save" (the thing a reader keeps). You answer with a tap:
+  Publish / Edit / Scrap. After an edit, the re-show leads with a one-line `Changed:` summary.
+- **One question settles the visual.** After the text is approved: text-only, a composed Press
+  card, or a carousel — each option previewed as an ASCII sketch of what *this* post would get,
+  before anything is rendered. Cards showing your own agent or CLI are transcribed from a real
+  captured session, never invented.
+- **Corrections stick.** Any voice/style feedback you give is appended to your
+  `voice-notes.md` in the same turn, before the redraft — you never repeat a correction in a
+  later session.
+
 ## Optional: the release radar
 
 If you post about a fast-moving field, the **release radar** keeps a running list of recent
