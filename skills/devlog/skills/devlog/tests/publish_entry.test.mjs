@@ -44,6 +44,7 @@ test('publishEntry writes the entry and creates a fresh manifest', (t) => {
   const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
 
   assert.equal(result.manifestUpdated, true);
+  assert.equal(result.no, 1);
   assert.ok(existsSync(join(cloneDir, 'proj', 'v0.1.0.md')));
   const manifest = readManifest(cloneDir);
   assert.deepEqual(manifest.entries, [{
@@ -53,6 +54,7 @@ test('publishEntry writes the entry and creates a fresh manifest', (t) => {
     summary: 'A summary.',
     version: 'v0.1.0',
     tags: ['a', 'b'],
+    no: 1,
   }]);
 });
 
@@ -219,6 +221,93 @@ test('publishEntry omits the cover field entirely when no coverImageBuffer is gi
   assert.equal(existsSync(join(cloneDir, 'proj', 'v0.1.0.png')), false);
   const entry = readManifest(cloneDir).entries.find((e) => e.version === 'v0.1.0');
   assert.equal('cover' in entry, false);
+});
+
+// ─── publishEntry: no (frozen entry number) ────────────────────────────────────
+
+test('publishEntry assigns sequential numbers within a single project', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  const r1 = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  const r2 = publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  const r3 = publishEntry({ cloneDir, project: 'proj', version: 'v0.3.0', entryPath: draft(root, 'v0.3.0') });
+
+  assert.deepEqual([r1.no, r2.no, r3.no], [1, 2, 3]);
+});
+
+test('publishEntry derives the next number as the max across ALL sibling project manifests, not just this project', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  // A different project already has entries numbered up to 5.
+  mkdirSync(join(cloneDir, 'other'));
+  writeFileSync(join(cloneDir, 'other', 'manifest.json'), JSON.stringify({
+    entries: [
+      { date: '2026-07-01', file: 'v1.0.0.md', title: 't', summary: 's', version: 'v1.0.0', tags: [], no: 5 },
+      { date: '2026-06-01', file: 'v0.9.0.md', title: 't', summary: 's', version: 'v0.9.0', tags: [], no: 3 },
+    ],
+  }));
+
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(result.no, 6);
+});
+
+test('publishEntry treats pre-migration entries with no `no` field as absent, not zero', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'proj'));
+  writeFileSync(join(cloneDir, 'proj', 'manifest.json'), JSON.stringify({
+    entries: [
+      { date: '2026-05-01', file: '2026-05-01.md', title: 'Legacy', summary: 'No no field.' },
+    ],
+  }));
+
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  // No numbered entries exist anywhere yet, so numbering starts at 1 — the
+  // legacy row's absence of `no` must not be read as 0 shifting nothing, and
+  // must not throw.
+  assert.equal(result.no, 1);
+});
+
+test('publishEntry retrying an already-published entry throws and never reaches number assignment', (t) => {
+  // The immutability guard (existsSync(destPath)) fires before manifest logic
+  // is ever reached, so a genuine repeat publish of the same version throws —
+  // it does not silently no-op and does not burn a number.
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.throws(
+    () => publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') }),
+    /immutable, refusing to overwrite/,
+  );
+
+  const next = publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  assert.equal(next.no, 2);
+});
+
+test('publishEntry does not burn a number when the manifest already has a dead row for this file (the .md-missing recovery case)', (t) => {
+  // The `already` branch (a manifest row references this file/version but the
+  // .md itself was missing, so the guard above didn't fire) must not push a
+  // second row or hand out a second number for the same file.
+  const { root, cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'proj'));
+  writeFileSync(join(cloneDir, 'proj', 'manifest.json'), JSON.stringify({
+    entries: [{ date: '2026-07-11', file: 'v0.1.0.md', title: 'Existing row', summary: 's', version: 'v0.1.0', no: 1 }],
+  }));
+
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(result.manifestUpdated, false);
+  assert.equal(result.no, null);
+  assert.equal(readManifest(cloneDir).entries.length, 1);
+  assert.equal(readManifest(cloneDir).entries[0].no, 1);
+
+  // A genuinely new entry continues from the existing row's `no`, not from 1.
+  const next = publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  assert.equal(next.no, 2);
+});
+
+test('publishEntry skips an unparseable sibling manifest rather than failing this publish', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'broken'));
+  writeFileSync(join(cloneDir, 'broken', 'manifest.json'), '{ not valid json');
+
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(result.no, 1);
 });
 
 // ─── addCoverToExistingEntry ───────────────────────────────────────────────────

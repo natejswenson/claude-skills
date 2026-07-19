@@ -4,6 +4,25 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-07-18
+
+Two real-session UX fixes (SKILL.md only — no script changes), one of which corrects behavior
+introduced in 0.14.0.
+
+### Fixed
+- **Quiet startup.** The setup check (and any other bookkeeping — idea-board/radar freshness,
+  directory orientation) must now run as one or two terse tool calls, never a parade of separate
+  `Bash` calls with printed section headers or exploratory `pwd`/`ls` probes. The user should see
+  a one-sentence status line before anything else, not a scroll of raw command output.
+- **One-question idea picker, not four.** 0.14.0's "four-section menu dialog" asked one
+  `AskUserQuestion` question per lane (Trending/Radar/Interests/Projects) in a single call — in
+  practice this forced the user to page past 3 unrelated lane cards even after already picking an
+  idea in one of them. The idea menu is now a single flattened, ranked list presented as ONE
+  single-select question (top 3 ideas + "Show more ideas"); picking a real idea moves straight to
+  drafting with nothing else to dismiss. Breadth is preserved via the opt-in "Show more ideas"
+  follow-up and the persisted `research/idea-board-*.md` file (every gathered idea is still
+  written there, whether or not it was shown).
+
 ## [0.14.0] - 2026-07-18
 
 A conversational-UX pass on the non-deterministic layer (SKILL.md only — no script changes).

@@ -2,7 +2,7 @@
 // manifest. This is the code-enforced immutability guard: a cut release's
 // entry is never overwritten, and manifest mutation is no longer done by
 // hand-editing JSON in the agent loop.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, statSync, openSync, readSync, closeSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, statSync, openSync, readSync, closeSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { RE_PROJECT_KEY, RE_FINAL_RELEASE, atomicWriteJSON } from './core.mjs';
 import { parseFrontmatter } from './lint_post.mjs';
@@ -55,6 +55,43 @@ function sortEntries(entries) {
     String(b.date).localeCompare(String(a.date)) || compareVersionsDesc(a, b));
 }
 
+// `no` is a single sequence across ALL projects (issue numbers of one
+// publication, not per-project counters), but manifests are stored one per
+// project — so "next" means "scan every project's manifest under cloneDir and
+// take the highest `no` seen, plus one." Pre-migration rows with no `no` field
+// are simply skipped, not treated as 0; a manifest a sibling agent is mid-write
+// on is skipped rather than thrown on, since a transient parse failure on
+// ANOTHER project must never block publishing to THIS one.
+// NOT safe against two publishEntry calls racing in separate processes at the
+// same instant (read-then-write with no lock) — acceptable for this single-
+// operator CLI; a real lock is not worth the complexity until that changes.
+function nextEntryNumber(cloneDir) {
+  let dirents;
+  try {
+    dirents = readdirSync(cloneDir, { withFileTypes: true });
+  } catch {
+    return 1;
+  }
+
+  let max = 0;
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory()) continue;
+    const manifestPath = join(cloneDir, dirent.name, 'manifest.json');
+    if (!existsSync(manifestPath)) continue;
+    let manifest;
+    try {
+      manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    } catch {
+      continue;
+    }
+    if (!manifest || !Array.isArray(manifest.entries)) continue;
+    for (const entry of manifest.entries) {
+      if (entry && Number.isInteger(entry.no) && entry.no > max) max = entry.no;
+    }
+  }
+  return max + 1;
+}
+
 export function publishEntry({ cloneDir, project, version, entryPath, coverImageBuffer }) {
   if (!RE_PROJECT_KEY.test(project) || project.includes('..')) {
     throw new Error(`Invalid project key: ${JSON.stringify(project)}`);
@@ -105,7 +142,13 @@ export function publishEntry({ cloneDir, project, version, entryPath, coverImage
   // when the .md was missing — never duplicate an index row.
   const already = manifest.entries.some((e) => e && (e.file === file || e.version === version));
   let manifestUpdated = false;
+  // Frozen at publish, never recomputed: a backdated entry published later must
+  // never shift a number already baked into a live published social image.
+  // Computed only on the write path — a repeat/idempotent call that hits
+  // `already` above must not burn a number on a publish that's a no-op.
+  let no = null;
   if (!already) {
+    no = nextEntryNumber(cloneDir);
     manifest.entries.push({
       date: String(data.date),
       file,
@@ -113,6 +156,7 @@ export function publishEntry({ cloneDir, project, version, entryPath, coverImage
       summary: String(data.summary),
       version,
       tags: Array.isArray(data.tags) ? data.tags : [],
+      no,
       ...(coverFile ? { cover: { file: coverFile, bytes: coverImageBuffer.length } } : {}),
     });
     manifest.entries = sortEntries(manifest.entries);
@@ -120,7 +164,7 @@ export function publishEntry({ cloneDir, project, version, entryPath, coverImage
     manifestUpdated = true;
   }
 
-  return { written: destPath, manifestUpdated, coverWritten: !!coverFile };
+  return { written: destPath, manifestUpdated, coverWritten: !!coverFile, no };
 }
 
 // Backfill path only: add a cover to an entry that was already published without one.
