@@ -2,6 +2,29 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.10.0 (2026-07-19) — publish into a subdirectory of the target repo
+
+**Added**
+- Optional `targetDir` config field (`devlog set targetDir content/devlog`, clear with
+  `set targetDir ''`): the subdirectory of `targetRepo` that holds the devlog content
+  tree. Lets the devlog publish directly into a site repo (e.g.
+  `natejswenson.io/content/devlog`) so the publish push itself triggers the site's
+  deploy — no separate rebuild commit, no second repo. Validated as a relative,
+  traversal-free path since it's interpolated into the publish clone path and the
+  `gh api` contents path.
+- `scan` threads `targetDir` through the existence check
+  (`repos/<targetRepo>/contents/<targetDir>/<key>`) and echoes it in its JSON output,
+  so already-published entries are still filtered correctly when content lives in a
+  subfolder. Unset behaves exactly as before (repo root).
+- `SKILL.md`: publish step now targets `<content-root>` (`<clone>/<targetDir>` when
+  set); the confirm message notes that a push to an auto-deploying site repo IS the
+  rebuild trigger.
+
+**Fixed**
+- `image-style/icons.md` still described the pre-PRESS dark palette for accent icons
+  (`#ededed` / accent yellow `#fff503`); corrected to PRESS ink/dim, never orange —
+  matching the style guide's accent law.
+
 ## 0.9.0 (2026-07-17) — cover images: icon catalog + geometry-enforced hero zone
 
 **Added**

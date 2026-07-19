@@ -97,6 +97,19 @@ test('setField voicePath with empty string clears the field', () => {
   assert.equal('voicePath' in next, false);
 });
 
+test('setField targetDir sets a relative subdirectory and empty string clears it', () => {
+  let c = setField(baseConfig(), 'targetDir', 'content/devlog');
+  assert.equal(c.targetDir, 'content/devlog');
+  c = setField(c, 'targetDir', '');
+  assert.equal('targetDir' in c, false);
+});
+
+test('setField targetDir rejects traversal, absolute, and malformed paths', () => {
+  for (const bad of ['../escape', 'a/../b', '/abs/path', 'a//b', 'a/', 'a b', '.']) {
+    assert.throws(() => setField(baseConfig(), 'targetDir', bad), /targetDir/, `expected reject: ${bad}`);
+  }
+});
+
 test('setField handles deepDive.minSources with integer validation', () => {
   const next = setField(baseConfig(), 'deepDive.minSources', '5');
   assert.equal(next.deepDive.minSources, 5);
@@ -125,7 +138,7 @@ test('setField rejects unknown fields and invalid values', () => {
 
 test('SETTABLE_FIELDS enumerates exactly the supported fields', () => {
   assert.deepEqual(SETTABLE_FIELDS.sort(), [
-    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'gitAuthor', 'githubUser', 'targetRepo', 'voicePath',
+    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'gitAuthor', 'githubUser', 'targetDir', 'targetRepo', 'voicePath',
   ].sort());
 });
 

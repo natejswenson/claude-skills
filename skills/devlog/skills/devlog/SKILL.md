@@ -41,7 +41,11 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 | Show config | `npx -y @natjswenson/devlog config --json` |
 | Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
 | Remove a project | `npx -y @natjswenson/devlog remove-project <key> --yes` |
-| Change a setting | `npx -y @natjswenson/devlog set <field> <value>` (settable: `targetRepo`, `branch`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+| Change a setting | `npx -y @natjswenson/devlog set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+
+`targetDir` is the subdirectory of `targetRepo` that holds the devlog content tree
+(e.g. `content/devlog` when the target is the site repo itself); unset/empty means the
+repo root. Set it with `set targetDir content/devlog`, clear it with `set targetDir ''`.
 
 For **add-project**: resolve the path first (the repo the user named, or the cwd), then
 detect what the CLI will use — key = directory basename, remote = `git -C '<path>' remote
@@ -291,8 +295,13 @@ critique, not a rubber stamp.
 
 ### Step 5: Publish
 
-Clone once, publish each entry through the CLI, push once. `targetRepo` and `branch` come
-from validated config — still single-quote every interpolated value.
+Clone once, publish each entry through the CLI, push once. `targetRepo`, `branch`, and
+`targetDir` come from validated config (all echoed in the scan output) — still
+single-quote every interpolated value.
+
+The `--clone` flag always points at the CONTENT ROOT: `<abs-tmp>/<repo-name>` when
+`targetDir` is empty, `<abs-tmp>/<repo-name>/<targetDir>` when it's set. Git commands
+always run against the clone root `<abs-tmp>/<repo-name>` regardless.
 
 Each release also gets a cover image, composed inline in this same loop right before that
 release's own `publish-entry` call — a self-contained HTML/CSS (or inline SVG) document,
@@ -301,13 +310,15 @@ rasterized locally, never sent to any external service:
 ```bash
 mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
 git -C '<abs-tmp>' clone --depth=1 'https://github.com/<targetRepo>.git'
+# <content-root> = '<abs-tmp>/<repo-name>/<targetDir>' if targetDir is set,
+#                  '<abs-tmp>/<repo-name>' otherwise.
 
 # Per release (refuses to overwrite an existing entry — on {"error": ...,
 # "message": "... immutable ..."} skip that release and note it):
 
 # 1. Style guide + up to 3 reference images of recently published covers.
 npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
-  --clone '<abs-tmp>/<repo-name>'
+  --clone '<content-root>'
 # On {"error": "style-guide-missing", ...}: skip cover composition for this release
 # entirely — proceed straight to publish-entry with no --cover flag. Never block
 # publish on a missing style guide.
@@ -346,7 +357,7 @@ npx -y @natjswenson/devlog render-cover '<abs-scratch>/<key>/<version>.html' \
 # the prose.
 
 npx -y @natjswenson/devlog publish-entry \
-  --clone '<abs-tmp>/<repo-name>' --project '<key>' \
+  --clone '<content-root>' --project '<key>' \
   --version '<version>' --entry '<abs-draft-path>' \
   --cover '<abs-scratch>/<key>/<version>.png'
 # Omit --cover entirely if no cover was produced for this release (missing style guide,
@@ -368,8 +379,13 @@ Release dev log entries published
   Project: <key>
   Releases: <version>, ...
   Judged weaknesses: <residuals from Step 4, or "none">
-  URL: https://github.com/<targetRepo>/blob/<branch>/<key>/<version>.md
+  URL: https://github.com/<targetRepo>/blob/<branch>/<targetDir-prefix><key>/<version>.md
 ```
+
+(`<targetDir-prefix>` is `<targetDir>/` when set, empty otherwise.) When the target is
+a site repo that auto-deploys on push (e.g. Cloudflare Pages watching `main`), the
+publish push itself triggers the rebuild — mention that the entry goes live with the
+next deploy.
 
 ## Security rules
 
