@@ -17,9 +17,10 @@ in-chat surfaces Claude Code offers.
 - **Four-section menu dialog — the picker IS the board.** The idea menu is now a single
   `AskUserQuestion` call with one question per lane (headers `Trending` / `Radar` / `Interests`
   / `Projects`), each lane offering up to 3 previewed ideas + a Pass option — 8–12 ideas
-  visible in one dialog instead of a 4-item shortlist. Lanes: **Trending now** (a run-day live
-  search over the interests file's trending areas — social/discussion surfaces, Google/news,
-  industry conversation — each topic tied to an angle the user could own), **Release radar
+  visible in one dialog instead of a 4-item shortlist. Lanes: **Trending now** (VERIFIED
+  run-day trending only — HN points/comments via the Algolia API, subreddit top posts, 48-hour
+  news volume, with the actual signal cited in the preview; vendor blogs and SEO listicles
+  don't qualify — each topic tied to an angle the user could own), **Release radar
   current through TODAY** (digest items plus a live top-up for anything released since the
   digest date, labeled `radar · <date>` vs `live · today`), **Interests & hot takes** (strong
   opinions + story bank, filtered against what's already published), and **2–3 recent Claude

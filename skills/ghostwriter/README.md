@@ -62,8 +62,9 @@ Claude drafts it in your voice, shows it to you, and on your OK runs the publish
 The conversational flow is built around the fewest possible round trips (as of 0.14.0):
 
 - **One dialog to start — a four-section idea picker.** With no topic given, Claude opens a
-  single dialog with one section per lane: **Trending** (a fresh run-day web search over your
-  interest areas), **Radar** (the release digest topped up with anything released since its
+  single dialog with one section per lane: **Trending** (verified run-day surge signals from
+  HN, Reddit, and 48-hour news volume — cited in the preview, never SEO results), **Radar**
+  (the release digest topped up with anything released since its
   date), **Interests** (your hot takes and story bank, minus what's already published), and
   **Projects** (your 2–3 most recent Claude repos, each anchored to the one real thing
   shipped). That's 8–12 previewed ideas in one dialog — each pane shows the working hook, the

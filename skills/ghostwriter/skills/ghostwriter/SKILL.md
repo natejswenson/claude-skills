@@ -137,12 +137,18 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      strongest lane — say so in the provenance line, and never pad with weak ideas.
 
    The four lanes, in priority order:
-   - **Trending now (live, run-day — always research this).** Do a quick live web search TODAY
-     over the trending areas in `~/.claude/ghostwriter/voice/interests.md` — what's actually
-     moving this week on social/discussion surfaces (X, Hacker News, Reddit), in Google/news
-     coverage, and in LinkedIn-adjacent industry conversation. Propose **2–3 trending topics**,
-     each with the specific angle the user could own (tie it to their core themes or hot takes —
-     a trending topic without their angle is just news). Label each `trending · <today> · <host>`.
+   - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
+     point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
+     are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
+     Algolia API** (top stories from the last ~3 days, e.g.
+     `curl 'https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>150,created_at_i>'"$(date -v-3d +%s)"`),
+     **top posts this week** in the relevant subreddits, and **news coverage from the last
+     ~48 h** (search with explicit recency). Filter through the trending areas in
+     `~/.claude/ghostwriter/voice/interests.md`, propose **2–3 topics**, each with the specific
+     angle the user could own (a trending topic without their angle is just news), and put the
+     ACTUAL signal in the preview's source line — points, comments, story volume, date
+     (`trending · HN 612 pts / 340 comments · Jul 18`). No citable signal → the item doesn't go
+     in the lane; fewer real trending items beat padded ones.
    - **Release radar — current through TODAY, not through the last digest.** Read the newest
      `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
      the board ("Jul 17 radar, job ran clean"). **If the digest is older than today, top the lane
