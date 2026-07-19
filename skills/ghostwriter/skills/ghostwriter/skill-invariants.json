@@ -68,6 +68,18 @@
       "rationale": "Rendering a visual before asking wasted a full card build in a real session (user wanted a carousel). One form question before any authoring is prose-only."
     },
     {
+      "id": "one-dialog-start",
+      "file": "SKILL.md",
+      "pattern": "check-in and the menu ride in the same single",
+      "rationale": "Session-start round trips are the UX tax paid every single run: the 0.14.0 pass merged the outcome check-in and the idea menu into ONE AskUserQuestion dialog. This rule is prose-only; deleting it regresses to two sequential question dialogs before any work starts."
+    },
+    {
+      "id": "fold-marked-draft-show",
+      "file": "SKILL.md",
+      "pattern": "fold ~210 chars",
+      "rationale": "The ~210-char '…see more' fold decides LinkedIn reach, and the fold-marked draft presentation is the only place the user actually SEES where their post cuts off before approving it. Prose-only; deleting it regresses to showing drafts with no fold visibility."
+    },
+    {
       "id": "real-output-transcription",
       "file": "SKILL.md",
       "pattern": "transcription of a real session,\\s*not an\\s*invention",
