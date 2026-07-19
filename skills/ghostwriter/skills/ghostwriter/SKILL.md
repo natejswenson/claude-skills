@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.12.0
+version: 0.14.1
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -34,6 +34,15 @@ place.
 Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/voice-profile.md`
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
 If not, switch to Setup.
+
+**Keep this invisible.** Do the setup check (and any other bookkeeping — idea-board/radar
+freshness, directory orientation) in as few, terse tool calls as possible: one chained
+existence/content check, not a parade of separate `Bash` calls with printed section headers.
+Skip exploratory commands that don't feed an immediate decision (a bare `pwd`, an `ls` "just to
+look around"). The first thing the user should see is your one-sentence status line, not a
+scroll of raw command output. This doesn't apply to the real research in Generate step 2 (the
+HN check, radar read, `recent_projects.py`) — that work produces content the user actually sees
+reflected in the menu.
 
 ---
 
@@ -96,9 +105,14 @@ post's real anchor, so there's no generic interview.
 
 **Outcome check-in (max one, fast — the feedback loop).** Before anything else, read
 `~/.claude/ghostwriter/published.jsonl` (written automatically on every publish). If the newest
-record is **≥2 days old and has no `outcome`**, ask ONE `AskUserQuestion` — *"How did
+record is **≥2 days old and has no `outcome`**, ask ONE check-in question — *"How did
 '<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
-`python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. Never ask more
+`python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. **One dialog to
+start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
+`AskUserQuestion` call** — the check-in takes the first question slot and the flat idea question
+(step 2) takes the second — still one dialog, one round trip, never two sequential question
+dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
+may the check-in be its own question. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
 outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
 from repeated `flopped`, and let format outcomes steer the visual-form recommendation (step 8).
@@ -109,38 +123,87 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → offer ONE rich idea menu.** Don't make the user pick a lane and then drill;
-   gather concrete, ready-to-write ideas from every source *yourself*, then present them in a
-   **single `AskUserQuestion`** (single-select; the auto "Other" lets them type their own topic).
-   Aim for **~5–6 options**, each a short title + its one-line hook, **led by recent-AI-release
-   how-tos** (the priority lane):
-   - **First, check radar health — never serve stale research silently.** Read the newest
-     `research/release-radar-*.md` date and the tail of `research/.radar.log`. Tell the user the
-     provenance in one line before (or in the intro of) the menu: fresh → *"ideas from the Jul 17
-     radar"*; **stale (>4 days) or missing** → say so, note whether the log shows the scheduled
-     job failing, and fall back to a live search (below). If the job is broken (e.g. exit 127 —
-     usually the repo moved), offer to repair it: `bash scripts/install_radar.sh` re-renders the
-     launchd agent against the repo's current path. **Label every menu option with its source**
-     (radar + digest date / live search + today / your repo / interests) so the user can judge
-     freshness at a glance.
-   - **~3–4 how-to ideas from the newest `research/release-radar-*.md` digest** — reuse each item's
-     title + "suggested angle" (already how-to-shaped and source-backed). The pick's facts +
-     suggested angle are the anchor, pre-sourced by the twice-weekly research job
-     (`scripts/release_radar.sh`), which scans the **broader AI industry**, not just Anthropic.
-     Never add experience claims the digest didn't establish. The digest's **Discussion radar**
-     items feed the opinion/hot-take slot below the same way. **No fresh digest?** Do a quick live
-     web search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
-     noteworthy developments, and use those for the how-to slots.
-   - **~1 personal-project idea** — run `python3 scripts/recent_projects.py`, take the top repo with
-     recent Claude Code sessions, and read its recent `git log` + last session summary for the
-     **one real thing shipped** (that's the anchor). Respect
+2. **No topic given → ONE flat idea question, pick and go.** Gather concrete, ready-to-write
+   ideas from the four lanes below *yourself*, then **flatten them into a single ranked list**
+   (lane priority order below, bent by outcome history) and present the **top 3** as **ONE
+   single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
+   ideas."** Never go back to asking one question per lane: that forced paging past unrelated
+   cards even after the user had already picked, which is exactly backwards. Rules of the
+   question:
+   - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
+     hook (the post's first ~2 lines as they'd actually read), the suggested angle in one
+     sentence, and a source-freshness line prefixed with its lane (e.g. `Trending · HN 612 pts /
+     340 comments · Jul 18`, `Radar · Jul 17 · anthropic.com`). A user should be able to pick on
+     the preview alone.
+   - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
+     or dismiss.** The auto "Other" on the question takes a typed topic directly (same
+     short-circuit as step 1).
+   - **Picking "Show more ideas" asks exactly ONE follow-up single-select question** with the
+     next batch (the remaining candidates, up to 3 + auto "Other"), same preview format. This is
+     the only path that costs a second round trip, and only because the user explicitly asked.
+   - **One provenance line total in chat**, not per lane (radar date + job health, live-search
+     date, repo names) — don't dump a duplicate board into chat; the question options carry the
+     ideas.
+   - **When the outcome check-in is due** it rides as the first question in the SAME call (see
+     above); the flat idea question is the second. Still one dialog, one round trip.
+
+   The four lanes, in priority order (used to rank the flattened list, not to structure separate
+   questions):
+   - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
+     point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
+     are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
+     Algolia API** (top stories from the last ~3 days, e.g.
+     `curl 'https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>150,created_at_i>'"$(date -v-3d +%s)"`),
+     **top posts this week** in the relevant subreddits, and **news coverage from the last
+     ~48 h** (search with explicit recency). Filter through the trending areas in
+     `~/.claude/ghostwriter/voice/interests.md`, propose **2–3 topics**, each with the specific
+     angle the user could own (a trending topic without their angle is just news), and put the
+     ACTUAL signal in the preview's source line — points, comments, story volume, date
+     (`trending · HN 612 pts / 340 comments · Jul 18`). No citable signal → the item doesn't go
+     in the lane; fewer real trending items beat padded ones.
+   - **Release radar — current through TODAY, not through the last digest.** Read the newest
+     `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
+     the board ("Jul 17 radar, job ran clean"). **If the digest is older than today, top the lane
+     up**: one quick live search for AI releases since the digest date, so the lane is current
+     through the day the user actually runs ghostwriter — label digest items `radar · <date>` and
+     top-ups `live · today`. Reuse digest items' title + "suggested angle" (already how-to-shaped
+     and source-backed; the twice-weekly `scripts/release_radar.sh` job scans the broader AI
+     industry, not just Anthropic). Never add experience claims the digest didn't establish; the
+     digest's **Discussion radar** items feed opinion/hot-take slots the same way. Skip items
+     already published (check `published.jsonl`). **Radar stale (>4 days) or missing** → say so,
+     note whether the log shows the job failing, and run the lane fully live; if the job is broken
+     (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
+     re-renders the launchd agent against the repo's current path.
+   - **Interests & hot takes (1–3 entries).** Read `~/.claude/ghostwriter/voice/interests.md` —
+     core themes, the "Strong opinions" list, and the story bank — for specific angles not
+     covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank
+     item beats a generic theme; label each `interests · <theme or story>`.
+   - **Your recent Claude projects (2–3 entries).** Run `python3 scripts/recent_projects.py` and
+     take the top 2–3 repos with recent Claude Code sessions; for each, read the recent `git log`
+     + last session summary for the **one real thing shipped** (that's the anchor). Respect
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
      work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
-   - **~1 interests / hot-take idea** — read `~/.claude/ghostwriter/voice/interests.md` (core
-     themes, hot takes, stories) for one specific angle not covered recently.
 
-   The tapped idea is the post's concrete anchor → go straight to grounding + draft (step 3). No
-   second drill. If the user picks a release how-to, follow the **How-to posts** playbook below.
+   **Build the list fast and honestly.** Gather all four lanes in parallel (the HN check, the
+   radar read + top-up, interests, `recent_projects.py`) so the question is the first thing the
+   user waits on. An idea appears in exactly ONE lane — highest-signal lane wins (a release
+   that's surging on HN is Trending, not Radar). Filter every candidate against `published.jsonl`
+   and recent `drafts/` so nothing already covered resurfaces. Rank the flattened list by lane
+   priority and the outcome history, and say so in the provenance line when it bends the order
+   ("release how-tos lead; your last two ran great").
+
+   **Persist the full list — research the user paid for doesn't evaporate.** Whether or not it
+   was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
+   surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
+   open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
+   into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
+   before reusing it, and drop anything that went stale.
+
+   **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
+   `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the save
+   (the thing a reader keeps), and the sources you'll verify against. Then straight to
+   grounding + draft (step 3); no second drill. A release-how-to pick follows the **How-to
+   posts** playbook below; a topic typed via "Other" is the short-circuit path (step 1).
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
    anchor** — the actual tool, a real number, a specific decision, a thing that actually happened
    (see voice-notes.md → Substance bar + Authenticity). The menu pick normally *is* that anchor.
@@ -183,6 +246,11 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `~/.claude/ghostwriter/voice/voice-notes.md` covers these. Be honest: if the post mixes a
      real external claim into a personal story, it is *not*
      `external_claims:false`.
+   - **Narrate the gate — it's the slow step; never go silent through it.** Emit one short status
+     line per claim as it resolves — `checking: "Sonnet 5 ships computer-use GA" → vendor
+     announcement + docs ✓` — and one close line when the gate passes: `3 claims · 5 distinct
+     hosts · gate passed`. One line each, no tables; the user should see the research happening,
+     not a minute of dead air followed by a draft.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
      sidecar before publishing.
@@ -195,8 +263,24 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      didn't actually live.
    - **Length** — default 50–120 words (see Engagement craft).
    - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words.
-   Fix what fails, then **show the full draft** in chat and ask: *"Publish this to LinkedIn,
-   edit it, or scrap it?"* Wait for their answer. Do not publish unprompted.
+   - **The hook** — the post's single most specific number or sharpest tension appears in the
+     first ~210 chars (before "…see more"). If the best number sits below the fold, move it up.
+   - **The save** — name (to yourself) the thing a reader keeps: a command, a checklist, a
+     reusable model. If there's nothing to keep, either rework toward reference-worthy or
+     accept it's a lower-reach personal post on purpose — don't pad it with fake utility.
+   Fix what fails, then **show the full draft in the LinkedIn-true format**:
+   - The draft text in a fenced block, with a visible fold line —
+     `┄┄┄ …see more (fold ~210 chars) ┄┄┄` — inserted at the line break nearest char 210, so the
+     user sees exactly what shows above the fold. (A draft that ends before the fold needs no
+     marker.)
+   - One metadata line under the block: `N words · save: <the thing a reader keeps> · lane: <lane>`.
+   - **Re-shows lead with the delta:** after any edit, the first line is
+     `Changed: <one-line summary>`, then the full draft in the same format — the user should never
+     re-read the whole post hunting for the edit.
+   Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
+   takes typed edit instructions directly) / **Scrap** — and wait for the answer. The Publish tap
+   immediately after seeing the exact full text is the explicit approval; an edited draft is
+   re-shown and re-asked the same way. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
@@ -207,10 +291,23 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    recommendation first, chosen from the post's shape and the outcome history: how-to /
    educational → **carousel** (highest-reach native format, see `voice/algorithm.md`) or a
    composed Press card; one punchy idea → card; personal story → text-only. A strong text post
-   beats a weak image, so text-only is always a respectable pick. Only after
+   beats a weak image, so text-only is always a respectable pick. **Give every option an ASCII
+   `preview` sketch of what THIS post would get:** the card option sketches the actual proposed
+   Press composition as labeled blocks (masthead / hero / colophon, with this post's real
+   headline and hero named, e.g. `[ DUEL: cron vs launchd ]`); the carousel option sketches the
+   slide strip (`cover → 5 steps → recap → CTA`, using this post's slide titles); text-only
+   previews the draft's first ~2 lines above the fold marker. Sketches are text in the question,
+   not builds — authoring still waits for the pick. Only after
    the pick do you author and render (see **Visuals**); never render a form the user didn't
    choose. Cards are **composed, not templated**: read `assets/card-language.md`, check
    `images/card-history.jsonl`, and differ from the last 3 cards on ≥2 variation axes.
+   **If the post is about the user's own agent, CLI, or code** — any visual that would show
+   its output (a hero `term`, `code`, or `claude` card) — settle the output source in the
+   SAME single question, via the option descriptions: you capture it live (run their CLI /
+   call their MCP tool from this session), they paste or screenshot a real session, or —
+   only if neither is possible — compose from facts already in the draft. One question
+   total, never a second round-trip. See **Real-output cards** below for what to do with
+   the capture.
 
 ### How-to posts (technical, from AI releases)
 
@@ -259,6 +356,37 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   `images/card-history.jsonl` and differ from the last 3 approved cards on **≥2 variation
   axes** (hero component, headline treatment, density, numeral presence, support texture);
   after the user approves the render, append the card's fingerprint line to that file.
+- **Real-output cards (the fidelity contract).** Whenever a card shows the output of the
+  user's own agent, tool, or code — a hero `term` component, a `code` card, a `claude`
+  session card — the terminal content is a **transcription of a real session, not an
+  invention**. A round of "make it look like my actual agent" is a defect: get the ground
+  truth *before* authoring, not after the user complains.
+  1. **Capture first.** In preference order: **run it yourself** (the user's CLI or MCP tool
+     is often reachable from this session — call it and capture real output); else take the
+     user's **paste or screenshot** (offered in the step-8 question). Save the raw capture —
+     transcribing a screenshot faithfully if that's what you got — to
+     `images/<slug>.source.txt` (gitignored, stays local), and iterate every render against
+     that file, not against memory of it. **The card gets published: scrub secrets before
+     transcribing** — tokens, keys, emails, home-directory paths, private hostnames get
+     redacted or generalized in the card even though the capture keeps them (same "never
+     print secrets" guardrail).
+  2. **Author as condensation, never invention.** Keep the session's anatomy — the prompt
+     row, the tool-call indicator line, the real table with its actual metric names, values,
+     baselines, and deltas, the verdict, the closing directive (see `assets/card-language.md`
+     → The hero terminal). Cut whole rows or sections to fit the budget; never smooth real
+     output into summary prose, and never "clean up" the texture that makes it real.
+  3. **Unknown value → `—` or one question.** Real CLIs print dashes for missing data; do the
+     same. If one real number would complete the card (a baseline, a total), ask for that ONE
+     number — never invent it, especially health or personal metrics.
+  4. **Feed the post too.** Pull the capture's 1–2 strongest real numbers into the draft body
+     (re-running the source gate if that adds an external claim) — real specifics are what get
+     posts saved and shared.
+  5. **Mirror check when a reference exists.** If the user supplied a screenshot or paste,
+     then before EVERY showing: Read the reference and the render side by side and enumerate
+     the structural mismatches yourself — missing prompt/tool-call lines, missing table
+     columns or rows, invented phrasing, dead whitespace where the real session is dense. Fix
+     and re-render until you find none; only then show the user. The user saying "closer" is
+     the failure mode, not the workflow.
 - **The legacy light gallery (reference compositions).** The pre-Press light-system templates
   below remain shipped and renderable — use them as *structural references* when a Press
   composition wants a proven skeleton, or when the user explicitly asks for the light look.
@@ -334,7 +462,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     money line `class="line hot"`, cap with `<span class="caret">`. ≤~42 chars, ≤~10 rows.
   - `assets/card-template-claude.html` — **Claude Code session**: the transcript variant of the
     code type (clay request band, action bullets, `└` result branches). Be honest — real request,
-    real outcome.
+    real outcome; the **Real-output cards** contract applies (capture the actual session first).
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
   Card styling lives in `~/.claude/ghostwriter/assets/diagram.css` (the brand guide) — use its
@@ -344,7 +472,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 
   | Template | Count | Field limits | Notes |
   |---|---|---|---|
-  | `press` | 2–3 body components | eyebrow ≤24 · h1 ≤2 lines (~13/line; `compact` ~20) · `.stand` ≤3 lines · `.lt` ≤38 · `.le` ≤60 · `.cmdbar` ≤44 one line · `.marginal` ≤2 lines · `.colophon .out` ≤52 | full budgets per component in `assets/card-language.md` |
+  | `press` | 2–3 body components | eyebrow ≤24 · h1 ≤2 lines (~13/line; `compact` ~20) · `.stand` ≤3 lines · `.lt` ≤38 · `.le` ≤60 · `.cmdbar` ≤44 one line · `.marginal` ≤2 lines · `.colophon .out` ≤52 · `.term` accent ≤10 rows×42 / hero ≤20 rows×56 | full budgets per component in `assets/card-language.md`; the lint fails misaligned `.term` tables |
   | all light cards | — | eyebrow ≤24, one line · h1 ≤2 lines (~28/line) · caption ≤60 | |
   | `howto` | 3–5 steps | `.t` ≤38 · `.e` ≤60 · `.cmd` ≤45 | 5 steps ⇒ one-line titles + one-line h1 |
   | `howto-stack` | 3–4 | `.st` ≤32 one line · `.se` ≤64 · `.cmd` ≤45 | 4 steps ⇒ ≤2 cmd chips total; 3 steps auto-scale |

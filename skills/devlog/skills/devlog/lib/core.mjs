@@ -113,6 +113,18 @@ export function validateConfig(config) {
       throw new Error(`branch must be a valid git branch name (no leading dash, no '..'): got ${JSON.stringify(config.branch)}`);
     }
   }
+  if ('targetDir' in config) {
+    // Optional: subdirectory of targetRepo holding the devlog content tree — e.g.
+    // `content/devlog` when the target is a site repo that renders the entries
+    // itself. Relative, slash-separated, no traversal, no leading/trailing slash.
+    // Interpolated into shell commands (the publish clone path) and the gh api
+    // contents path, so the charset is deliberately tight.
+    if (typeof config.targetDir !== 'string'
+      || !/^[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*$/.test(config.targetDir)
+      || config.targetDir.split('/').some((s) => s === '.' || s === '..')) {
+      throw new Error(`targetDir must be a relative path like "content/devlog" (no leading/trailing slash, no '..'): got ${JSON.stringify(config.targetDir)}`);
+    }
+  }
   if ('voicePath' in config) {
     // Optional: directory holding the voice profile used to write entries. Read by
     // the skill with the Read tool only — never shell-interpolated — so the only

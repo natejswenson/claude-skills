@@ -4,6 +4,132 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-07-18
+
+Two real-session UX fixes (SKILL.md only — no script changes), one of which corrects behavior
+introduced in 0.14.0.
+
+### Fixed
+- **Quiet startup.** The setup check (and any other bookkeeping — idea-board/radar freshness,
+  directory orientation) must now run as one or two terse tool calls, never a parade of separate
+  `Bash` calls with printed section headers or exploratory `pwd`/`ls` probes. The user should see
+  a one-sentence status line before anything else, not a scroll of raw command output.
+- **One-question idea picker, not four.** 0.14.0's "four-section menu dialog" asked one
+  `AskUserQuestion` question per lane (Trending/Radar/Interests/Projects) in a single call — in
+  practice this forced the user to page past 3 unrelated lane cards even after already picking an
+  idea in one of them. The idea menu is now a single flattened, ranked list presented as ONE
+  single-select question (top 3 ideas + "Show more ideas"); picking a real idea moves straight to
+  drafting with nothing else to dismiss. Breadth is preserved via the opt-in "Show more ideas"
+  follow-up and the persisted `research/idea-board-*.md` file (every gathered idea is still
+  written there, whether or not it was shown).
+
+## [0.14.0] - 2026-07-18
+
+A conversational-UX pass on the non-deterministic layer (SKILL.md only — no script changes).
+Goal: a `/ghostwriter` session with the fewest possible round trips and the most legible
+in-chat surfaces Claude Code offers.
+
+### Added
+- **One dialog to start** — when the outcome check-in is due AND the idea menu is being offered,
+  they share a single `AskUserQuestion` call (two questions, one dialog) instead of two
+  sequential question dialogs. Guarded by new prose invariant `one-dialog-start`.
+- **Four-section menu dialog — the picker IS the board.** The idea menu is now a single
+  `AskUserQuestion` call with one question per lane (headers `Trending` / `Radar` / `Interests`
+  / `Projects`), each lane offering up to 3 previewed ideas + a Pass option — 8–12 ideas
+  visible in one dialog instead of a 4-item shortlist. Lanes: **Trending now** (VERIFIED
+  run-day trending only — HN points/comments via the Algolia API, subreddit top posts, 48-hour
+  news volume, with the actual signal cited in the preview; vendor blogs and SEO listicles
+  don't qualify — each topic tied to an angle the user could own), **Release radar
+  current through TODAY** (digest items plus a live top-up for anything released since the
+  digest date, labeled `radar · <date>` vs `live · today`), **Interests & hot takes** (strong
+  opinions + story bank, filtered against what's already published), and **2–3 recent Claude
+  projects** (was 1). Chat intro stays to one provenance line per lane; when the outcome
+  check-in is due it takes the first question slot and Interests folds into Trending for the
+  day (the call caps at 4 questions).
+- **Topic selection hardened end-to-end** — the four lanes are gathered in parallel so the
+  dialog is the first wait; an idea appears in exactly one lane (highest signal wins); every
+  lane is filtered against `published.jsonl` and recent drafts; lane and option order follow
+  the outcome history (and the provenance line says so). The built board persists to
+  `research/idea-board-YYYY-MM-DD.md` with picked/on-deck status, and boards ≤7 days old
+  resurface still-fresh unpicked ideas next run (trending signals re-verified first). A pick
+  is echoed as a zero-dialog `Locked in:` brief (angle, anchor, the save, planned sources)
+  before drafting starts.
+- **Preview panes on the idea menu** — every menu option now carries an `AskUserQuestion`
+  `preview` (≤ ~9 lines so the pane never clips): the working hook line (the post's first ~2
+  lines as they'd read), the suggested angle, and a source-freshness line
+  (`radar · Jul 17 · anthropic.com`).
+- **Preview sketches on the visual-form question** — each step-8 option shows an ASCII sketch of
+  what THIS post would get: the proposed Press composition as labeled blocks, the carousel slide
+  strip with real slide titles, or the text-only above-the-fold lines. Sketches are text, not
+  builds; `visual-pick-before-build` unchanged.
+- **LinkedIn-true draft view** — every draft is shown with a visible
+  `┄┄┄ …see more (fold ~210 chars) ┄┄┄` marker at the line break nearest char 210, plus a
+  `N words · save: <what the reader keeps> · lane: <lane>` metadata line. Re-shows after an edit
+  lead with `Changed: <one-line summary>` so the user never re-reads the post hunting for the
+  edit. Guarded by new prose invariant `fold-marked-draft-show`.
+- **Tappable publish decision** — the post-draft ask is now an `AskUserQuestion`
+  (Publish / Edit / Scrap; "Other" takes typed edit instructions directly) instead of a prose
+  question. Approval semantics unchanged: the tap follows a full display of the exact draft text.
+- **Source-gate narration** — step 6 emits one short status line per claim as it resolves and a
+  one-line close (`3 claims · 5 distinct hosts · gate passed`) instead of going silent through
+  the slowest step of the flow.
+
+### Fixed
+- **Idea menu asked for more options than the tool allows** — SKILL.md said "aim for ~5–6
+  options," but `AskUserQuestion` hard-caps a question at 4 options (+ the automatic "Other").
+  The menu now specifies exactly 4 rich options (2 radar how-tos, 1 personal-project,
+  1 interests/hot-take, with backfill from the radar lane when a lane has nothing real).
+
+## [0.13.0] - 2026-07-18
+
+A real session (drafting the "hardass running coach" post) burned ~9 review rounds because the
+terminal card was invented instead of transcribed: the user had to say "make it look like my
+ACTUAL agent," paste a screenshot, and hand-feed real numbers row by row. 0.13.0 makes real
+output the raw material, not the correction.
+
+### Added
+- **Real-output cards (the fidelity contract)** — new SKILL.md section: any card showing the
+  user's own agent/CLI/code (hero `term`, `code`, `claude`) must be a *transcription of a real
+  session*. Capture first (run the user's CLI/MCP tool yourself, or take their paste/screenshot),
+  save the raw capture to `images/<slug>.source.txt`, author as condensation (cut whole rows,
+  never smooth texture into prose), print `—` for missing values or ask for ONE real number —
+  never invent, especially health/personal metrics. Guarded by a new prose invariant
+  (`real-output-transcription`).
+- **Mirror check** — when the user supplied a reference screenshot/paste, every render is
+  self-compared against it (missing prompt/tool-call lines, missing table columns, invented
+  phrasing, dead whitespace) and fixed *before* the user sees it. "Closer" from the user is
+  defined as the failure mode.
+- **`term-misaligned` lint (FAIL)** — box-drawing table rows inside `.term` must share one
+  character width, judged per table (a contiguous run of box rows), so two tables in one
+  terminal may differ. Matches `.tl` rows regardless of attribute or class order. Run against
+  the session's hand-approved published card, it caught a real 1-char border misalignment
+  that 9 rounds of eyeballing missed. Plus `term-rows` / `term-width` WARNs enforcing the
+  new hero budget.
+- **Secrets scrub on transcription** — captures are gitignored and stay local, but the card
+  is published: tokens, keys, emails, home paths, and private hostnames are redacted or
+  generalized in the card even when the raw capture keeps them.
+- **Hero-terminal budget** — `.term` now has two modes in `assets/card-language.md` and the
+  SKILL.md budget table: accent (≤10 rows × 42 chars, unchanged) and hero (≤20 rows × 56
+  chars, up to ~⅔ of the card). The published card that finally satisfied the user was 18
+  rows × 56 chars — the old budget outlawed the card the user actually wanted.
+- **"The hero terminal" section in `assets/card-language.md`** — the anatomy of a believable
+  session: highlighted `.tl.prompt` row, verbatim tool-call indicator line, box-drawing table
+  with real metrics/baselines/deltas, one `.hot` verdict, closing directive.
+- **Hook + save pre-show checks** — the step-7 self-check now verifies the post's most
+  specific number/tension sits in the first ~210 chars and that the post has a nameable
+  save-worthy artifact (or is deliberately a personal post), tightening the reach loop.
+
+### Changed
+- **Step 8 asks ONE question, including output provenance** — when the post is about the
+  user's own agent, the single visual question also settles where the real output comes from
+  (live capture / paste-screenshot / compose from draft facts). No second round-trip.
+- **`.term` CSS upgraded in `diagram.css.example`** — ported the battle-tested block the
+  session hand-tuned into the personal brand file: dark navy panel (`#141A26`), tighter row
+  gap, and the `.tl.prompt` full-bleed highlighted command bar. The shipped example and the
+  personal file no longer diverge on the terminal look.
+- The capture's 1–2 strongest real numbers now feed the post body too (re-running the source
+  gate if that adds an external claim) — real specifics are what get posts saved and shared.
+
 ## [0.12.0] - 2026-07-18
 
 Graphics were the user's stated engagement bottleneck: every card shipped the same light-SaaS
