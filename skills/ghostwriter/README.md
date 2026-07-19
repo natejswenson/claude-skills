@@ -57,6 +57,36 @@ Just ask Claude things like:
 
 Claude drafts it in your voice, shows it to you, and on your OK runs the publish step.
 
+## The in-session experience
+
+The conversational flow is built around the fewest possible round trips (as of 0.14.1):
+
+- **One dialog to start — pick and go.** With no topic given, Claude gathers ideas from four
+  lanes — **Trending** (verified run-day surge signals from HN, Reddit, and 48-hour news
+  volume — cited in the preview, never SEO results), **Radar** (the release digest topped up
+  with anything released since its date), **Interests** (your hot takes and story bank, minus
+  what's already published), and **Projects** (your 2–3 most recent Claude repos, each
+  anchored to the one real thing shipped) — then flattens them into a single ranked list and
+  asks ONE question: the top 3 ideas plus "Show more ideas." Pick a real idea and it goes
+  straight to drafting, nothing else to page past or dismiss; pick "Show more ideas" for one
+  follow-up question with the rest. When a "how did your last post do?" check-in is due, it
+  rides in the same dialog. Every gathered idea (not just the 3 shown) persists to an on-deck
+  board (`research/idea-board-*.md`) that resurfaces next run, and your pick is echoed back
+  as a one-glance "Locked in" brief (angle, anchor, the save, planned sources) before
+  drafting starts — there's no interview.
+- **Visible research.** Every external claim is verified against ≥3 live sources before you see
+  the draft, and the gate narrates as it works (`checking: … ✓`) instead of going silent.
+- **LinkedIn-true draft view.** The draft is shown with the ~210-character "…see more" fold
+  marked, plus a word count and the "save" (the thing a reader keeps). You answer with a tap:
+  Publish / Edit / Scrap. After an edit, the re-show leads with a one-line `Changed:` summary.
+- **One question settles the visual.** After the text is approved: text-only, a composed Press
+  card, or a carousel — each option previewed as an ASCII sketch of what *this* post would get,
+  before anything is rendered. Cards showing your own agent or CLI are transcribed from a real
+  captured session, never invented.
+- **Corrections stick.** Any voice/style feedback you give is appended to your
+  `voice-notes.md` in the same turn, before the redraft — you never repeat a correction in a
+  later session.
+
 ## Optional: the release radar
 
 If you post about a fast-moving field, the **release radar** keeps a running list of recent

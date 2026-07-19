@@ -301,3 +301,32 @@ test('scanAll honors config deepDive overrides', (t) => {
   assert.equal(out.deepDive.minSources, 5);
   assert.deepEqual(out.deepDive.topicDomains, ['security']);
 });
+
+test('scanAll threads targetDir into the existence lookup and echoes it in the output', (t) => {
+  const dir = makeRepo(t);
+  const config = { ...baseConfig(dir), targetDir: 'content/devlog' };
+  const calls = [];
+  const out = scanAll(config, {
+    fetch: false,
+    getExisting: (repo, branch, key, targetDir) => {
+      calls.push([repo, branch, key, targetDir]);
+      return { files: new Set(), status: 'ok' };
+    },
+  });
+  assert.deepEqual(calls, [['me/daily-dev-log', 'main', 'proj', 'content/devlog']]);
+  assert.equal(out.targetDir, 'content/devlog');
+});
+
+test('scanAll defaults targetDir to empty (repo root) when unset', (t) => {
+  const dir = makeRepo(t);
+  const calls = [];
+  const out = scanAll(baseConfig(dir), {
+    fetch: false,
+    getExisting: (repo, branch, key, targetDir) => {
+      calls.push(targetDir);
+      return { files: new Set(), status: 'ok' };
+    },
+  });
+  assert.deepEqual(calls, ['']);
+  assert.equal(out.targetDir, '');
+});
