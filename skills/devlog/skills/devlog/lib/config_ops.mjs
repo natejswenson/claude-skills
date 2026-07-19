@@ -31,6 +31,7 @@ export function removeProject(config, key) {
 const SETTERS = {
   targetRepo: (c, v) => ({ ...c, targetRepo: v }),
   branch: (c, v) => ({ ...c, branch: v }),
+  targetDir: (c, v) => (v === '' ? omit(c, 'targetDir') : { ...c, targetDir: v }),
   gitAuthor: (c, v) => ({ ...c, gitAuthor: v }),
   githubUser: (c, v) => ({ ...c, githubUser: v }),
   voicePath: (c, v) => (v === '' ? omit(c, 'voicePath') : { ...c, voicePath: expandHome(v) }),
