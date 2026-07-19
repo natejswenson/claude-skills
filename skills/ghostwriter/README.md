@@ -59,17 +59,18 @@ Claude drafts it in your voice, shows it to you, and on your OK runs the publish
 
 ## The in-session experience
 
-The conversational flow is built around the fewest possible round trips (as of 0.14.0):
+The conversational flow is built around the fewest possible round trips (as of 0.14.1):
 
-- **One dialog to start — a four-section idea picker.** With no topic given, Claude opens a
-  single dialog with one section per lane: **Trending** (verified run-day surge signals from
-  HN, Reddit, and 48-hour news volume — cited in the preview, never SEO results), **Radar**
-  (the release digest topped up with anything released since its
-  date), **Interests** (your hot takes and story bank, minus what's already published), and
-  **Projects** (your 2–3 most recent Claude repos, each anchored to the one real thing
-  shipped). That's 8–12 previewed ideas in one dialog — each pane shows the working hook, the
-  angle, and source + freshness; every lane has a Pass option. When a "how did your last post
-  do?" check-in is due, it rides in the same dialog. Unpicked ideas persist to an on-deck
+- **One dialog to start — pick and go.** With no topic given, Claude gathers ideas from four
+  lanes — **Trending** (verified run-day surge signals from HN, Reddit, and 48-hour news
+  volume — cited in the preview, never SEO results), **Radar** (the release digest topped up
+  with anything released since its date), **Interests** (your hot takes and story bank, minus
+  what's already published), and **Projects** (your 2–3 most recent Claude repos, each
+  anchored to the one real thing shipped) — then flattens them into a single ranked list and
+  asks ONE question: the top 3 ideas plus "Show more ideas." Pick a real idea and it goes
+  straight to drafting, nothing else to page past or dismiss; pick "Show more ideas" for one
+  follow-up question with the rest. When a "how did your last post do?" check-in is due, it
+  rides in the same dialog. Every gathered idea (not just the 3 shown) persists to an on-deck
   board (`research/idea-board-*.md`) that resurfaces next run, and your pick is echoed back
   as a one-glance "Locked in" brief (angle, anchor, the save, planned sources) before
   drafting starts — there's no interview.

@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.14.0
+version: 0.14.1
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -34,6 +34,15 @@ place.
 Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/voice-profile.md`
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
 If not, switch to Setup.
+
+**Keep this invisible.** Do the setup check (and any other bookkeeping — idea-board/radar
+freshness, directory orientation) in as few, terse tool calls as possible: one chained
+existence/content check, not a parade of separate `Bash` calls with printed section headers.
+Skip exploratory commands that don't feed an immediate decision (a bare `pwd`, an `ls` "just to
+look around"). The first thing the user should see is your one-sentence status line, not a
+scroll of raw command output. This doesn't apply to the real research in Generate step 2 (the
+HN check, radar read, `recent_projects.py`) — that work produces content the user actually sees
+reflected in the menu.
 
 ---
 
@@ -100,9 +109,9 @@ record is **≥2 days old and has no `outcome`**, ask ONE check-in question — 
 '<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
 `python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. **One dialog to
 start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
-`AskUserQuestion` call** — the check-in takes the first question slot and the menu compresses to
-three lane questions that day (see step 2) — one dialog, one round trip, never two sequential
-question dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
+`AskUserQuestion` call** — the check-in takes the first question slot and the flat idea question
+(step 2) takes the second — still one dialog, one round trip, never two sequential question
+dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
 may the check-in be its own question. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
 outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
@@ -114,29 +123,32 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → ONE four-section menu dialog. The picker IS the board.** Gather concrete,
-   ready-to-write ideas from the four lanes below *yourself*, then present them in a **single
-   `AskUserQuestion` call with one question per lane** — headers **`Trending`**, **`Radar`**,
-   **`Interests`**, **`Projects`** — so the user opens one dialog and sees every section with
-   **8–12 previewed ideas total**, not a 4-item shortlist. Rules of the dialog:
-   - Each lane question is single-select with **up to 3 ideas + a "Pass" option** ("nothing from
-     this lane today"); the auto "Other" on any lane takes a typed topic. The user picks in one
-     lane and passes the rest. If they pick in several lanes, draft the pick from the
-     highest-priority lane (lane order below, bent by outcome history) and say the other picks
-     are ready to draft on request — one post per request still holds.
+2. **No topic given → ONE flat idea question, pick and go.** Gather concrete, ready-to-write
+   ideas from the four lanes below *yourself*, then **flatten them into a single ranked list**
+   (lane priority order below, bent by outcome history) and present the **top 3** as **ONE
+   single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
+   ideas."** Never go back to asking one question per lane: that forced paging past unrelated
+   cards even after the user had already picked, which is exactly backwards. Rules of the
+   question:
    - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
      hook (the post's first ~2 lines as they'd actually read), the suggested angle in one
-     sentence, and a source-freshness line (e.g. `radar · Jul 17 · anthropic.com`). A user
-     should be able to pick on previews alone.
-   - **Intro text stays to one provenance line per lane** (radar date + job health, live-search
-     date, repo names) — don't dump a duplicate board into chat; the dialog carries the ideas.
-   - **When the outcome check-in is due** it takes the first question slot (the call caps at 4
-     questions): that day, fold the Interests lane's best idea into the Trending question so
-     everything still fits one dialog.
-   - A lane with nothing real today shows fewer ideas or gives its question slot to the next
-     strongest lane — say so in the provenance line, and never pad with weak ideas.
+     sentence, and a source-freshness line prefixed with its lane (e.g. `Trending · HN 612 pts /
+     340 comments · Jul 18`, `Radar · Jul 17 · anthropic.com`). A user should be able to pick on
+     the preview alone.
+   - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
+     or dismiss.** The auto "Other" on the question takes a typed topic directly (same
+     short-circuit as step 1).
+   - **Picking "Show more ideas" asks exactly ONE follow-up single-select question** with the
+     next batch (the remaining candidates, up to 3 + auto "Other"), same preview format. This is
+     the only path that costs a second round trip, and only because the user explicitly asked.
+   - **One provenance line total in chat**, not per lane (radar date + job health, live-search
+     date, repo names) — don't dump a duplicate board into chat; the question options carry the
+     ideas.
+   - **When the outcome check-in is due** it rides as the first question in the SAME call (see
+     above); the flat idea question is the second. Still one dialog, one round trip.
 
-   The four lanes, in priority order:
+   The four lanes, in priority order (used to rank the flattened list, not to structure separate
+   questions):
    - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
      point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
      are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
@@ -172,20 +184,20 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
      work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
 
-   **Build the board fast and honestly.** Gather all four lanes in parallel (the HN check, the
-   radar read + top-up, interests, `recent_projects.py`) so the dialog is the first thing the
+   **Build the list fast and honestly.** Gather all four lanes in parallel (the HN check, the
+   radar read + top-up, interests, `recent_projects.py`) so the question is the first thing the
    user waits on. An idea appears in exactly ONE lane — highest-signal lane wins (a release
-   that's surging on HN is Trending, not Radar). Filter every lane against `published.jsonl`
-   and recent `drafts/` so nothing already covered resurfaces. Order lane questions and the
-   options inside them by the outcome history, and say so in the provenance line when it bends
-   the order ("release how-tos lead; your last two ran great").
+   that's surging on HN is Trending, not Radar). Filter every candidate against `published.jsonl`
+   and recent `drafts/` so nothing already covered resurfaces. Rank the flattened list by lane
+   priority and the outcome history, and say so in the provenance line when it bends the order
+   ("release how-tos lead; your last two ran great").
 
-   **Persist the board — research the user paid for doesn't evaporate.** After the dialog,
-   write `research/idea-board-YYYY-MM-DD.md`: every idea with its lane, signal, angle, and
-   status (`picked` / `on deck`). On the next open-ended run, read the newest board (≤7 days
-   old) and resurface still-good unpicked ideas labeled `on deck · <date>` — re-verify a
-   trending idea's signal before reusing it, and drop anything that went stale. This is also
-   what makes "your other picks are ready to draft on request" true instead of polite.
+   **Persist the full list — research the user paid for doesn't evaporate.** Whether or not it
+   was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
+   surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
+   open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
+   into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
+   before reusing it, and drop anything that went stale.
 
    **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
    `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the save
