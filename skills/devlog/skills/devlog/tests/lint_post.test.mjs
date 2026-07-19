@@ -248,3 +248,39 @@ test('dedupeCaseInsensitive also folds a case-differing duplicate (defense-in-de
 test('dedupeCaseInsensitive returns tags unchanged when there are no duplicates', () => {
   assert.deepEqual(dedupeCaseInsensitive(['mcp', 'python', 'cli']), ['mcp', 'python', 'cli']);
 });
+
+// ─── voice rules (opt-in) ─────────────────────────────────────────────────────
+
+test('voice rules are off by default: prose em dashes pass without --voice', () => {
+  // GOOD's Gotchas prose contains an em dash; the default contract ignores it.
+  const r = lintPost(GOOD, { minSources: 3, filename: 'v0.5.0.md' });
+  assert.equal(r.ok, true);
+});
+
+test('voice: flags prose em dashes but exempts Sources, Changelog, and fenced code', () => {
+  const withFenceDash = GOOD.replace(
+    'def harvest(css: str) -> set[str]:',
+    'def harvest(css: str) -> set[str]:  # em — dash inside code',
+  );
+  const r = lintPost(withFenceDash, { minSources: 3, filename: 'v0.5.0.md', voice: true });
+  const emDash = r.findings.filter((f) => f.rule === 'voice-em-dash');
+  // Exactly one hit: the Gotchas prose line. The Sources template em dashes,
+  // the Changelog line, and the fenced code one are all exempt.
+  assert.equal(emDash.length, 1);
+  assert.match(emDash[0].message, /## Gotchas/);
+});
+
+test('voice: flags banned phrases from the voice contract', () => {
+  const post = GOOD.replace(
+    'The rest of this post shows how to build one.',
+    "Honestly, I keep seeing people skip contract tests. The problem isn't the tooling.",
+  );
+  const r = lintPost(post, { minSources: 3, filename: 'v0.5.0.md', voice: true });
+  const phrases = r.findings.filter((f) => f.rule === 'voice-banned-phrase').map((f) => f.message);
+  assert.equal(phrases.length, 3);
+  assert.ok(phrases.some((m) => m.includes('Honestly,')));
+  assert.ok(phrases.some((m) => m.includes('I keep seeing')));
+  assert.ok(phrases.some((m) => m.toLowerCase().includes("the problem isn't")));
+  // Without voice, the same post is clean.
+  assert.equal(lintPost(post, { minSources: 3, filename: 'v0.5.0.md' }).ok, true);
+});

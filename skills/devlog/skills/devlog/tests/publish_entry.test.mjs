@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { publishEntry, addCoverToExistingEntry } from '../lib/publish_entry.mjs';
+import { publishEntry, addCoverToExistingEntry, tombstoneEntry, syncEntryFromFrontmatter, extractChangelogHashes } from '../lib/publish_entry.mjs';
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const fakePng = (label = 'x') => Buffer.concat([PNG_MAGIC, Buffer.from(label)]);
@@ -408,4 +408,190 @@ test('addCoverToExistingEntry validates project key and slug shape', (t) => {
     () => addCoverToExistingEntry({ cloneDir, project: 'proj', slug: '../escape', coverImageBuffer: fakePng() }),
     /Invalid slug/,
   );
+});
+
+// ─── tombstone ───────────────────────────────────────────────────────────────
+
+test('tombstoneEntry creates a manifest with a tombstone row even when the project dir is gone', (t) => {
+  const { cloneDir } = makeDirs(t);
+  const result = tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'moved to personal/2026-07-17' });
+  assert.equal(result.tombstoned, true);
+  const manifest = readManifest(cloneDir);
+  assert.deepEqual(manifest.entries, [{
+    version: 'v0.1.0', file: 'v0.1.0.md', removed: true, reason: 'moved to personal/2026-07-17',
+  }]);
+});
+
+test('tombstoneEntry is idempotent on an already-tombstoned version', (t) => {
+  const { cloneDir } = makeDirs(t);
+  tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'consolidated' });
+  const again = tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'different reason' });
+  assert.deepEqual(again, { tombstoned: false, already: true, project: 'proj', version: 'v0.1.0' });
+  assert.equal(readManifest(cloneDir).entries[0].reason, 'consolidated');
+});
+
+test('tombstoneEntry refuses a live published entry', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.throws(
+    () => tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'nope' }),
+    /live published entry/,
+  );
+});
+
+test('tombstoneEntry converts a dead manifest row and keeps its frozen no', (t) => {
+  const { cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'proj'), { recursive: true });
+  writeFileSync(join(cloneDir, 'proj', 'manifest.json'), JSON.stringify({
+    entries: [{ date: '2026-07-01', file: 'v0.1.0.md', title: 'T', summary: 'S', version: 'v0.1.0', tags: [], no: 7 }],
+  }));
+  // No v0.1.0.md on disk — the post-move state.
+  const result = tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'moved' });
+  assert.equal(result.tombstoned, true);
+  const row = readManifest(cloneDir).entries[0];
+  assert.deepEqual(row, { version: 'v0.1.0', file: 'v0.1.0.md', removed: true, reason: 'moved', no: 7 });
+});
+
+test('tombstoneEntry requires a non-empty reason', (t) => {
+  const { cloneDir } = makeDirs(t);
+  assert.throws(
+    () => tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: '  ' }),
+    /non-empty --reason/,
+  );
+});
+
+test('publishEntry refuses a tombstoned version', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'editorially retired' });
+  assert.throws(
+    () => publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') }),
+    /tombstoned.*refusing to republish/,
+  );
+});
+
+test('a tombstoned row with a frozen no still reserves that number for the next publish', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'proj'), { recursive: true });
+  writeFileSync(join(cloneDir, 'proj', 'manifest.json'), JSON.stringify({
+    entries: [{ version: 'v0.1.0', file: 'v0.1.0.md', removed: true, reason: 'moved', no: 7 }],
+  }));
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  assert.equal(result.no, 8);
+});
+
+// ─── sync-entry ──────────────────────────────────────────────────────────────
+
+test('syncEntryFromFrontmatter resyncs the four metadata fields and reports coverStale', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0'), coverImageBuffer: fakePng() });
+  const before = readManifest(cloneDir).entries[0];
+
+  // Post-publish editorial edit to the PUBLISHED file: new title + tags.
+  writeFileSync(join(cloneDir, 'proj', 'v0.1.0.md'), `---
+title: "A reframed title"
+date: 2026-07-11
+project: proj
+version: v0.1.0
+tags: [c, d]
+summary: "A summary."
+---
+
+## Shipped
+
+Reframed things.
+`);
+  const result = syncEntryFromFrontmatter({ cloneDir, project: 'proj', slug: 'v0.1.0' });
+  assert.equal(result.synced, true);
+  assert.deepEqual(result.changedFields, ['title', 'tags']);
+  assert.equal(result.coverStale, true);
+
+  const after = readManifest(cloneDir).entries[0];
+  assert.equal(after.title, 'A reframed title');
+  assert.deepEqual(after.tags, ['c', 'd']);
+  // Frozen fields untouched.
+  assert.equal(after.no, before.no);
+  assert.equal(after.version, before.version);
+  assert.equal(after.file, before.file);
+  assert.deepEqual(after.cover, before.cover);
+});
+
+test('syncEntryFromFrontmatter refuses a tombstoned row and a missing published file', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  tombstoneEntry({ cloneDir, project: 'proj', version: 'v0.1.0', reason: 'moved' });
+  assert.throws(
+    () => syncEntryFromFrontmatter({ cloneDir, project: 'proj', slug: 'v0.1.0' }),
+    /tombstoned/,
+  );
+
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  rmSync(join(cloneDir, 'proj', 'v0.2.0.md'));
+  assert.throws(
+    () => syncEntryFromFrontmatter({ cloneDir, project: 'proj', slug: 'v0.2.0' }),
+    /entry file not found/,
+  );
+});
+
+// ─── changelog collision ─────────────────────────────────────────────────────
+
+const FULL_HASH = 'a'.repeat(40);
+
+function draftWithChangelog(root, project, version, hash, { short = false } = {}) {
+  const path = join(root, `draft-${project}-${version}.md`);
+  const link = short
+    ? `[${hash.slice(0, 7)}](https://example.com/x)`
+    : `[${hash.slice(0, 7)}](https://github.com/me/r/commit/${hash})`;
+  writeFileSync(path, `---
+title: "A real title"
+date: 2026-07-11
+project: ${project}
+version: ${version}
+tags: [a, b]
+summary: "A summary."
+---
+
+## Shipped
+
+Things.
+
+## Changelog
+
+- feat: something (${link})
+`);
+  return path;
+}
+
+test('extractChangelogHashes normalizes link-text and commit-URL hashes to short form', () => {
+  const body = `## Shipped
+
+x
+
+## Changelog
+
+- one ([abc1234](https://github.com/me/r/commit/${'abc1234' + 'f'.repeat(33)}))
+- two (https://github.com/me/r/commit/${'d'.repeat(40)})
+`;
+  const hashes = extractChangelogHashes(body);
+  assert.deepEqual([...hashes].sort(), ['abc1234', 'ddddddd']);
+  assert.deepEqual([...extractChangelogHashes('## Shipped\n\nno changelog here')], []);
+});
+
+test('publishEntry refuses a draft whose Changelog commit is already published in another project', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draftWithChangelog(root, 'proj', 'v0.1.0', FULL_HASH) });
+  assert.throws(
+    () => publishEntry({ cloneDir, project: 'other', version: 'v1.0.0', entryPath: draftWithChangelog(root, 'other', 'v1.0.0', FULL_HASH) }),
+    /already appears in proj\/v0\.1\.0\.md/,
+  );
+  // A short-hash-only link text collides with the full-hash URL form too.
+  assert.throws(
+    () => publishEntry({ cloneDir, project: 'other', version: 'v1.0.0', entryPath: draftWithChangelog(root, 'other', 'v1.0.0', FULL_HASH, { short: true }) }),
+    /already appears/,
+  );
+});
+
+test('publishEntry allows a draft whose Changelog hashes are unique', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draftWithChangelog(root, 'proj', 'v0.1.0', FULL_HASH) });
+  const result = publishEntry({ cloneDir, project: 'other', version: 'v1.0.0', entryPath: draftWithChangelog(root, 'other', 'v1.0.0', 'b'.repeat(40)) });
+  assert.equal(result.manifestUpdated, true);
 });

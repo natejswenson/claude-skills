@@ -77,7 +77,12 @@ export function mergeManifestEntries(cloneDir, config) {
   for (const p of (config.projects || [])) {
     const { entries, status, reason } = readProjectManifest(cloneDir, p.key);
     if (status === 'failed') throw new Error(reason);
-    for (const e of entries) merged.push({ ...e, project: p.key });
+    for (const e of entries) {
+      // Tombstoned rows (removed: true) are editorial retirements, not entries —
+      // they must never surface as backfill candidates or reference covers.
+      if (e && e.removed) continue;
+      merged.push({ ...e, project: p.key });
+    }
   }
   return merged;
 }

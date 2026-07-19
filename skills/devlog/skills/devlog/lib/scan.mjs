@@ -66,10 +66,11 @@ function git(projectPath, args) {
   return execArgs('git', ['-C', projectPath, ...args]);
 }
 
-// Scan one project's local clone. Pure git — the caller supplies the set of
-// entry filenames that already exist in the target repo (existingFiles), so
-// this function stays testable against throwaway fixture repos.
-export function scanProject(project, { branch = 'main', fetch = true, existingFiles = new Set() } = {}) {
+// Scan one project's local clone. Pure git — the caller supplies what already
+// exists in the target repo (`existing`: entry filenames, live manifest
+// versions, and tombstoned versions), so this function stays testable against
+// throwaway fixture repos.
+export function scanProject(project, { branch = 'main', fetch = true, existing = emptyExisting() } = {}) {
   const out = {
     key: project.key,
     label: project.label || project.key,
@@ -119,7 +120,14 @@ export function scanProject(project, { branch = 'main', fetch = true, existingFi
 
   for (let i = 0; i < releases.length; i++) {
     const { tag, version } = releases[i];
-    if (existingFiles.has(`${version}.md`)) {
+    // Tombstone check comes first: a tombstoned row also carries a `file`
+    // field, so the entry-exists check below would otherwise mask the more
+    // specific reason.
+    if (existing.removedVersions.has(version)) {
+      out.skippedTags.push({ tag, reason: 'entry-tombstoned' });
+      continue;
+    }
+    if (existing.versions.has(version) || existing.files.has(`${version}.md`)) {
       out.skippedTags.push({ tag, reason: 'entry-exists' });
       continue;
     }
@@ -185,22 +193,65 @@ function splitLogLine(line) {
   return [hash, subject, date];
 }
 
-// Which entry files already exist in the target repo for one project — a
-// single `gh api` directory listing (vs. the old one-probe-per-tag pattern).
-// Returns { files: Set, status: 'ok' | 'empty' | 'failed' }: a 404 means the
-// project has no entries yet; any other failure is surfaced so the caller
-// knows the entry-exists filter may be incomplete (publish-entry still refuses
-// overwrites against the fresh clone, so a stale scan cannot clobber anything).
+export function emptyExisting() {
+  return { files: new Set(), versions: new Set(), removedVersions: new Set(), entries: [] };
+}
+
+// What already exists in the target repo for one project. Entry identity is
+// project+version in the MANIFEST, not a filename: manifest rows survive
+// editorial file moves/consolidations, and a tombstoned row (`removed: true`)
+// keeps suppressing generation even after its .md is gone — the failure class
+// that re-armed three deleted entries in the first six runs. Fetches the
+// project's manifest.json (one `gh api` call); falls back to a directory
+// listing for legacy dirs with entries but no manifest yet.
+// Returns { files: Set, versions: Set, removedVersions: Set,
+//           entries: [{version, title, tags}] (live rows only),
+//           status: 'ok' | 'empty' | 'failed' }: 'empty' means the project has
+// no entries yet; 'failed' is surfaced so the caller knows the entry-exists
+// filter may be incomplete (publish-entry still refuses overwrites against the
+// fresh clone, so a stale scan cannot clobber anything).
 export function fetchExistingEntries(targetRepo, branch, projectKey, targetDir = '') {
   const contentPath = targetDir ? `${targetDir}/${projectKey}` : projectKey;
+  const m = spawnArgs('gh', ['api', `repos/${targetRepo}/contents/${contentPath}/manifest.json?ref=${branch}`, '--jq', '.content']);
+  if (m.status === 0) {
+    let manifest = null;
+    try {
+      manifest = JSON.parse(Buffer.from(m.stdout.replace(/\s/g, ''), 'base64').toString('utf8'));
+    } catch {
+      // Malformed manifest content — fall through to the directory listing.
+    }
+    if (manifest && Array.isArray(manifest.entries)) {
+      const out = { ...emptyExisting(), status: 'ok' };
+      for (const e of manifest.entries) {
+        if (!e) continue;
+        if (typeof e.file === 'string') out.files.add(e.file);
+        if (typeof e.version !== 'string' || e.version === '') continue;
+        if (e.removed) {
+          out.removedVersions.add(e.version);
+        } else {
+          out.versions.add(e.version);
+          out.entries.push({
+            version: e.version,
+            title: typeof e.title === 'string' ? e.title : null,
+            tags: Array.isArray(e.tags) ? e.tags : [],
+          });
+        }
+      }
+      return out;
+    }
+  } else if (!/HTTP 404|Not Found/i.test(m.stderr)) {
+    return { ...emptyExisting(), status: 'failed' };
+  }
+
+  // No manifest (or unparseable): legacy directory listing.
   const r = spawnArgs('gh', ['api', `repos/${targetRepo}/contents/${contentPath}?ref=${branch}`, '--jq', '.[].name']);
   if (r.status === 0) {
-    return { files: new Set(r.stdout.split('\n').filter(Boolean)), status: 'ok' };
+    return { ...emptyExisting(), files: new Set(r.stdout.split('\n').filter(Boolean)), status: 'ok' };
   }
   if (/HTTP 404|Not Found/i.test(r.stderr)) {
-    return { files: new Set(), status: 'empty' };
+    return { ...emptyExisting(), status: 'empty' };
   }
-  return { files: new Set(), status: 'failed' };
+  return { ...emptyExisting(), status: 'failed' };
 }
 
 // Full scan across the configured projects. `getExisting` is injectable for
@@ -219,9 +270,15 @@ export function scanAll(config, { projectKey = null, fetch = true, getExisting =
   }
 
   const results = projects.map((project) => {
-    const existing = getExisting(config.targetRepo, branch, project.key, config.targetDir || '');
-    const scanned = scanProject(project, { branch, fetch, existingFiles: existing.files });
+    // Normalized so an injected getExisting returning a partial shape (e.g. a
+    // legacy { files, status } double) can't crash the tombstone checks.
+    const existing = { ...emptyExisting(), status: 'ok', ...getExisting(config.targetRepo, branch, project.key, config.targetDir || '') };
+    const scanned = scanProject(project, { branch, fetch, existing });
     scanned.existenceCheck = existing.status;
+    // Live catalog rows for this project — the skill's topic-dedup input
+    // ("don't re-teach a guide the catalog already covers"), free with the
+    // manifest fetch above.
+    scanned.publishedEntries = existing.entries;
     return scanned;
   });
 
@@ -235,5 +292,27 @@ export function scanAll(config, { projectKey = null, fetch = true, getExisting =
     voicePath: config.voicePath || null,
     projects: results,
     totalNewReleases: results.reduce((n, p) => n + p.newReleases.length, 0),
+  };
+}
+
+// Compact plan-table view of a scanAll result: per release, drop the commit
+// list and diffstat (the bulky parts) for a commitCount; collapse skippedTags
+// to per-reason counts. publishedEntries stays — it's small and the skill's
+// topic-dedup input. Full detail remains one `scan --project <key>` away.
+export function summarizeScan(result) {
+  if (result.error) return result;
+  return {
+    ...result,
+    projects: result.projects.map((p) => ({
+      ...p,
+      newReleases: p.newReleases.map(({ commits, diffstat, ...release }) => ({
+        ...release,
+        commitCount: commits.length,
+      })),
+      skippedTags: p.skippedTags.reduce((acc, { reason }) => {
+        acc[reason] = (acc[reason] || 0) + 1;
+        return acc;
+      }, {}),
+    })),
   };
 }
