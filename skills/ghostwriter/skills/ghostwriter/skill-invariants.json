@@ -66,6 +66,12 @@
       "file": "SKILL.md",
       "pattern": "never render a form\\s+the user\\s+didn.t\\s+choose",
       "rationale": "Rendering a visual before asking wasted a full card build in a real session (user wanted a carousel). One form question before any authoring is prose-only."
+    },
+    {
+      "id": "real-output-transcription",
+      "file": "SKILL.md",
+      "pattern": "transcription of a real session,\\s*not an\\s*invention",
+      "rationale": "A real session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's actual output ('I want my terminal cards to represent my actual agents'). Capture-before-author lives only in this prose; the term-misaligned lint checks alignment, not provenance."
     }
   ]
 }

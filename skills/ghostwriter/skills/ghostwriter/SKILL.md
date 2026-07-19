@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.12.0
+version: 0.13.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -195,6 +195,11 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      didn't actually live.
    - **Length** — default 50–120 words (see Engagement craft).
    - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words.
+   - **The hook** — the post's single most specific number or sharpest tension appears in the
+     first ~210 chars (before "…see more"). If the best number sits below the fold, move it up.
+   - **The save** — name (to yourself) the thing a reader keeps: a command, a checklist, a
+     reusable model. If there's nothing to keep, either rework toward reference-worthy or
+     accept it's a lower-reach personal post on purpose — don't pad it with fake utility.
    Fix what fails, then **show the full draft** in chat and ask: *"Publish this to LinkedIn,
    edit it, or scrap it?"* Wait for their answer. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
@@ -211,6 +216,13 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    the pick do you author and render (see **Visuals**); never render a form the user didn't
    choose. Cards are **composed, not templated**: read `assets/card-language.md`, check
    `images/card-history.jsonl`, and differ from the last 3 cards on ≥2 variation axes.
+   **If the post is about the user's own agent, CLI, or code** — any visual that would show
+   its output (a hero `term`, `code`, or `claude` card) — settle the output source in the
+   SAME single question, via the option descriptions: you capture it live (run their CLI /
+   call their MCP tool from this session), they paste or screenshot a real session, or —
+   only if neither is possible — compose from facts already in the draft. One question
+   total, never a second round-trip. See **Real-output cards** below for what to do with
+   the capture.
 
 ### How-to posts (technical, from AI releases)
 
@@ -259,6 +271,37 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   `images/card-history.jsonl` and differ from the last 3 approved cards on **≥2 variation
   axes** (hero component, headline treatment, density, numeral presence, support texture);
   after the user approves the render, append the card's fingerprint line to that file.
+- **Real-output cards (the fidelity contract).** Whenever a card shows the output of the
+  user's own agent, tool, or code — a hero `term` component, a `code` card, a `claude`
+  session card — the terminal content is a **transcription of a real session, not an
+  invention**. A round of "make it look like my actual agent" is a defect: get the ground
+  truth *before* authoring, not after the user complains.
+  1. **Capture first.** In preference order: **run it yourself** (the user's CLI or MCP tool
+     is often reachable from this session — call it and capture real output); else take the
+     user's **paste or screenshot** (offered in the step-8 question). Save the raw capture —
+     transcribing a screenshot faithfully if that's what you got — to
+     `images/<slug>.source.txt` (gitignored, stays local), and iterate every render against
+     that file, not against memory of it. **The card gets published: scrub secrets before
+     transcribing** — tokens, keys, emails, home-directory paths, private hostnames get
+     redacted or generalized in the card even though the capture keeps them (same "never
+     print secrets" guardrail).
+  2. **Author as condensation, never invention.** Keep the session's anatomy — the prompt
+     row, the tool-call indicator line, the real table with its actual metric names, values,
+     baselines, and deltas, the verdict, the closing directive (see `assets/card-language.md`
+     → The hero terminal). Cut whole rows or sections to fit the budget; never smooth real
+     output into summary prose, and never "clean up" the texture that makes it real.
+  3. **Unknown value → `—` or one question.** Real CLIs print dashes for missing data; do the
+     same. If one real number would complete the card (a baseline, a total), ask for that ONE
+     number — never invent it, especially health or personal metrics.
+  4. **Feed the post too.** Pull the capture's 1–2 strongest real numbers into the draft body
+     (re-running the source gate if that adds an external claim) — real specifics are what get
+     posts saved and shared.
+  5. **Mirror check when a reference exists.** If the user supplied a screenshot or paste,
+     then before EVERY showing: Read the reference and the render side by side and enumerate
+     the structural mismatches yourself — missing prompt/tool-call lines, missing table
+     columns or rows, invented phrasing, dead whitespace where the real session is dense. Fix
+     and re-render until you find none; only then show the user. The user saying "closer" is
+     the failure mode, not the workflow.
 - **The legacy light gallery (reference compositions).** The pre-Press light-system templates
   below remain shipped and renderable — use them as *structural references* when a Press
   composition wants a proven skeleton, or when the user explicitly asks for the light look.
@@ -334,7 +377,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     money line `class="line hot"`, cap with `<span class="caret">`. ≤~42 chars, ≤~10 rows.
   - `assets/card-template-claude.html` — **Claude Code session**: the transcript variant of the
     code type (clay request band, action bullets, `└` result branches). Be honest — real request,
-    real outcome.
+    real outcome; the **Real-output cards** contract applies (capture the actual session first).
   - `assets/card-template-carousel.html` — **carousel type** (a multi-slide document). See
     **Carousels** below — the highest-reach native format, best for educational / step-by-step posts.
   Card styling lives in `~/.claude/ghostwriter/assets/diagram.css` (the brand guide) — use its
@@ -344,7 +387,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
 
   | Template | Count | Field limits | Notes |
   |---|---|---|---|
-  | `press` | 2–3 body components | eyebrow ≤24 · h1 ≤2 lines (~13/line; `compact` ~20) · `.stand` ≤3 lines · `.lt` ≤38 · `.le` ≤60 · `.cmdbar` ≤44 one line · `.marginal` ≤2 lines · `.colophon .out` ≤52 | full budgets per component in `assets/card-language.md` |
+  | `press` | 2–3 body components | eyebrow ≤24 · h1 ≤2 lines (~13/line; `compact` ~20) · `.stand` ≤3 lines · `.lt` ≤38 · `.le` ≤60 · `.cmdbar` ≤44 one line · `.marginal` ≤2 lines · `.colophon .out` ≤52 · `.term` accent ≤10 rows×42 / hero ≤20 rows×56 | full budgets per component in `assets/card-language.md`; the lint fails misaligned `.term` tables |
   | all light cards | — | eyebrow ≤24, one line · h1 ≤2 lines (~28/line) · caption ≤60 | |
   | `howto` | 3–5 steps | `.t` ≤38 · `.e` ≤60 · `.cmd` ≤45 | 5 steps ⇒ one-line titles + one-line h1 |
   | `howto-stack` | 3–4 | `.st` ≤32 one line · `.se` ≤64 · `.cmd` ≤45 | 4 steps ⇒ ≤2 cmd chips total; 3 steps auto-scale |
