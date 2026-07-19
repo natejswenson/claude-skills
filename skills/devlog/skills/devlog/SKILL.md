@@ -16,7 +16,7 @@ actual work, backed by cited reputable sources, and including **gotchas earned f
 experience**. The release is the springboard; the teaching is the point.
 
 The deterministic work (release discovery, post linting, manifest updates, config edits)
-is done by the `@natjswenson/devlog` CLI — invoke it as `npx -y @natjswenson/devlog <cmd>`.
+is done by the `@natjswenson/devlog` CLI — invoke it as `npx -y @natjswenson/devlog@latest <cmd>`.
 Every agent-facing command prints JSON.
 
 ## Decide which mode you're in
@@ -38,10 +38,10 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 
 | Intent | Command |
 |---|---|
-| Show config | `npx -y @natjswenson/devlog config --json` |
-| Add a project | `npx -y @natjswenson/devlog add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
-| Remove a project | `npx -y @natjswenson/devlog remove-project <key> --yes` |
-| Change a setting | `npx -y @natjswenson/devlog set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+| Show config | `npx -y @natjswenson/devlog@latest config --json` |
+| Add a project | `npx -y @natjswenson/devlog@latest add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
+| Remove a project | `npx -y @natjswenson/devlog@latest remove-project <key> --yes` |
+| Change a setting | `npx -y @natjswenson/devlog@latest set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
 
 `targetDir` is the subdirectory of `targetRepo` that holds the devlog content tree
 (e.g. `content/devlog` when the target is the site repo itself); unset/empty means the
@@ -71,26 +71,32 @@ fix the named field via `set`.
 
 ## Status mode
 
-Run `npx -y @natjswenson/devlog scan --json` and render a compact table: project, new
-releases (version + date + commit count), and skipped tags worth mentioning (reason
-`prerelease`, `empty-range`, etc. — omit `entry-exists` noise unless asked). Note
-`tagFetch: "failed"` ("using local tags only") and `existenceCheck: "failed"` ("couldn't
-confirm which entries exist; publish will still refuse overwrites"). Write nothing.
+Run `npx -y @natjswenson/devlog@latest scan --json --summary` and render a compact table:
+project, new releases (version + date + `commitCount`), and skipped-tag counts worth
+mentioning (`prerelease`, `empty-range`, `entry-tombstoned`, etc. — omit `entry-exists`
+noise unless asked). Note `tagFetch: "failed"` ("using local tags only") and
+`existenceCheck: "failed"` ("couldn't confirm which entries exist; publish will still
+refuse overwrites"). Write nothing.
 
 ## Generate mode
 
 ### Step 1: Scan for new releases
 
 ```bash
-npx -y @natjswenson/devlog scan --json            # all projects
-npx -y @natjswenson/devlog scan --json --project '<key>'   # one project
+npx -y @natjswenson/devlog@latest scan --json --summary            # the plan table
+npx -y @natjswenson/devlog@latest scan --json --project '<key>'    # full detail, one project
 ```
 
-The JSON plan contains everything discovery used to require: per project, the
-`newReleases` array (`tag`, `version`, `date`, `prevTag`, `commits[{hash, subject, date,
-public}]`, `diffstat`) plus `skippedTags` with reasons, and the resolved `deepDive`
-settings (`minSources`, `topicDomains`). Handle the edges:
+Start with `--summary`: per project it gives `newReleases` (`tag`, `version`, `date`,
+`commitCount`), per-reason `skippedTags` counts, `publishedEntries` (every live entry's
+`version`/`title`/`tags` — the topic-dedup input for 3b), and the resolved `deepDive`
+settings (`minSources`, `topicDomains`). When you start writing a project's posts, run
+the full per-project scan for its `commits[{hash, subject, date, public}]` and
+`diffstat`. Handle the edges:
 
+- The output echoes `cliVersion` — the version npx actually ran. npx caches aggressively;
+  if it's older than the version this SKILL.md shipped with, say so and re-run (the
+  `@latest` pin usually prevents this).
 - `error: "unknown-project"` → list `availableKeys` and stop.
 - `totalNewReleases: 0` → tell the user nothing new was tagged (mention notable skipped
   tags) and stop. Do not create empty entries.
@@ -150,14 +156,28 @@ trivia or niche internals. If the obvious topic is repo-specific, step up one le
 the general pattern behind it — the test is "could a reader finish this how-to and have
 something working of their own?" When a release spans two candidate topics (or two
 releases in one run share one), don't write the same guide twice: give each post the
-most usable topic the run hasn't already covered. In a monorepo, one commit can appear
-in several projects' ranges — it belongs to the post whose release story it is; other
-posts leave it out of their narrative and `## Changelog` (check what sibling entries
-already cover, across all projects).
+most usable topic the run hasn't already covered. **The same rule applies against the
+whole catalog**: before settling on a topic, check every project's `publishedEntries`
+(titles + tags, in the scan output) — if an existing entry already teaches this topic,
+find the angle this release genuinely adds, or step to the next-most-usable topic.
+Never publish a near-duplicate of a guide the catalog already has. Vary the surface
+too: don't reuse the catalog's title shapes ("How to …" again and again) or repeat the
+same section-heading skeleton post after post.
+
+In a monorepo, one commit can appear in several projects' ranges — it belongs to the
+post whose release story it is; other posts leave it out of their narrative and
+`## Changelog` (`publish-entry` refuses a draft whose Changelog repeats a commit an
+existing entry already lists). **Never force a second angle the history doesn't
+support**: if the twin release has no story of its own beyond the shared commits, give
+it a proportionally small post — or fold it into the sibling's `## Shipped` — rather
+than inventing a premise to differentiate it.
 
 **3c. Research before writing.** Use web search/fetch to gather at least
 `deepDive.minSources` **distinct** reputable sources: official docs and release notes,
-standards bodies, primary research, well-regarded engineering writing. Avoid SEO farms.
+standards bodies, primary research, well-regarded engineering writing. A content farm
+or SEO-mill page never counts toward `minSources` — when a concept has a primary source
+(the original paper, the official docs, the pattern's canonical text), cite that, not a
+summary site that ranks for the keyword.
 Every specific external claim (a version, a behavior, a study, a definition) must be
 backed by a source you actually verified — if you can't source it, don't claim it. Don't
 lean on one URL for most claims. Keep a working `(claim, url)` list. Fetch tools can
@@ -277,16 +297,28 @@ Write each draft with the **Write tool** (never a bash heredoc) to a temp dir
 (`mktemp -d` once, reuse the absolute path — shell variables don't persist across bash
 calls). Name it `<version>.md`. Then:
 
-1. **Lint:** `npx -y @natjswenson/devlog lint-post '<abs-draft-path>'` — fix every
-   finding (missing sections, thin gotchas, too few distinct sources, sources listed
-   but never cited inline, untagged fences).
-2. **Assemble-and-run check:** when the post's code is runnable without external
-   services, copy its code blocks in order into a scratch dir and execute them exactly
-   as a reader would. Anything undefined, out of order, or missing an entrypoint fails
-   the stranger test mechanically — fix the post, not just the scratch copy.
-3. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
+1. **Ground-truth gate.** List every claim the draft makes about the user's own repo —
+   a tag exists or doesn't, a count ("seven tests went red"), a timeline, an outcome —
+   and verify each one with a git command run NOW, in this session (`git tag -l`,
+   `git show`, `git log`), the same way 3c keeps a `(claim, url)` list for external
+   claims. A claim you can't verify gets removed, not softened. A specific number is
+   publishable only if it appears in a commit, a diff, or a fetched source — otherwise
+   drop the precision ("several", not "seven"). And never label output as real ("that's
+   the real output", "from my actual run") unless the command that produced it ran in
+   this session — unrun output is always framed as expectation ("you should see…").
+2. **Lint:** `npx -y @natjswenson/devlog@latest lint-post '<abs-draft-path>' --voice` —
+   fix every finding (missing sections, thin gotchas, too few distinct sources, sources
+   listed but never cited inline, untagged fences, voice violations).
+3. **Assemble-and-run check:**
+   `npx -y @natjswenson/devlog@latest assemble-post '<abs-draft-path>' --out '<scratch>/assemble/<version>'`
+   extracts the draft's code blocks in order as numbered files (`text` fences are
+   expected output, listed but not written). When the code is runnable without external
+   services, execute the blocks exactly as a reader would. Anything undefined, out of
+   order, or missing an entrypoint (or an install step the post never shows) fails the
+   stranger test mechanically — fix the post, not just the scratch copy.
+4. **Self-review against the how-to contract**, honestly, as a skeptical reader: walk
    points 1-8 above plus voice adherence. Revise the draft for any point that fails.
-4. At most **two** revision passes; then proceed with the best version and carry any
+5. At most **two** revision passes; then proceed with the best version and carry any
    residual weakness into the final summary (e.g. "v0.5.0: only 2 gotchas had commit
    evidence").
 
@@ -312,57 +344,66 @@ mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
 git -C '<abs-tmp>' clone --depth=1 'https://github.com/<targetRepo>.git'
 # <content-root> = '<abs-tmp>/<repo-name>/<targetDir>' if targetDir is set,
 #                  '<abs-tmp>/<repo-name>' otherwise.
+```
 
-# Per release (refuses to overwrite an existing entry — on {"error": ...,
-# "message": "... immutable ..."} skip that release and note it):
+Right after the clone, **Write `<abs-tmp>/run-state.json`**: the clone path, the planned
+releases, and a per-release status you update as each one drafts/lints/publishes. If the
+session is compacted or interrupted mid-run, re-read it instead of re-deriving paths
+from `/var/folders` archaeology.
 
-# 1. Style guide + up to 3 reference images of recently published covers.
-npx -y @natjswenson/devlog cover-context '<key>' '<version>' \
-  --clone '<content-root>'
-# On {"error": "style-guide-missing", ...}: skip cover composition for this release
-# entirely — proceed straight to publish-entry with no --cover flag. Never block
-# publish on a missing style guide.
+Per release:
 
-# 2. Compose the cover using ONLY this release's title/tags/summary/`## Shipped` text
-#    (never the raw draft file, never `## Changelog`) plus the returned style guide,
-#    icon catalog, and reference images. A cover that just re-renders the title in large text is a failure —
-#    find the one concrete mechanism this release is actually about
-#    (not the project name, not "a bug fix") and draw ONE custom inline-SVG illustration
-#    of it, sized as the dominant visual element of the canvas; title/kicker stay
-#    secondary. Two different releases should never produce visually similar covers.
-#
-#    Draw the illustration inside a `#hero-zone` container at exactly
-#    `x:150 y:425 width:1300 height:400` (render-cover mechanically checks this box and
-#    refuses to render otherwise) — pick ONE of two composition slots per post: single
-#    centered hero (one freehand mechanism, nothing else), or two-node before/after (a
-#    left node, a right node, a connecting line, all freehand). Snap interior key points
-#    to a 25px coordinate grid. Catalog icons (image-style/icons.md) are never placed
-#    inside `#hero-zone` — they may only appear as an optional small accent glyph near
-#    the kicker/title area, entirely outside the hero zone, its bottom edge no lower than
-#    y:400. See the style guide's hero-zone grid contract section before composing.
-#    Write the result with the Write tool to '<abs-scratch>/<key>/<version>.html' — a
-#    full document starting with `<!DOCTYPE html>`, sized
-#    `html, body { margin:0; width:1600px; height:900px; }`, referencing the bundled
-#    font only as `font-family: 'DevlogCoverFont', sans-serif`.
+1. **Cover context.**
+   `npx -y @natjswenson/devlog@latest cover-context '<key>' '<version>' --clone '<content-root>'`
+   returns the style guide, icon catalog, and up to 3 reference cover paths. **Read
+   only the single most recent reference image** (image reads are the expensive part;
+   open another only if you're genuinely unsure the new cover is distinct). On
+   `{"error": "style-guide-missing"}`: skip cover composition for this release entirely
+   and proceed straight to publish-entry with no `--cover` flag.
+   Never block publish on a missing style guide.
+2. **Compose** using ONLY this release's title/tags/summary/`## Shipped` text
+   (never the raw draft file, never `## Changelog`) plus the style guide and icon catalog. A
+   cover that just re-renders the title in large text is a failure — find the one
+   concrete mechanism this release is actually about (not the project name, not "a bug
+   fix") and draw ONE custom inline-SVG illustration of it as the dominant visual
+   element; title/kicker stay secondary; two releases should never produce visually
+   similar covers. Follow the style guide's hero-zone grid contract: the illustration
+   lives in a `#hero-zone` container at exactly `x:150 y:425 width:1300 height:400`
+   (render-cover mechanically enforces this), one of two slots (single centered hero,
+   or two-node before/after), interior points snapped to a 25px grid; catalog icons
+   never go inside `#hero-zone` (optional small accent glyph near the kicker only,
+   bottom edge above y:400). Write the document with the Write tool to
+   `'<abs-scratch>/<key>/<version>.html'` — full `<!DOCTYPE html>` document, sized
+   `html, body { margin:0; width:1600px; height:900px; }`, font referenced only as
+   `font-family: 'DevlogCoverFont', sans-serif`.
+3. **Rasterize.**
+   `npx -y @natjswenson/devlog@latest render-cover '<abs-scratch>/<key>/<version>.html' --project '<key>' --slug '<version>' --out '<abs-scratch>'`
+   The HTML is the source of truth and **survives the render**: to fix a visual
+   problem, edit (or re-Write — if an Edit fails, re-Write the whole file) the same
+   .html and re-run render-cover; it re-renders whenever the HTML is present,
+   overwriting the old PNG. On `render-failed` (timeout / Chromium missing / font
+   missing / a `#hero-zone` geometry violation), retry composing once with the error
+   text fed back, or give up and proceed with no `--cover` flag. **Show the rendered
+   `<abs-scratch>/<key>/<version>.png` in this session before continuing —
+   this interactive review IS the quality gate for the cover**, the same way Step 4
+   is for the prose.
+4. **Publish.**
+   ```bash
+   npx -y @natjswenson/devlog@latest publish-entry \
+     --clone '<content-root>' --project '<key>' \
+     --version '<version>' --entry '<abs-draft-path>' \
+     --cover '<abs-scratch>/<key>/<version>.png'
+   ```
+   Omit `--cover` entirely if no cover was produced (missing style guide, a render
+   failure not worth a second attempt) — publish still proceeds normally. publish-entry
+   refuses three things; none is retried by workaround: an existing entry (`immutable`
+   — skip the release, note it), a tombstoned version (`tombstoned` — skip; that
+   identity was editorially retired), and a Changelog commit another entry already
+   lists (drop the commit from this draft's `## Changelog` and re-publish).
 
-# 3. Rasterize it. On failure (render timeout / Chromium not installed / font missing /
-#    a #hero-zone problem — missing, duplicate, wrong position/size, or a catalog icon
-#    overlapping it),
-#    the .html is left in place for debugging — retry composing once with the error text
-#    fed back, or give up and proceed with no --cover flag.
-npx -y @natjswenson/devlog render-cover '<abs-scratch>/<key>/<version>.html' \
-  --project '<key>' --slug '<version>' --out '<abs-scratch>'
-# Show the rendered <abs-scratch>/<key>/<version>.png in this session before continuing —
-# this interactive review IS the quality gate for the cover, the same way Step 4 is for
-# the prose.
+Then, once, after all releases:
 
-npx -y @natjswenson/devlog publish-entry \
-  --clone '<content-root>' --project '<key>' \
-  --version '<version>' --entry '<abs-draft-path>' \
-  --cover '<abs-scratch>/<key>/<version>.png'
-# Omit --cover entirely if no cover was produced for this release (missing style guide,
-# a render failure not worth a second attempt) — publish still proceeds normally.
-
+```bash
 git -C '<abs-tmp>/<repo-name>' add .
 git -C '<abs-tmp>/<repo-name>' commit -m 'devlog: add release entries'
 git -C '<abs-tmp>/<repo-name>' push --no-tags origin '<branch>'
@@ -415,5 +456,17 @@ rules:
   not an error.
 - **Entry already exists** (skipped as `entry-exists`, or `publish-entry` refuses): a cut
   release is immutable; never overwrite, never delete.
+- **`entry-tombstoned`:** the release's entry was editorially retired (moved,
+  consolidated, or deleted on purpose) — skip it silently, never regenerate it.
+- **The user moved/consolidated/deleted a published entry by hand:** tombstone the
+  identity it left behind so no later run resurrects it:
+  `npx -y @natjswenson/devlog@latest tombstone --clone '<content-root>' --project '<key>'
+  --version '<vX.Y.Z>' --reason '<where it went>'` (commit + push like a publish).
+- **The user edited a published entry's prose/frontmatter:** resync its manifest row
+  (title/summary/date/tags — what the site index and RSS read) with
+  `npx -y @natjswenson/devlog@latest sync-entry --clone '<content-root>' --project '<key>'
+  --slug '<version>'`. If the result reports `coverStale: true` and the title/topic
+  changed, offer to recompose the cover (Step 5 flow, `--cover` via publish is not
+  needed — use the backfill commands or recompose+`render-cover`+commit).
 - **Unknown project argument:** list the available keys from the scan error.
 - **Config missing/invalid:** point at `npx @natjswenson/devlog init` / `set` and stop.

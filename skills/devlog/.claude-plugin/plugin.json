@@ -1,6 +1,6 @@
 {
   "name": "devlog",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Turn each new version release (git tag) into a polished, researched how-to guide with real gotchas, written in your voice and published to GitHub",
   "author": {
     "name": "Nate Swenson"

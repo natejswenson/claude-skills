@@ -79,8 +79,11 @@ test('every CLI command SKILL.md relies on exists in the dispatcher', () => {
   }
 });
 
-test('SKILL.md tells the agent to invoke the CLI via npx', () => {
-  assert.match(skillMd, /npx -y @natjswenson\/devlog scan --json/);
+test('SKILL.md tells the agent to invoke the CLI via npx, pinned to @latest', () => {
+  // The @latest pin is load-bearing: a bare package name lets npx prefer a
+  // stale cached install over the registry (this bit real runs three times).
+  assert.match(skillMd, /npx -y @natjswenson\/devlog@latest scan --json/);
+  assert.doesNotMatch(skillMd, /npx -y @natjswenson\/devlog (?!@)/);
 });
 
 test('package.json version matches the top CHANGELOG entry', () => {

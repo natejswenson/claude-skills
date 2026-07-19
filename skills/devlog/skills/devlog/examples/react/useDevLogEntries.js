@@ -34,6 +34,8 @@ function validateManifest(data) {
   const entries = [];
   for (const e of data.entries) {
     if (!e || typeof e !== 'object') continue;
+    // Tombstoned rows (removed: true) are editorial retirements, not entries.
+    if (e.removed) continue;
     const { date, file, title, summary, version } = e;
     if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
     if (typeof file !== 'string' || !/^[a-zA-Z0-9._-]+\.md$/.test(file)) continue;
