@@ -14,9 +14,18 @@ in-chat surfaces Claude Code offers.
 - **One dialog to start** — when the outcome check-in is due AND the idea menu is being offered,
   they share a single `AskUserQuestion` call (two questions, one dialog) instead of two
   sequential question dialogs. Guarded by new prose invariant `one-dialog-start`.
+- **Sectioned idea board with live trending research** — the menu is now built from a
+  three-lane board shown in full in chat: **Trending now** (a run-day live search over the
+  interests file's trending areas — social/discussion surfaces, Google/news, industry
+  conversation — 2–3 topics each tied to an angle the user could own), **Release radar current
+  through TODAY** (digest items plus a live top-up for anything released since the digest date,
+  labeled `radar · <date>` vs `live · today`), and **2–3 recent Claude projects** (was 1). The
+  single menu question carries the 4 strongest picks across the board, at least one per lane;
+  "Other" accepts a board number.
 - **Preview panes on the idea menu** — every menu option now carries an `AskUserQuestion`
-  `preview`: the working hook line (the post's first ~2 lines as they'd read), the suggested
-  angle, and a source-freshness line (`radar · Jul 17 · anthropic.com`).
+  `preview` (≤ ~9 lines so the pane never clips): the working hook line (the post's first ~2
+  lines as they'd read), the suggested angle, and a source-freshness line
+  (`radar · Jul 17 · anthropic.com`).
 - **Preview sketches on the visual-form question** — each step-8 option shows an ASCII sketch of
   what THIS post would get: the proposed Press composition as labeled blocks, the carousel slide
   strip with real slide titles, or the text-only above-the-fold lines. Sketches are text, not

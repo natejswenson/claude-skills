@@ -113,43 +113,45 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → offer ONE rich idea menu.** Don't make the user pick a lane and then drill;
-   gather concrete, ready-to-write ideas from every source *yourself*, then present them in a
-   **single `AskUserQuestion`** (single-select; the auto "Other" lets them type their own topic;
-   sharing the call with the outcome check-in when one is due — see above). The tool caps a
-   question at **4 options**, so offer **exactly 4**, each a short title + its one-line hook,
-   **led by recent-AI-release how-tos** (the priority lane). **Every option carries a `preview`**
-   — the working hook line (the post's first ~2 lines as they'd actually read), the suggested
-   angle in one sentence, and a source-freshness line (e.g. `radar · Jul 17 · anthropic.com`).
-   The previews are what make 4 options as informative as a longer flat list — a user should be
-   able to pick on the preview alone. Default mix:
-   - **First, check radar health — never serve stale research silently.** Read the newest
-     `research/release-radar-*.md` date and the tail of `research/.radar.log`. Tell the user the
-     provenance in one line before (or in the intro of) the menu: fresh → *"ideas from the Jul 17
-     radar"*; **stale (>4 days) or missing** → say so, note whether the log shows the scheduled
-     job failing, and fall back to a live search (below). If the job is broken (e.g. exit 127 —
-     usually the repo moved), offer to repair it: `bash scripts/install_radar.sh` re-renders the
-     launchd agent against the repo's current path. **Label every menu option with its source**
-     (radar + digest date / live search + today / your repo / interests) so the user can judge
-     freshness at a glance.
-   - **2 how-to ideas from the newest `research/release-radar-*.md` digest** — reuse each item's
-     title + "suggested angle" (already how-to-shaped and source-backed). The pick's facts +
-     suggested angle are the anchor, pre-sourced by the twice-weekly research job
-     (`scripts/release_radar.sh`), which scans the **broader AI industry**, not just Anthropic.
-     Never add experience claims the digest didn't establish. The digest's **Discussion radar**
-     items feed the opinion/hot-take slot below the same way. **No fresh digest?** Do a quick live
-     web search over `~/.claude/ghostwriter/voice/interests.md`'s trending areas, find 2–4 genuinely
-     noteworthy developments, and use those for the how-to slots.
-   - **1 personal-project idea** — run `python3 scripts/recent_projects.py`, take the top repo with
-     recent Claude Code sessions, and read its recent `git log` + last session summary for the
-     **one real thing shipped** (that's the anchor). Respect
+2. **No topic given → build the idea board, then ask ONE menu question.** Gather concrete,
+   ready-to-write ideas from the three lanes below *yourself*, show them all as a sectioned
+   **idea board** in chat (numbered straight through, so nothing you found is hidden), then ask a
+   **single `AskUserQuestion`** (single-select; the auto "Other" accepts a board number or a
+   typed topic; sharing the call with the outcome check-in when one is due — see above). The tool
+   caps a question at **4 options**, so the question carries the **4 strongest picks across the
+   board — at least one per lane** — and the board holds the rest. **Every option carries a
+   `preview`** (≤ ~9 lines so nothing gets clipped): the working hook line (the post's first ~2
+   lines as they'd actually read), the suggested angle in one sentence, and a source-freshness
+   line (e.g. `radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview
+   alone. The board's three lanes, in order:
+   - **Trending now (live, run-day — always research this).** Do a quick live web search TODAY
+     over the trending areas in `~/.claude/ghostwriter/voice/interests.md` — what's actually
+     moving this week on social/discussion surfaces (X, Hacker News, Reddit), in Google/news
+     coverage, and in LinkedIn-adjacent industry conversation. Propose **2–3 trending topics**,
+     each with the specific angle the user could own (tie it to their core themes or hot takes —
+     a trending topic without their angle is just news). Label each `trending · <today> · <host>`.
+   - **Release radar — current through TODAY, not through the last digest.** Read the newest
+     `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
+     the board ("Jul 17 radar, job ran clean"). **If the digest is older than today, top the lane
+     up**: one quick live search for AI releases since the digest date, so the lane is current
+     through the day the user actually runs ghostwriter — label digest items `radar · <date>` and
+     top-ups `live · today`. Reuse digest items' title + "suggested angle" (already how-to-shaped
+     and source-backed; the twice-weekly `scripts/release_radar.sh` job scans the broader AI
+     industry, not just Anthropic). Never add experience claims the digest didn't establish; the
+     digest's **Discussion radar** items feed opinion/hot-take slots the same way. Skip items
+     already published (check `published.jsonl`). **Radar stale (>4 days) or missing** → say so,
+     note whether the log shows the job failing, and run the lane fully live; if the job is broken
+     (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
+     re-renders the launchd agent against the repo's current path.
+   - **Your recent Claude projects (2–3 entries).** Run `python3 scripts/recent_projects.py` and
+     take the top 2–3 repos with recent Claude Code sessions; for each, read the recent `git log`
+     + last session summary for the **one real thing shipped** (that's the anchor). Respect
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
-     work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
-   - **1 interests / hot-take idea** — read `~/.claude/ghostwriter/voice/interests.md` (core
-     themes, hot takes, stories) for one specific angle not covered recently.
+     work-confidential (e.g. GoodLeap internals); personal/OSS repos only. The interests file's
+     hot takes and story bank can back-fill this lane when project activity is thin.
 
-   If a lane has nothing real today (no recent project activity, say), backfill the slot from the
-   radar/live-search lane rather than padding with a weak idea — 4 strong options, always.
+   If a lane has nothing real today, say so on the board and give its question slot to the next
+   strongest idea — 4 strong options, always.
 
    The tapped idea is the post's concrete anchor → go straight to grounding + draft (step 3). No
    second drill. If the user picks a release how-to, follow the **How-to posts** playbook below.

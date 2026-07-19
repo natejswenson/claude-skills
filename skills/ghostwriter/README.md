@@ -61,12 +61,15 @@ Claude drafts it in your voice, shows it to you, and on your OK runs the publish
 
 The conversational flow is built around the fewest possible round trips (as of 0.14.0):
 
-- **One dialog to start.** With no topic given, Claude opens a single question dialog holding
-  everything due: a quick "how did your last post do?" check-in (great / normal / flopped — it
-  feeds future topic and format picks) and a menu of **4 ready-to-write ideas**, each with a
-  preview pane showing the working hook, the angle, and its source + freshness (release radar,
-  live search, your recent repos, or your interests file). Tap one and drafting starts —
-  there's no interview.
+- **One dialog to start, fed by a live idea board.** With no topic given, Claude builds a
+  three-lane idea board — **trending now** (a fresh run-day web search over your interest
+  areas), the **release radar topped up through today** (digest items plus anything released
+  since the digest date), and **your 2–3 most recent Claude projects** — shows the whole board,
+  then opens a single question dialog holding everything due: a quick "how did your last post
+  do?" check-in (great / normal / flopped — it feeds future topic and format picks) and the
+  **4 strongest picks across the board**, each with a preview pane showing the working hook,
+  the angle, and its source + freshness. Tap one (or answer "Other" with a board number) and
+  drafting starts — there's no interview.
 - **Visible research.** Every external claim is verified against ≥3 live sources before you see
   the draft, and the gate narrates as it works (`checking: … ✓`) instead of going silent.
 - **LinkedIn-true draft view.** The draft is shown with the ~210-character "…see more" fold
