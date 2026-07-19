@@ -69,8 +69,10 @@ The conversational flow is built around the fewest possible round trips (as of 0
   **Projects** (your 2–3 most recent Claude repos, each anchored to the one real thing
   shipped). That's 8–12 previewed ideas in one dialog — each pane shows the working hook, the
   angle, and source + freshness; every lane has a Pass option. When a "how did your last post
-  do?" check-in is due, it rides in the same dialog. Tap one idea and drafting starts —
-  there's no interview.
+  do?" check-in is due, it rides in the same dialog. Unpicked ideas persist to an on-deck
+  board (`research/idea-board-*.md`) that resurfaces next run, and your pick is echoed back
+  as a one-glance "Locked in" brief (angle, anchor, the save, planned sources) before
+  drafting starts — there's no interview.
 - **Visible research.** Every external claim is verified against ≥3 live sources before you see
   the draft, and the gate narrates as it works (`checking: … ✓`) instead of going silent.
 - **LinkedIn-true draft view.** The draft is shown with the ~210-character "…see more" fold

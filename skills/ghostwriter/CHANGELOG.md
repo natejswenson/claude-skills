@@ -27,6 +27,14 @@ in-chat surfaces Claude Code offers.
   projects** (was 1). Chat intro stays to one provenance line per lane; when the outcome
   check-in is due it takes the first question slot and Interests folds into Trending for the
   day (the call caps at 4 questions).
+- **Topic selection hardened end-to-end** — the four lanes are gathered in parallel so the
+  dialog is the first wait; an idea appears in exactly one lane (highest signal wins); every
+  lane is filtered against `published.jsonl` and recent drafts; lane and option order follow
+  the outcome history (and the provenance line says so). The built board persists to
+  `research/idea-board-YYYY-MM-DD.md` with picked/on-deck status, and boards ≤7 days old
+  resurface still-fresh unpicked ideas next run (trending signals re-verified first). A pick
+  is echoed as a zero-dialog `Locked in:` brief (angle, anchor, the save, planned sources)
+  before drafting starts.
 - **Preview panes on the idea menu** — every menu option now carries an `AskUserQuestion`
   `preview` (≤ ~9 lines so the pane never clips): the working hook line (the post's first ~2
   lines as they'd read), the suggested angle, and a source-freshness line

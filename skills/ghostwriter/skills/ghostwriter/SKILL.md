@@ -172,8 +172,26 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
      work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
 
-   The tapped idea is the post's concrete anchor → go straight to grounding + draft (step 3). No
-   second drill. If the user picks a release how-to, follow the **How-to posts** playbook below.
+   **Build the board fast and honestly.** Gather all four lanes in parallel (the HN check, the
+   radar read + top-up, interests, `recent_projects.py`) so the dialog is the first thing the
+   user waits on. An idea appears in exactly ONE lane — highest-signal lane wins (a release
+   that's surging on HN is Trending, not Radar). Filter every lane against `published.jsonl`
+   and recent `drafts/` so nothing already covered resurfaces. Order lane questions and the
+   options inside them by the outcome history, and say so in the provenance line when it bends
+   the order ("release how-tos lead; your last two ran great").
+
+   **Persist the board — research the user paid for doesn't evaporate.** After the dialog,
+   write `research/idea-board-YYYY-MM-DD.md`: every idea with its lane, signal, angle, and
+   status (`picked` / `on deck`). On the next open-ended run, read the newest board (≤7 days
+   old) and resurface still-good unpicked ideas labeled `on deck · <date>` — re-verify a
+   trending idea's signal before reusing it, and drop anything that went stale. This is also
+   what makes "your other picks are ready to draft on request" true instead of polite.
+
+   **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
+   `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the save
+   (the thing a reader keeps), and the sources you'll verify against. Then straight to
+   grounding + draft (step 3); no second drill. A release-how-to pick follows the **How-to
+   posts** playbook below; a topic typed via "Other" is the short-circuit path (step 1).
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
    anchor** — the actual tool, a real number, a specific decision, a thing that actually happened
    (see voice-notes.md → Substance bar + Authenticity). The menu pick normally *is* that anchor.
