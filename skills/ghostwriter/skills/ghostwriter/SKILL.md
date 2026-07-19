@@ -100,7 +100,8 @@ record is **≥2 days old and has no `outcome`**, ask ONE check-in question — 
 '<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
 `python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. **One dialog to
 start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
-`AskUserQuestion` call** — two questions, one dialog, one round trip — never two sequential
+`AskUserQuestion` call** — the check-in takes the first question slot and the menu compresses to
+three lane questions that day (see step 2) — one dialog, one round trip, never two sequential
 question dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
 may the check-in be its own question. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
@@ -113,17 +114,29 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → build the idea board, then ask ONE menu question.** Gather concrete,
-   ready-to-write ideas from the three lanes below *yourself*, show them all as a sectioned
-   **idea board** in chat (numbered straight through, so nothing you found is hidden), then ask a
-   **single `AskUserQuestion`** (single-select; the auto "Other" accepts a board number or a
-   typed topic; sharing the call with the outcome check-in when one is due — see above). The tool
-   caps a question at **4 options**, so the question carries the **4 strongest picks across the
-   board — at least one per lane** — and the board holds the rest. **Every option carries a
-   `preview`** (≤ ~9 lines so nothing gets clipped): the working hook line (the post's first ~2
-   lines as they'd actually read), the suggested angle in one sentence, and a source-freshness
-   line (e.g. `radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview
-   alone. The board's three lanes, in order:
+2. **No topic given → ONE four-section menu dialog. The picker IS the board.** Gather concrete,
+   ready-to-write ideas from the four lanes below *yourself*, then present them in a **single
+   `AskUserQuestion` call with one question per lane** — headers **`Trending`**, **`Radar`**,
+   **`Interests`**, **`Projects`** — so the user opens one dialog and sees every section with
+   **8–12 previewed ideas total**, not a 4-item shortlist. Rules of the dialog:
+   - Each lane question is single-select with **up to 3 ideas + a "Pass" option** ("nothing from
+     this lane today"); the auto "Other" on any lane takes a typed topic. The user picks in one
+     lane and passes the rest. If they pick in several lanes, draft the pick from the
+     highest-priority lane (lane order below, bent by outcome history) and say the other picks
+     are ready to draft on request — one post per request still holds.
+   - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
+     hook (the post's first ~2 lines as they'd actually read), the suggested angle in one
+     sentence, and a source-freshness line (e.g. `radar · Jul 17 · anthropic.com`). A user
+     should be able to pick on previews alone.
+   - **Intro text stays to one provenance line per lane** (radar date + job health, live-search
+     date, repo names) — don't dump a duplicate board into chat; the dialog carries the ideas.
+   - **When the outcome check-in is due** it takes the first question slot (the call caps at 4
+     questions): that day, fold the Interests lane's best idea into the Trending question so
+     everything still fits one dialog.
+   - A lane with nothing real today shows fewer ideas or gives its question slot to the next
+     strongest lane — say so in the provenance line, and never pad with weak ideas.
+
+   The four lanes, in priority order:
    - **Trending now (live, run-day — always research this).** Do a quick live web search TODAY
      over the trending areas in `~/.claude/ghostwriter/voice/interests.md` — what's actually
      moving this week on social/discussion surfaces (X, Hacker News, Reddit), in Google/news
@@ -143,15 +156,15 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
      (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
      re-renders the launchd agent against the repo's current path.
+   - **Interests & hot takes (1–3 entries).** Read `~/.claude/ghostwriter/voice/interests.md` —
+     core themes, the "Strong opinions" list, and the story bank — for specific angles not
+     covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank
+     item beats a generic theme; label each `interests · <theme or story>`.
    - **Your recent Claude projects (2–3 entries).** Run `python3 scripts/recent_projects.py` and
      take the top 2–3 repos with recent Claude Code sessions; for each, read the recent `git log`
      + last session summary for the **one real thing shipped** (that's the anchor). Respect
      `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
-     work-confidential (e.g. GoodLeap internals); personal/OSS repos only. The interests file's
-     hot takes and story bank can back-fill this lane when project activity is thin.
-
-   If a lane has nothing real today, say so on the board and give its question slot to the next
-   strongest idea — 4 strong options, always.
+     work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
 
    The tapped idea is the post's concrete anchor → go straight to grounding + draft (step 3). No
    second drill. If the user picks a release how-to, follow the **How-to posts** playbook below.
