@@ -1,0 +1,7 @@
+# Optional — only needed for the diagram/card feature (scripts/render_image.py).
+# The core ghostwriter (drafting + publishing) needs no third-party packages.
+#
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements-diagrams.txt
+#   .venv/bin/playwright install chromium
+playwright>=1.40
