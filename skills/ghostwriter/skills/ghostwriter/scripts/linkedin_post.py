@@ -70,6 +70,20 @@ def read_post_text(args) -> str:
     return text
 
 
+# Characters reserved by LinkedIn's Posts API "little text" commentary format
+# (mention/hashtag-template/formatting syntax). Left UNESCAPED, the API silently
+# drops everything in the post from the first unescaped occurrence onward — no
+# error, no truncation warning, just a post that stops mid-sentence. '#' is
+# deliberately excluded so intentional hashtags (#devops) still render as
+# hashtags. See:
+# https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/little-text-format
+LITTLE_TEXT_RESERVED = set("\\|{}@[]()<>*_~")
+
+
+def escape_little_text(text: str) -> str:
+    return "".join(("\\" + ch) if ch in LITTLE_TEXT_RESERVED else ch for ch in text)
+
+
 def build_payload(
     author_urn: str,
     text: str,
@@ -80,7 +94,7 @@ def build_payload(
 ) -> dict:
     payload = {
         "author": author_urn,
-        "commentary": text,
+        "commentary": escape_little_text(text),
         "visibility": "PUBLIC",
         "distribution": {
             "feedDistribution": "MAIN_FEED",
