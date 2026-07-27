@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+  CAROUSEL TYPE — a multi-image X post. X has no PDF documents: a "carousel" is
+  either a 4-IMAGE POST (X shows up to 4 images in a grid) or a THREAD WITH ONE
+  IMAGE PER TWEET. Copy to images/<slug>-carousel.html, fill the slides, then:
+    render_carousel.py --in images/<slug>-carousel.html
+  That writes one 16:9 PNG per slide (images/<slug>-NN.png) to approve, and
+  prints the exact x_post.py --image flags to publish with.
+
+  THE BLUEPRINT: cover (hook) → point → point → recap/CTA. Exactly 4 slides for
+  a 4-image post (the render script refuses more unless --allow-many, which is
+  the thread-with-images case — then one slide per tweet, matching its beats).
+  Rules that actually move reach:
+   * LANDSCAPE 16:9 — each slide is 1200x675 (handled by diagram.css; don't set
+     sizes here). Viewers tap through the grid; slide 1 is the scroll-stopper.
+   * ONE idea per slide; <=~30 words/slide. Text walls kill the tap-through.
+   * Set --i (this slide's number) and --n (total) on EVERY .slide via style=""
+     — they drive the progress BAR only. The "NN / NN" page counter is literal
+     text you keep in sync by hand. Keep --n equal to your real slide count.
+   * The .eyebrow (series label) and the .footer brand (byline) repeat on every
+     slide for consistent branding — keep the eyebrow identical across slides.
+   * Cover: a 6-10 word hook, bold the pivot word with <b>. It deliberately
+     looks different from the content slides.
+   * Points: an accent .idx, a big <h2> statement, a short .body.
+   * Recap/CTA: the framework on one slide, ending on ONE action — replies are
+     the #1 reach signal on X, so a single genuine question beats "save this".
+   * Never invent numbers/structure that aren't true (same rule as voice-notes.md).
+   * Don't add one-off inline CSS (beyond --i/--n); extend diagram.css instead.
+
+  The example below is a complete, swappable 4-slide set — replace the copy.
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    2–4 slides (4 is the blueprint; >4 only for thread-with-images via
+    --allow-many) · <=30 words/slide · --i must run 1..N, --n must equal the
+    real slide count, and the literal "NN / NN" pageno text must match.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+
+  <!-- 1 — COVER: the hook (looks distinct from the content slides) -->
+  <div class="slide card cover light" style="--i:1; --n:4">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <h1>Most devs use coding agents <b>wrong</b>.</h1>
+    <p class="sub">3 habits that separate shipping from spinning your wheels.</p>
+    <div class="footer brand"></div>
+    <span class="swipe">Tap &rarr;</span>
+  </div>
+
+  <!-- 2..3 — POINTS: one idea each -->
+  <div class="slide card point light" style="--i:2; --n:4">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <span class="idx">01</span>
+    <h2>Give it a target, not a vibe</h2>
+    <p class="body">Spell out the outcome and the constraints up front. <b>Vague prompts get vague code.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>02</b> / 04</span>
+  </div>
+
+  <div class="slide card point light" style="--i:3; --n:4">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <span class="idx">02</span>
+    <h2>Review the diff like a PR</h2>
+    <p class="body">Read every line as if a teammate wrote it. <b>You own what you merge.</b></p>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>03</b> / 04</span>
+  </div>
+
+  <!-- 4 — RECAP + the one action -->
+  <div class="slide card recap light" style="--i:4; --n:4">
+    <div class="eyebrow">AI ENGINEERING</div>
+    <h2>The 3 habits</h2>
+    <ul>
+      <li>A clear <b>target</b>, not a vibe</li>
+      <li>Review the <b>diff</b> like a PR</li>
+      <li><b>Verify</b> with a real run</li>
+    </ul>
+    <span class="action">Which one do you skip?</span>
+    <div class="footer brand"></div>
+    <div class="rail"></div>
+    <span class="pageno"><b>04</b> / 04</span>
+  </div>
+
+</body>
+</html>
