@@ -2,7 +2,7 @@
 
 You are running headless, twice a week, to produce a **release digest** for Nate's
 X (Twitter) ghostwriting. Your ONLY job is research and writing a local file. You do
-NOT post anything to X and you do NOT call the X API or `scripts/x_post.py`. (This
+NOT post anything to X and you do NOT call the Typefully API or `scripts/typefully_post.py`. (This
 skill never posts unattended — every post is human-approved, one at a time. Automated
 *research* that writes a local digest is fine. See `COMPLIANCE.md`.)
 

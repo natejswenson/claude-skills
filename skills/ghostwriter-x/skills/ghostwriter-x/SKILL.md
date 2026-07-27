@@ -2,20 +2,21 @@
 name: ghostwriter-x
 version: 0.1.0
 user_invocable: true
-description: Write sharp X (Twitter) posts and threads in the user's own voice and publish them via the X API after they approve. Use when the user wants to draft, write, or post something to X or Twitter, asks for a "tweet", a "thread", or an "X post", or wants to set up X posting. Enforces X's 280-weighted-character limit per tweet, formats threads natively, and never publishes without explicit approval.
+description: Write sharp X (Twitter) posts and threads in the user's own voice and publish them through the free Typefully API after they approve. Use when the user wants to draft, write, or post something to X or Twitter, asks for a "tweet", a "thread", or an "X post", or wants to set up X posting. Enforces X's 280-weighted-character limit per tweet, formats threads natively, and never publishes without explicit approval.
 ---
 
 # X Ghostwriter
 
-Draft X posts and threads that sound like the user, then publish to their own account via
-X's official v2 API — **only after they approve the draft**. Never auto-publish.
+Draft X posts and threads that sound like the user, then publish to their own account
+through the Typefully API (free plan — X's own API has no free tier anymore) — **only
+after they approve the draft**. Never auto-publish.
 
 The repo root is the directory containing this skill's `scripts/`, `voice/`, and `drafts/`
 folders. All commands below are run from that repo root.
 
 **Personal data lives in `~/.claude/ghostwriter-x/`, not the repo.** The voice profile
 (`voice/voice-profile.md`, `voice-notes.md`, `interests.md`), the brand guide
-(`assets/diagram.css`), and X credentials (`.env`) are read from
+(`assets/diagram.css`), and the Typefully credentials (`.env`) are read from
 `~/.claude/ghostwriter-x/{voice,assets,.env}` — the same location whether the skill is running
 from this repo, an installed Claude Code plugin, or Claude Desktop, so editing your voice or
 brand once is visible everywhere. `voice/algorithm.md` (X reach tuning) stays bundled in the
@@ -27,14 +28,14 @@ platform. If the user asks for a LinkedIn post, that skill handles it, not this 
 
 ## Decide which mode you're in
 
-- **Setup** — `~/.claude/ghostwriter-x/.env` has no `X_ACCESS_TOKEN`, or
+- **Setup** — `~/.claude/ghostwriter-x/.env` has no `TYPEFULLY_API_KEY`, or
   `~/.claude/ghostwriter-x/voice/voice-profile.md` is missing, or the user says "set up",
   "configure", "connect my X account". → Run **Setup**.
 - **Generate** — the user wants a post or thread (the common case). → Run **Generate**.
 - **Publish** — the user approves a draft you already showed. → Run **Publish**.
 
 Before generating, quietly confirm setup is done: `~/.claude/ghostwriter-x/voice/voice-profile.md`
-exists and `~/.claude/ghostwriter-x/.env` contains `X_ACCESS_TOKEN` + `X_USER_ID`.
+exists and `~/.claude/ghostwriter-x/.env` contains `TYPEFULLY_API_KEY` + `TYPEFULLY_SOCIAL_SET_ID`.
 If not, switch to Setup.
 
 **Keep this invisible.** Do the setup check (and any other bookkeeping — idea-board/radar
@@ -52,20 +53,17 @@ reflected in the menu.
 
 Walk the user through this once. Do the steps you can; hand them the steps only they can do.
 
-1. **X developer app.** Ask them to create an app at
-   <https://developer.x.com/en/portal/dashboard> (a free account is enough to start; note
-   which tier their project is on — legacy free ≈ 500 posts/month, newer accounts are
-   pay-per-use). In **User authentication settings**: enable **OAuth 2.0**, pick app type
-   *Native App* (public client) or *Web App* (confidential client), and add the callback URI
-   `http://localhost:8766/callback`. They give you the **OAuth 2.0 Client ID** (and the
-   Client Secret only if they chose Web App).
+1. **Typefully account.** Publishing goes through Typefully's API because X's own API has
+   no free tier (pay-per-use since Feb 2026). Ask them to sign up at
+   <https://typefully.com>, **connect their X account** in Typefully's UI, and create an
+   API key (**Settings → API**). The free plan covers 1 social set and ~15 posts/month —
+   plenty for a personal cadence; mention the cap if they post daily.
 2. **.env.** Run `mkdir -p ~/.claude/ghostwriter-x && cp .env.example ~/.claude/ghostwriter-x/.env`,
-   then write their Client ID (and Secret, if any) into `~/.claude/ghostwriter-x/.env` (edit the
-   file; never echo the secret back in chat).
-3. **Authorize.** Tell them to run `python3 scripts/x_auth.py` themselves (it opens a browser
-   for them to click "Allow"). It writes the access + refresh tokens and their user id/handle
-   into `~/.claude/ghostwriter-x/.env`. This is one-time: `x_post.py` auto-refreshes the
-   2-hour tokens from then on.
+   then write their API key into `~/.claude/ghostwriter-x/.env` as `TYPEFULLY_API_KEY`
+   (edit the file; never echo the key back in chat).
+3. **Connect.** Run `python3 scripts/typefully_post.py --connect` — it fetches their
+   Typefully social sets and stores `TYPEFULLY_SOCIAL_SET_ID` in `.env`. One-time; no
+   OAuth dance, no token expiry.
 4. **Voice corpus — pick whichever the user can do fastest:**
    - **X archive (best).** Request it from X (Settings → *Your account* → *Download an
      archive of your data*; it can take a day to arrive). Drop the archive's `data/tweets.js`
@@ -235,7 +233,7 @@ so actually use it.
      than one beat → a thread of complete-thought tweets, ≤7 by default. Never split a sentence
      across tweets.
    - **Draft file format:** one tweet, or thread tweets separated by lines containing only
-     `---`. This is exactly what `scripts/x_post.py` parses.
+     `---`. This is exactly what `scripts/typefully_post.py` parses.
    - **Write each tweet to fit 280 weighted characters** (URLs count 23, most emoji/CJK count
      2) — check as you go with `python3 scripts/x_len.py --file <draft> --thread`; don't write
      long and trim at the gate.
@@ -489,7 +487,7 @@ illustrates that tweet's beat; better for 5+ beats). Slides are 16:9 (1200×675)
    or structure.
 2. **Render:** `.venv/bin/python scripts/render_carousel.py --in images/<slug>-carousel.html`
    — writes `images/<slug>-NN.png` per slide (it refuses >4 slides unless `--allow-many`, which
-   is the thread-with-images case) and prints the exact `x_post.py --image` flags to publish
+   is the thread-with-images case) and prints the exact `typefully_post.py --image` flags to publish
    with.
 3. **Show the slides** and iterate until approved (don't claim they look good without showing
    them).
@@ -527,9 +525,10 @@ The full rationale is in `voice/algorithm.md` — read it. The essentials:
 Only after the user explicitly approves a specific draft.
 
 1. **Preview the payload** (optional sanity check):
-   `python3 scripts/x_post.py --file drafts/<file>.md --dry-run`
-   — shows every tweet's payload with its weighted count; threads show the reply chaining.
-2. **Publish:** `python3 scripts/x_post.py --file drafts/<file>.md --lane <lane>`
+   `python3 scripts/typefully_post.py --file drafts/<file>.md --dry-run`
+   — shows the exact Typefully draft payload (the thread as a posts array) plus every
+   tweet's weighted count.
+2. **Publish:** `python3 scripts/typefully_post.py --file drafts/<file>.md --lane <lane>`
    — pass the post's content lane (`release-howto` / `personal-project` / `opinion` / `career` /
    `personal`) so the publish log (`~/.claude/ghostwriter-x/published.jsonl`, written
    automatically on success) can feed the outcome loop. Omitting `--lane` still publishes.
@@ -541,16 +540,18 @@ Only after the user explicitly approves a specific draft.
      that flag is human-only.
    - **With approved images**, add `--image [tweetN:]images/<slug>.png --alt "[tweetN:]<alt text>"`
      per image (max 4 per tweet; `render_carousel.py` prints the exact flags for carousels).
+     Alt text is recorded locally; remind the user to set it on the live post (X → post →
+     edit alt) since Typefully's draft API attaches media by id.
    - **Link in final reply:** if the approved draft calls for a public link, it is the last
      tweet of the thread (already in the draft file) — never inserted at publish time into a
      text the user didn't see.
    - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm.
-3. **Report** the result. On success, share the post URL the script prints. If the script exits
-   on a rate limit (HTTP 429) mid-thread, it saved progress — tell the user when the limit
-   resets (the script prints it) and resume later with
-   `python3 scripts/x_post.py --file drafts/<file>.md --resume`. On an auth error (401/403),
-   token refresh usually handles it automatically; if it persists, have the user re-run
-   `python3 scripts/x_auth.py`.
+3. **Report** the result. On success, share the post URL the script prints (Typefully
+   publishes asynchronously; the script polls until the post is live). On a 401, the API
+   key is wrong — fix `TYPEFULLY_API_KEY`. On a 402, the Typefully account is paused or
+   over the free plan's ~15 posts/month — say so plainly rather than retrying. If the
+   script times out waiting, the draft may still publish: check the printed Typefully
+   link before re-running (a blind re-run risks a double post).
 4. **Prompt the reply window.** Reach is largely decided in the first 30–60 minutes (see
    `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour: reply
    to every substantive response with substance (a question back, not just "thanks"), and go
@@ -567,7 +568,7 @@ for that exact draft.
 - **Never publish without explicit approval** of the specific text — every tweet of a thread,
   shown with its real weighted count. Editing the draft → re-show → re-confirm.
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
-  way. Don't echo the access token, refresh token, or client secret in chat.
+  way. Don't echo the Typefully API key in chat.
 - **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
   external/world claim must clear the source contract** (Generate step 6): ≥3 distinct live,
   reputable sources recorded in the draft's `*.sources.json` sidecar and confirmed to *support* the

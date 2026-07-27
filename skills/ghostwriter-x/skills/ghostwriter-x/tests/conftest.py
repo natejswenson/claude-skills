@@ -1,7 +1,7 @@
 """Shared test setup: make the standalone scripts importable as modules.
 
 `scripts/` is a folder of executable scripts, not a package, so we put it on
-sys.path and import each script by its stem (e.g. `import x_post`).
+sys.path and import each script by its stem (e.g. `import typefully_post`).
 """
 from __future__ import annotations
 
@@ -21,6 +21,6 @@ import pytest  # noqa: E402
 @pytest.fixture(autouse=True)
 def _isolate_published_log(tmp_path, monkeypatch):
     """Never let a test append to the user's real ~/.claude/ghostwriter-x/published.jsonl."""
-    import x_post
+    import typefully_post
 
-    monkeypatch.setattr(x_post, "PUBLISHED_LOG", tmp_path / "published.jsonl")
+    monkeypatch.setattr(typefully_post, "PUBLISHED_LOG", tmp_path / "published.jsonl")

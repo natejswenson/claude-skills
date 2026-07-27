@@ -60,15 +60,15 @@ def _bash(cmd):
 
 
 def test_detect_live_publish():
-    assert re_mod._did_publish_live([_bash("python3 scripts/x_post.py --file d.md")])
-    assert not re_mod._did_publish_live([_bash("python3 scripts/x_post.py --file d.md --dry-run")])
+    assert re_mod._did_publish_live([_bash("python3 scripts/typefully_post.py --file d.md")])
+    assert not re_mod._did_publish_live([_bash("python3 scripts/typefully_post.py --file d.md --dry-run")])
 
 
 def test_detect_allow_unverified():
     assert re_mod._did_use_allow_unverified(
-        [_bash("scripts/x_post.py --file d.md --allow-unverified")]
+        [_bash("scripts/typefully_post.py --file d.md --allow-unverified")]
     )
-    assert not re_mod._did_use_allow_unverified([_bash("scripts/x_post.py --file d.md")])
+    assert not re_mod._did_use_allow_unverified([_bash("scripts/typefully_post.py --file d.md")])
 
 
 def test_detect_sidecar_and_verify_via_writes():
@@ -108,7 +108,7 @@ def test_detect_decline_text_and_publish_short_circuit():
     assert re_mod._did_decline_unattended(declined)
     # A live publish means it did NOT decline, regardless of any text.
     assert not re_mod._did_decline_unattended(
-        [_bash("scripts/x_post.py --file d.md"),
+        [_bash("scripts/typefully_post.py --file d.md"),
          {"type": "text", "text": "per the compliance rules"}]
     )
 

@@ -1,7 +1,7 @@
 """Tier-1 skill-contract test (offline, deterministic, $0 — runs in CI).
 
 ghostwriter-x's user-protecting behavior lives almost entirely in SKILL.md prose,
-not in code (x_post.py has no approval check; verify_sources only proves
+not in code (typefully_post.py has no approval check; verify_sources only proves
 liveness). The shared Tier-1 scorer (tools/score_skill.py) is skill-agnostic and
 would not notice a deleted guardrail. This test is the ghostwriter-x-specific
 contract: it asserts the load-bearing guardrails still exist and that SKILL.md's

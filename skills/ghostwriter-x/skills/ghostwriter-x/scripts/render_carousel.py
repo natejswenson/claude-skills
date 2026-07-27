@@ -5,7 +5,7 @@ X has no PDF documents: a "carousel" is a 4-image post (X shows up to 4 images
 in a grid) or a thread with one image per tweet. Author it as ONE HTML file with
 several `.slide.card` sections (see assets/card-template-carousel.html), all
 styled by assets/diagram.css. This script screenshots each `.slide` to
-images/<slug>-NN.png (1200×675 @2x) and prints the exact `x_post.py --image`
+images/<slug>-NN.png (1200×675 @2x) and prints the exact `typefully_post.py --image`
 flags to publish with.
 
 More than 4 slides is refused unless --allow-many (the thread-with-images case,
@@ -96,7 +96,7 @@ def publish_hint(stem: Path, count: int) -> str:
             f"--image {i + 1}:images/{stem.name}-{i + 1:02d}.png" for i in range(count)
         )
     return (
-        f"python3 scripts/x_post.py --file drafts/<slug>.md {flags}"
+        f"python3 scripts/typefully_post.py --file drafts/<slug>.md {flags}"
         " (add a matching --alt per image)"
     )
 

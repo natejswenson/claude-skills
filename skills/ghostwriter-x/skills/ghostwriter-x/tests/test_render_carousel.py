@@ -242,7 +242,7 @@ def test_main_happy_path_opens_first_png(monkeypatch, tmp_path, capsys):
     assert opened == [tmp_path / "c-01.png"]
     out = capsys.readouterr().out
     assert "opened the first" in out
-    assert "x_post.py" in out  # the publish hint
+    assert "typefully_post.py" in out  # the publish hint
 
 
 def test_main_relative_src_and_no_open(monkeypatch, tmp_path, capsys):

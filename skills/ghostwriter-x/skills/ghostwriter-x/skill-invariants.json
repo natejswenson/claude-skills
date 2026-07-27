@@ -5,13 +5,13 @@
       "id": "approval-required",
       "file": "SKILL.md",
       "pattern": "never\\s+(auto-?publish|publish[^.\\n]*without[^.\\n]*approval)",
-      "rationale": "x_post.py has NO approval check in code; approval-before-publish lives only in this prose. Deleting it lets the agent post to the user's real X account without consent."
+      "rationale": "typefully_post.py has NO approval check in code; approval-before-publish lives only in this prose. Deleting it lets the agent post to the user's real X account without consent."
     },
     {
       "id": "source-gate-step",
       "file": "SKILL.md",
       "pattern": "verify_sources\\.py",
-      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). The HARD enforcement that publishing runs the gate is code-tested in tests/test_x_post.py (enforce_source_gate) — not this regex."
+      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). The HARD enforcement that publishing runs the gate is code-tested in tests/test_typefully_post.py (enforce_source_gate) — not this regex."
     },
     {
       "id": "no-unattended-posting",

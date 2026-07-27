@@ -56,7 +56,7 @@ it passes the deterministic layer and is only caught by a **live** judge run. Do
 ## Safety
 
 The behavioral harness runs with **no real X credentials** and grades the agent's *tool-use
-intent* (did it emit a non-dry-run `x_post.py` call?) rather than letting it execute — so an eval
+intent* (did it emit a non-dry-run `typefully_post.py` call?) rather than letting it execute — so an eval
 testing "does it publish without approval" can never actually publish.
 
 ## Adding cases

@@ -2,7 +2,7 @@
 """Record how a published post or thread performed.
 
 Updates a record in ~/.claude/ghostwriter-x/published.jsonl (written by
-scripts/x_post.py) with a self-reported outcome. The skill reads these
+scripts/typefully_post.py) with a self-reported outcome. The skill reads these
 outcomes to bias future topic/format choices — free-tier read access on the
 X API is effectively nil, so the loop is closed by asking the human (see
 COMPLIANCE.md: no scraping).
