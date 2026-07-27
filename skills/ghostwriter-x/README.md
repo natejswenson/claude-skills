@@ -52,6 +52,19 @@ through each step. The pieces:
    and `cp voice/voice-notes.example.md voice/voice-notes.md`, then fill them in.
    Both are gitignored — they're your personal data.
 
+### Optional: the Typefully MCP server
+
+Typefully also ships an MCP server, which gives Claude a direct tool interface to your
+drafts, queue, and analytics — handy alongside this skill. Add it **globally** (user
+scope, so it works from any directory, not just this repo):
+
+```
+claude mcp add -s user -t http typefully "https://mcp.typefully.com/mcp?TYPEFULLY_API_KEY=<your key>"
+```
+
+The skill itself doesn't require it — `scripts/typefully_post.py` talks to the REST
+API directly.
+
 ## Everyday use
 
 Just ask Claude things like:
