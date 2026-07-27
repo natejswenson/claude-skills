@@ -1,0 +1,46 @@
+<!doctype html>
+<!--
+  Date / deadline card TYPE (light system) — a realistic ADMIT-ONE ticket as the
+  centerpiece, for "X happens on <date>" posts (deprecations, launches, events). The
+  ticket is the topic graphic; the headline names the event, the date is the hero.
+  Class is `card date light`. Set .date-hero to the human date and BOTH .serial values
+  to that date in numeric YYYYMMDD form (e.g. June 15 2026 -> 20260615), then render at
+  PORTRAIT 4:5:
+    render_image.py --type card --size 1200x675 --in images/<slug>.html --out images/<slug>.png
+  Retheme the ticket stock by setting --ticket on #canvas (var(--accent-2) green, etc.).
+  Styling lives in diagram.css (.card.date.light and the .ticket children).
+
+  CONTENT BUDGET (the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
+    date-sub <=40 chars · long months wrap the day to a second line (by design).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<body>
+  <div id="canvas" class="card date light">
+    <div class="toprow">
+      <div class="eyebrow">Eyebrow Label</div>
+      <div class="footer brand"></div>
+    </div>
+
+    <h1>The event, named in one line.</h1>
+    <p class="lead">One line of context, with the <strong>what changes</strong> in bold.</p>
+
+    <div class="ticket">
+      <div class="serial s-left">20260615</div>
+      <div class="serial s-right">20260615</div>
+      <div class="inner">
+        <div class="deco">★ ★</div>
+        <div class="date-label">Short label · here</div>
+        <div class="date-hero">June 15</div>
+        <div class="date-sub">One short line of context.</div>
+      </div>
+    </div>
+
+    <div class="caption"><span class="d">●</span>&nbsp; The takeaway · why this date matters</div>
+  </div>
+</body>
+</html>
