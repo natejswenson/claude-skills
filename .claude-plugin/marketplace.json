@@ -7,6 +7,7 @@
   "plugins": [
     { "name": "devlog", "source": "./skills/devlog" },
     { "name": "ghostwriter", "source": "./skills/ghostwriter" },
+    { "name": "ghostwriter-x", "source": "./skills/ghostwriter-x" },
     { "name": "resume", "source": "./skills/resume" },
     { "name": "github-stats", "source": "./skills/github-stats" },
     { "name": "shipflow", "source": "./skills/shipflow" }
