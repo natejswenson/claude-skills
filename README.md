@@ -12,6 +12,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 |---|---|---|---|---|
 | [`devlog`](skills/devlog) | ![devlog](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=devlog-v*&label=&sort=semver&color=blue) | `/devlog` | Node | Generate a daily dev-log entry from today's git commits and publish it to GitHub. |
 | [`ghostwriter`](skills/ghostwriter) | ![ghostwriter](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=ghostwriter-v*&label=&sort=semver&color=blue) | `/ghostwriter` | Python | Turn engineering work into LinkedIn posts with diagram cards. |
+| [`ghostwriter-x`](skills/ghostwriter-x) | ![ghostwriter-x](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=ghostwriter-x-v*&label=&sort=semver&color=blue) | `/ghostwriter-x` | Python | Write X posts and threads in your voice and publish free via Typefully, with 16:9 cards. |
 | [`resume`](skills/resume) | ![resume](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=resume-v*&label=&sort=semver&color=blue) | `/resume` | Node/TS | Tailor a résumé to a job description and render a polished PDF from the CLI. |
 | [`github-stats`](skills/github-stats) | ![github-stats](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=github-stats-v*&label=&sort=semver&color=blue) | `/github-stats` | Bash/`gh` | Show GitHub profile statistics — commits, followers, stars, PRs, issues — plus a repo browser. |
 | [`shipflow`](skills/shipflow) | ![shipflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipflow-v*&label=&sort=semver&color=blue) | `/shipflow` | Node | Scaffold a configurable dev/main branching, auto-merge, cleanup, and release-tagging workflow into any repo. This repo's own automation is dogfooded on it. |
@@ -26,6 +27,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin marketplace add natejswenson/claude-skills
 /plugin install devlog@claude-skills
 /plugin install ghostwriter@claude-skills
+/plugin install ghostwriter-x@claude-skills
 /plugin install resume@claude-skills
 /plugin install github-stats@claude-skills
 /plugin install shipflow@claude-skills
@@ -41,6 +43,7 @@ Symlink each skill into your skills directory so `SKILL.md` is discovered:
 ```bash
 ln -sfn "$PWD/skills/devlog/skills/devlog"             ~/.claude/skills/devlog
 ln -sfn "$PWD/skills/ghostwriter/skills/ghostwriter"   ~/.claude/skills/ghostwriter
+ln -sfn "$PWD/skills/ghostwriter-x/skills/ghostwriter-x" ~/.claude/skills/ghostwriter-x
 ln -sfn "$PWD/skills/resume/skills/resume"             ~/.claude/skills/resume
 ln -sfn "$PWD/skills/github-stats/skills/github-stats" ~/.claude/skills/github-stats
 ln -sfn "$PWD/skills/shipflow/skills/shipflow"         ~/.claude/skills/shipflow
