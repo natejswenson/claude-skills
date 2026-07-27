@@ -319,10 +319,10 @@ def build_payload(tweets: list[str], media_ids: dict[int, list[str]], title: str
     for i, tweet in enumerate(tweets, 1):
         post: dict = {"text": tweet}
         if media_ids.get(i):
-            post["media"] = media_ids[i]
+            post["media_ids"] = media_ids[i]
         posts.append(post)
     return {
-        "platforms": {"x": {"posts": posts}},
+        "platforms": {"x": {"enabled": True, "posts": posts}},
         "draft_title": title,
         "publish_at": "now",
         "share": False,

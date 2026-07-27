@@ -343,9 +343,10 @@ def test_upload_media_processing_timeout(monkeypatch, tmp_path):
 # --------------------------------------------------------------- build/publish
 def test_build_payload_shapes():
     payload = tp.build_payload(["one", "two"], {2: ["m-9"]}, "slug")
+    assert payload["platforms"]["x"]["enabled"] is True
     assert payload["platforms"]["x"]["posts"] == [
         {"text": "one"},
-        {"text": "two", "media": ["m-9"]},
+        {"text": "two", "media_ids": ["m-9"]},
     ]
     assert payload["publish_at"] == "now"
     assert payload["draft_title"] == "slug"
@@ -496,7 +497,7 @@ def test_main_publish_happy_path(monkeypatch, tmp_path, capsys):
     assert "Published to X via Typefully" in out
     assert "https://x.com/n/status/1" in out
     posts = captured["payload"]["platforms"]["x"]["posts"]
-    assert posts[1]["media"] == ["m-1"]
+    assert posts[1]["media_ids"] == ["m-1"]
     rec = json.loads(tp.PUBLISHED_LOG.read_text(encoding="utf-8"))
     assert rec["lane"] == "opinion"
 
