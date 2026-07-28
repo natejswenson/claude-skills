@@ -58,9 +58,21 @@ it before anything posts.
 ## Why the outcome loop is self-reported
 
 The skill asks the user how a post did (`scripts/post_outcome.py`) instead of
-reading metrics: X analytics aren't part of Typefully's free API surface, and
-scraping x.com for your own numbers is still scraping. Self-report keeps the
-feedback loop compliant and free.
+reading metrics. Be precise about which constraint is doing the work here,
+because they are different constraints with different futures:
+
+- **Paywall, not policy.** Typefully *does* expose official analytics
+  (`list_social_set_analytics_posts`, `get_social_set_analytics_followers`).
+  Calling them is perfectly compliant — they are the vendor's own API. They
+  simply return `403 MONETIZATION_ERROR` on the free plan (verified
+  2026-07-27). If the account is ever upgraded, reading them breaks no rule.
+- **Policy, not paywall.** Scraping x.com for your own numbers is still
+  scraping, and stays banned at any price.
+- **Always fine:** the user reading their own x.com analytics and pasting the
+  figures in. The agent never fetches x.com, so no scraping occurs.
+
+So: self-report keeps the loop **free** and compliant; it is not the case that
+compliance forbids real metrics.
 
 ## Things that would BREAK the rules — do not do these
 
