@@ -35,7 +35,7 @@ gh api -X PUT "repos/$REPO/branches/dev/protection" --input - >/dev/null <<'JSON
 }
 JSON
 
-echo "==> Re-asserting main branch protection (PR + five ci/<skill> checks, 0 approvals)"
+echo "==> Re-asserting main branch protection (PR + six ci/<skill> checks, 0 approvals)"
 # Mirrors the protection the 2026-06-19 CI/CD design requires. Re-applying is a no-op
 # when already in this state. required_linear_history is intentionally OMITTED so
 # dev->main merge commits are allowed.
