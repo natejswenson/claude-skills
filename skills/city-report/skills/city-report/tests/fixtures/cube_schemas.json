@@ -1,0 +1,3081 @@
+{
+ "acs_yg_gini_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B19083",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Wage GINI"
+   },
+   {
+    "name": "Wage GINI Moe"
+   }
+  ]
+ },
+ "acs_yg_household_income_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B19001",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Household Income Bucket"
+       }
+      ],
+      "name": "Household Income Bucket"
+     }
+    ],
+    "name": "Household Income Bucket"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Household Income"
+   },
+   {
+    "name": "Household Income Moe"
+   }
+  ]
+ },
+ "acs_ygc_citizenship_status_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B05001",
+   "topic": "Diversity"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Citizenship"
+       }
+      ],
+      "name": "Citizenship"
+     }
+    ],
+    "name": "Citizenship"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Citizenship Status Granular"
+       }
+      ],
+      "name": "Citizenship Status Granular"
+     }
+    ],
+    "name": "Citizenship Status Granular"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Citizenship Status"
+   },
+   {
+    "name": "Citizenship Status Moe"
+   }
+  ]
+ },
+ "acs_ygf_place_of_birth_for_foreign_born_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B05006",
+   "topic": "Diversity"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Continent"
+       },
+       {
+        "name": "Subcontinent"
+       },
+       {
+        "name": "Region"
+       },
+       {
+        "name": "Country"
+       }
+      ],
+      "name": "Place of Birth"
+     }
+    ],
+    "name": "Place of Birth"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Foreign-Born Citizens"
+   },
+   {
+    "name": "Foreign-Born Citizens Moe"
+   }
+  ]
+ },
+ "acs_ygh_health_care_coverage_overall_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B27010",
+   "topic": "Health"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Age"
+       }
+      ],
+      "name": "Age"
+     }
+    ],
+    "name": "Age"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Health Coverage"
+       }
+      ],
+      "name": "Health Coverage"
+     }
+    ],
+    "name": "Health Coverage"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Kaiser Coverage"
+       },
+       {
+        "name": "ACS Coverage"
+       }
+      ],
+      "name": "Kaiser Health Coverage"
+     }
+    ],
+    "name": "Kaiser Health Coverage"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Health Insurance Policies"
+   },
+   {
+    "name": "Health Insurance Policies Moe"
+   }
+  ]
+ },
+ "acs_ygh_households_with_no_internet_2016_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B28002",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Access Group"
+       }
+      ],
+      "name": "Internet Access"
+     }
+    ],
+    "name": "Internet Access"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Households by Internet Access"
+   },
+   {
+    "name": "Households by Internet Access Moe"
+   }
+  ]
+ },
+ "acs_ygi_industry_for_median_earnings_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B24031",
+   "topic": "Economy"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Industry Group"
+       },
+       {
+        "name": "Industry"
+       }
+      ],
+      "name": "ACS Industry"
+     }
+    ],
+    "name": "ACS Industry"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Median Earnings by Industry: Industry Group"
+   },
+   {
+    "name": "Median Earnings by Industry Moe: Industry Group"
+   },
+   {
+    "name": "Median Earnings by Industry: Industry"
+   },
+   {
+    "name": "Median Earnings by Industry Moe: Industry"
+   }
+  ]
+ },
+ "acs_ygo_housing_value_bucket_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B25075",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Value Bucket"
+       }
+      ],
+      "name": "Value Bucket"
+     }
+    ],
+    "name": "Value Bucket"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Property Value by Bucket"
+   },
+   {
+    "name": "Property Value by Bucket Moe"
+   }
+  ]
+ },
+ "acs_ygo_tenure_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B25003",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Occupied By"
+       }
+      ],
+      "name": "Occupied By"
+     }
+    ],
+    "name": "Occupied By"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Household Ownership"
+   },
+   {
+    "name": "Household Ownership Moe"
+   }
+  ]
+ },
+ "acs_ygpsar_poverty_by_gender_age_race_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B17001,B17001A,B17001B,B17001C,B17001D,B17001E,B17001F,B17001G,B17001H",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Poverty Status"
+       }
+      ],
+      "name": "Poverty Status"
+     }
+    ],
+    "name": "Poverty Status"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Gender"
+       }
+      ],
+      "name": "Gender"
+     }
+    ],
+    "name": "Gender"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Age"
+       }
+      ],
+      "name": "Age"
+     }
+    ],
+    "name": "Age"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Race"
+       }
+      ],
+      "name": "Race"
+     }
+    ],
+    "name": "Race"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Poverty Population"
+   },
+   {
+    "name": "Poverty Population Moe"
+   }
+  ]
+ },
+ "acs_ygr_median_household_income_race_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B19013,B19013A,B19013B,B19013C,B19013D,B19013E,B19013F,B19013G,B19013H",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Race"
+       }
+      ],
+      "name": "Race"
+     }
+    ],
+    "name": "Race"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Household Income by Race"
+   },
+   {
+    "name": "Household Income by Race Moe"
+   }
+  ]
+ },
+ "acs_ygr_race_with_hispanic_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B03002",
+   "topic": "Diversity"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Ethnicity"
+       }
+      ],
+      "name": "Ethnicity"
+     }
+    ],
+    "name": "Ethnicity"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Race"
+       }
+      ],
+      "name": "Race"
+     }
+    ],
+    "name": "Race"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Hispanic Population"
+   },
+   {
+    "name": "Hispanic Population Moe"
+   }
+  ]
+ },
+ "acs_ygs_median_age_total_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B01002",
+   "topic": "Diversity"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Gender"
+       }
+      ],
+      "name": "Gender"
+     }
+    ],
+    "name": "Gender"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Median Age"
+   },
+   {
+    "name": "Median Age Moe"
+   }
+  ]
+ },
+ "acs_ygsi_gender_by_industry_c_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "C24030",
+   "topic": "Economy"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Gender"
+       }
+      ],
+      "name": "Gender"
+     }
+    ],
+    "name": "Gender"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Group"
+       },
+       {
+        "name": "Industry"
+       }
+      ],
+      "name": "ACS Industry"
+     }
+    ],
+    "name": "ACS Industry"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Workforce by Industry and Gender"
+   },
+   {
+    "name": "Workforce by Industry and Gender Moe"
+   }
+  ]
+ },
+ "acs_ygt_mean_transportation_time_to_work_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B08006,B08013",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Average Commute Time"
+   },
+   {
+    "name": "Average Commute Time Moe"
+   }
+  ]
+ },
+ "acs_ygt_means_of_transportation_to_work_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B08301",
+   "topic": "Housing & Living"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Group"
+       },
+       {
+        "name": "Subgroup"
+       },
+       {
+        "name": "Transportation Means"
+       }
+      ],
+      "name": "Transportation"
+     }
+    ],
+    "name": "Transportation"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Commute Means"
+   },
+   {
+    "name": "Commute Means Moe"
+   }
+  ]
+ },
+ "acs_ygv_veterans_5": {
+  "annotations": {
+   "dataset_name": "ACS 5-year Estimate",
+   "table_id": "B21002",
+   "topic": "Diversity"
+  },
+  "dimensions": [
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Nation"
+       }
+      ],
+      "name": "Nation"
+     },
+     {
+      "levels": [
+       {
+        "name": "State"
+       }
+      ],
+      "name": "State"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County"
+       },
+       {
+        "name": "County"
+       }
+      ],
+      "name": "County"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Tract"
+       },
+       {
+        "name": "County Tract"
+       },
+       {
+        "name": "Tract"
+       }
+      ],
+      "name": "Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Place"
+       },
+       {
+        "name": "Place"
+       }
+      ],
+      "name": "Place"
+     },
+     {
+      "levels": [
+       {
+        "name": "Zip"
+       }
+      ],
+      "name": "Zip"
+     },
+     {
+      "levels": [
+       {
+        "name": "State Congressional District"
+       },
+       {
+        "name": "Congressional District"
+       }
+      ],
+      "name": "Congressional District"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA"
+       }
+      ],
+      "name": "MSA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State PUMA"
+       },
+       {
+        "name": "PUMA"
+       }
+      ],
+      "name": "PUMA"
+     },
+     {
+      "levels": [
+       {
+        "name": "State County Subdivision"
+       },
+       {
+        "name": "County County Subdivision"
+       },
+       {
+        "name": "County Subdivision"
+       }
+      ],
+      "name": "County Subdivision"
+     },
+     {
+      "levels": [
+       {
+        "name": "Place Place-Tract"
+       },
+       {
+        "name": "Place-Tract"
+       }
+      ],
+      "name": "Place-Tract"
+     },
+     {
+      "levels": [
+       {
+        "name": "MSA MSA-Tract"
+       },
+       {
+        "name": "MSA-Tract"
+       }
+      ],
+      "name": "MSA-Tract"
+     }
+    ],
+    "name": "Geography"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Year"
+       }
+      ],
+      "name": "Year"
+     }
+    ],
+    "name": "Year"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Period of Service"
+       }
+      ],
+      "name": "Period of Service"
+     }
+    ],
+    "name": "Period of Service"
+   },
+   {
+    "hierarchies": [
+     {
+      "levels": [
+       {
+        "name": "Period of Service Granular"
+       }
+      ],
+      "name": "Period of Service Granular"
+     }
+    ],
+    "name": "Period of Service Granular"
+   }
+  ],
+  "measures": [
+   {
+    "name": "Veterans"
+   },
+   {
+    "name": "Veterans Moe"
+   }
+  ]
+ }
+}

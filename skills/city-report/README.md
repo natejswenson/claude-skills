@@ -1,0 +1,140 @@
+# city-report
+
+A Claude skill that turns "tell me about Duluth, MN" into a credible, good-looking
+demographic report — backed by US Census data, with the numbers pinned so they're
+right by construction.
+
+```
+you: city report for Minneapolis, MN
+     ├─ loads 22 metrics for the city + Minnesota + the US   (~2s, cached 24h)
+     └─ prints a digest
+
+you: how does poverty compare to the state?
+     └─ answered instantly from context — no tool call, no network
+
+you: generate the report
+     └─ reports/minneapolis-mn-2026-07-28.html  ← opens in your browser
+```
+
+## Why it's built this way
+
+The [Data USA API](https://datausa.io/about/api) is free, fast and comprehensive.
+It is also treacherous, because **its failure mode is silently wrong numbers, not
+errors**:
+
+- `acs_yg_total_population_5` — *the cube the official docs use as their own
+  example* — returns HTTP 200 with **zero rows** at every geography level.
+  `acs_yg_housing_median_value_5` returns HTTP 500 on every query.
+- The API aggregates a measure across every dimension you didn't drill down on.
+  Ask the household-income cube for Minneapolis and you get `165438`, which reads
+  exactly like a median income and is actually a **count of households**.
+- There's no universal "Total" member. Filtering the race cube's Ethnicity
+  dimension to what looks like a total silently drops every Hispanic resident —
+  10% of Minneapolis.
+
+So this skill never composes a query at runtime. Every number comes from a
+verified entry in [`scripts/manifest.py`](skills/city-report/scripts/manifest.py),
+and a guard test asserts against the live cube schemas that no metric can leave a
+dimension silently summed — and that no *median* ever leaves one uncovered at all.
+
+That test has already caught three real bugs in this manifest, including a
+headline median age that depended on an implicit aggregate over a Gender
+dimension nobody noticed.
+
+Full field notes: [`references/api-gotchas.md`](skills/city-report/references/api-gotchas.md).
+
+## What's in a report
+
+Five sections — People, Economy, Housing, Work & Commute, Health — over 22
+metrics, each benchmarked against the state and the nation, with a 2013–2024
+trend where one exists.
+
+- **Self-contained HTML.** Inline SVG charts, inline CSS, no dependencies, no
+  build step, no browser automation. Renders in milliseconds and works offline.
+- **PRESS branding** — the warm-paper editorial system shared with `ghostwriter`
+  and `local-fitness`: flat cream, ink rules, one accent used once.
+- **Margins of error are first-class.** A 250-person town's "25.7% poverty rate"
+  carries a ±79% margin; the report says so instead of implying precision.
+- **Provenance on every page**: survey vintage, Census table IDs, retrieval date.
+
+## Install
+
+```
+/plugin marketplace add natejswenson/claude-skills
+/plugin install city-report@claude-skills
+```
+
+Or symlink it manually:
+
+```bash
+ln -sfn "$PWD/skills/city-report/skills/city-report" ~/.claude/skills/city-report
+```
+
+## Requirements
+
+Python 3.10+. **No third-party packages, no API key, no setup** — the runtime is
+stdlib only and the first command works immediately. `requirements-dev.txt`
+covers the test suite alone.
+
+## Usage
+
+Run the scripts by path from wherever you want the report — `report.py` writes
+to `./reports` relative to the current directory.
+
+```bash
+S=~/.claude/skills/city-report
+
+python3 $S/scripts/load.py "Minneapolis, MN"     # fetch + cache + digest
+python3 $S/scripts/query.py                      # list metric keys
+python3 $S/scripts/query.py poverty_rate --series
+python3 $S/scripts/report.py                     # render + open
+python3 $S/scripts/report.py --section housing
+```
+
+The city argument is optional whenever one city is loaded, and accepts a slug
+(`minneapolis-mn`) or a place name (`"Minneapolis, MN"`) — you never have to
+learn that slugs exist. `python3 $S/scripts/query.py --cities` lists what's
+loaded.
+
+Ambiguous input is never guessed: `load.py "Springfield"` lists the candidates
+and exits rather than picking one. Section names accept ordinary words —
+`--section commute`, `--section demographics`, `--section income` all resolve.
+
+Loading a second city is how you compare two: both digests stay available, and
+`query.py "Duluth, MN" median_household_income` reads either one.
+
+### Comparative reports
+
+```bash
+python3 $S/scripts/report.py "Hawley, MN" --vs "Fargo, ND"
+```
+
+The second city is fetched automatically if it isn't loaded yet.
+
+One document, both cities, every block on a shared scale. Two things make the
+comparison honest rather than decorative:
+
+- **Breakdowns are shares of each city's own total.** Raw counts across a
+  2,178-person town and a 131,627-person city measure population, not
+  composition — every bar in the small town would vanish.
+- **Count trends are indexed to each city's own first year.** Those two
+  populations on a shared linear axis are both flat lines; indexed, you get the
+  reading you wanted (Fargo 121, Hawley 106, 2013 = 100).
+
+State benchmarks are dropped in comparison mode — the two cities are usually in
+different states, so "vs state" would mean something different on each side.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest                                    # 193 offline tests, 100% coverage
+pytest -m live                            # 14 contract tests against the real API
+```
+
+The live suite is what catches Data USA retiring a cube — it has already happened
+to two of them.
+
+## License
+
+MIT

@@ -31,6 +31,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install resume@claude-skills
 /plugin install github-stats@claude-skills
 /plugin install shipflow@claude-skills
+/plugin install city-report@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -47,6 +48,7 @@ ln -sfn "$PWD/skills/ghostwriter-x/skills/ghostwriter-x" ~/.claude/skills/ghostw
 ln -sfn "$PWD/skills/resume/skills/resume"             ~/.claude/skills/resume
 ln -sfn "$PWD/skills/github-stats/skills/github-stats" ~/.claude/skills/github-stats
 ln -sfn "$PWD/skills/shipflow/skills/shipflow"         ~/.claude/skills/shipflow
+ln -sfn "$PWD/skills/city-report/skills/city-report"   ~/.claude/skills/city-report
 ```
 </details>
 
