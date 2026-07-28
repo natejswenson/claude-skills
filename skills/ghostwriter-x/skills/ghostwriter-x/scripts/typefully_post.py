@@ -399,6 +399,22 @@ def publish_draft(
         )
 
 
+def _claim_count(args) -> int:
+    """How many external claims the post made, per its sources sidecar.
+
+    A pure first-person post is 0; a research-heavy how-to is several. Recorded
+    so the loop can tell those apart later without re-reading the draft.
+    """
+    if not getattr(args, "file", None):
+        return 0
+    sidecar = Path(args.file).with_suffix(".sources.json")
+    try:
+        data = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    return len(data.get("claims") or [])
+
+
 def record_publish(
     draft: dict,
     args,
@@ -410,6 +426,7 @@ def record_publish(
     if log_path is None:
         log_path = PUBLISHED_LOG
     draft_id = draft.get("id") or draft.get("draft_id") or ""
+    images = getattr(args, "image", None) or []
     record = {
         "date": time.strftime("%Y-%m-%d"),
         "ids": [str(draft_id)] if draft_id else [],
@@ -421,6 +438,13 @@ def record_publish(
         "first_line": tweets[0].splitlines()[0][:120] if tweets else "",
         "lane": getattr(args, "lane", "") or "",
         "via": "typefully",
+        # Captured at publish time because it cannot be reconstructed later: the
+        # draft file can be edited and the card re-rendered, but what actually
+        # went out is only knowable now. These are the covariates the outcome
+        # loop needs to say anything beyond "this post did well".
+        "images": len(images),
+        "hour": int(time.strftime("%H")),
+        "claims": _claim_count(args),
     }
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)

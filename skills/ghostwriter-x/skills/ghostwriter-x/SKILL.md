@@ -1,6 +1,6 @@
 ---
 name: ghostwriter-x
-version: 0.1.0
+version: 0.2.0
 user_invocable: true
 description: Write sharp X (Twitter) posts and threads in the user's own voice and publish them through the free Typefully API after they approve. Use when the user wants to draft, write, or post something to X or Twitter, asks for a "tweet", a "thread", or an "X post", or wants to set up X posting. Enforces X's 280-weighted-character limit per tweet, formats threads natively, and never publishes without explicit approval.
 ---
@@ -116,22 +116,44 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
 
-**Outcome check-in (max one, fast — the feedback loop).** Before anything else, read
-`~/.claude/ghostwriter-x/published.jsonl` (written automatically on every publish). If the newest
-record is **≥2 days old and has no `outcome`**, ask ONE check-in question — *"How did
-'<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
-`python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. **One dialog to
+**Outcome check-in (max one, fast — the feedback loop).** Before anything else, run
+**`python3 scripts/post_outcome.py --check-due`**. It prints `none`, or the one record a check-in
+is owed on. Do not hand-roll this from the log: the script picks the **oldest unscored post at
+least 2 days old**, which is the whole point. (The pre-0.2.0 rule asked about the *newest* record,
+so posting twice in one day left the newest record same-day forever, the gate never opened, and
+ripe older posts were never offered — the loop sat dead through three published posts. If you
+re-derive the rule by hand you will reintroduce that bug.)
+
+If a record comes back, ask ONE check-in question — *"How did '<first_line>' do?"* with options
+great / normal / flopped (notes via "Other") — then record it:
+`python3 scripts/post_outcome.py --due --outcome <answer> --notes "<notes>"`. **One dialog to
 start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
 `AskUserQuestion` call** — the check-in takes the first question slot and the flat idea question
 (step 2) takes the second — still one dialog, one round trip, never two sequential question
 dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
 may the check-in be its own question. Never ask more
-than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
-outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
-from repeated `flopped`, and let format outcomes steer the single-vs-thread and visual
-recommendations (step 8). Say why when it's relevant ("your last thread ran great"). This is the
-only compliant performance signal we have (free-tier reads ≈ nil, no scraping — COMPLIANCE.md),
-so actually use it.
+than once per session; `none` → skip silently, don't mention it.
+
+**Using the outcomes — and the sample-size bar.** This is a self-reported signal on a handful of
+posts with no control group, so it is evidence, not measurement. Hold to these floors before you
+let it steer anything, and say the floor out loud rather than inventing confidence:
+
+- **Fewer than 3 scored posts total → use none of it.** Rank on lane priority alone.
+- **Lane preference needs ≥3 scored posts in that lane**, and only shifts the ranking one slot.
+- **Format guidance (single vs thread) needs ≥3 scored posts of that format.**
+- **Visual guidance (card vs text-only) needs ≥3 scored posts with that treatment.**
+- A single `flopped` is never evidence of anything; two in the same lane is worth mentioning.
+
+Say why when it clears the bar ("your last three threads all ran great"). When it doesn't, don't
+gesture at it at all — a confident-sounding claim off N=1 is worse than silence. The
+`published.jsonl` covariates (`lane`, `format`, `images`, `hour`, `claims`, `tweets`) are there so
+you can see what actually varied; never read a difference as a cause.
+
+This is the only compliant performance signal available (no scraping — COMPLIANCE.md). **Typefully's
+analytics API does not change this on the free plan**: `list_social_set_analytics_posts` and
+`get_social_set_analytics_followers` both return `403 MONETIZATION_ERROR` there (verified
+2026-07-27). Don't re-probe them every session; if the user ever upgrades Typefully, real per-post
+impressions/likes/replies become available and this whole loop should be revisited.
 
 1. **Short-circuit if the topic is already concrete.** If the user named a specific topic, pointed
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
@@ -162,10 +184,12 @@ so actually use it.
    questions):
    - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
      point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
-     are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
-     Algolia API** (top stories from the last ~3 days, e.g.
-     `curl 'https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>150,created_at_i>'"$(date -v-3d +%s)"`),
-     **top posts this week** in the relevant subreddits, and **news coverage from the last
+     are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via
+     `python3 scripts/hn_trending.py`** (defaults to the last 2 days over 150 points; `--days`,
+     `--min-points`, `--json` if you need them). **Use the script, not a hand-written curl** — the
+     Algolia filter needs `points>150,created_at_i>…` percent-encoded, and in a shell the `>`
+     redirects to a file and the query silently returns nothing (this cost a wasted round trip on a
+     real run). Then **top posts this week** in the relevant subreddits, and **news coverage from the last
      ~48 h** (search with explicit recency). Filter through the trending areas in
      `~/.claude/ghostwriter-x/voice/interests.md`, propose **2–3 topics**, each with the specific
      angle the user could own (a trending topic without their angle is just news), and put the
@@ -174,8 +198,11 @@ so actually use it.
      is borderline stale. No citable signal → the item doesn't go in the lane; fewer real
      trending items beat padded ones.
    - **Release radar — current through TODAY, not through the last digest.** Read the newest
-     `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
-     the board ("Jul 24 radar, job ran clean"). **If the digest is older than today, top the lane
+     `research/release-radar-*.md` and, **if it exists**, the tail of `research/.radar.log`, and
+     state provenance in the board ("Jul 24 radar, job ran clean"). The log is only created once
+     the launchd job has run on this machine — **absent means "job never ran here", which is not
+     the same as "job failed"**; say which one you actually know and don't spend a second call
+     hunting for it. **If the digest is older than today, top the lane
      up**: one quick live search for AI releases since the digest date — label digest items
      `radar · <date>` and top-ups `live · today`. Reuse digest items' title + "suggested angle"
      (already source-backed; the twice-weekly `scripts/release_radar.sh` job scans the broader AI
@@ -205,10 +232,15 @@ so actually use it.
 
    **Persist the full list — research the user paid for doesn't evaporate.** Whether or not it
    was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
-   surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
-   open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
-   into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
-   before reusing it, and drop anything that went stale.
+   surfaced) with its lane, signal, angle, and status. Status is one of **`published · <url>`**,
+   **`drafted · <slug>`**, or **`on deck`** — never a bare `picked`, which records an intention
+   rather than an outcome and goes stale the moment the session ends. (A real board carried three
+   items marked `picked` that were never drafted, so the next run could not tell covered ground
+   from abandoned ground.) **Reconcile before you trust a board**: an item is only `published` if
+   `published.jsonl` has it, and only `drafted` if the file is in `drafts/`; downgrade anything
+   else back to `on deck`. On the next open-ended run, read the newest board (≤7 days old) and
+   fold still-good `on deck` ideas back into the flattened ranking labeled `on deck · <date>` —
+   re-verify a trending idea's signal before reusing it, and drop anything that went stale.
 
    **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
    `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the format
@@ -221,6 +253,37 @@ so actually use it.
    detail — ask **one** `AskUserQuestion`, never a generic multi-question interview. **Never
    fabricate a detail to clear this bar.** If there's genuinely no real anchor, say so rather than
    shipping a generic post.
+
+   **3a. Run it before you write about it — the highest-leverage step in this skill.** A release
+   how-to assembled from documentation is a recap anyone could write. The same post built on a
+   real run is an artifact only this user has. Before drafting, spend the two or three calls to
+   check whether the thing is *runnable from this session*:
+   - **Is the tool reachable?** `uvx <pkg>@<version>`, `npx -y <pkg>@<version>`, `pipx`, `docker
+     run`, an already-installed binary, or an MCP tool the session has. Pin the exact version the
+     post is about, and the version *before* it when the post is about a change.
+   - **Verify the mechanism against the real binary, not the docs.** Run `--help`, check that the
+     flags and defaults you're about to publish actually exist. Docs drift; a shipped post that
+     names a flag that isn't there is the most embarrassing failure mode this skill has.
+   - **Measure a real before/after when there is a legitimate subject.** `scripts/recent_projects.py`
+     lists the user's own repos; running an analysis command over one turns "the default set grew"
+     into "9 errors became 138 on the same code." That number is the post.
+   - **Read-only, always.** Analysis and reporting commands only — linters, `--help`, `--dry-run`,
+     `--check`, read queries. Never a command that writes, installs into, or mutates the user's
+     repos, and never anything in a work-confidential repo (interests.md → Off-limits).
+   - **Capture what you ran** to `images/<slug>.source.txt` even when no card is planned; it is
+     the evidence behind the numbers and `card_lint.py` verifies cards against it.
+   - **When it isn't runnable, say so and write generically** — steps in the second person, no
+     invented results. A how-to that can't be run is still fine; a fabricated run is not.
+
+   **3b. Whose run was it? — the disclosure rule.** Measurements from step 3a were produced by
+   *you*, in this session, not by the user at their keyboard. First-person framing ("I ran…", "my
+   repo", "my CI never moved") is **only** allowed when both hold: the command ran against the
+   user's own machine or repos, **and** you state the provenance plainly at the approval step
+   ("these are real measurements, but I ran them in this session — you didn't"). Let the user
+   decide; some will happily own it, some won't. **Default to second person** ("run this on your
+   repo") whenever you haven't disclosed it, and **never** use first person for a run on a machine
+   or repo that isn't theirs. Everything else in Authenticity still applies: no invented numbers,
+   ever.
 4. **Draft against the voice profile.** Read `~/.claude/ghostwriter-x/voice/voice-notes.md`,
    `~/.claude/ghostwriter-x/voice/voice-profile.md`, AND `voice/algorithm.md` (bundled,
    repo-relative) first, every time (voice-notes.md holds direct user feedback and takes
@@ -269,6 +332,12 @@ so actually use it.
      line per claim as it resolves — `checking: "Sonnet 5 ships computer-use GA" → vendor
      announcement + docs ✓` — and one close line when the gate passes: `3 claims · 5 distinct
      hosts · gate passed`.
+   - **The narration floor applies to every slow stretch, not just this one.** From the live run
+     (3a) through the source gate, the render cycles, and publishing, **never go more than ~2 tool
+     calls without a user-facing line.** Say what you're doing and what came back: `ran ruff
+     0.15.5 vs 0.16.0 on local-fitness → 9 errors became 138`, `render 2 failed clip-overflow at
+     688px, cutting a row`. Silence during a long stretch reads as a hang, and it hides the
+     decisions the user would most want to interrupt.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
      sidecar before publishing.
@@ -298,18 +367,29 @@ so actually use it.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole thread hunting for the edit.
-   Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
-   takes typed edit instructions directly) / **Scrap** — and wait for the answer. The Publish tap
-   immediately after seeing the exact full text is the explicit approval; an edited draft is
-   re-shown and re-asked the same way. Do not publish unprompted.
+   Then ask with a single `AskUserQuestion` **carrying TWO questions in the one call** — and wait
+   for the answer:
+   - **Q1 the text** — options **Publish** / **Edit** (the auto "Other" takes typed edit
+     instructions directly) / **Scrap**.
+   - **Q2 the visual** — the step-8 choice, asked here rather than in a second dialog, since the
+     recommendation and its ASCII previews are already derivable from the approved text. If the
+     user picks **Edit** or **Scrap**, the visual answer is simply discarded; that waste is
+     cheaper than a guaranteed extra round trip on every post.
+   - **Add Q3 only when step 3a produced first-person measurements** — the disclosure required by
+     3b, as its own question ("these are real numbers, but I ran them this session, not you: keep
+     the 'I ran…' framing, or switch to 'run this on your repo'?"). Never bury that in prose the
+     user might skim past.
+
+   The Publish tap immediately after seeing the exact full text is the explicit approval; an
+   edited draft is re-shown and re-asked the same way. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter-x/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
    to repeat it next session.
-8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
-   ask a single `AskUserQuestion`: **text-only** / **single card** (name the Press hero
-   component you'd compose around, e.g. "a duel" or "a ledger") / **image carousel** (a 4-image
-   post, or one image per tweet on a thread) — with your recommendation first, chosen from the
+8. **The visual choice — asked in step 7's dialog, built only after the pick.** This is Q2 of the
+   single approval call above, never a separate dialog: **text-only** / **single card** (name the
+   Press hero component you'd compose around, e.g. "a duel" or "a ledger") / **image carousel** (a
+   4-image post, or one image per tweet on a thread) — with your recommendation first, chosen from the
    post's shape and the outcome history: how-to / educational thread → a card on tweet 1 or
    one-image-per-tweet; one punchy idea → a single 16:9 card; personal story or hot take →
    text-only (X is text-native; a strong text post beats a weak image). **Give every option an
@@ -461,12 +541,18 @@ geometry.
   (not a chat-embedded copy) is how the user actually sees it full-size on their own screen.
   `--no-open` is for headless/batch/CI use only; if a render command ever produced a PNG
   without opening it, run `open images/<slug>.png` (macOS) immediately after.
-- **MANDATORY: after every render, Read the PNG yourself and judge it like an art director BEFORE
-  showing the user** — check: content fills the 1200×675 frame with even rhythm (no dead band,
-  vertical or horizontal), nothing clipped at any edge, no ellipsized command or code, eyebrow
-  and titles on one line, no widow words, one dominant accent. Fix and re-render until you'd
-  publish it; the user sees only cards that already pass. The render command prints WARN/FAIL
-  lint lines — treat every FAIL as a defect, not a suggestion.
+- **Lint before you look — it is far cheaper than an image Read.** Run
+  `.venv/bin/python scripts/card_lint.py --in images/<slug>.html` and clear every FAIL *first*.
+  The lint already catches the things that used to burn a render cycle each: `clip-overflow`
+  (content taller than the frame), `term-not-in-capture` (a terminal row that isn't in
+  `<slug>.source.txt` — i.e. invented or quietly edited output), `term-underfilled` / `panel-rag`
+  (a wide panel floated over short lines), `term-misaligned`, and the count budgets. Fixing those
+  on the source costs one edit; finding them in the PNG costs a render plus a Read.
+- **MANDATORY: after the lint is clean, Read the PNG yourself and judge it like an art director
+  BEFORE showing the user** — check what the lint cannot: does the composition actually prove the
+  post's point, is the hierarchy right, is there one dominant accent, are there widow words, does
+  the hero earn its space. Fix and re-render until you'd publish it; the user sees only cards that
+  already pass. Treat every FAIL as a defect, not a suggestion.
 - **Show the user the rendered PNG** and iterate (tweak the source or
   `~/.claude/ghostwriter-x/assets/diagram.css`) until they approve it. Don't claim it looks good
   without showing the image. **On approval, append the card's fingerprint to
@@ -542,16 +628,40 @@ Only after the user explicitly approves a specific draft.
      per image (max 4 per tweet; `render_carousel.py` prints the exact flags for carousels).
      Alt text is recorded locally; remind the user to set it on the live post (X → post →
      edit alt) since Typefully's draft API attaches media by id.
+   - **`--draft-only` is the fallback, not a shortcut.** It creates the draft in Typefully without
+     publishing and prints its URL, for when X policy blocks direct publishing (see Report,
+     below). It still runs the source gate. A parked draft is deliberately **not** written to
+     `published.jsonl` — that log records what actually went live, and polluting it with drafts
+     would corrupt the outcome loop. Use it only after a real block or when the user asks; the
+     default path is a real publish.
    - **Link in final reply:** if the approved draft calls for a public link, it is the last
      tweet of the thread (already in the draft file) — never inserted at publish time into a
      text the user didn't see.
    - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm.
 3. **Report** the result. On success, share the post URL the script prints (Typefully
-   publishes asynchronously; the script polls until the post is live). On a 401, the API
-   key is wrong — fix `TYPEFULLY_API_KEY`. On a 402, the Typefully account is paused or
-   over the free plan's ~15 posts/month — say so plainly rather than retrying. If the
-   script times out waiting, the draft may still publish: check the printed Typefully
-   link before re-running (a blind re-run risks a double post).
+   publishes asynchronously; the script polls until the post is live).
+
+   **When it fails, run a recovery, not a debugging session.** A failed publish is the moment the
+   user most needs to hear from you, and on a real run they instead watched eight silent tool
+   calls of API spelunking. **The first thing you say after any publish failure is whether
+   anything went out** — that is the only question they actually have. Then classify, in one
+   short line each, and offer the next step as a choice rather than disappearing into diagnosis:
+   - **401** — the API key is wrong; fix `TYPEFULLY_API_KEY`. Nothing posted.
+   - **402** — the account is paused or over the free plan's ~15 posts/month. Say so plainly
+     rather than retrying. Nothing posted.
+   - **403 "Direct publishing of X drafts containing URLs is blocked"** — X policy, tripped by
+     text that *looks* like a hostname; dotted config keys are the usual culprit (`lint.select`,
+     `[tool.ruff.lint]`) while a bare filename like `ruff.toml` is fine. **The draft was never
+     created, so nothing posted and a retry is safe.** Offer both fixes: reword the token, or
+     re-run with `--draft-only` to park the exact approved text in Typefully for the user to
+     publish from the UI.
+   - **Media upload failure** — nothing posted; media uploads run before the draft is created.
+   - **Timeout while polling** — the one genuinely ambiguous case: the draft may still go out.
+     **Check the printed Typefully link before re-running**; a blind retry risks a double post.
+
+   Debug only what the error doesn't already explain, and **read the script before writing any
+   probe against it** — a debug script written from memory of the API guessed the wrong base URL
+   and auth header and cost two wasted round trips.
 4. **Prompt the reply window.** Reach is largely decided in the first 30–60 minutes (see
    `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour: reply
    to every substantive response with substance (a question back, not just "thanks"), and go

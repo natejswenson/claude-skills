@@ -581,3 +581,53 @@ def test_api_request_403_url_block_explains_recovery(monkeypatch):
         tp.api_request(ENV, "POST", "/drafts", {"a": 1}, context="draft create")
     msg = str(e.value)
     assert "retry is safe" in msg and "--draft-only" in msg
+
+
+# ------------------------------------------------ publish-time metric capture
+def test_claim_count_reads_the_sources_sidecar(tmp_path):
+    draft = tmp_path / "d.md"
+    draft.write_text("x", encoding="utf-8")
+    (tmp_path / "d.sources.json").write_text(
+        json.dumps({"external_claims": True, "claims": [{"claim": "a"}, {"claim": "b"}]}),
+        encoding="utf-8",
+    )
+    assert tp._claim_count(make_args(file=str(draft))) == 2
+
+
+def test_claim_count_zero_for_first_person_post(tmp_path):
+    draft = tmp_path / "d.md"
+    draft.write_text("x", encoding="utf-8")
+    (tmp_path / "d.sources.json").write_text(
+        json.dumps({"external_claims": False, "claims": []}), encoding="utf-8"
+    )
+    assert tp._claim_count(make_args(file=str(draft))) == 0
+
+
+@pytest.mark.parametrize("body", ["not json at all", None])
+def test_claim_count_survives_a_missing_or_broken_sidecar(tmp_path, body):
+    draft = tmp_path / "d.md"
+    draft.write_text("x", encoding="utf-8")
+    if body is not None:
+        (tmp_path / "d.sources.json").write_text(body, encoding="utf-8")
+    assert tp._claim_count(make_args(file=str(draft))) == 0
+
+
+def test_claim_count_zero_without_a_file():
+    assert tp._claim_count(make_args(file=None)) == 0
+
+
+def test_record_publish_captures_covariates(tmp_path, monkeypatch):
+    log = tmp_path / "published.jsonl"
+    draft = tmp_path / "slug.md"
+    draft.write_text("one", encoding="utf-8")
+    (tmp_path / "slug.sources.json").write_text(
+        json.dumps({"claims": [{"claim": "a"}]}), encoding="utf-8"
+    )
+    monkeypatch.setattr(tp.time, "strftime", lambda fmt: "09" if fmt == "%H" else "2026-07-27")
+    args = make_args(file=str(draft), image=["1:a.png"], lane="release-howto")
+    tp.record_publish({"id": 7, "x_published_url": "u"}, args, ["one"], [3], log)
+    rec = json.loads(log.read_text(encoding="utf-8"))
+    assert rec["images"] == 1
+    assert rec["hour"] == 9
+    assert rec["claims"] == 1
+    assert rec["lane"] == "release-howto"
