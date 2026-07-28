@@ -54,6 +54,19 @@ def test_compare_uses_points_for_rates_and_percent_for_levels():
     assert fmt.compare(0.5, 0.4, "ratio") == "+0.1 pts"
 
 
+def test_count_comparisons_read_as_size_ratios():
+    """"Hawley is −98% vs Fargo" is right and unreadable; "1/60 the size" isn't."""
+    assert fmt.compare(2178, 600, "count") == "3.6× larger"
+    assert fmt.compare(2178, 131627, "count") == "1/60 the size"
+    assert fmt.compare(2178, 1352, "count") == "1.6× larger"
+    assert fmt.compare(600, 2178, "count") == "3.6× smaller"
+    assert fmt.compare(2178, 2178, "count") == "about the same size"
+    assert fmt.compare(50000, 1000, "count") == "50× larger"
+    # Degenerate inputs must not raise on the way to a report.
+    assert fmt.compare(0, 100, "count") == "—"
+    assert fmt._size_ratio(5, 0) == "—"
+
+
 def test_context_bits_benchmarks_vs_growth():
     rate = {"latest": 16.0, "unit": "percent",
             "benchmarks": {"State": {"value": 9.3}, "Nation": {"value": 12.5}},

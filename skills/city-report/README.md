@@ -6,7 +6,7 @@ right by construction.
 
 ```
 you: city report for Minneapolis, MN
-     ├─ loads 21 metrics for the city + Minnesota + the US   (~2s, cached 24h)
+     ├─ loads 22 metrics for the city + Minnesota + the US   (~2s, cached 24h)
      └─ prints a digest
 
 you: how does poverty compare to the state?
@@ -45,7 +45,7 @@ Full field notes: [`references/api-gotchas.md`](skills/city-report/references/ap
 
 ## What's in a report
 
-Five sections — People, Economy, Housing, Work & Commute, Health — over 21
+Five sections — People, Economy, Housing, Work & Commute, Health — over 22
 metrics, each benchmarked against the state and the nation, with a 2013–2024
 trend where one exists.
 
@@ -109,6 +109,8 @@ Loading a second city is how you compare two: both digests stay available, and
 python3 $S/scripts/report.py "Hawley, MN" --vs "Fargo, ND"
 ```
 
+The second city is fetched automatically if it isn't loaded yet.
+
 One document, both cities, every block on a shared scale. Two things make the
 comparison honest rather than decorative:
 
@@ -126,7 +128,7 @@ different states, so "vs state" would mean something different on each side.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 181 offline tests, 100% coverage
+pytest                                    # 193 offline tests, 100% coverage
 pytest -m live                            # 14 contract tests against the real API
 ```
 

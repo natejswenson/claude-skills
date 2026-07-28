@@ -49,7 +49,7 @@ def digest(data: dict) -> str:
             continue
         value = fmt.format_value(metric["latest"], metric["unit"])
         bits = fmt.context_bits(metric)
-        flag = "  [wide margin]" if metric["wide_margin"] else ""
+        flag = fmt.margin_note(metric)
         lines.append(f'  {metric["label"]:<26} {value:>12}   '
                      f'{" · ".join(bits)}{flag}  ({metric["latest_year"]})')
 
@@ -70,9 +70,9 @@ def digest(data: dict) -> str:
                     for c in top)
                 rows.append(f'  {metric["label"]:<34} {summary}')
             else:
-                flag = " [wide margin]" if metric["wide_margin"] else ""
                 rows.append(f'  {metric["label"]:<34} '
-                            f'{fmt.format_value(metric["latest"], metric["unit"])}{flag}')
+                            f'{fmt.format_value(metric["latest"], metric["unit"])}'
+                            f'{fmt.margin_note(metric)}')
         if rows:
             lines.append("")
             lines.append(section_title.upper())

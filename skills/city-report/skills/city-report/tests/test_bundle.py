@@ -244,6 +244,31 @@ def test_rate_category_unit_is_count_not_percent():
     assert built["category_unit"] == "count"
 
 
+def test_derived_median_interpolates_from_its_bucket_histogram():
+    """Median home value is derived because the cube that would publish it 500s."""
+    metric = Metric(key="d", section="housing", label="D", cube="c",
+                    drilldowns=("Year", "Bucket"), measure="M",
+                    kind="derived_median", unit="usd", is_median=True)
+    payload = rows_payload([
+        {"Year": 2024, "Bucket": "$200,000 to $249,999", "M": 10.0, "M Moe": 1.0},
+        {"Year": 2024, "Bucket": "Less Than $10,000", "M": 10.0, "M Moe": 1.0},
+    ])
+    values, moes = bundle._series(payload, metric)
+    # Buckets are interpolated in published order, not the order they arrive.
+    assert 10000 <= values[2024] <= 250000
+    # An interpolated figure has no published margin; inventing one would be
+    # worse than stating none.
+    assert moes[2024] is None
+
+
+def test_derived_median_ignores_unparsable_buckets():
+    metric = Metric(key="d", section="housing", label="D", cube="c",
+                    drilldowns=("Year", "Bucket"), measure="M",
+                    kind="derived_median", unit="usd", is_median=True)
+    payload = rows_payload([{"Year": 2024, "Bucket": "nonsense", "M": 5.0}])
+    assert bundle._series(payload, metric) == ({}, {})
+
+
 def test_build_bundle_shape(place):
     data = bundle.build_bundle(place, {"Place": {}})
     assert data["place"]["slug"] == "testville-mn"

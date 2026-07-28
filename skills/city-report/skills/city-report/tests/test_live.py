@@ -58,9 +58,11 @@ def test_margins_of_error_are_actually_returned(big_bundle):
     """Catches the MOE-naming trap: a malformed name yields data and no margin.
 
     ``Average Commute Time`` is exempt — the Census publishes no margin for that
-    derived measure, and the API returns an explicit null.
+    derived measure, and the API returns an explicit null. ``median_home_value``
+    is exempt because this skill interpolates it; inventing a margin for a
+    figure the Census never published would be worse than stating none.
     """
-    exempt = {"commute_time"}
+    exempt = {"commute_time", "median_home_value"}
     for key, metric in big_bundle["metrics"].items():
         if key in exempt or not metric["available"]:
             continue
@@ -144,15 +146,7 @@ def test_interpolated_median_tracks_the_published_one_year_value(big_bundle):
     two is the only available check that the interpolation is sound — they
     should agree within about 10%.
     """
-    import report as report_mod
-
-    metric = big_bundle["metrics"]["home_value_distribution"]
-    ordered = sorted(metric["categories"],
-                     key=lambda c: (bundle_mod.parse_bucket_bounds(c["label"]) or (0, 0))[0])
-    bounds = [bundle_mod.parse_bucket_bounds(c["label"]) for c in ordered]
-    usable = [(c, b) for c, b in zip(ordered, bounds) if b]
-    estimated = bundle_mod.interpolated_median([c for c, _ in usable],
-                                               [b for _, b in usable])
+    estimated = big_bundle["metrics"]["median_home_value"]["latest"]
 
     published = datausa._fetch("data.jsonrecords", {
         "cube": "acs_yg_housing_median_value_1", "drilldowns": "Year",
@@ -160,7 +154,6 @@ def test_interpolated_median_tracks_the_published_one_year_value(big_bundle):
     latest = max(published["data"], key=lambda r: r["Year"])["Property Value"]
 
     assert abs(estimated - latest) / latest < 0.10, (estimated, latest)
-    assert report_mod  # the caption path that publishes this number exists
 
 
 def test_a_full_load_is_fast():

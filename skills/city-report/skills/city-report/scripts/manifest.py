@@ -97,6 +97,11 @@ class Metric:
     ``rate``
         ``numerator`` members divided by the sum of all members, per year, as a
         share (poverty rate, uninsured rate, homeownership rate).
+    ``derived_median``
+        Interpolate a median from the drilled dimension's bucket histogram, per
+        year. Exists because the cube that would publish a median home value
+        directly returns HTTP 500 on every query — so the figure is computed
+        here and always presented as an estimate.
 
     ``is_median`` marks measures that must never be summed or averaged across
     members; the guard test enforces that such metrics are never ``total``.
@@ -378,6 +383,23 @@ METRICS: tuple[Metric, ...] = (
         measure="Household Ownership",
         kind="breakdown",
         unit="count",
+    ),
+    Metric(
+        key="median_home_value",
+        section="housing",
+        label="Median home value",
+        # Shares its query with home_value_distribution below — `unique_queries`
+        # de-duplicates, so this costs no extra request.
+        cube="acs_ygo_housing_value_bucket_5",
+        drilldowns=("Year", "Value Bucket"),
+        measure="Property Value by Bucket",
+        kind="derived_median",
+        unit="usd",
+        is_median=True,
+        headline=True,
+        first_year=2015,
+        note="Interpolated from the value-bucket histogram — Data USA's "
+             "median-value series returns no data at city level.",
     ),
     Metric(
         key="home_value_distribution",

@@ -68,10 +68,43 @@ def compare(value, benchmark, unit: str) -> str:
         delta = value - benchmark
         sign = "+" if delta >= 0 else "−"
         return f"{sign}{abs(delta):.1f}{'%' if unit == 'percent' else ''} pts"
+    if unit == "count":
+        # Two cities' populations compare as a ratio, not a percentage
+        # difference. "Hawley is −98% vs Fargo" is arithmetically right and
+        # nobody thinks that way; "1/60th the size" is the same fact, readable.
+        return _size_ratio(value, benchmark)
     ratio = (value - benchmark) / abs(benchmark) * 100
     if abs(ratio) < 0.5:
         return "on par"
     return f"{'+' if ratio >= 0 else '−'}{abs(ratio):.0f}%"
+
+
+def _size_ratio(value: float, other: float) -> str:
+    """``value`` expressed as a multiple of ``other``."""
+    if not other:
+        return "—"
+    times = value / other
+    if 0.95 <= times <= 1.05:
+        return "about the same size"
+    if times >= 1:
+        return f"{times:.1f}× larger" if times < 10 else f"{times:.0f}× larger"
+    inverse = other / value if value else 0
+    if not inverse:
+        return "—"
+    return f"1/{inverse:.0f} the size" if inverse >= 10 else f"{inverse:.1f}× smaller"
+
+
+def margin_note(metric: dict) -> str:
+    """A compact margin tag for the digest, e.g. ``[±70%]``.
+
+    The magnitude matters and a binary flag hides it: across two neighbouring
+    towns this skill reported an identical 4.6% poverty rate where one carried
+    a ±70% margin and the other ±171%. Both were flagged the same, which made
+    them look equally solid when one is four times shakier.
+    """
+    if not metric.get("wide_margin"):
+        return ""
+    return f'  [±{metric["moe_ratio"] * 100:.0f}%]'
 
 
 #: How a benchmark level is named in prose.

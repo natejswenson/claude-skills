@@ -203,7 +203,9 @@ def test_digest_marks_wide_margin_figures(place):
     payloads["Place"][key]["data"] = [
         {"Year": 2024, "Gender": "Total", "Median Age": 10.0, "Median Age Moe": 9.0}]
     text = load_mod.digest(bundle_mod.build_bundle(place, payloads))
-    assert "[wide margin]" in text
+    # The magnitude is shown, not a binary flag: across two neighbouring towns
+    # this skill reported the same 4.6% poverty rate at +-70% and +-171%.
+    assert "[\u00b190%]" in text
 
 
 def test_digest_reports_unavailable_metrics(place):
@@ -680,3 +682,105 @@ def test_load_cli_list_flag_shows_all_of_them(monkeypatch, capsys):
                         lambda q, refresh=False: (many, "fuzzy"))
     load_mod.main(["Springfield", "--list"])
     assert "more" not in capsys.readouterr().out
+
+
+# ------------------------------------------- improvements from real runs
+#
+# Each of these came from watching the skill answer real questions, not from
+# reading the code.
+
+
+def test_median_home_value_is_a_first_class_metric(loaded):
+    """It was computed at render time only, so it never reached the digest —
+    and "what's the median home value" is a top-three question for any city."""
+    metric = loaded["metrics"]["median_home_value"]
+    assert metric["headline"] is True
+    assert metric["available"]
+    assert metric["latest"] > 0
+    # Benchmarked, because the same interpolation runs on the state and
+    # national bucket payloads.
+    assert set(metric["benchmarks"]) == {"State", "Nation"}
+    assert "Median home value" in load_mod.digest(loaded)
+
+
+def test_median_home_value_carries_no_duplicate_buckets(loaded):
+    """The distribution metric owns the histogram; duplicating it here also
+    labelled household counts with the median's dollar unit."""
+    assert loaded["metrics"]["median_home_value"]["categories"] == []
+    assert loaded["metrics"]["home_value_distribution"]["categories"]
+
+
+def test_median_home_value_costs_no_extra_query():
+    """It shares a cube+drilldowns+measure with the distribution metric."""
+    triples = manifest.unique_queries()
+    housing = [t for t in triples if t[0] == "acs_ygo_housing_value_bucket_5"]
+    assert len(housing) == 1
+
+
+def test_report_reads_the_derived_median_rather_than_recomputing(loaded):
+    """One source of truth, so the report and the digest cannot drift."""
+    median = loaded["metrics"]["median_home_value"]["latest"]
+    assert report_mod._median_for(
+        loaded["metrics"]["home_value_distribution"], loaded["metrics"]) == median
+    assert report_mod._median_for(
+        loaded["metrics"]["income_distribution"], loaded["metrics"]) is None
+
+
+def test_digest_shows_margin_magnitude_not_a_binary_flag(place):
+    """Two neighbouring towns reported the same 4.6% poverty rate — one at
+    +-70%, the other +-171%. A shared flag made them look equally solid."""
+    payloads = full_payloads()
+    key = "acs_ygs_median_age_total_5|Year,Gender|Median Age"
+    payloads["Place"][key]["data"] = [
+        {"Year": 2024, "Gender": "Total", "Median Age": 10.0, "Median Age Moe": 17.0}]
+    text = load_mod.digest(bundle_mod.build_bundle(place, payloads))
+    assert "[±170%]" in text
+    assert "[wide margin]" not in text
+
+
+def test_margin_note_is_silent_below_the_threshold():
+    import fmt
+    assert fmt.margin_note({"wide_margin": False}) == ""
+    assert fmt.margin_note({"wide_margin": True, "moe_ratio": 0.7}) == "  [±70%]"
+
+
+def test_report_vs_autoloads_a_city_that_is_not_cached(loaded, tmp_path, monkeypatch):
+    """Every comparison run so far needed a separate load.py call first."""
+    other = datausa.Place("Autoville, KS", "16000US2011111", "Kansas",
+                          "04000US20", "autoville-ks")
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    monkeypatch.setattr(datausa, "resolve_place",
+                        lambda q, refresh=False: ([other], "exact"))
+    monkeypatch.setattr(datausa, "fetch_place_data",
+                        lambda p, include_benchmarks=True: full_payloads())
+    assert report_mod.main(["Testville, MN", "--vs", "Autoville, KS",
+                            "--out", str(tmp_path)]) == 0
+    assert datausa.read_cache("bundle-autoville-ks.json", 10_000) is not None
+
+
+def test_report_vs_autoload_still_refuses_an_ambiguous_name(loaded, tmp_path,
+                                                            monkeypatch, capsys):
+    many = [datausa.Place(f"Springfield, S{i}", f"16000US{i:07d}", "S",
+                          "04000US01", f"springfield-s{i}") for i in range(3)]
+    monkeypatch.setattr(datausa, "resolve_place",
+                        lambda q, refresh=False: (many, "fuzzy"))
+    assert report_mod.main(["Testville, MN", "--vs", "Springfield",
+                            "--out", str(tmp_path)]) == 1
+    assert "is not loaded" in capsys.readouterr().err
+
+
+def test_index_caption_names_a_shared_base_year_only_when_it_is_shared(loaded,
+                                                                       place,
+                                                                       tmp_cache):
+    """Naming one year misdescribes the other line when the series differ."""
+    shifted = json.loads(json.dumps(loaded))
+    pop = shifted["metrics"]["population"]
+    pop["series"] = {"2017": 100.0, "2024": 130.0}
+    shifted["place"]["name"] = "Shifted, KS"
+    html = report_mod.build_comparison_html(loaded, shifted, sections=["people"])
+    assert "first published year" in html
+
+    same = json.loads(json.dumps(loaded))
+    same["place"]["name"] = "Same, KS"
+    html_same = report_mod.build_comparison_html(loaded, same, sections=["people"])
+    assert "own 2013 level" in html_same

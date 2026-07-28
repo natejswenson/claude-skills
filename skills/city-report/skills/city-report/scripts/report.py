@@ -176,7 +176,7 @@ def _share_block(metric: dict, theme: dict) -> str:
         [metric["label"], "Households"], rows)
 
 
-def _distribution_block(metric: dict, theme: dict) -> str:
+def _distribution_block(metric: dict, theme: dict, median: float | None = None) -> str:
     """An ordered histogram with the median bucket highlighted.
 
     The highlight is the whole point: a 26-bar shape tells you the spread, but
@@ -191,16 +191,18 @@ def _distribution_block(metric: dict, theme: dict) -> str:
     bounds = [bundle_mod.parse_bucket_bounds(c["label"]) for c in ordered]
     usable = [(c, b) for c, b in zip(ordered, bounds) if b]
     median_index = None
-    median_value = None
-    if usable:
-        cats_u = [c for c, _ in usable]
-        bounds_u = [b for _, b in usable]
-        median_value = bundle_mod.interpolated_median(cats_u, bounds_u)
-        if median_value is not None:
-            for i, (_, (low, high)) in enumerate(usable):
-                if low <= median_value <= high:
-                    median_index = i
-                    break
+    # The median arrives from the `median_home_value` metric, which bundle.py
+    # already derives from these same buckets — recomputing it here is how the
+    # report and the digest would drift apart.
+    median_value = median
+    if median_value is None and usable:
+        median_value = bundle_mod.interpolated_median(
+            [c for c, _ in usable], [b for _, b in usable])
+    if median_value is not None:
+        for i, (_, (low, high)) in enumerate(usable):
+            if low <= median_value <= high:
+                median_index = i
+                break
 
     svg = charts.histogram(
         [c for c, _ in usable] or ordered, theme, highlight=median_index,
@@ -215,7 +217,7 @@ def _distribution_block(metric: dict, theme: dict) -> str:
             + _table_view(["Bracket", "Households"], rows))
 
 
-def _metric_block(metric: dict, theme: dict) -> str:
+def _metric_block(metric: dict, theme: dict, median: float | None = None) -> str:
     """Dispatch a metric to the form its shape calls for."""
     if not metric["available"]:
         return (f'<p class="unavailable">{_esc(metric["label"])} — '
@@ -225,7 +227,7 @@ def _metric_block(metric: dict, theme: dict) -> str:
     # breakdown branch, because they are all breakdowns too — checking kind
     # first swallows them and renders every one as ranked bars.
     if metric["key"] in ("income_distribution", "home_value_distribution"):
-        body = _distribution_block(metric, theme)
+        body = _distribution_block(metric, theme, median)
     elif metric["key"] == "tenure":
         body = _share_block(metric, theme)
     elif metric["kind"] == "breakdown":
@@ -285,6 +287,13 @@ def _pack_columns(blocks: list[tuple[int, str]]) -> tuple[list[str], list[str]]:
     return left, right
 
 
+def _median_for(metric: dict, metrics: dict) -> float | None:
+    """The derived median that belongs on this distribution's histogram."""
+    if metric["key"] != "home_value_distribution":
+        return None
+    return (metrics.get("median_home_value") or {}).get("latest")
+
+
 def _section_html(section_key: str, title: str, metrics: dict, theme: dict) -> str:
     """One ruled editorial section: heading, then a block per metric."""
     entries = [metrics[m.key] for m in manifest.metrics_for_section(section_key)
@@ -296,7 +305,7 @@ def _section_html(section_key: str, title: str, metrics: dict, theme: dict) -> s
         blocks.append((
             _estimated_units(metric),
             f'<div class="block"><h3 class="block-title">{_esc(metric["label"])}</h3>'
-            f'{_metric_block(metric, theme)}</div>'))
+            f'{_metric_block(metric, theme, _median_for(metric, metrics))}</div>'))
     left, right = _pack_columns(blocks)
     return (f'<section class="report-section"><h2>{_esc(title)}</h2>'
             f'<div class="cols">'
@@ -521,7 +530,12 @@ def _compare_block(metric_a: dict, metric_b: dict, theme: dict,
     # comparison that was actually wanted: which one is growing faster.
     if unit == "count":
         plot_a, plot_b = _index_to_base(series_a), _index_to_base(series_b)
-        base_year = min([int(y) for y in (plot_a or plot_b)], default="")
+        bases = [min((int(y) for y in plot), default=None)
+                 for plot in (plot_a, plot_b) if plot]
+        # Each city is indexed to its OWN first year, and those can differ —
+        # naming one year would misdescribe the other line.
+        base_year = (str(bases[0]) if len(set(bases)) == 1 and bases
+                     else "first published year")
         plot_fmt = lambda v: f"{v:.0f}"  # noqa: E731
         caption = (f'<p class="caption">Indexed to each city\'s own '
                    f'{base_year} level = 100, because the two populations differ '
@@ -644,6 +658,26 @@ def write_report(data: dict, out_dir: str, sections: list[str] | None = None) ->
     return path
 
 
+def _autoload(city: str) -> str | None:
+    """Fetch and cache ``city`` so a comparison can name a city not yet loaded.
+
+    Returns its slug, or ``None`` when the name is unknown or ambiguous — an
+    ambiguous name is still never guessed, it just falls through to the normal
+    "not loaded, here's what is" message.
+    """
+    import bundle as bundle_mod
+    import datausa
+
+    candidates, _ = datausa.resolve_place(city)
+    if len(candidates) != 1:
+        return None
+    place = candidates[0]
+    print(f"Loading {place.name}…", file=sys.stderr)
+    data = bundle_mod.build_bundle(place, datausa.fetch_place_data(place))
+    datausa.write_cache(f"bundle-{place.slug}.json", data)
+    return place.slug
+
+
 def write_comparison(data_a: dict, data_b: dict, out_dir: str,
                      sections: list[str] | None = None) -> str:
     os.makedirs(out_dir, exist_ok=True)
@@ -709,8 +743,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.vs:
         other_slug, message = datausa.resolve_cached_slug(args.vs)
         if other_slug is None:
-            print(message, file=sys.stderr)
-            return 1
+            # Every comparison run so far needed a separate load.py call first.
+            # Fetching the missing side here is the same work with one less
+            # step, and it still refuses to guess an ambiguous name.
+            other_slug = _autoload(args.vs)
+            if other_slug is None:
+                print(message, file=sys.stderr)
+                return 1
         if other_slug == slug:
             print("Both cities are the same — nothing to compare.", file=sys.stderr)
             return 1

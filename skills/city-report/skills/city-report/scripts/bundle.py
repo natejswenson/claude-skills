@@ -20,6 +20,64 @@ import manifest
 from manifest import Metric
 
 
+# ------------------------------------------------------------- presentation
+
+
+def interpolated_median(categories: list[dict], bounds: list[tuple[float, float]]) -> float | None:
+    """Median of a bucketed histogram by linear interpolation.
+
+    Needed because ``acs_yg_housing_median_value_5`` — the cube that would
+    publish a median home value directly — returns HTTP 500 on every query. The
+    result is always presented as an estimate, never as a reported median,
+    because interpolation assumes values spread evenly inside each bucket and
+    the top bucket is open-ended.
+
+    ``bounds`` is the ``(low, high)`` range of each bucket, in ``categories``'
+    original (ascending) order — so callers must pass the unsorted bucket list.
+    """
+    total = sum(c["value"] for c in categories)
+    if total <= 0 or len(categories) != len(bounds):
+        return None
+    half = total / 2
+    running = 0.0
+    for cat, (low, high) in zip(categories, bounds):
+        # The bucket that crosses the halfway point necessarily has a positive
+        # count — a zero-count bucket cannot move `running` past `half` — so
+        # this division is always safe.
+        if running + cat["value"] >= half:
+            return low + (half - running) / cat["value"] * (high - low)
+        running += cat["value"]
+    return bounds[-1][1]  # pragma: no cover - float-rounding safety net
+
+
+def parse_bucket_bounds(label: str) -> tuple[float, float] | None:
+    """Parse a Census bucket caption into numeric bounds.
+
+    Handles the three shapes the value/income cubes emit: ``"$100,000 to
+    $124,999"``, ``"Less Than $10,000"`` / ``"< $10,000"``, and
+    ``"$2,000,000 or More"`` / ``"$200,000+"``. The open-ended top bucket is
+    given a finite ceiling of 1.5x its floor purely so interpolation has a
+    range; a median landing there is unreliable by nature and the report says so.
+    """
+    text = label.replace(",", "").replace("$", "").strip()
+    numbers = []
+    for token in text.replace("-", " ").split():
+        cleaned = token.rstrip("+")
+        try:
+            numbers.append(float(cleaned))
+        except ValueError:
+            continue
+    if not numbers:
+        return None
+    if len(numbers) >= 2:
+        return numbers[0], numbers[1]
+    value = numbers[0]
+    lowered = label.lower()
+    if "less than" in lowered or lowered.startswith("<"):
+        return 0.0, value
+    return value, value * 1.5
+
+
 def _rows(payload: dict | None) -> list[dict]:
     """Rows from a payload, tolerating the API's empty and error shapes."""
     if not payload or not isinstance(payload, dict):
@@ -119,6 +177,23 @@ def _series(payload: dict | None, metric: Metric) -> tuple[dict[int, float], dic
             value = _num(picked[0].get(metric.measure)) if picked else None
             moe = _num(picked[0].get(metric.moe_measure)) if picked else None
 
+        elif metric.kind == "derived_median":
+            # Buckets must be interpolated in published order, not the
+            # size-sorted order a breakdown would use.
+            buckets = []
+            for row in year_rows:
+                bounds = parse_bucket_bounds(str(row.get(dim)))
+                count = _num(row.get(metric.measure))
+                if bounds and count is not None:
+                    buckets.append((bounds, count))
+            buckets.sort(key=lambda item: item[0][0])
+            value = interpolated_median(
+                [{"value": count} for _, count in buckets],
+                [bounds for bounds, _ in buckets])
+            # An interpolated figure has no published margin of error, and
+            # inventing one would be worse than stating none.
+            moe = None
+
         elif metric.kind == "rate":
             numer = [r for r in year_rows if r.get(dim) in metric.numerator]
             n_parts = [_num(r.get(metric.measure)) for r in numer]
@@ -205,7 +280,11 @@ def build_metric(metric: Metric, payloads: dict[str, dict | None]) -> dict:
     moe_ratio = (abs(latest_moe / latest)
                  if latest_moe is not None and latest else None)
 
-    categories = _categories(place_payload, metric, latest_year)
+    # A derived median shares its payload with the distribution metric that
+    # owns those buckets. Carrying them here too would duplicate the histogram
+    # and label household counts with the median's dollar unit.
+    categories = ([] if metric.kind == "derived_median"
+                  else _categories(place_payload, metric, latest_year))
 
     # Counts are deliberately left unbenchmarked — see Metric.benchmarkable.
     benchmarks: dict[str, dict] = {}
@@ -279,61 +358,3 @@ def build_bundle(place, payloads: dict[str, dict], now: _dt.datetime | None = No
         "source": "Data USA (datausa.io) / US Census Bureau American Community Survey",
         "metrics": metrics,
     }
-
-
-# ------------------------------------------------------------- presentation
-
-
-def interpolated_median(categories: list[dict], bounds: list[tuple[float, float]]) -> float | None:
-    """Median of a bucketed histogram by linear interpolation.
-
-    Needed because ``acs_yg_housing_median_value_5`` — the cube that would
-    publish a median home value directly — returns HTTP 500 on every query. The
-    result is always presented as an estimate, never as a reported median,
-    because interpolation assumes values spread evenly inside each bucket and
-    the top bucket is open-ended.
-
-    ``bounds`` is the ``(low, high)`` range of each bucket, in ``categories``'
-    original (ascending) order — so callers must pass the unsorted bucket list.
-    """
-    total = sum(c["value"] for c in categories)
-    if total <= 0 or len(categories) != len(bounds):
-        return None
-    half = total / 2
-    running = 0.0
-    for cat, (low, high) in zip(categories, bounds):
-        # The bucket that crosses the halfway point necessarily has a positive
-        # count — a zero-count bucket cannot move `running` past `half` — so
-        # this division is always safe.
-        if running + cat["value"] >= half:
-            return low + (half - running) / cat["value"] * (high - low)
-        running += cat["value"]
-    return bounds[-1][1]  # pragma: no cover - float-rounding safety net
-
-
-def parse_bucket_bounds(label: str) -> tuple[float, float] | None:
-    """Parse a Census bucket caption into numeric bounds.
-
-    Handles the three shapes the value/income cubes emit: ``"$100,000 to
-    $124,999"``, ``"Less Than $10,000"`` / ``"< $10,000"``, and
-    ``"$2,000,000 or More"`` / ``"$200,000+"``. The open-ended top bucket is
-    given a finite ceiling of 1.5x its floor purely so interpolation has a
-    range; a median landing there is unreliable by nature and the report says so.
-    """
-    text = label.replace(",", "").replace("$", "").strip()
-    numbers = []
-    for token in text.replace("-", " ").split():
-        cleaned = token.rstrip("+")
-        try:
-            numbers.append(float(cleaned))
-        except ValueError:
-            continue
-    if not numbers:
-        return None
-    if len(numbers) >= 2:
-        return numbers[0], numbers[1]
-    value = numbers[0]
-    lowered = label.lower()
-    if "less than" in lowered or lowered.startswith("<"):
-        return 0.0, value
-    return value, value * 1.5

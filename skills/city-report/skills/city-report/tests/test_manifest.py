@@ -80,7 +80,7 @@ def test_member_and_rate_metrics_name_their_members():
 
 
 def test_kinds_are_known():
-    valid = {"scalar", "total", "member", "breakdown", "rate"}
+    valid = {"scalar", "total", "member", "breakdown", "rate", "derived_median"}
     for metric in manifest.METRICS:
         assert metric.kind in valid, metric.key
 

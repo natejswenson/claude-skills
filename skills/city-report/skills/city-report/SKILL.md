@@ -1,6 +1,6 @@
 ---
 name: city-report
-version: 0.3.0
+version: 0.4.0
 user_invocable: true
 description: Pull US Census demographic, economic, housing and health data for any American city from the Data USA API, answer questions about it instantly, and generate a polished editorial HTML report. Use when the user asks for a city report, city profile, demographics, census data, population, median income, cost of living, or "tell me about <city>, <state>" — or wants to compare a city against its state and the nation.
 ---
@@ -40,7 +40,7 @@ If the user named a city and state, skip straight to loading. If they only said
 python3 <skill-dir>/scripts/load.py "Minneapolis, MN"
 ```
 
-Fetches 21 metrics for the city, its state and the nation concurrently (~2s
+Fetches 22 metrics for the city, its state and the nation concurrently (~2s
 cold, cached 24h) and prints a digest. **Read that digest — it is the working
 set for the rest of the conversation.**
 
@@ -95,8 +95,8 @@ python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND"
 python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" --section economy
 ```
 
-Both cities must be loaded first. The comparison document puts both on one
-scale in every block: breakdowns become shares of each city's own total (raw
+If the second city isn't loaded yet it is fetched automatically. The comparison
+document puts both on one scale in every block: breakdowns become shares of each city's own total (raw
 counts would just measure population), and count trends are indexed to each
 city's own first year (a 2,178-person town and a 131,627-person city both
 render as flat lines on a shared linear axis).
@@ -109,10 +109,12 @@ different states, so "vs state" means different things on each side.
 - **Always state the vintage.** These are ACS 5-year estimates. "Median income
   is $80,846" is incomplete; "$80,846 as of 2024" is the claim.
 - **Never quote a wide-margin figure as fact.** Anything the digest marks
-  `[wide margin]` has a margin of error over 30% of the estimate — routine for
-  towns under a few thousand people. Say "roughly 26%, though the margin on a
-  town this small is wide" rather than "25.7%". Where the margin exceeds the
-  estimate itself, don't quote a number at all — give the range or skip it.
+  `[±N%]` has a margin of error over 30% of the estimate — routine for towns
+  under a few thousand people. **Read the magnitude, not just the flag**: ±40%
+  is soft, ±171% means the estimate and its margin overlap zero, and ±375%
+  means the figure carries no information at all. Say "roughly 26%, though the
+  margin on a town this small is wide" rather than "25.7%"; past about ±100%,
+  don't quote a number — give a range or skip the metric.
 - **Counts are not benchmarked against the state**, because a city is part of
   its state. Population carries growth-since-2013 instead; rates and medians
   carry state and national comparisons.
@@ -140,7 +142,7 @@ each. Read it before touching the manifest.
 
 | Path | What it is |
 |---|---|
-| `scripts/manifest.py` | The 21 verified metric definitions — the accuracy asset |
+| `scripts/manifest.py` | The 22 verified metric definitions — the accuracy asset |
 | `scripts/datausa.py` | API client: place resolution, parallel fan-out, caching |
 | `scripts/bundle.py` | Turns raw API payloads into reportable series + margins |
 | `scripts/load.py` / `query.py` / `report.py` | The three commands |

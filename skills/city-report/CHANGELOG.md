@@ -4,6 +4,39 @@ All notable changes to the city-report skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-28
+
+Improvements found by running the skill against seven real cities and three
+comparisons, rather than by re-reading the code.
+
+### Added
+- **Median home value is now a first-class metric.** It was computed at render
+  time only, so it never reached the digest — meaning the one figure most
+  people ask about after income wasn't in context when the question came. It is
+  now derived in `bundle.py` with a full 2015-2024 series and state/national
+  benchmarks (the same interpolation runs on the benchmark payloads), and it
+  costs **no extra request**: it shares its query with the value-bucket
+  distribution. Verified against Data USA's published 1-year figure for
+  Minneapolis: $362,170 vs $368,300, within 1.7%.
+- **`--vs` auto-loads a city that isn't cached.** Every comparison run so far
+  needed a separate `load.py` call first. An ambiguous name is still never
+  guessed.
+
+### Changed
+- **The digest reports margin magnitude, not a binary flag.** Two neighbouring
+  Minnesota towns both returned a 4.6% poverty rate — one at ±70%, the other at
+  ±171% — and `[wide margin]` made them look equally solid. Now `[±70%]` vs
+  `[±171%]`, which is the difference between "soft" and "no information".
+  (Lake Park's uninsured rate turns out to be ±375%.)
+- **Count comparisons read as size ratios.** Comparing two cities' populations
+  produced "+263%" and "−98%"; now "3.6× larger" and "1/60 the size". The
+  percentage form is arithmetically correct and nobody thinks that way.
+- **The indexed-comparison caption no longer names a base year the second city
+  doesn't share.** Where two cities' series start in different years it says
+  "first published year" instead of asserting one of them.
+- `report.py` reads the derived median instead of recomputing it, so the report
+  and the digest cannot drift apart.
+
 ## [0.3.0] - 2026-07-28
 
 ### Added
