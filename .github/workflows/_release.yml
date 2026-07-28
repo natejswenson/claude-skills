@@ -147,5 +147,24 @@ jobs:
             echo "$PKG@$VER is already on npm — skipping publish."
             exit 0
           fi
+          # Stage README/LICENSE/CHANGELOG BEFORE invoking npm publish. They live
+          # at the plugin root (one level up, beside .claude-plugin/) because
+          # Claude Code's auto-discovery requires package.json to sit in the
+          # nested skills/<skill>/ dir — and npm only packs files from inside the
+          # package directory.
+          #
+          # The package's own `prepack` hook also copies these, which is enough
+          # for the TARBALL. It is NOT enough for the npm website: npm reads
+          # README.md to populate the registry manifest's `readme` field BEFORE
+          # prepack runs, so shipflow 0.3.1 and devlog 0.11.1 shipped tarballs
+          # containing README.md while npmjs.com still rendered "No README data
+          # found". Copying here — before `npm publish` is invoked at all — is
+          # what actually fixes the rendered page.
+          for f in README.md LICENSE CHANGELOG.md; do
+            [ -f "../../$f" ] && cp "../../$f" "$f" || true
+          done
+          if [ ! -s README.md ]; then
+            echo "::warning::No README.md staged for $PKG — the npm page will render blank."
+          fi
           echo "Publishing $PKG@$VER to npm (scoped package → --access public)…"
           npm publish --access public

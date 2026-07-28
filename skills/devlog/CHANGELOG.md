@@ -2,6 +2,22 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.11.2 (2026-07-28) — actually render the README on npmjs.com
+
+- **Fixed: the npm page still showed "No README data found" after 0.11.1.** That
+  release put README.md, LICENSE and CHANGELOG.md into the tarball (verified by
+  downloading it), which fixed what `npm install` delivers — but not the website.
+  npm reads README.md to populate the registry manifest's `readme` field when it
+  builds the publish manifest, which happens BEFORE the package's own `prepack`
+  hook runs. So the tarball had the file and the registry record did not.
+  Worse than merely empty: the stored value was the literal string
+  `ERROR: No README data found!`, and npmjs.com falls back to reading the
+  tarball only when that field is *absent* (compare `zod`, which renders fine
+  with no packument readme at all), so the error string kept winning.
+  The release workflow now stages the three files into the package directory
+  before `npm publish` is invoked at all, rather than relying on `prepack`.
+  Code unchanged.
+
 ## 0.11.1 (2026-07-28) — publish the README, LICENSE and CHANGELOG to npm
 
 - **Fixed: the npm package shipped with no README, LICENSE or CHANGELOG.**
