@@ -1,0 +1,19 @@
+{
+  "branches": { "main": "main", "dev": "dev" },
+  "featureBranchPrefix": "feature/",
+  "requiredChecks": ["ci / devlog", "ci / ghostwriter", "ci / github-stats", "ci / resume"],
+  "mergeMethod": { "featureToDevMethod": "squash", "devToMainMethod": "merge" },
+  "protectionOwner": "external",
+  "release": {
+    "enabled": true,
+    "mode": "manual-gate",
+    "tool": "release-please",
+    "layout": "manifest",
+    "releaseCredential": "SHIPFLOW_AUTOMERGE_PAT"
+  },
+  "branchCleanup": { "deleteOnMerge": true, "protectedBranches": ["dev", "main"] },
+  "enforceAdmins": false,
+  "renderedTemplateHashes": {
+    ".github/workflows/dev-to-main-automerge.yml": "6bc4b307b3d7928fa3b26f3ee6d281a9c4b59e7f6e8766576b688e519b21baef"
+  }
+}

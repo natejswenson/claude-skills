@@ -91,5 +91,32 @@
       "pattern": "transcription of a real session,\\s*not an\\s*invention",
       "rationale": "A real ghostwriter session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's actual output. Capture-before-author lives only in this prose; the term-misaligned lint checks alignment, not provenance."
     }
+  ],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter-x` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "voice-corpus-stays-clean",
+      "kind": "corpus",
+      "test": "tests/test_baseline_voice.py",
+      "corpus_glob": "evals/baseline/drafts/*.md",
+      "exclude_suffixes": [
+        ".STAGED.md"
+      ],
+      "min_corpus": 5,
+      "rationale": "The drafts the user approved and published are the only ground truth for 'this is my voice'. Six are frozen into evals/baseline/drafts/ as a committed corpus: drafts/ itself is gitignored as a working directory, so globbing it would find zero files in CI and red-line every PR. Pinning the corpus clean catches a voice-lint rule that grows too broad and blocks real work; pinning bad-draft.md's exact flag set catches a rule that gets weakened and stops catching real AI tells. The min_corpus floor stops the glob silently matching nothing and passing vacuously. `.STAGED.md` stays excluded because its human-written 'not published' banner contains an editorial em-dash that is not tweet body — verified that the staged file's published counterpart is clean, so the exclusion hides no real violation.",
+      "fixtures": []
+    },
+    {
+      "id": "published-threads-fit-280",
+      "kind": "corpus",
+      "test": "tests/test_baseline_voice.py",
+      "corpus_glob": "evals/baseline/drafts/*.md",
+      "exclude_suffixes": [
+        ".STAGED.md"
+      ],
+      "min_corpus": 5,
+      "rationale": "X's 280 limit is weighted, not len(): URLs are charged a flat weight and CJK/emoji are charged 2. Threads that published successfully are known-good input, so if scripts/x_len.py ever measures them as over-limit the weighting regressed and would start rejecting valid posts. The paired over-limit and URL-weighting assertions cover the other direction — a weighting that under-charges would let a too-long tweet reach X, where it is truncated or rejected.",
+      "fixtures": []
+    }
   ]
 }

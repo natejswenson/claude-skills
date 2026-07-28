@@ -115,5 +115,30 @@
       "rationale": "The catalog-icon/hero-zone overlap check must stay wired into renderCoverImage() — losing it silently reopens the gap where a catalog icon (or two, connected by a line) can stand in for the required bespoke hero illustration."
     }
   ],
-  "cli_commands_referenced": ["scan", "lint-post", "publish-entry", "add-project", "remove-project", "set", "config", "init", "cover-context", "render-cover", "tombstone", "sync-entry", "assemble-post"]
+  "cli_commands_referenced": [
+    "scan",
+    "lint-post",
+    "publish-entry",
+    "add-project",
+    "remove-project",
+    "set",
+    "config",
+    "init",
+    "cover-context",
+    "render-cover",
+    "tombstone",
+    "sync-entry",
+    "assemble-post"
+  ],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / devlog` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "published-entries-still-lint-clean",
+      "kind": "corpus",
+      "test": "tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/published/*.md",
+      "min_corpus": 8,
+      "rationale": "tests/lint_post.test.mjs unit-tests each rule against small crafted inputs and tests/evals.test.mjs drives the good/bad/irreproducible fixtures through the judge. All of those are hand-authored to exercise the rules; none answers whether the linter still accepts the real thing. evals/baseline/published/ holds eight entries copied verbatim from natejswenson.io — posts that went through the full pipeline, were reviewed, and are live — so 'this passes' means 'a human shipped this and stands behind it'. A rule that grows too strict starts rejecting work like this, and the cost lands at publish time on a real release. Deliberately a CURATED subset: of 61 published entries only 17 satisfy today's contract, the rest predating rules that landed later (the 5-10 tags-count range especially). Those are stale, not bad — asserting over all 61 would encode 'the linter must accept its own history', a different and wrong requirement. Paired negative assertions (bad-post.md must still produce findings; the three required-section rules must still fire) stop the corpus passing vacuously against a linter that returned nothing."
+    }
+  ]
 }
