@@ -54,7 +54,11 @@ trend where one exists.
 - **PRESS branding** — the warm-paper editorial system shared with `ghostwriter`
   and `local-fitness`: flat cream, ink rules, one accent used once.
 - **Margins of error are first-class.** A 250-person town's "25.7% poverty rate"
-  carries a ±79% margin; the report says so instead of implying precision.
+  carries a ±79% margin; the report says so, with the magnitude — `[±70%]` and
+  `[±171%]` are very different levels of confidence and a shared flag hides that.
+- **Median home value**, interpolated from the value-bucket histogram because the
+  cube that would publish it directly returns HTTP 500. Always labelled an
+  estimate; checks out against the published 1-year figure to within 1.7%.
 - **Provenance on every page**: survey vintage, Census table IDs, retrieval date.
 
 ## Install
@@ -128,7 +132,7 @@ different states, so "vs state" would mean something different on each side.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 193 offline tests, 100% coverage
+pytest                                    # 197 offline tests, 100% coverage
 pytest -m live                            # 14 contract tests against the real API
 ```
 

@@ -16,6 +16,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`resume`](skills/resume) | ![resume](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=resume-v*&label=&sort=semver&color=blue) | `/resume` | Node/TS | Tailor a résumé to a job description and render a polished PDF from the CLI. |
 | [`github-stats`](skills/github-stats) | ![github-stats](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=github-stats-v*&label=&sort=semver&color=blue) | `/github-stats` | Bash/`gh` | Show GitHub profile statistics — commits, followers, stars, PRs, issues — plus a repo browser. |
 | [`shipflow`](skills/shipflow) | ![shipflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipflow-v*&label=&sort=semver&color=blue) | `/shipflow` | Node | Scaffold a configurable dev/main branching, auto-merge, cleanup, and release-tagging workflow into any repo. This repo's own automation is dogfooded on it. |
+| [`city-report`](skills/city-report) | ![city-report](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=city-report-v*&label=&sort=semver&color=blue) | `/city-report` | Python | Pull US Census data for any American city, answer questions from context, and render a PRESS-branded HTML report. Stdlib only. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
