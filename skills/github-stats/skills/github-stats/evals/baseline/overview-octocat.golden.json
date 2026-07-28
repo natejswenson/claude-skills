@@ -1,0 +1,25 @@
+{
+  "commits": {
+    "top_count": 312,
+    "top_repo": "Spoon-Knife",
+    "total": 383
+  },
+  "followers": {
+    "followers": 22898,
+    "following": 9
+  },
+  "issues": {
+    "pct_closed": 41,
+    "total": 73
+  },
+  "prs": {
+    "pct_closed": 79,
+    "total": 184
+  },
+  "stars": {
+    "top_count": 13837,
+    "top_repo": "Spoon-Knife",
+    "total": 17237
+  },
+  "username": "octocat"
+}
