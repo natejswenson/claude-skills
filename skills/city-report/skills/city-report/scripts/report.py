@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """Render a cached city bundle as a self-contained PRESS-branded HTML report.
 
-    python scripts/report.py minneapolis-mn
-    python scripts/report.py minneapolis-mn --section housing
-    python scripts/report.py minneapolis-mn --out ~/Desktop --no-open
+    python3 scripts/report.py                          # the only loaded city
+    python3 scripts/report.py "Minneapolis, MN"        # or a slug: minneapolis-mn
+    python3 scripts/report.py --section housing
+    python3 scripts/report.py --section commute --section economy
+    python3 scripts/report.py --out ~/Desktop --no-open
+
+The city argument is optional whenever exactly one city is loaded, and accepts
+a slug or a place name. Reports are written to ``./reports`` relative to the
+**current** directory, so run this from wherever the user wants the file — not
+from inside the skill, or the report lands in the plugin install.
 
 Output is one ``.html`` file with the stylesheet and every chart inlined —
 nothing is fetched at view time, so it works offline, survives being emailed,
@@ -41,13 +48,39 @@ def _esc(text) -> str:
     return html.escape(str(text), quote=True)
 
 
+#: Section aliases, so a user's own words reach the right section. The report
+#: calls it "Work & Commute"; somebody asking for "a commute report" should not
+#: get an argparse error listing the internal keys.
+SECTION_ALIASES = {
+    "commute": "work", "jobs": "work", "employment": "work", "transport": "work",
+    "demographics": "people", "population": "people", "diversity": "people",
+    "income": "economy", "wages": "economy", "cost_of_living": "economy",
+    "homes": "housing", "home": "housing", "rent": "housing",
+    "healthcare": "health", "insurance": "health",
+}
+
+SECTION_KEYS = tuple(k for k, _ in manifest.SECTIONS)
+
+
+def normalize_section(value: str) -> str:
+    """Map a user-supplied section word onto a manifest section key."""
+    key = value.strip().lower().replace("&", "").replace(" ", "_")
+    key = SECTION_ALIASES.get(key, key)
+    if key not in SECTION_KEYS:
+        raise argparse.ArgumentTypeError(
+            f"unknown section '{value}' — choose from {', '.join(SECTION_KEYS)} "
+            f"(aliases: {', '.join(sorted(SECTION_ALIASES))})")
+    return key
+
+
 def load_bundle(slug: str) -> dict:
     """Read a bundle written by ``load.py``."""
     import datausa
     path = datausa.cache_path(f"bundle-{slug}.json")
     if not os.path.exists(path):
         raise SystemExit(
-            f"No cached data for '{slug}'. Run:  python scripts/load.py \"<City, ST>\"")
+            f"No cached data for '{slug}'. Run:  "
+            f"{datausa.script_cmd('load.py')} \"<City, ST>\"")
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh)
 
@@ -309,7 +342,19 @@ def build_html(data: dict, sections: list[str] | None = None) -> str:
               if not sections or k in sections]
 
     stamp = _dt.datetime.fromisoformat(data["fetched_at"]).strftime("%b %Y").upper()
-    kind = "CITY PROFILE" if not sections else f"{wanted[0][1].upper()} REPORT"
+    # The masthead must describe what the document actually contains. Naming it
+    # after `wanted[0]` labelled a two-section report with whichever section
+    # happened to sort first — a file called "…-housing.html" whose masthead
+    # read "ECONOMY REPORT".
+    if not sections:
+        kind = "CITY PROFILE"
+    elif len(wanted) == 1:
+        kind = f"{wanted[0][1].upper()} REPORT"
+    else:
+        # Middot, not "&" — one section is already called "Work & Commute", so
+        # an ampersand join reads as "ECONOMY & WORK & COMMUTE" and hides where
+        # one section ends and the next begins.
+        kind = " · ".join(title.upper() for _, title in wanted)
     eyebrow = f'{ident["brand_line"]} · {kind} · {stamp}'
 
     headline = [metrics[m.key] for m in manifest.headline_metrics()
@@ -361,7 +406,9 @@ def build_html(data: dict, sections: list[str] | None = None) -> str:
 
 def write_report(data: dict, out_dir: str, sections: list[str] | None = None) -> str:
     os.makedirs(out_dir, exist_ok=True)
-    suffix = f"-{sections[0]}" if sections else ""
+    # Every requested section appears in the filename, so a two-section report
+    # can't be mistaken for the single-section one it would otherwise overwrite.
+    suffix = f"-{'-'.join(sections)}" if sections else ""
     stamp = _dt.datetime.now().strftime("%Y-%m-%d")
     path = os.path.join(out_dir, f'{data["place"]["slug"]}{suffix}-{stamp}.html')
     with open(path, "w", encoding="utf-8") as fh:
@@ -386,18 +433,35 @@ def open_in_browser(path: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    import datausa
+
     parser = argparse.ArgumentParser(description="Render a PRESS city report.")
-    parser.add_argument("slug", help="City slug from load.py, e.g. minneapolis-mn")
+    parser.add_argument("city", nargs="?",
+                        help='Slug (minneapolis-mn) or name ("Minneapolis, MN"). '
+                             'Omit when only one city is loaded.')
     parser.add_argument("--section", action="append", dest="sections",
-                        choices=[k for k, _ in manifest.SECTIONS],
-                        help="Limit to one section (repeatable).")
-    parser.add_argument("--out", default="reports", help="Output directory.")
+                        type=normalize_section,
+                        help=f"Limit to a section, repeatable: "
+                             f"{', '.join(SECTION_KEYS)}.")
+    parser.add_argument("--out", default="reports",
+                        help="Output directory (default: ./reports).")
     parser.add_argument("--no-open", action="store_true",
                         help="Don't open the report in a browser.")
     args = parser.parse_args(argv)
 
-    data = load_bundle(args.slug)
-    path = write_report(data, args.out, args.sections)
+    slug, message = datausa.resolve_cached_slug(args.city)
+    if slug is None:
+        print(message, file=sys.stderr)
+        return 1
+
+    # De-duplicate while keeping manifest order, so --section housing --section
+    # housing doesn't produce a doubled filename.
+    sections = None
+    if args.sections:
+        sections = [k for k in SECTION_KEYS if k in set(args.sections)]
+
+    data = load_bundle(slug)
+    path = write_report(data, args.out, sections)
     print(f"Report written: {path}")
     if not args.no_open:
         open_in_browser(path)

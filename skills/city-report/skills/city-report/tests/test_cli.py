@@ -186,11 +186,13 @@ def test_report_cli_no_open(loaded, tmp_path, monkeypatch):
 # --------------------------------------------------------------------- load
 
 
-def test_digest_leads_with_headline_and_names_the_slug(loaded):
+def test_digest_leads_with_headline_and_tells_you_the_next_command(loaded):
     text = load_mod.digest(loaded)
     assert "HEADLINE" in text
     assert "Testville, MN" in text
-    assert "slug: testville-mn" in text
+    # The follow-on command uses the place name, not the internal slug — the
+    # user never has to learn that slugs exist.
+    assert 'report.py "Testville, MN"' in text
     for _, title in manifest.SECTIONS:
         assert title.upper() in text
 
@@ -381,3 +383,155 @@ def test_report_omits_a_section_with_no_metrics(loaded):
 
 def test_table_view_is_empty_when_there_are_no_rows():
     assert report_mod._table_view(["A"], []) == ""
+
+
+# ------------------------------------------------------------------- UX
+#
+# The city argument is optional and accepts a slug OR a place name, so nobody
+# has to retype an internal slug to see data they just loaded.
+
+
+def _cache_second_city(name="Otherville, KS", slug="otherville-ks"):
+    other = datausa.Place(name, "16000US2099999", "Kansas", "04000US20", slug)
+    datausa.write_cache(f"bundle-{slug}.json",
+                        bundle_mod.build_bundle(other, full_payloads()))
+    return other
+
+
+def test_list_cached_reports_slug_and_name(loaded):
+    _cache_second_city()
+    cached = dict(datausa.list_cached())
+    assert cached["testville-mn"] == "Testville, MN"
+    assert cached["otherville-ks"] == "Otherville, KS"
+
+
+def test_list_cached_skips_unreadable_files(loaded, tmp_cache):
+    (tmp_cache / "bundle-broken.json").write_text("{not json", encoding="utf-8")
+    (tmp_cache / "unrelated.txt").write_text("x", encoding="utf-8")
+    assert "broken" not in dict(datausa.list_cached())
+
+
+def test_resolve_slug_defaults_to_the_only_loaded_city(loaded):
+    assert datausa.resolve_cached_slug(None) == ("testville-mn", "")
+
+
+def test_resolve_slug_accepts_a_place_name_or_a_slug(loaded):
+    assert datausa.resolve_cached_slug("Testville, MN")[0] == "testville-mn"
+    assert datausa.resolve_cached_slug("testville-mn")[0] == "testville-mn"
+    # Case-insensitive, and a name that was never slugified still resolves.
+    assert datausa.resolve_cached_slug("testville, mn")[0] == "testville-mn"
+    # Punctuation the user didn't type: "Testville MN" slugifies onto the slug.
+    assert datausa.resolve_cached_slug("Testville MN")[0] == "testville-mn"
+
+
+def test_resolve_slug_asks_when_several_are_loaded(loaded):
+    _cache_second_city()
+    slug, message = datausa.resolve_cached_slug(None)
+    assert slug is None
+    assert "2 cities are loaded" in message
+    assert "Otherville, KS" in message
+
+
+def test_resolve_slug_unknown_city_lists_what_is_loaded(loaded):
+    slug, message = datausa.resolve_cached_slug("Nowhere, ZZ")
+    assert slug is None
+    assert "is not loaded" in message and "testville-mn" in message
+
+
+def test_resolve_slug_with_empty_cache(tmp_cache):
+    slug, message = datausa.resolve_cached_slug(None)
+    assert slug is None and "No city loaded yet" in message
+
+
+def test_report_cli_needs_no_city_when_only_one_is_loaded(loaded, tmp_path, monkeypatch):
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    assert report_mod.main(["--out", str(tmp_path)]) == 0
+
+
+def test_report_cli_accepts_a_place_name(loaded, tmp_path, monkeypatch):
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    assert report_mod.main(["Testville, MN", "--out", str(tmp_path)]) == 0
+
+
+def test_report_cli_errors_helpfully_on_an_unloaded_city(loaded, tmp_path, capsys):
+    assert report_mod.main(["Nowhere, ZZ", "--out", str(tmp_path)]) == 1
+    assert "is not loaded" in capsys.readouterr().err
+
+
+def test_section_aliases_map_to_manifest_keys():
+    assert report_mod.normalize_section("commute") == "work"
+    assert report_mod.normalize_section("Demographics") == "people"
+    assert report_mod.normalize_section("cost of living") == "economy"
+    assert report_mod.normalize_section("housing") == "housing"
+    with pytest.raises(Exception):
+        report_mod.normalize_section("bogus")
+
+
+def test_multi_section_report_names_every_section_consistently(loaded, tmp_path, monkeypatch):
+    """The masthead used to name whichever section sorted first.
+
+    A file called "…-housing.html" whose masthead read "ECONOMY REPORT" is
+    worse than no section filter at all.
+    """
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    report_mod.main(["--out", str(tmp_path), "--section", "commute",
+                     "--section", "economy"])
+    written = list(tmp_path.glob("*.html"))[0]
+    assert "economy-work" in written.name
+    html = written.read_text(encoding="utf-8")
+    assert "ECONOMY · WORK &amp; COMMUTE" in html
+
+
+def test_repeated_section_flag_is_deduplicated(loaded, tmp_path, monkeypatch):
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    report_mod.main(["--out", str(tmp_path), "--section", "housing",
+                     "--section", "homes"])
+    written = list(tmp_path.glob("*.html"))[0]
+    assert written.name.count("housing") == 1
+
+
+def test_query_cli_needs_no_city_when_only_one_is_loaded(loaded, capsys):
+    assert query_mod.main([]) == 0
+    assert "PEOPLE" in capsys.readouterr().out
+
+
+def test_query_cli_treats_a_lone_metric_key_as_a_metric(loaded, capsys):
+    """`query.py poverty_rate` must not be read as a city name."""
+    assert query_mod.main(["poverty_rate"]) == 0
+    assert "Poverty rate" in capsys.readouterr().out
+
+
+def test_query_cli_cities_flag(loaded, capsys):
+    assert query_mod.main(["--cities"]) == 0
+    assert "Testville, MN" in capsys.readouterr().out
+
+
+def test_query_cli_cities_flag_with_empty_cache(tmp_cache, capsys):
+    assert query_mod.main(["--cities"]) == 0
+    assert "No city loaded yet" in capsys.readouterr().out
+
+
+def test_query_cli_errors_on_an_unloaded_city(loaded, capsys):
+    assert query_mod.main(["Nowhere, ZZ", "population"]) == 1
+    assert "is not loaded" in capsys.readouterr().err
+
+
+def test_load_cli_caps_a_huge_ambiguous_list(monkeypatch, capsys):
+    """A bare "Springfield" matches dozens; printing all of them buries the ask."""
+    many = [datausa.Place(f"Springfield, S{i}", f"16000US{i:07d}", "S", "04000US01",
+                          f"springfield-s{i}") for i in range(30)]
+    monkeypatch.setattr(load_mod.datausa, "resolve_place",
+                        lambda q, refresh=False: (many, "fuzzy"))
+    assert load_mod.main(["Springfield"]) == 2
+    out = capsys.readouterr().out
+    assert "and 18 more" in out
+    assert out.count("Springfield, S") == 12
+
+
+def test_load_cli_list_flag_shows_all_of_them(monkeypatch, capsys):
+    many = [datausa.Place(f"Springfield, S{i}", f"16000US{i:07d}", "S", "04000US01",
+                          f"springfield-s{i}") for i in range(30)]
+    monkeypatch.setattr(load_mod.datausa, "resolve_place",
+                        lambda q, refresh=False: (many, "fuzzy"))
+    load_mod.main(["Springfield", "--list"])
+    assert "more" not in capsys.readouterr().out

@@ -57,31 +57,57 @@ trend where one exists.
   carries a ±79% margin; the report says so instead of implying precision.
 - **Provenance on every page**: survey vintage, Census table IDs, retrieval date.
 
+## Install
+
+```
+/plugin marketplace add natejswenson/claude-skills
+/plugin install city-report@claude-skills
+```
+
+Or symlink it manually:
+
+```bash
+ln -sfn "$PWD/skills/city-report/skills/city-report" ~/.claude/skills/city-report
+```
+
 ## Requirements
 
-Python 3.10+. **No third-party packages** — the runtime is stdlib only.
-`requirements-dev.txt` covers the test suite.
+Python 3.10+. **No third-party packages, no API key, no setup** — the runtime is
+stdlib only and the first command works immediately. `requirements-dev.txt`
+covers the test suite alone.
 
 ## Usage
 
-```bash
-cd skills/city-report/skills/city-report
+Run the scripts by path from wherever you want the report — `report.py` writes
+to `./reports` relative to the current directory.
 
-python3 scripts/load.py "Minneapolis, MN"        # fetch + cache + digest
-python3 scripts/query.py minneapolis-mn          # list metric keys
-python3 scripts/query.py minneapolis-mn poverty_rate --series
-python3 scripts/report.py minneapolis-mn         # render + open
-python3 scripts/report.py minneapolis-mn --section housing
+```bash
+S=~/.claude/skills/city-report
+
+python3 $S/scripts/load.py "Minneapolis, MN"     # fetch + cache + digest
+python3 $S/scripts/query.py                      # list metric keys
+python3 $S/scripts/query.py poverty_rate --series
+python3 $S/scripts/report.py                     # render + open
+python3 $S/scripts/report.py --section housing
 ```
 
-Ambiguous input is never guessed — `load.py "Springfield"` lists the candidates
-and exits rather than picking one.
+The city argument is optional whenever one city is loaded, and accepts a slug
+(`minneapolis-mn`) or a place name (`"Minneapolis, MN"`) — you never have to
+learn that slugs exist. `python3 $S/scripts/query.py --cities` lists what's
+loaded.
+
+Ambiguous input is never guessed: `load.py "Springfield"` lists the candidates
+and exits rather than picking one. Section names accept ordinary words —
+`--section commute`, `--section demographics`, `--section income` all resolve.
+
+Loading a second city is how you compare two: both digests stay available, and
+`query.py "Duluth, MN" median_household_income` reads either one.
 
 ## Tests
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 136 offline tests, 100% coverage
+pytest                                    # 156 offline tests, 100% coverage
 pytest -m live                            # 14 contract tests against the real API
 ```
 

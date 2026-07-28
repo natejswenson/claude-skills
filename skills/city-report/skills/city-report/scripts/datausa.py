@@ -87,6 +87,79 @@ def read_cache(name: str, ttl: int) -> dict | None:
         return None
 
 
+def script_cmd(name: str) -> str:
+    """A copy-pasteable command for a sibling script.
+
+    Error messages have to name a path the user can actually run. When the
+    skill is installed as a plugin the scripts live under
+    ``~/.claude/skills/city-report/`` and the user's shell is somewhere else
+    entirely, so a bare ``scripts/load.py`` is a dead end. ``~`` is folded back
+    in to keep the hint short.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+    home = os.path.expanduser("~")
+    if path.startswith(home + os.sep):
+        path = "~" + path[len(home):]
+    return f"python3 {path}"
+
+
+def list_cached() -> list[tuple[str, str]]:
+    """Every city bundle on disk, as ``(slug, display name)``, newest first.
+
+    Exists so no command ever demands a slug the user has no way to recall. A
+    slug is an implementation detail of the cache; making someone retype
+    ``minneapolis-mn`` from memory to see a report they just loaded is a poor
+    trade for the four characters it saves.
+    """
+    out = []
+    for entry in os.scandir(cache_dir()):
+        if not (entry.name.startswith("bundle-") and entry.name.endswith(".json")):
+            continue
+        slug = entry.name[len("bundle-"):-len(".json")]
+        try:
+            with open(entry.path, "r", encoding="utf-8") as fh:
+                name = json.load(fh)["place"]["name"]
+        except (OSError, ValueError, KeyError):
+            continue
+        out.append((slug, name, entry.stat().st_mtime))
+    out.sort(key=lambda row: row[2], reverse=True)
+    return [(slug, name) for slug, name, _ in out]
+
+
+def resolve_cached_slug(wanted: str | None) -> tuple[str | None, str]:
+    """Turn whatever the caller typed into a cached slug.
+
+    Accepts a slug (``minneapolis-mn``), a place name (``"Minneapolis, MN"``),
+    or nothing at all — which resolves to the only loaded city when there is
+    exactly one. Returns ``(slug, message)``; ``slug`` is ``None`` when the
+    caller needs to be told something, and ``message`` is that text.
+    """
+    cached = list_cached()
+    if not cached:
+        return None, ('No city loaded yet. Run:\n'
+                      f'  {script_cmd("load.py")} "<City, ST>"')
+
+    if wanted:
+        target = wanted.strip()
+        lowered = target.lower()
+        for slug, name in cached:
+            if lowered in (slug.lower(), name.lower()):
+                return slug, ""
+        # A slugified place name, so `report.py "Minneapolis, MN"` works too.
+        slugged = slugify(target)
+        for slug, _ in cached:
+            if slug == slugged:
+                return slug, ""
+        listing = "\n".join(f"  {slug:<28} {name}" for slug, name in cached)
+        return None, (f'"{target}" is not loaded. Cached cities:\n{listing}\n\n'
+                      f'Or load it:  {script_cmd("load.py")} "{target}"')
+
+    if len(cached) == 1:
+        return cached[0][0], ""
+    listing = "\n".join(f"  {slug:<28} {name}" for slug, name in cached)
+    return None, (f"{len(cached)} cities are loaded — name one:\n{listing}")
+
+
 def write_cache(name: str, payload: dict) -> str:
     """Write ``payload`` atomically, so a killed run can't leave a torn file."""
     path = cache_path(name)

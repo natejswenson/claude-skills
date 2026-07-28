@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Load a city's full Data USA bundle into the local cache, and print a digest.
 
-    python scripts/load.py "Minneapolis, MN"
-    python scripts/load.py "Minneapolis, MN" --refresh
-    python scripts/load.py "Springfield" --list
+    python3 scripts/load.py "Minneapolis, MN"
+    python3 scripts/load.py "Minneapolis, MN" --refresh
+    python3 scripts/load.py "Springfield" --list
 
 Every manifest query runs concurrently for the place, its state and the nation
 — one burst, ~2s cold, then cached for 24 hours. The digest printed to stdout
@@ -80,9 +80,9 @@ def digest(data: dict) -> str:
 
     unavailable = [m["label"] for m in metrics.values() if not m["available"]]
     lines.append("")
-    lines.append(f'Loaded {len(metrics) - len(unavailable)}/{len(metrics)} metrics · '
-                 f'slug: {place["slug"]}')
-    lines.append(f'Report:  python scripts/report.py {place["slug"]}')
+    lines.append(f'Loaded {len(metrics) - len(unavailable)}/{len(metrics)} metrics '
+                 f'for {place["name"]}')
+    lines.append(f'Report:  {datausa.script_cmd("report.py")} "{place["name"]}"')
     return "\n".join(lines)
 
 
@@ -104,10 +104,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list or len(candidates) > 1:
         print(f'{len(candidates)} places match "{args.city}" ({how} match):')
-        for c in candidates:
+        # A bare "Springfield" matches dozens. Showing every one buries the
+        # question being asked; the state suffix is what the user needs to add.
+        shown = candidates if args.list else candidates[:12]
+        for c in shown:
             print(f'  {c.name}   [{c.place_id}]')
+        if len(shown) < len(candidates):
+            print(f'  ... and {len(candidates) - len(shown)} more '
+                  f'(--list shows all)')
         if len(candidates) > 1:
-            print("\nRe-run with the full \"City, ST\" for the one you want.")
+            print('\nRe-run with the full "City, ST" for the one you want.')
             return 2
         return 0
 

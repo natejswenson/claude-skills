@@ -4,6 +4,45 @@ All notable changes to the city-report skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-28
+
+A UX pass over the three commands, driven by actually running the skill from a
+plugin install rather than from its own directory.
+
+### Fixed
+- **Multi-section reports were mislabelled.** `--section housing --section
+  economy` wrote a file named `…-housing.html` whose masthead read "ECONOMY
+  REPORT" — the title took whichever section sorted first. The masthead now
+  names every section it contains (`ECONOMY · WORK & COMMUTE`), and so does the
+  filename, so a two-section report can no longer overwrite a one-section one.
+- **`cd`-ing into the skill sent reports into the plugin install.** `report.py`
+  writes to `./reports` relative to the current directory, and SKILL.md was
+  telling the agent to run from the skill directory. It now instructs invoking
+  the scripts by path from wherever the user is.
+
+### Added
+- **The city argument is optional and accepts a place name.** With one city
+  loaded, `report.py` and `query.py` need no argument at all; with several, they
+  list what's loaded and ask. Both accept a slug (`minneapolis-mn`) or a name
+  (`"Minneapolis, MN"`, and even a comma-less `"Minneapolis MN"`). Slugs are a
+  cache detail and nobody should have to memorize one to see data they just
+  loaded.
+- **`query.py --cities`** lists the loaded cities, and a lone metric key
+  (`query.py poverty_rate`) is understood as a metric rather than a city.
+- **Section aliases.** `--section commute|demographics|income|homes|insurance|
+  cost of living|…` map onto the five manifest sections, so a user's own word
+  can be passed straight through instead of translated into an internal key.
+- **Ambiguous-place output is capped** at 12 candidates with an "and N more"
+  line; `--list` still shows every one. A bare "Springfield" matched 25 and
+  buried the question being asked.
+- Install instructions in the README, and `city-report@claude-skills` added to
+  the marketplace install list at the repo root.
+
+### Changed
+- The load digest now ends with `report.py "<City, ST>"` instead of exposing the
+  internal slug.
+- 156 offline tests (up from 136), still at 100% coverage.
+
 ## [0.1.0] - 2026-07-28
 
 First release. Load any US city's Census data from the Data USA API, answer

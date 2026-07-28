@@ -1,6 +1,6 @@
 {
   "name": "city-report",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pull US Census demographic, economic, housing and health data for any American city from the Data USA API, answer questions about it instantly, and generate a polished editorial HTML report. Use when the user asks for a city report, city profile, demographics, census data, population, median income, cost of living, or \"tell me about <city>, <state>\" — or wants to compare a city against its state and the nation.",
   "author": {
     "name": "Nate Swenson"

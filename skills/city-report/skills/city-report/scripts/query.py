@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Answer a question about an already-loaded city — local files only, no network.
 
-    python scripts/query.py minneapolis-mn                     # list metrics
-    python scripts/query.py minneapolis-mn poverty_rate        # one metric, full detail
-    python scripts/query.py minneapolis-mn commute_means --top 5
-    python scripts/query.py minneapolis-mn median_household_income --series
+    python3 scripts/query.py --cities                  # what's loaded
+    python3 scripts/query.py                           # list metrics
+    python3 scripts/query.py poverty_rate              # one metric, full detail
+    python3 scripts/query.py commute_means --top 5
+    python3 scripts/query.py median_household_income --series
+    python3 scripts/query.py "Duluth, MN" poverty_rate # name a city when several are loaded
+
+The city argument is optional whenever exactly one city is loaded, and accepts
+either a slug or a place name — nobody should have to retype ``minneapolis-mn``
+from memory to see data they just loaded.
 
 This exists so a follow-up question never costs a round trip. The bundle is
 already on disk and its digest is already in the agent's context, so most
@@ -17,6 +23,7 @@ import argparse
 import json
 import sys
 
+import datausa
 import fmt
 import manifest
 import report as report_mod
@@ -91,24 +98,50 @@ def describe(metric: dict, top: int | None = None, series: bool = False) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Query a cached city bundle (offline).")
-    parser.add_argument("slug", help="City slug, e.g. minneapolis-mn")
+    parser.add_argument("city", nargs="?",
+                        help='Slug (minneapolis-mn) or name ("Minneapolis, MN"). '
+                             'Omit when only one city is loaded.')
     parser.add_argument("metric", nargs="?", help="Metric key; omit to list all.")
     parser.add_argument("--top", type=int, help="Limit breakdown rows.")
     parser.add_argument("--series", action="store_true",
                         help="Include the full year-by-year series.")
     parser.add_argument("--json", action="store_true",
                         help="Emit the raw metric object as JSON.")
+    parser.add_argument("--cities", action="store_true",
+                        help="List the cities currently cached, and exit.")
     args = parser.parse_args(argv)
 
-    data = report_mod.load_bundle(args.slug)
+    if args.cities:
+        cached = datausa.list_cached()
+        if not cached:
+            print(f'No city loaded yet. Run:  '
+                  f'{datausa.script_cmd("load.py")} "<City, ST>"')
+            return 0
+        for slug, name in cached:
+            print(f"  {slug:<28} {name}")
+        return 0
 
-    if not args.metric:
+    city, metric_name = args.city, args.metric
+    # `query.py poverty_rate` is the natural thing to type when one city is
+    # loaded. Both positionals are optional, so a lone argument would otherwise
+    # be read as a city name and fail with a confusing "not loaded" error.
+    if city and not metric_name and city in manifest.METRICS_BY_KEY:
+        city, metric_name = None, city
+
+    slug, message = datausa.resolve_cached_slug(city)
+    if slug is None:
+        print(message, file=sys.stderr)
+        return 1
+
+    data = report_mod.load_bundle(slug)
+
+    if not metric_name:
         print(list_metrics(data))
         return 0
 
-    metric = data["metrics"].get(args.metric)
+    metric = data["metrics"].get(metric_name)
     if metric is None:
-        print(f'Unknown metric "{args.metric}". Known keys:', file=sys.stderr)
+        print(f'Unknown metric "{metric_name}". Known keys:', file=sys.stderr)
         print("  " + ", ".join(sorted(data["metrics"])), file=sys.stderr)
         return 1
 
