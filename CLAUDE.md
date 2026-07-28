@@ -10,7 +10,7 @@ read it before opening any PR.
 - **Never PR a feature branch straight into `main`.** The only path to `main` is a `dev → main`
   promotion PR. Feature work goes `feature/* → dev`, then `dev → main`. (If a feature PR is
   accidentally opened against `main`, retarget its base to `dev`: `gh pr edit <n> --base dev`.)
-- **Never push directly to `main`.** It is protected; the five `ci / <skill>` checks must pass and
+- **Never push directly to `main`.** It is protected; the six `ci / <skill>` checks must pass and
   a PR is required. `dev` is unprotected — direct pushes there are fine.
 - **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
   (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills, **and**
@@ -31,7 +31,7 @@ read it before opening any PR.
 feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ··· release tags cut manually
 ```
 
-- **`main`** — default + protected release branch. Required: a PR, the five `ci / <skill>` checks
+- **`main`** — default + protected release branch. Required: a PR, the six `ci / <skill>` checks
   green, no force-push, no deletion. **0 required approvals** (solo maintainer self-merges).
   **`enforce_admins: false`** — the admin keeps a direct-push break-glass path; protection is a
   discipline gate for the normal flow, not a hard wall.
@@ -79,7 +79,7 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
 2. **Land it on `dev`** — open a PR into `dev` and merge it, or push directly (dev is unprotected).
 3. **Promote: open a PR from `dev` into `main`.** The shipflow-rendered **`auto-merge dev to main`**
    workflow (`.github/workflows/dev-to-main-automerge.yml`) turns on GitHub native auto-merge, and
-   the PR **merges itself once all five `ci / <skill>` checks pass**. If any check fails, it never
+   the PR **merges itself once all six `ci / <skill>` checks pass**. If any check fails, it never
    merges.
    - **Hold a promotion** by opening the `dev → main` PR as a **draft** — `gh pr merge --auto` will
      not succeed against a draft. **Known gap (shipflow v0.2.0):** the rendered workflow's trigger
@@ -138,7 +138,7 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
   **`dev-to-main-automerge.yml`**.
 - Each caller has a **`ci` job** (Tier-1 `tools/score_skill.py` SKILL.md lint + the skill's own
   Tier-2 tests) and a **`release` job** (`needs: ci`, runs only on push to `main`).
-- **Why all five checks always pass on any PR:** the `pull_request` trigger is **un-filtered**, so
+- **Why all six checks always pass on any PR:** the `pull_request` trigger is **un-filtered**, so
   every `ci / <skill>` check reports on every PR — running real tests when that skill changed, and
   short-circuiting to success (via `dorny/paths-filter`) when it didn't. This is what makes the
   required-check set always satisfiable, so a `dev → main` PR can auto-merge no matter which skills
@@ -158,7 +158,7 @@ installs a competing ruleset. Key settings here:
   (`allow_deletions: false` in its branch protection, set by this same script). A `dev → main` PR's head is `dev`,
   so delete-on-merge would otherwise delete the long-lived `dev` branch; the deletion lock is what
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
-- `main` required checks: `ci / devlog`, `ci / resume`, `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`.
+- `main` required checks: `ci / devlog`, `ci / resume`, `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / city-report`.
   These names are the job `name:` values — **renaming a caller or its `ci` job silently
   un-requires it; update branch protection in the same change.**
 
