@@ -43,7 +43,7 @@ gh api -X PUT "repos/$REPO/branches/main/protection" --input - >/dev/null <<'JSO
 {
   "required_status_checks": {
     "strict": false,
-    "contexts": ["ci / devlog", "ci / resume", "ci / ghostwriter", "ci / ghostwriter-x", "ci / github-stats"]
+    "contexts": ["ci / devlog", "ci / resume", "ci / ghostwriter", "ci / ghostwriter-x", "ci / github-stats", "ci / city-report"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {

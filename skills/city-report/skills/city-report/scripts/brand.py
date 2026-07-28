@@ -1,0 +1,335 @@
+"""PRESS brand theme — the warm-paper editorial system shared across Nate's work.
+
+Ported from ``local-fitness``'s ``agent/branding.py`` and the stylesheet in
+``agent/visuals.py`` so a city report and a morning brief read as the same
+publication. The canonical rules, kept even under color overrides:
+
+* flat cream paper — never gradiented, never textured;
+* ink rules carry all structure — **no rounded corners, no shadows, no fills**;
+* display sans set 800–900 with tight tracking for structure, serif italic for
+  commentary, mono for data and labels;
+* **one** loud accent, used once or twice in a document — on the single most
+  notable figure, never as decoration.
+
+Like local-fitness, the theme is local-overridable: point
+``CITY_REPORT_BRAND_FILE`` at a JSON file and its keys deep-merge over the
+default. A missing or broken brand file must never break a render — any load
+error falls back to the default silently, because a report that fails to
+generate is worse than one in the wrong colors.
+
+**On chart color.** The ink ramp below is a *sequential* ramp — monotonic in
+lightness — and is only ever used to encode magnitude, with every mark directly
+labelled. It is deliberately never used as a categorical palette: run through
+``dataviz``'s ``validate_palette.js`` it fails the chroma floor and the
+normal-vision adjacent-pair floor, which is the expected result for a
+near-neutral ramp and exactly why identity here comes from labels rather than
+hue. ``FILL_STEPS`` is capped at the three steps that clear 3:1 contrast on
+cream; anything needing more categories uses ranked bars, which need no
+categorical encoding at all.
+"""
+from __future__ import annotations
+
+import copy
+import json
+import os
+from pathlib import Path
+
+_BRAND_FILE_ENV = "CITY_REPORT_BRAND_FILE"
+
+DEFAULT_THEME: dict = {
+    "name": "press",
+    "colors": {
+        # Warm cream paper — flat, never gradiented or textured.
+        "paper": "#F5F0E6",
+        # Near-black ink: text, headlines, and every structural rule.
+        "ink": "#181510",
+        # Muted secondary text (the serif "commentary" voice's color).
+        "dim": "#6E675C",
+        # THE one loud color. The single most notable figure, and the stamp.
+        "accent": "#E8501F",
+        # Rules are ink — named separately so an override can soften them
+        # without touching text color.
+        "rule": "#181510",
+        # Mid ink step, for the second segment of a two-part stacked bar.
+        "ink_mid": "#4A423A",
+    },
+    "fonts": {
+        "display_stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif",
+        "serif_stack": "'New York', ui-serif, Georgia, 'Times New Roman', serif",
+        "mono_stack": "ui-monospace, 'SF Mono', Menlo, monospace",
+    },
+    "identity": {
+        # Typographic stamp (rotated square, accent border + initials).
+        "stamp": "NS",
+        # Masthead eyebrow, tracked caps: "{brand_line} · CITY PROFILE · date".
+        "brand_line": "DATA USA",
+        # Right-aligned dim byline in the masthead.
+        "byline": "datausa.io · US Census ACS",
+    },
+}
+
+#: Sequential fill steps, dark to light. Capped at three because the lighter
+#: extensions of this ramp drop under 3:1 against cream — they would need
+#: "relief" (visible labels or a table view) to be legal, and a fill nobody can
+#: see is not worth the exception. Magnitude only; never identity.
+FILL_STEPS = ("#181510", "#4A423A", "#6E675C")
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge ``override`` into a copy of ``base``.
+
+    Non-dict values replace; unknown keys are kept, so a brand file written
+    against a newer default still loads against an older one.
+    """
+    out = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = _deep_merge(out[key], value)
+        else:
+            out[key] = copy.deepcopy(value)
+    return out
+
+
+def load_theme() -> dict:
+    """The active theme: ``DEFAULT_THEME`` merged with ``CITY_REPORT_BRAND_FILE``.
+
+    Read per render rather than cached, so editing the brand file takes effect
+    on the next report without restarting anything.
+    """
+    theme = copy.deepcopy(DEFAULT_THEME)
+    brand_file = os.environ.get(_BRAND_FILE_ENV)
+    if brand_file:
+        try:
+            override = json.loads(Path(brand_file).expanduser().read_text(encoding="utf-8"))
+            if isinstance(override, dict):
+                theme = _deep_merge(theme, override)
+        except (OSError, ValueError):
+            pass
+    return theme
+
+
+def stylesheet(theme: dict) -> str:
+    """The report stylesheet.
+
+    Structure comes from ink rules and whitespace — there is not a single
+    ``border-radius``, ``box-shadow`` or gradient in here, and that is the
+    brand, not an oversight. Tones and emphasis are typographic: weight,
+    italic, tracking and the dim/ink split do the work that color does
+    elsewhere.
+    """
+    c = theme["colors"]
+    f = theme["fonts"]
+    paper, ink, dim, accent, rule = (
+        c["paper"], c["ink"], c["dim"], c["accent"], c["rule"])
+    return f"""
+:root {{ color-scheme: light; }}
+* {{ box-sizing: border-box; }}
+html {{ background: {paper}; }}
+body {{
+  font-family: {f["display_stack"]};
+  color: {ink};
+  background: {paper};
+  font-size: 16px;
+  line-height: 1.45;
+  margin: 0;
+  padding: 2.2rem 1.5rem 4rem;
+}}
+main {{ max-width: 60rem; margin: 0 auto; }}
+
+/* Masthead — heavy ink rule, rotated accent stamp, tracked-caps mono eyebrow,
+   dim byline right. The editorial opening: no banner fills, no pills. */
+header.masthead {{ border-top: 8px solid {rule}; padding-top: 0.6rem; margin-bottom: 1.6rem; }}
+div.masthead-row {{ display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }}
+span.stamp {{
+  display: inline-block;
+  border: 2.5px solid {accent};
+  color: {accent};
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.22em 0.34em;
+  transform: rotate(-4deg);
+}}
+span.eyebrow {{
+  font-family: {f["mono_stack"]};
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}}
+span.byline {{
+  margin-left: auto;
+  font-family: {f["mono_stack"]};
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: {dim};
+}}
+header.masthead h1 {{
+  font-size: clamp(2rem, 6vw, 3.1rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  margin: 0.5rem 0 0.2rem;
+}}
+p.standfirst {{
+  font-family: {f["serif_stack"]};
+  font-style: italic;
+  color: {dim};
+  font-size: 1.05rem;
+  margin: 0.2rem 0 0;
+  max-width: 46rem;
+}}
+
+/* Stat strip — PRESS numerals: big 900 ink figures over tiny tracked-caps dim
+   labels, ruled above and below. No tiles, no fills, no radii. */
+section.stat-strip {{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0 1.4rem;
+  border-top: 2px solid {rule};
+  border-bottom: 2px solid {rule};
+  margin: 1.6rem 0 2.2rem;
+  padding: 0.9rem 0 1rem;
+}}
+div.stat .value {{
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  display: block;
+}}
+div.stat.focal .value {{ color: {accent}; }}
+div.stat .label {{
+  display: block;
+  margin-top: 0.25rem;
+  font-family: {f["mono_stack"]};
+  font-size: 0.6rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: {dim};
+}}
+div.stat .bench {{
+  display: block;
+  margin-top: 0.35rem;
+  font-family: {f["mono_stack"]};
+  font-size: 0.66rem;
+  color: {dim};
+  line-height: 1.5;
+}}
+span.moe {{ font-family: {f["mono_stack"]}; font-size: 0.62rem; color: {dim}; letter-spacing: 0.03em; }}
+
+/* Sections — ruled editorial blocks. */
+section.report-section {{ border-top: 2px solid {rule}; padding-top: 0.7rem; margin-bottom: 2.6rem; }}
+section.report-section > h2 {{
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.15rem;
+}}
+h3.block-title {{
+  font-family: {f["mono_stack"]};
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: {ink};
+  border-bottom: 1px solid {dim};
+  padding-bottom: 0.3rem;
+  margin: 1.6rem 0 0.9rem;
+}}
+div.block {{
+  /* Blocks flow down one column and into the next, so a short block never
+     forces its neighbour's row taller. Must not split across the column
+     break — a chart severed from its own heading is worse than a ragged
+     column bottom. */
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 0.5rem;
+  padding-bottom: 1.1rem;
+}}
+p.caption {{
+  font-family: {f["serif_stack"]};
+  font-style: italic;
+  color: {dim};
+  font-size: 0.92rem;
+  margin: 0.5rem 0 0;
+}}
+/* Two editorial columns, packed in Python (report._pack_columns) rather than
+   by CSS. Grid rows stretch to the tallest cell, and CSS multi-column can only
+   balance by splitting the flow — neither can keep a section balanced when one
+   block is three times the height of its neighbours. Flex with two pre-packed
+   columns puts each block exactly where the packer decided. */
+div.cols {{ display: flex; gap: 0 2.4rem; align-items: flex-start; }}
+div.col {{ flex: 1 1 0; min-width: 0; }}
+@media (max-width: 46rem) {{ div.cols {{ display: block; }} }}
+h3.block-title:first-child {{ margin-top: 0.4rem; }}
+div.col > div.block:first-child > h3.block-title {{ margin-top: 0.4rem; }}
+
+/* Charts scroll inside their own box rather than widening the page. */
+div.chart {{ overflow-x: auto; margin: 0.2rem 0 0; }}
+svg {{ display: block; max-width: 100%; height: auto; }}
+
+/* Data tables — mono voice, ink rules, never zebra fills. */
+table.data {{
+  width: 100%;
+  border-collapse: collapse;
+  font-family: {f["mono_stack"]};
+  font-size: 0.78rem;
+  margin: 0.7rem 0 0;
+}}
+table.data th {{
+  text-align: left;
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-bottom: 2px solid {rule};
+  padding: 0.3em 0.6em 0.3em 0;
+}}
+table.data td {{ border-bottom: 1px solid {dim}; padding: 0.35em 0.6em 0.35em 0; }}
+table.data td.num, table.data th.num {{ text-align: right; padding-right: 0; }}
+table.data tr:last-child td {{ border-bottom: none; }}
+
+details.table-view {{ margin-top: 0.6rem; }}
+details.table-view > summary {{
+  font-family: {f["mono_stack"]};
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: {dim};
+  cursor: pointer;
+}}
+
+p.unavailable {{
+  font-family: {f["mono_stack"]};
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: {dim};
+  border-left: 2px solid {dim};
+  padding-left: 0.7rem;
+  margin: 0.6rem 0 0;
+}}
+p.wide-margin {{
+  font-family: {f["serif_stack"]};
+  font-style: italic;
+  font-size: 0.85rem;
+  color: {accent};
+  margin: 0.5rem 0 0;
+}}
+
+footer.provenance {{
+  border-top: 2px solid {rule};
+  padding-top: 0.8rem;
+  margin-top: 3rem;
+  font-family: {f["mono_stack"]};
+  font-size: 0.66rem;
+  line-height: 1.7;
+  color: {dim};
+  letter-spacing: 0.03em;
+}}
+footer.provenance strong {{ color: {ink}; font-weight: 700; }}
+
+@media print {{
+  body {{ padding: 0; font-size: 10.5pt; }}
+  section.report-section {{ break-inside: avoid; }}
+}}
+"""
