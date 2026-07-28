@@ -64,6 +64,25 @@ BUDGETS = {
     # horizontal is judged WARN-only (two-column layouts vary legitimately).
     "empty_band": {"warn": 100, "fail": 160},
     "empty_band_x": {"warn": 300},
+    # Dead space INSIDE a painted panel, as a fraction of the panel's content
+    # width. Block children are full-width by default, so empty_band_x (which
+    # measures box edges) reads ~0 and never fires; this measures where the ink
+    # actually stops. Only painted panels are judged — ragged-right type on bare
+    # paper is correct editorial rag, not a defect.
+    #
+    # Calibration: .term is 1000px of inner width at 18px mono (~92 chars), but
+    # term.max_chars caps rows at 64 — so a fully budget-compliant terminal is
+    # ALREADY ~31% ragged. These thresholds therefore sit above that floor and
+    # only catch panels emptier than the budget can explain. The per-card
+    # actionable check is term-underfilled (below), which measures rows against
+    # the budget they are allowed to fill.
+    "panel_rag": {"warn": 0.40, "fail": 0.55},
+    # Widest .term row as a fraction of term.max_chars. Below this the author
+    # left usable width unused — add substance rather than float a wide panel
+    # over a few short lines. Only judged once the panel is big enough to be the
+    # HERO: card-language.md sizes an accent terminal at ≤8 rows / ≤42 chars, and
+    # holding a short accent block to the 64-char hero budget is a false alarm.
+    "term_fill": {"warn": 0.65, "hero_rows": 6},
     # Ramp trendline geometry: circle cy = baseline − bar height.
     "ramp": {"baseline": 498},
     # h1 wrap: landscape headlines are wide; 3 lines warns, 4 fails.
@@ -149,7 +168,61 @@ def static_checks(html: str, path: Path | str | None = None) -> list[Finding]:
                     f"template placeholder copy survives: {s!r}",
                 ))
         findings.extend(_term_checks(html))
+        findings.extend(_capture_fidelity_checks(html, path))
     findings.extend(_carousel_checks(html))
+    return findings
+
+
+# A row that honestly announces its own truncation, e.g. "… 18 more rules".
+_TRUNC_ROW = re.compile(r"^(?:[…]|\.{3})?\s*(?:\d+\s+more\b.*|[…]|\.{3})$")
+# Shell prompt glyphs: the card may restyle the prompt without that being an edit.
+_PROMPT_GLYPH = re.compile(r"^[❯>$#%]\s*")
+
+
+def _norm_term_line(line: str) -> str:
+    """Whitespace-insensitive, prompt-glyph-insensitive form of a terminal row.
+
+    Real CLI output is tab-aligned and cards are space-aligned, so alignment
+    whitespace must not count as a difference — but the tokens themselves must.
+    """
+    return _PROMPT_GLYPH.sub("", " ".join(line.split())).strip()
+
+
+def _capture_fidelity_checks(html: str, path: Path | str | None) -> list[Finding]:
+    """When a real capture exists at `<slug>.source.txt`, every `.term` row must
+    be a line from it, verbatim.
+
+    The Real-output contract allows condensing by cutting WHOLE rows, never by
+    editing a row's contents — so an exact per-line match (modulo alignment
+    whitespace) is the enforceable form of "transcription, not invention". A row
+    that announces its own truncation is exempt.
+    """
+    findings: list[Finding] = []
+    if path is None:
+        return findings
+    capture = Path(path).with_suffix(".source.txt")
+    if not capture.exists():
+        return findings
+
+    source = {
+        _norm_term_line(line)
+        for line in capture.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    rows = [
+        html_mod.unescape(_TAG.sub("", m.group(1)))
+        for m in _TERM_ROW.finditer(html)
+    ]
+    for i, row in enumerate(rows, start=1):
+        norm = _norm_term_line(row)
+        if not norm or _TRUNC_ROW.match(norm) or norm in source:
+            continue
+        findings.append(Finding(
+            "FAIL", "term-not-in-capture",
+            f"row {i} is not a line from {capture.name}: {norm!r} — the terminal "
+            "must transcribe the real session; condense by cutting whole rows, "
+            "never by editing one (re-run the command if you want it shorter)",
+        ))
     return findings
 
 
@@ -197,11 +270,22 @@ def _term_checks(html: str) -> list[Finding]:
             "table, verdict)",
         ))
     widest = max(rows, key=lambda r: len(r.rstrip()))
-    if len(widest.rstrip()) > max_chars:
+    widest_len = len(widest.rstrip())
+    if widest_len > max_chars:
         findings.append(Finding(
             "WARN", "term-width",
-            f"a .tl row is {len(widest.rstrip())} chars (>{max_chars}) — "
+            f"a .tl row is {widest_len} chars (>{max_chars}) — "
             "it will shrink or clip at feed size; tighten the widest row",
+        ))
+    elif (
+        len(rows) >= BUDGETS["term_fill"]["hero_rows"]
+        and widest_len < BUDGETS["term_fill"]["warn"] * max_chars
+    ):
+        findings.append(Finding(
+            "WARN", "term-underfilled",
+            f"the widest .tl row is only {widest_len} of the {max_chars} chars "
+            "the panel is sized for — a wide dark panel over short lines reads "
+            "as a hole; carry more of the real output or drop the terminal",
         ))
     return findings
 
@@ -385,6 +469,44 @@ LINT_JS = r"""
     if (xGap > B.empty_band_x.warn)
       push('WARN', 'empty-band-x', Math.round(xGap) + 'px of dead horizontal space right of ' +
         'the widest block — landscape wants hero-left/support-right, not a thin column');
+  }
+
+  // 4b. panel-rag — dead space inside a PAINTED panel, measured to the ink.
+  //     A terminal or tile block whose text stops well short of its own right
+  //     edge reads as a hole in the design; on bare paper the same rag is fine.
+  const painted = el => {
+    const bg = getComputedStyle(el).backgroundColor || '';
+    const m = bg.match(/rgba?\(([^)]+)\)/);
+    if (!m) return false;
+    const parts = m[1].split(',').map(s => parseFloat(s));
+    return parts.length < 4 || parts[3] > 0.5;      // opaque enough to read as a panel
+  };
+  for (const el of canvas.children) {
+    if (!visible(el) || !painted(el)) continue;
+    const es = getComputedStyle(el), er = el.getBoundingClientRect();
+    const padL = parseFloat(es.paddingLeft), padR = parseFloat(es.paddingRight);
+    const innerW = el.clientWidth - padL - padR;
+    if (innerW <= 0) continue;
+    const contentRight = er.left + el.clientLeft + el.clientWidth - padR;
+    let ink = 0;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (!node.nodeValue.trim()) continue;
+      const rg = document.createRange(); rg.selectNodeContents(node);
+      const rr = rg.getBoundingClientRect();
+      if (rr.width && rr.right > ink) ink = rr.right;
+    }
+    if (!ink) continue;                              // no text: not a rag problem
+    const frac = (contentRight - ink) / innerW;
+    const pct = Math.round(frac * 100);
+    if (frac > B.panel_rag.fail)
+      push('FAIL', 'panel-rag', name(el) + ' is ' + pct + '% empty on the right (' +
+        Math.round(contentRight - ink) + 'px of ' + Math.round(innerW) +
+        'px) — the panel is far wider than its content');
+    else if (frac > B.panel_rag.warn)
+      push('WARN', 'panel-rag', name(el) + ' is ' + pct + '% empty on the right — ' +
+        'widen the content or narrow the panel');
   }
 
   // 5. count-budget — per-template element budgets (from BUDGETS).
