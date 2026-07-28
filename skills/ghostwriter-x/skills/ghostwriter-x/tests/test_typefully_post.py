@@ -286,7 +286,9 @@ def upload_env(monkeypatch, tmp_path, statuses, create=None, put_status=200, put
         return next(states)
 
     def fake_urlopen(req):
-        api_calls.append(("PUT", req.full_url, req.data))
+        # Record headers too: the presigned-S3 PUT is signature-sensitive, so a
+        # test that only checks url+body cannot catch a wrong Content-Type.
+        api_calls.append(("PUT", req.full_url, req.data, dict(req.headers)))
         if put_error:
             raise put_error
         return FakeResp(status=put_status)
@@ -304,6 +306,20 @@ def test_upload_media_happy_path_polls_until_ready(monkeypatch, tmp_path):
     assert tp.upload_media(ENV, "77", str(img)) == "m-1"
     put = next(c for c in calls if c[0] == "PUT")
     assert put[1] == "https://s3/x" and put[2] == b"pngbytes"
+
+
+def test_upload_media_put_sends_empty_content_type(monkeypatch, tmp_path):
+    """Regression: Typefully hands back an S3 SigV2 presigned URL signed with an
+    EMPTY Content-Type. Sending a real one (image/png) — or omitting the header
+    and letting urllib substitute application/x-www-form-urlencoded — changes
+    S3's StringToSign and the upload dies with 403 SignatureDoesNotMatch. This
+    shipped broken because the old test asserted only url+body, never headers.
+    """
+    img, calls = upload_env(monkeypatch, tmp_path, [{"status": "ready"}])
+    tp.upload_media(ENV, "77", str(img))
+    headers = next(c for c in calls if c[0] == "PUT")[3]
+    ctype = {k.lower(): v for k, v in headers.items()}.get("content-type")
+    assert ctype == "", f"presigned PUT must send an empty Content-Type, got {ctype!r}"
 
 
 def test_upload_media_bad_create_response(monkeypatch, tmp_path):
@@ -486,8 +502,9 @@ def test_main_publish_happy_path(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(tp, "upload_media", lambda env, ss, p: "m-1")
     captured = {}
 
-    def fake_publish(env, ss, payload):
+    def fake_publish(env, ss, payload, draft_only=False):
         captured["payload"] = payload
+        captured["draft_only"] = draft_only
         return {"id": 9, "publish_state": "finished",
                 "x_published_url": "https://x.com/n/status/1"}
 
@@ -504,6 +521,63 @@ def test_main_publish_happy_path(monkeypatch, tmp_path, capsys):
 
 def test_main_publish_no_url_prints_private(monkeypatch, capsys):
     monkeypatch.setattr(tp, "publish_draft",
-                        lambda env, ss, p: {"id": 9, "private_url": "purl"})
+                        lambda env, ss, p, draft_only=False: {"id": 9,
+                                                              "private_url": "purl"})
     run_main(monkeypatch, ["--text", "quick note", "--allow-unverified"])
     assert "purl" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------ draft-only
+def test_build_payload_draft_only_omits_publish_at():
+    """draft_only must NOT set publish_at — that field is what makes Typefully
+    push it live, and the whole point of the fallback is to park it."""
+    payload = tp.build_payload(["one"], {}, "slug", draft_only=True)
+    assert "publish_at" not in payload
+    assert payload["draft_title"] == "slug"
+
+
+def test_publish_draft_draft_only_returns_without_polling(monkeypatch):
+    calls = []
+
+    def fake_api(env, method, path, payload=None, context=""):
+        calls.append(method)
+        return {"id": 5, "private_url": "purl"}
+
+    monkeypatch.setattr(tp, "api_request", fake_api)
+    draft = tp.publish_draft(ENV, "77", {}, draft_only=True)
+    assert draft["private_url"] == "purl"
+    assert calls == ["POST"], "draft-only must not poll for a publish that never comes"
+
+
+def test_main_draft_only_does_not_write_publish_log(monkeypatch, tmp_path, capsys):
+    """A parked draft never went live, so it must stay out of published.jsonl —
+    that log is the outcome loop's record of real posts."""
+    draft = tmp_path / "slug.md"
+    draft.write_text("one", encoding="utf-8")
+    log = tmp_path / "published.jsonl"
+    monkeypatch.setattr(tp, "PUBLISHED_LOG", log)
+    monkeypatch.setattr(tp, "enforce_source_gate", lambda args: None)
+    monkeypatch.setattr(
+        tp, "publish_draft",
+        lambda env, ss, p, draft_only=False: {"id": 9, "private_url": "purl"},
+    )
+    run_main(monkeypatch, ["--file", str(draft), "--draft-only"])
+    out = capsys.readouterr().out
+    assert "NOT published" in out and "purl" in out
+    assert not log.exists()
+
+
+def test_api_request_403_url_block_explains_recovery(monkeypatch):
+    """The X-policy URL block is atomic and pre-publish, so the message must say
+    a retry is safe and name both ways out."""
+    body = (b'{"error":{"code":"FORBIDDEN","message":"This is not allowed by X '
+            b'policy. Direct publishing of X drafts containing URLs is blocked."}}')
+
+    def boom(req):
+        raise http_error(403, body=body)
+
+    monkeypatch.setattr(tp.urllib.request, "urlopen", boom)
+    with pytest.raises(SystemExit) as e:
+        tp.api_request(ENV, "POST", "/drafts", {"a": 1}, context="draft create")
+    msg = str(e.value)
+    assert "retry is safe" in msg and "--draft-only" in msg

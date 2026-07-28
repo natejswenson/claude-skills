@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import mimetypes
 import sys
 import time
 import urllib.error
@@ -136,6 +135,19 @@ def api_request(
                 )
             sys.exit(f"ERROR: Typefully rate limit hit on {context or path}{when}. "
                      "Try again later.")
+        if e.code == 403 and "publishing of x drafts containing urls" in body.lower():
+            sys.exit(
+                "ERROR: Typefully refused to direct-publish this thread — X policy "
+                "blocks API publishing of drafts it reads as containing a URL.\n"
+                "Nothing was posted; the draft was never created, so a retry is "
+                "safe (no double-post risk).\n"
+                "Two ways forward:\n"
+                "  1. Reword the token it is reading as a hostname. Dotted config "
+                "keys are the usual culprit (`lint.select`, `[tool.ruff.lint]`); a "
+                "bare filename like `ruff.toml` is fine. Then re-run.\n"
+                "  2. Re-run with --draft-only to push the exact text to Typefully "
+                "as an unpublished draft, then publish it from their UI."
+            )
         print(f"ERROR: {context or path} returned HTTP {e.code}", file=sys.stderr)
         print(body, file=sys.stderr)
         sys.exit(1)
@@ -283,8 +295,12 @@ def upload_media(env: dict, social_set: str, path: str) -> str:
 
     blob = Path(path).read_bytes()
     req = urllib.request.Request(upload_url, data=blob, method="PUT")
-    ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
-    req.add_header("Content-Type", ctype)
+    # Typefully hands back an S3 *SigV2* presigned URL signed with an EMPTY
+    # Content-Type. Sending a real one (image/png) puts a different value in
+    # S3's StringToSign and the PUT fails with 403 SignatureDoesNotMatch.
+    # Set the header explicitly to "" so urllib doesn't substitute its own
+    # application/x-www-form-urlencoded default, which fails the same way.
+    req.add_header("Content-Type", "")
     try:
         with urllib.request.urlopen(req) as resp:
             if resp.status not in (200, 201, 204):
@@ -314,23 +330,38 @@ def upload_media(env: dict, social_set: str, path: str) -> str:
 
 
 # -------------------------------------------------------------------- publish
-def build_payload(tweets: list[str], media_ids: dict[int, list[str]], title: str) -> dict:
+def build_payload(
+    tweets: list[str],
+    media_ids: dict[int, list[str]],
+    title: str,
+    draft_only: bool = False,
+) -> dict:
     posts = []
     for i, tweet in enumerate(tweets, 1):
         post: dict = {"text": tweet}
         if media_ids.get(i):
             post["media_ids"] = media_ids[i]
         posts.append(post)
-    return {
+    payload = {
         "platforms": {"x": {"enabled": True, "posts": posts}},
         "draft_title": title,
-        "publish_at": "now",
         "share": False,
     }
+    # Omitting publish_at entirely leaves it parked in Typefully as an
+    # unpublished draft — the fallback when X policy blocks direct publishing.
+    if not draft_only:
+        payload["publish_at"] = "now"
+    return payload
 
 
-def publish_draft(env: dict, social_set: str, payload: dict) -> dict:
-    """Create the draft with publish_at: now, then poll until it's live."""
+def publish_draft(
+    env: dict, social_set: str, payload: dict, draft_only: bool = False
+) -> dict:
+    """Create the draft with publish_at: now, then poll until it's live.
+
+    With draft_only, create it and return immediately — there is nothing to
+    poll for, because Typefully will not publish it until a human does.
+    """
     draft = api_request(
         env,
         "POST",
@@ -341,6 +372,8 @@ def publish_draft(env: dict, social_set: str, payload: dict) -> dict:
     draft_id = draft.get("id") or draft.get("draft_id")
     if not draft_id:
         sys.exit(f"ERROR: unexpected draft response: {draft}")
+    if draft_only:
+        return draft
 
     deadline = time.time() + PUBLISH_TIMEOUT
     while True:
@@ -466,6 +499,14 @@ def main() -> None:
         help="HUMAN-ONLY escape hatch: publish without the source-verification "
         "gate. The agent must never set this to get past the gate.",
     )
+    ap.add_argument(
+        "--draft-only",
+        action="store_true",
+        help="Create the draft in Typefully without publishing it, and print its "
+        "URL. The fallback when X policy blocks direct API publishing (e.g. text "
+        "read as containing a URL); you publish it from Typefully's UI. Still "
+        "runs the source gate.",
+    )
     args = ap.parse_args()
 
     env = load_env(ENV_PATH)
@@ -504,9 +545,19 @@ def main() -> None:
         for i, pairs in media_map.items()
     }
     payload = build_payload(
-        tweets, media_ids, Path(args.file).stem if args.file else "post"
+        tweets,
+        media_ids,
+        Path(args.file).stem if args.file else "post",
+        draft_only=args.draft_only,
     )
-    draft = publish_draft(env, social_set, payload)
+    draft = publish_draft(env, social_set, payload, draft_only=args.draft_only)
+
+    if args.draft_only:
+        # Not published, so it must NOT go in the publish log — that log is the
+        # outcome loop's record of things that actually went live.
+        print("Draft created in Typefully. NOT published — publish it from their UI.")
+        print(f"Draft: {draft.get('private_url', '(check typefully.com)')}")
+        return
 
     print("Published to X via Typefully.")
     url = draft.get("x_published_url") or ""
