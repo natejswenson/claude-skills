@@ -87,5 +87,19 @@
       "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
     }
   ],
-  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"]
+  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / shipflow` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "dogfood-rendered-workflow-golden",
+      "kind": "golden",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/dogfood-shipflow.json",
+        "evals/baseline/dogfood-dev-to-main-automerge.yml"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "This monorepo dogfoods shipflow on itself, so .github/shipflow.json and the workflow rendered from it are a genuine input/output pair from a real `apply` run, and that config's renderedTemplateHashes is the receipt shipflow wrote at the time. The baseline re-runs config -> params -> render and asserts byte equality against the frozen golden, that the golden's sha256 still equals the recorded receipt, and that the frozen golden still equals the repo's live committed workflow (so the fixture cannot quietly go stale). Byte-exactness is correct here and nowhere else in the baseline suite: for a workflow file, one changed character is a behavior change to the repo's merge automation. The paired negative assertions (quote injection rejected, missing param throws, merge method actually reaches the output) stop the golden from passing while the validators rot -- the missing-param one found a real bug on its first run: a present-but-undefined param rendered the literal string 'undefined' into `branches: [...]`, installing a workflow that could never fire."
+    }
+  ]
 }

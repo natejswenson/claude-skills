@@ -1,0 +1,1 @@
+Claude Code v2.1.214 fixed a real bug: Edit(src/**) was auto-approving writes to any src/ directory in the tree, not just your repo root. If you scope Edit permissions in CI, re-test your rules today. It's a failure mode you'd never catch by reading the rule.

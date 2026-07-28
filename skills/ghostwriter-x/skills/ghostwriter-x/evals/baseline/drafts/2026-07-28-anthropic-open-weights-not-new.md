@@ -1,0 +1,1 @@
+Anthropic's open-weights post says they never wanted a ban. That was already their position. It's a clarification issued after days of criticism, not a new stance. If you're shipping agents, nothing about how you evaluate a model changed today.

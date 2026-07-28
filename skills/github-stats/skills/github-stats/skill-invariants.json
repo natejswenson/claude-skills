@@ -1,0 +1,60 @@
+{
+  "_comment": "Load-bearing guardrails for github-stats. The behavior that protects the user lives in SKILL.md prose, not in the bash: gh-stats.sh will happily print numbers, and nothing in it stops an agent recomputing figures by hand or creating a repository unprompted. tools/score_skill.py is skill-agnostic and scores structure, not content, so a deleted rule scores 100 and ships. tests/test_skill_contract.py asserts each pattern below still matches.",
+  "prose": [
+    {
+      "id": "never-compute-by-hand",
+      "file": "SKILL.md",
+      "pattern": "never compute stats by hand\\s*\\n?\\s*from raw API JSON",
+      "rationale": "The whole value of this skill is that one deterministic script produces every number, so two runs agree and the figures match the original CLI. An agent that reads raw API JSON and does its own arithmetic produces plausible numbers that silently disagree with the script — indistinguishable from correct output to the user."
+    },
+    {
+      "id": "no-recompute-or-invent",
+      "file": "SKILL.md",
+      "pattern": "Do not invent or recompute numbers",
+      "rationale": "The Rules-section restatement of the above. Both exist because this is the single easiest rule for an agent to rationalise away when the script's output does not answer the exact question asked."
+    },
+    {
+      "id": "metric-definitions-match-original",
+      "file": "SKILL.md",
+      "pattern": "match the original CLI.*Don't \"fix\" them silently",
+      "rationale": "Commits are bounded per repo and PR/issue close rates are ESTIMATED from a <=100-item sample. Both look like bugs to a well-meaning reader. 'Fixing' either silently breaks parity with github-stats-cli, which is the only external reference this skill can be checked against (eval/run_eval.py)."
+    },
+    {
+      "id": "never-auto-create-repo",
+      "file": "SKILL.md",
+      "pattern": "Never auto-create",
+      "rationale": "Creating a repository is the only state-changing, outward-facing action in the skill. This prose is the only thing standing between a casual 'set me up a repo for this' and an unconfirmed public repository on the user's account."
+    },
+    {
+      "id": "confirm-repo-details-first",
+      "file": "SKILL.md",
+      "pattern": "Always confirm the\\s*\\n?\\s*name, visibility, and description",
+      "rationale": "Visibility in particular: defaulting to public when the user assumed private is an irreversible disclosure, not a cosmetic mistake."
+    },
+    {
+      "id": "auth-check-before-use",
+      "file": "SKILL.md",
+      "pattern": "gh auth status",
+      "rationale": "Every script path shells out to `gh`. Without the auth pre-check the failure surfaces as a confusing empty result or a raw CLI error rather than the actionable 'run gh auth login'."
+    }
+  ],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / github-stats` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "assembled-overview-golden",
+      "kind": "golden",
+      "test": "tests/test_baseline_overview.py",
+      "fixtures": [
+        "evals/baseline/overview-octocat.golden.json",
+        "evals/baseline/fixtures/user.json",
+        "evals/baseline/fixtures/repos.json",
+        "evals/baseline/fixtures/commits.json",
+        "evals/baseline/fixtures/pr_search.json",
+        "evals/baseline/fixtures/issue_search.json",
+        "evals/baseline/bin/gh"
+      ],
+      "update_command": "PATH=\"$PWD/evals/baseline/bin:$PATH\" bash scripts/gh-stats.sh overview octocat --json | jq -S . > evals/baseline/overview-octocat.golden.json",
+      "rationale": "tests/test_gh_stats.py drives each compute_* function in isolation, so the aggregation math is covered; nothing covered collect_overview, the assembly of those pieces into the object the user actually sees. A metric wired to the wrong collector, a renamed key or a dropped section passes every existing test. evals/baseline/bin/gh stubs the gh CLI against frozen fixtures so the REAL script runs end to end with no network or auth — the live numeric-parity eval (eval/run_eval.py) needs network and a checkout of the original CLI, so it can never gate a release. Paired 'derived' assertions re-check the golden against its source fixtures (stars = sum of stargazers_count, commits = sum of per-repo counts, and the two DIFFERENT pct_closed estimators) so a hand-edited golden cannot make the comparison self-fulfilling, and the stub is asserted to exit non-zero on any endpoint it does not model rather than returning empty."
+    }
+  ]
+}
