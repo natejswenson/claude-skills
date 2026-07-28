@@ -30,7 +30,7 @@ Neither failure looks like a failure. A skill that trusts the docs reports
 
 **What this skill does:** population comes from `acs_ygr_race_with_hispanic_5`;
 median home value is interpolated from `acs_ygo_housing_value_bucket_5` and
-labelled as an estimate. A `pytest -m live` contract test asserts all 21 metrics
+labelled as an estimate. A `pytest -m live` contract test asserts all 22 metrics
 return rows, so the next cube to die is caught by CI rather than by a reader.
 
 ## 2. Un-drilled dimensions are silently summed
@@ -172,7 +172,7 @@ margins by the Census rule `MOE_total = sqrt(Σ MOE_i²)`, and flags anything ov
 ## Performance
 
 Not a constraint. 38 concurrent queries completed in **1.17s**; a full city load
-(21 metrics × 3 geographies, de-duplicated to 18 queries each) runs in about
+(22 metrics × 3 geographies, de-duplicated to 18 queries each) runs in about
 2 seconds cold and is then cached for 24 hours.
 
 ## Undocumented endpoint, deliberately unused
