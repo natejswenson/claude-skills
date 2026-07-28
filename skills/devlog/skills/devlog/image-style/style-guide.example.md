@@ -82,14 +82,38 @@ Never leave the band empty under a one-line headline. Whitespace is part of the 
 only when it's *between* composed elements — a gap with nothing on either side of it is
 just a hole.
 
-**Two named composition slots** — pick one per post:
+**Five named composition slots** — pick one per post:
 - **Single centered hero** — one freehand mechanism, nothing else, inside the hero zone.
 - **Two-node before/after** — a left node, a right node, and a connecting line, all
   three freehand shapes (never catalog icons) — for a post about a transformation or a
   fix.
+- **Axis / timeline** — one horizontal (or vertical) run with marks, labels, and events
+  positioned along it. For anything about *ordering*, *timing*, or *a race*: what fired
+  when, what arrived late, what overlapped. The marks carry the meaning, not boxes.
+- **Nested / containment** — one shape inside another, or a stack of layers, showing
+  what wraps what, what's isolated from what, or where a boundary sits. For posts about
+  scope, sandboxing, encapsulation, or a thing living inside a thing.
+- **Field / distribution** — many small marks whose *arrangement* is the point: a
+  scatter, a cluster with an outlier, a grid with holes, a shape emerging from noise.
+  For posts about many items, sampling, coverage, or one anomaly among many.
 
 These are placement/proportion guidance, not literal templates — the actual shapes
 inside each slot are still freehand per post.
+
+**Do not default to two-node.** It is the easiest slot to reach for and it fits almost
+any post *badly*, because nearly everything can be framed as before/after. That framing
+is the single biggest threat to this set: fifty covers that are each individually fine
+but all split-scene-with-a-connecting-line read as one template with the labels swapped,
+which is the anti-similarity failure at the level of the whole publication rather than
+the individual cover.
+
+So, before you commit to a slot: **look at the reference covers `cover-context` handed
+you and identify which slot each one used.** If two or more of them used the slot you
+were about to pick, pick a different one — and only override that if the post's mechanism
+genuinely cannot be drawn any other way, which is rarer than it feels. Reach for
+single-centered-hero more often than instinct suggests; one well-drawn mechanism with
+nothing beside it is usually stronger than a comparison, and it is the slot most likely
+to be under-used across a long run.
 
 **A third option, when the post is genuinely about code or a terminal session:** the
 `.term` panel treatment (see Palette below) may fill some or all of `#hero-zone` instead
@@ -258,13 +282,24 @@ summary as on-image text.
   edges, fold lines, or any texture overlay — the paper is a flat hex, not a vintage
   poster prop.
 - Don't round any corner or drop any shadow, on the illustration or anywhere else on the
-  cover — PRESS structure comes from rules and whitespace, never rounded chrome.
+  cover — PRESS structure comes from rules and whitespace, never rounded chrome. This
+  includes *incidental* shapes you reach for without thinking: speech bubbles, callout
+  balloons, pill badges, tooltips, rounded terminal chrome. A speech bubble is a
+  rectangle with a triangular tail, not a lozenge. Check every `rx`/`ry` on an SVG rect
+  and every `border-radius` before you render — a single rounded bubble in an otherwise
+  square composition is the tell that collapses the whole cover into web-app chrome.
 - Don't let orange spread across the cover — one signature moment (see The accent law),
   never orange as a fill color for multiple shapes, never a background wash.
 - Don't set the headline, eyebrow, or numerals in the serif voice — that voice is for
   commentary only; structure is always the display face.
 - Don't invent editorial props that aren't backed by real data: no fabricated issue
   numbers, no barcodes, no pull-quotes that aren't an actual quote from the post.
+- Don't print a number the post didn't state. A figure that *looks* like a measurement
+  ("0 edits left", "3x faster", "~40ms") must appear literally in the `## Shipped` text
+  or the summary. A fair entailment is not enough: once it's set in mono on the cover it
+  reads as something that was measured, and a reader who goes looking for it in the post
+  won't find it. If the point is "none" or "zero," draw the absence — an empty frame, a
+  severed line, a gap where marks used to be — rather than asserting a count.
 - Don't leave old terminal furniture lying around outside a `.term` panel — no blinking
   cursor, no bare `_` suffix, no stray `$` prompt as decoration. The dark palette now
   belongs to exactly one place, the `.term` panel, and only when it's real code.
