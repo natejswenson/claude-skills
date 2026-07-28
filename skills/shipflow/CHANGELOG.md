@@ -2,7 +2,22 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
-## Unreleased — multi-pattern workflow templates
+## 0.3.0 (2026-07-28) — multi-pattern workflow templates; `undefined` param fix
+
+Minor, not patch: this release carries the multi-pattern feature work that had been
+sitting unreleased on `main` since 0.2.6, plus one bug fix found by the new baseline
+eval. Existing `dev-main-promotion` repos are unaffected — see the compatibility note
+below.
+
+- **Fixed: a missing config field rendered the literal string `"undefined"` into the
+  workflow.** `renderTemplate` tested param presence with `key in params`, which is
+  true for a key whose value is `undefined`, so `String(undefined)` flowed through as
+  a real value and passed the safety regexes. A config with no `branches.main`
+  rendered `name: auto-merge dev to undefined` and `branches: [undefined]` — a
+  syntactically valid workflow that installs cleanly and can never fire, with no
+  error at `apply` time. Present-but-`undefined` and `null` now count as missing and
+  raise the same "missing param(s)" error as an absent key. Found by
+  `tests/baseline.test.mjs` on its first run.
 
 Generalizes shipflow from one hardcoded branching pattern to a registry of three
 selectable patterns, with deterministic autodetection. Backward compatible: a repo's
