@@ -130,16 +130,41 @@ def test_headline_figures_match_the_frozen_data(path):
 
     data = load(path)
     html = report.build_html(data)
+
+    # Scoped to the masthead stat tiles, NOT the whole document. Each headline
+    # figure also appears in the trend tables further down (five times over, for
+    # median income), so a document-wide `expected in html` check stays green
+    # even when the masthead itself renders the wrong number — verified by
+    # mutation: swapping the tile to show the STATE benchmark instead of the
+    # place's own figure did not fail a document-wide check.
+    tile_values = set(re.findall(r'<span class="value">([^<]*)</span>', html))
+    assert tile_values, f"{path.name}: no masthead stat tiles rendered at all"
+
+    checked = 0
     for m in manifest.headline_metrics():
         metric = data["metrics"].get(m.key)
-        if not metric or not metric.get("available") or metric.get("value") is None:
+        # `latest` is the headline figure the masthead renders; the bundle has no
+        # `value` key. Reading the wrong field would make this loop skip every
+        # metric and pass while asserting nothing — which is exactly what it did
+        # before this was caught, so the `checked` floor below is not decoration.
+        if not metric or not metric.get("available") or metric.get("latest") is None:
             continue
-        expected = fmt.format_value(metric["value"], metric["unit"])
-        assert expected in html, (
-            f"{path.name}: {m.key} is {expected} in the frozen bundle but that "
-            f"figure does not appear in the report. The renderer is showing a "
-            f"different number than the data says."
+        expected = fmt.format_compact(metric["latest"], metric["unit"])
+        assert expected in tile_values, (
+            f"{path.name}: {m.key} is {expected} in the frozen bundle, but no "
+            f"masthead stat tile shows that figure. Rendered tiles: "
+            f"{sorted(tile_values)}.\nThe masthead is showing a different number "
+            f"than the data says — a wrong year, or a benchmark in place of the "
+            f"city's own value."
         )
+        checked += 1
+
+    assert checked >= 6, (
+        f"{path.name}: only {checked} headline figure(s) were actually compared. "
+        f"This test asserts nothing when the metric field it reads is missing or "
+        f"renamed — if the bundle schema changed, fix the field name here rather "
+        f"than letting the loop skip."
+    )
 
 
 def test_comparison_report_renders_from_two_real_bundles():
