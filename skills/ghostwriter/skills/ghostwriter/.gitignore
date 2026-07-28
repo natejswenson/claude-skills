@@ -39,3 +39,11 @@ htmlcov/
 
 # OS
 .DS_Store
+
+# Baseline eval corpus: a small, curated set of real drafts committed ON PURPOSE
+# as the ground truth for the deterministic voice lint (evals/baseline/, see
+# tests/test_baseline_voice.py). drafts/ itself stays ignored as a working dir;
+# without this exception the corpus check would find zero files in CI and its
+# min_corpus floor would red-line every PR.
+!evals/baseline/drafts/
+!evals/baseline/drafts/*.md

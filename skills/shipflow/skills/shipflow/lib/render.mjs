@@ -70,7 +70,14 @@ export function renderTemplate(templateSource, params) {
   const unsafe = [];
   const rendered = templateSource.replace(TOKEN_RE, (_, name) => {
     const key = TOKEN_TO_PARAM[name];
-    if (!key || !(key in params)) {
+    // A present-but-undefined param counts as MISSING, not as the string
+    // "undefined". `key in params` alone was true for it, so String(undefined)
+    // flowed through as a real value and passed the safety regexes — a config
+    // with no `branches.main` rendered `branches: [undefined]` and
+    // `name: auto-merge dev to undefined`, installing a workflow that could
+    // never fire, with no error at apply time. Found by the rendered-workflow
+    // baseline (tests/baseline.test.mjs) on its first run.
+    if (!key || params[key] === undefined || params[key] === null) {
       missing.push(name);
       return `{{${name}}}`;
     }
