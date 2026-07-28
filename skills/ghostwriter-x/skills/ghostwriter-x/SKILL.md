@@ -33,6 +33,9 @@ platform. If the user asks for a LinkedIn post, that skill handles it, not this 
   "configure", "connect my X account". → Run **Setup**.
 - **Generate** — the user wants a post or thread (the common case). → Run **Generate**.
 - **Publish** — the user approves a draft you already showed. → Run **Publish**.
+- **Check in** — the user asks how a post or their posts did ("how did my posts do?", "how did
+  that thread go?"). → Run just the **Outcome check-in** at the top of Generate, record the
+  answer, and stop. Don't slide into drafting a new post unless they ask.
 
 Before generating, quietly confirm setup is done: `~/.claude/ghostwriter-x/voice/voice-profile.md`
 exists and `~/.claude/ghostwriter-x/.env` contains `TYPEFULLY_API_KEY` + `TYPEFULLY_SOCIAL_SET_ID`.
@@ -134,26 +137,42 @@ dialogs to get a session moving. Only when no menu is due (the topic came in con
 may the check-in be its own question. Never ask more
 than once per session; `none` → skip silently, don't mention it.
 
+Posts older than **30 days are never asked about** — nobody honestly remembers, and a guess is
+worse than a gap. `python3 scripts/post_outcome.py --retire-stale` marks those `unrecalled` so the
+backlog stops growing; run it when `--check-due` has been returning `none` for a while.
+
 **Using the outcomes — and the sample-size bar.** This is a self-reported signal on a handful of
-posts with no control group, so it is evidence, not measurement. Hold to these floors before you
-let it steer anything, and say the floor out loud rather than inventing confidence:
+posts with no control group. Treat it as a record you can show the user, not a measurement you can
+optimize against. The confounds here are *unidentifiable*, not merely noisy: every post varies
+lane, hour, format, image and hook at once, so there are more free variables than observations,
+and format is collinear with content **by construction** because the agent picks thread-vs-single
+from the content's shape — "threads do better" may only mean "meatier topics do better".
 
-- **Fewer than 3 scored posts total → use none of it.** Rank on lane priority alone.
-- **Lane preference needs ≥3 scored posts in that lane**, and only shifts the ranking one slot.
-- **Format guidance (single vs thread) needs ≥3 scored posts of that format.**
-- **Visual guidance (card vs text-only) needs ≥3 scored posts with that treatment.**
-- A single `flopped` is never evidence of anything; two in the same lane is worth mentioning.
+- **Fewer than 5 scored posts → display only.** You may show the user their own numbers and use
+  them to avoid repeating a topic. **Zero influence on ranking.**
+- **≥5 in an arm** → you may *say* what you see, with the N attached ("3 of your 4 threads beat
+  your 2 singles, small sample"). No behaviour change.
+- **≥8 in each of two arms AND a ≥2× gap** → move a lane by **one** position, stating the N.
+  Never drop a lane entirely.
+- **Single vs thread is never outcome-driven.** Content shape decides, always.
+- **Posting time is never outcome-driven.** The per-hour sample will not exist for years.
+- Compare **medians, not means** — one amplified post swamps a small account's average — and
+  ignore anything older than **90 days**; X's ranking and the follower base both move.
 
-Say why when it clears the bar ("your last three threads all ran great"). When it doesn't, don't
-gesture at it at all — a confident-sounding claim off N=1 is worse than silence. The
-`published.jsonl` covariates (`lane`, `format`, `images`, `hour`, `claims`, `tweets`) are there so
-you can see what actually varied; never read a difference as a cause.
+**Anti-ratchet — the loop's real hazard.** Outcomes must **never** override
+`voice-notes.md`, the substance bar, or the source gate. They sit *below* those in precedence,
+exactly as `algorithm.md` does. A `flopped` on an honest, well-sourced post is not a reason to
+change the voice; chasing a reach number on a personal account is precisely the pressure that
+bends a technical voice toward the engagement bait this skill forbids. If the data ever seems to
+argue for a banned tactic, the data loses.
 
-This is the only compliant performance signal available (no scraping — COMPLIANCE.md). **Typefully's
-analytics API does not change this on the free plan**: `list_social_set_analytics_posts` and
-`get_social_set_analytics_followers` both return `403 MONETIZATION_ERROR` there (verified
-2026-07-27). Don't re-probe them every session; if the user ever upgrades Typefully, real per-post
-impressions/likes/replies become available and this whole loop should be revisited.
+This is the only **free** compliant performance signal available. Be precise about why: real
+analytics are **paywalled, not forbidden**. Typefully's `list_social_set_analytics_posts` and
+`get_social_set_analytics_followers` are official, COMPLIANCE-clean endpoints that return
+`403 MONETIZATION_ERROR` on the free plan (verified 2026-07-27) — don't re-probe them every
+session. If the user ever wants real numbers sooner, the zero-cost path is for **them** to read
+their own x.com analytics and paste the figures in; the agent never fetches x.com, so that is not
+scraping. Revisit the whole loop if the account upgrades.
 
 1. **Short-circuit if the topic is already concrete.** If the user named a specific topic, pointed
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
@@ -667,6 +686,14 @@ Only after the user explicitly approves a specific draft.
    to every substantive response with substance (a question back, not just "thanks"), and go
    engage in a couple of adjacent conversations. The script can't do these; they are the
    single biggest fix for low reach.
+5. **Say when you'll ask how it did, and mention the quota if it's tight.** One line, right after
+   the URL: *"I'll ask how this did in a couple of days."* The check-in otherwise only exists at
+   the top of Generate, which is reachable only when the user is about to publish *again* — so
+   without this the loop is invisible until it fires. Tell them they can also just ask **"how did
+   my posts do?"** any time, which runs the check-in on its own. If
+   `python3 scripts/typefully_post.py --quota` shows **2 or fewer posts left**, say so here too,
+   with the reset date — the free plan's cap is otherwise discovered by eating a 402 on a post
+   they already approved.
 
 Never run the non-`--dry-run` publish command without a clear, specific approval from the user
 for that exact draft.

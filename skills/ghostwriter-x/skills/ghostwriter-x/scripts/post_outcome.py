@@ -24,8 +24,16 @@ from pathlib import Path
 
 PUBLISHED_LOG = Path.home() / ".claude" / "ghostwriter-x" / "published.jsonl"
 OUTCOMES = ("great", "normal", "flopped")
+# Written to posts that aged out unasked, so they stop being offered without
+# being confused for real data.
+UNRECALLED = "unrecalled"
 # A post needs a couple of days before its performance means anything.
 CHECKIN_MIN_AGE_DAYS = 2
+# ...and past this it is not worth asking: the user cannot honestly remember how
+# a month-old post did, and a guess is worse than a gap. Without an upper bound
+# the unscored backlog grows forever and every session opens with a question
+# about something nobody remembers, which is how a feedback loop dies twice.
+CHECKIN_MAX_AGE_DAYS = 30
 
 
 def _today() -> _dt.date:
@@ -49,11 +57,37 @@ def due_record(records: list[dict], today: _dt.date | None = None) -> dict | Non
             posted = _dt.date.fromisoformat(str(rec.get("date", "")))
         except ValueError:
             continue  # undated record: can't age it, so never due
-        if (today - posted).days >= CHECKIN_MIN_AGE_DAYS:
+        if CHECKIN_MIN_AGE_DAYS <= (today - posted).days <= CHECKIN_MAX_AGE_DAYS:
             ripe.append((posted, rec))
     if not ripe:
         return None
     return min(ripe, key=lambda pair: pair[0])[1]
+
+
+def _write(log_path: Path, records: list[dict]) -> None:
+    """Rewrite the log atomically — a torn publish log loses real history."""
+    tmp = log_path.with_suffix(".jsonl.tmp")
+    tmp.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records),
+        encoding="utf-8",
+    )
+    tmp.replace(log_path)
+
+
+def stale_records(records: list[dict], today: _dt.date | None = None) -> list[dict]:
+    """Unscored posts that aged past the ask window without ever being asked."""
+    today = today or _today()
+    out = []
+    for rec in records:
+        if rec.get("outcome"):
+            continue
+        try:
+            posted = _dt.date.fromisoformat(str(rec.get("date", "")))
+        except ValueError:
+            continue
+        if (today - posted).days > CHECKIN_MAX_AGE_DAYS:
+            out.append(rec)
+    return out
 
 
 def load_records(log_path: Path) -> list[dict]:
@@ -113,6 +147,13 @@ def main() -> None:
         "'none' if there isn't one. Records nothing. Use this to decide whether "
         "to ask the user at all.",
     )
+    which.add_argument(
+        "--retire-stale",
+        action="store_true",
+        help=f"Housekeeping: mark every unscored post older than "
+        f"{CHECKIN_MAX_AGE_DAYS} days as '{UNRECALLED}' so it stops sitting in "
+        "the backlog. Records no opinion about how those posts did.",
+    )
     ap.add_argument("--outcome", choices=OUTCOMES)
     ap.add_argument("--notes", default="", help="Optional free-text context.")
     ap.add_argument(
@@ -134,6 +175,17 @@ def main() -> None:
         print(json.dumps(rec, ensure_ascii=False) if rec else "none")
         return
 
+    if args.retire_stale:
+        records = load_records(log_path)
+        stale = stale_records(records)
+        for rec in stale:
+            rec["outcome"] = UNRECALLED
+            rec["outcome_date"] = time.strftime("%Y-%m-%d")
+        if stale:
+            _write(log_path, records)
+        print(f"Retired {len(stale)} post(s) as {UNRECALLED}.")
+        return
+
     if not args.outcome:
         sys.exit("ERROR: --outcome is required when recording.")
 
@@ -143,13 +195,7 @@ def main() -> None:
     if args.notes:
         rec["outcome_notes"] = args.notes
     rec["outcome_date"] = time.strftime("%Y-%m-%d")
-
-    tmp = log_path.with_suffix(".jsonl.tmp")
-    tmp.write_text(
-        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records),
-        encoding="utf-8",
-    )
-    tmp.replace(log_path)
+    _write(log_path, records)
     print(f"Recorded: {rec.get('slug') or (rec.get('ids') or ['?'])[0]} -> {args.outcome}")
 
 

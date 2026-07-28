@@ -170,6 +170,17 @@ def require_setup(env: dict) -> str:
     return social_set
 
 
+def quota(env: dict, social_set: str) -> dict:
+    """The free plan's remaining monthly posts, from Typefully.
+
+    `GET /social-sets/{id}/` returns publishing_quota {used, remaining,
+    resets_at} at no cost. Worth one call: the alternative is discovering the
+    cap by eating a 402 on a post the user already approved.
+    """
+    data = api_request(env, "GET", f"/social-sets/{social_set}/", context="quota")
+    return data.get("publishing_quota") or {}
+
+
 def connect(env: dict, env_path: Path = ENV_PATH) -> None:
     """List the account's social sets and store the id of the one to post to."""
     if not env.get("TYPEFULLY_API_KEY", "").strip():
@@ -443,8 +454,13 @@ def record_publish(
         # went out is only knowable now. These are the covariates the outcome
         # loop needs to say anything beyond "this post did well".
         "images": len(images),
-        "hour": int(time.strftime("%H")),
         "claims": _claim_count(args),
+        # Timezone-explicit publish instant, straight from Typefully. The local
+        # `date` above can disagree with it across midnight UTC — this thread
+        # was logged 2026-07-27 locally but went out 2026-07-28T01:42Z.
+        "published_at": draft.get("x_post_published_at") or draft.get("published_at") or "",
+        # The X status id, distinct from `ids` (which are Typefully draft ids).
+        "x_post_id": (draft.get("x_published_url") or "").rstrip("/").rsplit("/", 1)[-1],
     }
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -493,6 +509,11 @@ def main() -> None:
         action="store_true",
         help="One-time: fetch your Typefully social sets and store the id in .env.",
     )
+    src.add_argument(
+        "--quota",
+        action="store_true",
+        help="Print the plan's remaining monthly posts and reset date, then exit.",
+    )
     ap.add_argument(
         "--image",
         action="append",
@@ -536,6 +557,15 @@ def main() -> None:
     env = load_env(ENV_PATH)
     if args.connect:
         connect(env, ENV_PATH)
+        return
+
+    if args.quota:
+        q = quota(env, require_setup(env))
+        if not q:
+            print("Typefully did not report a publishing quota for this plan.")
+            return
+        print(f"Posts left this period: {q.get('remaining', '?')} "
+              f"(used {q.get('used', '?')}), resets {q.get('resets_at', '?')}")
         return
 
     text = read_draft(args)

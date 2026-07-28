@@ -61,10 +61,35 @@ self-learning loop turned out never to have run at all.
   measured to the **ink** inside painted panels, which the existing
   `empty-band-x` cannot see because block children are full-width and its
   box-edge measure reads ~0.
-- Publish-time covariates in `published.jsonl` (`images`, `hour`, `claims`) —
-  cheap to record now, impossible to reconstruct later.
-- Sample-size floors before any outcome may steer a decision (≥3 scored posts in
-  a lane/format/treatment; under 3 total, ignore outcomes entirely).
+- Publish-time covariates in `published.jsonl` (`images`, `claims`,
+  `published_at`, `x_post_id`) — cheap to record now, impossible to reconstruct
+  later. `published_at` is Typefully's timezone-explicit publish instant, which
+  can disagree with the local `date` across UTC midnight (this release's own
+  thread logged `2026-07-27` locally but went out `2026-07-28T01:42Z`), and
+  `x_post_id` disambiguates the X status id from the Typefully draft ids in
+  `ids`.
+- Sample-size floors before any outcome may steer a decision: under 5 scored
+  posts it is display-only with zero ranking influence; ≥8 per arm *and* a ≥2×
+  gap before a lane moves, by one position, with the N stated. Single-vs-thread
+  and posting-time are explicitly never outcome-driven — format is collinear
+  with content by construction, and the per-hour sample will not exist for
+  years. Compare medians, not means; ignore anything older than 90 days.
+- **Anti-ratchet rule**: outcomes never override `voice-notes.md`, the substance
+  bar, or the source gate. Chasing a reach number is the exact pressure that
+  bends an honest technical voice toward the engagement bait the skill forbids,
+  so if the data ever argues for a banned tactic, the data loses.
+- 30-day stale-out: posts that age out unasked are marked `unrecalled` by
+  `--retire-stale` rather than accreting in the backlog. Without an upper bound
+  the loop dies a second way — every session opening with a question about a
+  post nobody remembers, answered by a guess that poisons the data.
+- `--quota`: surfaces `publishing_quota {used, remaining, resets_at}` from
+  `GET /social-sets/{id}/` at no cost (verified live). The free plan's cap was
+  otherwise discovered by eating a 402 on an already-approved post; Publish now
+  warns at ≤2 remaining.
+- A discoverable check-in path — "how did my posts do?" runs the outcome
+  check-in on its own — plus a promise line at publish time. The check-in
+  previously existed only at the top of Generate, reachable only when the user
+  was about to publish *again*, so it was invisible until it fired.
 
 ### Changed
 
@@ -88,9 +113,18 @@ self-learning loop turned out never to have run at all.
 ### Notes
 
 - Typefully's analytics endpoints return `403 MONETIZATION_ERROR` on the free
-  plan (verified 2026-07-27), for both per-post metrics and follower counts. The
-  self-reported check-in remains the only compliant signal; SKILL.md records
-  this so it is not re-probed every session.
+  plan (verified 2026-07-27), for both per-post metrics and follower counts.
+  SKILL.md and COMPLIANCE.md both previously implied compliance forbade real
+  metrics; it does not. The endpoints are official and COMPLIANCE-clean, they
+  are merely **paywalled**, so the check-in is the only *free* signal, not the
+  only permitted one. Scraping x.com stays banned at any price, and the user
+  pasting figures from their own x.com analytics is always fine.
+- Not recommending a paid Typefully tier yet: the sample-size floors mean
+  nothing is actionable until ~30 posts, and the binding constraint is the
+  15-posts/month publishing cap rather than data access. **One open question
+  worth asking Typefully support first** — whether analytics backfill on
+  upgrade or only accrue from subscription start. If they do not backfill,
+  waiting permanently loses these early posts.
 - Calibrating `panel-rag` surfaced a design-system inconsistency worth its own
   look: `.term` offers ~92 characters of width at 18px mono, but
   `BUDGETS['term']['max_chars']` caps rows at 64, so a fully budget-compliant

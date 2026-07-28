@@ -623,11 +623,77 @@ def test_record_publish_captures_covariates(tmp_path, monkeypatch):
     (tmp_path / "slug.sources.json").write_text(
         json.dumps({"claims": [{"claim": "a"}]}), encoding="utf-8"
     )
-    monkeypatch.setattr(tp.time, "strftime", lambda fmt: "09" if fmt == "%H" else "2026-07-27")
+    monkeypatch.setattr(tp.time, "strftime", lambda fmt: "2026-07-27")
     args = make_args(file=str(draft), image=["1:a.png"], lane="release-howto")
-    tp.record_publish({"id": 7, "x_published_url": "u"}, args, ["one"], [3], log)
+    tp.record_publish(
+        {"id": 7, "x_published_url": "https://x.com/n/status/42",
+         "x_post_published_at": "2026-07-28T01:42:13.931Z"},
+        args, ["one"], [3], log,
+    )
     rec = json.loads(log.read_text(encoding="utf-8"))
     assert rec["images"] == 1
-    assert rec["hour"] == 9
     assert rec["claims"] == 1
     assert rec["lane"] == "release-howto"
+    assert rec["published_at"] == "2026-07-28T01:42:13.931Z"
+    assert rec["x_post_id"] == "42"
+
+
+# ----------------------------------------------------------------- quota
+def test_quota_returns_publishing_quota(monkeypatch):
+    monkeypatch.setattr(
+        tp, "api_request",
+        lambda *a, **k: {"publishing_quota": {"used": 3, "remaining": 12,
+                                              "resets_at": "2026-08-01T00:00:00-05:00"}},
+    )
+    assert tp.quota(ENV, "77")["remaining"] == 12
+
+
+def test_quota_absent_is_empty_dict(monkeypatch):
+    monkeypatch.setattr(tp, "api_request", lambda *a, **k: {})
+    assert tp.quota(ENV, "77") == {}
+
+
+def test_main_quota_prints_remaining(monkeypatch, capsys):
+    monkeypatch.setattr(
+        tp, "quota",
+        lambda env, ss: {"used": 3, "remaining": 12, "resets_at": "2026-08-01"},
+    )
+    run_main(monkeypatch, ["--quota"])
+    out = capsys.readouterr().out
+    assert "Posts left this period: 12" in out and "2026-08-01" in out
+
+
+def test_main_quota_handles_a_plan_with_no_quota(monkeypatch, capsys):
+    monkeypatch.setattr(tp, "quota", lambda env, ss: {})
+    run_main(monkeypatch, ["--quota"])
+    assert "did not report a publishing quota" in capsys.readouterr().out
+
+
+def test_record_publish_captures_publish_instant_and_x_id(tmp_path):
+    """The local `date` can disagree with the real publish instant across UTC
+    midnight, and `ids` holds Typefully draft ids, not the X status id."""
+    log = tmp_path / "published.jsonl"
+    draft = {
+        "id": 10087791,
+        "x_published_url": "https://x.com/NatejSwenson/status/2081918068549374428",
+        "x_post_published_at": "2026-07-28T01:42:13.931Z",
+    }
+    tp.record_publish(draft, make_args(), ["one"], [3], log)
+    rec = json.loads(log.read_text(encoding="utf-8"))
+    assert rec["published_at"] == "2026-07-28T01:42:13.931Z"
+    assert rec["x_post_id"] == "2081918068549374428"
+    assert rec["ids"] == ["10087791"]
+
+
+def test_record_publish_falls_back_to_published_at(tmp_path):
+    log = tmp_path / "published.jsonl"
+    tp.record_publish({"id": 1, "published_at": "2026-07-28T01:42:13.931Z"},
+                      make_args(), ["one"], [3], log)
+    assert json.loads(log.read_text(encoding="utf-8"))["published_at"].endswith("Z")
+
+
+def test_record_publish_without_a_url_leaves_x_post_id_blank(tmp_path):
+    log = tmp_path / "published.jsonl"
+    tp.record_publish({"id": 1}, make_args(), ["one"], [3], log)
+    rec = json.loads(log.read_text(encoding="utf-8"))
+    assert rec["x_post_id"] == "" and rec["published_at"] == ""
