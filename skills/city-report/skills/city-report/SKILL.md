@@ -1,6 +1,6 @@
 ---
 name: city-report
-version: 0.2.0
+version: 0.3.0
 user_invocable: true
 description: Pull US Census demographic, economic, housing and health data for any American city from the Data USA API, answer questions about it instantly, and generate a polished editorial HTML report. Use when the user asks for a city report, city profile, demographics, census data, population, median income, cost of living, or "tell me about <city>, <state>" — or wants to compare a city against its state and the nation.
 ---
@@ -84,8 +84,25 @@ the user's own word through rather than translating it.
 
 ## Comparing two cities
 
-Load both, then compare from the two digests — no special command. Say which
-year each figure is from; the latest available year can differ between cities.
+Load both, then answer from the two digests. For a written comparison that's
+all you need — say which year each figure is from, since the latest available
+year can differ between cities.
+
+For a **comparative report**, use `--vs`:
+
+```bash
+python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND"
+python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" --section economy
+```
+
+Both cities must be loaded first. The comparison document puts both on one
+scale in every block: breakdowns become shares of each city's own total (raw
+counts would just measure population), and count trends are indexed to each
+city's own first year (a 2,178-person town and a 131,627-person city both
+render as flat lines on a shared linear axis).
+
+State benchmarks are omitted from a comparison — the two cities are usually in
+different states, so "vs state" means different things on each side.
 
 ## Reporting the numbers honestly
 

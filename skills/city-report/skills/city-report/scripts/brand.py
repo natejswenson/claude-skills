@@ -218,6 +218,40 @@ div.stat .bench {{
 }}
 span.moe {{ font-family: {f["mono_stack"]}; font-size: 0.62rem; color: {dim}; letter-spacing: 0.03em; }}
 
+/* Comparison documents. The second city is the accent throughout — in a
+   two-city report the cities ARE the subject, so this is the one place the
+   signature accent is spent on every chart rather than once. Validated at
+   ΔE 47.6 normal / 35.5 protan against ink, well clear of the separation floor. */
+div.stat .value.alt {{
+  color: {accent};
+  font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+  margin-top: 0.1rem;
+}}
+h1 span.versus {{
+  display: inline-block;
+  font-family: {f["serif_stack"]};
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.42em;
+  letter-spacing: 0;
+  color: {dim};
+  margin: 0 0.45em;
+  vertical-align: 0.32em;
+}}
+/* Legend: swatch carries the series color, text stays ink. Present on every
+   two-series chart — identity must never rest on matching a hue from memory. */
+div.legend {{ display: flex; flex-wrap: wrap; gap: 0 1rem; margin: 0.1rem 0 0.4rem; }}
+div.legend .key {{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: {f["mono_stack"]};
+  font-size: 0.63rem;
+  letter-spacing: 0.05em;
+  color: {ink};
+}}
+div.legend .key i {{ width: 0.7rem; height: 0.7rem; display: inline-block; }}
+
 /* Sections — ruled editorial blocks. */
 section.report-section {{ border-top: 2px solid {rule}; padding-top: 0.7rem; margin-bottom: 2.6rem; }}
 section.report-section > h2 {{

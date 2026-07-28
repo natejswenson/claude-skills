@@ -240,3 +240,63 @@ def test_svg_escapes_hostile_labels():
 def test_truncate_helper():
     assert charts._truncate("short", 10) == "short"
     assert charts._truncate("a" * 30, 10).endswith("…")
+
+
+# --------------------------------------------------- two-series comparison
+#
+# City A is ink, city B is the accent. Validated at ΔE 47.6 normal-vision and
+# 35.5 protan against ink — comfortably above the separation floor — and a
+# legend is always present, so identity never rests on the hue alone.
+
+
+def test_legend_pairs_labels_with_the_series_colors():
+    html = charts.legend(["Hawley, MN", "Fargo, ND"], THEME)
+    assert html.count('class="key"') == 2
+    assert THEME["colors"]["ink"] in html
+    assert THEME["colors"]["accent"] in html
+    assert "Hawley, MN" in html
+
+
+def test_legend_escapes_labels():
+    assert "<b>" not in charts.legend(["<b>x</b>", "y"], THEME)
+
+
+def test_dual_sparkline_draws_both_series_on_one_scale():
+    svg = charts.dual_sparkline({"2013": 1.0, "2024": 2.0},
+                                {"2013": 3.0, "2024": 4.0}, THEME)
+    assert svg.count("<path") == 2
+    assert svg.count("<circle") == 2
+    assert THEME["colors"]["accent"] in svg
+
+
+def test_dual_sparkline_tolerates_one_short_series():
+    """Cities publish different year ranges; the shorter one just isn't drawn."""
+    svg = charts.dual_sparkline({"2013": 1.0, "2024": 2.0}, {"2024": 9.0}, THEME)
+    assert svg.count("<path") == 1
+    assert charts.dual_sparkline({"2024": 1.0}, {"2024": 2.0}, THEME) == ""
+
+
+def test_dual_sparkline_flat_series_does_not_divide_by_zero():
+    assert "<svg" in charts.dual_sparkline({"2013": 5.0, "2024": 5.0},
+                                           {"2013": 5.0, "2024": 5.0}, THEME)
+
+
+def test_paired_bars_draws_two_bars_per_row():
+    rows = [{"label": "White", "a": 93.0, "b": 80.0},
+            {"label": "Black", "a": 0.4, "b": 8.6}]
+    svg = charts.paired_bars(rows, THEME)
+    assert svg.count("<title>") == 4          # two cities x two categories
+    assert THEME["colors"]["accent"] in svg
+    assert "White" in svg
+
+
+def test_paired_bars_zero_value_still_labels_clear_of_the_gutter():
+    svg = charts.paired_bars([{"label": "None", "a": 0.0, "b": 5.0}], THEME)
+    xs = [float(x) for x in re.findall(r'<text x="([\d.]+)" y="[\d.]+" '
+                                       r'fill="#[0-9A-Fa-f]{6}" font-size="10"', svg)]
+    assert all(x > charts.LABEL_GUTTER for x in xs)
+
+
+def test_paired_bars_empty_and_all_zero():
+    assert charts.paired_bars([], THEME) == ""
+    assert "<svg" in charts.paired_bars([{"label": "a", "a": 0.0, "b": 0.0}], THEME)

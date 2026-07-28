@@ -4,6 +4,36 @@ All notable changes to the city-report skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-28
+
+### Added
+- **Comparative reports** — `report.py "Hawley, MN" --vs "Fargo, ND"` renders a
+  two-city document instead of two separate ones. Every block puts both cities
+  on one scale, with two decisions that make the comparison mean something:
+  - **Breakdowns are normalised to shares of each city's own total.** Comparing
+    raw category counts across a 2,178-person town and a 131,627-person city
+    makes every bar in the small town invisible and measures population instead
+    of composition.
+  - **Count trends are indexed to each city's own first year (= 100).** On a
+    shared linear axis those two populations both render as flat lines; indexed,
+    the chart shows what was actually being asked — Fargo at 121 vs Hawley at
+    106 since 2013.
+  Categories are unioned across both cities, not taken from the first, so
+  whatever the second city is distinctive for still surfaces.
+- **Two-series chart primitives**: `charts.dual_sparkline`, `charts.paired_bars`
+  and `charts.legend`. City A is ink, city B is the accent — validated at ΔE
+  47.6 normal-vision and 35.5 protan against ink, well clear of the separation
+  floor, with a legend on every chart so identity never rests on hue alone. This
+  is the one document type where the signature accent is spent on every chart
+  rather than once: in a comparison, the two cities *are* the subject.
+- Small shares keep a decimal (`0.4%` rather than `0%`), since a visible bar
+  labelled zero reads as a rendering bug.
+
+### Notes
+- State/national benchmarks are omitted from comparison documents — two cities
+  are usually in different states, so "vs state" would mean something different
+  on each side of the page.
+
 ## [0.2.0] - 2026-07-28
 
 A UX pass over the three commands, driven by actually running the skill from a

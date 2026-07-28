@@ -528,6 +528,151 @@ def test_load_cli_caps_a_huge_ambiguous_list(monkeypatch, capsys):
     assert out.count("Springfield, S") == 12
 
 
+# --------------------------------------------------------- comparison mode
+
+
+@pytest.fixture
+def two_cities(loaded, tmp_cache):
+    """A second city whose values differ from the first, for comparisons."""
+    other = datausa.Place("Otherville, KS", "16000US2099999", "Kansas",
+                          "04000US20", "otherville-ks")
+    payloads = full_payloads()
+    for level in payloads:
+        for payload in payloads[level].values():
+            for row in payload["data"]:
+                for key in row:
+                    if isinstance(row[key], float):
+                        row[key] = row[key] * 3
+    data = bundle_mod.build_bundle(other, payloads)
+    datausa.write_cache("bundle-otherville-ks.json", data)
+    return loaded, data
+
+
+def test_index_to_base_rebases_to_100():
+    assert report_mod._index_to_base({"2013": 50.0, "2024": 75.0}) == {
+        "2013": 100.0, "2024": 150.0}
+    assert report_mod._index_to_base({}) == {}
+    assert report_mod._index_to_base({"2013": 0.0, "2024": 5.0}) == {}
+
+
+def test_share_pct_keeps_a_decimal_for_small_values():
+    """A visible bar labelled "0%" reads as a rendering bug."""
+    assert report_mod._share_pct(93.0) == "93%"
+    assert report_mod._share_pct(0.4) == "0.4%"
+    assert report_mod._share_pct(9.9) == "9.9%"
+
+
+def test_shares_normalise_a_breakdown_to_its_own_total(two_cities):
+    data_a, _ = two_cities
+    shares = report_mod._shares(data_a["metrics"]["race"], 99)
+    assert abs(sum(s["share"] for s in shares) - 100) < 0.001
+
+
+def test_shares_of_an_empty_breakdown():
+    assert report_mod._shares({"categories": []}, 5) == []
+    assert report_mod._shares({"categories": [{"label": "a", "value": 0.0}]}, 5) == []
+
+
+def test_paired_rows_union_both_cities_categories(two_cities):
+    data_a, data_b = two_cities
+    rows = report_mod._paired_rows(data_a["metrics"]["race"],
+                                   data_b["metrics"]["race"], 6)
+    assert rows and all({"label", "a", "b"} <= set(r) for r in rows)
+    # Sorted by the larger of the two shares, so a category that only one city
+    # is distinctive for still surfaces.
+    assert rows[0]["a"] >= rows[-1]["a"] or rows[0]["b"] >= rows[-1]["b"]
+
+
+def test_comparison_html_puts_both_cities_on_one_document(two_cities):
+    data_a, data_b = two_cities
+    html = report_mod.build_comparison_html(data_a, data_b)
+    assert "CITY COMPARISON" in html
+    assert "Testville, MN" in html and "Otherville, KS" in html
+    assert 'class="versus"' in html
+    assert html.count('class="legend"') >= 5   # every two-series chart
+
+
+def test_comparison_normalises_breakdowns_and_says_so(two_cities):
+    data_a, data_b = two_cities
+    html = report_mod.build_comparison_html(data_a, data_b)
+    assert "share of each city" in html and "composition rather than size" in html
+
+
+def test_comparison_indexes_counts_rather_than_sharing_a_linear_axis(two_cities):
+    """2,178 and 131,627 on one axis renders both as flat lines."""
+    data_a, data_b = two_cities
+    html = report_mod.build_comparison_html(data_a, data_b)
+    assert "Indexed to each city" in html
+
+
+def test_comparison_section_filter(two_cities):
+    data_a, data_b = two_cities
+    html = report_mod.build_comparison_html(data_a, data_b, sections=["housing"])
+    assert "<h2>Housing</h2>" in html
+    assert "<h2>People</h2>" not in html
+
+
+def test_comparison_states_when_a_metric_is_missing_for_one_city(loaded, place):
+    absent = bundle_mod.build_bundle(place, {"Place": {}})
+    html = report_mod.build_comparison_html(loaded, absent)
+    assert "not published for" in html
+
+
+def test_comparison_section_with_no_shared_metrics(loaded):
+    trimmed = _bundle_without(loaded, *[m.key for m in manifest.METRICS])
+    html = report_mod.build_comparison_html(loaded, trimmed)
+    assert "<h2>People</h2>" not in html
+
+
+def test_compare_delta_needs_both_sides(loaded):
+    metric = loaded["metrics"]["median_age"]
+    assert report_mod._compare_delta(metric, {"available": False}) == ""
+
+
+def test_compare_stat_tile_flags_a_wide_margin_by_city(place, tmp_cache):
+    payloads = full_payloads()
+    key = "acs_ygs_median_age_total_5|Year,Gender|Median Age"
+    payloads["Place"][key]["data"] = [
+        {"Year": 2024, "Gender": "Total", "Median Age": 10.0, "Median Age Moe": 9.0}]
+    noisy = bundle_mod.build_bundle(place, payloads)
+    clean = bundle_mod.build_bundle(place, full_payloads())
+    tile = report_mod._compare_stat_tile(
+        noisy["metrics"]["median_age"], clean["metrics"]["median_age"], "A", "B")
+    assert "wide margin: A" in tile
+    tile_b = report_mod._compare_stat_tile(
+        clean["metrics"]["median_age"], noisy["metrics"]["median_age"], "A", "B")
+    assert "wide margin: B" in tile_b
+
+
+def test_report_cli_vs_writes_a_comparison(two_cities, tmp_path, monkeypatch):
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    assert report_mod.main(["Testville, MN", "--vs", "Otherville, KS",
+                            "--out", str(tmp_path)]) == 0
+    written = list(tmp_path.glob("*.html"))[0]
+    assert written.name.startswith("testville-mn-vs-otherville-ks-")
+    assert "CITY COMPARISON" in written.read_text(encoding="utf-8")
+
+
+def test_report_cli_vs_with_sections_names_them_in_the_filename(two_cities, tmp_path,
+                                                                monkeypatch):
+    monkeypatch.setattr(report_mod, "open_in_browser", lambda p: None)
+    report_mod.main(["Testville, MN", "--vs", "Otherville, KS", "--section",
+                     "housing", "--out", str(tmp_path)])
+    assert "vs-otherville-ks-housing" in list(tmp_path.glob("*.html"))[0].name
+
+
+def test_report_cli_vs_unknown_city(two_cities, tmp_path, capsys):
+    assert report_mod.main(["Testville, MN", "--vs", "Nowhere, ZZ",
+                            "--out", str(tmp_path)]) == 1
+    assert "is not loaded" in capsys.readouterr().err
+
+
+def test_report_cli_vs_itself_is_refused(loaded, tmp_path, capsys):
+    assert report_mod.main(["Testville, MN", "--vs", "testville-mn",
+                            "--out", str(tmp_path)]) == 1
+    assert "same" in capsys.readouterr().err
+
+
 def test_load_cli_list_flag_shows_all_of_them(monkeypatch, capsys):
     many = [datausa.Place(f"Springfield, S{i}", f"16000US{i:07d}", "S", "04000US01",
                           f"springfield-s{i}") for i in range(30)]

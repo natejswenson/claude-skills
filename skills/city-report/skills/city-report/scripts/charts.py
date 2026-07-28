@@ -265,6 +265,141 @@ def stacked_bar(categories: list[dict], theme: dict, width: int = 460,
     return "".join(out)
 
 
+#: Thickness of one bar in a paired comparison row. Half a normal bar, so the
+#: two cities read as a single row rather than two unrelated entries.
+PAIR_THICKNESS = 9
+
+
+def legend(labels: list[str], theme: dict) -> str:
+    """Legend markup for a two-series comparison chart.
+
+    Always rendered when a chart carries two cities — identity must never
+    depend on the reader matching a hue from memory. The swatch carries the
+    series color; the text stays in ink, per the rule that text never wears the
+    data color.
+    """
+    c = theme["colors"]
+    colors = (c["ink"], c["accent"])
+    items = "".join(
+        f'<span class="key"><i style="background:{colors[i % 2]}"></i>'
+        f'{_esc(label)}</span>'
+        for i, label in enumerate(labels))
+    return f'<div class="legend">{items}</div>'
+
+
+def dual_sparkline(series_a: dict, series_b: dict, theme: dict,
+                   width: int = 300, height: int = 74, value_format=None,
+                   label: str = "") -> str:
+    """Two cities' trends on one set of axes.
+
+    Both series share a scale — the whole point is that the gap between the
+    lines is readable — so this is emphatically not a dual-axis chart. Where
+    the two cities' published years differ, each line simply spans its own
+    range rather than being padded or interpolated to match.
+    """
+    c = theme["colors"]
+    pts_a = [(int(y), v) for y, v in sorted(series_a.items(), key=lambda kv: int(kv[0]))]
+    pts_b = [(int(y), v) for y, v in sorted(series_b.items(), key=lambda kv: int(kv[0]))]
+    if len(pts_a) < 2 and len(pts_b) < 2:
+        return ""
+
+    fmt = value_format or (lambda v: f"{v:,.0f}")
+    all_pts = pts_a + pts_b
+    years = [p[0] for p in all_pts]
+    values = [p[1] for p in all_pts]
+    y0, y1 = min(years), max(years)
+    lo, hi = min(values), max(values)
+    span = (hi - lo) or (abs(hi) or 1)
+
+    widest = max((len(fmt(p[1])) for p in (pts_a[-1:] + pts_b[-1:])), default=6)
+    pad_l, pad_t, pad_b = 2, 12, 16
+    pad_r = 16 + int(widest * 7.3)
+    plot_w = width - pad_l - pad_r
+    plot_h = height - pad_t - pad_b
+
+    def px(year):
+        return pad_l + (year - y0) / max(y1 - y0, 1) * plot_w
+
+    def py(value):
+        return pad_t + (1 - (value - lo) / span) * plot_h
+
+    out = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+           f'role="img" aria-label="{_esc(label or "comparison")}, {y0} to {y1}">',
+           f'<line x1="{pad_l}" y1="{pad_t + plot_h:.1f}" x2="{pad_l + plot_w}" '
+           f'y2="{pad_t + plot_h:.1f}" stroke="{c["dim"]}" stroke-width="1" '
+           f'opacity="0.35"/>']
+
+    for points, color in ((pts_a, c["ink"]), (pts_b, c["accent"])):
+        if len(points) < 2:
+            continue
+        path = " ".join(f"{'M' if i == 0 else 'L'}{px(y):.1f},{py(v):.1f}"
+                        for i, (y, v) in enumerate(points))
+        end_x, end_y = px(points[-1][0]), py(points[-1][1])
+        out.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="2" '
+                   f'stroke-linejoin="round" stroke-linecap="round"/>')
+        out.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="4" fill="{color}" '
+                   f'stroke="{c["paper"]}" stroke-width="2">'
+                   f'<title>{_esc(points[-1][0])}: {_esc(fmt(points[-1][1]))}</title>'
+                   f'</circle>')
+        out.append(f'<text x="{end_x + 8:.1f}" y="{end_y + 4:.1f}" fill="{color}" '
+                   f'font-size="11.5" font-weight="700" '
+                   f'font-family="ui-monospace, monospace">{_esc(fmt(points[-1][1]))}'
+                   f'</text>')
+
+    out.append(f'<text x="{pad_l}" y="{height - 3}" fill="{c["dim"]}" font-size="10" '
+               f'font-family="ui-monospace, monospace">{y0}</text>')
+    out.append(f'<text x="{pad_l + plot_w:.1f}" y="{height - 3}" fill="{c["dim"]}" '
+               f'font-size="10" text-anchor="end" '
+               f'font-family="ui-monospace, monospace">{y1}</text>')
+    out.append("</svg>")
+    return "".join(out)
+
+
+def paired_bars(rows: list[dict], theme: dict, width: int = 460,
+                value_format=None) -> str:
+    """One row per category, two thin bars — city A over city B.
+
+    ``rows`` carry ``label``, ``a`` and ``b``. Callers pass **shares, not
+    counts**: comparing a 2,178-person town's raw category counts against a
+    131,627-person city's makes every bar in the small town invisible and
+    measures population rather than composition.
+    """
+    c = theme["colors"]
+    if not rows:
+        return ""
+    fmt = value_format or (lambda v: f"{v:.0f}%")
+
+    value_w = 62
+    plot_w = width - LABEL_GUTTER - value_w
+    row_h = PAIR_THICKNESS * 2 + SURFACE_GAP + BAR_GAP
+    height = row_h * len(rows)
+    peak = max(max(r["a"], r["b"]) for r in rows) or 1
+
+    out = [f'<svg viewBox="0 0 {width} {height}" width="{width}" height="{height}" '
+           f'role="img" aria-label="Paired comparison, {len(rows)} categories">']
+    for i, row in enumerate(rows):
+        top = i * row_h + BAR_GAP / 2
+        out.append(
+            f'<text x="0" y="{top + PAIR_THICKNESS + 3:.1f}" fill="{c["ink"]}" '
+            f'font-size="11.5" font-family="ui-monospace, monospace">'
+            f'{_esc(_truncate(row["label"], LABEL_CHARS))}</text>')
+        for j, (value, color) in enumerate(((row["a"], c["ink"]),
+                                            (row["b"], c["accent"]))):
+            y = top + j * (PAIR_THICKNESS + SURFACE_GAP)
+            bar_w = max(value / peak * plot_w, 0)
+            out.append(
+                f'<g fill="{color}" transform="translate({LABEL_GUTTER},{y:.1f})">'
+                f'<title>{_esc(row["label"])}: {_esc(fmt(value))}</title>'
+                + _rounded_end_bar(0, 0, bar_w, PAIR_THICKNESS, radius=2) + "</g>")
+            out.append(
+                f'<text x="{LABEL_GUTTER + max(bar_w, 2) + 6:.1f}" '
+                f'y="{y + PAIR_THICKNESS - 0.5:.1f}" fill="{color}" font-size="10" '
+                f'font-weight="700" font-family="ui-monospace, monospace">'
+                f'{_esc(fmt(value))}</text>')
+    out.append("</svg>")
+    return "".join(out)
+
+
 def histogram(categories: list[dict], theme: dict, width: int = 460,
               height: int = 150, highlight: int | None = None,
               value_format=None) -> str:

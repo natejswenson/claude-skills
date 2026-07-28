@@ -404,6 +404,234 @@ def build_html(data: dict, sections: list[str] | None = None) -> str:
 """
 
 
+# --------------------------------------------------------------- comparison
+
+
+def _shares(metric: dict, limit: int) -> list[dict]:
+    """A breakdown's categories as percentages of its own total.
+
+    Raw counts cannot be compared across cities of different size — a 2,178
+    person town's every bar disappears beside a 131,627 person city's, and the
+    chart ends up measuring population instead of composition.
+    """
+    cats = metric.get("categories") or []
+    total = sum(c["value"] for c in cats)
+    if total <= 0:
+        return []
+    return [{"label": c["label"], "share": c["value"] / total * 100}
+            for c in cats[:limit]]
+
+
+def _paired_rows(metric_a: dict, metric_b: dict, limit: int) -> list[dict]:
+    """Union the two cities' leading categories, largest combined share first.
+
+    Taking only city A's top categories would hide whatever city B is
+    distinctive for, which is usually the interesting half of a comparison.
+    """
+    a = {r["label"]: r["share"] for r in _shares(metric_a, 99)}
+    b = {r["label"]: r["share"] for r in _shares(metric_b, 99)}
+    labels = sorted(set(a) | set(b),
+                    key=lambda label: max(a.get(label, 0), b.get(label, 0)),
+                    reverse=True)
+    return [{"label": label, "a": a.get(label, 0.0), "b": b.get(label, 0.0)}
+            for label in labels[:limit]]
+
+
+def _index_to_base(series: dict) -> dict:
+    """Rebase a series so its earliest year is 100.
+
+    Turns "how big" into "how much has it changed", which is the only
+    like-for-like reading when two cities differ in size by 60×.
+    """
+    if not series:
+        return {}
+    base_year = min(series, key=lambda y: int(y))
+    base = series[base_year]
+    if not base:
+        return {}
+    return {year: value / base * 100 for year, value in series.items()}
+
+
+def _share_pct(value: float) -> str:
+    """Format a share, keeping a decimal where rounding would print "0%".
+
+    A visible bar labelled 0% reads as a rendering bug rather than a small
+    number; 0.4% is both honest and legible.
+    """
+    return f"{value:.0f}%" if value >= 10 else f"{value:.1f}%"
+
+
+def _compare_delta(metric_a: dict, metric_b: dict) -> str:
+    """How A stands against B, phrased in the metric's own terms."""
+    if not (metric_a.get("available") and metric_b.get("available")):
+        return ""
+    return fmt.compare(metric_a["latest"], metric_b["latest"], metric_a["unit"])
+
+
+def _compare_stat_tile(metric_a: dict, metric_b: dict, name_a: str, name_b: str) -> str:
+    """One masthead figure carrying both cities and the gap between them."""
+    unit = metric_a["unit"]
+    a_val = fmt.format_compact(metric_a.get("latest"), unit)
+    b_val = fmt.format_compact(metric_b.get("latest"), unit)
+    delta = _compare_delta(metric_a, metric_b)
+    flags = []
+    if metric_a.get("wide_margin"):
+        flags.append(name_a)
+    if metric_b.get("wide_margin"):
+        flags.append(name_b)
+    flag_html = (f'<span class="bench">wide margin: {_esc(", ".join(flags))}</span>'
+                 if flags else "")
+    return (
+        f'<div class="stat">'
+        f'<span class="value">{_esc(a_val)}</span>'
+        f'<span class="value alt">{_esc(b_val)}</span>'
+        f'<span class="label">{_esc(metric_a["label"])}</span>'
+        f'<span class="bench">{_esc(delta)} vs {_esc(name_b)}</span>'
+        f'{flag_html}</div>')
+
+
+def _compare_block(metric_a: dict, metric_b: dict, theme: dict,
+                   name_a: str, name_b: str) -> str:
+    """One metric, both cities."""
+    if not (metric_a["available"] and metric_b["available"]):
+        missing = name_a if not metric_a["available"] else name_b
+        return (f'<p class="unavailable">{_esc(metric_a["label"])} — not published '
+                f'for {_esc(missing)}.</p>')
+
+    if metric_a["kind"] == "breakdown":
+        rows = _paired_rows(metric_a, metric_b, BREAKDOWN_LIMIT)
+        svg = charts.paired_bars(rows, theme, value_format=_share_pct)
+        table_rows = [[r["label"], f'{r["a"]:.1f}%', f'{r["b"]:.1f}%'] for r in rows]
+        body = (f'<div class="chart">{svg}</div>'
+                + _table_view([metric_a["label"], name_a, name_b], table_rows,
+                              "table view — % of category total"))
+        caption = ('<p class="caption">Shown as a share of each city\'s own '
+                   'total, so the comparison measures composition rather than '
+                   'size.</p>')
+        return charts.legend([name_a, name_b], theme) + body + caption
+
+    unit = metric_a["unit"]
+    series_a = metric_a.get("series") or {}
+    series_b = metric_b.get("series") or {}
+    caption = ""
+
+    # Counts of wildly different magnitude cannot share a linear axis — a town
+    # of 2,178 and a city of 131,627 both render as flat lines and the chart
+    # says nothing. Indexing each city to its own first year turns it into the
+    # comparison that was actually wanted: which one is growing faster.
+    if unit == "count":
+        plot_a, plot_b = _index_to_base(series_a), _index_to_base(series_b)
+        base_year = min([int(y) for y in (plot_a or plot_b)], default="")
+        plot_fmt = lambda v: f"{v:.0f}"  # noqa: E731
+        caption = (f'<p class="caption">Indexed to each city\'s own '
+                   f'{base_year} level = 100, because the two populations differ '
+                   f'by enough that a shared axis would flatten both lines. '
+                   f'Absolute values are in the table.</p>')
+    else:
+        plot_a, plot_b = series_a, series_b
+        plot_fmt = lambda v: fmt.format_compact(v, unit)  # noqa: E731
+
+    svg = charts.dual_sparkline(plot_a, plot_b, theme, value_format=plot_fmt,
+                                label=metric_a["label"])
+    years = sorted(set(series_a) | set(series_b))
+    table_rows = [[
+        year,
+        fmt.format_value(series_a.get(year), unit),
+        fmt.format_value(series_b.get(year), unit),
+    ] for year in years]
+    body = (f'<div class="chart">{svg}</div>' + caption
+            + _table_view(["Year", name_a, name_b], table_rows))
+    return (charts.legend([name_a, name_b], theme) + body
+            + _moe_note(metric_a) + _moe_note(metric_b))
+
+
+def _compare_section_html(section_key: str, title: str, data_a: dict, data_b: dict,
+                          theme: dict, name_a: str, name_b: str) -> str:
+    blocks = []
+    for metric in manifest.metrics_for_section(section_key):
+        m_a = data_a["metrics"].get(metric.key)
+        m_b = data_b["metrics"].get(metric.key)
+        if not (m_a and m_b):
+            continue
+        blocks.append((
+            _estimated_units(m_a) + 1,
+            f'<div class="block"><h3 class="block-title">{_esc(m_a["label"])}</h3>'
+            f'{_compare_block(m_a, m_b, theme, name_a, name_b)}</div>'))
+    if not blocks:
+        return ""
+    left, right = _pack_columns(blocks)
+    return (f'<section class="report-section"><h2>{_esc(title)}</h2>'
+            f'<div class="cols"><div class="col">{"".join(left)}</div>'
+            f'<div class="col">{"".join(right)}</div></div></section>')
+
+
+def build_comparison_html(data_a: dict, data_b: dict,
+                          sections: list[str] | None = None) -> str:
+    """A two-city comparison document.
+
+    Deliberately not two reports side by side: every block puts both cities on
+    one scale, breakdowns are normalised to shares, and the masthead carries
+    the gap rather than two independent figures.
+    """
+    theme = brand.load_theme()
+    ident = theme["identity"]
+    name_a, name_b = data_a["place"]["name"], data_b["place"]["name"]
+    wanted = [(k, t) for k, t in manifest.SECTIONS if not sections or k in sections]
+
+    stamp = _dt.datetime.fromisoformat(data_a["fetched_at"]).strftime("%b %Y").upper()
+    eyebrow = f'{ident["brand_line"]} · CITY COMPARISON · {stamp}'
+
+    strip = "".join(
+        _compare_stat_tile(data_a["metrics"][m.key], data_b["metrics"][m.key],
+                           name_a, name_b)
+        for m in manifest.headline_metrics()
+        if m.key in data_a["metrics"] and m.key in data_b["metrics"]
+        and data_a["metrics"][m.key]["available"]
+        and data_b["metrics"][m.key]["available"]
+        and (not sections or m.section in sections))
+
+    body = "".join(
+        _compare_section_html(key, title, data_a, data_b, theme, name_a, name_b)
+        for key, title in wanted)
+
+    years = [m["latest_year"] for d in (data_a, data_b)
+             for m in d["metrics"].values() if m.get("latest_year")]
+    vintage_year = max(years) if years else ""
+    tables = sorted({m["table_id"] for d in (data_a, data_b)
+                     for m in d["metrics"].values() if m.get("table_id")})
+    fetched = _dt.datetime.fromisoformat(data_a["fetched_at"]).strftime("%Y-%m-%d")
+
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{_esc(name_a)} vs {_esc(name_b)} — City Comparison</title>
+<style>{brand.stylesheet(theme)}</style>
+</head><body><main>
+<header class="masthead">
+  <div class="masthead-row">
+    <span class="stamp">{_esc(ident["stamp"])}</span>
+    <span class="eyebrow">{_esc(eyebrow)}</span>
+    <span class="byline">{_esc(ident["byline"])}</span>
+  </div>
+  <h1>{_esc(name_a)}<span class="versus">vs</span>{_esc(name_b)}</h1>
+  <p class="standfirst">Every figure below puts both cities on one scale.
+  Breakdowns are shown as a share of each city's own total, so the comparison
+  measures composition rather than size.</p>
+</header>
+<section class="stat-strip">{strip}</section>
+{body}
+<footer class="provenance">
+  <strong>Source</strong> {_esc(data_a["source"])}<br>
+  <strong>Vintage</strong> {_esc(data_a["vintage"])}, {_esc(vintage_year)} ·
+  each city's state benchmarks differ and are omitted here<br>
+  <strong>Census tables</strong> {_esc(", ".join(tables)) or "—"}<br>
+  <strong>Retrieved</strong> {_esc(fetched)} · figures marked with a wide margin of
+  error are sample estimates and should be read as ranges
+</footer>
+</main></body></html>
+"""
+
+
 def write_report(data: dict, out_dir: str, sections: list[str] | None = None) -> str:
     os.makedirs(out_dir, exist_ok=True)
     # Every requested section appears in the filename, so a two-section report
@@ -413,6 +641,19 @@ def write_report(data: dict, out_dir: str, sections: list[str] | None = None) ->
     path = os.path.join(out_dir, f'{data["place"]["slug"]}{suffix}-{stamp}.html')
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(build_html(data, sections))
+    return path
+
+
+def write_comparison(data_a: dict, data_b: dict, out_dir: str,
+                     sections: list[str] | None = None) -> str:
+    os.makedirs(out_dir, exist_ok=True)
+    suffix = f"-{'-'.join(sections)}" if sections else ""
+    stamp = _dt.datetime.now().strftime("%Y-%m-%d")
+    path = os.path.join(
+        out_dir,
+        f'{data_a["place"]["slug"]}-vs-{data_b["place"]["slug"]}{suffix}-{stamp}.html')
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(build_comparison_html(data_a, data_b, sections))
     return path
 
 
@@ -443,6 +684,9 @@ def main(argv: list[str] | None = None) -> int:
                         type=normalize_section,
                         help=f"Limit to a section, repeatable: "
                              f"{', '.join(SECTION_KEYS)}.")
+    parser.add_argument("--vs", metavar="CITY",
+                        help='Render a two-city comparison against this loaded '
+                             'city, e.g. --vs "Fargo, ND".')
     parser.add_argument("--out", default="reports",
                         help="Output directory (default: ./reports).")
     parser.add_argument("--no-open", action="store_true",
@@ -461,7 +705,19 @@ def main(argv: list[str] | None = None) -> int:
         sections = [k for k in SECTION_KEYS if k in set(args.sections)]
 
     data = load_bundle(slug)
-    path = write_report(data, args.out, sections)
+
+    if args.vs:
+        other_slug, message = datausa.resolve_cached_slug(args.vs)
+        if other_slug is None:
+            print(message, file=sys.stderr)
+            return 1
+        if other_slug == slug:
+            print("Both cities are the same — nothing to compare.", file=sys.stderr)
+            return 1
+        path = write_comparison(data, load_bundle(other_slug), args.out, sections)
+    else:
+        path = write_report(data, args.out, sections)
+
     print(f"Report written: {path}")
     if not args.no_open:
         open_in_browser(path)

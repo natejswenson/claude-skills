@@ -103,11 +103,30 @@ and exits rather than picking one. Section names accept ordinary words —
 Loading a second city is how you compare two: both digests stay available, and
 `query.py "Duluth, MN" median_household_income` reads either one.
 
+### Comparative reports
+
+```bash
+python3 $S/scripts/report.py "Hawley, MN" --vs "Fargo, ND"
+```
+
+One document, both cities, every block on a shared scale. Two things make the
+comparison honest rather than decorative:
+
+- **Breakdowns are shares of each city's own total.** Raw counts across a
+  2,178-person town and a 131,627-person city measure population, not
+  composition — every bar in the small town would vanish.
+- **Count trends are indexed to each city's own first year.** Those two
+  populations on a shared linear axis are both flat lines; indexed, you get the
+  reading you wanted (Fargo 121, Hawley 106, 2013 = 100).
+
+State benchmarks are dropped in comparison mode — the two cities are usually in
+different states, so "vs state" would mean something different on each side.
+
 ## Tests
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 156 offline tests, 100% coverage
+pytest                                    # 181 offline tests, 100% coverage
 pytest -m live                            # 14 contract tests against the real API
 ```
 
