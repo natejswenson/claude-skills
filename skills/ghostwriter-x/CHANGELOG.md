@@ -93,6 +93,15 @@ self-learning loop turned out never to have run at all.
 
 ### Changed
 
+- `verify_sources.py` no longer reports "N distinct live sources **verified**".
+  It proves the URLs resolve and come from ≥3 distinct hosts; whether a source
+  actually *supports* the claim attached to it is unmachine-checkable and stays
+  the agent's job. The old wording invited exactly the over-trust that lets an
+  unread citation through, so it now states its own scope.
+- `card-language.md`: fit beats novelty. Anti-sameness never overrides the
+  step-1 choice of the hero that proves the point — if the right hero repeats,
+  keep it and vary the other four axes. Swapping to a weaker hero to satisfy the
+  constraint produces a card that varies and proves nothing.
 - The visual choice now rides in the draft-approval dialog as a second question
   instead of its own round trip (4 dialogs per post → 3).
 - Publish failures get a recovery, not a debugging session: the first thing said

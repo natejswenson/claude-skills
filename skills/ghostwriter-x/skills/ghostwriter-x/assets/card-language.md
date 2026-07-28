@@ -16,6 +16,14 @@ All classes live in `diagram.css` (section: PRESS DESIGN SYSTEM); personalize
 3. **Check `images/card-history.jsonl` and differ from the last 3 cards on ≥2 axes**
    (see Variation axes). Same post shape twice in a row is fine; same *composition*
    is not.
+   **Fit beats novelty, always.** The hero is chosen in step 1 by what proves the
+   point; anti-sameness never overrides that. If the right hero repeats — three
+   terminal posts in a row because the last three posts were about real CLI output —
+   **keep it** and differ on the other four axes (headline treatment, density,
+   numeral presence, support texture), which is more than enough to keep cards
+   distinct. Swapping to a weaker hero purely to satisfy the constraint produces a
+   card that varies and proves nothing, which is the failure this rule exists to
+   prevent, not the one it creates.
 4. Author `images/<slug>.html` (start from `assets/card-template-press.html` or from
    scratch), render with `--strict`, judge it like an art director, then show the user.
 5. On approval, append one fingerprint line to `images/card-history.jsonl`:
