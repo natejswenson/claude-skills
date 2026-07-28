@@ -1,6 +1,6 @@
 {
   "name": "ghostwriter-x",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Write sharp X (Twitter) posts and threads in the user's own voice and publish them through the free Typefully API after they approve. Use when the user wants to draft, write, or post something to X or Twitter, asks for a \"tweet\", a \"thread\", or an \"X post\", or wants to set up X posting. Enforces X's 280-weighted-character limit per tweet, formats threads natively, and never publishes without explicit approval.",
   "author": {
     "name": "Nate Swenson"
