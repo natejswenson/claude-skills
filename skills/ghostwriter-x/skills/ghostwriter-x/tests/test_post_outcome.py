@@ -1,6 +1,7 @@
 """Tests for scripts/post_outcome.py — the self-reported outcome half of the feedback loop."""
 from __future__ import annotations
 
+import datetime as _dt
 import json
 
 import pytest
@@ -116,3 +117,111 @@ def test_main_id_and_latest_mutually_exclusive(monkeypatch, tmp_path):
     )
     with pytest.raises(SystemExit):
         po.main()
+
+
+# ------------------------------------------------------- due / check-due loop
+TODAY = _dt.date(2026, 7, 27)
+
+
+def test_due_record_picks_oldest_ripe_not_newest():
+    """The bug that kept this loop dead: picking the NEWEST unscored post meant a
+    same-day post blocked the check forever while ripe older posts aged out."""
+    recs = [
+        {"date": "2026-07-20", "slug": "old-unscored"},
+        {"date": "2026-07-22", "slug": "scored", "outcome": "great"},
+        {"date": "2026-07-27", "slug": "today"},
+    ]
+    assert po.due_record(recs, TODAY)["slug"] == "old-unscored"
+
+
+def test_due_record_ignores_posts_younger_than_threshold():
+    recs = [{"date": "2026-07-26", "slug": "yesterday"}]
+    assert po.due_record(recs, TODAY) is None
+
+
+def test_due_record_exactly_at_threshold_is_due():
+    recs = [{"date": "2026-07-25", "slug": "ripe"}]
+    assert po.due_record(recs, TODAY)["slug"] == "ripe"
+
+
+def test_due_record_all_scored_returns_none():
+    recs = [{"date": "2026-07-01", "slug": "a", "outcome": "flopped"}]
+    assert po.due_record(recs, TODAY) is None
+
+
+def test_due_record_undated_record_never_due():
+    assert po.due_record([{"slug": "no-date"}], TODAY) is None
+    assert po.due_record([{"date": "not-a-date", "slug": "bad"}], TODAY) is None
+
+
+def test_today_returns_the_real_date():
+    assert po._today() == _dt.date.today()
+
+
+def test_due_record_defaults_to_real_today(monkeypatch):
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    assert po.due_record([{"date": "2026-07-01", "slug": "old"}])["slug"] == "old"
+
+
+def test_check_due_prints_record(monkeypatch, tmp_path, capsys):
+    log = _log(tmp_path, [{"date": "2026-07-01", "slug": "old"}])
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    monkeypatch.setattr("sys.argv", ["x", "--check-due", "--log", str(log)])
+    po.main()
+    assert json.loads(capsys.readouterr().out)["slug"] == "old"
+
+
+def test_check_due_prints_none_when_nothing_ripe(monkeypatch, tmp_path, capsys):
+    log = _log(tmp_path, [{"date": "2026-07-27", "slug": "today"}])
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    monkeypatch.setattr("sys.argv", ["x", "--check-due", "--log", str(log)])
+    po.main()
+    assert capsys.readouterr().out.strip() == "none"
+
+
+def test_check_due_on_missing_log_is_none_not_error(monkeypatch, tmp_path, capsys):
+    """Runs before anything has ever been published, so absent != broken."""
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--check-due", "--log", str(tmp_path / "nope.jsonl")]
+    )
+    po.main()
+    assert capsys.readouterr().out.strip() == "none"
+
+
+def test_main_due_records_the_oldest_ripe_post(monkeypatch, tmp_path, capsys):
+    log = _log(tmp_path, [
+        {"date": "2026-07-20", "ids": ["1"], "slug": "old"},
+        {"date": "2026-07-27", "ids": ["2"], "slug": "today"},
+    ])
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--due", "--outcome", "flopped", "--log", str(log)]
+    )
+    po.main()
+    recs = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+    assert recs[0]["outcome"] == "flopped"
+    assert "outcome" not in recs[1]
+    assert "old -> flopped" in capsys.readouterr().out
+
+
+def test_main_due_with_nothing_ripe_exits(monkeypatch, tmp_path):
+    log = _log(tmp_path, [{"date": "2026-07-27", "slug": "today"}])
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--due", "--outcome", "great", "--log", str(log)]
+    )
+    with pytest.raises(SystemExit, match="no post is due"):
+        po.main()
+
+
+def test_main_recording_without_outcome_exits(monkeypatch, tmp_path):
+    log = _log(tmp_path, [REC1])
+    monkeypatch.setattr("sys.argv", ["x", "--latest", "--log", str(log)])
+    with pytest.raises(SystemExit, match="--outcome is required"):
+        po.main()
+
+
+def test_pick_record_due_branch_exits_when_none(monkeypatch):
+    monkeypatch.setattr(po, "_today", lambda: TODAY)
+    with pytest.raises(SystemExit, match="no post is due"):
+        po.pick_record([{"date": "2026-07-27"}], None, False, due=True)
