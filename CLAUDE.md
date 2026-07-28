@@ -126,10 +126,26 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    (this bypasses `release-dispatch`, so clear the `release-pending` label by hand:
    `gh pr edit <number> --remove-label release-pending`.)
 
-> The per-skill `release` job (`needs: ci`) runs on a real push to `main` **or** an on-demand
-> `workflow_dispatch` (step 6). The bot `GITHUB_TOKEN` auto-merge does not fire push events, so the
-> dispatch is the deliberate release trigger. Full publish-on-merge would still need re-coupling via
-> a `RELEASE_PAT` so the auto-merge push fires downstream workflows.
+> The per-skill `release` job (`needs: ci`) runs on a push to `main` **or** an on-demand
+> `workflow_dispatch` (step 6).
+>
+> **⚠️ A `dev → main` auto-merge DOES fire the push trigger — releases are effectively
+> publish-on-merge, not dispatch-gated.** This file previously claimed the bot `GITHUB_TOKEN`
+> suppresses push events; that is wrong, and it cost a release. Observed 2026-07-28: PR #94
+> auto-merged at 14:37:04, a `push`-triggered `city-report` run started at 14:37:07, and it cut
+> `city-report-v0.4.0` at 14:37:32 — before a planned CHANGELOG edit had landed, so the GitHub
+> Release carried stale notes. The later `release-dispatch` succeeded but was a **no-op**: the
+> `_release` workflow skips when the tag already exists, so it silently could not correct anything.
+>
+> Consequences to plan around:
+> - **Land the CHANGELOG in the same promotion as the version bump.** A follow-up promotion to fix
+>   release notes is too late — the tag is already cut from the first one.
+> - To *hold* a release, keep the version bump off `main` (open the promotion as a draft), not by
+>   withholding the dispatch.
+> - To repair notes after the fact: `gh release edit <tag> --notes-file <file>`. Re-cutting instead
+>   means deleting a published tag, which is worse.
+> - `release-dispatch` remains useful for re-running a failed release or one whose push run was
+>   cancelled; treat it as a retry path, not the primary trigger.
 
 ## CI architecture (how the gate works)
 
