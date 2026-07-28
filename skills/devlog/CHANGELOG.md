@@ -2,6 +2,19 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.11.1 (2026-07-28) — publish the README, LICENSE and CHANGELOG to npm
+
+- **Fixed: the npm package shipped with no README, LICENSE or CHANGELOG.**
+  `package.json`'s `files` listed all three, but they live at the plugin root
+  (beside `.claude-plugin/`), one level above the package directory — and npm only
+  includes files from inside the package directory, so the entries silently matched
+  nothing. Every release published a tarball without them, and
+  `npm view @natjswenson/devlog readme` returned *"No README data found"*, leaving
+  the npm page blank. A `prepack` script now stages the three files into the package
+  directory before the tarball is built, and `postpack` removes them again so the
+  working tree stays clean; they are gitignored at that path so an interrupted pack
+  cannot leave committable strays. Code unchanged.
+
 ## 0.11.0 (2026-07-19) — everything the six-run audit found
 
 A three-way audit of the first six real `/devlog` runs (content graded against git
