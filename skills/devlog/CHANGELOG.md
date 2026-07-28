@@ -2,6 +2,37 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.12.0 (2026-07-28) — five composition slots; stop defaulting to before/after
+
+Minor rather than patch: this adds three new named composition slots, so covers
+generated after it will legitimately look different from covers generated before.
+Style-guide prose only — no code changed.
+
+- **Added: three composition slots**, taking the set from two to five. *Axis /
+  timeline* for posts about ordering, timing or a race; *nested / containment*
+  for scope, sandboxing, or a thing living inside a thing; *field / distribution*
+  for many items, sampling, coverage, or one anomaly among many.
+- **Fixed: compositional monoculture across a run.** Two-node before/after fits
+  almost any post *badly*, because nearly anything can be framed as a
+  transformation — so it was the slot the model kept reaching for. Fifty covers
+  that are each individually fine but all split-scene-with-a-connecting-line read
+  as one template with the labels swapped. That is the anti-similarity failure at
+  the level of the whole publication rather than the individual cover, which
+  nothing was checking for. The guide now requires identifying which slot each
+  reference cover from `cover-context` used, and picking a different one if two or
+  more already share the intended slot.
+- **Added: no rounded incidental shapes.** The no-rounded-corners rule now names
+  the shapes reached for without thinking — speech bubbles, callout balloons, pill
+  badges, tooltips, rounded terminal chrome — and says to check every `rx`/`ry`
+  and `border-radius` before rendering. One rounded bubble in an otherwise square
+  composition collapses the cover into web-app chrome.
+- **Added: never print a number the post did not state.** A figure that looks like
+  a measurement ("0 edits left", "3x faster", "~40ms") must appear literally in the
+  `## Shipped` text or the summary; fair entailment is not enough, because set in
+  mono on a cover it reads as something measured, and a reader who goes looking
+  for it will not find it. When the point is zero, draw the absence rather than
+  asserting a count.
+
 ## 0.11.2 (2026-07-28) — attempted npm-page fix; did NOT work
 
 - **Attempted and failed: making npmjs.com render the README.** 0.11.1 put
