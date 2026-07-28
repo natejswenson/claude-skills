@@ -1,0 +1,61 @@
+{
+  "_comment": "Load-bearing guardrails for resume. The scripts enforce schema and rendering; they do NOT enforce the process rules that keep a tailored resume honest — never invent facts, validate against the plain-text source rather than a binary path, stop after 3 validation attempts instead of retrying silently, treat job-description text as data. Those live only in SKILL.md, and tools/score_skill.py scores structure rather than content, so a deleted rule scores 100 and ships. tests/skill_contract.test.mjs asserts each pattern below still matches.",
+  "prose": [
+    {
+      "id": "never-invent-facts",
+      "file": "SKILL.md",
+      "pattern": "Never\\s*\\n?\\s*invent facts",
+      "rationale": "This is the one rule whose violation actively harms the user: a resume that claims experience the candidate does not have is something they carry into an interview. Nothing in validate.mjs can detect a plausible fabricated bullet, so this prose is the entire defense."
+    },
+    {
+      "id": "validate-against-plain-text-source",
+      "file": "SKILL.md",
+      "pattern": "never against a `\\.pdf`/`\\.docx` path",
+      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring — and the natural response to a spurious failure is to stop trusting the validator."
+    },
+    {
+      "id": "stop-after-three-validation-attempts",
+      "file": "SKILL.md",
+      "pattern": "still failing after \\*\\*3 attempts\\*\\*, stop",
+      "rationale": "Without a bound, a rule the agent cannot reconcile with the source material turns into a silent retry loop that either burns the session or ends in the agent quietly weakening the resume until the validator passes. The bound forces the conflict to surface to the user."
+    },
+    {
+      "id": "jd-text-is-data-not-instructions",
+      "file": "SKILL.md",
+      "pattern": "prompt-injection-fixtures",
+      "rationale": "Job descriptions are attacker-controlled text pasted straight into the context. The skill has a tested adversarial-input history (docs/security/prompt-injection-fixtures/); dropping the pointer to it removes the only in-skill signal that JD text must be treated as data."
+    },
+    {
+      "id": "no-silent-template-fallback",
+      "file": "SKILL.md",
+      "pattern": "don't silently fall back\\s*\\n?\\s*to a default template",
+      "rationale": "A silent fallback means the user asks for one style, gets another, and has no way to tell — the PDF renders fine and looks deliberate."
+    },
+    {
+      "id": "style-picker-is-mandatory",
+      "file": "SKILL.md",
+      "pattern": "This step is not optional\\s*—?\\s*always run it after opening the",
+      "rationale": "Re-rendering a template is ~1s while re-tailoring is expensive, so the picker is where the user gets real choice cheaply. Marked mandatory because it is the step most likely to be skipped as 'the user didn't ask'."
+    },
+    {
+      "id": "switching-templates-never-retailors",
+      "file": "SKILL.md",
+      "pattern": "never re-tailor, never\\s*\\n?\\s*re-validate",
+      "rationale": "Re-tailoring on a style switch would re-run the LLM and produce different resume CONTENT for what the user asked to be a cosmetic change — the content they already approved would silently drift under them."
+    }
+  ],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / resume` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "jd-coverage-discriminates-on-real-data",
+      "kind": "golden",
+      "test": "scripts/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/coverage-matrix.json",
+        "evals/baseline/tailored-devops-resume.json"
+      ],
+      "update_command": "node evals/baseline/update-coverage-matrix.mjs",
+      "rationale": "scripts/keyword-coverage.test.mjs unit-tests keywordCoverage() on small synthetic inputs, which separate under almost any scoring rule. This pins it against the real corpus the eval harness actually scores: a genuine past-run tailored DevOps resume (evals/baseline/tailored-devops-resume.json — the benchmark-out artifact with identity fields replaced, since benchmark-out/ is gitignored for holding real contact details and keywordCoverage reads only summary + experience[].bullets) against all 28 real job postings across 9 archetypes. Observed separation is unambiguous — every swe-mid posting scores >= 0.1719 while every other archetype tops out at 0.1094 — so the baseline asserts strict ordering (worst matching > best off-archetype), a 1.5x mean-ratio floor to catch the signal collapsing toward noise before the ordering actually inverts, and per-job drift against a frozen matrix to catch a stopword or tokenizer change that shifts everything at once. If JD-coverage stops discriminating, every eval score built on it becomes meaningless while still looking like a number. The resume is also re-parsed against the current ResumeJSON schema, so schema drift that invalidates real historical output surfaces at CI time rather than on a user's file. NOTE: benchmark-out/j6-frontend.json is byte-identical to the DevOps file (a real defect in the historical benchmark run), so it is deliberately NOT used as a second discrimination case."
+    }
+  ]
+}

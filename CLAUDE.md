@@ -161,6 +161,50 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
   it touches. **The `push` trigger IS path-filtered** so a skill only releases when its own files
   changed.
 
+## Baseline eval sets (the anti-degradation gate)
+
+Every skill ships a **baseline eval set**: deterministic, offline, $0 checks pinned against
+artifacts from *real past runs*. They run inside each skill's existing test suite, so
+`ci / <skill>` already gates them — there is no separate workflow and no new required check.
+
+**They are deliberately not LLM-judged.** A CI gate that calls a model costs money, flakes, and
+turns every release into a coin flip. The LLM-judged harnesses (`evals/run_eval.py`,
+`voice_judge.py`, `judge_post.mjs`, `scripts/evals/run.mjs`) stay **manual and cost-capped** — run
+them when adding a feature, not to merge. Anything in CI is offline and cannot spend.
+
+Four rules keep these catching real degradation instead of becoming release friction:
+
+1. **Two-sided.** Every baseline asserts good-input-passes **and** known-bad-input-fails. A
+   one-sided baseline silently rots the day someone weakens the checker.
+2. **Anti-vacuity floors.** Any corpus-driven check declares `min_corpus`. A glob that quietly
+   matches nothing must go red, not green. (This is the most common way a baseline turns
+   decorative — it bit this very change during development: a `r.errors ?? []` typo against a
+   `{ok, findings}` return made 61 devlog entries report "all clean" while checking nothing.)
+3. **Floors, not equality, for scores.** Byte-exactness is used in exactly one place — shipflow's
+   rendered workflow, where the file *is* the contract.
+4. **One-command refresh.** Every frozen artifact has an `update_command` in
+   `skill-invariants.json`, and the failing assertion prints it.
+
+`skills/<skill>/skills/<skill>/skill-invariants.json` is the declaration: `prose` (guardrails no
+code enforces) + `baseline` (each entry naming its `test`, `fixtures`/`corpus_glob`, `min_corpus`
+and `update_command`). **`tools/lint_baseline.py` enforces the declaration is real** — it runs
+unconditionally in `ci / marketplace` and fails if a skill has no baseline, names a test that does
+not exist *or that no test runner discovers*, declares a missing fixture, or has a corpus glob
+below its own floor.
+
+| Skill | Baseline pinned against | Catches |
+|---|---|---|
+| ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
+| shipflow | this repo's own `shipflow.json` → rendered workflow (+ its `renderedTemplateHashes` receipt) | any renderer/config-mapping drift; found a real bug on first run (see below) |
+| city-report | two real cached city bundles (small places, where the `_1` cubes fail first) | a section or headline metric silently vanishing; the Data USA "HTTP 200 + zero rows" trap |
+| github-stats | a stubbed-`gh` end-to-end `overview` golden | assembly regressions the per-function unit tests cannot see |
+| resume | a real tailored résumé × 28 real job postings | JD-keyword coverage ceasing to discriminate — i.e. every eval score becoming meaningless while still looking like a number |
+| devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
+
+> The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
+> today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
+> "the linter must accept its own history", which is a different and wrong requirement.
+
 ## Repo settings (as code)
 
 `.github/repo-settings.sh` is the idempotent source of truth for repo + `main`/`dev` **protection**
@@ -229,6 +273,14 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
    `score_skill.py` CI invocation argument must point at the nested path
    (`skills/<skill>/skills/<skill>`); `lint_plugin.py`'s argument stays the plugin root — it
    resolves the nested SKILL.md/package.json path internally.
+10. **Add `skill-invariants.json` with both a `prose` and a `baseline` block, and the tests that
+    enforce them** (see Baseline eval sets, above). `ci / marketplace` runs
+    `tools/lint_baseline.py` unconditionally and **fails the PR** if the new skill has no baseline,
+    names a test no runner discovers, or declares a fixture/corpus that isn't there — so this is
+    not optional and cannot be deferred. Put the baseline test where the skill's runner already
+    looks (`tests/test_*.py` for pytest skills, `tests/**/*.test.mjs` or `scripts/**/*.test.mjs`
+    for node skills); no CI wiring is needed beyond that. Pin it against a **real past run** of the
+    skill, not a synthetic fixture — that is the whole point.
 
 ## Design docs
 

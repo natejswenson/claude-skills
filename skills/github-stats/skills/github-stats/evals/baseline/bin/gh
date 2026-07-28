@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Offline stub of the `gh` CLI, serving evals/baseline/fixtures/ instead of GitHub.
+#
+# Why a stub and not more unit tests: tests/test_gh_stats.py already drives each
+# `compute_*` function against fixture JSON, so the aggregation math is covered.
+# What nothing covered is `collect_overview` — the assembly of those pieces into
+# the object the user actually sees. That path is pure `gh api` calls, so putting
+# this on PATH makes the REAL script runnable end to end with zero network.
+#
+# Only the surface gh-stats.sh actually uses is implemented. Anything else exits
+# non-zero on purpose: a silent empty result would let a regression that starts
+# calling a new endpoint pass as if nothing changed.
+set -euo pipefail
+
+FIXTURES="$(cd "$(dirname "${BASH_SOURCE[0]}")/../fixtures" && pwd)"
+
+[ "${1:-}" = "api" ] || { echo "stub gh: unsupported command: ${1:-<none>}" >&2; exit 64; }
+shift
+
+path=""
+jq_filter=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --paginate) shift ;;
+    --jq) jq_filter="$2"; shift 2 ;;
+    -*) echo "stub gh: unsupported flag: $1" >&2; exit 64 ;;
+    *) path="$1"; shift ;;
+  esac
+done
+
+emit() {
+  if [ -n "$jq_filter" ]; then jq -r "$jq_filter"; else cat; fi
+}
+
+case "$path" in
+  users/*/repos\?*)
+    cat "$FIXTURES/repos.json" | emit ;;
+
+  users/*)
+    cat "$FIXTURES/user.json" | emit ;;
+
+  repos/*/commits\?*)
+    # repos/<owner>/<repo>/commits?author=...&per_page=100&page=N
+    repo="${path#repos/*/}"; repo="${repo%%/commits\?*}"
+    page="${path##*page=}"; page="${page%%&*}"
+    if [ "$page" = "1" ]; then
+      n=$(jq -r --arg r "$repo" '.[$r] // 0' "$FIXTURES/commits.json")
+    else
+      n=0   # every fixture repo fits in one page, so page 2+ is always empty
+    fi
+    jq -nc --argjson n "$n" '[range(0;$n)|{sha:"x"}]' | emit ;;
+
+  search/issues\?q=type:pr*)
+    cat "$FIXTURES/pr_search.json" | emit ;;
+
+  search/issues\?q=type:issue*)
+    cat "$FIXTURES/issue_search.json" | emit ;;
+
+  *)
+    echo "stub gh: unmapped api path: $path" >&2
+    exit 65 ;;
+esac

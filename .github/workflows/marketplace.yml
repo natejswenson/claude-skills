@@ -31,3 +31,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python tools/lint_marketplace.py
+      # Every skill must declare a baseline eval set whose test the runner
+      # actually discovers and whose fixtures/corpus really exist. Lives here
+      # rather than in the per-skill callers for the same reason as the
+      # marketplace lint: it is a cross-skill invariant, and a path-filtered
+      # check would let a PR adding a new skill pass green without it ever
+      # being evaluated. See CLAUDE.md's "Baseline eval sets" section.
+      - run: python tools/lint_baseline.py
