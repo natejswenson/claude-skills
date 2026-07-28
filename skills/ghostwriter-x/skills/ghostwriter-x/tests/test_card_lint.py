@@ -149,6 +149,66 @@ ALIGNED_TABLE = [
 ]
 
 
+# ------------------------------------------- capture fidelity (term-not-in-capture)
+CAPTURE = "$ ruff check --statistics\n47\tDTZ011 \t[ ] call-date-today\nFound 138 errors.\n"
+
+
+def _with_capture(tmp_path, rows, capture=CAPTURE):
+    html_path = tmp_path / "slug.html"
+    (tmp_path / "slug.source.txt").write_text(capture, encoding="utf-8")
+    html = term_card(rows)
+    html_path.write_text(html, encoding="utf-8")
+    return html, str(html_path)
+
+
+def test_fidelity_no_path_skips():
+    assert cl._capture_fidelity_checks(term_card(["anything at all"]), None) == []
+
+
+def test_fidelity_no_capture_file_skips(tmp_path):
+    html_path = tmp_path / "slug.html"
+    assert cl._capture_fidelity_checks(term_card(["invented"]), str(html_path)) == []
+
+
+def test_fidelity_passes_when_rows_match_capture(tmp_path):
+    """Tabs in the real capture vs spaces in the card must not count as a diff."""
+    html, path = _with_capture(
+        tmp_path, ["❯ ruff check --statistics", "47  DTZ011  [ ] call-date-today"]
+    )
+    assert cl._capture_fidelity_checks(html, path) == []
+
+
+def test_fidelity_fails_on_an_edited_row(tmp_path):
+    """The real defect this exists for: silently dropping the [ ] column."""
+    html, path = _with_capture(tmp_path, ["47  DTZ011  call-date-today"])
+    findings = cl._capture_fidelity_checks(html, path)
+    assert [f.code for f in findings] == ["term-not-in-capture"]
+    assert "call-date-today" in findings[0].message
+
+
+def test_fidelity_fails_on_an_invented_row(tmp_path):
+    html, path = _with_capture(tmp_path, ["99  FAKE01  [ ] totally-made-up"])
+    assert [f.code for f in cl._capture_fidelity_checks(html, path)] == [
+        "term-not-in-capture"
+    ]
+
+
+@pytest.mark.parametrize("marker", ["… 18 more rules", "17 more rules", "…", "..."])
+def test_fidelity_allows_self_announced_truncation(tmp_path, marker):
+    html, path = _with_capture(tmp_path, [marker])
+    assert cl._capture_fidelity_checks(html, path) == []
+
+
+def test_fidelity_ignores_blank_rows(tmp_path):
+    html, path = _with_capture(tmp_path, ["   "])
+    assert cl._capture_fidelity_checks(html, path) == []
+
+
+def test_norm_term_line_strips_prompt_glyph_and_collapses_space():
+    assert cl._norm_term_line("❯   ruff  check") == "ruff check"
+    assert cl._norm_term_line("$ ruff\tcheck") == "ruff check"
+
+
 def test_term_aligned_table_is_clean():
     findings = cl.static_checks(term_card(ALIGNED_TABLE), "images/x.html")
     assert findings == []
@@ -191,7 +251,10 @@ def test_term_two_tables_may_differ_in_width():
     narrow = ["┌───┐", "│ x │", "└───┘"]
     rows = ALIGNED_TABLE + ["verdict line, no box chars"] + narrow
     findings = cl.static_checks(term_card(rows), "images/x.html")
-    assert findings == []
+    # 7 short rows also trips the (separate) hero-fill warning; alignment is
+    # what this test is about, so assert only that nothing failed alignment.
+    assert "term-misaligned" not in codes(findings)
+    assert not codes(findings, "FAIL")
 
 
 def test_term_misalignment_within_second_table_still_fails():
@@ -203,7 +266,28 @@ def test_term_misalignment_within_second_table_still_fails():
 def test_term_row_budget_warns_past_landscape_cap():
     rows = [f"line {i}" for i in range(cl.BUDGETS["term"]["max_rows"] + 1)]
     findings = cl.static_checks(term_card(rows), "images/x.html")
-    assert codes(findings, "WARN") == ["term-rows"]
+    assert "term-rows" in codes(findings, "WARN")
+
+
+def test_term_underfilled_warns_when_a_hero_panel_holds_short_rows():
+    """A wide dark panel floated over a few short lines reads as a hole."""
+    rows = [f"line {i}" for i in range(cl.BUDGETS["term_fill"]["hero_rows"])]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert "term-underfilled" in codes(findings, "WARN")
+
+
+def test_term_underfilled_quiet_for_a_short_accent_panel():
+    """card-language.md sizes an accent terminal at ≤8 rows / ≤42 chars — it is
+    not held to the 64-char hero budget."""
+    rows = [f"line {i}" for i in range(cl.BUDGETS["term_fill"]["hero_rows"] - 1)]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert "term-underfilled" not in codes(findings)
+
+
+def test_term_underfilled_quiet_when_rows_use_the_budget():
+    rows = ["x" * 60 for _ in range(cl.BUDGETS["term_fill"]["hero_rows"])]
+    findings = cl.static_checks(term_card(rows), "images/x.html")
+    assert "term-underfilled" not in codes(findings)
 
 
 def test_term_width_budget_warns_past_landscape_cap():
@@ -626,3 +710,44 @@ def test_dom_code_line_budget_fails_at_14_rows(dom_page):
         f.code == "count-budget" and "14 code lines" in f.message
         for f in findings if f.level == "FAIL"
     )
+
+
+def _press_term_card(rows: list[str]) -> str:
+    """A Press card whose hero is a painted .term panel."""
+    return card(
+        '<div class="mast"><div class="stamp"></div>'
+        '<div class="eyebrow">Ruff 0.16 · <span class="no">No. 002</span></div></div>'
+        '<h1 class="compact">Same code. 9 errors became 138.</h1>'
+        '<div class="term">'
+        + "".join(f'<div class="tl">{r}</div>' for r in rows)
+        + "</div>"
+        '<div class="colophon"><span>Before you upgrade</span>'
+        '<span class="out">check what you stopped catching</span></div>',
+        cls="card press",
+    )
+
+
+def test_dom_panel_rag_warns_on_an_underfilled_terminal(dom_page):
+    """The .term dead-band defect. The pre-existing empty-band-x rule cannot see
+    this: block children are full-width, so its box-edge measure reads ~0."""
+    findings = run_dom(dom_page, _press_term_card(["9 E402", "Found 9 errors."]))
+    assert "panel-rag" in codes(findings)
+    assert "empty-band-x" not in codes(findings)
+
+
+def test_dom_panel_rag_quiet_when_the_panel_is_filled(dom_page):
+    wide = "47  DTZ011  [ ] call-datetime-now-without-tzinfo-and-then-some-more"
+    findings = run_dom(dom_page, _press_term_card([wide, wide]))
+    assert "panel-rag" not in codes(findings)
+
+
+def test_dom_panel_rag_ignores_unpainted_blocks(dom_page):
+    """Ragged-right type on bare paper is correct editorial rag, not a defect —
+    a short h1/colophon must never trip the rule."""
+    html = card(
+        '<div class="mast"><div class="eyebrow">X · <span class="no">No. 1</span></div></div>'
+        '<h1>Short.</h1>'
+        '<div class="colophon"><span>Out</span><span class="out">brief</span></div>',
+        cls="card press",
+    )
+    assert "panel-rag" not in codes(run_dom(dom_page, html))

@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import mimetypes
 import sys
 import time
 import urllib.error
@@ -136,6 +135,19 @@ def api_request(
                 )
             sys.exit(f"ERROR: Typefully rate limit hit on {context or path}{when}. "
                      "Try again later.")
+        if e.code == 403 and "publishing of x drafts containing urls" in body.lower():
+            sys.exit(
+                "ERROR: Typefully refused to direct-publish this thread — X policy "
+                "blocks API publishing of drafts it reads as containing a URL.\n"
+                "Nothing was posted; the draft was never created, so a retry is "
+                "safe (no double-post risk).\n"
+                "Two ways forward:\n"
+                "  1. Reword the token it is reading as a hostname. Dotted config "
+                "keys are the usual culprit (`lint.select`, `[tool.ruff.lint]`); a "
+                "bare filename like `ruff.toml` is fine. Then re-run.\n"
+                "  2. Re-run with --draft-only to push the exact text to Typefully "
+                "as an unpublished draft, then publish it from their UI."
+            )
         print(f"ERROR: {context or path} returned HTTP {e.code}", file=sys.stderr)
         print(body, file=sys.stderr)
         sys.exit(1)
@@ -156,6 +168,17 @@ def require_setup(env: dict) -> str:
             "python3 scripts/typefully_post.py --connect"
         )
     return social_set
+
+
+def quota(env: dict, social_set: str) -> dict:
+    """The free plan's remaining monthly posts, from Typefully.
+
+    `GET /social-sets/{id}/` returns publishing_quota {used, remaining,
+    resets_at} at no cost. Worth one call: the alternative is discovering the
+    cap by eating a 402 on a post the user already approved.
+    """
+    data = api_request(env, "GET", f"/social-sets/{social_set}/", context="quota")
+    return data.get("publishing_quota") or {}
 
 
 def connect(env: dict, env_path: Path = ENV_PATH) -> None:
@@ -283,8 +306,12 @@ def upload_media(env: dict, social_set: str, path: str) -> str:
 
     blob = Path(path).read_bytes()
     req = urllib.request.Request(upload_url, data=blob, method="PUT")
-    ctype = mimetypes.guess_type(path)[0] or "application/octet-stream"
-    req.add_header("Content-Type", ctype)
+    # Typefully hands back an S3 *SigV2* presigned URL signed with an EMPTY
+    # Content-Type. Sending a real one (image/png) puts a different value in
+    # S3's StringToSign and the PUT fails with 403 SignatureDoesNotMatch.
+    # Set the header explicitly to "" so urllib doesn't substitute its own
+    # application/x-www-form-urlencoded default, which fails the same way.
+    req.add_header("Content-Type", "")
     try:
         with urllib.request.urlopen(req) as resp:
             if resp.status not in (200, 201, 204):
@@ -314,23 +341,38 @@ def upload_media(env: dict, social_set: str, path: str) -> str:
 
 
 # -------------------------------------------------------------------- publish
-def build_payload(tweets: list[str], media_ids: dict[int, list[str]], title: str) -> dict:
+def build_payload(
+    tweets: list[str],
+    media_ids: dict[int, list[str]],
+    title: str,
+    draft_only: bool = False,
+) -> dict:
     posts = []
     for i, tweet in enumerate(tweets, 1):
         post: dict = {"text": tweet}
         if media_ids.get(i):
             post["media_ids"] = media_ids[i]
         posts.append(post)
-    return {
+    payload = {
         "platforms": {"x": {"enabled": True, "posts": posts}},
         "draft_title": title,
-        "publish_at": "now",
         "share": False,
     }
+    # Omitting publish_at entirely leaves it parked in Typefully as an
+    # unpublished draft — the fallback when X policy blocks direct publishing.
+    if not draft_only:
+        payload["publish_at"] = "now"
+    return payload
 
 
-def publish_draft(env: dict, social_set: str, payload: dict) -> dict:
-    """Create the draft with publish_at: now, then poll until it's live."""
+def publish_draft(
+    env: dict, social_set: str, payload: dict, draft_only: bool = False
+) -> dict:
+    """Create the draft with publish_at: now, then poll until it's live.
+
+    With draft_only, create it and return immediately — there is nothing to
+    poll for, because Typefully will not publish it until a human does.
+    """
     draft = api_request(
         env,
         "POST",
@@ -341,6 +383,8 @@ def publish_draft(env: dict, social_set: str, payload: dict) -> dict:
     draft_id = draft.get("id") or draft.get("draft_id")
     if not draft_id:
         sys.exit(f"ERROR: unexpected draft response: {draft}")
+    if draft_only:
+        return draft
 
     deadline = time.time() + PUBLISH_TIMEOUT
     while True:
@@ -366,6 +410,22 @@ def publish_draft(env: dict, social_set: str, payload: dict) -> dict:
         )
 
 
+def _claim_count(args) -> int:
+    """How many external claims the post made, per its sources sidecar.
+
+    A pure first-person post is 0; a research-heavy how-to is several. Recorded
+    so the loop can tell those apart later without re-reading the draft.
+    """
+    if not getattr(args, "file", None):
+        return 0
+    sidecar = Path(args.file).with_suffix(".sources.json")
+    try:
+        data = json.loads(sidecar.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    return len(data.get("claims") or [])
+
+
 def record_publish(
     draft: dict,
     args,
@@ -377,6 +437,7 @@ def record_publish(
     if log_path is None:
         log_path = PUBLISHED_LOG
     draft_id = draft.get("id") or draft.get("draft_id") or ""
+    images = getattr(args, "image", None) or []
     record = {
         "date": time.strftime("%Y-%m-%d"),
         "ids": [str(draft_id)] if draft_id else [],
@@ -388,6 +449,18 @@ def record_publish(
         "first_line": tweets[0].splitlines()[0][:120] if tweets else "",
         "lane": getattr(args, "lane", "") or "",
         "via": "typefully",
+        # Captured at publish time because it cannot be reconstructed later: the
+        # draft file can be edited and the card re-rendered, but what actually
+        # went out is only knowable now. These are the covariates the outcome
+        # loop needs to say anything beyond "this post did well".
+        "images": len(images),
+        "claims": _claim_count(args),
+        # Timezone-explicit publish instant, straight from Typefully. The local
+        # `date` above can disagree with it across midnight UTC — this thread
+        # was logged 2026-07-27 locally but went out 2026-07-28T01:42Z.
+        "published_at": draft.get("x_post_published_at") or draft.get("published_at") or "",
+        # The X status id, distinct from `ids` (which are Typefully draft ids).
+        "x_post_id": (draft.get("x_published_url") or "").rstrip("/").rsplit("/", 1)[-1],
     }
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -436,6 +509,11 @@ def main() -> None:
         action="store_true",
         help="One-time: fetch your Typefully social sets and store the id in .env.",
     )
+    src.add_argument(
+        "--quota",
+        action="store_true",
+        help="Print the plan's remaining monthly posts and reset date, then exit.",
+    )
     ap.add_argument(
         "--image",
         action="append",
@@ -466,11 +544,28 @@ def main() -> None:
         help="HUMAN-ONLY escape hatch: publish without the source-verification "
         "gate. The agent must never set this to get past the gate.",
     )
+    ap.add_argument(
+        "--draft-only",
+        action="store_true",
+        help="Create the draft in Typefully without publishing it, and print its "
+        "URL. The fallback when X policy blocks direct API publishing (e.g. text "
+        "read as containing a URL); you publish it from Typefully's UI. Still "
+        "runs the source gate.",
+    )
     args = ap.parse_args()
 
     env = load_env(ENV_PATH)
     if args.connect:
         connect(env, ENV_PATH)
+        return
+
+    if args.quota:
+        q = quota(env, require_setup(env))
+        if not q:
+            print("Typefully did not report a publishing quota for this plan.")
+            return
+        print(f"Posts left this period: {q.get('remaining', '?')} "
+              f"(used {q.get('used', '?')}), resets {q.get('resets_at', '?')}")
         return
 
     text = read_draft(args)
@@ -504,9 +599,19 @@ def main() -> None:
         for i, pairs in media_map.items()
     }
     payload = build_payload(
-        tweets, media_ids, Path(args.file).stem if args.file else "post"
+        tweets,
+        media_ids,
+        Path(args.file).stem if args.file else "post",
+        draft_only=args.draft_only,
     )
-    draft = publish_draft(env, social_set, payload)
+    draft = publish_draft(env, social_set, payload, draft_only=args.draft_only)
+
+    if args.draft_only:
+        # Not published, so it must NOT go in the publish log — that log is the
+        # outcome loop's record of things that actually went live.
+        print("Draft created in Typefully. NOT published — publish it from their UI.")
+        print(f"Draft: {draft.get('private_url', '(check typefully.com)')}")
+        return
 
     print("Published to X via Typefully.")
     url = draft.get("x_published_url") or ""

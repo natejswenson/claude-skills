@@ -179,8 +179,15 @@ def verify(draft_path):
             f"need >={MIN_SOURCES}.",
             distinct_live=len(live_hosts), results=results,
         )
+    # Deliberately not the word "verified": this gate proves the URLs resolve
+    # and come from >=MIN_SOURCES distinct hosts. Whether a source actually
+    # SUPPORTS the claim it is attached to is unmachine-checkable and remains
+    # the agent's job (SKILL.md Generate step 6). Saying "verified" invites
+    # exactly the over-trust that lets an unread citation through.
     return _ok(
-        f"{len(live_hosts)} distinct live sources verified.",
+        f"{len(live_hosts)} distinct live source host(s) reachable "
+        "(liveness + diversity only; that each source supports its claim is "
+        "not machine-checked).",
         distinct_live=len(live_hosts), results=results,
     )
 
