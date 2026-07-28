@@ -10,6 +10,7 @@
     { "name": "ghostwriter-x", "source": "./skills/ghostwriter-x" },
     { "name": "resume", "source": "./skills/resume" },
     { "name": "github-stats", "source": "./skills/github-stats" },
-    { "name": "shipflow", "source": "./skills/shipflow" }
+    { "name": "shipflow", "source": "./skills/shipflow" },
+    { "name": "city-report", "source": "./skills/city-report" }
   ]
 }
