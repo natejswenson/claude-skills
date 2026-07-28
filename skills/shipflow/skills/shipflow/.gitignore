@@ -10,3 +10,11 @@ dist/
 .vscode/
 .idea/
 coverage/
+
+# Staged at pack time by the prepack script from the plugin root (one level up,
+# beside .claude-plugin/), where these files actually live. npm only includes
+# files inside the package directory, so without this staging the published
+# tarball has no README and the npm page renders blank. postpack removes them.
+/README.md
+/LICENSE
+/CHANGELOG.md

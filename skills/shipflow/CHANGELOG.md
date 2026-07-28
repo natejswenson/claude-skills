@@ -2,6 +2,19 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.3.1 (2026-07-28) — publish the README, LICENSE and CHANGELOG to npm
+
+- **Fixed: the npm package shipped with no README, LICENSE or CHANGELOG.**
+  `package.json`'s `files` listed all three, but they live at the plugin root
+  (beside `.claude-plugin/`), one level above the package directory — and npm only
+  includes files from inside the package directory, so the entries silently matched
+  nothing. Every release through 0.3.0 published a tarball without them, and
+  `npm view @natjswenson/shipflow readme` returned *"No README data found"*, leaving
+  the npm page blank for anyone evaluating the CLI. A `prepack` script now stages the
+  three files into the package directory before the tarball is built, and `postpack`
+  removes them again so the working tree stays clean; they are gitignored at that
+  path so a interrupted pack cannot leave committable strays. Code unchanged.
+
 ## 0.3.0 (2026-07-28) — multi-pattern workflow templates; `undefined` param fix
 
 Minor, not patch: this release carries the multi-pattern feature work that had been
