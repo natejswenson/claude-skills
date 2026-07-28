@@ -148,20 +148,41 @@ def test_distribution_block_with_no_parsable_buckets():
         {"categories": []}, report_mod.brand.load_theme()) == ""
 
 
-def test_write_report_and_open(loaded, tmp_path, monkeypatch):
-    opened = []
-    monkeypatch.setattr(report_mod.subprocess, "run", lambda *a, **k: opened.append(a))
-    monkeypatch.setattr(report_mod.webbrowser, "open", lambda u: opened.append(u))
+def test_write_report_produces_a_file(loaded, tmp_path):
     path = report_mod.write_report(loaded, str(tmp_path))
     assert os.path.exists(path)
-    report_mod.open_in_browser(path)
-    assert opened
 
 
-def test_open_in_browser_survives_a_failing_opener(monkeypatch, tmp_path):
-    monkeypatch.setattr(report_mod.sys, "platform", "linux")
+@pytest.mark.parametrize("platform, opener", [("darwin", "subprocess"),
+                                              ("linux", "webbrowser"),
+                                              ("win32", "webbrowser")])
+def test_open_in_browser_uses_the_right_opener_per_platform(
+        tmp_path, monkeypatch, platform, opener):
+    """Pin the platform explicitly rather than inheriting the host's.
+
+    Without this the macOS branch was only ever exercised on a developer's own
+    machine — the suite passed locally at 100% and dropped to 99.92% on Linux
+    CI, because `sys.platform` decided which half of the function ran.
+    """
+    calls = []
+    monkeypatch.setattr(report_mod.sys, "platform", platform)
+    monkeypatch.setattr(report_mod.subprocess, "run",
+                        lambda *a, **k: calls.append(("subprocess", a)))
     monkeypatch.setattr(report_mod.webbrowser, "open",
-                        lambda u: (_ for _ in ()).throw(OSError("no display")))
+                        lambda u: calls.append(("webbrowser", u)))
+    report_mod.open_in_browser(str(tmp_path / "x.html"))
+    assert [c[0] for c in calls] == [opener]
+
+
+@pytest.mark.parametrize("platform", ["darwin", "linux"])
+def test_open_in_browser_survives_a_failing_opener(monkeypatch, tmp_path, platform):
+    """A browser that won't open must not take the whole report down with it."""
+    def boom(*a, **k):
+        raise OSError("no display")
+
+    monkeypatch.setattr(report_mod.sys, "platform", platform)
+    monkeypatch.setattr(report_mod.subprocess, "run", boom)
+    monkeypatch.setattr(report_mod.webbrowser, "open", boom)
     report_mod.open_in_browser(str(tmp_path / "x.html"))  # must not raise
 
 
