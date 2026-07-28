@@ -2,21 +2,26 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
-## 0.3.2 (2026-07-28) — actually render the README on npmjs.com
+## 0.3.2 (2026-07-28) — attempted npm-page fix; did NOT work
 
-- **Fixed: the npm page still showed "No README data found" after 0.3.1.** That
-  release put README.md, LICENSE and CHANGELOG.md into the tarball (verified by
-  downloading it), which fixed what `npm install` delivers — but not the website.
-  npm reads README.md to populate the registry manifest's `readme` field when it
-  builds the publish manifest, which happens BEFORE the package's own `prepack`
-  hook runs. So the tarball had the file and the registry record did not.
-  Worse than merely empty: the stored value was the literal string
-  `ERROR: No README data found!`, and npmjs.com falls back to reading the
-  tarball only when that field is *absent* (compare `zod`, which renders fine
-  with no packument readme at all), so the error string kept winning.
-  The release workflow now stages the three files into the package directory
-  before `npm publish` is invoked at all, rather than relying on `prepack`.
-  Code unchanged.
+- **Attempted and failed: making npmjs.com render the README.** 0.3.1 put
+  README.md, LICENSE and CHANGELOG.md into the tarball (verified by downloading
+  the published artifact), which fixed what `npm install` delivers. This release
+  additionally staged those files into the package directory before
+  `npm publish` was invoked, on the theory that npm populates the registry
+  manifest's `readme` field from disk at that point. **It did not work.** After
+  publishing, `npm view <pkg> readme` still returns the literal string
+  `ERROR: No README data found!` for both packages.
+  That field appears to be sticky: it was set once by an early release that had
+  no README, and republishing with one present does not overwrite it. Since
+  npmjs.com only falls back to reading the tarball when the field is *absent*
+  (compare `zod`, which renders fine with none at all), the stale error string
+  keeps winning.
+  The ineffective staging step was reverted in the release workflow; the
+  `prepack` hook stays, because the tarball fix is real and verified. **The npm
+  web page for both packages is still blank** — an open issue, likely needing
+  npm support to clear the cached field.
+  Code unchanged in both skills.
 
 ## 0.3.1 (2026-07-28) — publish the README, LICENSE and CHANGELOG to npm
 
