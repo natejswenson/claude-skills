@@ -41,11 +41,18 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 | Show config | `npx -y @natjswenson/devlog@latest config --json` |
 | Add a project | `npx -y @natjswenson/devlog@latest add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
 | Remove a project | `npx -y @natjswenson/devlog@latest remove-project <key> --yes` |
-| Change a setting | `npx -y @natjswenson/devlog@latest set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+| Change a setting | `npx -y @natjswenson/devlog@latest set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `siteUrl`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
 
 `targetDir` is the subdirectory of `targetRepo` that holds the devlog content tree
 (e.g. `content/devlog` when the target is the site repo itself); unset/empty means the
 repo root. Set it with `set targetDir content/devlog`, clear it with `set targetDir ''`.
+
+`siteUrl` is the public base URL that repo is *served* at, with no trailing slash — used
+to verify a published entry actually renders (Generate step 6). **The repo name is not the
+site name**: a repo called `example.io` is commonly served at `example.com`, so take this
+from a working page, not from the repo. Without it a run can push but cannot confirm
+anything went live. Set with `set siteUrl 'https://example.com'`, clear with
+`set siteUrl ''`.
 
 For **add-project**: resolve the path first (the repo the user named, or the cwd), then
 detect what the CLI will use — key = directory basename, remote = `git -C '<path>' remote
@@ -412,7 +419,65 @@ rm -rf '<abs-tmp>'
 
 If the push fails, report the error and stop — do not retry automatically.
 
-### Step 6: Confirm
+### Step 5b: Register a project the site has never rendered before
+
+`publish-entry` returns **`firstEntryForProject: true`** when the call created that
+project's first live entry. **A push is not a route.** A site that renders the devlog
+almost always keeps its own registry deciding *which* content directories become pages;
+content on disk that the registry doesn't list is built right past, and the entry 404s
+while every command in this skill reports success. Publishing a project's first entry is
+therefore a two-part job, and the CLI can only do the first part.
+
+When `firstEntryForProject` is true, **before the push**:
+
+1. Find the registry in the clone. It is a source file, not content — grep the site's
+   `src/` for the existing project keys (`grep -rn '<a-known-project-key>' <clone>/src`).
+   In an Astro/Next-style site it is typically a `PROJECTS` array the entry loader maps
+   over.
+2. Add the new project, matching the shape of the neighbouring rows exactly.
+3. **Build the site in the clone and confirm the route exists** (`npm ci && npx astro
+   build`, then check the output directory contains the new `<project>/<version>` path).
+   A registry edit that doesn't produce a route is not done.
+4. Run the site's own test suite if it has one, and commit the registry change together
+   with the content in the same push.
+
+If you cannot find a registry, say so plainly rather than assuming there isn't one; the
+verification in Step 6 is what actually settles it.
+
+**Registry position can decide feed order, not just visibility.** If the site sorts
+entries by date alone, same-date entries fall back to their load order, which is registry
+order — so a project appended to the end can render its newest entry last. After the build
+in step 3, check that the new entry appears where its date and publish numeral say it
+should, and report it if not.
+
+### Step 6: Verify the entry is actually live
+
+**Do not report a publish as successful until the published URL returns 200.** The push
+succeeding, the manifest updating, and the site serving the post are three different
+things, and this skill has previously reported success on all of the first two while the
+post 404'd.
+
+When `siteUrl` is set in config (it is echoed in the scan output):
+
+```bash
+curl -s -o /dev/null -w '%{http_code}' -L '<siteUrl>/devlog/<project>/<version>/'
+```
+
+Poll every ~45s for up to ~5 minutes; deploys are not instant. Then:
+
+- **200** → done, report the live URL as the primary link.
+- **Still 404 after the window** → the deploy failed or the entry is not routed. Check
+  `firstEntryForProject`/the registry from Step 5b first, since that is the most common
+  cause, then the host's build log. Report it as **not live**, with what you checked.
+- **`siteUrl` unset** → say the entry is pushed but unverified, give the repo URL, and
+  offer to set it: `npx -y @natjswenson/devlog@latest set siteUrl 'https://example.com'`.
+  Never describe an unverified push as published.
+
+The `/devlog/<project>/<version>/` path is this skill's default convention. If the site
+routes differently, take the pattern from a URL of an already-published entry rather than
+assuming this one.
+
+### Step 7: Confirm
 
 ```
 Release dev log entries published
@@ -420,13 +485,13 @@ Release dev log entries published
   Project: <key>
   Releases: <version>, ...
   Judged weaknesses: <residuals from Step 4, or "none">
-  URL: https://github.com/<targetRepo>/blob/<branch>/<targetDir-prefix><key>/<version>.md
+  Live: <siteUrl>/devlog/<key>/<version>/  (verified 200)
+  Source: https://github.com/<targetRepo>/blob/<branch>/<targetDir-prefix><key>/<version>.md
 ```
 
-(`<targetDir-prefix>` is `<targetDir>/` when set, empty otherwise.) When the target is
-a site repo that auto-deploys on push (e.g. Cloudflare Pages watching `main`), the
-publish push itself triggers the rebuild — mention that the entry goes live with the
-next deploy.
+(`<targetDir-prefix>` is `<targetDir>/` when set, empty otherwise.) Report the **verified
+live URL** as the primary link; the repo blob URL is the secondary one. If Step 6 could
+not verify, say so on the `Live:` line instead of printing a URL that may 404.
 
 ## Security rules
 

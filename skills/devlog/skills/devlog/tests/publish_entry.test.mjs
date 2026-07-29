@@ -595,3 +595,43 @@ test('publishEntry allows a draft whose Changelog hashes are unique', (t) => {
   const result = publishEntry({ cloneDir, project: 'other', version: 'v1.0.0', entryPath: draftWithChangelog(root, 'other', 'v1.0.0', 'b'.repeat(40)) });
   assert.equal(result.manifestUpdated, true);
 });
+
+test('publishEntry flags the first live entry for a project', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+
+  // First ever publish for this project: the site's own project registry has
+  // never been told this directory exists, so the caller has to register it.
+  const first = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(first.firstEntryForProject, true);
+
+  // Second publish into the same project needs no registration.
+  const second = publishEntry({ cloneDir, project: 'proj', version: 'v0.2.0', entryPath: draft(root, 'v0.2.0') });
+  assert.equal(second.firstEntryForProject, false);
+});
+
+test('publishEntry does not re-flag first entry on an idempotent no-op', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+
+  // Re-publishing the same version is refused outright; a manifest row that
+  // already exists with the .md removed takes the `already` path instead. Either
+  // way nothing was created, so nothing needs registering.
+  rmSync(join(cloneDir, 'proj', 'v0.1.0.md'));
+  const repeat = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(repeat.manifestUpdated, false);
+  assert.equal(repeat.firstEntryForProject, false);
+});
+
+test('publishEntry treats a project holding only tombstones as having no live entries', (t) => {
+  const { root, cloneDir } = makeDirs(t);
+  mkdirSync(join(cloneDir, 'proj'), { recursive: true });
+  writeFileSync(
+    join(cloneDir, 'proj', 'manifest.json'),
+    JSON.stringify({ entries: [{ version: 'v0.0.9', file: 'v0.0.9.md', removed: true, reason: 'consolidated' }] })
+  );
+
+  // A tombstone is an editorial retirement, not a rendered entry — the site may
+  // never have had a route for this project, so this still needs registration.
+  const result = publishEntry({ cloneDir, project: 'proj', version: 'v0.1.0', entryPath: draft(root, 'v0.1.0') });
+  assert.equal(result.firstEntryForProject, true);
+});
