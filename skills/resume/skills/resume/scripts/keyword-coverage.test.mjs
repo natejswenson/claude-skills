@@ -60,5 +60,53 @@ await test("empty JD → coverage 0, no crash", () => {
   assert.equal(keywordCoverage({ summary: "x", experience: [] }, "").coverage, 0);
 });
 
+console.log("\n[corpus sources — every section that renders]");
+await test("skills, projects and highlights all contribute", () => {
+  const jd = "We need Kubernetes, governance and Model Context Protocol experience.";
+  const bare = { summary: "Engineer.", experience: [{ bullets: ["Did work."] }] };
+  const rich = {
+    ...bare,
+    skills: ["Cloud: Kubernetes"],
+    projects: [{ name: "mcp-server", description: "A Model Context Protocol server." }],
+    highlights: [{ label: "Focus", value: "governance", caption: "policy-as-code" }],
+  };
+  const a = keywordCoverage(bare, jd);
+  const b = keywordCoverage(rich, jd);
+  assert.ok(b.coverage > a.coverage, `expected a lift, got ${a.coverage} -> ${b.coverage}`);
+  for (const kw of ["kubernetes", "governance", "protocol"]) {
+    assert.ok(b.matched.includes(kw), `missing ${kw}; matched=${b.matched.join(",")}`);
+  }
+});
+
+await test("highlights are read field-by-field, not stringified", () => {
+  // [...highlights].join(" ") would yield "[object Object]" and match nothing.
+  const r = {
+    summary: "",
+    experience: [],
+    highlights: [{ label: "Governance", value: "policy-as-code" }],
+  };
+  const out = keywordCoverage(r, "We value governance.");
+  assert.ok(out.matched.includes("governance"), "highlight objects were not read");
+});
+
+await test("malformed input never throws", () => {
+  // scripts/evals/run.mjs passes an UNVALIDATED résumé from a subprocess; a
+  // throw there is swallowed and silently drops the datapoint.
+  const jd = "Kubernetes and Terraform.";
+  for (const bad of [
+    {},
+    { skills: "not-an-array" },
+    { projects: ["a bare string"] },
+    { highlights: [null, 42] },
+    { experience: [{ bullets: "nope" }, null] },
+    { summary: 12345 },
+    null,
+    undefined,
+  ]) {
+    const out = keywordCoverage(bad, jd);
+    assert.ok(Number.isFinite(out.coverage), `coverage not finite for ${JSON.stringify(bad)}`);
+  }
+});
+
 console.log(`\nresult: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

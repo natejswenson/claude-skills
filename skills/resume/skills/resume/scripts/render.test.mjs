@@ -33,7 +33,9 @@ process.env.USERPROFILE = FAKE_HOME;
 const {
   resolveTheme,
   renderThemeFromResume,
+  renderThemes,
   renderHtmlToPdf,
+  outputStem,
   shippedThemeNames,
   DEFAULT_THEME,
   HOME_THEMES_DIR,
@@ -131,6 +133,65 @@ await test("the theme CSS is inlined, not linked", async () => {
   // unstyled; setContent() has no base URL.
   assert.ok(!/<link[^>]+stylesheet/i.test(html), "theme was linked rather than inlined");
   assert.ok(html.includes("--sig"), "press tokens missing from the inlined CSS");
+});
+
+console.log("\n[outputStem]");
+await test("a target makes the filename unique per application", () => {
+  const r = { name: "Nate Swenson", target: { company: "Alteryx", role: "AI Platform Engineer" } };
+  // The default theme owns the plain name — it is the deliverable.
+  assert.equal(outputStem(r, "press"), "nate-swenson-alteryx-ai-platform-engineer");
+  assert.equal(outputStem(r, "ats-plain"), "nate-swenson-alteryx-ai-platform-engineer-ats-plain");
+});
+await test("without a target it falls back to the old name-and-theme scheme", () => {
+  const r = { name: "Nate Swenson" };
+  assert.equal(outputStem(r, "press"), "nate-swenson-press");
+  assert.equal(outputStem(r, "ats-plain"), "nate-swenson-ats-plain");
+});
+await test("two different applications never collide", () => {
+  const a = { name: "Nate Swenson", target: { company: "Alteryx", role: "AI Platform Engineer" } };
+  const b = { name: "Nate Swenson", target: { company: "Stripe", role: "AI Platform Engineer" } };
+  assert.notEqual(outputStem(a, "press"), outputStem(b, "press"));
+});
+await test("punctuation and spacing in company or role are slugified", () => {
+  const r = {
+    name: "Nate Swenson",
+    target: { company: "Acme, Inc.", role: "Sr. Engineer / Platform (Remote)" },
+  };
+  const stem = outputStem(r, "press");
+  assert.match(stem, /^[a-z0-9-]+$/, `unsafe characters survived: ${stem}`);
+  assert.equal(stem.includes("--"), false, "empty slug segments left a double dash");
+});
+await test("a nameless résumé still produces a usable stem", () => {
+  assert.equal(outputStem({}, "press"), "resume-press");
+});
+
+console.log("\n[renderThemes]");
+await test("several themes share ONE browser launch", async () => {
+  // Launching Chromium dominates render cost; per-theme launches doubled the
+  // wall clock for identical work.
+  let launches = 0;
+  const { chromium } = await import("playwright");
+  const launch = (o) => {
+    launches++;
+    return chromium.launch(o);
+  };
+  const out = await renderThemes(resume, ["press", "ats-plain"], TMP, { launch });
+  assert.equal(launches, 1, `expected 1 browser launch, got ${launches}`);
+  assert.equal(out.length, 2);
+  for (const r of out) {
+    assert.ok(existsSync(r.pdfPath));
+    assert.ok(r.pages >= 1, `page count not reported for ${r.theme.name}`);
+  }
+});
+await test("--preview writes a PNG next to the PDF", async () => {
+  const [r] = await renderThemes(resume, ["press"], TMP, { preview: true });
+  assert.ok(r.previewPath, "no preview path returned");
+  assert.ok(existsSync(r.previewPath), "preview PNG not written");
+  assert.ok(statSync(r.previewPath).size > 5000, "preview suspiciously small");
+});
+await test("preview is off unless asked for", async () => {
+  const [r] = await renderThemes(resume, ["press"], TMP, {});
+  assert.equal(r.previewPath, null);
 });
 
 console.log("\n[renderHtmlToPdf]");

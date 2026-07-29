@@ -92,12 +92,99 @@ export function resolveTheme(ref) {
   );
 }
 
-function sanitizeStem(name) {
-  return name
+function slug(value, max = 60) {
+  return String(value ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
+    .slice(0, max);
+}
+
+/**
+ * Filename for one rendered résumé.
+ *
+ * When the résumé records what it was tailored for, the name carries it:
+ *   nate-swenson-alteryx-ai-platform-engineer.pdf
+ * Without that every application overwrites the last one, which is exactly
+ * what happened in the first live run.
+ *
+ * The default theme owns the plain name; any other theme appends its own, so
+ * the primary deliverable stays the obvious file in the directory.
+ */
+export function outputStem(resume, themeName) {
+  const person = slug(resume?.name) || "resume";
+  const t = resume?.target;
+  const base =
+    t?.company && t?.role
+      ? [person, slug(t.company, 40), slug(t.role, 60)].filter(Boolean).join("-")
+      : person;
+  return themeName === DEFAULT_THEME && t?.company && t?.role
+    ? base
+    : `${base}-${themeName}`;
+}
+
+/** US Letter at 96dpi, and a nominal half-inch page inset for previews. */
+const PREVIEW_WIDTH = 816;
+const PREVIEW_INSET_PX = 48;
+
+async function openBrowser(launch) {
+  let doLaunch = launch;
+  if (!doLaunch) {
+    const { chromium } = await import("playwright");
+    doLaunch = (o) => chromium.launch(o);
+  }
+  try {
+    return await doLaunch(undefined);
+  } catch (err) {
+    throw new Error(
+      "Chromium is not installed (or failed to launch) — run `npx playwright install chromium`.\n" +
+        `  underlying error: ${err?.message ?? err}`
+    );
+  }
+}
+
+/** Write one document's PDF (and optionally a preview PNG) using an open browser. */
+async function printOne(browser, html, pdfPath, { timeoutMs, previewPath }) {
+  const page = await browser.newPage();
+  try {
+    await page.setContent(html, { waitUntil: "load", timeout: timeoutMs });
+    await page.pdf({
+      path: pdfPath,
+      format: "Letter",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: { top: "0", bottom: "0", left: "0", right: "0" },
+      timeout: timeoutMs,
+    });
+    if (previewPath) {
+      // Print media so the preview shows the themed page, not a screen variant.
+      // A full-page shot rather than faked page slices: Chromium does not
+      // paginate the DOM, so any "page 2" crop would be a guess that disagrees
+      // with the real PDF at every break-inside rule.
+      await page.emulateMedia({ media: "print" });
+      await page.setViewportSize({ width: PREVIEW_WIDTH, height: 1056 });
+      // @page margins apply to paged media only, so on screen the content runs
+      // to the viewport edge and the preview looks clipped. Re-inset it here.
+      // Safe to mutate: the PDF is already written by this point.
+      await page.addStyleTag({
+        content: `html { padding: ${PREVIEW_INSET_PX}px; box-sizing: border-box; }`,
+      });
+      await page.screenshot({ path: previewPath, fullPage: true });
+    }
+  } finally {
+    await page.close();
+  }
+}
+
+/** Page count, read straight from the PDF we just wrote. */
+async function pdfPageCount(pdfPath) {
+  try {
+    const { getDocumentProxy } = await import("unpdf");
+    const doc = await getDocumentProxy(new Uint8Array(readFileSync(pdfPath)));
+    return doc.numPages;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -108,35 +195,10 @@ function sanitizeStem(name) {
  * paying for a real Chromium launch. It is not part of the documented CLI.
  */
 export async function renderHtmlToPdf(html, outPath, opts = {}) {
-  const { timeoutMs = 30000, launch } = opts;
-
-  let doLaunch = launch;
-  if (!doLaunch) {
-    const { chromium } = await import("playwright");
-    doLaunch = (o) => chromium.launch(o);
-  }
-
-  let browser;
+  const { timeoutMs = 30000, launch, previewPath } = opts;
+  const browser = await openBrowser(launch);
   try {
-    browser = await doLaunch(undefined);
-  } catch (err) {
-    throw new Error(
-      "Chromium is not installed (or failed to launch) — run `npx playwright install chromium`.\n" +
-        `  underlying error: ${err?.message ?? err}`
-    );
-  }
-
-  try {
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "load", timeout: timeoutMs });
-    await page.pdf({
-      path: outPath,
-      format: "Letter",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: "0", bottom: "0", left: "0", right: "0" },
-      timeout: timeoutMs,
-    });
+    await printOne(browser, html, outPath, { timeoutMs, previewPath });
   } finally {
     await browser.close();
   }
@@ -152,20 +214,45 @@ export async function renderHtmlToPdf(html, outPath, opts = {}) {
  *
  * @returns {Promise<{pdfPath: string, htmlPath: string, theme: object}>}
  */
-export async function renderThemeFromResume(resume, themeRef, outDir, opts = {}) {
-  const theme = resolveTheme(themeRef);
-  const css = readFileSync(theme.path, "utf8");
-  const html = buildResumeHtml(resume, css);
+/**
+ * Render one résumé in several themes using a SINGLE browser.
+ *
+ * Chromium launch dominates the cost of a render (roughly a second), so
+ * launching per theme doubled the wall clock for what is otherwise the same
+ * work. Every theme shares one browser and gets its own page.
+ */
+export async function renderThemes(resume, themeRefs, outDir, opts = {}) {
+  const { timeoutMs = 30000, launch, preview = false } = opts;
+  const themes = themeRefs.map(resolveTheme);
 
   await mkdir(outDir, { recursive: true });
-  const stem = sanitizeStem(resume.name) || "resume";
-  const pdfPath = join(outDir, `${stem}-${theme.name}.pdf`);
-  const htmlPath = join(outDir, `${stem}-${theme.name}.html`);
+  const browser = await openBrowser(launch);
+  const results = [];
+  try {
+    for (const theme of themes) {
+      const css = readFileSync(theme.path, "utf8");
+      const html = buildResumeHtml(resume, css);
+      const stem = outputStem(resume, theme.name);
+      const pdfPath = join(outDir, `${stem}.pdf`);
+      const htmlPath = join(outDir, `${stem}.html`);
+      const previewPath = preview ? join(outDir, `${stem}-preview.png`) : undefined;
 
-  writeFileSync(htmlPath, html, "utf8");
-  await renderHtmlToPdf(html, pdfPath, opts);
+      writeFileSync(htmlPath, html, "utf8");
+      await printOne(browser, html, pdfPath, { timeoutMs, previewPath });
+      results.push({ pdfPath, htmlPath, previewPath: previewPath ?? null, theme });
+    }
+  } finally {
+    await browser.close();
+  }
 
-  return { pdfPath, htmlPath, theme };
+  for (const r of results) r.pages = await pdfPageCount(r.pdfPath);
+  return results;
+}
+
+/** Single-theme convenience wrapper over renderThemes(). */
+export async function renderThemeFromResume(resume, themeRef, outDir, opts = {}) {
+  const [only] = await renderThemes(resume, [themeRef], outDir, opts);
+  return only;
 }
 
 const HELP = `render — render a tailored résumé JSON to a themed PDF
@@ -175,11 +262,18 @@ Usage:
 
 Flags:
   --json <path>     path to a tailored résumé JSON (see scripts/validate.mjs's ResumeJSON)
-  --theme <ref>     shipped theme name, or a path to your own .css (default: ${DEFAULT_THEME})
+  --theme <refs>    comma-separated theme names or .css paths (default: ${DEFAULT_THEME}).
+                    Several themes share ONE browser, so rendering both shipped
+                    themes costs barely more than rendering one.
   --out <dir>       output directory (default: ~/resume-out)
-  --open            open the rendered PDF in the default viewer when done
-  --json-output     print the result as JSON instead of a plain line
-  -h, --help        show this help`;
+  --preview         also write a PNG of each rendered résumé, for showing the user
+  --open            open the first rendered PDF in the default viewer when done
+  --json-output     print the result as JSON instead of plain lines
+  -h, --help        show this help
+
+Output names come from the résumé's \`target\` ({company, role}) when it has one:
+  nate-swenson-alteryx-ai-platform-engineer.pdf        (default theme)
+  nate-swenson-alteryx-ai-platform-engineer-ats-plain.pdf`;
 
 function parseArgs(argv) {
   const flags = {};
@@ -189,6 +283,7 @@ function parseArgs(argv) {
     else if (a === "--json") flags.json = argv[++i];
     else if (a === "--theme") flags.theme = argv[++i];
     else if (a === "--out") flags.out = argv[++i];
+    else if (a === "--preview") flags.preview = true;
     else if (a === "--open") flags.open = true;
     else if (a === "--json-output") flags.jsonOutput = true;
   }
@@ -250,36 +345,51 @@ async function main() {
   }
 
   const outDir = flags.out ? resolve(flags.out) : join(homedir(), "resume-out");
+  const themeRefs = (flags.theme ?? DEFAULT_THEME)
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
 
-  let result;
+  let results;
+  const startedAt = Date.now();
   try {
-    result = await renderThemeFromResume(parsed.data, flags.theme, outDir);
+    results = await renderThemes(parsed.data, themeRefs, outDir, { preview: flags.preview });
   } catch (err) {
     console.error(`✖ ${err.message ?? err}`);
     process.exit(1);
   }
+  const elapsedMs = Date.now() - startedAt;
 
-  if (flags.open) openFile(result.pdfPath);
+  if (flags.open && results[0]) openFile(results[0].pdfPath);
 
   if (flags.jsonOutput) {
     console.log(
       JSON.stringify(
         {
-          pdfPath: result.pdfPath,
-          htmlPath: result.htmlPath,
-          theme: result.theme.name,
-          themeSource: result.theme.source,
-          themePath: result.theme.path,
+          elapsedMs,
+          target: parsed.data.target ?? null,
+          rendered: results.map((r) => ({
+            theme: r.theme.name,
+            themeSource: r.theme.source,
+            themePath: r.theme.path,
+            pages: r.pages,
+            pdfPath: r.pdfPath,
+            htmlPath: r.htmlPath,
+            previewPath: r.previewPath,
+          })),
         },
         null,
         2
       )
     );
   } else {
-    const where = result.theme.source === "shipped" ? "" : ` (${result.theme.source})`;
-    console.log(
-      `✓ Rendered ${result.theme.name} theme${where} → ${relative(process.cwd(), result.pdfPath) || result.pdfPath}`
-    );
+    for (const r of results) {
+      const where = r.theme.source === "shipped" ? "" : ` (${r.theme.source})`;
+      const pages = r.pages ? `${r.pages}p` : "?";
+      console.log(
+        `✓ ${r.theme.name}${where} · ${pages} → ${relative(process.cwd(), r.pdfPath) || r.pdfPath}`
+      );
+    }
   }
 }
 

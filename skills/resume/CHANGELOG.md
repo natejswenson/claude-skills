@@ -18,6 +18,30 @@ now just a stylesheet: if you can write CSS, you can make the résumé look like
 anything.
 
 ### Added
+- **`scripts/job.mjs` — job postings are fetched by one command.** Workday,
+  Greenhouse, Lever and Ashby are read through the JSON API the page itself
+  calls, so company, title, location and req id come back as *fields* rather
+  than being guessed out of scraped prose; Firecrawl and a plain fetch are the
+  fallbacks. The posting is written to `job.txt` and **never printed** — only
+  metadata goes to stdout. Previously the agent hand-rolled this every run
+  (`curl`, a `python3` heredoc to strip HTML, then `sed` to page the result),
+  which is what filled the conversation with noise. Also a security
+  improvement: `FIRECRAWL_API_KEY` is read inside the process, so its value
+  never reaches a command line or the transcript.
+- **Unique output names.** A new optional `target: {company, role, url}` in
+  `ResumeJSON` makes the filename carry the application:
+  `nate-swenson-alteryx-ai-platform-engineer.pdf`. Without it every tailoring
+  overwrote the last one. Falls back to the old `<name>-<theme>` scheme.
+- **`--preview`** writes a PNG of each rendered résumé so the agent can show
+  the user the document instead of describing it.
+- **`--json-output` on `validate.mjs`**, returning the per-role bullet tally
+  the change-summary table needs, so it is not recounted by hand.
+- **A Presentation contract in `SKILL.md`**, backed by a
+  `never-print-file-contents` invariant: no file contents in the conversation,
+  one script call rather than a shell pipeline, fixed table columns per stage,
+  and show the preview rather than describing it.
+
+### Added
 - **The résumé is supplied once and stored.** It is kept as plain text at
   `~/.claude/resume/source-resume.txt`, outside the install dir, so it survives
   reinstalls. After setup a run needs nothing but a job posting — a bare URL is
@@ -61,11 +85,23 @@ anything.
   `EXPERIENCE` extracted as `E X P E R I E N C E` and stopped matching as a
   heading. Both themes now cap tracking at 0.08em. Poppler does not reproduce
   this, which is why it survived a single-extractor check.
+- **`keywordCoverage()` was blind to over half the résumé.** It read only
+  `summary` and `experience[].bullets`, so the `skills`, `projects` and
+  `highlights` sections added in this release scored as if empty. On a real
+  posting nine of the job's terms (`mcp`, `governance`, `evaluation`, …)
+  matched only in those sections. It now reads every section that renders,
+  defensively — one caller passes a résumé that was never schema-validated.
+  The frozen coverage matrix gains a second résumé row
+  (`press-showcase-resume.json`), because the original fixture has no projects
+  or highlights and so exercised none of the new code paths.
 - **Contact lines are single text nodes.** Splitting a right-aligned line with
   inline separators reorders the runs in the PDF content stream and pushed the
   email address well down the extracted text.
 
 ### Changed
+- **Several themes now share one browser.** `--theme press,ats-plain` renders
+  both in a single Chromium launch — measured 0.69s → 0.49s, and a run no
+  longer needs a second render call at all.
 - Rendering is headless Chromium via Playwright instead of react-pdf. **A first
   run needs `npx playwright install chromium`.** The generated HTML is now kept
   next to the PDF so a theme can be tweaked and re-rendered.

@@ -2,8 +2,15 @@
  * keyword-coverage — deterministic JD-noun echo proxy.
  *
  * Measures what fraction of the job description's significant terms appear in the
- * tailored résumé's LIVE rendered content (`resume.experience[].bullets` plus
- * `resume.summary`) — NOT the `optimizedBullets` diff record.
+ * tailored résumé's LIVE rendered content — every section that actually prints:
+ * `summary`, `experience[].bullets`, `skills`, `projects[]` and `highlights[]`.
+ * NOT the `optimizedBullets` diff record, which is bookkeeping and never renders.
+ *
+ * It read only summary + bullets until 2.0, which made it blind to the sections
+ * added with the theme engine. On a real posting that was not a rounding error:
+ * nine of the job's terms (`mcp`, `governance`, `evaluation`, …) lived only in
+ * skills and projects, and the tailored résumé scored BELOW the untailored one
+ * because tailoring moved wording out of the summary and into those sections.
  *
  * This is a WEAK, gameable signal (a résumé that keyword-stuffs every JD noun
  * scores 100% while being no more qualified). It is the benchmark's only
@@ -83,9 +90,32 @@ export function keywordCoverage(resume, trimmedJobText) {
   const keywords = extractKeywords(trimmedJobText || "");
 
   // Build the résumé's live content corpus, as a token SET for O(1) membership.
-  const summary = resume?.summary ?? "";
-  const bullets = (resume?.experience ?? []).flatMap((e) => e?.bullets ?? []);
-  const corpus = new Set(tokenize([summary, ...bullets].join(" ")));
+  //
+  // Every read is defensive. One caller (scripts/evals/run.mjs's baseline-delta
+  // path) passes a résumé straight from an LLM subprocess that was never
+  // schema-validated, so any field here can be missing or the wrong shape. A
+  // throw there is swallowed by a try/catch and silently drops the datapoint.
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  const str = (v) => (typeof v === "string" ? v : "");
+
+  const parts = [str(resume?.summary)];
+
+  for (const e of arr(resume?.experience)) {
+    for (const b of arr(e?.bullets)) parts.push(str(b));
+  }
+  // Grouped entries ("CI/CD: Jenkins, Actions") tokenize fine as-is.
+  for (const sk of arr(resume?.skills)) parts.push(str(sk));
+  // name and meta carry signal too ("claude-skills", a repo URL), not just the
+  // description.
+  for (const pr of arr(resume?.projects)) {
+    parts.push(str(pr?.name), str(pr?.meta), str(pr?.description));
+  }
+  // highlights[] is an array of OBJECTS — joining it would yield "[object Object]".
+  for (const h of arr(resume?.highlights)) {
+    parts.push(str(h?.label), str(h?.value), str(h?.caption));
+  }
+
+  const corpus = new Set(tokenize(parts.join(" ")));
 
   const matched = [];
   const missed = [];

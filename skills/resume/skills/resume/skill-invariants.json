@@ -10,13 +10,13 @@
     {
       "id": "validate-against-plain-text-source",
       "file": "SKILL.md",
-      "pattern": "never a `\\.pdf`/`\\.docx` path",
+      "pattern": "never the `\\.pdf`/`\\.docx` path itself",
       "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring \u2014 and the natural response to a spurious failure is to stop trusting the validator. Since 2.0.0 the source is stored once and reused, so storing binary content would persist that failure across EVERY future run rather than one; profile.mjs rejects it at the door, and this prose is why."
     },
     {
       "id": "stop-after-three-validation-attempts",
       "file": "SKILL.md",
-      "pattern": "still failing after \\*\\*3 attempts\\*\\*, stop",
+      "pattern": "still failing\\s*\\n?\\s*after 3 attempts\\*\\*, stop",
       "rationale": "Without a bound, a rule the agent cannot reconcile with the source material turns into a silent retry loop that either burns the session or ends in the agent quietly weakening the resume until the validator passes. The bound forces the conflict to surface to the user."
     },
     {
@@ -34,8 +34,8 @@
     {
       "id": "theme-picker-is-mandatory",
       "file": "SKILL.md",
-      "pattern": "This step is not optional\\s*\u2014?\\s*always run it after opening the",
-      "rationale": "Re-rendering a theme is ~2s while re-tailoring is expensive, so the picker is where the user gets real choice cheaply. Marked mandatory because it is the step most likely to be skipped as 'the user didn't ask' \u2014 and because it is the only moment the ats-plain trade-off is surfaced."
+      "pattern": "This step is not\\s*\\n?\\s*optional \u2014 always run it after showing the preview",
+      "rationale": "Both themes are now rendered in the same call, so the hand-off costs nothing \u2014 but it is the ONLY moment the press-vs-ats-plain trade-off reaches the user, and the moment most likely to be skipped as 'the user didn't ask'. Skipping it means a gutter-layout resume goes into an ATS and nobody finds out until the application vanishes."
     },
     {
       "id": "switching-themes-never-retailors",
@@ -60,6 +60,12 @@
       "file": "SKILL.md",
       "pattern": "you must\\s*\\n?\\s*confirm with the user before passing it",
       "rationale": "Replacing the stored r\u00e9sum\u00e9 is destructive and it is the user's data, not the agent's: the stored copy may be the only plain-text version they have. profile.mjs enforces --force at the CLI boundary and keeps a .bak, but nothing stops an agent from passing --force reflexively to clear an error \u2014 this prose is what makes the confirmation a rule rather than a speed bump."
+    },
+    {
+      "id": "never-print-file-contents",
+      "file": "SKILL.md",
+      "pattern": "Never print file contents into the conversation",
+      "rationale": "This skill is watched, not just run, so the transcript is part of the product. Every input it touches is long \u2014 a job posting, a resume, a tailored JSON \u2014 and every one of them is already in front of the user somewhere else. A real run filled the conversation with three sed calls paging a job description, a python heredoc stripping HTML, and a profile.mjs --show that dumped the entire stored resume; the user could not see the actual work. Nothing in code can stop an agent reaching for `cat`, so this line is the whole defense, and it is why every script here writes to a path and prints only metadata."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / resume` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",

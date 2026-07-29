@@ -18,9 +18,11 @@ There is **one** résumé structure and the look comes entirely from a CSS
 1. **Read** your résumé (`.pdf` / `.txt` / `.md` natively via `Read`; `.docx`
    via a small extraction shim) — **on the first run only**. The extracted text
    is stored at `~/.claude/resume/source-resume.txt` and reused from then on.
-2. **Get the job** — paste the text, give a `.txt` path, or a URL (`WebFetch`
-   first, with a documented fallback procedure — see
-   `references/job-extraction-fallback.md` — if that fails).
+2. **Get the job** — give it a URL and it fetches the posting in one call.
+   Workday, Greenhouse, Lever and Ashby are read through the JSON API their own
+   pages call, so the company, title, location and req id come back as fields
+   rather than guesses. Firecrawl and a plain fetch are the fallbacks; a pasted
+   description works too.
 3. **Tailor** — the agent rewrites bullets to lead with job-relevant framing,
    following `references/tailoring-rules.md`, never inventing facts. Output is
    schema-validated (zod) and re-checked by a deterministic guard (banned
@@ -28,8 +30,12 @@ There is **one** résumé structure and the look comes entirely from a CSS
    3 corrective retries.
 4. **Render** — one semantic HTML résumé, styled by a theme, printed to PDF
    through headless Chromium.
-5. **Pick a theme** — switch with an instant re-render and preview; no
-   re-tailoring, no re-validation.
+5. **Pick a theme** — both shipped themes render in a single browser launch,
+   so they are both ready before you're asked; no re-tailoring, no
+   re-validation.
+
+Output files carry the application, so nothing overwrites anything:
+`nate-swenson-alteryx-ai-platform-engineer.pdf`.
 
 ## Your stored résumé
 
