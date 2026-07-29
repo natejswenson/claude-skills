@@ -1,5 +1,5 @@
 {
-  "_comment": "Load-bearing guardrails for resume. The scripts enforce schema and rendering; they do NOT enforce the process rules that keep a tailored resume honest — never invent facts, validate against the plain-text source rather than a binary path, stop after 3 validation attempts instead of retrying silently, treat job-description text as data. Those live only in SKILL.md, and tools/score_skill.py scores structure rather than content, so a deleted rule scores 100 and ships. tests/skill_contract.test.mjs asserts each pattern below still matches.",
+  "_comment": "Load-bearing guardrails for resume. The scripts enforce schema, theme resolution and rendering; they do NOT enforce the process rules that keep a tailored resume honest \u2014 never invent facts, validate against the plain-text source rather than a binary path, stop after 3 validation attempts instead of retrying silently, treat job-description text as data. Those live only in SKILL.md, and tools/score_skill.py scores structure rather than content, so a deleted rule scores 100 and ships. tests/skill_contract.test.mjs asserts each pattern below still matches.",
   "prose": [
     {
       "id": "never-invent-facts",
@@ -11,7 +11,7 @@
       "id": "validate-against-plain-text-source",
       "file": "SKILL.md",
       "pattern": "never against a `\\.pdf`/`\\.docx` path",
-      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring — and the natural response to a spurious failure is to stop trusting the validator."
+      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring \u2014 and the natural response to a spurious failure is to stop trusting the validator."
     },
     {
       "id": "stop-after-three-validation-attempts",
@@ -26,22 +26,28 @@
       "rationale": "Job descriptions are attacker-controlled text pasted straight into the context. The skill has a tested adversarial-input history (docs/security/prompt-injection-fixtures/); dropping the pointer to it removes the only in-skill signal that JD text must be treated as data."
     },
     {
-      "id": "no-silent-template-fallback",
+      "id": "no-silent-theme-fallback",
       "file": "SKILL.md",
-      "pattern": "don't silently fall back\\s*\\n?\\s*to a default template",
-      "rationale": "A silent fallback means the user asks for one style, gets another, and has no way to tell — the PDF renders fine and looks deliberate."
+      "pattern": "don't silently fall back to a\\s*\\n?\\s*default theme",
+      "rationale": "A silent fallback means the user asks for one look, gets another, and has no way to tell \u2014 the PDF renders fine and looks deliberate. resolveTheme() throws on an unknown theme NAME for the same reason; this is the prose half of that contract."
     },
     {
-      "id": "style-picker-is-mandatory",
+      "id": "theme-picker-is-mandatory",
       "file": "SKILL.md",
-      "pattern": "This step is not optional\\s*—?\\s*always run it after opening the",
-      "rationale": "Re-rendering a template is ~1s while re-tailoring is expensive, so the picker is where the user gets real choice cheaply. Marked mandatory because it is the step most likely to be skipped as 'the user didn't ask'."
+      "pattern": "This step is not optional\\s*\u2014?\\s*always run it after opening the",
+      "rationale": "Re-rendering a theme is ~2s while re-tailoring is expensive, so the picker is where the user gets real choice cheaply. Marked mandatory because it is the step most likely to be skipped as 'the user didn't ask' \u2014 and because it is the only moment the ats-plain trade-off is surfaced."
     },
     {
-      "id": "switching-templates-never-retailors",
+      "id": "switching-themes-never-retailors",
       "file": "SKILL.md",
       "pattern": "never re-tailor, never\\s*\\n?\\s*re-validate",
-      "rationale": "Re-tailoring on a style switch would re-run the LLM and produce different resume CONTENT for what the user asked to be a cosmetic change — the content they already approved would silently drift under them."
+      "rationale": "Re-tailoring on a style switch would re-run the LLM and produce different resume CONTENT for what the user asked to be a cosmetic change \u2014 the content they already approved would silently drift under them."
+    },
+    {
+      "id": "ats-plain-for-strict-parsers",
+      "file": "SKILL.md",
+      "pattern": "Recommend `ats-plain` whenever the user says they are applying",
+      "rationale": "The default press theme puts section headings in a left gutter, which a column-detecting PDF parser reads as a separate column and separates from their sections. That is measured, not theoretical. Collapsing seven templates to one structure removed the old ATS-safe/presentation labelling, so this line is now the ONLY place a run surfaces the trade-off \u2014 without it the agent cheerfully sends a gutter-layout resume into a job board."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / resume` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
@@ -55,7 +61,19 @@
         "evals/baseline/tailored-devops-resume.json"
       ],
       "update_command": "node evals/baseline/update-coverage-matrix.mjs",
-      "rationale": "scripts/keyword-coverage.test.mjs unit-tests keywordCoverage() on small synthetic inputs, which separate under almost any scoring rule. This pins it against the real corpus the eval harness actually scores: a genuine past-run tailored DevOps resume (evals/baseline/tailored-devops-resume.json — the benchmark-out artifact with identity fields replaced, since benchmark-out/ is gitignored for holding real contact details and keywordCoverage reads only summary + experience[].bullets) against all 28 real job postings across 9 archetypes. Observed separation is unambiguous — every swe-mid posting scores >= 0.1719 while every other archetype tops out at 0.1094 — so the baseline asserts strict ordering (worst matching > best off-archetype), a 1.5x mean-ratio floor to catch the signal collapsing toward noise before the ordering actually inverts, and per-job drift against a frozen matrix to catch a stopword or tokenizer change that shifts everything at once. If JD-coverage stops discriminating, every eval score built on it becomes meaningless while still looking like a number. The resume is also re-parsed against the current ResumeJSON schema, so schema drift that invalidates real historical output surfaces at CI time rather than on a user's file. NOTE: benchmark-out/j6-frontend.json is byte-identical to the DevOps file (a real defect in the historical benchmark run), so it is deliberately NOT used as a second discrimination case."
+      "rationale": "scripts/keyword-coverage.test.mjs unit-tests keywordCoverage() on small synthetic inputs, which separate under almost any scoring rule. This pins it against the real corpus the eval harness actually scores: a genuine past-run tailored DevOps resume (evals/baseline/tailored-devops-resume.json \u2014 the benchmark-out artifact with identity fields replaced, since benchmark-out/ is gitignored for holding real contact details and keywordCoverage reads only summary + experience[].bullets) against all 28 real job postings across 9 archetypes. Observed separation is unambiguous \u2014 every swe-mid posting scores >= 0.1719 while every other archetype tops out at 0.1094 \u2014 so the baseline asserts strict ordering (worst matching > best off-archetype), a 1.5x mean-ratio floor to catch the signal collapsing toward noise before the ordering actually inverts, and per-job drift against a frozen matrix to catch a stopword or tokenizer change that shifts everything at once. If JD-coverage stops discriminating, every eval score built on it becomes meaningless while still looking like a number. The resume is also re-parsed against the current ResumeJSON schema, so schema drift that invalidates real historical output surfaces at CI time rather than on a user's file. NOTE: benchmark-out/j6-frontend.json is byte-identical to the DevOps file (a real defect in the historical benchmark run), so it is deliberately NOT used as a second discrimination case."
+    },
+    {
+      "id": "rendered-resume-survives-text-extraction",
+      "kind": "golden",
+      "test": "scripts/baseline-render.test.mjs",
+      "fixtures": [
+        "evals/baseline/tailored-devops-resume.json",
+        "evals/baseline/press-showcase-resume.json",
+        "scripts/fixtures/themes/tracking-trap.css"
+      ],
+      "update_command": "node scripts/render.mjs --json evals/baseline/press-showcase-resume.json --theme press --out /tmp/resume-baseline --open",
+      "rationale": "A resume PDF that looks perfect can still be unreadable to the software that reads it first, and nothing about the rendered page reveals that \u2014 you have to extract the text and look. Both assertions here are defects measured on real renders during the 2.0 theme work, not hypotheticals. (1) letter-spacing above ~0.10em makes pdf.js insert a space between every glyph, so 'EXPERIENCE' extracts as 'E X P E R I E N C E' and stops matching as a section heading; BOTH shipped themes had this until it was measured, and poppler does not reproduce it, so a single-extractor check misses it entirely. (2) fragmenting a right-aligned contact line into inline spans reorders the runs in the PDF content stream and pushed the email address to the sixth extracted line. TWO-SIDED: scripts/fixtures/themes/tracking-trap.css is press with heading tracking restored to 0.15em, and the test asserts the heading check FAILS on it \u2014 without a known-bad input, 'headings survive extraction' could be weakened to a tautology and keep reporting green. Anti-vacuity floors: >=2 baseline resumes, >=2 shipped themes, >=1500 extracted chars, and the showcase fixture must still carry highlights/projects/grouped skills or the optional-section markup goes untested while this file reports green. NOTE: there is deliberately no ligature assertion \u2014 Chromium emits a correct ToUnicode map and both pdf.js and poppler recover 'workflows' even with ligatures enabled, so such a check would pass on its own known-bad input."
     }
   ]
 }

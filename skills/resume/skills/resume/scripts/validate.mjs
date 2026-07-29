@@ -48,6 +48,27 @@ const OptimizedBullet = z.object({
   role: z.string(),
 });
 
+// Two optional presentation sections. Both are OPTIONAL on purpose: a résumé
+// that omits them renders without the section, and every résumé JSON written
+// before they existed still parses. Like every other field here, their content
+// must come from the source résumé — they are new places to put facts, not a
+// licence to invent them.
+const Highlight = z.object({
+  /** Short caps label, e.g. "Years" or "Cloud". */
+  label: z.string(),
+  /** The headline value, kept short enough to set large, e.g. "16 years". */
+  value: z.string(),
+  /** Optional one-line gloss under the value. */
+  caption: z.string().optional(),
+});
+
+const Project = z.object({
+  name: z.string(),
+  /** Right-aligned metadata: a repo URL, a role, a date range. */
+  meta: z.string().optional(),
+  description: z.string(),
+});
+
 export const ResumeJSON = z.object({
   name: z.string().min(1),
   contact: z.object({
@@ -76,6 +97,8 @@ export const ResumeJSON = z.object({
       details: z.string().optional(),
     }),
   ),
+  highlights: z.array(Highlight).optional(),
+  projects: z.array(Project).optional(),
   droppedBullets: z.array(z.string()).default([]),
   optimizedBullets: z.array(OptimizedBullet).default([]),
 });

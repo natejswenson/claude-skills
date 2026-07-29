@@ -1,0 +1,175 @@
+/* ===========================================================================
+   ATS-PLAIN — the maximally parseable theme. Same HTML as `press`, restyled
+   for machines first and humans second.
+
+   Use this when the résumé is going through a job board or an applicant
+   tracking system you don't control. Use `press` when a person will see it:
+   a referral, a hiring manager, a portfolio.
+
+   What this theme does differently, and why each one matters:
+
+   - SINGLE COLUMN, headings above their content. `press` puts each <h2> in a
+     left gutter, which looks better but reads to a column-detecting parser as
+     a separate column — extract the PDF without layout preservation and every
+     heading collects at the top, divorced from its section. This theme keeps
+     one linear text flow, so heading and content stay adjacent in any
+     extraction mode. That is the entire reason this file exists.
+   - No colour and no background fill, so a printed or greyscale copy loses
+     nothing.
+   - Real <ul> markers rather than decorative ::before squares.
+   - Common system fonts only, at conventional résumé sizes.
+
+   Everything is still restyleable — the class contract is identical. See
+   references/theme-contract.md.
+   =========================================================================== */
+
+:root {
+  --ink:  #111111;
+  --dim:  #444444;
+  --hair: #BBBBBB;
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --serif: Georgia, "Times New Roman", Times, serif;
+}
+
+@page { size: letter; margin: 0.7in 0.75in; }
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Same cheap insurance as press; see the note there. */
+  font-variant-ligatures: none;
+}
+
+body {
+  background: #FFFFFF;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* --- Masthead: name, then contact, all left-aligned and linear ----------- */
+
+.stamp { display: none; }   /* decorative only; nothing is lost */
+
+.mast { margin-bottom: 14px; }
+
+.name {
+  font: 700 24px/1.2 var(--font);
+  letter-spacing: -.01em;
+}
+
+.role {
+  margin-top: 4px;
+  font: 400 12px/1.3 var(--font);
+  color: var(--dim);
+}
+
+.contact {
+  list-style: none;
+  margin-top: 8px;
+  font: 400 10.5px/1.55 var(--font);
+  color: var(--dim);
+}
+
+/* --- Sections: full-width heading, content below ------------------------- */
+
+.sec {
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hair);
+}
+.sec-summary { margin-top: 0; }
+
+.sec > h2 {
+  font: 700 11.5px/1.3 var(--font);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.stand { font: 400 10.5px/1.5 var(--serif); }
+
+/* --- At a glance: a plain labelled list, not a grid ---------------------- */
+
+.facts { list-style: none; }
+.fact { margin-top: 4px; }
+.fact:first-child { margin-top: 0; }
+.flabel { font: 700 10.5px/1.45 var(--font); }
+.flabel::after { content: ": "; }
+.fval { font-weight: 700; }
+.fcap { color: var(--dim); }
+.fcap::before { content: " — "; }
+
+/* --- Skills: one per line, label inline ---------------------------------- */
+
+.skills { list-style: none; }
+.skills.grouped .skill { margin-top: 4px; break-inside: avoid; }
+.skills.grouped .skill:first-child { margin-top: 0; }
+.skills .k { font: 700 10.5px/1.45 var(--font); }
+.skills .k::after { content: ": "; }
+
+/* Bare keywords run inline, comma separated — the form every résumé parser
+   already expects to find under a "Skills" heading. */
+.skills.flat .skill { display: inline; }
+.skills.flat .skill + .skill::before { content: ", "; }
+
+/* --- Experience ---------------------------------------------------------- */
+
+/* Unlike press, a job here MAY break across pages. Keeping each one whole
+   strands up to half a page and pushes a 2-page résumé to 3; a machine reader
+   does not care, and a human reading this theme is reading it in a portal.
+   The heading still travels with its first lines. */
+.job { margin-top: 12px; }
+.sbody > .job:first-child { margin-top: 0; }
+.jhead, .jorg { break-after: avoid; }
+.bullets li { break-inside: avoid; }
+
+.jhead { display: flex; align-items: baseline; gap: 12px; }
+.jtitle { font: 700 12.5px/1.3 var(--font); }
+.jdate {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+  font: 400 10.5px/1.3 var(--font);
+  color: var(--dim);
+}
+.jorg { margin-top: 2px; font: 400 11px/1.35 var(--font); }
+.jorg .company { font-weight: 700; }
+.jorg .where::before { content: ", "; }
+.jorg .where { color: var(--dim); }
+
+.bullets { margin-top: 5px; padding-left: 17px; list-style: disc; }
+.bullets li { margin-top: 3px; }
+
+/* --- Open source --------------------------------------------------------- */
+
+.project { margin-top: 10px; break-inside: avoid; }
+.sbody > .project:first-child { margin-top: 0; }
+.phead { display: flex; align-items: baseline; gap: 12px; }
+.pname { font: 700 11.5px/1.3 var(--font); }
+.pmeta { margin-left: auto; flex: none; font: 400 10px/1.3 var(--font); color: var(--dim); }
+.pdesc { margin-top: 3px; }
+
+/* --- Education ----------------------------------------------------------- */
+
+.edu { margin-top: 8px; break-inside: avoid; }
+.sbody > .edu:first-child { margin-top: 0; }
+.degree { font: 700 11.5px/1.3 var(--font); }
+.school { margin-top: 2px; color: var(--dim); }
+.edetails { margin-top: 2px; color: var(--dim); }
+
+/* --- Colophon ------------------------------------------------------------ */
+
+.colophon {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hair);
+  font: 400 10px/1.4 var(--font);
+  color: var(--dim);
+  break-inside: avoid;
+}
+.colophon .cmeta::before { content: " · "; }

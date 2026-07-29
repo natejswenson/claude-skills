@@ -4,6 +4,66 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] — 2026-07-29
+
+**Breaking.** Seven react-pdf templates are replaced by one semantic HTML
+structure styled by a swappable CSS theme. `--template <name>` is now
+`--theme <name|path>`; `modern`, `classic`, `technical`, `editorial`,
+`polished`, `timeline` and `spotlight` no longer exist.
+
+The old templates were `TemplateConfig` objects — a fixed vocabulary of preset
+knobs (sidebar, band, timeline rail). Adding a look meant extending a hardcoded
+union, and layouts outside that vocabulary were simply unreachable. A theme is
+now just a stylesheet: if you can write CSS, you can make the résumé look like
+anything.
+
+### Added
+- **`press` theme (default)** — editorial layout: warm paper, one signature
+  accent, section labels in a left gutter, a derived monogram stamp. Shares its
+  tokens with the author's site and card system.
+- **`ats-plain` theme** — same résumé, single column with headings above their
+  content and no colour, for job boards and applicant tracking systems. This
+  preserves the ATS-safe-vs-presentation choice the seven templates offered.
+- **User-replaceable themes.** `~/.claude/resume/themes/<name>.css` overrides
+  the shipped theme of the same name and survives reinstalls; `--theme
+  <path>.css` renders any stylesheet. Precedence is explicit path > home >
+  shipped, mirroring the ghostwriter brand-guide pattern.
+- **`references/theme-contract.md`** — the class structure a theme styles, the
+  five palette variables, and the rules that keep a theme machine-readable.
+- **Optional `highlights` and `projects`** in `ResumeJSON` — an at-a-glance
+  stat strip and an open-source/writing section. Both optional; a résumé
+  without them renders without the section, and existing résumé JSON is
+  unaffected.
+- **Grouped skills.** A `"Label: a, b, c"` skill entry renders as a labelled
+  block; bare keywords run inline instead of burning a line each.
+- **A text-extraction baseline** (`scripts/baseline-render.test.mjs`) that
+  renders real fixtures in both themes and asserts the PDF is still readable by
+  the software that reads it first. Two-sided against a known-bad theme.
+
+### Fixed
+- **Section headings could be unreadable to résumé parsers.** `letter-spacing`
+  above ~0.10em makes pdf.js insert a space between every glyph, so
+  `EXPERIENCE` extracted as `E X P E R I E N C E` and stopped matching as a
+  heading. Both themes now cap tracking at 0.08em. Poppler does not reproduce
+  this, which is why it survived a single-extractor check.
+- **Contact lines are single text nodes.** Splitting a right-aligned line with
+  inline separators reorders the runs in the PDF content stream and pushed the
+  email address well down the extracted text.
+
+### Changed
+- Rendering is headless Chromium via Playwright instead of react-pdf. **A first
+  run needs `npx playwright install chromium`.** The generated HTML is now kept
+  next to the PDF so a theme can be tweaked and re-rendered.
+- The eval harness's ATS check renders `ats-plain` rather than `modern`.
+
+### Removed
+- `@react-pdf/renderer`, `react`, and the whole TypeScript toolchain
+  (`scripts/templates/`, the tsx loader, `tsconfig.json`, `typescript`,
+  `@types/*`) — with the templates gone, no TypeScript remained.
+- `scripts/template-spacing.test.mjs`, which guarded a react-pdf-specific
+  `lineHeight <= 1.15` ceiling. That premise does not transfer to Chromium,
+  where 1.4–1.5 is correct body copy.
+
 ## [1.0.1] — 2026-07-11
 
 ### Fixed

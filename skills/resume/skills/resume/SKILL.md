@@ -2,7 +2,7 @@
 name: resume
 description: Tailor a résumé to a job description and render a polished PDF. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
 user_invocable: true
-version: 1.0.1
+version: 2.0.0
 ---
 
 # /resume — Résumé tailoring
@@ -45,9 +45,8 @@ anything missing (one item at a time):
    text.
 
 Optional, only if the user expresses a preference:
-- **Template** — one of `modern` (default, ATS-safe), `classic` (ATS-safe),
-  `technical` (ATS-safe), `editorial` (ATS-safe), `polished` (presentation),
-  `timeline` (presentation), `spotlight` (presentation).
+- **Theme** — `press` (default) or `ats-plain`, or a path to their own `.css`.
+  See Step 4; you offer these rather than asking up front.
 - **Output directory** — defaults to `~/resume-out`, independent of where
   the skill is installed or invoked from.
 
@@ -96,6 +95,19 @@ reasoning.
 5. **Write the tailored result** as JSON matching the `ResumeJSON` shape
    (see the zod contract at the top of `scripts/validate.mjs`), to
    `<outDir>/resume.json` (default outDir: `~/resume-out`).
+
+   Two fields are optional and worth filling when the source résumé supports
+   them — they are what the `press` theme is built around:
+   - `highlights` — 3–4 `{label, value, caption}` headline facts (years of
+     experience, current focus, primary stack, scope of reach). Every one must
+     come from the source résumé; this is a place to *surface* facts, not to
+     invent them.
+   - `projects` — `{name, meta, description}` for open-source work, writing, or
+     side projects worth showing.
+
+   Grouping `skills` as `"Label: a, b, c"` strings renders them as labelled
+   blocks; bare keywords render as an inline run. Both are supported — group
+   them when the résumé has enough range for the grouping to mean something.
 6. **Validate it** — pass the plain-text source (the `<outDir>/source-resume.txt`
    sidecar from step 1 for `.pdf`/`.docx` originals; the original path directly
    for `.txt`/`.md`; never a `.pdf`/`.docx` path):
@@ -113,46 +125,48 @@ reasoning.
 7. **Render the PDF** (open it immediately so the user sees the result):
 
    ```bash
-   cd "$SKILL_DIR" && node scripts/render.mjs --json <outDir>/resume.json --template modern --out <outDir> --open
+   cd "$SKILL_DIR" && node scripts/render.mjs --json <outDir>/resume.json --theme press --out <outDir> --open
    ```
 
-   If `render.mjs` reports an unknown template or a render-time error,
-   surface the raw message to the user directly — don't silently fall back
-   to a default template.
+   If `render.mjs` reports an unknown theme or a render-time error, surface
+   the raw message to the user directly — don't silently fall back to a
+   default theme. A first run may need `npx playwright install chromium`;
+   the error says so when that's the cause.
 
-Note the printed PDF path — you need it for the style picker in Step 4.
+Note the printed PDF path — you need it for the theme picker in Step 4.
 
-## Step 4 — Style picker (interactive, instant, mandatory)
+## Step 4 — Theme picker (interactive, instant, mandatory)
 
-Switching templates is a cheap (~1s) re-render — never re-tailor, never
+Switching themes is a cheap (~2s) re-render — never re-tailor, never
 re-validate. **This step is not optional — always run it after opening the
 first PDF, even if the user hasn't asked for a different style.** Drive
 this as a friendly loop:
 
 1. **Show the change summary** — a small markdown table (optimized /
    dropped / kept bullets, roles preserved), and confirm the résumé opened.
-2. **Offer the styles as a selector.** Use your question/selection tool
-   with the seven templates as options, each with a one-line description.
-   Label the first four **ATS-safe** (single-column, standard headings —
-   survives automated résumé screening reliably) and the last three
-   **presentation-only** (visually distinctive, but may not parse cleanly
-   through some applicant tracking systems — best for referrals, portfolio
-   sites, or direct-to-hiring-manager submissions):
-   - **ATS-safe:** `modern` (clean, accent headers · default), `classic`
-     (traditional serif), `technical` (dense, monospace accents),
-     `editorial` (magazine-style, still single-column).
-   - **Presentation-only:** `polished` (two-column sidebar), `timeline`
-     (dated timeline rail), `spotlight` (colored header band).
+2. **Offer the themes as a selector**, with a one-line description each:
+   - **`press`** (default) — editorial layout: warm paper, one accent colour,
+     section labels in a left gutter. For a person: a referral, a hiring
+     manager, a portfolio.
+   - **`ats-plain`** — single column, headings above their content, no colour.
+     For a job board or an applicant tracking system you don't control.
+   - **their own `.css`** — if the user has one, pass its path.
+
+   **Recommend `ats-plain` whenever the user says they are applying through a
+   job board, a careers portal, or any ATS.** The gutter layout `press` uses
+   reads to a column-detecting parser as a separate column, so headings can be
+   separated from their sections. This is measured, not theoretical — see
+   `references/theme-contract.md`.
 3. **On each pick, re-render and re-open** (instant, no validation needed
    — the JSON is already clean):
 
    ```bash
-   cd "$SKILL_DIR" && node scripts/render.mjs --json <outDir>/resume.json --template <pick> --out <outDir> --open
+   cd "$SKILL_DIR" && node scripts/render.mjs --json <outDir>/resume.json --theme <pick> --out <outDir> --open
    ```
 
-4. **Then ask what's next**: **"Preview another style"** or **"Save &
+4. **Then ask what's next**: **"Preview the other theme"** or **"Save &
    finish"**.
-   - *Another style* → back to step 2/3.
+   - *Another theme* → back to step 2/3.
    - *Save & finish* → the chosen PDF is already saved locally in the out
      dir; give its path as the final deliverable.
 5. **End the run with exactly:** `Done — let me know if you'd like anything else.`
@@ -160,12 +174,25 @@ this as a friendly loop:
 If you have an image/screenshot tool, show the PDF after each render as the
 preview; otherwise `--open` opens it in the user's default viewer.
 
+**If the user wants to change how a theme looks** (their colours, their fonts,
+their own layout), don't edit the shipped file — help them make it theirs:
+
+```bash
+mkdir -p ~/.claude/resume/themes && cp assets/themes/press.css ~/.claude/resume/themes/press.css
+```
+
+That copy wins over the shipped theme of the same name, survives reinstalls,
+and is shared across every install of the skill. `references/theme-contract.md`
+documents the class structure, the five palette variables, and the rules that
+keep a theme machine-readable.
+
 ## Maintainer reference (not part of a user run)
 
 - `npm test` — offline unit suite (no network, no LLM calls): schema/content
-  validation, PDF rendering across all 7 templates, a template
-  line-spacing regression guard, the DOCX-extraction shim, and the
-  prompt-injection scanning oracle.
+  validation, the HTML generator's structural contract, theme resolution, PDF
+  rendering in both shipped themes, the text-extraction baseline, the
+  DOCX-extraction shim, and the prompt-injection scanning oracle. It launches
+  real Chromium, so a fresh checkout needs `npx playwright install chromium`.
 - `node scripts/evals/run.mjs` — the tailoring-quality evaluation harness.
   See `docs/plans/2026-07-08-resume-eval-harness-design.md` for the full
   design (a single PASS/FAIL verdict, a real dollar cost cap, mandatory
