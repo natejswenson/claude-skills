@@ -21,7 +21,6 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = dirname(SCRIPTS_DIR);
-const REGISTER = join(SCRIPTS_DIR, "_tsx-register.mjs");
 const filter = process.argv[2];
 
 function findTests(dir) {
@@ -49,7 +48,7 @@ for (const test of tests) {
   process.stdout.write(`\n──── ${rel} ────\n`);
   const res = spawnSync(
     process.execPath,
-    ["--import", REGISTER, test],
+    [test],
     {
       stdio: "inherit",
       cwd: ROOT,
