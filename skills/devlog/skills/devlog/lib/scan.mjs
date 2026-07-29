@@ -288,6 +288,11 @@ export function scanAll(config, { projectKey = null, fetch = true, getExisting =
     // skill appends it to the publish clone path (`--clone <clone>/<targetDir>`).
     targetDir: config.targetDir || '',
     branch,
+    // Public base URL the target repo is served at, when configured — the skill
+    // uses it to confirm a published entry actually renders. null means the run
+    // can push but cannot verify, which the skill has to say out loud rather
+    // than report an unverified publish as a success.
+    siteUrl: config.siteUrl || null,
     deepDive: resolveDeepDive(config),
     voicePath: config.voicePath || null,
     projects: results,

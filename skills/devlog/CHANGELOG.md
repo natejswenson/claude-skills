@@ -2,6 +2,38 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.13.0 (2026-07-29) — a publish run now proves the entry is live
+
+Publishing reported success on a post that was never reachable. The content, cover
+and manifest all landed correctly, the push succeeded, every command returned `ok`,
+and the entry 404'd for an hour because the site's own project registry had never
+been told the project existed. A push is not a route, and this release stops the
+skill treating the two as the same thing.
+
+- **Added: `publish-entry` returns `firstEntryForProject`.** True when the call
+  created a project's first live entry, which is exactly when a rendering site needs
+  a new registry row. A project holding only tombstones still counts as first, since
+  a retired entry never implied a route. Previously nothing distinguished a project's
+  first publish from its fiftieth, so the one moment registration is required looked
+  identical to every run where it isn't.
+- **Added: `siteUrl` config field** (settable, optional, trailing slash stripped,
+  http(s) only) plus `siteUrl` in the scan output. The repo name is not the site name
+  — a repo named `example.io` is commonly served at `example.com` — so a publish run
+  had no way to reach the page it had just published.
+- **Added: SKILL.md Generate step 5b (register a project the site has never
+  rendered).** Find the site's registry, add the project, and *build the clone to
+  confirm the route exists* before pushing. Also warns that registry position can
+  decide feed order: a site sorting by date alone falls back to load order for
+  same-date entries, so a project appended last can render its newest entry last.
+- **Added: SKILL.md Generate step 6 (verify the entry is live).** Poll the published
+  URL until it returns 200 before reporting success; on a persistent 404, check the
+  registry first, then the host's build log, and report it as **not live**. With no
+  `siteUrl` configured, the run must say the entry is pushed but unverified rather
+  than call it published.
+- **Changed: the confirmation block leads with the verified live URL**, with the repo
+  blob URL demoted to secondary, and prints the failure on the `Live:` line rather
+  than a URL that may 404.
+
 ## 0.12.0 (2026-07-28) — five composition slots; stop defaulting to before/after
 
 Minor rather than patch: this adds three new named composition slots, so covers

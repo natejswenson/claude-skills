@@ -125,6 +125,19 @@ export function validateConfig(config) {
       throw new Error(`targetDir must be a relative path like "content/devlog" (no leading/trailing slash, no '..'): got ${JSON.stringify(config.targetDir)}`);
     }
   }
+  if ('siteUrl' in config) {
+    // Optional: the public base URL the target repo is served at, used only to
+    // confirm a published entry actually renders. The repo name is not the site
+    // name (a repo called `example.io` can be served at `example.com`), and
+    // pushing content is not the same as the site serving it, so this is the
+    // only way a publish run can verify itself rather than assume.
+    // Interpolated into a shell curl, hence the tight charset.
+    if (typeof config.siteUrl !== 'string'
+      || !/^https?:\/\/[A-Za-z0-9.-]+(:\d+)?(\/[A-Za-z0-9._~/-]*)?$/.test(config.siteUrl)
+      || config.siteUrl.endsWith('/')) {
+      throw new Error(`siteUrl must be an http(s) URL with no trailing slash, e.g. "https://example.com": got ${JSON.stringify(config.siteUrl)}`);
+    }
+  }
   if ('voicePath' in config) {
     // Optional: directory holding the voice profile used to write entries. Read by
     // the skill with the Read tool only — never shell-interpolated — so the only
