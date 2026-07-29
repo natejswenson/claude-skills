@@ -221,6 +221,14 @@ export function publishEntry({ cloneDir, project, version, entryPath, coverImage
   }
 
   const file = `${version}.md`;
+  // Whether this project had any live entry before this call. A site that
+  // renders the devlog typically keeps its own registry of which projects to
+  // render (content on disk is not the same as a route), and that registry is
+  // the thing a first-ever publish silently misses: the entry lands, the build
+  // walks past it, and the post 404s while every check reports success.
+  // Reported back so the caller can require registration exactly once per
+  // project, instead of relying on whoever is publishing to remember.
+  const hadLiveEntries = manifest.entries.some((e) => e && !e.removed);
   // Idempotent: legacy manifests may already reference this file/version even
   // when the .md was missing — never duplicate an index row.
   const already = manifest.entries.some((e) => e && (e.file === file || e.version === version));
@@ -247,7 +255,13 @@ export function publishEntry({ cloneDir, project, version, entryPath, coverImage
     manifestUpdated = true;
   }
 
-  return { written: destPath, manifestUpdated, coverWritten: !!coverFile, no };
+  return {
+    written: destPath,
+    manifestUpdated,
+    coverWritten: !!coverFile,
+    no,
+    firstEntryForProject: manifestUpdated && !hadLiveEntries,
+  };
 }
 
 // Editorially retire a release: after an entry is manually moved, consolidated,
