@@ -1,120 +1,241 @@
 {
-  "_comment": "Frozen keywordCoverage() scores for a real past-run tailored DevOps resume (evals/baseline/tailored-devops-resume.json — the benchmark-out artifact with identity fields replaced; benchmark-out/ is gitignored because it holds real contact details, and coverage reads only summary + experience[].bullets) against all 28 real job fixtures. Regenerate with: node evals/baseline/update-coverage-matrix.mjs",
-  "resume": "evals/baseline/tailored-devops-resume.json",
+  "_comment": "Frozen keywordCoverage() scores against all 28 real job fixtures, for two real résumés with identity fields replaced (benchmark-out/ is gitignored because it holds real contact details). 'devops' is the historical discrimination case; 'showcase' additionally carries highlights, projects and grouped skills, which keywordCoverage reads as of 2.0 and which 'devops' does not contain at all. Regenerate with: node evals/baseline/update-coverage-matrix.mjs",
   "matchingArchetype": "swe-mid",
   "jdTrimChars": 6000,
-  "jobs": {
-    "j01-swe-greenhouse": {
-      "archetype": "swe-mid",
-      "coverage": 0.1748
+  "resumes": {
+    "devops": {
+      "path": "evals/baseline/tailored-devops-resume.json",
+      "jobs": {
+        "j01-swe-greenhouse": {
+          "archetype": "swe-mid",
+          "coverage": 0.1845
+        },
+        "j02-swe-lever": {
+          "archetype": "swe-mid",
+          "coverage": 0.1719
+        },
+        "j03-swe-workday": {
+          "archetype": "swe-mid",
+          "coverage": 0.1889
+        },
+        "j04-sales-greenhouse": {
+          "archetype": "sales-ae",
+          "coverage": 0.0217
+        },
+        "j05-sales-lever": {
+          "archetype": "sales-ae",
+          "coverage": 0.043
+        },
+        "j06-sales-linkedin": {
+          "archetype": "sales-ae",
+          "coverage": 0.0588
+        },
+        "j07-rn-workday-rochester": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0309
+        },
+        "j08-rn-workday-allina": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0745
+        },
+        "j09-rn-linkedin": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0562
+        },
+        "j10-retail-workday-skechers": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0682
+        },
+        "j11-retail-greenhouse-tecovas": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0595
+        },
+        "j12-retail-workday-loft": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0988
+        },
+        "j13-restaurant-workday-shakeshack": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.0476
+        },
+        "j14-restaurant-linkedin": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.046
+        },
+        "j15-mktg-ashby-sanguine": {
+          "archetype": "mktg-coord",
+          "coverage": 0.0448
+        },
+        "j16-mktg-lever-leantaas": {
+          "archetype": "mktg-coord",
+          "coverage": 0.0617
+        },
+        "j17-mktg-lever-willow": {
+          "archetype": "mktg-coord",
+          "coverage": 0.0822
+        },
+        "j18-accountant-workday-groupon": {
+          "archetype": "accountant",
+          "coverage": 0.1094
+        },
+        "j19-accountant-linkedin-goto": {
+          "archetype": "accountant",
+          "coverage": 0.0556
+        },
+        "j20-accountant-linkedin-forter": {
+          "archetype": "accountant",
+          "coverage": 0.0909
+        },
+        "j21-hvac-linkedin-nj": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0135
+        },
+        "j22-hvac-linkedin-jll": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0441
+        },
+        "j23-teacher-linkedin-leander": {
+          "archetype": "teacher-elem",
+          "coverage": 0.025
+        },
+        "j24-teacher-linkedin-northampton": {
+          "archetype": "teacher-elem",
+          "coverage": 0.0256
+        },
+        "j25-paste-restaurant-small": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.0349
+        },
+        "j26-paste-hvac-small": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0253
+        },
+        "j27-paste-teacher-rural": {
+          "archetype": "teacher-elem",
+          "coverage": 0.0556
+        },
+        "j28-paste-retail-boutique": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0227
+        }
+      }
     },
-    "j02-swe-lever": {
-      "archetype": "swe-mid",
-      "coverage": 0.1719
-    },
-    "j03-swe-workday": {
-      "archetype": "swe-mid",
-      "coverage": 0.1889
-    },
-    "j04-sales-greenhouse": {
-      "archetype": "sales-ae",
-      "coverage": 0.0217
-    },
-    "j05-sales-lever": {
-      "archetype": "sales-ae",
-      "coverage": 0.043
-    },
-    "j06-sales-linkedin": {
-      "archetype": "sales-ae",
-      "coverage": 0.0588
-    },
-    "j07-rn-workday-rochester": {
-      "archetype": "rn-clinical",
-      "coverage": 0.0309
-    },
-    "j08-rn-workday-allina": {
-      "archetype": "rn-clinical",
-      "coverage": 0.0745
-    },
-    "j09-rn-linkedin": {
-      "archetype": "rn-clinical",
-      "coverage": 0.0562
-    },
-    "j10-retail-workday-skechers": {
-      "archetype": "retail-mgr",
-      "coverage": 0.0682
-    },
-    "j11-retail-greenhouse-tecovas": {
-      "archetype": "retail-mgr",
-      "coverage": 0.0595
-    },
-    "j12-retail-workday-loft": {
-      "archetype": "retail-mgr",
-      "coverage": 0.0988
-    },
-    "j13-restaurant-workday-shakeshack": {
-      "archetype": "restaurant-gm",
-      "coverage": 0.0476
-    },
-    "j14-restaurant-linkedin": {
-      "archetype": "restaurant-gm",
-      "coverage": 0.046
-    },
-    "j15-mktg-ashby-sanguine": {
-      "archetype": "mktg-coord",
-      "coverage": 0.0448
-    },
-    "j16-mktg-lever-leantaas": {
-      "archetype": "mktg-coord",
-      "coverage": 0.0617
-    },
-    "j17-mktg-lever-willow": {
-      "archetype": "mktg-coord",
-      "coverage": 0.0822
-    },
-    "j18-accountant-workday-groupon": {
-      "archetype": "accountant",
-      "coverage": 0.1094
-    },
-    "j19-accountant-linkedin-goto": {
-      "archetype": "accountant",
-      "coverage": 0.0556
-    },
-    "j20-accountant-linkedin-forter": {
-      "archetype": "accountant",
-      "coverage": 0.0909
-    },
-    "j21-hvac-linkedin-nj": {
-      "archetype": "hvac-tech",
-      "coverage": 0.0135
-    },
-    "j22-hvac-linkedin-jll": {
-      "archetype": "hvac-tech",
-      "coverage": 0.0441
-    },
-    "j23-teacher-linkedin-leander": {
-      "archetype": "teacher-elem",
-      "coverage": 0.025
-    },
-    "j24-teacher-linkedin-northampton": {
-      "archetype": "teacher-elem",
-      "coverage": 0.0256
-    },
-    "j25-paste-restaurant-small": {
-      "archetype": "restaurant-gm",
-      "coverage": 0.0349
-    },
-    "j26-paste-hvac-small": {
-      "archetype": "hvac-tech",
-      "coverage": 0.0253
-    },
-    "j27-paste-teacher-rural": {
-      "archetype": "teacher-elem",
-      "coverage": 0.0556
-    },
-    "j28-paste-retail-boutique": {
-      "archetype": "retail-mgr",
-      "coverage": 0.0227
+    "showcase": {
+      "path": "evals/baseline/press-showcase-resume.json",
+      "jobs": {
+        "j01-swe-greenhouse": {
+          "archetype": "swe-mid",
+          "coverage": 0.2233
+        },
+        "j02-swe-lever": {
+          "archetype": "swe-mid",
+          "coverage": 0.1719
+        },
+        "j03-swe-workday": {
+          "archetype": "swe-mid",
+          "coverage": 0.1889
+        },
+        "j04-sales-greenhouse": {
+          "archetype": "sales-ae",
+          "coverage": 0.0543
+        },
+        "j05-sales-lever": {
+          "archetype": "sales-ae",
+          "coverage": 0.1075
+        },
+        "j06-sales-linkedin": {
+          "archetype": "sales-ae",
+          "coverage": 0.1176
+        },
+        "j07-rn-workday-rochester": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0515
+        },
+        "j08-rn-workday-allina": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0426
+        },
+        "j09-rn-linkedin": {
+          "archetype": "rn-clinical",
+          "coverage": 0.0562
+        },
+        "j10-retail-workday-skechers": {
+          "archetype": "retail-mgr",
+          "coverage": 0.1023
+        },
+        "j11-retail-greenhouse-tecovas": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0714
+        },
+        "j12-retail-workday-loft": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0988
+        },
+        "j13-restaurant-workday-shakeshack": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.0476
+        },
+        "j14-restaurant-linkedin": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.0115
+        },
+        "j15-mktg-ashby-sanguine": {
+          "archetype": "mktg-coord",
+          "coverage": 0.1194
+        },
+        "j16-mktg-lever-leantaas": {
+          "archetype": "mktg-coord",
+          "coverage": 0.1235
+        },
+        "j17-mktg-lever-willow": {
+          "archetype": "mktg-coord",
+          "coverage": 0.0959
+        },
+        "j18-accountant-workday-groupon": {
+          "archetype": "accountant",
+          "coverage": 0.0781
+        },
+        "j19-accountant-linkedin-goto": {
+          "archetype": "accountant",
+          "coverage": 0.0833
+        },
+        "j20-accountant-linkedin-forter": {
+          "archetype": "accountant",
+          "coverage": 0.0779
+        },
+        "j21-hvac-linkedin-nj": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0676
+        },
+        "j22-hvac-linkedin-jll": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0294
+        },
+        "j23-teacher-linkedin-leander": {
+          "archetype": "teacher-elem",
+          "coverage": 0.0375
+        },
+        "j24-teacher-linkedin-northampton": {
+          "archetype": "teacher-elem",
+          "coverage": 0.0513
+        },
+        "j25-paste-restaurant-small": {
+          "archetype": "restaurant-gm",
+          "coverage": 0.093
+        },
+        "j26-paste-hvac-small": {
+          "archetype": "hvac-tech",
+          "coverage": 0.0506
+        },
+        "j27-paste-teacher-rural": {
+          "archetype": "teacher-elem",
+          "coverage": 0.0278
+        },
+        "j28-paste-retail-boutique": {
+          "archetype": "retail-mgr",
+          "coverage": 0.0455
+        }
+      }
     }
   }
 }

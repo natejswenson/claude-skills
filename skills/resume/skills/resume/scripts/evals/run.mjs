@@ -27,19 +27,17 @@
  *   node scripts/evals/run.mjs --skip-judge     # skip the capped LLM-judge pass
  *   node scripts/evals/run.mjs --judge-cap 5    # override the $2.00 default cap
  */
-import { register } from "node:module";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
-register(pathToFileURL(join(ROOT, "scripts", "_tsx-loader.mjs")).href);
 
 const { z } = await import("zod");
 const { ResumeJSON, validateTailoring, dropNoopOptimizedBullets } = await import("../validate.mjs");
-const { renderTemplateFromResume } = await import("../render.mjs");
+const { renderThemeFromResume } = await import("../render.mjs");
 const { keywordCoverage } = await import("../eval/keyword-coverage.mjs");
 const { BudgetGate, BudgetExceededError } = await import("../scorer/budget.mjs");
 const { judgeTailoringQuality } = await import("./judge.mjs");
@@ -274,10 +272,13 @@ async function main() {
   // ---- ATS-parseability (scored, not gating) ----
   console.log("\nATS-parseability (scored, informational):");
   const atsResults = [];
-  const ATS_SAFE_TEMPLATES = ["modern", "classic", "technical", "editorial"];
+  // ats-plain is the theme built for machine parsing (single column, headings
+  // above content). press is the presentation theme and is deliberately NOT
+  // what this gate measures.
+  const ATS_THEME = "ats-plain";
   for (const r of results.filter((r) => r.gatePass)) {
     try {
-      const pdfPath = await renderTemplateFromResume(r.tailored, "modern", process.env.TMPDIR ?? "/tmp");
+      const { pdfPath } = await renderThemeFromResume(r.tailored, ATS_THEME, process.env.TMPDIR ?? "/tmp");
       const buf = readFileSync(pdfPath);
       const pdf = await getDocumentProxy(new Uint8Array(buf));
       const extracted = await extractText(pdf, { mergePages: true });
@@ -301,7 +302,7 @@ async function main() {
   const atsPassRate = atsResults.length
     ? Math.round((atsResults.filter((a) => a.orderPreserved).length / atsResults.length) * 100)
     : null;
-  console.log(`  ${atsPassRate ?? "N/A"}% of fixtures preserved bullet order in extracted text (threshold: 100%; templates used: modern, and ${ATS_SAFE_TEMPLATES.slice(1).join("/")} share the same single-column layout)`);
+  console.log(`  ${atsPassRate ?? "N/A"}% of fixtures preserved bullet order in extracted text (threshold: 100%; theme used: ${ATS_THEME})`);
 
   // ---- Baseline delta (scored, not gating) ----
   console.log("\nBaseline delta (informational — is the rules doc measurably better than plain prompting?):");

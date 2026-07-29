@@ -1,0 +1,141 @@
+{
+  "name": "Morgan Avery",
+  "contact": {
+    "email": "morgan.avery@example.com",
+    "phone": "555-0142",
+    "location": "Fargo, ND / Remote",
+    "links": [
+      "https://linkedin.com/in/example",
+      "https://github.com/example"
+    ]
+  },
+  "summary": "Sixteen years building the platforms other engineers ship on. Right now that means AI agents on the Anthropic Claude platform that triage incidents, debug failures, and make the CI/CD calls that used to wait on a human. Before that: AWS at scale, Terraform-driven infrastructure, and the pipelines two major product launches ran on. I like leaving teams faster than I found them.",
+  "highlights": [
+    {
+      "label": "Years",
+      "value": "16 years",
+      "caption": "Cloud and platform engineering"
+    },
+    {
+      "label": "Focus now",
+      "value": "AI agents",
+      "caption": "Incident triage, debugging, CI/CD"
+    },
+    {
+      "label": "Cloud",
+      "value": "AWS at scale",
+      "caption": "EKS, ECS, Lambda, S3, DynamoDB"
+    },
+    {
+      "label": "Reach",
+      "value": "100+ engineers",
+      "caption": "Standards adopted org-wide"
+    }
+  ],
+  "skills": [
+    "AI & Agents: Anthropic Claude SDK, Model Context Protocol (MCP), LLMOps, agent design and evaluation",
+    "Cloud: Amazon Web Services (AWS): EC2, EKS, ECS, Lambda, S3, DynamoDB. Kubernetes, Docker, OpenShift",
+    "Infrastructure as Code: Terraform / OpenTofu, Ansible & Ansible Tower, CloudFormation",
+    "CI/CD: GitHub Actions, GitLab CI, Jenkins, pipelines-as-code, golden pipelines",
+    "Reliability & Security: Datadog observability, Site Reliability Engineering (SRE), on-call, SAST/DAST, secret scanning, policy-as-code",
+    "Languages: Python, JavaScript, Bash, SQL, Linux"
+  ],
+  "experience": [
+    {
+      "title": "Senior DevOps Engineer",
+      "company": "GoodLeap",
+      "location": "Remote",
+      "startDate": "Nov 2022",
+      "endDate": "Present",
+      "bullets": [
+        "Co-developing AI agents on the Anthropic Claude platform that automate incident triage, debugging, and CI/CD failure analysis across GitHub. Cut mean time to resolution by 3x in early rollout.",
+        "Building an agent that auto-tags legacy AWS resources across every account in the org, reconciling infrastructure created by Terraform, SST, CloudFormation, and manual console work into one accurate inventory.",
+        "Built a repository creation agent that applies company-wide naming, structure, permission, and CI/CD standards to every new repo at creation time, so compliance is enforced up front instead of audited after the fact.",
+        "Led AWS infrastructure engineering for two major product launches, designing the Terraform modules and GitHub Actions pipelines they shipped on, then set the org-wide CI/CD and Infrastructure-as-Code standards other teams now build against.",
+        "Built the Datadog observability dashboards and alerting the on-call rotation runs on today, standardizing how production incidents are detected and escalated."
+      ]
+    },
+    {
+      "title": "Lead Associate, DevOps Engineering",
+      "company": "Fannie Mae",
+      "startDate": "Jun 2021",
+      "endDate": "Nov 2022",
+      "bullets": [
+        "Owned GitLab platform infrastructure end to end at a federally chartered mortgage finance company: Terraform-managed deployment, version upgrades, multi-region high availability, runner autoscaling, and DR/backup automation, all under financial-services security and compliance constraints.",
+        "Designed and shipped shared CI/CD templates and golden pipelines that engineering teams adopted as their delivery baseline, replacing per-team pipeline drift with one vetted, reusable path.",
+        "Wired SAST, DAST, secret scanning, and policy-as-code directly into the platform's pipelines so security and audit requirements shipped with the code instead of after it, then onboarded and mentored the teams adopting it."
+      ]
+    },
+    {
+      "title": "Lead Cloud Platform Engineer",
+      "company": "Discover Financial Services",
+      "startDate": "Dec 2020",
+      "endDate": "Jun 2021",
+      "bullets": [
+        "Architected an automated IAM policy assignment system spanning AWS Lambda, DynamoDB, Jenkins, and Ansible Tower, managing access policies for roughly 300 S3 buckets and giving Discover a self-service path that replaced manual provisioning.",
+        "Designed and published 20 reusable Ansible templates that standardized provisioning across cloud and on-premise services, adopted by an org of 100+ platform engineers as the vetted baseline to build on.",
+        "Led the Ansible Tower 3.6 to 3.8 upgrade across 15 consuming teams and delivered the migration without disrupting production workflows."
+      ]
+    },
+    {
+      "title": "Lead DevOps Engineer",
+      "company": "Optum",
+      "location": "Eden Prairie, MN",
+      "startDate": "Sep 2019",
+      "endDate": "Dec 2020",
+      "bullets": [
+        "Led DevOps teams supporting government and military health contracts, delivering CI/CD and infrastructure under regulated, compliance-driven constraints.",
+        "Re-architected Jenkins onto container-based infrastructure, replacing static-VM build agents with elastic on-demand workers. Build throughput doubled and operational downtime dropped by a third.",
+        "Built zero-downtime automated deployment pipelines for high-availability healthcare workloads, and operated Jenkins, Chef, and GitHub Enterprise enterprise-wide, setting the reliability standards downstream teams depended on."
+      ]
+    },
+    {
+      "title": "Senior DevOps Engineer, Community Lead",
+      "company": "Optum",
+      "location": "Minneapolis, MN",
+      "startDate": "Jan 2019",
+      "endDate": "Sep 2019",
+      "bullets": [
+        "Led a distributed team building internal Agile and engineering communities of practice across a 235,000-person organization, scaling adoption of best practices into every product group.",
+        "Developed and delivered hands-on technical training in TDD, pair programming, and XP, a curriculum that shaped engineering culture across the org."
+      ]
+    },
+    {
+      "title": "DevOps Engineer",
+      "company": "Optum",
+      "location": "Minnesota",
+      "startDate": "Jan 2016",
+      "endDate": "Jan 2019",
+      "bullets": [
+        "Built end-to-end test automation across Selenium, Cucumber, and Sauce Labs, replacing manual QA cycles with continuous browser-coverage testing that ran on every build.",
+        "Shipped zero-downtime deployments on OpenShift and developed pipelines-as-code in Jenkins, giving product teams a version-controlled, reusable release path."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "claude-skills",
+      "meta": "github.com/example/claude-skills",
+      "description": "Seven independently versioned Claude Code skills in one monorepo, each with its own test suite, offline evaluation baseline, and required CI check. Protected promotion flow with auto-merge on green and version-driven release tagging."
+    },
+    {
+      "name": "local-fitness",
+      "meta": "github.com/example/local-fitness",
+      "description": "A self-hosted Model Context Protocol server exposing 44 grounded tools over a local SQLite store, so an agent has to call a tool before it can state a number. Python and Docker, 85% coverage gate in CI, MIT licensed."
+    },
+    {
+      "name": "example.com",
+      "meta": "Engineering writing",
+      "description": "How-to guides on platform engineering and agent tooling, written from real shipped releases."
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor of Science, Industrial Engineering",
+      "school": "University of Minnesota Duluth",
+      "year": "2005 to 2010"
+    }
+  ],
+  "droppedBullets": [],
+  "optimizedBullets": []
+}

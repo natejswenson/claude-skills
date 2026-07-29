@@ -1,8 +1,8 @@
 {
   "name": "resume-skill",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "private": true,
-  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders a polished multi-template PDF. Reading, extraction, and tailoring run agent-native; only PDF rendering and content validation are code.",
+  "description": "Self-contained Claude Code skill that tailors a resume to a job description and renders it through one semantic HTML template styled by a swappable CSS theme. Reading, extraction, and tailoring run agent-native; only rendering and content validation are code.",
   "license": "MIT",
   "author": "Nate Swenson",
   "repository": {
@@ -20,6 +20,7 @@
     "cv",
     "resume-tailoring",
     "pdf",
+    "themes",
     "cli"
   ],
   "type": "module",
@@ -28,19 +29,13 @@
   },
   "scripts": {
     "test": "node scripts/run-tests.mjs",
-    "eval": "node --import ./scripts/_tsx-register.mjs scripts/evals/run.mjs",
-    "render": "node --import ./scripts/_tsx-register.mjs scripts/render.mjs"
+    "eval": "node scripts/evals/run.mjs",
+    "render": "node scripts/render.mjs"
   },
   "dependencies": {
-    "@react-pdf/renderer": "^4.5.0",
     "mammoth": "^1.12.0",
-    "react": "19.2.4",
+    "playwright": "1.61.1",
     "unpdf": "^1.6.0",
     "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "typescript": "^5"
   }
 }

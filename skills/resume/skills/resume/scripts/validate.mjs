@@ -35,6 +35,8 @@ Usage:
 Flags:
   --json <path>          path to the tailored résumé JSON to check
   --resume <path|text>    path to the original résumé text, or the literal text itself
+  --json-output           report the result as JSON (violations + a per-role
+                          bullet tally) instead of human lines
   -h, --help              show this help`;
 
 // ---------------------------------------------------------------------------
@@ -46,6 +48,36 @@ const OptimizedBullet = z.object({
   original: z.string(),
   rewritten: z.string(),
   role: z.string(),
+});
+
+// Two optional presentation sections. Both are OPTIONAL on purpose: a résumé
+// that omits them renders without the section, and every résumé JSON written
+// before they existed still parses. Like every other field here, their content
+// must come from the source résumé — they are new places to put facts, not a
+// licence to invent them.
+const Highlight = z.object({
+  /** Short caps label, e.g. "Years" or "Cloud". */
+  label: z.string(),
+  /** The headline value, kept short enough to set large, e.g. "16 years". */
+  value: z.string(),
+  /** Optional one-line gloss under the value. */
+  caption: z.string().optional(),
+});
+
+// What this résumé was tailored FOR. Optional so older résumé JSON still
+// parses, but when present it makes the output filename unique per
+// application — without it every tailoring overwrites the last one.
+const Target = z.object({
+  company: z.string(),
+  role: z.string(),
+  url: z.string().optional(),
+});
+
+const Project = z.object({
+  name: z.string(),
+  /** Right-aligned metadata: a repo URL, a role, a date range. */
+  meta: z.string().optional(),
+  description: z.string(),
 });
 
 export const ResumeJSON = z.object({
@@ -76,6 +108,9 @@ export const ResumeJSON = z.object({
       details: z.string().optional(),
     }),
   ),
+  target: Target.optional(),
+  highlights: z.array(Highlight).optional(),
+  projects: z.array(Project).optional(),
   droppedBullets: z.array(z.string()).default([]),
   optimizedBullets: z.array(OptimizedBullet).default([]),
 });
@@ -424,6 +459,7 @@ function parseArgs(argv) {
     if (a === "-h" || a === "--help") flags.help = true;
     else if (a === "--json") flags.json = argv[++i];
     else if (a === "--resume") flags.resume = argv[++i];
+    else if (a === "--json-output") flags.jsonOutput = true;
   }
   return flags;
 }
@@ -452,9 +488,12 @@ async function main() {
   // Step 1: structural gate.
   const parsed = ResumeJSON.safeParse(raw);
   if (!parsed.success) {
-    console.error(`✖ schema violations in ${jsonPath}:`);
-    for (const issue of parsed.error.issues) {
-      console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
+    const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+    if (flags.jsonOutput) {
+      console.log(JSON.stringify({ ok: false, stage: "schema", violations: issues }, null, 2));
+    } else {
+      console.error(`✖ schema violations in ${jsonPath}:`);
+      for (const v of issues) console.error(`  - ${v}`);
     }
     process.exit(1);
   }
@@ -465,6 +504,10 @@ async function main() {
 
   const cleaned = dropNoopOptimizedBullets(parsed.data);
   const result = validateTailoring(cleaned, sourceText);
+  if (!result.ok && flags.jsonOutput) {
+    console.log(JSON.stringify({ ok: false, stage: "content", violations: result.violations }, null, 2));
+    process.exit(1);
+  }
   if (!result.ok) {
     console.error(`✖ content violations:`);
     for (const v of result.violations) {
@@ -473,6 +516,47 @@ async function main() {
     process.exit(1);
   }
 
+  if (flags.jsonOutput) {
+    // The per-role tally the caller needs for its change-summary table, so it
+    // does not have to re-derive it from the résumé JSON itself.
+    const optimizedByRole = new Map();
+    for (const b of cleaned.optimizedBullets) {
+      optimizedByRole.set(b.role, (optimizedByRole.get(b.role) ?? 0) + 1);
+    }
+    const roles = cleaned.experience.map((e) => {
+      const optimized = optimizedByRole.get(e.title) ?? 0;
+      return {
+        role: e.title,
+        company: e.company,
+        bullets: e.bullets.length,
+        optimized,
+        kept: Math.max(e.bullets.length - optimized, 0),
+      };
+    });
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          name: cleaned.name,
+          target: cleaned.target ?? null,
+          roles,
+          totals: {
+            bullets: roles.reduce((n, r) => n + r.bullets, 0),
+            optimized: cleaned.optimizedBullets.length,
+            dropped: cleaned.droppedBullets.length,
+          },
+          sections: {
+            highlights: cleaned.highlights?.length ?? 0,
+            projects: cleaned.projects?.length ?? 0,
+            skills: cleaned.skills.length,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    return;
+  }
   console.log("✓ clean — no schema or content violations");
 }
 
