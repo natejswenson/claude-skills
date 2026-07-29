@@ -33,9 +33,12 @@ wins.
 - **No external links in the main post.** Links in tweet 1 measurably suppress
   reach (X deprioritizes off-platform exits). Put the link in the **last reply** of
   the thread ("link below" if you must reference it).
-- **Threads > long-form for anything that doesn't fit one tweet.** Chained replies
-  are the native long format: each tweet a complete beat, numbered when it helps
-  (`3/7`), ≤7 tweets by default. Never split mid-sentence across tweets.
+- **Threads > long-form when a thread is warranted at all.** Chained replies are the
+  native long format: each tweet a complete beat, numbered when it helps (`3/7`), ≤7
+  tweets by default. Never split mid-sentence across tweets. **This is a reach note,
+  not a licence to thread** — the default form is a single tweet, and voice-notes wins
+  wherever the two conflict. If the material won't fit one tweet, the first move is to
+  cut to the sharpest beat and put the rest on a card, not to chain replies.
 - **Native images beat link cards.** A composed 16:9 card (1200×675) stops the
   scroll; up to 4 images make a carousel-like post. Always with alt text.
 - **Specifics over abstractions.** Real commands, real numbers, real names — that's
