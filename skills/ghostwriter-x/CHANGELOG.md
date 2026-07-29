@@ -5,6 +5,28 @@ All notable changes to the ghostwriter-x skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-28
+
+### Changed
+
+- **A single tweet is now the default form; a thread is drafted only when the user
+  asks for one.** Five separate places decided form, and every one of them assumed a
+  thread as soon as the material had more than one beat: the step-4 format rule, the
+  how-to shape (steps spread across tweets 2–5), the idea-menu preview line, the
+  post-pick brief, and the Engagement-craft list. An open-ended run therefore produced
+  a thread by default, which is not the house style.
+- **How-to posts put the steps on the card, not on tweets 2–5.** The tweet carries the
+  implication and the sharpest number; the real commands, config and the gotcha go into
+  the composed Press card. This is where a how-to earns bookmarks anyway, so the
+  material the single tweet cuts is not lost.
+- **`voice/algorithm.md`'s "threads > long-form" is re-scoped as a reach note that
+  cannot license a thread.** It was the one remaining path by which reach guidance
+  could quietly reinstate the old default, which contradicts that file's own stated
+  subordination to `voice-notes.md`. If the material won't fit one tweet, the first
+  move is to cut to the sharpest beat and put the rest on a card.
+- **`voice/voice-notes.example.md` ships the single-tweet default**, so a fresh setup
+  inherits it rather than having to discover it through a redraft.
+
 ## [0.2.0] - 2026-07-27
 
 Improvement pass driven by the first real end-to-end run that published a
