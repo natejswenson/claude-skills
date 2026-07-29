@@ -23,3 +23,8 @@ below are good starting points for anyone; replace or extend them with your own.
 ## Tone
 - <Set your tone — e.g. positive and supportive; argue the idea, never trash a
   person, team, or tool.>
+
+## Format
+- **A single tweet is the default; threads only on request.** If the material has
+  five beats, find the sharpest one and cut the other four, then put the rest on a
+  card. Delete this line if you actually want threads by default.
