@@ -18,6 +18,21 @@ now just a stylesheet: if you can write CSS, you can make the résumé look like
 anything.
 
 ### Added
+- **The résumé is supplied once and stored.** It is kept as plain text at
+  `~/.claude/resume/source-resume.txt`, outside the install dir, so it survives
+  reinstalls. After setup a run needs nothing but a job posting — a bare URL is
+  a complete request. `scripts/profile.mjs` manages it (`--status`, `--save`,
+  `--show`, `--path`, `--clear`).
+  - Plain text, not a parsed structure, on purpose: this file is the ground
+    truth `validate.mjs` checks tailored content against, and storing a parse
+    would make a fact dropped during extraction unfalsifiable from then on.
+  - Storing **rejects binary** — raw PDF and `.docx`/zip signatures, NUL bytes,
+    control-character soup, and anything under 200 characters (a failed
+    extraction usually returns a few characters rather than an error). Saving
+    binary here would break every future run's fact-checking, not just one.
+  - Replacing requires `--force` and keeps the previous version at
+    `source-resume.txt.bak`; the stored copy may be the only plain-text version
+    the user has.
 - **`press` theme (default)** — editorial layout: warm paper, one signature
   accent, section labels in a left gutter, a derived monogram stamp. Shares its
   tokens with the author's site and card system.

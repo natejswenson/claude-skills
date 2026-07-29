@@ -1,6 +1,6 @@
 ---
 name: resume
-description: Tailor a résumé to a job description and render a polished PDF. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", or any request to adapt a résumé to a specific posting and produce a PDF.
+description: Tailor a stored résumé to a job description and render it as a themed PDF. The résumé is supplied once and reused, so later runs need only a job URL. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", a bare job posting URL, or any request to adapt a résumé to a specific posting and produce a PDF. Also handles "update my stored resume", "show my stored resume", and "forget my resume".
 user_invocable: true
 version: 2.0.0
 ---
@@ -28,6 +28,23 @@ If `$SKILL_DIR/node_modules` does not exist, install dependencies first:
 cd "$SKILL_DIR" && npm install
 ```
 
+**Then check whether a source résumé is already stored:**
+
+```bash
+cd "$SKILL_DIR" && node scripts/profile.mjs --status --json-output
+```
+
+The résumé is supplied **once** and reused for every later run, so a normal run
+needs nothing but a job posting.
+
+- **`"stored": true`** → you already have their résumé. **Say so, with its
+  date**, e.g. *"Using your stored résumé (saved 12 June)."* Never tailor from
+  a stored résumé without telling the user which one you used — a résumé from
+  six months ago produces a confidently wrong application, and the run looks
+  identical to a correct one.
+- **`"stored": false`** → this is their first run. Ask for the résumé file
+  (Step 2), then store it (Step 3).
+
 If `FIRECRAWL_API_KEY` is not set in the environment, mention it once
 (don't block the run on it): without it, job postings on Indeed, Glassdoor,
 and ZipRecruiter will fail to extract automatically, and the user will need
@@ -39,10 +56,12 @@ firecrawl.dev.
 Gather whatever the user already gave you in their message; ask for
 anything missing (one item at a time):
 
-1. **Résumé file** — an absolute path to a `.pdf`, `.txt`, `.md`, or `.docx`
-   file.
-2. **Job posting** — a URL, a path to a `.txt` job description, or pasted
-   text.
+1. **Job posting** — a URL, a path to a `.txt` job description, or pasted
+   text. **This is the only required input once a résumé is stored.** A bare
+   URL is a complete request; don't ask for anything else.
+2. **Résumé file** — an absolute path to a `.pdf`, `.txt`, `.md`, or `.docx`
+   file. **Ask for this only when Step 1 reported no stored résumé**, or when
+   the user is explicitly replacing it.
 
 Optional, only if the user expresses a preference:
 - **Theme** — `press` (default) or `ats-plain`, or a path to their own `.css`.
@@ -58,21 +77,37 @@ work.
 This is the core step. No subprocess, no LLM call besides your own
 reasoning.
 
-1. **Read the résumé:**
+1. **Get the résumé text.**
+
+   **If a résumé is already stored** (Step 1), that is the source. Read it:
+
+   ```bash
+   cd "$SKILL_DIR" && node scripts/profile.mjs --show
+   ```
+
+   **If this is a first run**, read the file the user gave you and store it:
    - `.pdf`, `.txt`, `.md` — use your `Read` tool directly (it handles
      `.pdf` natively).
    - `.docx` — the `Read` tool can't parse this format. Run
      `node scripts/docx-to-text.mjs <path>` first and read its stdout as
      the résumé text.
-   - **Whenever the original file is not already plain text** (`.pdf` or
-     `.docx`), write the text you just read/extracted to
-     `<outDir>/source-resume.txt` before continuing. `scripts/validate.mjs`
-     reads whatever path you give it with a plain `utf8` file read — pointed
-     at a `.pdf`/`.docx` path directly, it reads raw binary bytes as garbled
-     "text" and its source-truth checks (scope qualifiers, invented numbers)
-     will spuriously fail even on a clean tailoring. Step 6 below always
-     validates against this sidecar (or the original path directly, only
-     when it was already `.txt`/`.md`) — never against a `.pdf`/`.docx` path.
+   - Write the text you just read/extracted to a temporary file, then store it:
+
+     ```bash
+     cd "$SKILL_DIR" && node scripts/profile.mjs --save <extracted-text-file>
+     ```
+
+     **Store the extracted TEXT, never the `.pdf`/`.docx` path itself.**
+     `scripts/validate.mjs` reads the stored file with a plain `utf8` read —
+     given binary content it reads raw bytes as garbled "text" and its
+     source-truth checks (scope qualifiers, invented numbers) spuriously fail
+     on even a clean tailoring, and here that would persist across every future
+     run. `profile.mjs` refuses binary content, a failed extraction, and
+     anything under 200 characters; if it rejects your input, fix the
+     extraction rather than working around the guard.
+
+   Confirm to the user that it's saved and that future runs need only a job
+   posting.
 2. **Get the job description text:**
    - If given a `.txt` path or pasted text, use it directly.
    - If given a URL, try `WebFetch` first. If it fails, is blocked, or
@@ -108,12 +143,11 @@ reasoning.
    Grouping `skills` as `"Label: a, b, c"` strings renders them as labelled
    blocks; bare keywords render as an inline run. Both are supported — group
    them when the résumé has enough range for the grouping to mean something.
-6. **Validate it** — pass the plain-text source (the `<outDir>/source-resume.txt`
-   sidecar from step 1 for `.pdf`/`.docx` originals; the original path directly
-   for `.txt`/`.md`; never a `.pdf`/`.docx` path):
+6. **Validate it** — against the stored plain-text résumé, which is the ground
+   truth for every source-truth check (never a `.pdf`/`.docx` path):
 
    ```bash
-   cd "$SKILL_DIR" && node scripts/validate.mjs --json <outDir>/resume.json --resume <source-resume.txt-or-original-txt/md-path>
+   cd "$SKILL_DIR" && node scripts/validate.mjs --json <outDir>/resume.json --resume "$(node scripts/profile.mjs --path)"
    ```
 
    If it reports schema or content violations, fix the JSON directly (you
@@ -185,6 +219,41 @@ That copy wins over the shipped theme of the same name, survives reinstalls,
 and is shared across every install of the skill. `references/theme-contract.md`
 documents the class structure, the five palette variables, and the rules that
 keep a theme machine-readable.
+
+## Managing the stored résumé
+
+The stored résumé lives at `~/.claude/resume/source-resume.txt`, outside the
+skill's install dir, so it survives reinstalls and upgrades.
+
+**"update my résumé" / "I have a new version"** — read the new file exactly as
+in Step 3, then replace it. Replacing requires `--force`, and **you must
+confirm with the user before passing it**: the stored copy may be the only
+plain-text version they have, and this is not your file to discard.
+
+```bash
+cd "$SKILL_DIR" && node scripts/profile.mjs --save <extracted-text-file> --force
+```
+
+The previous version is kept at `source-resume.txt.bak` automatically. Say so
+after replacing — it is the difference between a recoverable mistake and a lost
+résumé.
+
+**"what résumé do you have?"** — `node scripts/profile.mjs --status`, and offer
+to print it with `--show`.
+
+**"forget my résumé"** — this deletes their data, so confirm first, then:
+
+```bash
+cd "$SKILL_DIR" && node scripts/profile.mjs --clear --force
+```
+
+Mention that the `.bak` from any earlier replacement is left behind, and where.
+
+**Adding facts that aren't on the résumé** (open-source projects, a new
+certification, a side project worth showing): these belong *in* the stored
+text, not invented per run. Append them to the stored résumé with the user's
+approval and re-save with `--force`. Anything not in that file will be flagged
+by `validate.mjs` as unsupported, which is exactly the intended behaviour.
 
 ## Maintainer reference (not part of a user run)
 

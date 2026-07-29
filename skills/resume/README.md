@@ -7,13 +7,17 @@ invoking Claude Code agent does that work directly, in-conversation, using its
 own tools. There is no subprocess LLM call and no per-run API cost. Only PDF
 rendering and deterministic content validation run as scripts.
 
+You give it your résumé **once**. After that, a run needs nothing but a job
+posting — paste a URL and you get a tailored PDF back.
+
 There is **one** résumé structure and the look comes entirely from a CSS
 **theme**. Two ship, and you can replace either or write your own.
 
 ## What it does
 
 1. **Read** your résumé (`.pdf` / `.txt` / `.md` natively via `Read`; `.docx`
-   via a small extraction shim).
+   via a small extraction shim) — **on the first run only**. The extracted text
+   is stored at `~/.claude/resume/source-resume.txt` and reused from then on.
 2. **Get the job** — paste the text, give a `.txt` path, or a URL (`WebFetch`
    first, with a documented fallback procedure — see
    `references/job-extraction-fallback.md` — if that fails).
@@ -26,6 +30,34 @@ There is **one** résumé structure and the look comes entirely from a CSS
    through headless Chromium.
 5. **Pick a theme** — switch with an instant re-render and preview; no
    re-tailoring, no re-validation.
+
+## Your stored résumé
+
+Supplied once, kept as plain text at `~/.claude/resume/source-resume.txt` —
+outside the install dir, so it survives reinstalls and upgrades.
+
+```bash
+node scripts/profile.mjs --status          # is one stored, and how old?
+node scripts/profile.mjs --show            # print it
+node scripts/profile.mjs --save <file>     # store (--force to replace)
+node scripts/profile.mjs --clear --force   # delete it
+```
+
+Just say *"update my résumé"*, *"what résumé do you have?"*, or *"forget my
+résumé"* — the skill runs these for you, and confirms before replacing or
+deleting anything. A replaced résumé is kept at `source-resume.txt.bak`.
+
+**Plain text, not a parsed structure, is deliberate.** This file is the ground
+truth the validator checks tailored content against — the thing that catches an
+invented number or an inflated scope. Storing a parse instead would make the
+*parse* the ground truth, and a fact mangled during extraction would become
+unfalsifiable. For the same reason, storing **refuses** binary input: a raw
+`.pdf` or `.docx` saved here would silently break fact-checking on every future
+run, not just one.
+
+New facts that aren't on the résumé — an open-source project, a certification —
+belong *in* that file, added with your approval. Anything not in it gets flagged
+as unsupported, which is the point.
 
 ## Themes
 
@@ -115,7 +147,8 @@ end-to-end; it will be removed in a fast-follow once confirmed.
 In Claude Code:
 
 ```
-/resume <resume-path> <job-url-or-text>
+/resume <resume-path> <job-url-or-text>     # first run: stores your résumé
+/resume <job-url>                            # every run after that
 ```
 
 Pass what you have; the skill asks for anything missing, one item at a time.

@@ -1,7 +1,7 @@
 {
   "name": "resume",
   "version": "2.0.0",
-  "description": "Tailor a r\u00e9sum\u00e9 to a job description and render it as a themed PDF. Triggers on \"/resume\", \"tailor my resume\", \"optimize my resume for this job\", or any request to adapt a r\u00e9sum\u00e9 to a specific posting and produce a PDF.",
+  "description": "Tailor a stored r\u00e9sum\u00e9 to a job description and render it as a themed PDF. The r\u00e9sum\u00e9 is supplied once and reused, so later runs need only a job URL. Triggers on \"/resume\", \"tailor my resume\", \"optimize my resume for this job\", a bare job posting URL, or any request to adapt a r\u00e9sum\u00e9 to a specific posting and produce a PDF.",
   "author": {
     "name": "Nate Swenson"
   },

@@ -10,8 +10,8 @@
     {
       "id": "validate-against-plain-text-source",
       "file": "SKILL.md",
-      "pattern": "never against a `\\.pdf`/`\\.docx` path",
-      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring \u2014 and the natural response to a spurious failure is to stop trusting the validator."
+      "pattern": "never a `\\.pdf`/`\\.docx` path",
+      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring \u2014 and the natural response to a spurious failure is to stop trusting the validator. Since 2.0.0 the source is stored once and reused, so storing binary content would persist that failure across EVERY future run rather than one; profile.mjs rejects it at the door, and this prose is why."
     },
     {
       "id": "stop-after-three-validation-attempts",
@@ -48,6 +48,18 @@
       "file": "SKILL.md",
       "pattern": "Recommend `ats-plain` whenever the user says they are applying",
       "rationale": "The default press theme puts section headings in a left gutter, which a column-detecting PDF parser reads as a separate column and separates from their sections. That is measured, not theoretical. Collapsing seven templates to one structure removed the old ATS-safe/presentation labelling, so this line is now the ONLY place a run surfaces the trade-off \u2014 without it the agent cheerfully sends a gutter-layout resume into a job board."
+    },
+    {
+      "id": "disclose-which-stored-resume",
+      "file": "SKILL.md",
+      "pattern": "Never tailor from\\s*\\n?\\s*a stored r\u00e9sum\u00e9 without telling the user which one you used",
+      "rationale": "Once the r\u00e9sum\u00e9 is stored and a run needs only a job URL, the user stops seeing which career history is being used. A r\u00e9sum\u00e9 six months out of date produces a confidently wrong application, and that run is indistinguishable from a correct one \u2014 same output, same PDF, no error. Stating the stored date every run is the only signal that surfaces staleness before it reaches an employer."
+    },
+    {
+      "id": "confirm-before-replacing-stored-resume",
+      "file": "SKILL.md",
+      "pattern": "you must\\s*\\n?\\s*confirm with the user before passing it",
+      "rationale": "Replacing the stored r\u00e9sum\u00e9 is destructive and it is the user's data, not the agent's: the stored copy may be the only plain-text version they have. profile.mjs enforces --force at the CLI boundary and keeps a .bak, but nothing stops an agent from passing --force reflexively to clear an error \u2014 this prose is what makes the confirmation a rule rather than a speed bump."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / resume` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
