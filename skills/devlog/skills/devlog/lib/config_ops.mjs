@@ -34,6 +34,7 @@ const SETTERS = {
   targetDir: (c, v) => (v === '' ? omit(c, 'targetDir') : { ...c, targetDir: v }),
   gitAuthor: (c, v) => ({ ...c, gitAuthor: v }),
   githubUser: (c, v) => ({ ...c, githubUser: v }),
+  siteUrl: (c, v) => (v === '' ? omit(c, 'siteUrl') : { ...c, siteUrl: v.replace(/\/+$/, '') }),
   voicePath: (c, v) => (v === '' ? omit(c, 'voicePath') : { ...c, voicePath: expandHome(v) }),
   'deepDive.minSources': (c, v) => {
     const n = Number(v);

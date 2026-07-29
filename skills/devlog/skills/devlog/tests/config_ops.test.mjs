@@ -138,7 +138,7 @@ test('setField rejects unknown fields and invalid values', () => {
 
 test('SETTABLE_FIELDS enumerates exactly the supported fields', () => {
   assert.deepEqual(SETTABLE_FIELDS.sort(), [
-    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'gitAuthor', 'githubUser', 'targetDir', 'targetRepo', 'voicePath',
+    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'gitAuthor', 'githubUser', 'siteUrl', 'targetDir', 'targetRepo', 'voicePath',
   ].sort());
 });
 
@@ -150,4 +150,20 @@ test('resolveDeepDive applies defaults and overrides', () => {
     resolveDeepDive({ deepDive: { minSources: 2, topicDomains: ['x'] } }),
     { topicDomains: ['x'], minSources: 2 },
   );
+});
+
+test('setField accepts a siteUrl and strips a trailing slash', () => {
+  const c = setField(baseConfig(), 'siteUrl', 'https://example.com/');
+  assert.equal(c.siteUrl, 'https://example.com');
+});
+
+test('setField clears siteUrl with an empty string', () => {
+  const withUrl = setField(baseConfig(), 'siteUrl', 'https://example.com');
+  assert.equal('siteUrl' in setField(withUrl, 'siteUrl', ''), false);
+});
+
+test('setField rejects a siteUrl that is not an http(s) URL', () => {
+  for (const bad of ['example.com', 'ftp://example.com', 'https://exa mple.com', 'javascript:alert(1)']) {
+    assert.throws(() => setField(baseConfig(), 'siteUrl', bad), /siteUrl must be an http\(s\) URL/, bad);
+  }
 });
