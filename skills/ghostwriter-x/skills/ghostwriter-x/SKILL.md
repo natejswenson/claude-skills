@@ -184,8 +184,8 @@ scraping. Revisit the whole loop if the account upgrades.
    single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
    ideas."** Never ask one question per lane. Rules of the question:
    - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
-     first tweet as it would actually read, the suggested angle + format (single or thread, and
-     roughly how many tweets) in one sentence, and a source-freshness line prefixed with its
+     tweet as it would actually read, the suggested angle in one sentence (assume a single
+     unless the user asked for a thread), and a source-freshness line prefixed with its
      lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`, `Radar · Jul 17 ·
      anthropic.com`). A user should be able to pick on the preview alone.
    - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
@@ -262,8 +262,8 @@ scraping. Revisit the whole loop if the account upgrades.
    re-verify a trending idea's signal before reusing it, and drop anything that went stale.
 
    **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
-   `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the format
-   call (single or thread-of-N), and the sources you'll verify against. Then straight to
+   `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the form
+   (a single unless the user asked for a thread), and the sources you'll verify against. Then straight to
    grounding + draft (step 3); no second drill.
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
    anchor** — the actual tool, a real number, a specific decision, a thing that actually happened
@@ -311,9 +311,11 @@ scraping. Revisit the whole loop if the account upgrades.
    `~/.claude/ghostwriter-x/voice/voice-notes.md` and proceed with what you have. Write to match
    them — their openers, rhythm, emoji habits, thread style. Apply the **Engagement craft**
    rules below AND the reach rules in `voice/algorithm.md`. Format rules:
-   - **Pick the form for the content:** one sharp idea → a single tweet; anything needing more
-     than one beat → a thread of complete-thought tweets, ≤7 by default. Never split a sentence
-     across tweets.
+   - **A SINGLE tweet is the default form. Draft a thread only when the user asks for one.**
+     Material with five beats is a signal to find the sharpest beat and cut the other four,
+     not to thread it; a punchy single is the house style, and the beats that don't survive
+     the cut are exactly what a card is for (step 8). When the user does ask for a thread:
+     complete-thought tweets, ≤7 by default, never a sentence split across tweets.
    - **Draft file format:** one tweet, or thread tweets separated by lines containing only
      `---`. This is exactly what `scripts/typefully_post.py` parses.
    - **Write each tweet to fit 280 weighted characters** (URLs count 23, most emoji/CJK count
@@ -409,9 +411,10 @@ scraping. Revisit the whole loop if the account upgrades.
    single approval call above, never a separate dialog: **text-only** / **single card** (name the
    Press hero component you'd compose around, e.g. "a duel" or "a ledger") / **image carousel** (a
    4-image post, or one image per tweet on a thread) — with your recommendation first, chosen from the
-   post's shape and the outcome history: how-to / educational thread → a card on tweet 1 or
-   one-image-per-tweet; one punchy idea → a single 16:9 card; personal story or hot take →
-   text-only (X is text-native; a strong text post beats a weak image). **Give every option an
+   post's shape and the outcome history: how-to or anything technical → a single 16:9 card
+   carrying the steps the single tweet had to cut; personal story or hot take → text-only
+   (X is text-native; a strong text post beats a weak image); carousels only on a
+   user-requested thread. **Give every option an
    ASCII `preview` sketch of what THIS post would get:** the card option sketches the actual
    proposed Press composition as labeled blocks with this post's real headline; the carousel
    option sketches the image strip (`cover → point → point → recap`, using this post's real
@@ -432,13 +435,14 @@ scraping. Revisit the whole loop if the account upgrades.
 The priority lane, and the one radar items feed directly. When the anchor is a recent AI release,
 write a genuine how-to — not a news recap.
 
-- **Shape: a thread.** Tweet 1 = the implication (what the reader can now *do*) with the
-  sharpest number; tweets 2–5 = the concrete steps, real commands and flags inline; one tweet
-  for the real gotcha; final tweet = the outcome. Prescriptive, for the reader
-  (voice-notes → Framing & audience). No recap tweet.
+- **Shape: a single tweet, with the steps on the card.** The tweet carries the implication
+  (what the reader can now *do*) and the sharpest number; the concrete steps, real commands
+  and the gotcha go into the composed Press card, which is where a how-to earns its
+  bookmarks. Prescriptive, for the reader (voice-notes → Framing & audience). Only draft the
+  step-per-tweet thread version when the user explicitly asks for a thread.
 - **Real technical meat, accessible entry.** Use real commands, real config, real names — a
-  curious non-expert can follow tweet 1, an engineer still learns the mechanism by tweet 4.
-  This is what earns bookmarks and quote-posts.
+  curious non-expert can follow the tweet, an engineer still learns the mechanism from the
+  card. This is what earns bookmarks and quote-posts.
 - **Authenticity — how-to ≠ "I did this."** A release how-to makes external/world claims, so it
   is exactly the case the source gate is for: the `*.sources.json` sidecar + `verify_sources.py`
   step (step 6) is mandatory. **Never fabricate** or imply the user personally ran a release
@@ -612,12 +616,14 @@ The full rationale is in `voice/algorithm.md` — read it. The essentials:
 - **Teach something.** A command, a config, a mental model — the thing a reader keeps is what
   gets bookmarked and quoted.
 - **Specifics over abstractions.** Real numbers, real moments, real names of things.
-- **Complete thoughts per tweet.** Each tweet in a thread stands on its own; never split a
-  sentence across tweets. Number long threads (`3/7`) when it aids navigation.
+- **One tweet is the default.** Cut to the sharpest beat and let the card carry the rest;
+  only thread when the user asks. In a requested thread, each tweet is a complete thought
+  that stands on its own, never a sentence split across tweets, numbered (`3/7`) when it
+  aids navigation.
 - **280 weighted chars per tweet** (URLs 23, emoji/CJK 2) — write to fit; `x_len.py` is the
   referee, not the editor.
 - **No external links in tweet 1** (they suppress reach); a needed link is the final reply.
-- **Earn the ending on substance.** The thread stops on the last real point — no recap tweet,
+- **Earn the ending on substance.** The post stops on the last real point — no recap tweet,
   no reflexive closing question.
 - **Sound human.** No "game-changer", no "delve", no "🧵👇", no manufactured humility. If it
   reads like AI, rewrite it. Match the profile's "Never do" list.
