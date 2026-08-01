@@ -1,0 +1,15 @@
+.card.press {
+  --paper:        #F5F0E6;                      /* warm paper canvas */
+  --ink:          #181510;
+  --dim:          #6E675C;
+  --press-sig:    #E8501F;                      /* THE signature accent — one loud color, used sparingly */
+  --rule:         #181510;                      /* heavy editorial rules */
+  --serif:        'New York', ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif; /* commentary voice */
+  --stamp:        "YN";                         /* your monogram initials (2 chars) */
+  --term-bg:      #141A26;                      /* dark panel: only ever inside .term */
+  --term-text:    #EFE9DC;
+  --term-dim:     #8A8478;
+  --term-hot:     #FF8A5C;
+  --term-prompt:  #1E2738;
+  color: var(--ink);
+}

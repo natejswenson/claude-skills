@@ -1,0 +1,336 @@
+{
+  "$comment": "Every place the brand is written down. A consumer not listed here is invisible to `press check`, which is the whole failure mode this skill exists to close — so adding a consumer means adding it here, not copying tokens into it. Paths are relative to their own repo root; selection is by file presence, so this one registry works unchanged inside claude-skills, budget, local-fitness or the site.",
+  "targets": [
+    {
+      "id": "city-report",
+      "repo": "claude-skills",
+      "path": "skills/city-report/skills/city-report/scripts/brand.py",
+      "region": "tokens",
+      "syntax": "python",
+      "emitter": "python-theme",
+      "params": {
+        "env_var": "CITY_REPORT_BRAND_FILE",
+        "brand_line": "DATA USA",
+        "byline": "datausa.io · US Census ACS",
+        "document_kind": "CITY PROFILE",
+        "extras": [
+          "fill_steps"
+        ]
+      },
+      "init": {
+        "replaceFrom": "^import copy$",
+        "replaceTo": "^    return theme$"
+      }
+    },
+    {
+      "id": "resume-theme",
+      "repo": "claude-skills",
+      "path": "skills/resume/skills/resume/assets/themes/press.css",
+      "region": "tokens",
+      "syntax": "css",
+      "emitter": "css-vars",
+      "params": {
+        "selector": ":root",
+        "align": true,
+        "comments": false,
+        "vars": [
+          {
+            "token": "paper"
+          },
+          {
+            "token": "ink"
+          },
+          {
+            "token": "dim"
+          },
+          {
+            "token": "accent",
+            "name": "sig"
+          },
+          {
+            "token": "hair"
+          },
+          {
+            "token": "display_stack",
+            "name": "font"
+          },
+          {
+            "token": "serif_stack",
+            "name": "serif"
+          },
+          {
+            "token": "mono_stack",
+            "name": "mono"
+          }
+        ]
+      },
+      "init": {
+        "replaceFrom": "^:root \\{$",
+        "replaceTo": "^\\}$"
+      }
+    },
+    {
+      "id": "ghostwriter-card",
+      "repo": "claude-skills",
+      "path": "skills/ghostwriter/skills/ghostwriter/assets/diagram.css.example",
+      "region": "tokens",
+      "syntax": "css",
+      "emitter": "css-vars",
+      "params": {
+        "selector": ".card.press",
+        "stamp": "YN",
+        "vars": [
+          {
+            "token": "paper",
+            "comment": "warm paper canvas"
+          },
+          {
+            "token": "ink"
+          },
+          {
+            "token": "dim"
+          },
+          {
+            "token": "accent",
+            "name": "press-sig",
+            "comment": "THE signature accent — one loud color, used sparingly"
+          },
+          {
+            "token": "rule",
+            "comment": "heavy editorial rules"
+          },
+          {
+            "token": "serif_stack",
+            "name": "serif",
+            "comment": "commentary voice"
+          },
+          {
+            "token": "stamp",
+            "quote": true,
+            "comment": "your monogram initials (2 chars)"
+          },
+          {
+            "token": "term_bg",
+            "comment": "dark panel: only ever inside .term"
+          },
+          {
+            "token": "term_text"
+          },
+          {
+            "token": "term_dim"
+          },
+          {
+            "token": "term_hot"
+          },
+          {
+            "token": "term_prompt"
+          }
+        ],
+        "trailing": [
+          "color: var(--ink);"
+        ],
+        "comments": "explicit",
+        "align": true
+      },
+      "init": {
+        "replaceFrom": "^\\.card\\.press \\{$",
+        "replaceTo": "^\\}$"
+      }
+    },
+    {
+      "id": "ghostwriter-x-card",
+      "repo": "claude-skills",
+      "path": "skills/ghostwriter-x/skills/ghostwriter-x/assets/diagram.css.example",
+      "region": "tokens",
+      "syntax": "css",
+      "emitter": "css-vars",
+      "params": {
+        "selector": ".card.press",
+        "stamp": "YN",
+        "vars": [
+          {
+            "token": "paper",
+            "comment": "warm paper canvas"
+          },
+          {
+            "token": "ink"
+          },
+          {
+            "token": "dim"
+          },
+          {
+            "token": "accent",
+            "name": "press-sig",
+            "comment": "THE signature accent — one loud color, used sparingly"
+          },
+          {
+            "token": "rule",
+            "comment": "heavy editorial rules"
+          },
+          {
+            "token": "serif_stack",
+            "name": "serif",
+            "comment": "commentary voice"
+          },
+          {
+            "token": "stamp",
+            "quote": true,
+            "comment": "your monogram initials (2 chars)"
+          },
+          {
+            "token": "term_bg",
+            "comment": "dark panel: only ever inside .term"
+          },
+          {
+            "token": "term_text"
+          },
+          {
+            "token": "term_dim"
+          },
+          {
+            "token": "term_hot"
+          },
+          {
+            "token": "term_prompt"
+          }
+        ],
+        "trailing": [
+          "color: var(--ink);"
+        ],
+        "comments": "explicit",
+        "align": true
+      },
+      "init": {
+        "replaceFrom": "^\\.card\\.press \\{$",
+        "replaceTo": "^\\}$"
+      }
+    },
+    {
+      "id": "devlog-palette",
+      "repo": "claude-skills",
+      "path": "skills/devlog/skills/devlog/image-style/style-guide.example.md",
+      "region": "palette",
+      "syntax": "md",
+      "emitter": "md-palette",
+      "params": {
+        "omit": [
+          "rule",
+          "paper_surface",
+          "paper_elevated"
+        ]
+      },
+      "init": {
+        "replaceFrom": "^- \\*\\*Paper\\*\\* ",
+        "replaceTo": "^  outside a `\\.term` panel\\.$"
+      }
+    },
+    {
+      "$comment": "Phase 2 — external repos. Declared now so the registry documents where the brand lives, even before those repos carry a press CI step. They resolve only when `press check` runs inside their own checkout.",
+      "id": "budget",
+      "repo": "budget",
+      "path": "src/local_budget/report/brand.py",
+      "region": "tokens",
+      "syntax": "python",
+      "emitter": "python-theme",
+      "params": {
+        "env_var": "BUDGET_BRAND_FILE",
+        "brand_line": "LOCAL BUDGET",
+        "byline": "local-budget · generated offline",
+        "document_kind": "MONTHLY REPORT",
+        "extras": [
+          "warn"
+        ]
+      },
+      "init": {
+        "replaceFrom": "^import copy$",
+        "replaceTo": "^    return theme$"
+      }
+    },
+    {
+      "id": "local-fitness",
+      "repo": "local-fitness",
+      "path": "src/local_fitness/agent/branding.py",
+      "region": "tokens",
+      "syntax": "python",
+      "emitter": "python-theme",
+      "params": {
+        "env_var": "LOCAL_FITNESS_BRAND_FILE",
+        "brand_line": "LOCAL FITNESS",
+        "document_kind": "MORNING BRIEF",
+        "logging": true,
+        "extras": [
+          "mono_file"
+        ]
+      },
+      "init": {
+        "replaceFrom": "^import copy$",
+        "replaceTo": "^    return theme$"
+      }
+    },
+    {
+      "id": "site-tokens",
+      "repo": "natejswenson.io",
+      "path": "src/styles/global.css",
+      "region": "tokens",
+      "syntax": "css",
+      "emitter": "css-vars",
+      "params": {
+        "selector": ":root",
+        "align": true,
+        "comments": false,
+        "vars": [
+          {
+            "token": "paper",
+            "name": "bg"
+          },
+          {
+            "token": "paper_surface",
+            "name": "bg-surface"
+          },
+          {
+            "token": "paper_elevated",
+            "name": "bg-elevated"
+          },
+          {
+            "token": "ink",
+            "name": "fg"
+          },
+          {
+            "token": "dim",
+            "name": "fg-secondary"
+          },
+          {
+            "token": "ink_faint",
+            "name": "fg-tertiary"
+          },
+          {
+            "token": "accent"
+          },
+          {
+            "token": "rule"
+          },
+          {
+            "token": "term_bg",
+            "name": "panel"
+          },
+          {
+            "token": "term_text",
+            "name": "panel-fg"
+          },
+          {
+            "token": "term_dim",
+            "name": "panel-dim"
+          },
+          {
+            "token": "term_hot",
+            "name": "panel-hot"
+          },
+          {
+            "token": "term_prompt",
+            "name": "panel-bar"
+          }
+        ]
+      }
+    }
+  ]
+}
