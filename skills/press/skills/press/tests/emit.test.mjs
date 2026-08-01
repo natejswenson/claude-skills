@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 
 import { loadTokens } from '../lib/tokens.mjs';
 import { emitBody, EmitError } from '../lib/emit.mjs';
+import { renderRegion } from '../lib/region.mjs';
 
 const tokens = loadTokens();
 
@@ -247,4 +248,110 @@ test('version-badge takes the version from run context, not target params', () =
 test('version-badge describes what this consumer generates', () => {
   const body = emitBody(tokens, 'version-badge', { what: 'The tiles' }, { version: '1.0.0' });
   assert.match(body, /The tiles are generated/);
+});
+
+// --- gha-header -----------------------------------------------------------
+
+const GHA_PARAMS = {
+  title: 'CI · node test',
+  purpose: 'Lint and test on every pull request into main.',
+  generator: 'forge',
+  generator_version: '0.1.0',
+};
+
+/**
+ * The load-bearing one. Every other emitter's body is code in the target's own
+ * language, so `renderRegion` comments only the two markers — correct there,
+ * and fatal here: a body emitted bare splices raw box-drawing into the document
+ * and produces a workflow that cannot parse. This caught exactly that during
+ * development.
+ */
+test('gha-header comments its own body, every line', () => {
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  const bare = body.split('\n').filter((l) => !l.startsWith('#'));
+  assert.deepEqual(bare, [], 'these lines would be spliced into the document as YAML, not comment');
+});
+
+/**
+ * The document must be unchanged by the header, as far as any YAML parser is
+ * concerned — every line the region adds is a comment, so stripping the block
+ * returns the original bytes exactly.
+ *
+ * This deliberately uses no YAML parser. The first version shelled out to
+ * `python3 -c "import yaml"`, which passed locally and failed in CI with
+ * `ModuleNotFoundError: No module named 'yaml'` — PyYAML is not on the runner.
+ * A test that depends on a module nobody declared is a test that gates nothing
+ * on the machine that matters.
+ */
+test('splicing the header leaves the workflow document byte-identical', () => {
+  const workflow = `name: CI
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm test
+`;
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  const doc = `${renderRegion('gha-header', 'yaml', body, '0.0.0')}\n${workflow}`;
+
+  const stripped = doc
+    .split('\n')
+    .filter((l) => !l.startsWith('#'))
+    .join('\n');
+  assert.equal(stripped, workflow, 'the header contributed a non-comment line');
+});
+
+test('gha-header carries the brand identity, so a token change reaches every workflow', () => {
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  assert.ok(body.includes(tokens.identity.stamp), 'no stamp');
+  assert.ok(body.includes(tokens.identity.byline), 'no byline');
+});
+
+test('gha-header sets the eyebrow in caps, the masthead treatment', () => {
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  assert.ok(body.includes('CI · NODE TEST'), body);
+});
+
+test('a long purpose wraps inside the rule instead of running past it', () => {
+  const body = emitBody(tokens, 'gha-header', {
+    ...GHA_PARAMS,
+    purpose: 'Publishes the package to npm with build provenance attestation whenever a version tag is pushed, then cuts a matching GitHub Release from the changelog.',
+  });
+  const over = body.split('\n').filter((l) => l.length > 76);
+  assert.deepEqual(over, [], 'a line ran past the rule');
+});
+
+/**
+ * Lossless, not truncated: the workflow name is the one thing this line exists
+ * to show, so an overflowing title moves the byline rather than clipping.
+ */
+test('a long title pushes the byline to its own line and loses nothing', () => {
+  const title = 'release · publish to npm with provenance and cut a github release';
+  const body = emitBody(tokens, 'gha-header', { ...GHA_PARAMS, title });
+  assert.ok(body.includes(title.toUpperCase()), 'the title was clipped');
+  assert.ok(body.includes(tokens.identity.byline), 'the byline was dropped');
+});
+
+/**
+ * Encodes the design decision, so a later "helpful" addition has to argue with
+ * a red test: the header is spliced once and never revisited, while the file
+ * below it stays hand-editable. A frozen `actionlint ✓` would therefore be a
+ * claim about a file the region does not cover.
+ */
+test('gha-header makes no verification claim', () => {
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  assert.doesNotMatch(body, /actionlint|zizmor|✓|verified|passing/i, body);
+});
+
+test('gha-header refuses to emit without a title or a purpose', () => {
+  assert.throws(() => emitBody(tokens, 'gha-header', { purpose: 'x' }), EmitError);
+  assert.throws(() => emitBody(tokens, 'gha-header', { title: 'x' }), EmitError);
+});
+
+test('gha-header rejects a width the masthead cannot hold', () => {
+  assert.throws(() => emitBody(tokens, 'gha-header', { ...GHA_PARAMS, width: 12 }), EmitError);
+  assert.throws(() => emitBody(tokens, 'gha-header', { ...GHA_PARAMS, width: 74.5 }), EmitError);
 });

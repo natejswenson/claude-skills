@@ -103,7 +103,7 @@ test('an anchor that matches nothing is an error, not a no-op', () => {
 });
 
 test('each syntax round-trips through its own comment form', () => {
-  for (const syntax of ['python', 'css', 'md']) {
+  for (const syntax of ['python', 'yaml', 'css', 'md']) {
     const text = `head\n${renderRegion('tokens', syntax, 'body line', V)}\ntail\n`;
     assert.equal(findRegion(text, 'tokens', syntax).body, 'body line', syntax);
   }
