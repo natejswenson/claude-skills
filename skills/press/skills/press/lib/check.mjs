@@ -40,10 +40,18 @@ export function checkTarget(target, root, tokens, version) {
   const expected = emitBody(tokens, target.emitter, target.params ?? {}, { version })
     .replace(/\s+$/, '');
   const actual = found.body.replace(/\s+$/, '');
-  if (expected === actual) {
-    return { target, path, status: 'ok', writtenBy: found.version };
+  if (expected !== actual) {
+    return { target, path, status: 'drift', diff: lineDiff(expected, actual), writtenBy: found.version };
   }
-  return { target, path, status: 'drift', diff: lineDiff(expected, actual), writtenBy: found.version };
+  // The values match, but the region must also record the release it belongs
+  // to. Without this the version is decoration: in-repo regions sat at v0.1.0
+  // through six releases with a green check, which is precisely the "three
+  // different version numbers and no way to read them" problem this policy
+  // exists to end. One version per consumer means check has to say so.
+  if (found.version !== version) {
+    return { target, path, status: 'stale-version', writtenBy: found.version };
+  }
+  return { target, path, status: 'ok', writtenBy: found.version };
 }
 
 export function checkAll({ tokens, targets, root, ids, version }) {
@@ -86,6 +94,7 @@ export function lineDiff(expected, actual) {
 export const EXPLAIN = {
   ok: 'in sync',
   drift: 'region content differs from what the tokens produce',
+  'stale-version': 'values are correct but the region records an older press release — re-emit',
   missing: 'file has no press region — the generated block was removed',
   absent: 'declared file does not exist at this path',
   corrupt: 'region markers are malformed',
