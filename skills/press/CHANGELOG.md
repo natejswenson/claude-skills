@@ -5,6 +5,17 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-08-01
+
+### Fixed
+
+- **Propagation now retires its own superseded pull requests.** Each release
+  opened a new PR pair per consumer without closing the previous one, so a repo
+  that had not merged for two releases accumulated four stacked PRs — and the
+  older pair failed *by construction*, because its pin predates the targets the
+  newer release declares. Opening `press/brand-vX-<base>` now closes any older
+  `press/brand-v*` PR against the same base, with an explanation.
+
 ## [0.7.1] - 2026-08-01
 
 ### Fixed
@@ -319,6 +330,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.7.2]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.7.2
 [0.7.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.7.1
 [0.7.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.7.0
 [0.6.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.1
