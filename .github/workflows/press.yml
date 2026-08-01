@@ -81,3 +81,11 @@ jobs:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     permissions:
       contents: write
+
+  # Fan the new brand out to every consumer repo. Chained off `release` rather
+  # than a tag trigger, because a tag created with GITHUB_TOKEN fires nothing.
+  propagate:
+    needs: release
+    uses: ./.github/workflows/press-propagate.yml
+    secrets:
+      PRESS_PROPAGATE_TOKEN: ${{ secrets.PRESS_PROPAGATE_TOKEN }}
