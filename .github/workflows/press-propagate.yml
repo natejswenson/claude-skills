@@ -190,6 +190,21 @@ jobs:
                 --title "$title" \
                 --body-file .press-body.md \
                 || echo "::warning::PR creation failed for $repo (one may already be open)"
+
+              # Retire this base's earlier propagate PRs. Each release opened a
+              # new pair without closing the last, so a repo that had not merged
+              # for two releases accumulated four stacked PRs — and the older
+              # ones fail by construction, because their pin predates the
+              # targets the newer release declares.
+              gh pr list --state open --base "$base" --json number,headRefName \
+                --jq ".[] | select(.headRefName | startswith(\"press/brand-v\")) | select(.headRefName != \"$branch\") | .number" \
+                | while read -r old_pr; do
+                    [ -n "$old_pr" ] || continue
+                    echo "  superseding #$old_pr"
+                    gh pr close "$old_pr" --delete-branch \
+                      --comment "Superseded by press v$version. An earlier propagate PR pins a release older than the targets the current one declares, so its check cannot pass." \
+                      || echo "::warning::could not close #$old_pr in $repo"
+                  done
             ) || failures=$((failures + 1))
             done
             echo "::endgroup::"
