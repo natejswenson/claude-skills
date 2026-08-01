@@ -37,7 +37,8 @@ export function checkTarget(target, root, tokens, version) {
   }
   if (!found) return { target, path, status: 'missing' };
 
-  const expected = emitBody(tokens, target.emitter, target.params ?? {}).replace(/\s+$/, '');
+  const expected = emitBody(tokens, target.emitter, target.params ?? {}, { version })
+    .replace(/\s+$/, '');
   const actual = found.body.replace(/\s+$/, '');
   if (expected === actual) {
     return { target, path, status: 'ok', writtenBy: found.version };

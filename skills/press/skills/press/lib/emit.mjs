@@ -292,23 +292,49 @@ function pythonConsts(tokens, params) {
   return out.join('\n');
 }
 
+
+/**
+ * A short "this repo is on press vX" note for a consumer's README.
+ *
+ * The version is the point: without it, the only places a repo's press version
+ * appears are a CI pin and a comment marker, neither of which anyone reads. A
+ * reader landing on the repo should be able to see which brand release it is on
+ * without opening a workflow file.
+ */
+function versionBadge(tokens, params, ctx) {
+  const version = ctx.version ?? '0.0.0';
+  const repo = params.repo_url ?? 'https://github.com/natejswenson/claude-skills/tree/main/skills/press';
+  const what = params.what ?? 'Design tokens, brand laws and run presentation';
+  return [
+    `**Brand:** PRESS v${version} — ${what} are generated from the`,
+    `[\`press\`](${repo}) skill, not maintained here. The token blocks marked`,
+    '`press:tokens` are generated; edit `press/brand/tokens.json` and re-emit instead.',
+  ].join('\n');
+}
+
 export const EMITTERS = {
   'python-theme': pythonTheme,
   'python-consts': pythonConsts,
+  'version-badge': versionBadge,
   'css-vars': cssVars,
   'md-palette': mdPalette,
   'markdown-block': markdownBlock,
   json: jsonTokens,
 };
 
-export function emitBody(tokens, emitter, params = {}) {
+/**
+ * @param ctx  Run context available to emitters — currently `{ version }`.
+ *             Kept separate from `params` because it is a property of the
+ *             invocation, not of the target's configuration.
+ */
+export function emitBody(tokens, emitter, params = {}, ctx = {}) {
   const fn = EMITTERS[emitter];
   if (!fn) {
     throw new EmitError(
       `unknown emitter "${emitter}" (expected one of: ${Object.keys(EMITTERS).join(', ')})`,
     );
   }
-  return fn(tokens, params);
+  return fn(tokens, params, ctx);
 }
 
 // --------------------------------------------------------------------------
