@@ -398,6 +398,51 @@
         "replaceFrom": "^# --- PRESS tokens",
         "replaceTo": "^\\}$"
       }
+    },
+    {
+      "id": "natejswenson.io-readme",
+      "repo": "natejswenson.io",
+      "path": "README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The site's colour, type and panel tokens"
+      }
+    },
+    {
+      "id": "budget-readme",
+      "repo": "budget",
+      "path": "README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The report's colour and type tokens"
+      },
+      "github": "local-budget"
+    },
+    {
+      "id": "local-fitness-readme",
+      "repo": "local-fitness",
+      "path": "README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The brief and report-card colour and type tokens"
+      }
+    },
+    {
+      "id": "natejswenson-readme",
+      "repo": "natejswenson",
+      "path": "README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The profile tiles' colour tokens and vendored faces"
+      }
     }
   ]
 }

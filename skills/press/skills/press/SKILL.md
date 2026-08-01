@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.6.1
+version: 0.7.0
 ---
 
 # /press — the brand system
@@ -121,8 +121,14 @@ is that the PR says which kind it is:
 | **Brand values moved** | `press vX — BRAND VALUES CHANGED` | read the diff as a design change |
 | **Version only** | `adopt press vX` | one line; nothing renders differently |
 
-`.github/workflows/press-propagate.yml` runs this on every release and weekly,
-opening a PR in each consumer repo whose bytes actually moved.
+`.github/workflows/press-propagate.yml` runs this on every release and weekly.
+It propagates to **every long-lived branch** a consumer has — `dev` *and* the
+default branch — because landing on `dev` alone leaves the branch that actually
+ships stale until someone remembers to promote, and makes the next promotion
+carry an unrelated brand diff.
+
+Each consumer's README carries a generated `press:version` line, so the release
+a repo is on is visible without opening a workflow file.
 
 ## Changing a brand value
 

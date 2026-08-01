@@ -86,7 +86,7 @@ function cmdEmit({ tokens, root, values }) {
   const rows = [];
   for (const target of targets) {
     const path = targetPath(target, root);
-    const body = emitBody(tokens, target.emitter, target.params ?? {});
+    const body = emitBody(tokens, target.emitter, target.params ?? {}, { version: VERSION });
     const before = readFileSync(path, 'utf8');
     const has = findRegion(before, target.region, target.syntax);
 
