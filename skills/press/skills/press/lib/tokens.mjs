@@ -41,9 +41,16 @@ function resolve(raw) {
   const colors = clean(raw.colors);
   const terminal = clean(raw.terminal);
 
-  const hairAlpha = raw.derived?.hair_alpha ?? 0.18;
   const [r, g, b] = hexToRgb(colors.ink);
-  const hair = `rgba(${r}, ${g}, ${b}, ${hairAlpha})`;
+  const [ar, ag, ab] = hexToRgb(colors.accent);
+  const inkAlpha = (a) => `rgba(${r}, ${g}, ${b}, ${a})`;
+
+  const hairAlpha = raw.derived?.hair_alpha ?? 0.18;
+  const hair = inkAlpha(hairAlpha);
+  // Named separately from `hair` on purpose — see derived.$comment in tokens.json.
+  const border = inkAlpha(raw.derived?.border_alpha ?? hairAlpha);
+  const borderHover = inkAlpha(raw.derived?.border_hover_alpha ?? 0.38);
+  const accentDim = `rgba(${ar}, ${ag}, ${ab}, ${raw.derived?.accent_dim_alpha ?? 0.12})`;
 
   const fillSteps = (raw.derived?.fill_steps ?? []).map((name) => {
     const value = colors[name];
@@ -61,7 +68,7 @@ function resolve(raw) {
     identity: clean(raw.identity),
     marks: clean(raw.marks),
     limits: clean(raw.limits),
-    derived: { hair, hairAlpha, fillSteps },
+    derived: { hair, hairAlpha, border, borderHover, accentDim, fillSteps },
     /** Every literal color the brand permits, for the off-palette lint. */
     palette: [...Object.values(colors), ...Object.values(terminal)],
   };
@@ -77,6 +84,9 @@ export function hexToRgb(hex) {
 /** Look up a token by its flat name, including the derived ones. */
 export function tokenValue(tokens, name) {
   if (name === 'hair') return tokens.derived.hair;
+  if (name === 'border') return tokens.derived.border;
+  if (name === 'border_hover') return tokens.derived.borderHover;
+  if (name === 'accent_dim') return tokens.derived.accentDim;
   if (name in tokens.colors) return tokens.colors[name];
   if (name in tokens.terminal) return tokens.terminal[name];
   if (name in tokens.fonts) return tokens.fonts[name];
