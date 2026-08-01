@@ -1,5 +1,5 @@
 {
-  "$comment": "Every place the brand is written down. A consumer not listed here is invisible to `press check`, which is the whole failure mode this skill exists to close — so adding a consumer means adding it here, not copying tokens into it. Paths are relative to their own repo root; selection is by file presence, so this one registry works unchanged inside claude-skills, budget, local-fitness or the site.",
+  "$comment": "Every place the brand is written down. A consumer not listed here is invisible to `press check`, which is the whole failure mode this skill exists to close \u2014 so adding a consumer means adding it here, not copying tokens into it. Paths are relative to their own repo root; selection is by file presence, so this one registry works unchanged inside claude-skills, budget, local-fitness or the site.",
   "targets": [
     {
       "id": "city-report",
@@ -11,7 +11,7 @@
       "params": {
         "env_var": "CITY_REPORT_BRAND_FILE",
         "brand_line": "DATA USA",
-        "byline": "datausa.io · US Census ACS",
+        "byline": "datausa.io \u00b7 US Census ACS",
         "document_kind": "CITY PROFILE",
         "extras": [
           "fill_steps"
@@ -93,7 +93,7 @@
           {
             "token": "accent",
             "name": "press-sig",
-            "comment": "THE signature accent — one loud color, used sparingly"
+            "comment": "THE signature accent \u2014 one loud color, used sparingly"
           },
           {
             "token": "rule",
@@ -161,7 +161,7 @@
           {
             "token": "accent",
             "name": "press-sig",
-            "comment": "THE signature accent — one loud color, used sparingly"
+            "comment": "THE signature accent \u2014 one loud color, used sparingly"
           },
           {
             "token": "rule",
@@ -225,7 +225,7 @@
       }
     },
     {
-      "$comment": "Phase 2 — external repos. Declared now so the registry documents where the brand lives, even before those repos carry a press CI step. They resolve only when `press check` runs inside their own checkout.",
+      "$comment": "Phase 2 \u2014 external repos. Declared now so the registry documents where the brand lives, even before those repos carry a press CI step. They resolve only when `press check` runs inside their own checkout.",
       "id": "budget",
       "repo": "budget",
       "path": "src/local_budget/report/brand.py",
@@ -235,7 +235,7 @@
       "params": {
         "env_var": "BUDGET_BRAND_FILE",
         "brand_line": "LOCAL BUDGET",
-        "byline": "local-budget · generated offline",
+        "byline": "local-budget \u00b7 generated offline",
         "document_kind": "MONTHLY REPORT",
         "extras": [
           "warn"
@@ -463,7 +463,7 @@
       "syntax": "md",
       "emitter": "version-badge",
       "params": {
-        "what": "The résumé themes' colour and type tokens"
+        "what": "The r\u00e9sum\u00e9 themes' colour and type tokens"
       },
       "init": {
         "insertAfter": "^# "
@@ -509,6 +509,31 @@
       },
       "init": {
         "insertAfter": "^# "
+      }
+    },
+    {
+      "id": "forge-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/forge/skills/forge/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "forge-readme",
+      "repo": "claude-skills",
+      "path": "skills/forge/README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The workflow masthead"
+      },
+      "init": {
+        "insertAfter": "^# forge "
       }
     }
   ],
