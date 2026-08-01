@@ -51,18 +51,21 @@ export const SYNTAX = 'yaml';
  * and the purpose line is the only place a reader learns what the file is for
  * without reading the YAML.
  */
-export async function renderHeader({ title, purpose, generatorVersion }) {
-  const [{ loadTokens }, { emitBody }, { renderRegion }] = await Promise.all([
-    pressModule('tokens.mjs'), pressModule('emit.mjs'), pressModule('region.mjs'),
+export async function headerBody({ title, purpose, generatorVersion }) {
+  const [{ loadTokens }, { emitBody }] = await Promise.all([
+    pressModule('tokens.mjs'), pressModule('emit.mjs'),
   ]);
-  const version = await pressVersion();
-  const body = emitBody(loadTokens(), 'gha-header', {
+  return emitBody(loadTokens(), 'gha-header', {
     title,
     purpose,
     generator: 'forge',
     generator_version: generatorVersion,
-  }, { version });
-  return renderRegion(REGION, SYNTAX, body, version);
+  }, { version: await pressVersion() });
+}
+
+export async function renderHeader(opts) {
+  const { renderRegion } = await pressModule('region.mjs');
+  return renderRegion(REGION, SYNTAX, await headerBody(opts), await pressVersion());
 }
 
 /** Splice or insert the masthead at the very top of a workflow document. */
