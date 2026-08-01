@@ -11,9 +11,24 @@ name: press propagate
 # Freshness is PUSHED from the source of truth rather than polled. press
 # re-emits into each consumer, bumps the pin, and opens a PR. Consumers still
 # review and merge — nothing lands unreviewed — but nobody has to remember.
+#
+# NOTE ON THE TRIGGER. This deliberately does NOT use `push: tags: [press-v*]`.
+# The release tag is created by `_release.yml` using the repository's
+# GITHUB_TOKEN, and GitHub does not fire new workflow runs for events created
+# with that token — so a tag trigger here would look correct and never once
+# execute. Verified the hard way: press-v0.4.0 was tagged and published with
+# zero propagate runs. The release path calls this workflow directly instead.
 on:
-  push:
-    tags: ["press-v*"] # every press release
+  workflow_call:
+    inputs:
+      dry-run:
+        description: "Report what would change without opening PRs"
+        type: boolean
+        default: false
+    secrets:
+      PRESS_PROPAGATE_TOKEN:
+        description: "PAT with repo scope on the consumer repos"
+        required: false
   schedule:
     - cron: "0 13 * * 1" # safety net: closed PRs, failed fan-outs, new consumers
   workflow_dispatch:
