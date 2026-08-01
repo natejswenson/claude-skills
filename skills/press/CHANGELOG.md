@@ -5,6 +5,46 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-01
+
+Closes the propagation gap: a pinned check can tell you a consumer is intact,
+but never that it is *current*.
+
+### Added
+
+- **`press propagate`** — re-emits every region in a consumer's checkout, bumps
+  any `@natjswenson/press@<version>` pin in its workflows, and reports what
+  moved. `--dry-run` answers "is this repo behind?"; `--json` is what CI
+  branches on.
+- **`.github/workflows/press-propagate.yml`** — runs on every `press-v*` tag and
+  weekly, opening a PR in each consumer repo whose bytes actually changed. The
+  consumer list is derived from `targets.json` (with an optional `github` field
+  where the remote name differs), so adding a consumer stays one declaration.
+  Without `PRESS_PROPAGATE_TOKEN` it reports what it would do and exits clean,
+  rather than failing a release over a missing credential.
+
+### Why
+
+Consumers pin an exact version on purpose — a mutable reference in a repo that
+auto-deploys to production is a supply-chain hole. But a pinned check passes
+forever against the version it was pinned to: `natejswenson.io` sat **two
+releases behind with entirely green CI**. Integrity and freshness are different
+questions, and only the first was being answered.
+
+So freshness is pushed from the source of truth rather than polled by each
+consumer. Two rules keep it honest:
+
+- **Content decides, not the version receipt.** A region written by 0.1.0 that
+  is still byte-correct today is current; opening a PR for it would be noise.
+- **A stale pin alone is not "behind".** It changes no shipped artifact, so it
+  is bumped quietly and never triggers a PR by itself.
+
+### Fixed
+
+- `changed` was derived by matching `/updated$/` against a status string, which
+  silently missed `"would update"` — so `--dry-run` reported "nothing to do"
+  while displaying a changed region. It is a boolean now, and a test pins that.
+
 ## [0.3.0] - 2026-08-01
 
 Font stacks become per-engine profiles. Migrating `local-fitness` measured a real
@@ -127,6 +167,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.4.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.0
 [0.3.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.3.0
 [0.2.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.2.0
 [0.1.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.1.0
