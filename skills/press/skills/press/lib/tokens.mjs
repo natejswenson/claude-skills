@@ -37,6 +37,24 @@ const clean = (group) => {
   return out;
 };
 
+/**
+ * The three stacks for one rendering engine. An unknown profile name is an
+ * error rather than a silent fall back to the default — a target asking for
+ * `fontconfig` and quietly getting the browser chain is precisely the bug this
+ * whole mechanism exists to prevent.
+ */
+function fontProfile(raw, name) {
+  const profiles = raw.fonts?.profiles ?? {};
+  const key = name ?? raw.fonts?.default_profile;
+  const profile = profiles[key];
+  if (!profile) {
+    throw new Error(
+      `unknown font profile "${key}" (available: ${Object.keys(profiles).join(', ')})`,
+    );
+  }
+  return clean(profile);
+}
+
 function resolve(raw) {
   const colors = clean(raw.colors);
   const terminal = clean(raw.terminal);
@@ -64,7 +82,11 @@ function resolve(raw) {
     colors,
     terminal,
     notes: clean(raw.color_notes),
-    fonts: clean(raw.fonts),
+    fonts: fontProfile(raw, raw.fonts?.default_profile),
+    fontProfiles: Object.fromEntries(
+      Object.keys(raw.fonts?.profiles ?? {}).map((p) => [p, fontProfile(raw, p)]),
+    ),
+    defaultFontProfile: raw.fonts?.default_profile,
     identity: clean(raw.identity),
     marks: clean(raw.marks),
     limits: clean(raw.limits),

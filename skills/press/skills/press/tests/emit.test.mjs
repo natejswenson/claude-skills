@@ -144,3 +144,50 @@ test('emitters are pure — same inputs, same bytes', () => {
     emitBody(tokens, 'python-theme', PY_PARAMS),
   );
 });
+
+// --- font profiles --------------------------------------------------------
+// The brand's type intent is one thing; the chain that achieves it depends on
+// the rendering engine. Chromium resolves -apple-system to SF and never walks
+// the fallbacks; fontconfig walks them for real, where the browser chain lands
+// on Helvetica Neue Heavy Condensed. Measured with pdffonts, not assumed.
+
+test('omitting font_profile uses the token set default, so old targets are unchanged', () => {
+  const a = emitBody(tokens, 'python-theme', PY_PARAMS);
+  const b = emitBody(tokens, 'python-theme', { ...PY_PARAMS, font_profile: tokens.defaultFontProfile });
+  assert.equal(a, b);
+});
+
+test('font_profile selects that engine\'s stacks', () => {
+  const browser = emitBody(tokens, 'python-theme', { ...PY_PARAMS, font_profile: 'browser' });
+  const fc = emitBody(tokens, 'python-theme', { ...PY_PARAMS, font_profile: 'fontconfig' });
+  assert.match(browser, /Inter, Roboto/);
+  assert.doesNotMatch(fc, /Inter, Roboto/, 'the fontconfig chain must not carry browser-only faces');
+});
+
+test('an unknown font_profile is an error, never a silent fall back to the default', () => {
+  assert.throws(() => emitBody(tokens, 'python-theme', { ...PY_PARAMS, font_profile: 'ghost' }), EmitError);
+});
+
+test('the fontconfig profile stays shallower than the browser one', () => {
+  for (const key of ['display_stack', 'serif_stack', 'mono_stack']) {
+    const b = tokens.fontProfiles.browser[key].split(',').length;
+    const f = tokens.fontProfiles.fontconfig[key].split(',').length;
+    assert.ok(f <= b, `${key}: every extra face in a fontconfig chain is one that can win`);
+  }
+});
+
+test('css-vars honours the profile too', () => {
+  const fc = emitBody(tokens, 'css-vars', {
+    vars: [{ token: 'display_stack', name: 'font' }], comments: false, font_profile: 'fontconfig',
+  });
+  assert.doesNotMatch(fc, /Inter/);
+});
+
+test('a WeasyPrint target is never emitted the browser display chain', async () => {
+  const { loadTargets } = await import('../lib/targets.mjs');
+  const lf = loadTargets().find((t) => t.id === 'local-fitness');
+  assert.equal(lf.params.font_profile, 'fontconfig',
+    'local-fitness renders through WeasyPrint; the browser chain visibly condenses its headlines');
+  const body = emitBody(tokens, lf.emitter, lf.params);
+  assert.doesNotMatch(body, /'Helvetica Neue'/);
+});
