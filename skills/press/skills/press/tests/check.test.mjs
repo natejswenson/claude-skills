@@ -118,7 +118,12 @@ test('every registered target names a real emitter and syntax', () => {
 
 test('the live repo is in sync and covers every in-repo consumer', () => {
   const root = repoRoot(dirname(new URL(import.meta.url).pathname));
-  const report = checkAll({ tokens, targets: loadTargets(), root, ids: [], version: V });
+  // The REAL package version: check now enforces that a region records the
+  // release it belongs to, so a placeholder here would fail every target.
+  const version = JSON.parse(
+    readFileSync(join(dirname(new URL(import.meta.url).pathname), '..', 'package.json'), 'utf8'),
+  ).version;
+  const report = checkAll({ tokens, targets: loadTargets(), root, ids: [], version });
   assert.ok(report.results.length >= 5, `only ${report.results.length} targets resolved in-repo`);
   assert.deepEqual(
     report.failures.map((f) => `${f.target.id}:${f.status}`),
