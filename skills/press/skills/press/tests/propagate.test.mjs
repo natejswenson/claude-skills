@@ -163,3 +163,61 @@ test('after propagating, the region records the new version — pin and receipt 
   assert.equal(again.changed, false, 'a second run must be a no-op');
   assert.equal(again.regions[0].wroteBy, V);
 });
+
+// --- version-embedding emitters -------------------------------------------
+
+const BADGE = {
+  id: 'demo-readme',
+  repo: 'demo',
+  path: 'README.md',
+  region: 'version',
+  syntax: 'md',
+  emitter: 'version-badge',
+  params: { what: 'The tiles' },
+};
+
+function badgeSandbox(regionVersion) {
+  const root = mkdtempSync(join(tmpdir(), 'press-badge-'));
+  const body = emitBody(tokens, 'version-badge', BADGE.params, { version: regionVersion });
+  writeFileSync(
+    join(root, 'README.md'),
+    `# demo\n\n${renderRegion('version', 'md', body, regionVersion)}\n`,
+    'utf8',
+  );
+  return root;
+}
+
+/**
+ * The 0.8.0 rollout regression, pinned.
+ *
+ * `version-badge` writes the version into its own body ("PRESS v0.7.2 — …"), so
+ * comparing the on-disk body against the NEW body reported a values change on
+ * every single release. Three of four consumers were titled BRAND VALUES CHANGED
+ * for a release in which no token moved; only the one target without a badge got
+ * it right. A title that is always loud is a title nobody reads.
+ */
+test('a version-only bump of a version-embedding emitter is NOT a brand change', () => {
+  const root = badgeSandbox('0.1.0');
+  const r = propagate({ tokens, targets: [BADGE], root, version: V });
+  assert.equal(r.regions[0].versionChanged, true);
+  assert.equal(
+    r.regions[0].brandChanged,
+    false,
+    'the badge text moved only because the version did — that is routine adoption',
+  );
+  assert.deepEqual(r.brand, []);
+  assert.equal(r.regions[0].status, 'adopted');
+});
+
+/**
+ * The other side, and the one that matters most: the fix must not blind the
+ * detector. A real values change that happens to arrive in the same release as a
+ * version bump must still be flagged.
+ */
+test('a real values change is still caught when the version moved too', () => {
+  const root = sandbox({ tokenSet: bend(), regionVersion: '0.1.0' });
+  const r = propagate({ tokens, targets: [TARGET], root, version: V });
+  assert.equal(r.regions[0].versionChanged, true, 'the version moved as well');
+  assert.equal(r.regions[0].brandChanged, true, 'a token moved — this still needs a human');
+  assert.deepEqual(r.brand, ['demo']);
+});

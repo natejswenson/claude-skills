@@ -227,7 +227,7 @@
     {
       "$comment": "Phase 2 \u2014 external repos. Declared now so the registry documents where the brand lives, even before those repos carry a press CI step. They resolve only when `press check` runs inside their own checkout.",
       "id": "budget",
-      "repo": "budget",
+      "repo": "local-budget",
       "path": "src/local_budget/report/brand.py",
       "region": "tokens",
       "syntax": "python",
@@ -414,7 +414,7 @@
     },
     {
       "id": "budget-readme",
-      "repo": "budget",
+      "repo": "local-budget",
       "path": "README.md",
       "region": "version",
       "syntax": "md",
