@@ -264,8 +264,37 @@ function jsonTokens(tokens, params) {
 
 // --------------------------------------------------------------------------
 
+
+/**
+ * Flat module constants plus optional dicts, for a script that reads tokens as
+ * Python names rather than a theme dict. The profile README's SVG build is the
+ * case: it has no override file to deep-merge and no stylesheet, so the full
+ * `python-theme` machinery would be dead weight around four strings.
+ */
+function pythonConsts(tokens, params) {
+  const out = [];
+  for (const spec of params.consts ?? []) {
+    const name = required(spec, 'name', 'python-consts');
+    out.push(`${name} = ${py(lookup(tokens, required(spec, 'token', 'python-consts'), params))}`);
+  }
+  for (const spec of params.dicts ?? []) {
+    const group = tokens[required(spec, 'group', 'python-consts')];
+    if (!group) throw new EmitError(`python-consts: unknown token group "${spec.group}"`);
+    if (out.length) out.push('');
+    out.push(`${required(spec, 'name', 'python-consts')} = {`);
+    for (const [key, value] of Object.entries(group)) {
+      const k = spec.key_style === 'kebab' ? key.replace(/_/g, '-') : key;
+      out.push(`    ${py(k)}: ${py(value)},`);
+    }
+    out.push('}');
+  }
+  if (out.length === 0) throw new EmitError('python-consts needs consts and/or dicts');
+  return out.join('\n');
+}
+
 export const EMITTERS = {
   'python-theme': pythonTheme,
+  'python-consts': pythonConsts,
   'css-vars': cssVars,
   'md-palette': mdPalette,
   'markdown-block': markdownBlock,
@@ -317,7 +346,7 @@ const DERIVED = {
 
 function lookup(tokens, name, params = {}) {
   if (name in DERIVED) return tokens.derived[DERIVED[name]];
-  for (const group of [tokens.colors, tokens.terminal, fontsFor(tokens, params), tokens.identity, tokens.marks]) {
+  for (const group of [tokens.colors, tokens.terminal, fontsFor(tokens, params), tokens.fontFiles, tokens.identity, tokens.marks]) {
     if (name in group) return group[name];
   }
   throw new EmitError(`unknown token "${name}"`);
