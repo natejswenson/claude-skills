@@ -304,10 +304,31 @@
             "name": "fg-tertiary"
           },
           {
+            "token": "border"
+          },
+          {
+            "token": "border_hover"
+          },
+          {
             "token": "accent"
           },
           {
+            "token": "accent_dim"
+          },
+          {
             "token": "rule"
+          },
+          {
+            "token": "display_stack",
+            "name": "font-display"
+          },
+          {
+            "token": "serif_stack",
+            "name": "font-serif"
+          },
+          {
+            "token": "mono_stack",
+            "name": "font-mono"
           },
           {
             "token": "term_bg",
@@ -330,6 +351,10 @@
             "name": "panel-bar"
           }
         ]
+      },
+      "init": {
+        "replaceFrom": "^:root \\{$",
+        "replaceTo": "^\\}$"
       }
     }
   ]

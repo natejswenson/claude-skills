@@ -5,6 +5,35 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-01
+
+Everything `natejswenson.io` needed to adopt the brand without changing by a
+single pixel. Surveying the site turned up four values the token set could not
+express, so it could not have been migrated without either losing them or
+hand-writing them locally — which is the failure mode press exists to end.
+
+### Added
+
+- **Alpha tints as first-class derived tokens** — `border`, `border_hover` and
+  `accent_dim`, computed from `ink` and `accent` so no consumer writes an
+  `rgba()` by hand.
+
+### Changed
+
+- **`mono_stack` gained `'JetBrains Mono'`.** The site's stack was one fallback
+  deeper than the token set's; emitting the shorter one would have silently
+  removed a face. Fallbacks are additive, so the union is canonical — the same
+  call made for the résumé's stacks in 0.1.0. Purely additive for every existing
+  consumer.
+
+### Known inconsistency, kept deliberately
+
+`hair` (0.18) and `border` (0.16) are the same idea at two different strengths —
+the résumé's hairline and the site's. They are recorded as separate tokens rather
+than reconciled, because reconciling them would change one of two shipped
+products. That is a decision to make on purpose, not a side effect of adopting
+press. Documented in `tokens.json` under `derived.$comment`.
+
 ## [0.1.0] - 2026-07-31
 
 First release. Replaces eight hand-ported copies of the PRESS brand with one
@@ -63,4 +92,5 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.2.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.2.0
 [0.1.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.1.0

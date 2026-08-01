@@ -291,8 +291,15 @@ function required(params, key, emitter) {
   return value;
 }
 
+const DERIVED = {
+  hair: 'hair',
+  border: 'border',
+  border_hover: 'borderHover',
+  accent_dim: 'accentDim',
+};
+
 function lookup(tokens, name) {
-  if (name === 'hair') return tokens.derived.hair;
+  if (name in DERIVED) return tokens.derived[DERIVED[name]];
   for (const group of [tokens.colors, tokens.terminal, tokens.fonts, tokens.identity, tokens.marks]) {
     if (name in group) return group[name];
   }
