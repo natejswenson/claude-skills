@@ -48,6 +48,7 @@ function pythonTheme(tokens, params) {
   const brandLine = required(params, 'brand_line', 'python-theme');
   const byline = params.byline ?? tokens.identity.byline;
   const docKind = params.document_kind ?? 'DOCUMENT';
+  const fonts = fontsFor(tokens, params);
 
   const out = [];
   out.push('import copy');
@@ -88,11 +89,11 @@ function pythonTheme(tokens, params) {
   out.push('    },');
   out.push('    "fonts": {');
   out.push('        # Display/structure voice, set 800-900 with tight tracking by the CSS.');
-  out.push(`        "display_stack": ${py(tokens.fonts.display_stack)},`);
+  out.push(`        "display_stack": ${py(fonts.display_stack)},`);
   out.push('        # Commentary voice: serif italics for standfirsts and captions.');
-  out.push(`        "serif_stack": ${py(tokens.fonts.serif_stack)},`);
+  out.push(`        "serif_stack": ${py(fonts.serif_stack)},`);
   out.push('        # Data voice: labels, dates, tables, provenance.');
-  out.push(`        "mono_stack": ${py(tokens.fonts.mono_stack)},`);
+  out.push(`        "mono_stack": ${py(fonts.mono_stack)},`);
   if (extras.has('mono_file')) {
     out.push('        # Point at a real TTF to load an authentic mono face via @font-face.');
     out.push('        "mono_file": None,');
@@ -191,7 +192,7 @@ function cssVars(tokens, params) {
     const name = (spec.name ?? spec.token).replace(/_/g, '-');
     const raw = spec.token === 'stamp'
       ? (params.stamp ?? tokens.identity.stamp)
-      : lookup(tokens, spec.token);
+      : lookup(tokens, spec.token, params);
     const value = spec.quote ? JSON.stringify(raw) : raw;
     // `comments: "explicit"` keeps only hand-written hints; the token notes are
     // written for a reader of tokens.json and are far too long for a CSS block.
@@ -253,7 +254,7 @@ function jsonTokens(tokens, params) {
   const payload = {
     colors: tokens.colors,
     terminal: tokens.terminal,
-    fonts: tokens.fonts,
+    fonts: fontsFor(tokens, params),
     identity: { ...tokens.identity, ...(params.stamp ? { stamp: params.stamp } : {}) },
     derived: { hair: tokens.derived.hair, fill_steps: tokens.derived.fillSteps },
   };
@@ -291,6 +292,22 @@ function required(params, key, emitter) {
   return value;
 }
 
+/**
+ * The font stacks for this target's rendering engine. Defaults to the token
+ * set's own default profile, so a target that says nothing is unchanged.
+ */
+function fontsFor(tokens, params = {}) {
+  const name = params.font_profile;
+  if (!name) return tokens.fonts;
+  const profile = tokens.fontProfiles?.[name];
+  if (!profile) {
+    throw new EmitError(
+      `unknown font_profile "${name}" (available: ${Object.keys(tokens.fontProfiles ?? {}).join(', ')})`,
+    );
+  }
+  return profile;
+}
+
 const DERIVED = {
   hair: 'hair',
   border: 'border',
@@ -298,9 +315,9 @@ const DERIVED = {
   accent_dim: 'accentDim',
 };
 
-function lookup(tokens, name) {
+function lookup(tokens, name, params = {}) {
   if (name in DERIVED) return tokens.derived[DERIVED[name]];
-  for (const group of [tokens.colors, tokens.terminal, tokens.fonts, tokens.identity, tokens.marks]) {
+  for (const group of [tokens.colors, tokens.terminal, fontsFor(tokens, params), tokens.identity, tokens.marks]) {
     if (name in group) return group[name];
   }
   throw new EmitError(`unknown token "${name}"`);

@@ -5,6 +5,41 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-01
+
+Font stacks become per-engine profiles. Migrating `local-fitness` measured a real
+regression the previous single-stack model would have shipped.
+
+### Added
+
+- **`fonts.profiles`** — the brand's type *intent* is one thing; the fallback
+  chain that achieves it depends on the rendering engine. Targets pick one with
+  `params.font_profile`; omitting it uses `fonts.default_profile` (`browser`), so
+  every existing consumer is byte-for-byte unchanged.
+  - **`browser`** — Chromium/WebKit. `-apple-system` resolves to SF and the
+    fallbacks are never reached, so depth is free.
+  - **`fontconfig`** — WeasyPrint and anything else walking the chain for real.
+    Deliberately shallower: every extra face is one that can *win*.
+- An unknown `font_profile` is an error, never a silent fall back to the default.
+
+### Fixed
+
+- **The union stack visibly broke WeasyPrint output.** `local-fitness` renders
+  through WeasyPrint, which resolves none of the `ui-*` / `-apple-system`
+  keywords and walks the chain for real. The browser-tuned list put `Inter` and
+  `'Helvetica Neue'` ahead of `Arial`, and headlines resolved to
+  **Helvetica Neue Heavy Condensed** — measured with `pdffonts`, not assumed.
+  Under the `fontconfig` profile it renders `Arial-Bold` / `Georgia-Bold` /
+  `Menlo-Bold`, exactly as it always has.
+
+### Changed
+
+- **Migrated `budget` and `local-fitness`.** budget renders through headless
+  Chrome, where the widened stacks are provably inert: identical embedded faces
+  and byte-identical rendered pages. local-fitness takes the `fontconfig`
+  profile and its emitted theme changed **zero values**. Suites stay green
+  (894 and 2063 tests).
+
 ## [0.2.0] - 2026-08-01
 
 Everything `natejswenson.io` needed to adopt the brand without changing by a
@@ -92,5 +127,6 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.3.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.3.0
 [0.2.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.2.0
 [0.1.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.1.0
