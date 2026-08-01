@@ -38,7 +38,7 @@ DEFAULT_THEME: dict = {
         # Commentary voice: serif italics for standfirsts and captions.
         "serif_stack": "'New York', ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif",
         # Data voice: labels, dates, tables, provenance.
-        "mono_stack": "ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace",
+        "mono_stack": "ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace",
     },
     "identity": {
         # Typographic stamp (rotated square, accent border + initials).
