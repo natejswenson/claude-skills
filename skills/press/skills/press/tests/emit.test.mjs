@@ -191,3 +191,39 @@ test('a WeasyPrint target is never emitted the browser display chain', async () 
   const body = emitBody(tokens, lf.emitter, lf.params);
   assert.doesNotMatch(body, /'Helvetica Neue'/);
 });
+
+// --- python-consts --------------------------------------------------------
+// The profile README's SVG build reads tokens as plain Python names: it has no
+// override file to deep-merge and no stylesheet, so `python-theme` would be
+// dead weight around four strings.
+
+const CONSTS = {
+  consts: [{ name: 'PAPER', token: 'paper' }, { name: 'ACCENT', token: 'accent' }],
+  dicts: [{ name: 'FACES', group: 'fontFiles', key_style: 'kebab' }],
+};
+
+test('python-consts emits importable Python with the real values', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const body = emitBody(tokens, 'python-consts', CONSTS);
+  const out = execFileSync('python3', ['-c', `${body}\nimport json;print(json.dumps([PAPER, ACCENT, FACES]))`], { encoding: 'utf8' });
+  const [paper, accent, faces] = JSON.parse(out);
+  assert.equal(paper, tokens.colors.paper);
+  assert.equal(accent, tokens.colors.accent);
+  assert.equal(faces['display-black'], tokens.fontFiles.display_black);
+});
+
+test('python-consts kebab-cases dict keys only when asked', () => {
+  assert.match(emitBody(tokens, 'python-consts', CONSTS), /"display-black"/);
+  const snake = emitBody(tokens, 'python-consts', { ...CONSTS, dicts: [{ name: 'FACES', group: 'fontFiles' }] });
+  assert.match(snake, /"display_black"/);
+});
+
+test('python-consts carries every vendorable face, so a new one cannot be missed', () => {
+  const body = emitBody(tokens, 'python-consts', CONSTS);
+  for (const file of Object.values(tokens.fontFiles)) assert.ok(body.includes(file), file);
+});
+
+test('python-consts rejects an unknown group and an empty spec', () => {
+  assert.throws(() => emitBody(tokens, 'python-consts', { dicts: [{ name: 'X', group: 'nope' }] }), EmitError);
+  assert.throws(() => emitBody(tokens, 'python-consts', {}), EmitError);
+});
