@@ -18,6 +18,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`shipflow`](skills/shipflow) | ![shipflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipflow-v*&label=&sort=semver&color=blue) | `/shipflow` | Node | Scaffold a configurable dev/main branching, auto-merge, cleanup, and release-tagging workflow into any repo. This repo's own automation is dogfooded on it. |
 | [`city-report`](skills/city-report) | ![city-report](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=city-report-v*&label=&sort=semver&color=blue) | `/city-report` | Python | Pull US Census data for any American city, answer questions from context, and render a PRESS-branded HTML report. Stdlib only. |
 | [`press`](skills/press) | ![press](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=press-v*&label=&sort=semver&color=blue) | `/press` | Node | The one brand system: design tokens, visual laws, run presentation and voice core, generated into every consumer across five repos with a CI drift gate. |
+| [`forge`](skills/forge) | ![forge](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=forge-v*&label=&sort=semver&color=blue) | `/forge` | Node | Generate GitHub Actions workflows that are *verified, not hoped for* — every action ref resolved to a real pinned SHA, `with:` keys checked against the action's own metadata, staleness reported, actionlint and zizmor clean, in about a second. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -34,6 +35,8 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install github-stats@claude-skills
 /plugin install shipflow@claude-skills
 /plugin install city-report@claude-skills
+/plugin install press@claude-skills
+/plugin install forge@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -51,6 +54,8 @@ ln -sfn "$PWD/skills/resume/skills/resume"             ~/.claude/skills/resume
 ln -sfn "$PWD/skills/github-stats/skills/github-stats" ~/.claude/skills/github-stats
 ln -sfn "$PWD/skills/shipflow/skills/shipflow"         ~/.claude/skills/shipflow
 ln -sfn "$PWD/skills/city-report/skills/city-report"   ~/.claude/skills/city-report
+ln -sfn "$PWD/skills/press/skills/press"               ~/.claude/skills/press
+ln -sfn "$PWD/skills/forge/skills/forge"               ~/.claude/skills/forge
 ```
 </details>
 
