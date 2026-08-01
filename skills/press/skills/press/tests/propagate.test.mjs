@@ -49,12 +49,16 @@ const bend = () => {
   return t;
 };
 
-test('a consumer already on the current brand reports no change', () => {
-  const root = sandbox();
+test('a consumer fully on the current release reports no change at all', () => {
+  // "Current" now means region receipt AND pin both on this version — the whole
+  // point of the policy is that those stay one number.
+  const root = sandbox({ workflow: WORKFLOW.replace('0.1.0', V) });
   const r = propagate({ tokens, targets: [TARGET], root, version: V });
   assert.equal(r.changed, false);
   assert.deepEqual(r.stale, []);
+  assert.deepEqual(r.brand, []);
   assert.equal(r.regions[0].status, 'current');
+  assert.equal(r.pins[0].status, 'current');
 });
 
 test('a consumer behind the current brand is detected and rewritten', () => {
@@ -70,7 +74,7 @@ test('--dry-run reports the change without touching the file', () => {
   const before = readFileSync(join(root, 'theme.css'), 'utf8');
   const r = propagate({ tokens, targets: [TARGET], root, version: V, dryRun: true });
   assert.equal(r.changed, true, 'a dry run must still report that the repo is behind');
-  assert.equal(r.regions[0].status, 'would update');
+  assert.equal(r.regions[0].status, 'would change brand');
   assert.equal(readFileSync(join(root, 'theme.css'), 'utf8'), before, 'dry run wrote to disk');
 });
 
@@ -83,12 +87,14 @@ test('the changed flag is a boolean, not a guess at the status wording', () => {
   assert.equal(r.changed, r.regions.some((x) => x.changed));
 });
 
-test('a stale pin alone is bumped but does NOT make the repo "behind"', () => {
-  // The pin changes no shipped artifact, so it is not worth a pull request on
-  // its own — otherwise every no-op release opens noise in four repos.
+test('a stale pin alone IS enough to need a pull request', () => {
+  // Policy, chosen deliberately: pin, region receipt and current release stay
+  // ONE number. The older "only open a PR when values move" rule left three
+  // divergent versions per repo and no way to read a consumer's health.
   const root = sandbox();
   const r = propagate({ tokens, targets: [TARGET], root, version: V });
-  assert.equal(r.changed, false);
+  assert.equal(r.changed, true);
+  assert.deepEqual(r.brand, [], 'nothing renders differently, so no brand review needed');
   assert.equal(r.pins[0].status, 'bumped');
   assert.match(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8'),
     new RegExp(`@natjswenson/press@${V.replace(/\./g, '\\.')} check`));
@@ -116,11 +122,13 @@ test('a repo with no workflows propagates fine and reports no pins', () => {
   assert.equal(r.changed, false);
 });
 
-test('a deleted region is surfaced separately from a stale one', () => {
-  const root = sandbox();
+test('a deleted region is surfaced as missing, never silently re-created', () => {
+  const root = sandbox({ workflow: WORKFLOW.replace('0.1.0', V) });
   writeFileSync(join(root, 'theme.css'), ':root { --paper: #F5F0E6; }\n', 'utf8');
   const r = propagate({ tokens, targets: [TARGET], root, version: V });
   assert.deepEqual(r.missing, ['demo']);
+  assert.deepEqual(r.stale, [], 'a missing region needs `emit --init`, not a propagate');
+  assert.match(readFileSync(join(root, 'theme.css'), 'utf8'), /^:root \{ --paper/);
   assert.equal(r.changed, false, 'a missing region needs a --init, not a propagate');
 });
 
@@ -130,11 +138,28 @@ test('propagate records which press version wrote the region it found', () => {
   assert.equal(r.regions[0].wroteBy, '0.1.0');
 });
 
-test('content, not the version receipt, decides whether a repo is behind', () => {
-  // natejswenson.io's region was written by 0.1.0 and is still byte-correct
-  // under 0.3.0. Opening a PR for that would be pure noise.
+test('a stale region receipt is adopted, and reported as NOT a brand change', () => {
   const root = sandbox({ regionVersion: '0.1.0' });
   const r = propagate({ tokens, targets: [TARGET], root, version: V });
   assert.equal(r.regions[0].wroteBy, '0.1.0');
-  assert.equal(r.changed, false);
+  assert.equal(r.regions[0].versionChanged, true);
+  assert.equal(r.regions[0].brandChanged, false, 'no value moved, so no design review');
+  assert.equal(r.changed, true);
+  assert.deepEqual(r.brand, []);
+});
+
+test('a brand change is separated from a version bump, so review stays proportionate', () => {
+  const root = sandbox({ tokenSet: bend(), regionVersion: '0.1.0' });
+  const r = propagate({ tokens, targets: [TARGET], root, version: V });
+  assert.equal(r.regions[0].brandChanged, true);
+  assert.deepEqual(r.brand, ['demo'], 'a values change must be flagged for a human');
+  assert.equal(r.regions[0].status, 'brand updated');
+});
+
+test('after propagating, the region records the new version — pin and receipt converge', () => {
+  const root = sandbox({ regionVersion: '0.1.0' });
+  propagate({ tokens, targets: [TARGET], root, version: V });
+  const again = propagate({ tokens, targets: [TARGET], root, version: V });
+  assert.equal(again.changed, false, 'a second run must be a no-op');
+  assert.equal(again.regions[0].wroteBy, V);
 });

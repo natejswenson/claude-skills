@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.5.1
+version: 0.6.0
 ---
 
 # /press — the brand system
@@ -108,13 +108,18 @@ node bin/press.js propagate --repo ../budget             # re-emit + bump its pi
 what moved. The caller turns that into a pull request, so nothing lands
 unreviewed — but nobody has to *remember*.
 
-Two rules keep it from becoming noise or a false negative:
+**One version per repo.** A consumer's CI pin, its region receipt and the
+current release are kept equal, so "is this repo up to date?" is answerable by
+looking. The earlier rule — only act when values move — left three divergent
+version numbers per repo and no way to tell a healthy consumer from a stale one.
 
-- **Content decides, not the version receipt.** A region written by 0.1.0 that
-  is still byte-correct under 0.3.0 is *current*. Opening a PR for it would be
-  noise.
-- **A stale pin alone is not "behind".** It changes no shipped artifact, so it
-  is bumped silently and never triggers a PR on its own.
+Every release therefore opens a PR in every consumer. What keeps that readable
+is that the PR says which kind it is:
+
+| Kind | Title | Review |
+|---|---|---|
+| **Brand values moved** | `press vX — BRAND VALUES CHANGED` | read the diff as a design change |
+| **Version only** | `adopt press vX` | one line; nothing renders differently |
 
 `.github/workflows/press-propagate.yml` runs this on every release and weekly,
 opening a PR in each consumer repo whose bytes actually moved.

@@ -52,19 +52,35 @@ export function propagate({ tokens, targets, root, version, dryRun = false }) {
     }
     const body = emitBody(tokens, target.emitter, target.params ?? {});
     const after = spliceRegion(before, target.region, target.syntax, body, version);
-    // Compare the region bodies, not whole files: the start marker carries the
-    // emitting version, so a no-op release would otherwise look like a change
-    // and open a pull request that alters nothing anyone can see.
-    const changed = found.body.replace(/\s+$/, '') !== body.replace(/\s+$/, '');
+    // Two different kinds of "changed", kept apart on purpose.
+    //
+    //   brand    the generated VALUES moved — something renders differently and
+    //            the diff must be reviewed as a design change.
+    //   version  only the marker's recorded version moved. Nothing renders
+    //            differently; the repo is adopting a newer press.
+    //
+    // Both are written. Skipping the write when only the version moved is what
+    // produced three divergent version numbers per repo — pin, region receipt
+    // and current release all disagreeing, with no way to tell a healthy
+    // consumer from a stale one at a glance.
+    const brandChanged = found.body.replace(/\s+$/, '') !== body.replace(/\s+$/, '');
+    const versionChanged = found.version !== version;
+    const changed = brandChanged || versionChanged;
     if (changed && !dryRun) writeFileSync(path, after, 'utf8');
     regions.push({
       id: target.id,
       path: target.path,
-      // `changed` is carried as a boolean, never re-derived from the status
-      // string: matching /updated$/ silently missed "would update", so a
-      // dry run reported "nothing to do" while showing a changed region.
+      // Carried as booleans, never re-derived from the status string: matching
+      // /updated$/ once silently missed "would update", so a dry run reported
+      // "nothing to do" while showing a changed region.
       changed,
-      status: changed ? (dryRun ? 'would update' : 'updated') : 'current',
+      brandChanged,
+      versionChanged,
+      status: brandChanged
+        ? (dryRun ? 'would change brand' : 'brand updated')
+        : versionChanged
+          ? (dryRun ? 'would adopt' : 'adopted')
+          : 'current',
       wroteBy: found.version,
     });
   }
@@ -76,9 +92,15 @@ export function propagate({ tokens, targets, root, version, dryRun = false }) {
     version,
     regions,
     pins,
-    // A repo is behind if its bytes moved. A pin bump alone is not worth a pull
-    // request — it changes no shipped artifact.
-    changed: regions.some((r) => r.changed),
+    // A repo needs a pull request if anything moved at all — values or version
+    // — so that its pin, its region receipt and the current release stay one
+    // readable number. Letting the receipt lag "because the body did not
+    // change" produced three divergent versions per repo and no way to tell a
+    // healthy consumer from a stale one at a glance.
+    changed: regions.some((r) => r.changed) || pins.some((p) => p.status !== 'current'),
+    // The subset a human must actually look at: these change what renders.
+    // Everything else is routine adoption and reviews in seconds.
+    brand: regions.filter((r) => r.brandChanged).map((r) => r.id),
     stale: regions.filter((r) => r.changed).map((r) => r.id),
     missing: regions.filter((r) => r.status === 'missing').map((r) => r.id),
   };
