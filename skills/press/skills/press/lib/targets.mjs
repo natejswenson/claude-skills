@@ -6,6 +6,7 @@
  * `check`, which is why `doctor` exists to show the whole registry rather than
  * only what resolved locally.
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
@@ -44,6 +45,26 @@ export const targetPath = (target, root) =>
   isAbsolute(target.path) ? target.path : join(root, target.path);
 
 /**
+ * The repository a checkout actually is, from its origin remote.
+ *
+ * File presence alone cannot identify a consumer: `README.md` exists in every
+ * repo, so a README target would select inside any checkout and be checked
+ * against the wrong file. Returns null when there is no remote (a temp dir in a
+ * test), in which case callers fall back to presence.
+ */
+export function repoIdentity(root) {
+  try {
+    const url = execFileSync('git', ['-C', root, 'config', '--get', 'remote.origin.url'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    const m = /([^/:]+?)(?:\.git)?$/.exec(url);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Which targets this invocation is responsible for.
  *
  * Selection is by *file presence* under the repo root, so the same registry
@@ -63,5 +84,12 @@ export function selectTargets(targets, { root, ids }) {
       return found;
     });
   }
-  return targets.filter((t) => existsSync(targetPath(t, root)));
+  const identity = repoIdentity(root);
+  return targets.filter((t) => {
+    if (!existsSync(targetPath(t, root))) return false;
+    // When the checkout names itself, trust that over a path that happens to
+    // exist — otherwise every repo's README matches every README target.
+    if (identity) return identity === (t.github ?? t.repo);
+    return true;
+  });
 }

@@ -5,6 +5,36 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-01
+
+### Added
+
+- **`version-badge` emitter** — a generated `press:version` line for a
+  consumer's README. Until now a repo's press version appeared only in a CI pin
+  and a comment marker, neither of which anyone reads when landing on the repo.
+- Emitters now receive a small run context (`{ version }`), kept separate from
+  target `params` because it is a property of the invocation, not the config.
+
+### Changed
+
+- **Propagation now covers every long-lived branch, not just `dev`.** Landing on
+  the integration branch alone left `main` — the branch that actually ships —
+  stale until someone remembered to promote, and made the next promotion carry
+  an unrelated brand diff. Branch names are suffixed per base so the two pushes
+  cannot collide.
+
+### Fixed
+
+- **Target selection could match the wrong repository.** Selection was by file
+  presence alone, and `README.md` exists everywhere — so a README target
+  selected inside *any* checkout and would have been compared against the wrong
+  file. Selection now checks the checkout's own `origin` remote against the
+  target's `github`/`repo`, falling back to presence only when there is no
+  remote.
+- Goldens pin the **shape** of each emitter's output using a fixed placeholder
+  version. Using the real release would rewrite every golden on every release
+  and turn a drift detector into noise.
+
 ## [0.6.1] - 2026-08-01
 
 ### Fixed
@@ -264,6 +294,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.7.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.7.0
 [0.6.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.1
 [0.6.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.0
 [0.5.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.1

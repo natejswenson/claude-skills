@@ -50,7 +50,7 @@ export function propagate({ tokens, targets, root, version, dryRun = false }) {
       regions.push({ id: target.id, path: target.path, status: 'missing' });
       continue;
     }
-    const body = emitBody(tokens, target.emitter, target.params ?? {});
+    const body = emitBody(tokens, target.emitter, target.params ?? {}, { version });
     const after = spliceRegion(before, target.region, target.syntax, body, version);
     // Two different kinds of "changed", kept apart on purpose.
     //

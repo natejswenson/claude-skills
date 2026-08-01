@@ -126,3 +126,44 @@ test('the live repo is in sync and covers every in-repo consumer', () => {
     'run `node bin/press.js emit` to resync',
   );
 });
+
+// --- repo identity --------------------------------------------------------
+// File presence alone cannot identify a consumer: README.md exists in every
+// repo, so a README target would select inside any checkout and be compared
+// against the wrong file.
+
+test('a checkout that names itself only matches its own targets', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const root = sandbox({ 'README.md': 'hello\n', 'theme.css': inSync() });
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  execFileSync('git', ['-C', root, 'remote', 'add', 'origin',
+    'https://github.com/someone/other-repo.git']);
+
+  const readmeTarget = { ...TARGET, id: 'readme', path: 'README.md', region: 'version', syntax: 'md' };
+  const picked = selectTargets([TARGET, readmeTarget], { root, ids: [] });
+  assert.deepEqual(picked, [], 'this checkout is other-repo; neither target belongs to it');
+});
+
+test('a checkout matching a target\'s repo still selects it', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const root = sandbox({ 'theme.css': inSync() });
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  execFileSync('git', ['-C', root, 'remote', 'add', 'origin',
+    'https://github.com/natejswenson/demo.git']);
+  assert.deepEqual(selectTargets([TARGET], { root, ids: [] }).map((t) => t.id), ['demo']);
+});
+
+test('with no remote at all, selection falls back to file presence', () => {
+  const root = sandbox({ 'theme.css': inSync() });
+  assert.deepEqual(selectTargets([TARGET], { root, ids: [] }).map((t) => t.id), ['demo']);
+});
+
+test('the github field wins over repo when resolving identity', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const root = sandbox({ 'theme.css': inSync() });
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  execFileSync('git', ['-C', root, 'remote', 'add', 'origin',
+    'https://github.com/natejswenson/local-budget.git']);
+  const t = { ...TARGET, repo: 'budget', github: 'local-budget' };
+  assert.deepEqual(selectTargets([t], { root, ids: [] }).map((x) => x.id), ['demo']);
+});
