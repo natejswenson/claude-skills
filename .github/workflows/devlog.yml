@@ -45,6 +45,13 @@ jobs:
       # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
       - if: steps.changes.outputs.devlog == 'true'
         run: python tools/lint_plugin.py skills/devlog
+      # Tier 1.6: this skill's brand block is a generated region owned by the
+      # `press` skill. Fails if it was hand-edited, or if the tokens moved and
+      # nobody re-emitted — so drift is caught in the PR that causes it rather
+      # than whenever someone next happens to touch press. (Node is preinstalled
+      # on ubuntu-latest; press has no dependencies.)
+      - if: steps.changes.outputs.devlog == 'true'
+        run: node skills/press/skills/press/bin/press.js check --repo . --target devlog-palette
       # Tier 2: devlog functional tests (Node)
       - if: steps.changes.outputs.devlog == 'true'
         uses: actions/setup-node@v6
