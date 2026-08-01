@@ -28,6 +28,8 @@ const REFRESH = 'node tests/fixtures/update-pre-migration.mjs';
 const tokens = loadTokens();
 const targets = loadTargets();
 const frozen = JSON.parse(readFileSync(join(FIXTURES, 'pre-migration-values.json'), 'utf8'));
+// Must match update-pre-migration.mjs: goldens pin emitter shape, not release.
+const GOLDEN_VERSION = '0.0.0';
 const manifest = JSON.parse(readFileSync(join(GOLDEN, 'manifest.json'), 'utf8'));
 
 /** Every colour the brand knows, by value. */
@@ -110,7 +112,8 @@ test('the accent is one value everywhere, under five different names', () => {
 test('every target still emits exactly its golden bytes', () => {
   for (const target of targets) {
     const expected = readFileSync(join(GOLDEN, `${target.id}.txt`), 'utf8').replace(/\s+$/, '');
-    const actual = emitBody(tokens, target.emitter, target.params ?? {}).replace(/\s+$/, '');
+    const actual = emitBody(tokens, target.emitter, target.params ?? {}, { version: GOLDEN_VERSION })
+      .replace(/\s+$/, '');
     assert.equal(actual, expected, `${target.id} drifted from its golden — refresh with: ${REFRESH}`);
   }
 });
@@ -140,7 +143,7 @@ test('each emitted region still carries every value its own consumer shipped wit
   for (const target of targets) {
     const source = frozen.sources[target.id];
     if (!source) continue;
-    const body = emitBody(tokens, target.emitter, target.params ?? {});
+    const body = emitBody(tokens, target.emitter, target.params ?? {}, { version: GOLDEN_VERSION });
     const allowed = OMISSIONS[target.id] ?? [];
     for (const [name, value] of Object.entries(source.values)) {
       checked += 1;
