@@ -42,6 +42,13 @@ jobs:
       # Tier 1.5: plugin.json <-> SKILL.md/package.json name+version consistency
       - if: steps.changes.outputs.ghostwriter == 'true'
         run: python tools/lint_plugin.py skills/ghostwriter
+      # Tier 1.6: this skill's brand block is a generated region owned by the
+      # `press` skill. Fails if it was hand-edited, or if the tokens moved and
+      # nobody re-emitted — so drift is caught in the PR that causes it rather
+      # than whenever someone next happens to touch press. (Node is preinstalled
+      # on ubuntu-latest; press has no dependencies.)
+      - if: steps.changes.outputs.ghostwriter == 'true'
+        run: node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-card
       # Tier 2: lint the bash, test the Python at 100% coverage
       - if: steps.changes.outputs.ghostwriter == 'true'
         run: pip install -r requirements-dev.txt

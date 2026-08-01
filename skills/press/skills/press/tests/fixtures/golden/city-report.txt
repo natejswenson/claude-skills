@@ -1,0 +1,91 @@
+import copy
+import json
+import os
+from pathlib import Path
+
+_BRAND_FILE_ENV = "CITY_REPORT_BRAND_FILE"
+
+DEFAULT_THEME: dict = {
+    "name": "press",
+    "colors": {
+        # Warm cream. Flat — never gradiented, never textured.
+        "paper": "#F5F0E6",
+        # One step down from paper, for a panel that must separate from the
+        # page without a border. Still flat.
+        "paper_surface": "#ECE5D6",
+        # Two steps down. The deepest paper tone; below this, use an ink rule
+        # instead.
+        "paper_elevated": "#E4DCCA",
+        # Near-black. Text, headlines, and every structural rule.
+        "ink": "#181510",
+        # Muted secondary text; the serif commentary voice's color.
+        "dim": "#6E675C",
+        # THE one loud color. Spent once or twice per document, never as
+        # decoration.
+        "accent": "#E8501F",
+        # Rules are ink, named separately so an override can soften them
+        # without touching text color.
+        "rule": "#181510",
+        # Mid ink step: a second series, a stacked-bar segment, a bar track.
+        "ink_mid": "#4A423A",
+        # Decorative only — a faint element inside an illustration. Never body
+        # text, never a headline.
+        "ink_faint": "#8A8272",
+    },
+    "fonts": {
+        # Display/structure voice, set 800-900 with tight tracking by the CSS.
+        "display_stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif",
+        # Commentary voice: serif italics for standfirsts and captions.
+        "serif_stack": "'New York', ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif",
+        # Data voice: labels, dates, tables, provenance.
+        "mono_stack": "ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace",
+    },
+    "identity": {
+        # Typographic stamp (rotated square, accent border + initials).
+        "stamp": "NS",
+        # Masthead eyebrow, tracked caps: "{brand_line} · CITY PROFILE · date".
+        "brand_line": "DATA USA",
+        # Right-aligned dim byline in the masthead.
+        "byline": "datausa.io · US Census ACS",
+    },
+}
+
+#: Sequential fill steps, dark to light. Capped at three because the lighter
+#: extensions of this ramp drop under 3:1 against paper. Encodes magnitude
+#: only, never identity — see the brand laws on fills.
+FILL_STEPS = ("#181510", "#4A423A", "#6E675C")
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Recursively merge ``override`` into a copy of ``base``.
+
+    Non-dict values replace; unknown keys are kept, so a brand file written
+    against a newer default still loads against an older one.
+    """
+    out = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = _deep_merge(out[key], value)
+        else:
+            out[key] = copy.deepcopy(value)
+    return out
+
+
+def load_theme() -> dict:
+    """The active theme: ``DEFAULT_THEME`` merged with ``CITY_REPORT_BRAND_FILE``.
+
+    Read per render rather than cached, so editing the brand file takes effect
+    on the next render without restarting anything. A missing or broken brand
+    file must never break a render, so any load error falls back to the
+    default.
+    """
+    theme = copy.deepcopy(DEFAULT_THEME)
+    brand_file = os.environ.get(_BRAND_FILE_ENV)
+    if brand_file:
+        try:
+            override = json.loads(Path(brand_file).expanduser().read_text(encoding="utf-8"))
+            if isinstance(override, dict):
+                theme = _deep_merge(theme, override)
+        except (OSError, ValueError):
+            pass
+    return theme

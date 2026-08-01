@@ -1,0 +1,73 @@
+{
+  "comment": "Prose guardrails in SKILL.md that must survive edits, plus the baseline eval declaration. Each prose pattern is a case-insensitive regex tested against the full SKILL.md text by tests/skill-contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
+  "prose": [
+    {
+      "id": "never-write-a-value-by-hand",
+      "pattern": "Never write a brand value into a file by hand",
+      "rationale": "The entire skill exists because copying values by hand produced eight divergent copies. Losing this line reopens exactly the failure mode press was built to close."
+    },
+    {
+      "id": "add-to-tokens-never-invent-locally",
+      "pattern": "add it to `brand/tokens\\.json` and re-emit\\. Never invent one locally",
+      "rationale": "Three genuinely-shared tokens (ink_faint, the terminal quartet, two paper steps) were found undeclared during the first migration precisely because consumers invented values locally. The escape hatch has to point back to tokens.json."
+    },
+    {
+      "id": "check-fails-on-three-things",
+      "pattern": "gone missing.{0,400}resolved \\*\\*zero\\*\\* targets",
+      "rationale": "A gate that only detects byte drift silently passes when a region is deleted or when nothing resolved. Those two are the ways this check turns decorative, so they must stay named in the contract."
+    },
+    {
+      "id": "never-generate-a-whole-file",
+      "pattern": "Never generate a whole file",
+      "rationale": "Whole-file generation clobbered ghostwriter's personal avatar footer once already. Region splicing is the load-bearing design decision, not a style preference."
+    },
+    {
+      "id": "prose-contracts-spliced-not-referenced",
+      "pattern": "spliced \\*\\*into\\*\\* a consuming SKILL\\.md",
+      "rationale": "A consuming skill is a separately installed plugin and cannot read this skill's files at runtime. If this degrades into 'reference the press docs', the agent-UI and voice contracts silently stop applying."
+    },
+    {
+      "id": "medium-voice-wins-on-conflict",
+      "pattern": "wins on conflict",
+      "rationale": "ghostwriter's learned voice and devlog's release-note shape are personal, per-medium, and higher-signal than the universal floor. Without this precedence rule, folding voice into press would degrade both."
+    },
+    {
+      "id": "npx-must-pin-latest",
+      "pattern": "Always pin `@latest`",
+      "rationale": "A bare npx invocation silently prefers a stale global install over the registry. This exact failure cost this repo a release with shipflow; the same trap applies verbatim to press."
+    },
+    {
+      "id": "look-at-the-artifact",
+      "pattern": "Re-render one real artifact per affected medium and \\*\\*look at it\\*\\*",
+      "rationale": "A token change is the one edit that touches every product at once, and no test asserts taste. The visual confirmation step is the only thing standing between a one-character edit and shipping it everywhere."
+    }
+  ],
+  "baseline": [
+    {
+      "id": "pre-migration-value-snapshot",
+      "kind": "golden",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": ["tests/fixtures/pre-migration-values.json"],
+      "update_command": "node tests/fixtures/update-pre-migration.mjs",
+      "rationale": "A frozen snapshot of every brand value as it actually existed in eight files across four repos (claude-skills, budget, local-fitness, natejswenson.io) before press generated any of them. This is the migration's no-op proof: whatever press emits must still carry those values, so a future token edit that silently changes a colour a shipped product depends on goes red instead of quietly re-rendering every artifact wrong. Pinned to a real past state, never synthesised. The paired negative assertion (deleting the accent from the known set must be detected) keeps the check from passing while the comparison rots, and a min_sources floor of 7 stops the fixture from shrinking to nothing and still reporting clean."
+    },
+    {
+      "id": "emitted-region-goldens",
+      "kind": "golden",
+      "test": "tests/baseline.test.mjs",
+      "corpus_glob": "tests/fixtures/golden/*.txt",
+      "min_corpus": 8,
+      "update_command": "node tests/fixtures/update-pre-migration.mjs",
+      "rationale": "Byte-exact expected output for every registered target's region. Byte-exactness is correct here for the same reason it is for shipflow's rendered workflow: the region IS the contract, and one changed character is a change to a shipped artifact's appearance. min_corpus 8 is the anti-vacuity floor -- a glob that quietly matched nothing would otherwise report every target as passing. The paired negative assertion bends one token and requires the comparison to notice."
+    },
+    {
+      "id": "shipped-stylesheets-lint-clean",
+      "kind": "corpus",
+      "test": "tests/lint.test.mjs",
+      "corpus_glob": "../../../*/skills/*/assets/**/press.css",
+      "min_corpus": 1,
+      "update_command": "node bin/press.js lint <file> --raster",
+      "rationale": "The brand lint is run against the stylesheets this repo actually ships, so a rule strict enough to reject work already published fails here rather than in a release. This caught a real over-strict rule on its first run: the 0.10em tracking ceiling exists to protect PDF text extraction, and the ghostwriter card set legitimately runs its eyebrow at .16em because a rasterised card's text is never extracted -- the rule was scoped to extractable documents instead of the corpus being waived. Every rule is two-sided: the real corpus passes and a targeted mutation of it fails."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+:root {
+  --paper:  #F5F0E6;
+  --ink:    #181510;
+  --dim:    #6E675C;
+  --sig:    #E8501F;
+  --hair:   rgba(24, 21, 16, 0.18);
+  --font:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --serif:  'New York', ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --mono:   ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}
