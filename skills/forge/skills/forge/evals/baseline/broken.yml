@@ -1,0 +1,33 @@
+name: Deliberately broken
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. nonexistent action / bogus ref
+      - uses: actions/checkout@v99
+      # 2. hallucinated action that does not exist at all
+      - uses: actions/setup-nodejs@v4
+      # 3. real action, misspelled input
+      - uses: actions/setup-node@v4
+        with:
+          node_version: 22
+      # 4. script injection from attacker-controlled context
+      - run: echo "title is ${{ github.event.pull_request.title }}"
+      # 5. shell error
+      - run: |
+          if [ -z "$FOO" ]
+            echo unterminated
+      # 6. bad expression / unknown context
+      - run: echo ok
+        if: ${{ github.evnt_name == 'push' }}
+      # 7. reference to a job that does not exist
+  b:
+    needs: [nope]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+      # 8. output set the dead way
+      - run: echo "::set-output name=x::1"

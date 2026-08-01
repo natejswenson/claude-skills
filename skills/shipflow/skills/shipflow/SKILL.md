@@ -62,7 +62,31 @@ user; the CLI is the only thing that *does*.
 
 4. **Confirm branch names and required checks with the user.** Show `workflows.jobNames` from the detect output as candidate `requiredChecks` (this list is already filtered to jobs from workflows that actually trigger on `pull_request` — a job that only runs on `schedule`/`workflow_dispatch` can never satisfy a required check, so it's never offered as a candidate) and let the user confirm/edit the list. **An empty `requiredChecks` list is a fail-open state, not a valid steady state** — `shipflow apply` will hard-refuse to enable auto-merge with zero required checks (see Error handling below). Don't let the user skip this without understanding that consequence.
 
-   **If the candidate list is empty, offer to scaffold a starter CI workflow yourself** — this is a judgment call for the agent, not something shipflow's CLI does (the CLI stays free of per-language/build-tool logic). Investigate the repo directly (`package.json`, `Cargo.toml`, `project.yml`/`.xcodeproj`, `go.mod`, `pyproject.toml`, or whatever's actually there) and draft a minimal, conservative `pull_request`-triggered build+test workflow. **Never silently overwrite an existing workflow file.** Present the drafted YAML to the user and wait for explicit confirmation before writing it — the same confirm-before-write pattern as everything else in this skill. Say plainly that this is a best-effort starting point inferred from repo structure, not a guarantee it's green on the first run — a required check that never passes blocks every future merge, so the user should watch it actually run successfully before relying on it as a required check. Once it exists, re-run step 1's `detect` (repo state changed) and continue this step with the new job name as a real candidate.
+   **If the candidate list is empty, a CI workflow has to exist before auto-merge
+   can be enabled. Hand that job to the `forge` skill** — authoring and *verifying*
+   workflow YAML is its whole subject, and it does things shipflow never will:
+   it resolves every action ref against the real API (no linter checks that an
+   action exists), validates each `with:` key against the action's own
+   `action.yml`, reports how many majors behind each pin is, and runs actionlint
+   and zizmor before showing you anything. Two skills answering "scaffold me a CI
+   workflow" differently is worse than either answer.
+
+   > Use the forge skill to create a `pull_request`-triggered build+test workflow
+   > for this repo, then come back here with the job name.
+
+   **If forge is not installed**, draft it here instead: investigate the repo
+   directly (`package.json`, `Cargo.toml`, `project.yml`/`.xcodeproj`, `go.mod`,
+   `pyproject.toml`, or whatever's actually there) and write a minimal,
+   conservative `pull_request`-triggered build+test workflow.
+   **Never silently overwrite an existing workflow file.** Present it and wait for
+   explicit confirmation before writing it — the same confirm-before-write pattern
+   as everything else in this skill.
+
+   Either way, say plainly that a fresh workflow is a starting point, not a
+   guarantee it's green on the first run — **a required check that never passes
+   blocks every future merge**, so the user should watch it run successfully
+   before relying on it as one. Once it exists, re-run step 1's `detect` (repo
+   state changed) and continue this step with the new job name as a real candidate.
 
 5. **Resolve `protectionOwner`:**
    - `"external"` → tell the user which settings-as-code artifact was found (`settingsAsCodeArtifact` in the detect output) and that shipflow will defer to it, managing only cleanup/automerge/release, not installing a competing ruleset.
