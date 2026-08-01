@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.8.0
+version: 0.8.1
 ---
 
 # /press — the brand system
