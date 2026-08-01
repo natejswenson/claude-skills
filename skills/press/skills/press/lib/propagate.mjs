@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { emitBody } from './emit.mjs';
-import { findRegion, spliceRegion } from './region.mjs';
+import { findRegion, initRegion, spliceRegion } from './region.mjs';
 import { selectTargets, targetPath } from './targets.mjs';
 
 /** The npm reference consumers pin in CI, e.g. `@natjswenson/press@0.3.0`. */
@@ -47,7 +47,32 @@ export function propagate({ tokens, targets, root, version, dryRun = false }) {
     const before = readFileSync(path, 'utf8');
     const found = findRegion(before, target.region, target.syntax);
     if (!found) {
-      regions.push({ id: target.id, path: target.path, status: 'missing' });
+      // A newly declared target has no region in the consumer yet, and that
+      // consumer's `check` starts failing the moment its pin reaches the
+      // release that declares it. So the PR that raises the pin must also
+      // create the region — the two are one change, not two.
+      //
+      // This is not "silently creating": it lands in a reviewed pull request
+      // alongside the pin bump. A region that was deliberately DELETED is a
+      // different case, and one this cannot distinguish, which is why the
+      // target must declare an `init` anchor to be seedable at all.
+      if (!target.init) {
+        regions.push({ id: target.id, path: target.path, status: 'missing' });
+        continue;
+      }
+      const body = emitBody(tokens, target.emitter, target.params ?? {}, { version });
+      if (!dryRun) {
+        writeFileSync(path, initRegion(before, target.region, target.syntax, body, version, target.init), 'utf8');
+      }
+      regions.push({
+        id: target.id,
+        path: target.path,
+        changed: true,
+        brandChanged: false,
+        versionChanged: true,
+        status: dryRun ? 'would seed' : 'seeded',
+        wroteBy: null,
+      });
       continue;
     }
     const body = emitBody(tokens, target.emitter, target.params ?? {}, { version });
