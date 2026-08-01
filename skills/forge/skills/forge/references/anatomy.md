@@ -81,6 +81,44 @@ survives, and `forge verify` reads it to report staleness.
 | job `name:` | matches the id unless a matrix needs interpolation | **this string is the required-check context — renaming it silently un-requires the check** |
 | step `name:` | omitted when the `run:` is self-evident | a name that restates the command is noise |
 
+## How to emit the YAML itself
+
+Four rules about the *bytes*, each of which produces a workflow that looks fine
+and behaves wrong.
+
+**Always emit `run:` as a block scalar (`|`), never a bare scalar.** A bare
+scalar containing `": "` is a YAML parse error:
+
+```yaml
+- run: curl -H "Authorization: Bearer $TOKEN" https://example.com   # ✗ won't parse
+```
+
+That single line is worse than it looks: actionlint's parse errors are fatal
+*per file*, so one of these hides every other finding in the whole workflow.
+
+**Never use `>` for a multi-command script.** It folds newlines into spaces, so
+
+```yaml
+run: >
+  npm ci
+  npm test          # ✗ silently runs `npm ci npm test`
+```
+
+`|` is what you want essentially always. `>-` is fine for one long command split
+across lines.
+
+**Quote every version string.** YAML 1.1 reads unquoted `1.20` as the float
+`1.2`, so `go-version: 1.20` installs Go 1.2 and `python-version: 3.10` installs
+3.1. Same family as the Norway problem (`NO` → `false`).
+
+```yaml
+node-version: 20.10     # ✗ becomes 20.1
+node-version: "20.10"   # ✓
+```
+
+**Single-quote any scalar containing `${{` that also contains `:`, `#`, `{`,
+`[`, `,` or `*`.** `name: ${{ github.actor }}: build` breaks the mapping.
+
 ## The masthead
 
 Never hand-written. `forge header <file> --purpose "…"` splices it; the brand

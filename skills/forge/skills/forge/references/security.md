@@ -56,6 +56,22 @@ the isolation is structural, not a policy you can misconfigure.
 If you use `pull_request_target`, **never check out the PR head.** A workflow that
 labels, triages or comments does not need the code.
 
+### Never emit `allow-unsafe-pr-checkout`
+
+`actions/checkout` v7 **refuses by default** to check out a fork PR head under
+`pull_request_target` or `workflow_run`, and the escape hatch is deliberately
+named to be obvious in review. Two consequences:
+
+- **Never generate `allow-unsafe-pr-checkout: true`.** If a requested workflow
+  seems to need it, that is the signal to restructure into the `workflow_run`
+  split below — not to add the flag.
+- If upgrading a repo to checkout v7 makes a workflow start failing on fork PRs,
+  checkout is telling you that workflow was exploitable. Fix the workflow; do not
+  pin back to v6.
+
+The protection covers fork PR refs only. It does **not** cover `git fetch`,
+`gh pr checkout`, an unrelated third-party repo, or running a downloaded artifact.
+
 ### The safe replacement — the two-workflow `workflow_run` split
 
 This is the correct default when a fork PR genuinely needs a write token. The

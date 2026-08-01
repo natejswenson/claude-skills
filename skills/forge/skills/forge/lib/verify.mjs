@@ -24,6 +24,8 @@ import { inspectUses } from './resolve.mjs';
 
 const exec = promisify(execFile);
 
+export class VerifyError extends Error {}
+
 /** Every `uses:` in a workflow, with its `with:` keys and line number. */
 export function collectUses(text) {
   const lines = text.split('\n');
@@ -139,6 +141,10 @@ export async function runZizmor(files) {
     if (err.code === 14 && typeof err.stdout === 'string') {
       return { ran: true, findings: parseZizmor(err.stdout) };
     }
+    // 3 means zizmor collected no inputs at all — a vacuous run, not a clean one.
+    if (err.code === 3) {
+      return { ran: false, reason: 'zizmor collected zero inputs — it audited nothing' };
+    }
     return { ran: false, reason: (err.stderr || err.message).trim().split('\n')[0] };
   }
 }
@@ -174,6 +180,12 @@ const BLOCKING = new Set(['High', 'Medium']);
  * low-confidence notes, which are advisory by that tool's own model.
  */
 export async function verify(files, texts) {
+  // Anti-vacuity, and not theoretical: with no files, bare `actionlint`
+  // auto-discovers `.github/workflows` and would lint something the caller never
+  // asked about, then report clean. A checker that verifies nothing must go red.
+  if (files.length === 0) {
+    throw new VerifyError('verify resolved zero files — that is a failure, not a pass');
+  }
   const cache = new Map();
   const refs = [];
   for (const text of texts) refs.push(...(await verifyRefs(text, cache)));

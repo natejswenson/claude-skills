@@ -129,3 +129,13 @@ test('the masthead is entirely comment lines, so a workflow still parses', async
   const bare = block.split('\n').filter((l) => !l.startsWith('#'));
   assert.deepEqual(bare, [], 'a non-comment line would be spliced into the YAML document');
 });
+
+/**
+ * The gate must refuse to pass on nothing. With no files, bare `actionlint`
+ * auto-discovers `.github/workflows` and would report clean about workflows the
+ * caller never named — the exact way a checker turns decorative.
+ */
+test('verify refuses to run against zero files', async () => {
+  const { verify, VerifyError } = await import('../lib/verify.mjs');
+  await assert.rejects(() => verify([], []), VerifyError);
+});

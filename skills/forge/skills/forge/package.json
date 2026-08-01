@@ -1,7 +1,7 @@
 {
   "name": "@natjswenson/forge",
   "version": "0.1.0",
-  "description": "Generate GitHub Actions workflows that are verified, not hoped for — refs resolved to pinned SHAs, actionlint and zizmor clean, in one second",
+  "description": "Generate GitHub Actions workflows that are verified, not hoped for \u2014 refs resolved to pinned SHAs, actionlint and zizmor clean, in one second",
   "license": "MIT",
   "author": "Nate Swenson",
   "homepage": "https://github.com/natejswenson/claude-skills",
@@ -39,13 +39,11 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "@natjswenson/press": "^0.8.0"
-  },
   "scripts": {
     "test": "node --test \"tests/**/*.test.mjs\"",
     "audit": "npm audit --audit-level=moderate",
     "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
     "postpack": "rm -f README.md LICENSE CHANGELOG.md"
-  }
+  },
+  "_dependencies_comment": "No npm dependency on @natjswenson/press yet, deliberately. lib/header.mjs resolves press from the in-repo checkout first and falls back to node_modules, and forge is not published in 0.1.0 (see CHANGELOG) \u2014 so declaring ^0.8.0 only broke `npm install` in CI against a version that does not exist on the registry until press 0.8.0 actually releases. Add the real dependency in the same change that turns npm-publish on."
 }
