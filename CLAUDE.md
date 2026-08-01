@@ -10,6 +10,8 @@ read it before opening any PR.
 - **Never PR a feature branch straight into `main`.** The only path to `main` is a `dev → main`
   promotion PR. Feature work goes `feature/* → dev`, then `dev → main`. (If a feature PR is
   accidentally opened against `main`, retarget its base to `dev`: `gh pr edit <n> --base dev`.)
+  A stacked PR layer targets the layer below it and the *bottom* of the stack targets `dev` —
+  so `gh stack init` always takes `--base dev`, never the default `main` (see Stacked PRs).
 - **Never push directly to `main`.** It is protected; every `ci / <skill>` check must pass and
   a PR is required. `dev` is unprotected — direct pushes there are fine.
 - **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
@@ -31,6 +33,15 @@ read it before opening any PR.
 feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ··· release tags cut manually
 ```
 
+Work that splits into reviewable layers stacks instead of landing as one wide PR (see
+Stacked PRs, below). The bottom of a stack targets `dev`; each layer above targets the
+layer below it:
+
+```
+feature/c ──PR──▶ feature/b ──PR──▶ feature/a ──PR──▶ dev ──▶ main
+   └ each PR's diff is only that layer's changes
+```
+
 - **`main`** — default + protected release branch. Required: a PR, every `ci / <skill>` check
   green, no force-push, no deletion. **0 required approvals** (solo maintainer self-merges).
   **`enforce_admins: false`** — the admin keeps a direct-push break-glass path; protection is a
@@ -43,6 +54,47 @@ feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ·�
   ever auto-removed since `dev`/`main` are deletion-protected.
 - Merge style: **merge commit** for `dev → main` (keeps `dev` and `main` linked so `dev` never
   diverges and needs no reset). Feature → `dev` is typically squashed for a clean integration commit.
+
+## Stacked PRs
+
+Native GitHub stacked PRs via the `gh stack` extension (`gh extension install github/gh-stack`,
+needs `gh` ≥ 2.0). **This is the expected shape for work that splits into layers** — a `tools/`
+change plus the skills consuming it, a refactor plus the feature built on it, a workflow fix plus
+the docs describing it. Each layer gets its own PR whose diff is only that layer, so it can be
+reviewed and CI'd alone. A single-layer change is still just `feature/* → dev`; don't stack for
+the sake of it.
+
+```sh
+gh stack init --base dev feature/first-layer   # --base dev is MANDATORY, see below
+# ...commit...
+gh stack add feature/second-layer              # ...commit...
+gh stack submit                                # pushes all branches, opens the PRs, links the stack
+gh stack view                                  # see the stack; `up`/`down`/`top`/`bottom` navigate
+```
+
+Four things that actually bite:
+
+- **Always pass `--base dev` to `gh stack init`.** The repo's *default* branch is `main`, and
+  `gh stack` roots a stack on the default branch unless told otherwise. Omitting `--base` silently
+  builds a stack whose bottom PR targets `main` — a direct violation of the first golden rule.
+- **Land a stack with `gh stack merge`, not layer by layer.** Feature → `dev` is squash
+  (`shipflow.json` `featureToDevMethod`), which rewrites the bottom layer's commits; merging one
+  layer at a time therefore forces a `gh stack sync` before the next layer's diff is clean again.
+  `gh stack merge --yes --squash` lands the whole stack all-or-nothing in one squash per layer and
+  avoids that entirely. Keeping squash is deliberate — the friction is a merge-order problem, not
+  a merge-method problem.
+- **Every layer gets its own `ci / <skill>` checks, and none of them are required.** `dev` is
+  push-open with zero required checks, so a red layer will still merge. Read the checks; they will
+  not stop you. This works only because each caller's `pull_request` trigger lists `feature/**` as
+  a base — **a stacked layer's base is the branch below it, not `dev`, so dropping `feature/**`
+  from any caller silently gives that skill no checks at all on stacked work.**
+- **Cleanup is the existing rule, not a new one.** `delete_branch_on_merge` removes merged layer
+  heads on the remote and GitHub auto-retargets the next PR onto `dev`; `gh stack sync --prune`
+  clears the locals. Feature branches still get deleted as soon as they merge, local *and* remote.
+
+Stacks never target `main`: promotion stays a single `dev → main` PR, and
+`dev-to-main-automerge.yml` guards on `head.ref == 'dev'`, so stacked PRs cannot trip the
+promotion or release automation. Stack metadata lives in `.git/gh-stack` and is not committed.
 
 ## Shipflow-managed automation
 
