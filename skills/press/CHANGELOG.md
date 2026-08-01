@@ -5,6 +5,22 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-08-01
+
+### Fixed
+
+- **The propagate workflow could never fire on a release.** It triggered on
+  `push: tags: [press-v*]`, but the release tag is created by `_release.yml`
+  using the repository's `GITHUB_TOKEN`, and GitHub does not start new workflow
+  runs for events created with that token. The trigger looked correct and
+  executed exactly zero times — confirmed on the 0.4.0 release, which tagged and
+  published with no propagate run at all.
+
+  The release path now calls the workflow directly (`workflow_call` from
+  `press.yml`'s `propagate` job, `needs: release`), which runs in the same chain
+  and is not subject to that restriction. The weekly schedule and manual
+  dispatch were always unaffected.
+
 ## [0.4.0] - 2026-08-01
 
 Closes the propagation gap: a pinned check can tell you a consumer is intact,
@@ -167,6 +183,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.4.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.1
 [0.4.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.0
 [0.3.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.3.0
 [0.2.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.2.0
