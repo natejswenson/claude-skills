@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/press",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "One brand system — tokens, laws, run presentation and voice core — generated into every consumer with a CI drift gate",
   "license": "MIT",
   "author": "Nate Swenson",
