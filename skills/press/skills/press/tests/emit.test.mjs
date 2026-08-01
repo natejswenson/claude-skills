@@ -272,10 +272,19 @@ test('gha-header comments its own body, every line', () => {
   assert.deepEqual(bare, [], 'these lines would be spliced into the document as YAML, not comment');
 });
 
-test('a workflow carrying the header still parses as YAML', () => {
-  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
-  const doc = `${renderRegion('gha-header', 'yaml', body, '0.0.0')}
-name: CI
+/**
+ * The document must be unchanged by the header, as far as any YAML parser is
+ * concerned — every line the region adds is a comment, so stripping the block
+ * returns the original bytes exactly.
+ *
+ * This deliberately uses no YAML parser. The first version shelled out to
+ * `python3 -c "import yaml"`, which passed locally and failed in CI with
+ * `ModuleNotFoundError: No module named 'yaml'` — PyYAML is not on the runner.
+ * A test that depends on a module nobody declared is a test that gates nothing
+ * on the machine that matters.
+ */
+test('splicing the header leaves the workflow document byte-identical', () => {
+  const workflow = `name: CI
 on:
   pull_request:
     branches: [main]
@@ -285,12 +294,14 @@ jobs:
     steps:
       - run: npm test
 `;
-  const probe = 'import sys,yaml,json;print(json.dumps(sorted(str(k) for k in yaml.safe_load(sys.stdin).keys())))';
-  const out = execFileSync('python3', ['-c', probe], { input: doc, encoding: 'utf8' });
-  // `on` is YAML 1.1's boolean `true` — GitHub's own parser handles it; what
-  // matters here is that the document parses at all and the header contributed
-  // no keys of its own.
-  assert.deepEqual(JSON.parse(out), ['True', 'jobs', 'name']);
+  const body = emitBody(tokens, 'gha-header', GHA_PARAMS);
+  const doc = `${renderRegion('gha-header', 'yaml', body, '0.0.0')}\n${workflow}`;
+
+  const stripped = doc
+    .split('\n')
+    .filter((l) => !l.startsWith('#'))
+    .join('\n');
+  assert.equal(stripped, workflow, 'the header contributed a non-comment line');
 });
 
 test('gha-header carries the brand identity, so a token change reaches every workflow', () => {
