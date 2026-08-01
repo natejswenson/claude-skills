@@ -16,6 +16,7 @@ import { initRegion, spliceRegion, findRegion } from '../lib/region.mjs';
 import { loadTargets, repoRoot, selectTargets, targetPath } from '../lib/targets.mjs';
 import { checkAll, EXPLAIN } from '../lib/check.mjs';
 import { lintText } from '../lib/lint.mjs';
+import { propagate } from '../lib/propagate.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
@@ -25,6 +26,7 @@ const USAGE = `press v${VERSION} — one brand, generated into every consumer.
   press emit  [--target <id>…] [--repo <path>] [--init] [--dry-run]
   press check [--target <id>…] [--repo <path>] [--json]
   press lint  <file…> [--accent-cap <n>] [--raster] [--waive <rule>…]
+  press propagate [--repo <path>] [--dry-run] [--json]
   press doctor [--repo <path>]
   press tokens [--format json|css|md]
 
@@ -65,6 +67,8 @@ function main(argv) {
       return cmdCheck({ tokens, root, values });
     case 'lint':
       return cmdLint({ tokens, files: positionals.slice(1), values });
+    case 'propagate':
+      return cmdPropagate({ tokens, root, values });
     case 'doctor':
       return cmdDoctor({ root, values });
     case 'tokens':
@@ -174,6 +178,35 @@ function cmdLint({ tokens, files, values }) {
 
   table(['File', 'Findings', 'Status'], rows);
   return findings === 0 ? 0 : 1;
+}
+
+function cmdPropagate({ tokens, root, values }) {
+  const report = propagate({
+    tokens,
+    targets: loadTargets(),
+    root,
+    version: VERSION,
+    dryRun: values['dry-run'],
+  });
+
+  if (values.json) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return 0;
+  }
+
+  if (report.regions.length === 0) {
+    return fail('no targets resolved under this repo — nothing to propagate');
+  }
+  table(['Target', 'File', 'Wrote by', 'Result'],
+    report.regions.map((r) => [r.id, r.path, r.wroteBy ?? '—', r.status]));
+  if (report.pins.length) {
+    table(['Workflow', 'Pinned', 'Now', 'Result'],
+      report.pins.map((p) => [p.file, p.from, p.to, p.status]));
+  }
+  process.stdout.write(report.changed
+    ? `\nThis repo is BEHIND — ${report.stale.join(', ')} changed. Commit and open a PR.\n`
+    : `\nAlready on press v${VERSION}; nothing to do.\n`);
+  return 0;
 }
 
 function cmdDoctor({ root, values }) {
