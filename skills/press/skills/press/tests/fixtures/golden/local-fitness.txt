@@ -37,11 +37,11 @@ DEFAULT_THEME: dict = {
     },
     "fonts": {
         # Display/structure voice, set 800-900 with tight tracking by the CSS.
-        "display_stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "display_stack": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif",
         # Commentary voice: serif italics for standfirsts and captions.
-        "serif_stack": "'New York', ui-serif, Georgia, 'Iowan Old Style', 'Times New Roman', serif",
+        "serif_stack": "'New York', ui-serif, Georgia, 'Times New Roman', serif",
         # Data voice: labels, dates, tables, provenance.
-        "mono_stack": "ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace",
+        "mono_stack": "ui-monospace, 'SF Mono', Menlo, monospace",
         # Point at a real TTF to load an authentic mono face via @font-face.
         "mono_file": None,
     },
