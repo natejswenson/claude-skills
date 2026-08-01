@@ -94,6 +94,14 @@ jobs:
             exit 0
           fi
 
+          # `gh` authenticates its own API calls from GH_TOKEN, but a plain
+          # `git push` does not — it has no credential helper and prompts for a
+          # username, which on a runner fails with "No such device or address".
+          # This wires gh in as git's credential helper for github.com. Without
+          # it every push fails while cloning and PR-listing still work, which
+          # is a confusing way to lose a fan-out.
+          gh auth setup-git
+
           failures=0
           for repo in $(echo "$REPOS" | jq -r '.[]'); do
             echo "::group::$repo"
@@ -185,8 +193,14 @@ jobs:
             echo "::endgroup::"
           done
 
-          # An unreachable consumer is a warning, never a failed release — the
-          # release already happened, and the weekly run retries.
+          # A failed consumer must FAIL this job. The release itself already
+          # happened and is untouched by this — but a fan-out that silently does
+          # nothing is worse than one that never ran, because the green tick says
+          # the brand reached everywhere when it reached nowhere. That is exactly
+          # what happened on 0.6.0: four pushes failed on missing git credentials
+          # and the run reported success.
           if [ "$failures" -ne 0 ]; then
-            echo "::warning::$failures consumer(s) could not be propagated; the weekly run will retry"
+            echo "::error::$failures of $(echo "$REPOS" | jq -r 'length') consumer(s) could not be propagated"
+            exit 1
           fi
+          echo "All consumers propagated or already current."
