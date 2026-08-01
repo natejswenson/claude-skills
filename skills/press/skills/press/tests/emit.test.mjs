@@ -227,3 +227,24 @@ test('python-consts rejects an unknown group and an empty spec', () => {
   assert.throws(() => emitBody(tokens, 'python-consts', { dicts: [{ name: 'X', group: 'nope' }] }), EmitError);
   assert.throws(() => emitBody(tokens, 'python-consts', {}), EmitError);
 });
+
+// --- version-badge --------------------------------------------------------
+// Without this, a repo's press version appears only in a CI pin and a comment
+// marker — neither of which anyone reads when landing on the repo.
+
+test('version-badge states the release it was emitted from', () => {
+  const body = emitBody(tokens, 'version-badge', {}, { version: '9.9.9' });
+  assert.match(body, /PRESS v9\.9\.9/);
+  assert.match(body, /press\/brand\/tokens\.json/, 'must say where to change values');
+});
+
+test('version-badge takes the version from run context, not target params', () => {
+  const a = emitBody(tokens, 'version-badge', {}, { version: '1.0.0' });
+  const b = emitBody(tokens, 'version-badge', {}, { version: '2.0.0' });
+  assert.notEqual(a, b, 'a new release must change the badge, or it can never go stale-detected');
+});
+
+test('version-badge describes what this consumer generates', () => {
+  const body = emitBody(tokens, 'version-badge', { what: 'The tiles' }, { version: '1.0.0' });
+  assert.match(body, /The tiles are generated/);
+});

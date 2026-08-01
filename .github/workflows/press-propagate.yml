@@ -112,22 +112,25 @@ jobs:
               continue
             fi
 
-            # Target the INTEGRATION branch, not the default branch. Every
-            # consumer here runs feature -> dev -> main, so a PR opened straight
-            # into main would violate its own flow — and worse, the default
-            # branch can legitimately lag: the first dry run reported budget and
-            # local-fitness as "missing" simply because their migration was
-            # still sitting on dev.
-            base=$(cd "$work" && git rev-parse --verify --quiet origin/dev >/dev/null \
-              && echo dev \
-              || gh repo view "$OWNER/$repo" --json defaultBranchRef --jq .defaultBranchRef.name)
-            (cd "$work" && git checkout -q "$base")
-            echo "  base branch: $base"
+            # Propagate to EVERY long-lived branch that carries the brand, not
+            # just one. Landing on `dev` alone leaves `main` — the branch that
+            # actually ships — stale until someone remembers to promote, and
+            # makes the next promotion carry an unrelated brand diff.
+            default=$(gh repo view "$OWNER/$repo" --json defaultBranchRef --jq .defaultBranchRef.name)
+            branches="$default"
+            if (cd "$work" && git rev-parse --verify --quiet origin/dev >/dev/null); then
+              branches="dev $default"
+            fi
+            echo "  branches: $branches"
 
+            for base in $branches; do
+            echo "  --- $base ---"
+            (cd "$work" && git checkout -q -- . && git checkout -q "$base") || {
+              echo "::warning::could not check out $base in $repo"; continue
+            }
             summary=$(node "$press" propagate --repo "$work" --json --dry-run) || {
-              echo "::warning::propagate failed for $repo"
+              echo "::warning::propagate failed for $repo@$base"
               failures=$((failures + 1))
-              echo "::endgroup::"
               continue
             }
             echo "$summary" | jq -r '.regions[] | "  \(.id): \(.status)"'
@@ -147,17 +150,15 @@ jobs:
 
             if [ "$changed" != "true" ]; then
               echo "  already current — no PR"
-              echo "::endgroup::"
               continue
             fi
             if [ "$DRY_RUN" = "true" ]; then
-              echo "  WOULD open a PR (dry run)"
-              echo "::endgroup::"
+              echo "  WOULD open a PR into $base (dry run)"
               continue
             fi
 
             node "$press" propagate --repo "$work" >/dev/null
-            branch="press/brand-v$version"
+            branch="press/brand-v$version-$base"
 
             # Message bodies are written to files rather than inlined, so no line
             # of prose has to sit at a column YAML would read as ending the block.
@@ -190,6 +191,7 @@ jobs:
                 --body-file .press-body.md \
                 || echo "::warning::PR creation failed for $repo (one may already be open)"
             ) || failures=$((failures + 1))
+            done
             echo "::endgroup::"
           done
 
