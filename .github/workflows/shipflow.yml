@@ -4,13 +4,16 @@ name: shipflow
 # - PR trigger is intentionally NOT path-filtered, so the `ci` check ALWAYS reports
 #   on every PR to dev/main (required-check + path-filter deadlock avoidance). The
 #   dorny/paths-filter step short-circuits the heavy steps when shipflow is unchanged.
+# - `feature/**` is in the PR base list so each layer of a stacked PR gets its own
+#   `ci / shipflow` run. Without it a stacked layer (whose base is the branch below
+#   it, not dev) would get NO checks at all. Keep it when editing this trigger.
 # - push trigger IS path-filtered, so the release job only attempts on relevant merges.
 on:
   push:
     branches: [main]
     paths: ["skills/shipflow/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/shipflow.yml"]
   pull_request:
-    branches: [dev, main]
+    branches: [dev, main, 'feature/**']
   workflow_dispatch:
 
 jobs:
