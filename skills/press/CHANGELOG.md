@@ -5,6 +5,18 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-08-01
+
+### Fixed
+
+- **Propagation targeted the default branch, not the integration branch.** Every
+  consumer runs `feature → dev → main`, so a PR opened straight into `main`
+  would violate its own flow. Worse, the default branch can legitimately lag:
+  the first real fan-out reported `budget` and `local-fitness` as *missing* only
+  because their migration was still sitting on `dev`. It now checks out `dev`
+  when the remote has one and falls back to the default branch otherwise.
+- The clone was `--depth=1`, which cannot see other branches. Full clone now.
+
 ## [0.5.0] - 2026-08-01
 
 The last hand-maintained copy of the brand is gone.
@@ -216,6 +228,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.5.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.1
 [0.5.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.0
 [0.4.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.1
 [0.4.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.0
