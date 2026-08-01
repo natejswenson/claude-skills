@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.4.1
+version: 0.5.0
 ---
 
 # /press — the brand system
@@ -161,7 +161,7 @@ node bin/press.js propagate --repo ../budget --dry-run
    the region takes over, so the duplicate is **swallowed**, not left behind.
 5. `node bin/press.js emit --target <id> --init`
 6. Add a `press check` step to that repo's CI, **pinned to an exact version**:
-   `npx -y @natjswenson/press@0.4.0 check --repo .`. Never write a bare
+   `npx -y @natjswenson/press@0.5.0 check --repo .`. Never write a bare
    `npx @natjswenson/press` — with no version reference at all, npx silently
    prefers a stale global install over the registry, which cost this repo a
    release once already. An exact pin also keeps a mutable dependency out of a

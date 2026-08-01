@@ -5,6 +5,39 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-01
+
+The last hand-maintained copy of the brand is gone.
+
+### Added
+
+- **`python-consts` emitter** — flat module constants plus optional dicts, for a
+  script that reads tokens as Python names rather than a theme dict. The profile
+  README's SVG build has no override file to deep-merge and no stylesheet, so
+  `python-theme` would be dead weight around four strings.
+- **`font_files`** — the vendorable faces, for engines that EMBED a font file
+  rather than resolving a CSS stack. Same type intent as `fonts.profiles`,
+  expressed where a stack is not an option: SF is not licensable, so Inter
+  stands in for the display voice and IBM Plex for serif and mono.
+
+### Changed
+
+- **Migrated `natejswenson/natejswenson`** (the GitHub profile README). Its
+  header named `natejswenson.io/src/styles/global.css` as canonical without
+  anything keeping it honest — the ninth copy, and the last one. Every value is
+  byte-identical; the only content change is the comment header becoming a
+  region marker.
+- That repo had **no CI at all**, so it gains a workflow running its existing
+  lint and 82 tests plus the brand check.
+
+### On verifying that migration
+
+Its SVG tiles embed subsetted WOFF2, and **font subsetting is not
+byte-reproducible** — rebuilding the untouched repo produced different base64
+payloads. A byte comparison would have failed constantly while proving nothing.
+Parity was verified by stripping the font payloads and comparing everything
+else: 7 of 7 SVGs and the generated README identical.
+
 ## [0.4.1] - 2026-08-01
 
 ### Fixed
@@ -183,6 +216,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.5.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.0
 [0.4.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.1
 [0.4.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.0
 [0.3.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.3.0
