@@ -5,6 +5,26 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-01
+
+### Changed
+
+- **A consumer's pin, its region receipt and the current release are now kept
+  equal.** Previously propagation acted only when generated *values* moved, so
+  a repo could show three different version numbers at once — natejswenson.io
+  read pin 0.2.0, receipt 0.1.0, latest 0.5.1 — and there was no way to tell a
+  healthy consumer from a stale one without knowing the rule. Every release now
+  opens a PR in every consumer.
+
+  What keeps that readable is that the PR says which kind it is: a **brand
+  change** (`press vX — BRAND VALUES CHANGED`) is reviewed as a design change,
+  while a **version-only adoption** (`adopt press vX`) is a one-line diff where
+  nothing renders differently. `propagate --json` reports the two separately as
+  `brand` and `stale`.
+
+  The trade is deliberate: a few no-op pull requests per release, in exchange
+  for state anyone can read at a glance.
+
 ## [0.5.1] - 2026-08-01
 
 ### Fixed
@@ -228,6 +248,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.6.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.0
 [0.5.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.1
 [0.5.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.0
 [0.4.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.4.1
