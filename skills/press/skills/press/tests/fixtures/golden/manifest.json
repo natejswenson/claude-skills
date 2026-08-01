@@ -18,6 +18,8 @@
     "resume-readme",
     "ghostwriter-readme",
     "ghostwriter-x-readme",
-    "devlog-readme"
+    "devlog-readme",
+    "forge-agent-ui",
+    "forge-readme"
   ]
 }

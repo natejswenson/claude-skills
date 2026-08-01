@@ -1,6 +1,6 @@
 {
   "name": "press",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "One brand system for everything: design tokens, the visual laws, the run-presentation contract and the voice core, generated into every consumer with a CI drift gate.",
   "author": {
     "name": "Nate Swenson"

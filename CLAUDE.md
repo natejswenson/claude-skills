@@ -254,6 +254,7 @@ below its own floor.
 | resume | a real tailored résumé × 28 real job postings | JD-keyword coverage ceasing to discriminate — i.e. every eval score becoming meaningless while still looking like a number |
 | devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
 | press | every brand value as it existed in 8 files across 4 repos *before* press generated any of them | a token edit silently changing a colour a shipped product depends on; a generated region drifting or vanishing |
+| forge | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -262,7 +263,9 @@ below its own floor.
 ## The brand is generated, never copied
 
 `skills/press/skills/press/brand/tokens.json` is the **only** place a brand value is written
-down — colours, the terminal-panel palette, font stacks, the monogram. Every consumer receives
+down — colours, the terminal-panel palette, font stacks, the monogram. Since press 0.8.0
+that includes the masthead every forge-generated GitHub Actions workflow wears, via the
+`yaml` region syntax and the `gha-header` emitter. Every consumer receives
 those values in a **generated region** spliced into an otherwise hand-written file:
 
 ```
@@ -306,7 +309,7 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / forge`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:

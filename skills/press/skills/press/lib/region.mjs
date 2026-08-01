@@ -17,6 +17,11 @@ import { createHash } from 'node:crypto';
 /** Comment syntaxes a region can be expressed in. */
 export const SYNTAXES = {
   python: { prefix: '# ', suffix: '' },
+  // Byte-identical to `python`, and deliberately a separate entry: a workflow
+  // file declaring `syntax: "python"` reads as a mistake to the next person
+  // editing targets.json, and the day a YAML-specific quirk appears there is
+  // nowhere to put it. The cost of the duplicate is three lines.
+  yaml: { prefix: '# ', suffix: '' },
   css: { prefix: '/* ', suffix: ' */' },
   md: { prefix: '<!-- ', suffix: ' -->' },
 };

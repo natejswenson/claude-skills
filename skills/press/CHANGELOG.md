@@ -5,6 +5,28 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-01
+
+### Added
+
+- **A `yaml` comment syntax.** Regions can now be spliced into GitHub Actions
+  workflow files. Byte-identical to `python` and deliberately a separate entry:
+  a workflow declaring `syntax: "python"` reads as a mistake to the next person
+  editing `targets.json`, and a YAML-specific quirk would have nowhere to live.
+- **A `gha-header` emitter** — the masthead a generated workflow wears. The
+  `.mast` component in the only medium a workflow has: heavy rule, stamp and
+  tracked-caps eyebrow, right-aligned byline, hair rule, purpose, provenance.
+  Rules rather than a box, per the component law. A long purpose wraps inside
+  the rule; a long title moves the byline to its own line rather than clipping
+  the one thing that line exists to show.
+
+  Two decisions worth keeping: it **comments its own body**, because every other
+  emitter returns code in the target's language and lets `renderRegion` comment
+  only the two markers — emitting a masthead bare splices box-drawing into the
+  document and yields YAML that cannot parse. And it carries **no verification
+  claim**: a frozen `actionlint ✓` would be a statement about the file below the
+  region, which the region's hash does not cover and a hand-edit invalidates.
+
 ## [0.7.2] - 2026-08-01
 
 ### Fixed
