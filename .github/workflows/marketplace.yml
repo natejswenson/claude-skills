@@ -15,7 +15,7 @@ name: marketplace
 # open and just silently un-requires).
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [dev, main, 'feature/**']
   workflow_dispatch:
 
 jobs:
