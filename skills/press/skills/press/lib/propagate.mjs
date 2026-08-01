@@ -88,7 +88,24 @@ export function propagate({ tokens, targets, root, version, dryRun = false }) {
     // produced three divergent version numbers per repo — pin, region receipt
     // and current release all disagreeing, with no way to tell a healthy
     // consumer from a stale one at a glance.
-    const brandChanged = found.body.replace(/\s+$/, '') !== body.replace(/\s+$/, '');
+    // Comparing the on-disk body against the NEW body is wrong for any emitter
+    // that embeds the version in its own output — `version-badge` writes
+    // "PRESS v0.7.2 — …" into the body, so a pure version bump moved those bytes
+    // and every consumer carrying a README badge was labelled BRAND VALUES
+    // CHANGED on every release. Observed on the 0.8.0 rollout: three of four
+    // consumers cried wolf; only the one target with no badge said "adopt".
+    // A title that is always loud is a title nobody reads, which defeats the
+    // whole point of having two of them.
+    //
+    // The right question is whether the bytes on disk are what TODAY's tokens
+    // would emit AT THE VERSION THE REGION RECORDS. If they are, no value moved
+    // and this is routine adoption, whatever the version substitution did.
+    const bodyAtRecorded = found.version
+      ? emitBody(tokens, target.emitter, target.params ?? {}, { version: found.version })
+      : null;
+    const brandChanged = bodyAtRecorded === null
+      ? found.body.replace(/\s+$/, '') !== body.replace(/\s+$/, '')
+      : found.body.replace(/\s+$/, '') !== bodyAtRecorded.replace(/\s+$/, '');
     const versionChanged = found.version !== version;
     const changed = brandChanged || versionChanged;
     if (changed && !dryRun) writeFileSync(path, after, 'utf8');

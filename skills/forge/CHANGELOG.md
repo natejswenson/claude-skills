@@ -35,6 +35,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   and both release from the same promotion with no ordering guarantee, so a forge
   tarball could reach the registry before the press version it requires. The skill
   runs from the plugin checkout, so nothing is lost by waiting.
+- **The masthead baseline pins the region BODY, not the whole block.** The block's
+  start marker carries press's version, so freezing it made every press release fail
+  forge's CI over a change that altered nothing forge emits — caught immediately, by
+  press 0.8.1. Same distinction press's own propagate classification draws: a version
+  bump is not a content change. Verified by running the suite against a synthetic
+  press 9.9.9.
 - `references/anatomy.md`, `recipes.md` and `security.md` — deliberately free of
   frozen version numbers, since published research puts the typical workflow 7+
   months behind and a hardcoded table rots from the day it ships.

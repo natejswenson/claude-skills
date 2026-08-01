@@ -5,6 +5,30 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-08-01
+
+### Fixed
+
+- **A version-only release no longer claims the brand values changed.** `propagate`
+  compared each region's on-disk body against the *new* body, which is wrong for any
+  emitter that writes the version into its own output — `version-badge` emits
+  "PRESS v0.7.2 — …", so a pure version bump moved those bytes and the pull request
+  was titled `BRAND VALUES CHANGED`.
+
+  Observed on the 0.8.0 rollout: three of four consumers cried wolf for a release in
+  which no token moved. Only `natejswenson`, the one target with no README badge, was
+  labelled correctly. A title that is always loud is a title nobody reads, which
+  defeats the entire point of having two of them.
+
+  The question is now whether the bytes on disk are what *today's* tokens would emit
+  **at the version the region records**. If they are, no value moved, whatever the
+  version substitution did. A real values change arriving in the same release as a
+  version bump is still flagged — that side is pinned by its own test.
+
+- **`targets.json` named the budget consumer `budget`; the repo is `local-budget`.**
+  Metadata only — selection is by file presence, so propagation still reached it — but
+  the registry is meant to be the readable answer to "where does the brand live".
+
 ## [0.8.0] - 2026-08-01
 
 ### Added
