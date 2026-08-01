@@ -9,7 +9,7 @@ on:
     branches: [main]
     paths: ["skills/ghostwriter-x/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/ghostwriter-x.yml"]
   pull_request:
-    branches: [dev, main]
+    branches: [dev, main, 'feature/**']
   workflow_dispatch:
 
 jobs:
