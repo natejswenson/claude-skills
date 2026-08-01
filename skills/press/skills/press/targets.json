@@ -260,7 +260,9 @@
         "logging": true,
         "extras": [
           "mono_file"
-        ]
+        ],
+        "font_profile": "fontconfig",
+        "byline": "linkedin.com/in/natejswenson"
       },
       "init": {
         "replaceFrom": "^import copy$",
