@@ -5,6 +5,22 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-01
+
+### Fixed
+
+- **Every propagate push failed on missing git credentials, and the job still
+  reported success.** `gh` authenticates its own API calls from `GH_TOKEN`, so
+  cloning and PR listing worked, but a plain `git push` has no credential helper
+  and fails with `could not read Username for 'https://github.com'`. All four
+  consumers failed this way on the 0.6.0 release. `gh auth setup-git` now wires
+  gh in as git's credential helper.
+- **A failed fan-out now fails the job.** Failures were a warning, on the
+  reasoning that the release had already happened and the weekly run would
+  retry. That was wrong: a fan-out that silently does nothing is worse than one
+  that never ran, because the green tick claims the brand reached everywhere
+  when it reached nowhere.
+
 ## [0.6.0] - 2026-08-01
 
 ### Changed
@@ -248,6 +264,7 @@ source of truth and a CI drift gate.
   rasterised cards, whose eyebrow legitimately runs at `.16em`. Scoped rather
   than waived, and caught by linting the real shipped corpus.
 
+[0.6.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.1
 [0.6.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.6.0
 [0.5.1]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.1
 [0.5.0]: https://github.com/natejswenson/claude-skills/releases/tag/press-v0.5.0
