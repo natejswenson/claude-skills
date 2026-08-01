@@ -1,0 +1,110 @@
+{
+  "$comment": "Frozen snapshot of every brand value as it existed in the wild BEFORE press generated any of it. This is the migration's no-op proof: whatever press emits must still carry these values. Extracted from real files, never hand-written. Refresh only when a value change is deliberate.",
+  "captured": "2026-07-31",
+  "min_sources": 7,
+  "update_command": "node tests/fixtures/update-pre-migration.mjs",
+  "sources": {
+    "city-report": {
+      "path": "skills/city-report/skills/city-report/scripts/brand.py",
+      "origin": "claude-skills@HEAD",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "accent": "#E8501F",
+        "rule": "#181510",
+        "ink_mid": "#4A423A"
+      }
+    },
+    "resume-theme": {
+      "path": "skills/resume/skills/resume/assets/themes/press.css",
+      "origin": "claude-skills@HEAD",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "sig": "#E8501F",
+        "hair": "rgba(24, 21, 16, 0.18)"
+      }
+    },
+    "ghostwriter-card": {
+      "path": "skills/ghostwriter/skills/ghostwriter/assets/diagram.css.example",
+      "origin": "claude-skills@HEAD",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "press-sig": "#E8501F",
+        "rule": "#181510"
+      }
+    },
+    "ghostwriter-x-card": {
+      "path": "skills/ghostwriter-x/skills/ghostwriter-x/assets/diagram.css.example",
+      "origin": "claude-skills@HEAD",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "press-sig": "#E8501F",
+        "rule": "#181510"
+      }
+    },
+    "devlog-palette": {
+      "path": "skills/devlog/skills/devlog/image-style/style-guide.example.md",
+      "origin": "claude-skills@HEAD",
+      "values": {
+        "hex0": "#F5F0E6",
+        "hex1": "#181510",
+        "hex2": "#6E675C",
+        "hex3": "#8A8272",
+        "hex4": "#E8501F",
+        "hex5": "#141A26",
+        "hex6": "#EFE9DC",
+        "hex7": "#8A8478",
+        "hex8": "#FF8A5C"
+      }
+    },
+    "budget": {
+      "path": "budget/src/local_budget/report/brand.py",
+      "origin": "budget repo, working tree",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "accent": "#E8501F",
+        "rule": "#181510",
+        "ink_mid": "#4A423A"
+      }
+    },
+    "local-fitness": {
+      "path": "local-fitness/src/local_fitness/agent/branding.py",
+      "origin": "local-fitness repo, working tree",
+      "values": {
+        "paper": "#F5F0E6",
+        "ink": "#181510",
+        "dim": "#6E675C",
+        "accent": "#E8501F",
+        "rule": "#181510"
+      }
+    },
+    "site-tokens": {
+      "path": "natejswenson.io/src/styles/global.css",
+      "origin": "natejswenson.io repo, working tree",
+      "values": {
+        "bg": "#F5F0E6",
+        "bg-surface": "#ECE5D6",
+        "bg-elevated": "#E4DCCA",
+        "fg": "#181510",
+        "fg-secondary": "#6E675C",
+        "fg-tertiary": "#8A8272",
+        "accent": "#E8501F",
+        "rule": "#181510",
+        "panel": "#141A26",
+        "panel-fg": "#EFE9DC",
+        "panel-dim": "#8A8478",
+        "panel-hot": "#FF8A5C",
+        "panel-bar": "#1E2738"
+      }
+    }
+  }
+}

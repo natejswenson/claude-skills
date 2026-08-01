@@ -1,0 +1,8 @@
+- **Paper** `#F5F0E6` — Warm cream. Flat — never gradiented, never textured.
+- **Ink** `#181510` — Near-black. Text, headlines, and every structural rule.
+- **Dim** `#6E675C` — Muted secondary text; the serif commentary voice's color.
+- **Accent** `#E8501F` — THE one loud color. Spent once or twice per document, never as decoration.
+- **Ink Mid** `#4A423A` — Mid ink step: a second series, a stacked-bar segment, a bar track.
+- **Ink Faint** `#8A8272` — Decorative only — a faint element inside an illustration. Never body text, never a headline.
+- **Terminal panel** (bg, text, dim, hot, prompt) `#141A26`, `#EFE9DC`, `#8A8478`, `#FF8A5C`, `#1E2738` — the one place the dark palette
+  survives, and only inside a terminal element. Never on paper.

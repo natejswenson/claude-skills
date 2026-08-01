@@ -1,0 +1,15 @@
+:root {
+  --bg:            #F5F0E6;
+  --bg-surface:    #ECE5D6;
+  --bg-elevated:   #E4DCCA;
+  --fg:            #181510;
+  --fg-secondary:  #6E675C;
+  --fg-tertiary:   #8A8272;
+  --accent:        #E8501F;
+  --rule:          #181510;
+  --panel:         #141A26;
+  --panel-fg:      #EFE9DC;
+  --panel-dim:     #8A8478;
+  --panel-hot:     #FF8A5C;
+  --panel-bar:     #1E2738;
+}
