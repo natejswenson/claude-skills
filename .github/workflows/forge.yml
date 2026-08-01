@@ -84,8 +84,11 @@ jobs:
     uses: ./.github/workflows/_release.yml
     with:
       skill: forge
-      npm-publish: true
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Deliberately NOT npm-publish. forge depends on @natjswenson/press ^0.8.0,
+      # and both release from the same promotion with no ordering guarantee — a
+      # forge tarball could reach npm before the press version it requires exists
+      # there, making it uninstallable. The skill runs `node bin/forge.js` from
+      # the plugin checkout anyway, so publishing buys nothing today. Turn this on
+      # once press 0.8.0 is on the registry.
     permissions:
       contents: write

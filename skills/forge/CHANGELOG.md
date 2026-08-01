@@ -31,6 +31,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `gha-header` emitter and `yaml` region syntax. The brand is generated, never
   copied; `check` re-derives it because `press check` walks a static registry and
   a generated workflow lives in a repo press has never heard of.
+- **Not published to npm in 0.1.0.** forge depends on `@natjswenson/press` ^0.8.0
+  and both release from the same promotion with no ordering guarantee, so a forge
+  tarball could reach the registry before the press version it requires. The skill
+  runs from the plugin checkout, so nothing is lost by waiting.
 - `references/anatomy.md`, `recipes.md` and `security.md` — deliberately free of
   frozen version numbers, since published research puts the typical workflow 7+
   months behind and a hardcoded table rots from the day it ships.
