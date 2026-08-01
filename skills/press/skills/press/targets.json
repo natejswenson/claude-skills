@@ -359,6 +359,45 @@
         "replaceFrom": "^:root \\{$",
         "replaceTo": "^\\}$"
       }
+    },
+    {
+      "id": "profile-readme",
+      "repo": "natejswenson",
+      "path": "build_svg.py",
+      "region": "tokens",
+      "syntax": "python",
+      "emitter": "python-consts",
+      "params": {
+        "consts": [
+          {
+            "name": "PAPER",
+            "token": "paper"
+          },
+          {
+            "name": "INK",
+            "token": "ink"
+          },
+          {
+            "name": "DIM",
+            "token": "dim"
+          },
+          {
+            "name": "ACCENT",
+            "token": "accent"
+          }
+        ],
+        "dicts": [
+          {
+            "name": "FACES",
+            "group": "fontFiles",
+            "key_style": "kebab"
+          }
+        ]
+      },
+      "init": {
+        "replaceFrom": "^# --- PRESS tokens",
+        "replaceTo": "^\\}$"
+      }
     }
   ]
 }

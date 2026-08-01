@@ -88,6 +88,7 @@ function resolve(raw) {
     ),
     defaultFontProfile: raw.fonts?.default_profile,
     identity: clean(raw.identity),
+    fontFiles: clean(raw.font_files),
     marks: clean(raw.marks),
     limits: clean(raw.limits),
     derived: { hair, hairAlpha, border, borderHover, accentDim, fillSteps },
