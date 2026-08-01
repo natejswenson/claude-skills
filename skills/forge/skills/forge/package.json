@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/forge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate GitHub Actions workflows that are verified, not hoped for \u2014 refs resolved to pinned SHAs, actionlint and zizmor clean, in one second",
   "license": "MIT",
   "author": "Nate Swenson",

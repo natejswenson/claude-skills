@@ -5,6 +5,23 @@ All notable changes to the **forge** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-01
+
+### Fixed
+
+- **zizmor findings below High silently dropped the entire security rung.** Only exit
+  code 14 was treated as "findings"; 11, 12 and 13 mean the same thing at lower
+  severities, so forge reported `zizmor unavailable` whenever nothing High was found.
+  A gate that goes quiet exactly when it has less to say is worse than one that fails
+  loudly. Found by running forge across this repo's own 13 workflows.
+- **Findings had no file attribution.** zizmor reports the path under
+  `locations[].symbolic`, not `concrete`, so a repo-wide run printed a wall of line
+  numbers with no way to act on them. The table now leads with the file.
+- **Line numbers were off by one.** `start_point.row` is 0-indexed; a finding on line 1
+  was reported as line 0.
+- `verify` no longer stutters "skipped — skipped —" when a rung is skipped with an
+  already-worded reason.
+
 ## [0.1.0] - 2026-08-01
 
 ### Added
