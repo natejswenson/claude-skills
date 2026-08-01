@@ -1,6 +1,6 @@
 {
   "name": "forge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate GitHub Actions workflows that are verified rather than hoped for — every action ref resolved to a real pinned SHA, actionlint and zizmor clean, staleness reported, before you ever see the YAML.",
   "author": { "name": "Nate Swenson" },
   "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/forge",
