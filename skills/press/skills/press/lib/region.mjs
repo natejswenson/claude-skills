@@ -153,7 +153,22 @@ export function initRegion(text, region, syntaxName, body, version, anchor = {})
     throw new RegionError(`file already has a press:${region} region — use emit without --init`);
   }
   const block = renderRegion(region, syntaxName, body, version);
-  const { replaceFrom, replaceTo } = anchor;
+  const { replaceFrom, replaceTo, insertAfter } = anchor;
+
+  // Seeding a brand-new region (a README badge) rather than taking over a
+  // hand-written block: place it after the first line matching `insertAfter`,
+  // usually the title, instead of appending to the bottom where nobody looks.
+  if (insertAfter) {
+    const lines = text.split('\n');
+    const re = new RegExp(insertAfter);
+    const at = lines.findIndex((l) => re.test(l));
+    if (at === -1) throw new RegionError(`anchor insertAfter /${insertAfter}/ matched no line`);
+    let i = at + 1;
+    while (i < lines.length && lines[i].trim() === '') i += 1;
+    lines.splice(i, 0, ...block.split('\n'), '');
+    return lines.join('\n');
+  }
+
   if (!replaceFrom) return `${text.replace(/\s+$/, '')}\n\n${block}\n`;
 
   const lines = text.split('\n');
