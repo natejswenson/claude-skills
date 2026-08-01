@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.3.0
+version: 0.4.0
 ---
 
 # /press — the brand system
@@ -79,6 +79,46 @@ nothing reports "all clean", which is exactly how a gate turns decorative.
 On failure it prints the diff and the exact `press emit` command that fixes it.
 Run that; do not hand-edit the region.
 
+## How a change reaches every product
+
+There are **two different questions**, and conflating them is what leaves a
+consumer silently stale.
+
+| | Question | Answered by | Runs |
+|---|---|---|---|
+| **Integrity** | does this region match the press version this repo adopted? | `press check` | inside each consumer, against a **pinned** version |
+| **Freshness** | has this repo adopted the **current** brand? | `press propagate` | from press, against a consumer's checkout |
+
+**A pinned check can never answer the second question** — it passes forever
+against the version it was pinned to. That is not a hypothetical: this skill's
+own site consumer sat two releases behind with entirely green CI.
+
+**Consumers pin on purpose.** A mutable `@latest` in a repo that auto-deploys to
+production is a supply-chain hole, and a reproducible check is the only kind
+worth gating a merge on. So freshness is **pushed from here** rather than polled
+by each consumer:
+
+```bash
+node bin/press.js propagate --repo ../budget --dry-run   # is it behind?
+node bin/press.js propagate --repo ../budget             # re-emit + bump its pin
+```
+
+`propagate` re-emits every region it resolves, bumps any
+`@natjswenson/press@<version>` pin it finds in that repo's workflows, and reports
+what moved. The caller turns that into a pull request, so nothing lands
+unreviewed — but nobody has to *remember*.
+
+Two rules keep it from becoming noise or a false negative:
+
+- **Content decides, not the version receipt.** A region written by 0.1.0 that
+  is still byte-correct under 0.3.0 is *current*. Opening a PR for it would be
+  noise.
+- **A stale pin alone is not "behind".** It changes no shipped artifact, so it
+  is bumped silently and never triggers a PR on its own.
+
+`.github/workflows/press-propagate.yml` runs this on every release and weekly,
+opening a PR in each consumer repo whose bytes actually moved.
+
 ## Changing a brand value
 
 This is the one operation that touches every product, so do it deliberately.
@@ -88,11 +128,15 @@ This is the one operation that touches every product, so do it deliberately.
 3. `node bin/press.js emit`, then run the affected skills' own test suites —
    a token change must not break anyone's baseline.
 4. Re-render one real artifact per affected medium and **look at it**.
-5. For repos outside this one, run `npx -y @natjswenson/press@latest emit
-   --repo <path>` in each. Always pin `@latest`: a bare `npx @natjswenson/press`
-   silently prefers a stale global install over the registry.
+5. Bump the version and add a `CHANGELOG.md` entry in the same change.
 
-Bump the version and add a `CHANGELOG.md` entry in the same change.
+**Repos outside this one need no manual step.** Releasing the version bump fires
+`press-propagate.yml`, which opens a PR in every consumer whose bytes actually
+moved. To see it early, dry-run against a local checkout:
+
+```bash
+node bin/press.js propagate --repo ../budget --dry-run
+```
 
 ## Onboarding a new consumer
 
@@ -108,10 +152,27 @@ Bump the version and add a `CHANGELOG.md` entry in the same change.
    | `markdown-block` | one of the brand docs, inlined into a SKILL.md |
    | `json` | raw values |
 
-3. Add an `init` anchor naming the first and last line of the hand-written block
+3. **Pick the font profile for its rendering engine.** `params.font_profile` is
+   `browser` by default. Anything going through **fontconfig — WeasyPrint above
+   all — must say `fontconfig`**, because it walks the fallback chain for real
+   and the browser chain resolves headlines to Helvetica Neue Heavy Condensed.
+   Survey the consumer's current stacks before you assume.
+4. Add an `init` anchor naming the first and last line of the hand-written block
    the region takes over, so the duplicate is **swallowed**, not left behind.
-4. `node bin/press.js emit --target <id> --init`
-5. Add a `press check` step to that repo's CI.
+5. `node bin/press.js emit --target <id> --init`
+6. Add a `press check` step to that repo's CI, **pinned to an exact version**:
+   `npx -y @natjswenson/press@0.4.0 check --repo .`. Never write a bare
+   `npx @natjswenson/press` — with no version reference at all, npx silently
+   prefers a stale global install over the registry, which cost this repo a
+   release once already. An exact pin also keeps a mutable dependency out of a
+   repo that auto-deploys to production; `propagate` bumps it for you.
+7. If its GitHub repo name differs from the `repo` field (budget lives at
+   `local-budget`), add `"github": "<name>"` so propagation can find it.
+
+**Survey before you emit.** Diff the consumer's real values against the token set
+first: adopting the site turned up a `'JetBrains Mono'` fallback and three alpha
+tints the tokens could not express, and emitting blindly would have silently
+dropped them. Widen the tokens to the union; never narrow a consumer.
 
 **Aliases are deliberate.** The résumé keeps `--sig`, the site keeps `--fg`. The
 names stay idiomatic to their medium; only the values are shared. Renaming

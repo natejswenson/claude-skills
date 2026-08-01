@@ -32,14 +32,24 @@
       "rationale": "ghostwriter's learned voice and devlog's release-note shape are personal, per-medium, and higher-signal than the universal floor. Without this precedence rule, folding voice into press would degrade both."
     },
     {
-      "id": "npx-must-pin-latest",
-      "pattern": "Always pin `@latest`",
-      "rationale": "A bare npx invocation silently prefers a stale global install over the registry. This exact failure cost this repo a release with shipflow; the same trap applies verbatim to press."
+      "id": "npx-must-carry-a-version",
+      "pattern": "Never write a bare\\s+`npx @natjswenson/press`",
+      "rationale": "A bare npx invocation with no version reference silently prefers a stale global install over the registry; this exact failure cost this repo a release with shipflow. The rule was originally 'always pin @latest'; from 0.4.0 consumers pin an EXACT version instead, because a mutable reference in a repo that auto-deploys to prod is a supply-chain hole and propagate now handles the bumping. Either form avoids the stale-global trap — a bare invocation is the thing that must never appear."
     },
     {
       "id": "look-at-the-artifact",
       "pattern": "Re-render one real artifact per affected medium and \\*\\*look at it\\*\\*",
       "rationale": "A token change is the one edit that touches every product at once, and no test asserts taste. The visual confirmation step is the only thing standing between a one-character edit and shipping it everywhere."
+    },
+    {
+      "id": "integrity-and-freshness-are-different",
+      "pattern": "pinned check can never answer",
+      "rationale": "The propagation design rests on these being separate questions: a pinned check proves the region is intact, never that it is current. natejswenson.io sat two releases behind with green CI. If this line goes, the next person 'simplifies' by dropping propagate or by unpinning consumers, and either choice reopens a real failure."
+    },
+    {
+      "id": "fontconfig-consumers-need-their-own-profile",
+      "pattern": "must say `fontconfig`",
+      "rationale": "WeasyPrint walks the fallback chain for real, so the browser-tuned stack resolved local-fitness headlines to Helvetica Neue Heavy Condensed. A new consumer onboarded without checking its engine ships that regression silently — the emitted CSS looks correct and only the rendered PDF is wrong."
     }
   ],
   "baseline": [
@@ -47,7 +57,9 @@
       "id": "pre-migration-value-snapshot",
       "kind": "golden",
       "test": "tests/baseline.test.mjs",
-      "fixtures": ["tests/fixtures/pre-migration-values.json"],
+      "fixtures": [
+        "tests/fixtures/pre-migration-values.json"
+      ],
       "update_command": "node tests/fixtures/update-pre-migration.mjs",
       "rationale": "A frozen snapshot of every brand value as it actually existed in eight files across four repos (claude-skills, budget, local-fitness, natejswenson.io) before press generated any of them. This is the migration's no-op proof: whatever press emits must still carry those values, so a future token edit that silently changes a colour a shipped product depends on goes red instead of quietly re-rendering every artifact wrong. Pinned to a real past state, never synthesised. The paired negative assertion (deleting the accent from the known set must be detected) keeps the check from passing while the comparison rots, and a min_sources floor of 7 stops the fixture from shrinking to nothing and still reporting clean."
     },
