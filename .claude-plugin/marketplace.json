@@ -38,16 +38,16 @@
       "source": "./skills/press"
     },
     {
-      "name": "forge",
-      "source": "./skills/forge"
+      "name": "ghfactory",
+      "source": "./skills/ghfactory"
     },
     {
-      "name": "smith",
-      "source": "./skills/smith"
+      "name": "skillfactory",
+      "source": "./skills/skillfactory"
     },
     {
-      "name": "assay",
-      "source": "./skills/assay"
+      "name": "eval",
+      "source": "./skills/eval"
     }
   ]
 }
