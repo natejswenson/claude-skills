@@ -27,14 +27,12 @@
       "id": "tally-readme",
       "repo": "claude-skills",
       "path": "skills/tally/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The brand regions"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# tally "
+        "insertAfter": "^# tally$"
       }
     }
   ]

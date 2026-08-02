@@ -1,3 +1,3 @@
-**Brand:** PRESS v0.0.0 — The workflow masthead are generated from the
-[`press`](https://github.com/natejswenson/claude-skills/tree/main/skills/press) skill, not maintained here. The token blocks marked
-`press:tokens` are generated; edit `press/brand/tokens.json` and re-emit instead.
+**NS** · NATE SWENSON · CLAUDE CODE SKILL · PRESS v0.0.0 · linkedin.com/in/natejswenson
+
+---

@@ -5,6 +5,39 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-08-01
+
+### Added
+
+- **`readme-masthead` — the masthead a skill README wears.** Ten skills shipped
+  ten different READMEs; three of them (`github-stats`, `press`, `shipflow`)
+  carried no brand mark at all and were invisible to `press check`. The new
+  emitter is `.mast` translated into markdown the same way `gha-header`
+  translates it into workflow comments: stamp, brand line, document kind, the
+  press version as the issue, byline, and the rule under it.
+
+  Three deviations from `components.md`, each forced by the medium and each
+  recorded in the emitter's own docstring: it sits *under* the H1 (a GitHub repo
+  page has to open on its own name), the byline is not right-aligned (markdown
+  offers no alignment short of a box, which laws §2 forbids), and the eyebrow is
+  bold rather than mono (GitHub renders a code span as a rounded chip).
+
+  The blank line before the closing `---` is load-bearing and has its own test:
+  without it the entire eyebrow renders as a setext `<h2>` instead of a masthead
+  over a rule, and nothing but a rendered page would show it.
+
+- **`identity.name` is now a token.** The masthead needs the publication's name,
+  and the alternative was repeating "Nate Swenson" in eleven target configs —
+  the exact hand-copying this skill exists to end.
+
+### Changed
+
+- **The eleven skill READMEs moved from `version-badge` to `readme-masthead`,**
+  with a uniform `^# <name>$` anchor. Previously three different anchors were in
+  use and one (`city-report`'s bare `^# `) would have attached to any heading.
+  `version-badge` is unchanged and still serves the product repos — `budget`,
+  `local-fitness`, `natejswenson.io` — whose READMEs have their own titles.
+
 ## [0.8.1] - 2026-08-01
 
 ### Fixed

@@ -144,6 +144,7 @@ export function readSkill(repo, name) {
     stack: pkg ? 'node' : 'python',
     version: plugin?.version ?? fm.version ?? pkg?.version ?? null,
     caller: readText(join(repo, '.github', 'workflows', `${name}.yml`)),
+    readme: readText(join(root, 'README.md')),
     hasReadme: existsSync(join(root, 'README.md')),
     hasChangelog: existsSync(join(root, 'CHANGELOG.md')),
     hasLicense: existsSync(join(root, 'LICENSE')),

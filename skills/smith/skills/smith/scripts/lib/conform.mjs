@@ -19,6 +19,8 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { gradeReadme, summarizeReadme } from './readme.mjs';
+
 /** A skill is smith-native when its invariants say so. Claiming it opts into the stricter tier. */
 export const isSmithNative = (skill) => Boolean(skill.invariants?.smith);
 
@@ -183,6 +185,24 @@ export function conform(house, skill) {
         .filter(Boolean)
         .join(', ') || 'README.md, CHANGELOG.md, LICENSE',
       'a release cuts notes from CHANGELOG.md — without it the GitHub Release ships empty',
+    ),
+  );
+
+  /**
+   * House tier, not smith tier, and deliberately so: every shipped skill was
+   * retrofitted to the contract in the change that introduced it, so the tier
+   * is true on the day it lands. The comment at the top of this file warns
+   * against retroactive rules because they get waived — a rule applied *with*
+   * the retrofit is the opposite case.
+   */
+  const readmeGrade = gradeReadme(skill.readme, name);
+  out.push(
+    check(
+      'readme-structure',
+      'house',
+      readmeGrade.ok,
+      summarizeReadme(readmeGrade),
+      'the README house style is in smith/references/readme.md — fixed head, free tail, fixed foot',
     ),
   );
 
