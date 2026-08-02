@@ -28,6 +28,8 @@
     "press-readme",
     "shipflow-readme",
     "assay-agent-ui",
-    "assay-readme"
+    "assay-readme",
+    "pluginsync-agent-ui",
+    "pluginsync-readme"
   ]
 }

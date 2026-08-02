@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out $OUT",
+  "artifacts": [
+    {
+      "path": "report.json",
+      "bytes": 2317,
+      "sha256": "2a06a0ce05800dc816af074d1163af469a8f6e833c9e33000ced4e4baf6bc314"
+    },
+    {
+      "path": "report.md",
+      "bytes": 840,
+      "sha256": "a2a0201c01cc0f2728272dbbf0694fd4e1fa20d41f9fe1e503395bfa63f0fec9"
+    }
+  ]
+}

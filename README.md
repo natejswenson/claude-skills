@@ -27,6 +27,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`forge`](skills/forge) | ![forge](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=forge-v*&label=&sort=semver&color=blue) | `/forge` | Node | Generate GitHub Actions workflows that are *verified, not hoped for* — every action ref resolved to a real pinned SHA, `with:` keys checked against the action's own metadata, staleness reported, actionlint and zizmor clean, in about a second. |
 | [`smith`](skills/smith) | ![smith](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=smith-v*&label=&sort=semver&color=blue) | `/smith` | Node | The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run is frozen as its baseline eval. |
 | [`assay`](skills/assay) | ![assay](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=assay-v*&label=&sort=semver&color=blue) | `/assay` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
+| [`pluginsync`](skills/pluginsync) | ![pluginsync](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=pluginsync-v*&label=&sort=semver&color=blue) | `/pluginsync` | Node | Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -47,6 +48,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install forge@claude-skills
 /plugin install smith@claude-skills
 /plugin install assay@claude-skills
+/plugin install pluginsync@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -68,6 +70,7 @@ ln -sfn "$PWD/skills/press/skills/press"               ~/.claude/skills/press
 ln -sfn "$PWD/skills/forge/skills/forge"               ~/.claude/skills/forge
 ln -sfn "$PWD/skills/smith/skills/smith" ~/.claude/skills/smith
 ln -sfn "$PWD/skills/assay/skills/assay" ~/.claude/skills/assay
+ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
 ```
 </details>
 
