@@ -21,7 +21,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -102,12 +103,29 @@ test('trap: every frozen commit reaches the rendered draft', () => {
 });
 
 test('trap: a component with nothing to release is refused, not drafted', () => {
-  // `eval` was frozen at zero unreleased commits, and is still at zero live.
-  // Drafting notes for it must fail: a release whose entry says nothing is how
-  // notes ship saying nothing.
-  const r = run(['changelog-draft', '--repo', REPO_ROOT, '--component', 'eval']);
-  assert.notEqual(r.status, 0, 'changelog-draft on a component with nothing to release must exit non-zero');
-  assert.match(r.stderr, /nothing to write notes about/);
+  // Drafting notes for a component with no unreleased commits must fail: a
+  // release whose entry says nothing is how notes ship saying nothing.
+  //
+  // This drives the FROZEN zero-commit status through `--from`, deliberately
+  // never touching git. The first version of this test shelled out to
+  // `changelog-draft --component eval` against the live repo, which was
+  // environment-dependent and went green locally while failing in CI: the
+  // caller's checkout is shallow with NO TAGS, so `lastTag` resolved to null,
+  // `commitsSince` returned every commit ever touching skills/eval instead of
+  // none, the command succeeded, and the "must exit non-zero" assertion
+  // inverted. A full clone (including a `git worktree`, which is how this was
+  // verified) has tags and cannot reproduce it. A baseline that reads live git
+  // state is not a baseline — this skill's own invariants say so.
+  const dir = mkdtempSync(join(tmpdir(), 'release-trap-'));
+  try {
+    copyFileSync(join(BASELINE, 'status-eval.json'), join(dir, 'status-eval.json'));
+    const r = run(['changelog-draft', '--from', dir, '--out', join(dir, 'out')]);
+    assert.notEqual(r.status, 0, 'a status set with zero unreleased commits must exit non-zero, not emit an empty draft');
+    assert.match(r.stderr, /zero commits|render was a no-op/);
+    assert.ok(!existsSync(join(dir, 'out', 'changelog-draft-eval.md')), 'no draft file may be written for a component with nothing to release');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('trap: cut refuses without a status hash', () => {

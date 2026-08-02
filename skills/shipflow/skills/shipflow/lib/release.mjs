@@ -380,6 +380,21 @@ export function readStatus(repoPath, config, name) {
 
   const blockers = [];
   const notes = [];
+  // A shallow clone cannot answer "what is unreleased?" — and it does not fail
+  // when asked, which is the dangerous part. `git log <tag>..<ref>` excludes
+  // everything reachable from <tag>, and that exclusion needs full ancestry;
+  // in a grafted history it silently under-applies and the range returns
+  // commits that were released long ago. Observed on this repo: a depth-1
+  // checkout of main reported 1 unreleased commit for a component that a full
+  // clone correctly reported as 0 — which would have proposed a patch release
+  // for nothing. A wrong commit list also means a wrong suggestedBump, so this
+  // is a blocker rather than a note: every number below it is untrustworthy.
+  if (git(['rev-parse', '--is-shallow-repository'], { cwd: repoPath }).stdout.trim() === 'true') {
+    blockers.push({
+      id: 'shallow-clone',
+      detail: 'this is a shallow clone, so commit ranges and the bump derived from them cannot be trusted — run `git fetch --unshallow` first',
+    });
+  }
   if (!fetched || fetched.status !== 0) {
     notes.push(`could not fetch origin (${fetched?.stderr || 'unknown error'}) — versions and tags below may be stale`);
   }
