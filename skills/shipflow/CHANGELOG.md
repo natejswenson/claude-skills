@@ -2,6 +2,26 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.4.1 (2026-08-02) — a shallow clone cannot answer "what is unreleased?"
+
+### Fixed
+
+- **`release-status` returned a wrong commit list in a shallow clone, silently.**
+  `git log <tag>..<ref>` excludes everything reachable from `<tag>`, and that
+  exclusion needs full ancestry. In a grafted history it under-applies, so the
+  range returns commits that shipped long ago — without erroring, and therefore
+  with a `suggestedBump` derived from fiction.
+
+  Observed on this repo the day 0.4.0 shipped: a depth-1 checkout of `main`
+  reported **1 unreleased commit** for a component a full clone correctly
+  reported as **0**, which would have proposed a patch release for nothing.
+  `actions/checkout` is depth-1 by default, so any CI job calling `release-status`
+  hit this.
+
+  A shallow repository is now a **blocker**, not a note — every number derived
+  from the commit range is untrustworthy, so the honest answer is to refuse and
+  say `git fetch --unshallow`, rather than to report a plausible wrong one.
+
 ## 0.4.0 (2026-08-02) — release one named thing, and prove the tag exists
 
 ### Added
