@@ -83,6 +83,17 @@
       "rationale": "Two-sided: the good fixture must parse cleanly and the broken one must still carry every defect class it was frozen for \u2014 dead ref, nonexistent action, misspelled input, template injection, deprecated command. A one-sided baseline goes green the day someone weakens a checker. Also pins with:-key attribution, because mis-attributing them would make input validation vacuous: it would check an empty key list and always pass."
     },
     {
+      "id": "required-inputs-two-sided",
+      "kind": "trap",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/inputs-codeql-analyze.yml",
+        "evals/baseline/inputs-paths-filter.yml"
+      ],
+      "update_command": "gh api -X GET repos/github/codeql-action/contents/analyze/action.yml -f ref=<sha> --jq .content | base64 -d > evals/baseline/inputs-codeql-analyze.yml",
+      "rationale": "Real action.yml files at the SHAs this repo pins, not synthetic ones. Two-sided because each side fails differently: codeql-analyze's `wait-for-processing` is required-WITH-default and must NOT be reported missing — the false positive that made rung 0 red on every correct CodeQL workflow, and a rung nobody can get green is a rung people learn to ignore. paths-filter's `filters` is required with NO default and must still be reported, or the fix has quietly turned input checking off rather than corrected it."
+    },
+    {
       "id": "uses-corpus-floor",
       "kind": "corpus",
       "test": "tests/baseline.test.mjs",
