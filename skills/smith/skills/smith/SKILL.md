@@ -138,9 +138,14 @@ worse than not wiring it, because the half that landed makes the rest look done.
 
 ```bash
 press emit --repo <path> --init --target <name>-agent-ui --target <name>-readme
+node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs
 forge header .github/workflows/<name>.yml
 forge verify .github/workflows/<name>.yml
 ```
+
+**The golden refresh is not optional.** press pins one golden per target, so two
+new targets mean `ci / press` goes red until its fixture set is regenerated —
+in the PR that added them, which is the point.
 
 The run-presentation contract and the version badge are **generated regions**;
 the workflow masthead comes from press through forge. **Never hand-write a brand

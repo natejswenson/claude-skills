@@ -137,6 +137,7 @@ function cmdScaffold(args) {
       ['Next', 'Why'],
       [
         [`press emit --repo . --init --target ${spec.name}-agent-ui --target ${spec.name}-readme`, 'splice the brand regions — never hand-write them'],
+        ['node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs', "refresh press's golden set — two new targets, or ci / press goes red"],
         [`forge header .github/workflows/${spec.name}.yml`, 'stamp the masthead from press'],
         [`forge verify .github/workflows/${spec.name}.yml`, 'refs real, lint-clean, before anyone reads it'],
         ['run .github/repo-settings.sh (admin)', 'editing the contexts array applies NOTHING on its own'],

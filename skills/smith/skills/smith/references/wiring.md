@@ -9,7 +9,7 @@ not there, in a way that looks exactly like being there.
 | 1 | `.claude-plugin/marketplace.json` | nobody can install it; `lint_marketplace.py` fails the PR | `scaffold` |
 | 2 | `.github/workflows/<name>.yml` | no `ci / <name>` check exists at all | `scaffold` |
 | 3 | `.github/repo-settings.sh` `contexts` | CI runs, reports green, and gates nothing on `main` | `scaffold` **+ an admin run** |
-| 4 | press `targets.json` | `press check` cannot see the skill; brand drift is invisible | `scaffold`, then `press emit --init` |
+| 4 | press `targets.json` | `press check` cannot see the skill; brand drift is invisible | `scaffold`, then `press emit --init`, then the golden refresh |
 | 5 | root `README.md` — table, install block, symlink block | the skill is undiscoverable to a reader | `scaffold` |
 | 6 | `CLAUDE.md` required-check list | the drift audit is read against a list that is now wrong | `scaffold` |
 | 7 | `CLAUDE.md` baseline-eval table | the anti-degradation contract has a hole nobody can see | **the agent** — it is prose |
@@ -35,6 +35,19 @@ for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' \
   echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
 done
 ```
+
+## Registry 4 has a second half
+
+press pins **one golden per target**, so adding two targets makes `ci / press`
+red until its fixture set is regenerated:
+
+```bash
+node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs
+```
+
+That is the design working, not a nuisance: press's golden set is what stops a
+brand value drifting, and a set that silently ignores unknown targets would stop
+covering the newest consumer first. Run it in the same PR that adds the targets.
 
 ## Two properties of the caller that are load-bearing
 
