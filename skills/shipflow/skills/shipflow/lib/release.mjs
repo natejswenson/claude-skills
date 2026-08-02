@@ -504,7 +504,21 @@ function writeVersionInto(relPath, text, version) {
 // containing the version, up to the next `## `.
 export function spliceChangelog(existing, version, notes, date) {
   const heading = `## [${version}] - ${date}`;
-  if (new RegExp(`^## .*\\[?${version.replace(/\./g, '\\.')}\\]?`, 'm').test(existing)) {
+  // Plain string matching, deliberately not a constructed regex. Two reasons,
+  // and the second is why this is not merely a style preference:
+  //
+  //   1. It is exactly what _release.yml's awk does — `/^## / && index($0, ver)`
+  //      — so "would this heading be found at release time?" is answered by the
+  //      same test that will actually answer it.
+  //   2. Building `new RegExp` from `version` escaped only dots, leaving every
+  //      other metacharacter (`\`, `*`, `+`, `(`, `[`) live. `prepare` rejects a
+  //      non-semver version before reaching here, but this function is exported
+  //      and independently callable, so it must not depend on a caller's guard.
+  //      Found by CodeQL (js/incomplete-sanitization, high) on PR #158.
+  const alreadyPresent = existing
+    .split('\n')
+    .some((line) => line.startsWith('## ') && line.includes(version));
+  if (alreadyPresent) {
     return { ok: false, error: `CHANGELOG already has a heading for ${version}` };
   }
   const lines = existing.split('\n');

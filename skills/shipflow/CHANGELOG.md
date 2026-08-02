@@ -51,6 +51,16 @@ All notable changes to `@natjswenson/shipflow` are documented here.
 
 ### Fixed
 
+- **`spliceChangelog` built a regex out of the version string and escaped only
+  the dots**, leaving `\`, `*`, `+`, `(` and `[` live all the way into
+  `new RegExp`. `prepare` rejects a non-semver version before reaching it, so
+  this was not exploitable through the CLI — but the function is exported and
+  independently callable, and a guard that lives in the caller is not a guard.
+  It now matches with plain string operations, which is also exactly what
+  `_release.yml`'s `awk` does (`/^## / && index($0, ver)`), so the duplicate
+  check and the release-time extractor answer the same question the same way.
+  Found by CodeQL (`js/incomplete-sanitization`, high) on PR #158.
+
 - **`dispatchReleaseWorkflow` ignored the `ownerRepo` it was given.** It shelled
   out to `gh workflow run` with no `--repo`, so `gh` inferred the repository
   from the process's working directory — which is routinely *not* the repo

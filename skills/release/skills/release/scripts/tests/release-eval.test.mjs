@@ -169,7 +169,9 @@ test('corpus: the shipflow this skill would call is new enough to have the comma
   assert.equal(bin.where, 'in-repo', 'a checkout that ships shipflow must use its own copy, never the registry');
   const help = execFileSync(bin.cmd, [...bin.args, '--help'], { encoding: 'utf8' });
   for (const cmd of ['release-status', 'release-prepare', 'release-cut']) {
-    assert.match(help, new RegExp(cmd), `shipflow does not offer ${cmd} — every mutating step of this skill depends on it`);
+    // A plain substring check, not a constructed regex: these are literal
+    // command names, and there is no reason to hand them to a regex engine.
+    assert.ok(help.includes(cmd), `shipflow does not offer ${cmd} — every mutating step of this skill depends on it`);
   }
 });
 

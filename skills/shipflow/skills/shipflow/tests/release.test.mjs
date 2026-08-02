@@ -235,6 +235,29 @@ test('changelog: a duplicate version heading is refused', () => {
   assert.match(r.error, /already has a heading/);
 });
 
+test('changelog: a version full of regex metacharacters is data, not a pattern', () => {
+  // spliceChangelog used to build `new RegExp` from `version`, escaping only
+  // dots — so `\`, `*`, `+`, `(` and `[` all reached the regex engine live.
+  // `prepare` rejects a non-semver version before it gets here, but this
+  // function is exported and independently callable, so it must be safe alone.
+  // Found by CodeQL (js/incomplete-sanitization, high) on PR #158.
+  const hostile = '1.0.0[)\\*+(';
+  const existing = '# Changelog\n\n## [0.1.0] - 2026-01-01\n\n- old\n';
+  const r = spliceChangelog(existing, hostile, '- notes', '2026-08-02');
+  assert.equal(r.ok, true, 'a metacharacter-laden version must not throw or be misread');
+  assert.ok(r.content.includes(`## [${hostile}] - 2026-08-02`));
+
+  // And the duplicate check must still fire on the literal string, not on
+  // whatever pattern those characters would have compiled to.
+  const again = spliceChangelog(r.content, hostile, '- notes', '2026-08-03');
+  assert.equal(again.ok, false);
+  assert.match(again.error, /already has a heading/);
+
+  // A version that is a strict substring of an existing heading must not be
+  // mistaken for it — `## [1.0.0]` does not mean 1.0.0[)\*+( is present.
+  assert.equal(spliceChangelog('# c\n\n## [1.0.0] - 2026-01-01\n', hostile, '- n', '2026-08-02').ok, true);
+});
+
 test('changelog: _release.yml’s extractor can find what we spliced', () => {
   // _release.yml pulls notes with awk: lines under the first `## ` heading
   // containing the version, up to the next `## `. If the splice format and
