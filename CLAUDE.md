@@ -178,6 +178,13 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    fields, so this is normally caught before merge, not at release time (release runs via
    `workflow_dispatch`, which the PR-time lint doesn't gate — see the marketplace design doc's Data
    Flow section).
+   **`package-lock.json` is one of those fields too** (both its root `version` and its
+   `packages[""].version`), so a node skill's bump must touch the lockfile as well —
+   `npm install` does it for free. It went unchecked until 2026-08-02, by which point five
+   skills had drifted (shipflow's lockfile said 0.2.4 against a 0.5.0 package). It matters
+   because `npm pack`/`npm publish` read the lockfile into the tarball, so the wrong version
+   ships to the registry. A skill with **no dependencies** correctly has no lockfile, and its
+   absence is never an error.
 6. **Dispatch and clear the label together:**
    ```
    npx -y @natjswenson/shipflow@latest release-dispatch --repo . --pr <number> \
