@@ -124,6 +124,23 @@ any new invocation you add here.
 
 ## Release process (step by step)
 
+> **Use `/release <skill>` instead of doing this by hand.** Since `release` 0.1.0 the whole
+> path below is one flow: `release preflight` reads what's on main and what's unreleased,
+> `release changelog-draft` groups the commits, and `release cut` drives the bump through
+> `feature/* → dev → main` and does not report success until the tag is fetched back from
+> origin. The steps below are the specification it implements, kept here because they are
+> what the skill is checked against — and because steps 3–6 are still the manual fallback.
+>
+> Two things `/release` surfaces that the manual path silently does not:
+> **collateral** (a promotion is atomic and carries all of `dev`, so releasing one skill
+> releases every other bumped-but-untagged one — the list is named before the irreversible
+> step), and the **0.x cap** (a breaking change is held at minor rather than silently
+> declaring 1.0.0).
+>
+> **Every component must be declared** in `.github/shipflow.json`'s `release.components`.
+> `ci / release`'s corpus baseline fails if a directory under `skills/` is missing from it,
+> so a new skill cannot quietly become invisible to the release flow.
+
 **Auto-merge and release tagging are decoupled.** Promoting `dev → main` auto-merges on green; it
 does **not** cut a release tag on its own. Cutting a tag is a separate, deliberate step.
 
@@ -249,6 +266,7 @@ below its own floor.
 |---|---|---|
 | ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
 | shipflow | this repo's own `shipflow.json` → rendered workflow (+ its `renderedTemplateHashes` receipt) | any renderer/config-mapping drift; found a real bug on first run (see below) |
+| shipflow (component releases) | covered by `release`'s baseline, which pins **shipflow's own `release-status` output**, plus 23 unit tests that drive a real git repo rather than a mock | a component resolving to the wrong files; `prepare` sweeping unrelated dirty work into a release commit; the `{name}` validator admitting a traversal. Deliberately **not** a second frozen corpus in `ci / shipflow` — it would pin the same artifact twice |
 | city-report | two real cached city bundles (small places, where the `_1` cubes fail first) | a section or headline metric silently vanishing; the Data USA "HTTP 200 + zero rows" trap |
 | github-stats | a stubbed-`gh` end-to-end `overview` golden | assembly regressions the per-function unit tests cannot see |
 | resume | a real tailored résumé × 28 real job postings | JD-keyword coverage ceasing to discriminate — i.e. every eval score becoming meaningless while still looking like a number |
@@ -257,6 +275,7 @@ below its own floor.
 | ghfactory | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
 | eval | a real graded run — this repo's own skillfactory session, frozen as a normalized trace, scored against skillfactory's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
 | skillfactory | a real `scaffold` run of the `repocount` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
+| release | real `shipflow release-status` output for three components spanning many/one/zero unreleased commits, with the rendered CHANGELOG draft re-run and byte-compared; plus every skill in the repo as a component corpus | the draft grouper silently dropping a commit while still emitting a complete-looking entry; `cut` proceeding without its TOCTOU hash; a fixture refresh collapsing every input to "nothing to release" so the golden passes over nothing; a newly-shipped skill never being declared in `release.components`, so `preflight` reports on 12 of 13 and looks complete |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -340,21 +359,24 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:
   ```bash
   req=$(gh api repos/<owner>/<repo>/branches/main/protection --jq '.required_status_checks.contexts[]' | sed 's|ci / ||')
-  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate'); do
+  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate\|security'); do
     echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
   done
   ```
   (`ci / shipflow` was missing this way from its introduction until 2026-07-28 — its CI ran and
   reported on every PR, but a promotion could auto-merge with it red.)
-  The filter excludes `press-propagate` too: it has only a `propagate` job and no `ci` job, so it
-  can never satisfy a required check. Without that exclusion the audit reports it as drift on every
-  run, and an audit that always cries wolf stops being read.
+  The filter excludes `press-propagate` and `security` too: `press-propagate` has only a
+  `propagate` job, and `security.yml`'s four jobs are all named `security / <job>` — neither has a
+  `ci` job, so neither can ever satisfy a required check. Without those exclusions the audit
+  reports them as drift on every run, and an audit that always cries wolf stops being read.
+  (`security` was missing from this list until 2026-08-02, found by actually running the audit
+  after adding `ci / release` — the snippet predates `security.yml`.)
 
 **Bootstrap note:** `dev-to-main-automerge.yml` is a plain `pull_request`-triggered workflow (not
 `pull_request_target`), so unlike the auto-merge workflow it replaced, it needs **no manual-merge
