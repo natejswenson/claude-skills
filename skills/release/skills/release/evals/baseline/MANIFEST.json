@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/release.js changelog-draft --from evals/baseline --out $OUT",
+  "artifacts": [
+    {
+      "path": "changelog-draft-ghostwriter.md",
+      "bytes": 749,
+      "sha256": "247cb8c7d1dcff86d9d6408d229b18cbffe877d6df7c55851bf52ff234a19341"
+    },
+    {
+      "path": "changelog-draft-press.md",
+      "bytes": 89,
+      "sha256": "595fe33a7c58032a3b9493f4602975526ccdb1b9dbe114e26cbd99cf33f3a612"
+    }
+  ]
+}

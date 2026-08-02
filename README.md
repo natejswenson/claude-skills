@@ -24,9 +24,10 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`shipflow`](skills/shipflow) | ![shipflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipflow-v*&label=&sort=semver&color=blue) | `/shipflow` | Node | Scaffold a configurable dev/main branching, auto-merge, cleanup, and release-tagging workflow into any repo. This repo's own automation is dogfooded on it. |
 | [`city-report`](skills/city-report) | ![city-report](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=city-report-v*&label=&sort=semver&color=blue) | `/city-report` | Python | Pull US Census data for any American city, answer questions from context, and render a PRESS-branded HTML report. Stdlib only. |
 | [`press`](skills/press) | ![press](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=press-v*&label=&sort=semver&color=blue) | `/press` | Node | The one brand system: design tokens, visual laws, run presentation and voice core, generated into every consumer across five repos with a CI drift gate. |
-| [`forge`](skills/forge) | ![forge](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=forge-v*&label=&sort=semver&color=blue) | `/forge` | Node | Generate GitHub Actions workflows that are *verified, not hoped for* — every action ref resolved to a real pinned SHA, `with:` keys checked against the action's own metadata, staleness reported, actionlint and zizmor clean, in about a second. |
-| [`smith`](skills/smith) | ![smith](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=smith-v*&label=&sort=semver&color=blue) | `/smith` | Node | The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run is frozen as its baseline eval. |
-| [`assay`](skills/assay) | ![assay](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=assay-v*&label=&sort=semver&color=blue) | `/assay` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
+| [`ghfactory`](skills/ghfactory) | ![ghfactory](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=ghfactory-v*&label=&sort=semver&color=blue) | `/ghfactory` | Node | Generate GitHub Actions workflows that are *verified, not hoped for* — every action ref resolved to a real pinned SHA, `with:` keys checked against the action's own metadata, staleness reported, actionlint and zizmor clean, in about a second. |
+| [`skillfactory`](skills/skillfactory) | ![skillfactory](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=skillfactory-v*&label=&sort=semver&color=blue) | `/skillfactory` | Node | The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run is frozen as its baseline eval. |
+| [`eval`](skills/eval) | ![eval](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=eval-v*&label=&sort=semver&color=blue) | `/eval` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
+| [`release`](skills/release) | ![release](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=release-v*&label=&sort=semver&color=blue) | `/release` | Node | Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist. |
 | [`pluginsync`](skills/pluginsync) | ![pluginsync](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=pluginsync-v*&label=&sort=semver&color=blue) | `/pluginsync` | Node | Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
@@ -45,9 +46,10 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install shipflow@claude-skills
 /plugin install city-report@claude-skills
 /plugin install press@claude-skills
-/plugin install forge@claude-skills
-/plugin install smith@claude-skills
-/plugin install assay@claude-skills
+/plugin install ghfactory@claude-skills
+/plugin install skillfactory@claude-skills
+/plugin install eval@claude-skills
+/plugin install release@claude-skills
 /plugin install pluginsync@claude-skills
 ```
 
@@ -67,9 +69,10 @@ ln -sfn "$PWD/skills/github-stats/skills/github-stats" ~/.claude/skills/github-s
 ln -sfn "$PWD/skills/shipflow/skills/shipflow"         ~/.claude/skills/shipflow
 ln -sfn "$PWD/skills/city-report/skills/city-report"   ~/.claude/skills/city-report
 ln -sfn "$PWD/skills/press/skills/press"               ~/.claude/skills/press
-ln -sfn "$PWD/skills/forge/skills/forge"               ~/.claude/skills/forge
-ln -sfn "$PWD/skills/smith/skills/smith" ~/.claude/skills/smith
-ln -sfn "$PWD/skills/assay/skills/assay" ~/.claude/skills/assay
+ln -sfn "$PWD/skills/ghfactory/skills/ghfactory"               ~/.claude/skills/ghfactory
+ln -sfn "$PWD/skills/skillfactory/skills/skillfactory" ~/.claude/skills/skillfactory
+ln -sfn "$PWD/skills/eval/skills/eval" ~/.claude/skills/eval
+ln -sfn "$PWD/skills/release/skills/release" ~/.claude/skills/release
 ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
 ```
 </details>

@@ -1,0 +1,241 @@
+{
+  "name": "eval",
+  "sources": [
+    "skills/eval/skills/eval/SKILL.md",
+    "skills/eval/skills/eval/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-658ac01f",
+      "tag": "inv",
+      "text": "Never grade from a summary",
+      "severity": "high",
+      "rationale": "Grading an account of a run instead of the run is how a grader starts hallucinating politely. The transcript is on disk; there is never a reason to accept a retelling of it.",
+      "source": {
+        "file": "skills/eval/skills/eval/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 197
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 201
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 208
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 192
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 216
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 189
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 206
+      }
+    },
+    {
+      "id": "rule-b691a05c",
+      "tag": "rule",
+      "text": "Not the user's account of the run, not your own memory of it, not a description someone pasted. Grade the transcript, or say you cannot grade. -",
+      "severity": "critical",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 25
+      }
+    },
+    {
+      "id": "skill-02616a3e",
+      "tag": "skill",
+      "text": "Never keep an eval case that passed on arrival.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 156
+      }
+    },
+    {
+      "id": "skill-62436eec",
+      "tag": "skill",
+      "text": "Never assert what it did not observe: every finding must cite one exact transcript event and one exact contract clause, and a generated eval case is kept only if it is run and observed to fail against the skill as it exists today.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 148
+      }
+    },
+    {
+      "id": "skill-78260a7b",
+      "tag": "skill",
+      "text": "Never ask the user to paste a transcript",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 61
+      }
+    },
+    {
+      "id": "skill-83b4b9cb",
+      "tag": "skill",
+      "text": "Never grade a skill against anything but its own committed contract.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 158
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 149
+      }
+    },
+    {
+      "id": "skill-a83c9100",
+      "tag": "skill",
+      "text": "read the clauses the probes did not examine",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 94
+      }
+    },
+    {
+      "id": "skill-d6195353",
+      "tag": "skill",
+      "text": "Never present a finding count without its coverage gap.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 151
+      }
+    },
+    {
+      "id": "skill-daaa75fa",
+      "tag": "skill",
+      "text": "Always show the coverage gap number next to the findings count",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 114
+      }
+    },
+    {
+      "id": "skill-f78090c9",
+      "tag": "skill",
+      "text": "Never weaken a probe to remove a finding.",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 153
+      }
+    }
+  ]
+}

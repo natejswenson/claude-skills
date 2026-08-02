@@ -1,6 +1,6 @@
 ---
 name: pluginsync
-description: Refresh the locally-installed Claude Code plugin marketplaces so newly released skill versions are actually on disk. Use when the user says "update my marketplace", "refresh my skills", "update the claude-skills plugins", "am I on the latest skills", "install the new skill", or "why is my skill still on the old version". Reports installed vs available version per plugin, installs what is missing, updates what drifted, flags plugins shadowed by a stale personal copy in ~/.claude/skills, and always says whether a restart is still needed.
+description: Refresh the locally-installed Claude Code plugin marketplaces so newly released skill versions are actually on disk. Use when the user says "update my marketplace", "refresh my skills", "update the claude-skills plugins", "am I on the latest skills", "install the new skill", or "why is /skillfactory still the old version". Reports installed vs available version per plugin, installs what is missing, updates what drifted, flags plugins shadowed by a stale personal copy in ~/.claude/skills, and always says whether a restart is still needed.
 user_invocable: true
 version: 0.1.0
 ---
@@ -23,7 +23,7 @@ and never collapse them into one.**
 
 Every command in this flow exits 0 whether or not anything moved. `claude plugin
 update` prints no version and returns success when it no-ops. So "✓ updated
-smith" followed by a `/smith` that still runs the old version is not a rare edge
+skillfactory" followed by a `/skillfactory` that still runs the old version is not a rare edge
 case — it is the default failure, and it is indistinguishable from success
 unless the report keeps the three states apart:
 
@@ -40,7 +40,7 @@ the version on disk changed. If it did not change, the row is `stalled`, and
 ## What is code and what is judgment
 
 The split is declared in `skill-invariants.json` and checked — a deterministic
-step whose command does not exist fails `smith verify`.
+step whose command does not exist fails `skillfactory verify`.
 
 | Deterministic — the machine decides | Command |
 |---|---|
@@ -97,7 +97,7 @@ soften one into a success.
 
 ### 4. Say what is live
 
-Close with the restart, always. The user's next `/smith` runs the old version
+Close with the restart, always. The user's next `/skillfactory` runs the old version
 until Claude Code restarts, no matter how clean the table looked.
 
 ## Commands

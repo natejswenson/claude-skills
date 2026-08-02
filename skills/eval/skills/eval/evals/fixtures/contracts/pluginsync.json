@@ -1,0 +1,220 @@
+{
+  "name": "pluginsync",
+  "sources": [
+    "skills/pluginsync/skills/pluginsync/SKILL.md",
+    "skills/pluginsync/skills/pluginsync/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 156
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 160
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 167
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 151
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 175
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 148
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 165
+      }
+    },
+    {
+      "id": "rule-791b3480",
+      "tag": "rule",
+      "text": "A plugin is not refreshed until the new version is read back off disk, and it is not live until Claude Code restarts — report those as three different states and never collapse them into one.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "rule-d96e3d04",
+      "tag": "rule",
+      "text": "live** | this version is loaded in the running session | only true after a restart — never assert it |",
+      "severity": "critical",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 34
+      }
+    },
+    {
+      "id": "skill-0838d62a",
+      "tag": "skill",
+      "text": "An unreadable source is an error row, never a dropped one.",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 121
+      }
+    },
+    {
+      "id": "skill-19dea7cf",
+      "tag": "skill",
+      "text": "Never ask about anything in it",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 65
+      }
+    },
+    {
+      "id": "skill-86ad48e8",
+      "tag": "skill",
+      "text": "Never report a stalled row as updated.",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 118
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 116
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 13
+      }
+    },
+    {
+      "id": "skill-c6e55217",
+      "tag": "skill",
+      "text": "Never uninstall an orphan without being asked.",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 120
+      }
+    },
+    {
+      "id": "skill-ce73898c",
+      "tag": "skill",
+      "text": "Never uninstall an orphan on your own",
+      "severity": "high",
+      "source": {
+        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
+        "line": 84
+      }
+    }
+  ]
+}

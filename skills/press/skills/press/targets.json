@@ -516,9 +516,9 @@
       }
     },
     {
-      "id": "forge-agent-ui",
+      "id": "ghfactory-agent-ui",
       "repo": "claude-skills",
-      "path": "skills/forge/skills/forge/SKILL.md",
+      "path": "skills/ghfactory/skills/ghfactory/SKILL.md",
       "region": "agent-ui",
       "syntax": "md",
       "emitter": "markdown-block",
@@ -527,21 +527,21 @@
       }
     },
     {
-      "id": "forge-readme",
+      "id": "ghfactory-readme",
       "repo": "claude-skills",
-      "path": "skills/forge/README.md",
+      "path": "skills/ghfactory/README.md",
       "region": "masthead",
       "syntax": "md",
       "emitter": "readme-masthead",
       "params": {},
       "init": {
-        "insertAfter": "^# forge$"
+        "insertAfter": "^# ghfactory$"
       }
     },
     {
-      "id": "smith-agent-ui",
+      "id": "skillfactory-agent-ui",
       "repo": "claude-skills",
-      "path": "skills/smith/skills/smith/SKILL.md",
+      "path": "skills/skillfactory/skills/skillfactory/SKILL.md",
       "region": "agent-ui",
       "syntax": "md",
       "emitter": "markdown-block",
@@ -550,15 +550,15 @@
       }
     },
     {
-      "id": "smith-readme",
+      "id": "skillfactory-readme",
       "repo": "claude-skills",
-      "path": "skills/smith/README.md",
+      "path": "skills/skillfactory/README.md",
       "region": "masthead",
       "syntax": "md",
       "emitter": "readme-masthead",
       "params": {},
       "init": {
-        "insertAfter": "^# smith$"
+        "insertAfter": "^# skillfactory$"
       }
     },
     {
@@ -598,9 +598,9 @@
       }
     },
     {
-      "id": "assay-agent-ui",
+      "id": "eval-agent-ui",
       "repo": "claude-skills",
-      "path": "skills/assay/skills/assay/SKILL.md",
+      "path": "skills/eval/skills/eval/SKILL.md",
       "region": "agent-ui",
       "syntax": "md",
       "emitter": "markdown-block",
@@ -609,15 +609,38 @@
       }
     },
     {
-      "id": "assay-readme",
+      "id": "eval-readme",
       "repo": "claude-skills",
-      "path": "skills/assay/README.md",
+      "path": "skills/eval/README.md",
       "region": "masthead",
       "syntax": "md",
       "emitter": "readme-masthead",
       "params": {},
       "init": {
-        "insertAfter": "^# assay$"
+        "insertAfter": "^# eval$"
+      }
+    },
+    {
+      "id": "release-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/release/skills/release/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "release-readme",
+      "repo": "claude-skills",
+      "path": "skills/release/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# release$"
       }
     },
     {

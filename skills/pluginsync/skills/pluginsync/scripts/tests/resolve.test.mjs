@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
@@ -137,7 +137,7 @@ test('an unreadable source is never summarised as "everything matches"', () => {
 // ---------------------------------------------------------------------------
 test('a shadowing personal skill is detected by its SKILL.md, not its directory', () => {
   // The fixture home has no skills/ dir at all, so nothing should be reported.
-  assert.deepEqual(findShadows(join(FIXTURES, 'home'), ['assay', 'press']), []);
+  assert.deepEqual(findShadows(join(FIXTURES, 'home'), ['eval', 'press']), []);
   // The skill's own tree does have scripts/, proving the probe looks for
   // SKILL.md specifically rather than for any directory of that name.
   assert.deepEqual(findShadows(SKILL, ['scripts']), []);

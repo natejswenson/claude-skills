@@ -12,55 +12,26 @@
 
 ## Why install this
 
-Refreshing a marketplace by hand is four commands, and every one of them exits 0
-whether or not anything happened. `claude plugin update` prints no version and
-returns success when it no-ops. So the usual outcome is a clean-looking "updated"
-followed by a skill that still runs the old code — and nothing in the terminal
-tells you which one you got.
+Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. It ships the method as well as the commands: 3 steps the machine decides outright, and 3 the model has to judge, with the line between them written down in `skill-invariants.json` rather than left to taste.
 
-pluginsync makes that difference legible. It reads the available version from the
-marketplace source, the installed version from disk, writes, then **reads the
-version back off disk and compares**. A row that did not move is `stalled`, not
-success. And because a plugin on disk still is not a plugin in memory, every
-report ends by naming the restart.
-
-It also catches the failure with no version number attached at all: a stale
-`~/.claude/skills/<name>/SKILL.md` silently shadowing the plugin, so the update
-lands perfectly and the old copy keeps winning.
+Use it when the work needs a repeatable process and a result you can inspect.
 
 ## What you get
 
 | Path | What it provides |
 |---|---|
 | `skills/pluginsync/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/pluginsync/scripts/lib/state.mjs` | The four readers — marketplaces, catalogue, installed set, shadow probe — and nothing that decides. |
-| `skills/pluginsync/scripts/lib/report.mjs` | Classification and rendering. The report shape is frozen byte-for-byte in the eval. |
-| `skills/pluginsync/references/anatomy.md` | The report contract: the column set, the six actions, the four outcomes, the footer. |
-| `skills/pluginsync/references/sources.md` | Where every fact comes from — and the four traps, including why `--available` is not the available list. |
+| `skills/pluginsync/scripts/` | The deterministic half — `--no-fetch`, `check`, `apply`. |
+| `skills/pluginsync/references/anatomy.md` | The fixed shape of the report — the column set, the six actions, and the footer contract. |
+| `skills/pluginsync/references/sources.md` | Where every fact comes from: known_marketplaces.json, each marketplace.json, each plugin.json, and claude plugin list --json. |
 | `skills/pluginsync/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
 
 ## Quick start
 
 ```bash
-pluginsync check    # what drifted, and what would change
-pluginsync apply    # install and update it, then verify it actually moved
+pluginsync check   # one row per marketplace plugin — plugin, installed, available, action (ok/update/install/orphan/disabled/error) — plus a shadow warning per stale personal copy, and a footer naming how many rows would change
+pluginsync apply   # the same table, re-read after every install/update, with the action column resolved to installed/updated/stalled/failed — stalled meaning the command exited 0 and the version on disk did not move
 ```
-
-```
-marketplace  claude-skills → /Users/you/localrepo/claude-skills (directory)
-
-| Plugin        | Installed | Available | Action  |
-|---------------|-----------|-----------|---------|
-| press         | 0.8.1     | 0.9.0     | update  |
-| smith         | 0.2.0     | 0.2.0     | ok      |
-| pluginsync    | —         | 0.1.0     | install |
-
-2 to change · run apply, then restart Claude Code
-```
-
-Useful flags: `--marketplace <name>` for a marketplace other than
-`claude-skills`, `--no-fetch` to read disk without refreshing the source, and
-`--json` for the structured payload.
 
 Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
 for work matching the triggers below.
@@ -72,22 +43,12 @@ for work matching the triggers below.
 - "update the claude-skills plugins"
 - "am I on the latest skills"
 - "install the new skill"
-- "why is my skill still on the old version"
+- "why is /skillfactory still the old version"
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
-- The `claude` CLI on `PATH` — it is the only writer. pluginsync never edits
-  `installed_plugins.json` or anything else the CLI maintains for itself.
-
-## A note on directory-source marketplaces
-
-If a marketplace is registered as a `directory` source pointing at a local
-checkout, "available" means *what is in that working tree right now* — including
-uncommitted version bumps, and including whatever branch happens to be checked
-out. That is usually what you want while developing a skill, and occasionally a
-surprise worth knowing about.
 
 ## Development
 
@@ -97,7 +58,7 @@ npm test
 ```
 
 Node skill. `ci / pluginsync` runs the same tests plus the house lints on
-every pull request, and `smith verify --skill pluginsync` reports which rung
+every pull request, and `skillfactory verify --skill pluginsync` reports which rung
 of the ladder it has reached.
 
 ## Changelog

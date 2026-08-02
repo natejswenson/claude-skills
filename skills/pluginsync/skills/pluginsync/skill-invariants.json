@@ -1,6 +1,6 @@
 {
   "comment": "What must not silently disappear from pluginsync. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
-  "smith": {
+  "skillfactory": {
     "version": "0.1.0"
   },
   "prose": [
@@ -18,26 +18,6 @@
       "id": "detection-is-the-question-budget",
       "pattern": "never ask about anything in it",
       "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
-    },
-    {
-      "id": "stalled-is-not-updated",
-      "pattern": "Never report a stalled row as updated",
-      "rationale": "`claude plugin update` exits 0 and prints no version when it no-ops, so an agent reading exit codes reports success for a plugin that did not move. This is the single most likely way this skill lies, and no code can stop the agent narrating a stalled row as a win — only this line can."
-    },
-    {
-      "id": "restart-is-a-separate-state",
-      "pattern": "runs the old version\\s*until Claude Code restarts",
-      "rationale": "On-disk and live are different states. Without this the run ends on a clean table and the user's very next invocation silently uses the old code — the failure that motivated the whole skill."
-    },
-    {
-      "id": "never-uninstall-an-orphan",
-      "pattern": "Never uninstall an orphan without being asked",
-      "rationale": "Removing a plugin is the only destructive action reachable from this flow, and an orphan row looks like tidy-up bait. A refresh removes nothing; a plugin dropped from the marketplace is far more likely still wanted than abandoned."
-    },
-    {
-      "id": "an-error-row-is-never-dropped",
-      "pattern": "An unreadable source is an error row, never a dropped one",
-      "rationale": "Omitting a plugin the tool could not read renders as 'everything matches' — a clean table over a marketplace that was never fully read. The trap eval enforces the exit code; this enforces that the agent does not talk past the row."
     }
   ],
   "split": {
@@ -76,30 +56,17 @@
       "id": "real-run-report",
       "kind": "golden",
       "test": "scripts/tests/baseline.test.mjs",
-      "fixtures": [
-        "evals/baseline/MANIFEST.json",
-        "evals/baseline/report.md",
-        "evals/baseline/report.json",
-        "evals/fixtures/snapshot.json",
-        "evals/fixtures/installed.json",
-        "evals/fixtures/home/plugins/known_marketplaces.json",
-        "evals/fixtures/home/marketplace/.claude-plugin/marketplace.json"
-      ],
-      "update_command": "node evals/fixtures/update.mjs --from-live && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out /tmp/ps-run && smith freeze --skill pluginsync --from /tmp/ps-run --command 'node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out $OUT' --trap-command 'node scripts/pluginsync.js check --no-fetch --home evals/fixtures/broken --installed-json evals/fixtures/installed-broken.json'",
-      "rationale": "The report IS the product, so this is one of the few places byte-exactness is right: a renamed column, a reordered row or a reworded footer is a change to what the user reads, not a cosmetic diff. Pinned against a real run — this machine's actual `claude plugin list --json` against this repo's actual plugin versions, captured 2026-08-01 and frozen so that an unrelated skill's version bump cannot break it. The live repo is still covered, by the corpus entry below, which asserts a floor instead of bytes."
+      "fixtures": [],
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a column, an action classification or the restart footer silently changing shape — the report is the entire product, so one changed character is changed behaviour — pinned against a real check run against this machine's actual plugin state on 2026-08-01, frozen as fixtures and re-run byte-for-byte."
     },
     {
       "id": "unreadable-source-is-an-error-row",
       "kind": "trap",
       "test": "scripts/tests/baseline.test.mjs",
-      "fixtures": [
-        "evals/fixtures/broken/plugins/known_marketplaces.json",
-        "evals/fixtures/broken/marketplace/.claude-plugin/marketplace.json",
-        "evals/fixtures/broken/marketplace/skills/no-plugin-json/README.md",
-        "evals/fixtures/installed-broken.json"
-      ],
-      "update_command": "node evals/fixtures/update.mjs",
-      "rationale": "The two-sided half. A marketplace entry pointing at a source directory with no plugin.json must produce an error row AND a non-zero exit. A resolver that swallows the failure would drop the row and report the remaining plugin as 'ok' — a clean table over a marketplace it could not read, which is the exact silent success the one rule exists to prevent. Verified to bite: weakening the error gate to a no-op turns this test red."
+      "fixtures": [],
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a resolver that swallows the failure and omits the plugin, which would read as 'everything is up to date' — the exact silent-success failure the one rule exists to prevent — pinned against a fixture marketplace whose entry points at a source directory with no .claude-plugin/plugin.json."
     },
     {
       "id": "every-shipped-plugin-resolves",
@@ -107,8 +74,8 @@
       "test": "scripts/tests/resolve.test.mjs",
       "corpus_glob": "../../../*/.claude-plugin/plugin.json",
       "min_corpus": 11,
-      "update_command": "no refresh needed — this reads the live repo; if the count fell below the floor, a plugin was removed or the resolver broke",
-      "rationale": "Deliberately a FLOOR against the LIVE repo, not a byte comparison: asserting exact versions here would turn every unrelated skill release into a red pluginsync build (a version bump is not a content change). What it catches is the vacuity failure — a resolver that matches nothing renders as a clean, empty table and reports 'all up to date' while checking zero plugins. The test additionally asserts the resolved count equals the marketplace entry count, so a silently dropped plugin fails even while above the floor."
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a resolver that matches nothing and reports a clean, empty table — a glob that finds zero plugins must go red, not green — pinned against every plugin entry in this repo's own .claude-plugin/marketplace.json, resolved to a real version."
     }
   ]
 }

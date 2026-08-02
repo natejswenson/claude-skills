@@ -13,7 +13,7 @@ const manifest = JSON.parse(readFileSync(join(BASELINE, 'MANIFEST.json'), 'utf8'
 
 // Pinned against a real run of pluginsync. Refresh with:
 //   node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <a fresh dir>
-//   smith freeze --skill pluginsync --from <that dir> --command "node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out $OUT"
+//   skillfactory freeze --skill pluginsync --from <that dir> --command "node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out $OUT"
 
 const sh = (cmd, cwd) => execFileSync('bash', ['-lc', cmd], { cwd, encoding: 'utf8' });
 

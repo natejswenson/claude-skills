@@ -6,14 +6,6 @@
   },
   "rows": [
     {
-      "plugin": "assay",
-      "installed": "0.1.0",
-      "available": "0.1.0",
-      "enabled": true,
-      "note": null,
-      "action": "ok"
-    },
-    {
       "plugin": "city-report",
       "installed": "0.4.0",
       "available": "0.4.0",
@@ -30,7 +22,15 @@
       "action": "ok"
     },
     {
-      "plugin": "forge",
+      "plugin": "eval",
+      "installed": "0.1.0",
+      "available": "0.1.0",
+      "enabled": true,
+      "note": null,
+      "action": "ok"
+    },
+    {
+      "plugin": "ghfactory",
       "installed": "0.1.2",
       "available": "0.1.2",
       "enabled": true,
@@ -94,7 +94,7 @@
       "action": "ok"
     },
     {
-      "plugin": "smith",
+      "plugin": "skillfactory",
       "installed": "0.2.0",
       "available": "0.2.0",
       "enabled": true,
