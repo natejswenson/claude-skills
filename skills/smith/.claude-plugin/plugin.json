@@ -1,0 +1,8 @@
+{
+  "name": "smith",
+  "version": "0.1.0",
+  "description": "The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run of it is frozen as its baseline eval.",
+  "author": { "name": "Nate Swenson" },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/smith",
+  "license": "MIT"
+}

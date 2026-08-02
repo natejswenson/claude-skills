@@ -1,0 +1,42 @@
+{
+  "name": "@natjswenson/tally",
+  "version": "0.1.0",
+  "description": "Count what a repository owes you — open PRs, stale branches, unreleased commits — as one table.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/claude-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natejswenson/claude-skills/issues"
+  },
+  "keywords": [
+    "tally",
+    "claude-code",
+    "claude-skill"
+  ],
+  "type": "module",
+  "bin": {
+    "tally": "scripts/tally.js"
+  },
+  "files": [
+    "scripts/",
+    "references/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
+    "postpack": "rm -f README.md LICENSE CHANGELOG.md"
+  }
+}

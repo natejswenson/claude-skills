@@ -1,0 +1,17 @@
+{
+  "name": "claude-skills",
+  "description": "Fixture house — a structurally real, minimally populated copy of this repo's registries, so a scaffold run can be exercised end to end without touching the real ones.",
+  "owner": {
+    "name": "Nate Swenson"
+  },
+  "plugins": [
+    {
+      "name": "press",
+      "source": "./skills/press"
+    },
+    {
+      "name": "tally",
+      "source": "./skills/tally"
+    }
+  ]
+}
