@@ -82,12 +82,32 @@
       "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest."
     },
     {
+      "id": "collateral-must-be-named-before-cutting",
+      "pattern": "[Nn]ever run `release-cut` without naming that list to the user first",
+      "rationale": "A dev -> main promotion is atomic and carries ALL of dev, so cutting a release for one named component also releases every other component sitting bumped-but-untagged on dev. That is the worst failure this flow has — the user asked for one thing and got several, with tags and npm publishes that cannot be un-cut. The collateral list must be spoken aloud before the irreversible step, not merely present in JSON the agent may skim past."
+    },
+    {
+      "id": "tag-read-back-is-the-only-proof",
+      "pattern": "A dispatched workflow, a merged PR and a green check are \\*\\*not\\*\\* a release",
+      "rationale": "Every intermediate signal in the release path can succeed while the tag is never cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml deliberately no-ops when a tag already exists. The only evidence a release happened is the tag fetched back from origin, which is why release-cut polls for it and why the agent must not report success from anything else."
+    },
+    {
+      "id": "zero-major-bump-cap-is-the-users-call",
+      "pattern": "going to 1\\.0\\.0 is a\\s+release decision, never a commit message",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0 — an API-stability promise no commit message is entitled to make on the maintainer's behalf. suggestBump caps it at minor and reports capped: true so the promotion is offered, never taken."
+    },
+    {
+      "id": "prepare-isolated-from-unrelated-work",
+      "pattern": "throwaway git worktree",
+      "rationale": "A real repo's working tree routinely holds unrelated uncommitted work from parallel sessions — this monorepo's did, including an entire untracked skill, while this feature was written. Branching and staging under that tree is how someone else's in-flight work gets swept into a release commit. The isolated worktree makes that structurally impossible rather than relying on careful pathspecs."
+    },
+    {
       "id": "ambiguous-pattern-no-silent-pick",
       "pattern": "present all 3 (templates|patterns).{0,60}ask the user to choose",
       "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
     }
   ],
-  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"],
+  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "release-status", "release-prepare", "release-cut", "rename-default-branch"],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / shipflow` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
   "baseline": [
     {
