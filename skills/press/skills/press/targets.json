@@ -442,73 +442,77 @@
       }
     },
     {
+      "id": "root-readme",
+      "repo": "claude-skills",
+      "path": "README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {
+        "document_kind": "skill marketplace"
+      },
+      "init": {
+        "insertAfter": "^# claude-skills$"
+      }
+    },
+    {
       "id": "city-report-readme",
       "repo": "claude-skills",
       "path": "skills/city-report/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The report's colour and type tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# city-report$"
       }
     },
     {
       "id": "resume-readme",
       "repo": "claude-skills",
       "path": "skills/resume/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The r\u00e9sum\u00e9 themes' colour and type tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# resume$"
       }
     },
     {
       "id": "ghostwriter-readme",
       "repo": "claude-skills",
       "path": "skills/ghostwriter/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The card system's colour, type and terminal tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# ghostwriter$"
       }
     },
     {
       "id": "ghostwriter-x-readme",
       "repo": "claude-skills",
       "path": "skills/ghostwriter-x/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The card system's colour, type and terminal tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# ghostwriter-x$"
       }
     },
     {
       "id": "devlog-readme",
       "repo": "claude-skills",
       "path": "skills/devlog/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The cover-image palette"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# devlog$"
       }
     },
     {
@@ -526,14 +530,12 @@
       "id": "forge-readme",
       "repo": "claude-skills",
       "path": "skills/forge/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The workflow masthead"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# forge "
+        "insertAfter": "^# forge$"
       }
     },
     {
@@ -551,14 +553,48 @@
       "id": "smith-readme",
       "repo": "claude-skills",
       "path": "skills/smith/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The brand regions"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# smith "
+        "insertAfter": "^# smith$"
+      }
+    },
+    {
+      "id": "github-stats-readme",
+      "repo": "claude-skills",
+      "path": "skills/github-stats/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# github-stats$"
+      }
+    },
+    {
+      "id": "press-readme",
+      "repo": "claude-skills",
+      "path": "skills/press/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# press$"
+      }
+    },
+    {
+      "id": "shipflow-readme",
+      "repo": "claude-skills",
+      "path": "skills/shipflow/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# shipflow$"
       }
     }
   ],
