@@ -20,6 +20,8 @@
     "ghostwriter-x-readme",
     "devlog-readme",
     "forge-agent-ui",
-    "forge-readme"
+    "forge-readme",
+    "smith-agent-ui",
+    "smith-readme"
   ]
 }

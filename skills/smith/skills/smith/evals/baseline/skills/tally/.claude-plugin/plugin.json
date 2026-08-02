@@ -1,0 +1,10 @@
+{
+  "name": "tally",
+  "version": "0.1.0",
+  "description": "Count what a repository owes you — open PRs, stale branches, unreleased commits — as one table.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/tally",
+  "license": "MIT"
+}
