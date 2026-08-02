@@ -41,8 +41,9 @@ jobs:
       run:
         working-directory: skills/${{ inputs.skill }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0 # full history + tags so the "already tagged?" check works
 
       - name: Resolve version
@@ -52,6 +53,9 @@ jobs:
         # path. CHANGELOG.md (read by later steps) stays at the plugin root, so
         # only this step and the npm-publish step override working-directory.
         working-directory: skills/${{ inputs.skill }}/skills/${{ inputs.skill }}
+        env:
+          SKILL: ${{ inputs.skill }}
+          VERSION_SOURCE: ${{ inputs.version-source }}
         run: |
           set -euo pipefail
           read_pkg() { node -p "require('./package.json').version"; }
@@ -68,32 +72,37 @@ jobs:
               }
             ' SKILL.md
           }
-          case "${{ inputs.version-source }}" in
+          case "$VERSION_SOURCE" in
             package-json) V="$(read_pkg)" ;;
             skill-md)     V="$(read_fm)" ;;
             *)            if [ -f package.json ]; then V="$(read_pkg)"; else V="$(read_fm)"; fi ;;
           esac
           if [ -z "${V:-}" ]; then
-            echo "::error::Could not resolve a version for skill '${{ inputs.skill }}' (no package.json version and no frontmatter version:)."
+            echo "::error::Could not resolve a version for skill '$SKILL' (no package.json version and no frontmatter version:)."
             exit 1
           fi
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Resolved ${{ inputs.skill }} version: $V"
+          echo "Resolved $SKILL version: $V"
 
       - name: Check whether this version is already tagged
         id: tag
+        env:
+          SKILL: ${{ inputs.skill }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          if git rev-parse "${{ inputs.skill }}-v${{ steps.ver.outputs.version }}" >/dev/null 2>&1; then
+          if git rev-parse "$SKILL-v$VERSION" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "${{ inputs.skill }}-v${{ steps.ver.outputs.version }} already released — skipping."
+            echo "$SKILL-v$VERSION already released — skipping."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Extract release notes from CHANGELOG
         if: steps.tag.outputs.exists == 'false'
+        env:
+          SKILL: ${{ inputs.skill }}
+          VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          VERSION="${{ steps.ver.outputs.version }}"
           # Print the lines under the first "## ..." heading containing VERSION, up to
           # the next "## " heading. Handles both "## 1.2.3 (...)" and "## [1.2.3] - ...".
           awk -v ver="$VERSION" '
@@ -102,17 +111,20 @@ jobs:
             flag {print}
           ' CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
-            printf '%s v%s\n' "${{ inputs.skill }}" "$VERSION" > release-notes.md
+            printf '%s v%s\n' "$SKILL" "$VERSION" > release-notes.md
           fi
 
       - name: Create tag and GitHub Release
         if: steps.tag.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          SKILL: ${{ inputs.skill }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SHA: ${{ github.sha }}
         run: |
-          gh release create "${{ inputs.skill }}-v${{ steps.ver.outputs.version }}" \
-            --target "${{ github.sha }}" \
-            --title "${{ inputs.skill }} v${{ steps.ver.outputs.version }}" \
+          gh release create "$SKILL-v$VERSION" \
+            --target "$SHA" \
+            --title "$SKILL v$VERSION" \
             --notes-file release-notes.md
 
       # npm publish is intentionally INDEPENDENT of the "already tagged?" check
@@ -121,7 +133,7 @@ jobs:
       # npm. Opt-in per skill via the `npm-publish` input.
       - name: Setup Node for npm publish
         if: inputs.npm-publish
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
@@ -131,10 +143,11 @@ jobs:
         working-directory: skills/${{ inputs.skill }}/skills/${{ inputs.skill }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          SKILL: ${{ inputs.skill }}
         run: |
           set -euo pipefail
           if [ ! -f package.json ]; then
-            echo "::notice::No package.json in skills/${{ inputs.skill }}/skills/${{ inputs.skill }}; nothing to publish."
+            echo "::notice::No package.json in skills/$SKILL/skills/$SKILL; nothing to publish."
             exit 0
           fi
           PKG="$(node -p "require('./package.json').name")"

@@ -21,6 +21,14 @@ gh api -X PATCH "repos/$REPO" \
   -F allow_merge_commit=true \
   -F delete_branch_on_merge=true >/dev/null
 
+echo "==> Enabling the dependency graph (via vulnerability alerts) for security / deps"
+# `actions/dependency-review-action` in security.yml hard-fails with "Dependency review is
+# not supported on this repository" unless the dependency graph is on — a 5-second failure
+# that reads like a security finding and isn't one. Public repos do NOT always have it
+# enabled; this one did not. Enabling vulnerability alerts is what turns the graph on
+# (there is no separate dependency-graph endpoint), so this is the toggle, not a bonus.
+gh api -X PUT "repos/$REPO/vulnerability-alerts" >/dev/null
+
 echo "==> Protecting dev from DELETION (it stays push-open; only deletion is blocked)"
 # Minimal protection: no required checks/PR (direct pushes to dev still allowed), force-push
 # allowed, but allow_deletions=false so delete-branch-on-merge can't eat dev on a dev->main merge.

@@ -2,7 +2,7 @@
 name: forge
 description: Generate GitHub Actions workflows that are verified rather than hoped for — every action ref resolved to a real pinned SHA, actionlint and zizmor clean, staleness reported, before you ever see the YAML. Use when the user asks to create, add, fix, review, harden or speed up a GitHub Actions workflow, CI, a CI/CD pipeline, a release or publish workflow, a deploy workflow, a matrix build, a scheduled job, or says "set up CI", "add a workflow", "my workflow is broken", "why is my action failing", "pin my actions", or "audit my workflows".
 user_invocable: true
-version: 0.1.0
+version: 0.1.2
 ---
 
 # /forge — GitHub Actions that are verified, not hoped for

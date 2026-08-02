@@ -153,18 +153,35 @@ function parseInputs(text) {
   return out;
 }
 
-function parseRequired(text) {
+/**
+ * Which inputs a caller must actually supply.
+ *
+ * `required: true` alone is not the answer. An input that also declares a
+ * `default:` is never missing — the runner substitutes the default when the
+ * caller omits it — and pairing the two is common enough that ignoring the
+ * default made rung 0 report phantom failures on `github/codeql-action`, whose
+ * `analysis-kinds` and `wait-for-processing` are both required-with-default.
+ * That is worse than a missed defect: a rung nobody can get green is a rung
+ * people learn to ignore, and rung 0 is the one nothing else does.
+ */
+export function parseRequired(text) {
   const out = [];
   let current = null;
   let inBlock = false;
+  let required = false;
+  let hasDefault = false;
+  const flush = () => { if (current && required && !hasDefault) out.push(current); };
   for (const line of text.split('\n')) {
     if (/^inputs:\s*$/.test(line)) { inBlock = true; continue; }
     if (inBlock && /^\S/.test(line)) break;
     if (!inBlock) continue;
     const key = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
-    if (key) { current = key[1]; continue; }
-    if (current && /^ {4}required:\s*true\s*$/.test(line)) out.push(current);
+    if (key) { flush(); current = key[1]; required = false; hasDefault = false; continue; }
+    if (!current) continue;
+    if (/^ {4}required:\s*true\s*$/.test(line)) required = true;
+    else if (/^ {4}default:/.test(line)) hasDefault = true;
   }
+  flush();
   return out;
 }
 
