@@ -5,8 +5,8 @@
   "artifacts": [
     {
       "path": "report.json",
-      "bytes": 2317,
-      "sha256": "2a06a0ce05800dc816af074d1163af469a8f6e833c9e33000ced4e4baf6bc314"
+      "bytes": 2098,
+      "sha256": "d08127c5e3d98ae030fcc9cd7e363aa376f3c8c9d3700f8fe0417e4ea32ac6cf"
     },
     {
       "path": "report.md",

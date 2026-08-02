@@ -2,8 +2,7 @@
   "marketplace": {
     "name": "claude-skills",
     "kind": "directory",
-    "spec": "./marketplace",
-    "installLocation": "/private/tmp/claude-501/-Users-natejswenson-localrepo-claude-skills/4c2593d2-ebe4-4367-9c03-826566cf19a4/scratchpad/nsr-tree/skills/pluginsync/skills/pluginsync/evals/fixtures/home/marketplace"
+    "spec": "./marketplace"
   },
   "rows": [
     {

@@ -66,6 +66,18 @@ export function classify({ marketplace, catalog, installed }) {
 export const changeable = (rows) => rows.filter((r) => r.action === 'install' || r.action === 'update');
 export const errored = (rows) => rows.filter((r) => r.action === 'error');
 
+/**
+ * The marketplace as it appears in output — name, kind and the source spec
+ * verbatim from the config.
+ *
+ * `installLocation` is deliberately dropped: it is a RESOLVED absolute path, so
+ * embedding it makes the artifact machine-specific. The text report avoided
+ * this by printing `spec`; the JSON payload did not, and CI caught it as a
+ * byte-diff between a local run and the runner. Resolution is an internal
+ * detail — a consumer that needs the path can read the config it came from.
+ */
+export const publicMarketplace = ({ name, kind, spec }) => ({ name, kind, spec });
+
 const dash = (v) => (v == null || v === '' ? '—' : v);
 
 /**

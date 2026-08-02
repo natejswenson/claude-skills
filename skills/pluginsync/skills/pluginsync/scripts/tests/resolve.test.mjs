@@ -144,6 +144,29 @@ test('a shadowing personal skill is detected by its SKILL.md, not its directory'
 });
 
 // ---------------------------------------------------------------------------
+// No output may carry a machine-specific absolute path. Both artifacts are
+// byte-compared in CI, and a resolved installLocation differs on every machine
+// — this shipped once in report.json and was caught only by the runner.
+// ---------------------------------------------------------------------------
+test('neither artifact embeds a resolved absolute path', () => {
+  const cli = join(SKILL, 'scripts', 'pluginsync.js');
+  const args = ['check', '--no-fetch', '--home', join(FIXTURES, 'home'),
+    '--installed-json', join(FIXTURES, 'installed.json')];
+
+  const text = execFileSync('node', [cli, ...args], { encoding: 'utf8' });
+  const json = execFileSync('node', [cli, ...args, '--json'], { encoding: 'utf8' });
+
+  for (const [label, out] of [['text', text], ['json', json]]) {
+    assert.doesNotMatch(out, new RegExp(SKILL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      `${label} output embeds this checkout's absolute path — it cannot be byte-compared on another machine`);
+    assert.doesNotMatch(out, /"installLocation"/, `${label} output exposes the resolved install location`);
+  }
+  // ...but the source spec, which IS machine-independent, must survive.
+  assert.match(text, /→ \.\/marketplace \(directory\)/);
+  assert.equal(JSON.parse(json).marketplace.spec, './marketplace');
+});
+
+// ---------------------------------------------------------------------------
 // --home redirects reads only; apply always writes through the real CLI.
 // ---------------------------------------------------------------------------
 test('apply refuses a fixture home rather than writing to the real install', () => {

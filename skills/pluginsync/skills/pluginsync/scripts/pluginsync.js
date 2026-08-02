@@ -20,7 +20,7 @@ import {
   readJson,
   readMarketplaces,
 } from './lib/state.mjs';
-import { changeable, classify, errored, renderApply, renderCheck, table } from './lib/report.mjs';
+import { changeable, classify, errored, publicMarketplace, renderApply, renderCheck, table } from './lib/report.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const DEFAULT_MARKETPLACE = 'claude-skills';
@@ -90,7 +90,7 @@ async function cmdCheck(args) {
   const { marketplace, rows, shadows } = gather(args);
 
   const text = renderCheck({ marketplace, rows, shadows });
-  const payload = { marketplace, rows, shadows, toChange: changeable(rows).length };
+  const payload = { marketplace: publicMarketplace(marketplace), rows, shadows, toChange: changeable(rows).length };
 
   // --out is what makes a run freezable: the baseline eval re-runs this exact
   // command into a temp dir and byte-compares these two files.
@@ -160,7 +160,7 @@ async function cmdApply(args) {
 
   const selfUpdated = rows.some((r) => r.plugin === 'pluginsync' && (r.outcome === 'updated' || r.outcome === 'installed'));
   if (args.json) {
-    console.log(JSON.stringify({ marketplace: before.marketplace, rows, shadows: before.shadows, selfUpdated }, null, 2));
+    console.log(JSON.stringify({ marketplace: publicMarketplace(before.marketplace), rows, shadows: before.shadows, selfUpdated }, null, 2));
   } else {
     console.log(renderApply({ marketplace: before.marketplace, rows, shadows: before.shadows, selfUpdated }));
   }
