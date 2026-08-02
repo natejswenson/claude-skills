@@ -2,6 +2,84 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.4.0 (2026-08-02) — release one named thing, and prove the tag exists
+
+### Added
+
+- **Component releases: `release-status`, `release-prepare`, `release-cut`.**
+  A *component* is one independently-versioned thing in a repo — a skill in a
+  monorepo, or the repo itself. `release.componentLayout` says where its
+  version files, changelog, tag and release workflow live, with `{name}` as the
+  only substitution token, and `release.components` lists the names. A repo
+  with neither gets a single component inferred from its root, so a one-project
+  repo needs no config at all and `--component` may be omitted.
+
+  This closes the half of releasing that was never automated. The mechanical
+  end already worked — `_release.yml` is version-driven and idempotent, every
+  caller has `workflow_dispatch`, `release-dispatch` exists. Everything
+  *upstream* of the dispatch was manual, and that is where the friction and the
+  mistakes lived.
+
+- **`release-status` reads state instead of guessing it.** The version on main
+  and on dev (read via `git show`, so the user's working tree is never touched
+  or checked out), the last tag, every commit since that tag that touched this
+  component's paths, a suggested bump with its reason, and a `statusHash` that
+  `release-cut` requires back — the same TOCTOU discipline `apply` already has.
+
+- **`collateral`: every other component the same promotion would release.** A
+  `dev → main` promotion is atomic and carries all of dev, so cutting a release
+  for one component also releases anything else sitting bumped-but-untagged
+  there. The SKILL.md rule is that this list is named to the user before the
+  irreversible step, never merely present in JSON an agent might skim past.
+
+- **`release-cut` is resumable, bounded, and proves the tag.** The full path —
+  feature PR, checks, merge, promotion, auto-merge, release run, tag — takes
+  longer than one call should block for, so each call advances as far as it can
+  and returns the stage it is parked at. Every stage is derived from live remote
+  state, never from a record of a previous call, so a resumed run and a fresh
+  one are the same code path. It reports `done: true` only after reading the tag
+  back from origin: a dispatched workflow, a merged PR and a green check are all
+  still "not done."
+
+- **Version files can be `package.json`, `SKILL.md` frontmatter, `pyproject.toml`
+  or a top-level `project.yml`.** A component model that only reads
+  `package.json` is not generic, it is a node model — the first two non-node
+  repos this was pointed at were a Python project and an Xcode project. TOML and
+  YAML are matched at column zero only: both formats nest, and an indented
+  `version` is a dependency pin, not the project's own version. Releasing the
+  wrong number is worse than reporting none.
+
+### Fixed
+
+- **`spliceChangelog` built a regex out of the version string and escaped only
+  the dots**, leaving `\`, `*`, `+`, `(` and `[` live all the way into
+  `new RegExp`. `prepare` rejects a non-semver version before reaching it, so
+  this was not exploitable through the CLI — but the function is exported and
+  independently callable, and a guard that lives in the caller is not a guard.
+  It now matches with plain string operations, which is also exactly what
+  `_release.yml`'s `awk` does (`/^## / && index($0, ver)`), so the duplicate
+  check and the release-time extractor answer the same question the same way.
+  Found by CodeQL (`js/incomplete-sanitization`, high) on PR #158.
+
+- **`dispatchReleaseWorkflow` ignored the `ownerRepo` it was given.** It shelled
+  out to `gh workflow run` with no `--repo`, so `gh` inferred the repository
+  from the process's working directory — which is routinely *not* the repo
+  `--repo <path>` points at. A dispatch into the wrong repository still exits 0,
+  so this failed silently in exactly the setup the flag exists for.
+
+### Notes
+
+- A breaking change on a component still in 0.x is capped at a **minor** bump,
+  and reported as capped rather than applied silently. Declaring 1.0.0 is an
+  API-stability promise, and no commit message is entitled to make it on the
+  maintainer's behalf.
+- `release-prepare` does its work in a throwaway `git worktree`, so unrelated
+  uncommitted work in the user's tree cannot be swept into a release commit.
+  Real trees have parallel work in them; this monorepo's had an entire untracked
+  skill in it while this feature was written.
+- No template changed, so no rendered workflow and no `renderedTemplateHashes`
+  entry moves in this release.
+
 ## 0.3.3 (2026-08-01) — least-privilege permissions in every rendered workflow
 
 - **Every rendered workflow granted its permissions at the workflow level, so
