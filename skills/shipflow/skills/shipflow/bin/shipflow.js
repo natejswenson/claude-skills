@@ -16,6 +16,7 @@ import {
 } from '../lib/apply.mjs';
 import { readFileCapped } from '../lib/gh.mjs';
 import { resolvePattern, scoreAll } from '../lib/pattern-registry.mjs';
+import { readStatus, prepare, cut, listComponentNames } from '../lib/release.mjs';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -244,6 +245,117 @@ function cmdReleaseDispatch(args) {
   printJson({ dispatched: results, labelCleared: cleared.ok, labelClearError: cleared.ok ? null : cleared.error });
 }
 
+// --- component releases -----------------------------------------------------
+// Shared resolution for the three release-* commands. `--component` is optional
+// when the repo has exactly one component (the inferred single-component case),
+// because in a repo with one thing to release, naming it is ceremony.
+function resolveReleaseArgs(values, commandName) {
+  if (!values.repo) return { error: `${commandName}: --repo is required` };
+  const configPath = values.config ?? defaultConfigPath(values.repo);
+  let config;
+  try {
+    config = readConfig(configPath);
+  } catch (e) {
+    return { error: `${commandName}: could not read config at ${configPath}: ${e.message}` };
+  }
+  const names = listComponentNames(config, values.repo);
+  let name = values.component;
+  if (!name) {
+    if (names.length !== 1) {
+      return { error: `${commandName}: --component is required (this repo declares ${names.length}: ${names.join(', ')})` };
+    }
+    name = names[0];
+  } else if (!names.includes(name)) {
+    return { error: `${commandName}: "${name}" is not a declared component. This repo has: ${names.join(', ')}` };
+  }
+  return { config, name };
+}
+
+function cmdReleaseStatus(args) {
+  const { values } = parseArgs({
+    args,
+    options: { repo: { type: 'string' }, config: { type: 'string' }, component: { type: 'string' } },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-status');
+  if (resolved.error) return fail(resolved.error);
+  try {
+    printJson(readStatus(values.repo, resolved.config, resolved.name));
+  } catch (e) {
+    return fail(`release-status: ${e.message}`);
+  }
+}
+
+function cmdReleasePrepare(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+      component: { type: 'string' },
+      version: { type: 'string' },
+      'notes-file': { type: 'string' },
+      date: { type: 'string' },
+    },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-prepare');
+  if (resolved.error) return fail(resolved.error);
+  if (!values.version || !values['notes-file']) {
+    return fail('release-prepare: --version and --notes-file are both required');
+  }
+  let notes;
+  try {
+    notes = readFileCapped(values['notes-file']);
+  } catch (e) {
+    return fail(`release-prepare: could not read --notes-file: ${e.message}`);
+  }
+  if (notes.trim().length === 0) {
+    // An empty CHANGELOG entry is how a release ships with notes that say
+    // nothing. _release.yml falls back to a bare "<skill> v<version>" title,
+    // which looks deliberate and is not.
+    return fail('release-prepare: --notes-file is empty — a release with no notes is not a release');
+  }
+  try {
+    const result = prepare(values.repo, resolved.config, resolved.name, values.version, notes, {
+      date: values.date,
+      featureBranchPrefix: resolved.config.featureBranchPrefix,
+    });
+    if (!result.ok) return fail(`release-prepare: ${result.error}`);
+    printJson(result);
+  } catch (e) {
+    return fail(`release-prepare: ${e.message}`);
+  }
+}
+
+function cmdReleaseCut(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+      component: { type: 'string' },
+      'expect-status-hash': { type: 'string' },
+      'skip-hash-check': { type: 'boolean', default: false },
+      wait: { type: 'string' },
+    },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-cut');
+  if (resolved.error) return fail(resolved.error);
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('release-cut: could not resolve owner/repo from git remote');
+  try {
+    const result = cut(values.repo, resolved.config, resolved.name, {
+      waitSeconds: values.wait ? Number(values.wait) : 240,
+      expectStatusHash: values['expect-status-hash'] ?? null,
+      skipHashCheck: values['skip-hash-check'],
+      ownerRepo,
+    });
+    if (!result.ok) return fail(`release-cut: ${result.error}${result.currentStatusHash ? ` (current statusHash: ${result.currentStatusHash})` : ''}`);
+    printJson(result);
+  } catch (e) {
+    return fail(`release-cut: ${e.message}`);
+  }
+}
+
 function cmdRenameDefaultBranch(args) {
   const { values } = parseArgs({
     args,
@@ -274,6 +386,9 @@ Commands:
   apply --repo <path> [--config <path>] [--dry-run] [--expect-state-hash <hash> | --skip-hash-check] [--force <id>]... [--force-reason <text>]
   releases --repo <path> [--config <path>]
   release-dispatch --repo <path> --pr <number> --workflow-file <file>... --ref <ref>
+  release-status --repo <path> [--component <name>]
+  release-prepare --repo <path> [--component <name>] --version <x.y.z> --notes-file <path> [--date <YYYY-MM-DD>]
+  release-cut --repo <path> [--component <name>] (--expect-status-hash <hash> | --skip-hash-check) [--wait <seconds>]
   rename-default-branch --repo <path> --branch <current-name> --to <new-name>
 
 Every command prints JSON to stdout.`);
@@ -313,6 +428,15 @@ if (isMain) {
       break;
     case 'release-dispatch':
       cmdReleaseDispatch(rest);
+      break;
+    case 'release-status':
+      cmdReleaseStatus(rest);
+      break;
+    case 'release-prepare':
+      cmdReleasePrepare(rest);
+      break;
+    case 'release-cut':
+      cmdReleaseCut(rest);
       break;
     case 'rename-default-branch':
       cmdRenameDefaultBranch(rest);

@@ -27,6 +27,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`ghfactory`](skills/ghfactory) | ![ghfactory](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=ghfactory-v*&label=&sort=semver&color=blue) | `/ghfactory` | Node | Generate GitHub Actions workflows that are *verified, not hoped for* — every action ref resolved to a real pinned SHA, `with:` keys checked against the action's own metadata, staleness reported, actionlint and zizmor clean, in about a second. |
 | [`skillfactory`](skills/skillfactory) | ![skillfactory](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=skillfactory-v*&label=&sort=semver&color=blue) | `/skillfactory` | Node | The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run is frozen as its baseline eval. |
 | [`eval`](skills/eval) | ![eval](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=eval-v*&label=&sort=semver&color=blue) | `/eval` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
+| [`release`](skills/release) | ![release](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=release-v*&label=&sort=semver&color=blue) | `/release` | Node | Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -47,6 +48,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install ghfactory@claude-skills
 /plugin install skillfactory@claude-skills
 /plugin install eval@claude-skills
+/plugin install release@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -68,6 +70,7 @@ ln -sfn "$PWD/skills/press/skills/press"               ~/.claude/skills/press
 ln -sfn "$PWD/skills/ghfactory/skills/ghfactory"               ~/.claude/skills/ghfactory
 ln -sfn "$PWD/skills/skillfactory/skills/skillfactory" ~/.claude/skills/skillfactory
 ln -sfn "$PWD/skills/eval/skills/eval" ~/.claude/skills/eval
+ln -sfn "$PWD/skills/release/skills/release" ~/.claude/skills/release
 ```
 </details>
 
