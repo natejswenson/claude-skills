@@ -1,7 +1,7 @@
 {
   "comment": "What must not silently disappear from smith. `prose` names guardrails no code enforces — each one is a rule whose loss would be invisible until it caused the failure it exists to prevent. `split` declares which half of this skill is deterministic. `baseline` names the offline, $0 checks pinned against a real run of the scaffolder.",
   "smith": {
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "prose": [
     {
@@ -28,6 +28,11 @@
       "id": "never-hand-write-a-brand-value",
       "pattern": "Never hand-write a brand value",
       "rationale": "The brand lives in press/brand/tokens.json and nowhere else. A hand-written region recreates precisely the drift press exists to end — this brand was previously eight hand-ported copies across four repos with five names for the same orange."
+    },
+    {
+      "id": "readme-h1-is-the-anchor",
+      "pattern": "keep the H1 exactly the\\s+skill name",
+      "rationale": "press's `<name>-readme` target anchors its masthead on `^# <name>$`. A decorated H1 does not error — it detaches the region silently, and the next `press emit --init` splices a SECOND masthead below the first. Nothing but a rendered page shows that, so the rule has to survive as prose."
     },
     {
       "id": "never-pr-into-main",
@@ -115,9 +120,18 @@
       "kind": "corpus",
       "test": "scripts/tests/conformance.test.mjs",
       "corpus_glob": "../../../*/skills/*/SKILL.md",
-      "min_corpus": 9,
+      "min_corpus": 11,
       "update_command": "node scripts/smith.js verify --all --repo ../../..",
-      "rationale": "The house tier is only trustworthy about a new skill if it is right about the nine already shipped. The floor is the anti-vacuity rule: a conformance resolver that silently matched nothing would report 'all conformant' having checked zero skills — the exact way a gate turns decorative. Pinned against real, shipped, working skills rather than a synthetic tree, so a rule that drifts away from what this repo actually does goes red."
+      "rationale": "The house tier is only trustworthy about a new skill if it is right about the ten already shipped. The floor is the anti-vacuity rule: a conformance resolver that silently matched nothing would report 'all conformant' having checked zero skills — the exact way a gate turns decorative. Pinned against real, shipped, working skills rather than a synthetic tree, so a rule that drifts away from what this repo actually does goes red."
+    },
+    {
+      "id": "readme-house-style-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/readme.test.mjs",
+      "corpus_glob": "../../../*/README.md",
+      "min_corpus": 11,
+      "update_command": "node scripts/smith.js verify --all --repo ../../..",
+      "rationale": "Pinned against the READMEs this repo actually ships, so a contract strict enough to reject work already published fails here rather than in a release — the same reason press lints its own shipped stylesheets. The floor of 10 is the anti-vacuity rule: the glob resolves from inside the nested skill dir, and one wrong `..` would match nothing and report every README as conforming. Two-sided by construction: the corpus must pass, and each of six targeted mutations of a real README — decorated H1, deleted masthead, prose instead of the inventory table, a reordered head, a missing foot section, a Quick start with no command — must be caught by the specific check that exists for it, which is stronger than merely failing somewhere."
     }
   ]
 }
