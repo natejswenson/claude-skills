@@ -13,7 +13,7 @@ const REPO = join(HERE, '..', '..', '..', '..', '..', '..');
 // skills rather than a synthetic tree is the whole point: a conformance rule
 // that has drifted away from what this repo actually does should go red here,
 // not in the PR of whoever makes the next skill.
-const MIN_CORPUS = 9;
+const MIN_CORPUS = 11;
 
 test('the corpus is real', () => {
   // Anti-vacuity floor. A resolver that silently matched nothing would let

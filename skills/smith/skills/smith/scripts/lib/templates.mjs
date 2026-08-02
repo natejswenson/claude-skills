@@ -46,22 +46,95 @@ SOFTWARE.
 `;
 
 /**
- * The README's first line is load-bearing: press's `<name>-readme` target
- * inserts its version region after `^# <name> `, so changing this heading
- * silently detaches the badge.
+ * The README, in the house style — fixed head, free tail, fixed foot. The
+ * contract is `references/readme.md`, `gradeReadme` checks it, and
+ * `ci / marketplace` runs that check over every skill on every PR, so a
+ * scaffolded README that drifts from this shape fails rather than merely
+ * looking different.
+ *
+ * Two lines are load-bearing beyond their appearance:
+ *
+ * - **The H1 is the bare skill name.** press's `<name>-readme` target anchors
+ *   its masthead on `^# <name>$`; decorating the title silently detaches the
+ *   brand region and the next `press emit --init` splices a second one.
+ * - **The blank line where the masthead goes.** `press emit --init` inserts the
+ *   region directly after the H1, so nothing may sit between them.
+ *
+ * Every section is filled from the spec. A scaffolded README is a real README
+ * with thin content, never a file of TODO markers: a placeholder heading reads
+ * as done to every checker and to most humans.
  */
-export const readme = (spec) => `# ${spec.name} (Claude Code skill)
+export const readme = (spec) => {
+  const kind = spec.stack === 'node' ? 'Node' : 'Python';
+  const rows = [
+    [`skills/${spec.name}/SKILL.md`, 'What the agent reads: triggers, the flow, and the one rule.'],
+    [`skills/${spec.name}/scripts/`, `The deterministic half — ${spec.split.deterministic.map((s) => `\`${s.command.split(' ').pop()}\``).join(', ')}.`],
+    ...spec.references.map((r) => [`skills/${spec.name}/references/${r.file}`, `${r.is[0].toUpperCase()}${r.is.slice(1)}.`]),
+    [`skills/${spec.name}/skill-invariants.json`, 'The prose guardrails and the baseline eval declaration.'],
+  ];
 
-${spec.summary}
+  // Triggers come from the quoted phrases in the description, because that is
+  // literally the text Claude Code matches a request against — writing a
+  // separate trigger list by hand would let the two disagree.
+  const triggers = [...spec.description.matchAll(/"([^"]{3,})"/g)].map((m) => m[1]);
 
-${spec.oneRule}
+  return `# ${spec.name}
+
+*${spec.summary.replace(/\.$/, '')}.*
+
+> **${spec.oneRule}**
+
+## Why install this
+
+${spec.summary} It ships the method as well as the commands: ${spec.split.deterministic.length} step${spec.split.deterministic.length === 1 ? '' : 's'} the machine decides outright, and ${spec.split.nondeterministic.length} the model has to judge, with the line between them written down in \`skill-invariants.json\` rather than left to taste.
+
+Use it when the work needs a repeatable process and a result you can inspect.
+
+## What you get
+
+| Path | What it provides |
+|---|---|
+${rows.map(([p, w]) => `| \`${p}\` | ${w} |`).join('\n')}
+
+## Quick start
 
 \`\`\`bash
-${spec.commands.map((c) => `${spec.name} ${c.name}`).join('\n')}
+${spec.commands.map((c) => `${spec.name} ${c.name.padEnd(Math.max(...spec.commands.map((x) => x.name.length)))}   # ${c.does}`).join('\n')}
 \`\`\`
 
-Install via the [${REPO} marketplace](https://github.com/${ORG}/${REPO}).
+Install from the [${REPO} marketplace](https://github.com/${ORG}/${REPO}), then ask
+for work matching the triggers below.
+
+## Triggers
+
+${(triggers.length ? triggers.map((t) => `- "${t}"`) : ['- see the `description:` in `SKILL.md`']).join('\n')}
+- Anything the method in \`SKILL.md\` covers, whether or not it is phrased that way.
+
+## Requirements
+
+${spec.stack === 'node' ? '- Node 18+ (the bundled scripts are ESM, no dependencies).' : '- Python 3.12+ (standard library only).'}
+
+## Development
+
+\`\`\`bash
+cd skills/${spec.name}/skills/${spec.name}
+${spec.stack === 'node' ? 'npm test' : 'python3 -m pytest -q'}
+\`\`\`
+
+${kind} skill. \`ci / ${spec.name}\` runs the same tests plus the house lints on
+every pull request, and \`smith verify --skill ${spec.name}\` reports which rung
+of the ladder it has reached.
+
+## Changelog
+
+See [\`CHANGELOG.md\`](CHANGELOG.md). Releases are cut by a version bump, tagged
+\`${spec.name}-v<version>\`.
+
+## License
+
+MIT — see [\`LICENSE\`](LICENSE).
 `;
+};
 
 export const changelog = (spec, today) => `# Changelog
 
@@ -135,7 +208,7 @@ version: 0.1.0
 
 You are running the **${spec.name}** skill.
 
-**Announce at start:** "I'm using the ${spec.name} skill to ${spec.summary[0].toLowerCase()}${spec.summary.slice(1).replace(/\.$/, '')}."
+**Announce at start:** "I'm using the ${spec.name} skill — ${spec.summary.replace(/\.$/, '')}."
 
 > Commands below run from the directory containing this \`SKILL.md\` (\`$SKILL_DIR\`).
 > Resolve it once. Pass \`--repo <path>\` to work against the user's repo.

@@ -1,6 +1,6 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
-  "label": "scaffold-golden",
+  "label": "the-real-run",
   "command": "cp -R evals/inputs/house/. $OUT && node scripts/smith.js scaffold --spec evals/inputs/demo.spec.json --repo $OUT --today 2026-08-01 >/dev/null",
   "artifacts": [
     {
@@ -35,8 +35,8 @@
     },
     {
       "path": "skills/press/skills/press/targets.json",
-      "bytes": 960,
-      "sha256": "6deeb8b11ec81c7d363def29438018c7d0d9b6365f5eed01a36e84bc9aaad00f"
+      "bytes": 920,
+      "sha256": "10d3fcb97a0725e89055eacffdd89ae3a25858d5fd0aec32364a1fdf2973ccc8"
     },
     {
       "path": "skills/tally/.claude-plugin/plugin.json",
@@ -55,13 +55,13 @@
     },
     {
       "path": "skills/tally/README.md",
-      "bytes": 371,
-      "sha256": "5ca4901d1bbbfa027f9310cdae2443aa764a35c9a0352bec5496bacf5ebc2f08"
+      "bytes": 2021,
+      "sha256": "c9e1b493393d976a11c0a10b156ee471f43951319aa300b8bda722fb1dce30cb"
     },
     {
       "path": "skills/tally/skills/tally/SKILL.md",
-      "bytes": 3146,
-      "sha256": "f0b599c9094985617e6d2fd724f55353624644edc510645555e32dcef27e5566"
+      "bytes": 3147,
+      "sha256": "8097a69a025249971c4aa8dc694a8dc0a95e436c5ce74062fd276cac5a77132f"
     },
     {
       "path": "skills/tally/skills/tally/package.json",

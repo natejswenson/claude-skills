@@ -95,11 +95,11 @@ export function planEdits(spec, house) {
           id: `${n}-readme`,
           repo: 'claude-skills',
           path: `skills/${n}/README.md`,
-          region: 'version',
+          region: 'masthead',
           syntax: 'md',
-          emitter: 'version-badge',
-          params: { what: 'The brand regions' },
-          init: { insertAfter: `^# ${n} ` },
+          emitter: 'readme-masthead',
+          params: {},
+          init: { insertAfter: `^# ${n}$` },
         },
       );
       return data;

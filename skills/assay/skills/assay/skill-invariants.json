@@ -1,0 +1,116 @@
+{
+  "comment": "What must not silently disappear from assay. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "smith": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never assert what it did not observe: every finding must cit",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "coverage-gap-is-not-optional",
+      "pattern": "Never present a finding count without its coverage gap",
+      "rationale": "A finding count alone reads as a verdict on the run. It is only a verdict on the clauses something examined. Split from its coverage gap, the number misleads by construction — and it misleads in the flattering direction, which is the one nobody questions."
+    },
+    {
+      "id": "never-keep-a-green-case",
+      "pattern": "Never keep an eval case that passed on arrival",
+      "rationale": "A case never observed failing could be asserting nothing at all. Generating cases automatically is the fastest known way to manufacture a folder of decorative evals, so generation stays welded to proof."
+    },
+    {
+      "id": "never-grade-from-a-summary",
+      "pattern": "Never grade from a summary",
+      "rationale": "Grading an account of a run instead of the run is how a grader starts hallucinating politely. The transcript is on disk; there is never a reason to accept a retelling of it."
+    },
+    {
+      "id": "never-weaken-a-probe",
+      "pattern": "Never weaken a probe to remove a finding",
+      "rationale": "The cheapest way to make a report look good is to stop it detecting things. Narrowing what a probe decides is legitimate; deleting the finding leaves the defect in place and destroys the evidence that it existed."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "extract every committed clause with a stable id and a source anchor",
+        "command": "node scripts/assay.js contract --skill <name>"
+      },
+      {
+        "step": "normalize a session transcript into anchored, citable events",
+        "command": "node scripts/assay.js trace --run <file>"
+      },
+      {
+        "step": "decide the mechanically checkable violations and resolve every citation",
+        "command": "node scripts/assay.js probe --skill <name> --run <file>"
+      },
+      {
+        "step": "assemble the scored report and the clause-coverage gap",
+        "command": "node scripts/assay.js report --skill <name> --run <file>"
+      },
+      {
+        "step": "prove a generated eval case actually fails against the skill as it exists today",
+        "command": "node scripts/assay.js case --skill <name> --finding <id> --prove"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide whether a clause no probe can parse was violated in spirit",
+        "why": "a rule like \"never claim a result you did not observe\" is a semantic relation between a sentence and an event, not a pattern; a parser can find the sentence but cannot decide whether it was earned"
+      },
+      {
+        "step": "rank findings by what they would actually have cost",
+        "why": "counting violations is arithmetic; knowing which one would have shipped a broken skill and which is cosmetic is judgment nothing on disk records"
+      },
+      {
+        "step": "choose which confirmed findings deserve to become permanent eval cases",
+        "why": "most violations are one-off accidents; a case is worth keeping only when its failure class will recur, and no file says which those are"
+      },
+      {
+        "step": "write the report prose and the recommended fix for each finding",
+        "why": "ordering, tone and what to leave out — a report nobody reads catches nothing"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": ["evals/fixtures/run-trace.json", "evals/fixtures/contracts/smith.json"],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "probe drift, and clause extraction silently dropping rules so the report shrinks while still looking complete — pinned against a frozen snapshot of a real session (the smith run that built assay) graded against smith's own contract. The command reads the committed snapshot, never the live session file, which grows every turn and would byte-drift the baseline red for no reason."
+    },
+    {
+      "id": "uncited-finding-rejected",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": ["evals/fixtures/bad-finding.json"],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the one rule being weakened until assertions pass without evidence — the day this goes green, the skill is a hallucination engine with a table — pinned against a finding whose clause id and event id do not resolve to anything real."
+    },
+    {
+      "id": "green-case-refused",
+      "kind": "trap",
+      "test": "scripts/tests/eval-cases.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "decorative case generation — an eval that was never observed failing proves nothing and will never go red — pinned against a generated case whose asserted-absent string is genuinely absent, so the case passes on arrival and must be refused and deleted."
+    },
+    {
+      "id": "every-shipped-contract",
+      "kind": "corpus",
+      "test": "scripts/tests/eval-cases.test.mjs",
+      "corpus_glob": "evals/fixtures/contracts/*.json",
+      "min_corpus": 10,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the extractor matching nothing and reporting \"no violations\" over zero clauses — a clean grade of an empty rubric. Every shipped skill's frozen contract must still yield clauses, and the floor means a resolver that matches nothing goes red instead of quiet."
+    }
+  ]
+}
