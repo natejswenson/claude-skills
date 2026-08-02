@@ -1,0 +1,97 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "cp -R evals/inputs/house/. $OUT && node scripts/skillfactory.js scaffold --spec evals/inputs/demo.spec.json --repo $OUT --today 2026-08-01 >/dev/null",
+  "artifacts": [
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "bytes": 429,
+      "sha256": "322e197dbfb3a49468be42ea704bf639757e313fe4ff3dbe8acefd3f52f46372"
+    },
+    {
+      "path": ".github/repo-settings.sh",
+      "bytes": 382,
+      "sha256": "1541cd36e0c96aa93a6233ec6b765901162024f4517584078c411fc4e7ca75a7"
+    },
+    {
+      "path": ".github/workflows/press.yml",
+      "bytes": 1178,
+      "sha256": "7a9202270c0b52203d6e2850b91ed8491a3819c811eb568d07589476e238d09f"
+    },
+    {
+      "path": ".github/workflows/repocount.yml",
+      "bytes": 3182,
+      "sha256": "b2ffecc29a1111053d3bf1da1cf7a3429205cd3db645c9b28099af3204595ce6"
+    },
+    {
+      "path": "CLAUDE.md",
+      "bytes": 603,
+      "sha256": "0a1c5ce11c23037cdf50ace1cfaa6ab4f0891d351fcb820705b9a36b058c7964"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1141,
+      "sha256": "41ae9d7a5a6c059cc8202ce84bb1bf4ce4c432f7e74191ab0b6a8a7a34bf8bb6"
+    },
+    {
+      "path": "skills/press/skills/press/targets.json",
+      "bytes": 944,
+      "sha256": "63af8a2df074dc536b71198d45903ed720ccf1e8734723c79fcea8ef20fd2f1b"
+    },
+    {
+      "path": "skills/repocount/.claude-plugin/plugin.json",
+      "bytes": 324,
+      "sha256": "6c07ee537f981fd60d0e415f1403148ecfcaee561e7f598c57839579b2315e57"
+    },
+    {
+      "path": "skills/repocount/CHANGELOG.md",
+      "bytes": 400,
+      "sha256": "330b7cb92265d309147cada15cd80b2bf1bc305ee6ac7fe7d98962c41df6ab22"
+    },
+    {
+      "path": "skills/repocount/LICENSE",
+      "bytes": 1069,
+      "sha256": "5a37862cd3d2b64070cb948cf57cb4854d5cdbd5c282d43232edeede2f506638"
+    },
+    {
+      "path": "skills/repocount/README.md",
+      "bytes": 2080,
+      "sha256": "b071f141e75ccc9212a0ce279a587986006318222c0a76fc00548fd22ab70f12"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/SKILL.md",
+      "bytes": 3202,
+      "sha256": "1eb29fe25fcecfc8234a81d3161774266edcabc8b0d45cb036814626edc60c2c"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/package.json",
+      "bytes": 1073,
+      "sha256": "6cf332368dbcf7222963c02238d9e0b34335dfc7779955efe27c6aaff4145c0e"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/references/anatomy.md",
+      "bytes": 205,
+      "sha256": "5e290cccc815a7add1aa7c10466b1d3d609b1b45520ba0c9a9d8ebf34fd54a09"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/scripts/repocount.js",
+      "bytes": 2618,
+      "sha256": "44b674c3fad7697af0ae493b41e9aeb0c0fdd887dcc4c170328c62a88a46d51a"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/scripts/tests/baseline.test.mjs",
+      "bytes": 1143,
+      "sha256": "f640e22c5daa55cff85082cec936fb1ffe7108dedc2f4783eeee91bcaa6df48d"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/scripts/tests/skill-contract.test.mjs",
+      "bytes": 1790,
+      "sha256": "1a2258c50259415374068819b915b1922a16b11c4931ade3d8ae03c19c1c8f1c"
+    },
+    {
+      "path": "skills/repocount/skills/repocount/skill-invariants.json",
+      "bytes": 2687,
+      "sha256": "33aff31353e96ab47113906f35039ca2904987417a8310ad6ef70e7c54466f4d"
+    }
+  ]
+}

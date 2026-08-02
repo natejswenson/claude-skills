@@ -50,4 +50,4 @@ jobs:
       # which is exactly how a house style rots one pull request at a time.
       # `verify --all` exits non-zero on any house-tier failure and shells out
       # to nothing, so this stays offline and sub-second.
-      - run: node skills/smith/skills/smith/scripts/smith.js verify --all --repo .
+      - run: node skills/skillfactory/skills/skillfactory/scripts/skillfactory.js verify --all --repo .
