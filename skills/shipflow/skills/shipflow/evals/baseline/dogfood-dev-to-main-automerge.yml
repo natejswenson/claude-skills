@@ -24,9 +24,18 @@ on:
     types: [opened, reopened, synchronize, closed]
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: write
+# Deny by default at the workflow level, grant per job. A workflow-level grant
+# applies to every job in the file, including ones added later that never
+# needed it — which is why zizmor's excessive-permissions rule flags it, and
+# why the fix is to scope rather than to waive.
+#
+# `contents: write` is dropped entirely, not moved. `gh pr merge --auto` only
+# *enables* native auto-merge, a pull-requests operation; GitHub performs the
+# merge itself afterwards, under its own automation rather than this token. The
+# grants below are what matters when releaseCredential is left as GITHUB_TOKEN
+# — where a real PAT is configured (the supported setup, see above), the
+# workflow token's permissions do not apply to these steps at all.
+permissions: {}
 
 jobs:
   # Enables native GitHub auto-merge on open/reopen/synchronize — this job
@@ -39,6 +48,8 @@ jobs:
       github.event.action != 'closed' &&
       github.event.pull_request.head.ref == 'dev'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Enable auto-merge
         run: gh pr merge --auto --merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"

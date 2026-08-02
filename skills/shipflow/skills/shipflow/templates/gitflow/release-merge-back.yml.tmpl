@@ -15,8 +15,11 @@ on:
     types: [closed]
     branches: [{{MAIN_BRANCH}}]
 
-permissions:
-  contents: write
+# Deny by default at the workflow level, grant per job — a workflow-level grant
+# applies to every job in the file, including ones added later that never needed
+# it. `contents: write` is genuinely required here (this job pushes a merge
+# commit), so it is scoped to the job rather than dropped.
+permissions: {}
 
 jobs:
   merge-back-to-dev:
@@ -24,6 +27,9 @@ jobs:
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, '{{RELEASE_BRANCH_PREFIX}}')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
