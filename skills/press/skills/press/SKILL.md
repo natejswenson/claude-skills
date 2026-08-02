@@ -2,7 +2,7 @@
 name: press
 description: The one brand system for everything produced in Claude — design tokens, the visual laws, the run-presentation contract, and the universal voice core. Use when composing or restyling any artifact (report, résumé, card, cover, PDF, HTML page, chart), when asked about brand colors, fonts, the accent law or "the PRESS look", when adding a new skill that renders anything, or when a brand value needs to change everywhere at once. Also handles "check the brand is in sync", "why do my colors differ", and onboarding a new consumer repo.
 user_invocable: true
-version: 0.8.1
+version: 0.9.0
 ---
 
 # /press — the brand system
@@ -127,8 +127,9 @@ default branch — because landing on `dev` alone leaves the branch that actuall
 ships stale until someone remembers to promote, and makes the next promotion
 carry an unrelated brand diff.
 
-Each consumer's README carries a generated `press:version` line, so the release
-a repo is on is visible without opening a workflow file.
+Each consumer's README carries the release in a generated region — `press:masthead`
+for a skill, `press:version` for a product repo — so the version a repo is on is
+visible without opening a workflow file.
 
 ## Changing a brand value
 
@@ -162,7 +163,8 @@ node bin/press.js propagate --repo ../budget --dry-run
    | `css-vars` | a custom-property block, with per-consumer aliases |
    | `md-palette` | the palette as a prose bullet list |
    | `markdown-block` | one of the brand docs, inlined into a SKILL.md |
-   | `version-badge` | a "this repo is on press vX" note for a README |
+   | `version-badge` | a "this repo is on press vX" note for a non-skill README |
+   | `readme-masthead` | the masthead a **skill** README wears |
    | `gha-header` | the masthead a generated GitHub Actions workflow wears |
    | `json` | raw values |
 
@@ -170,6 +172,12 @@ node bin/press.js propagate --repo ../budget --dry-run
    the target's language and lets `renderRegion` comment just the two markers;
    a workflow masthead is commentary throughout, so emitting it bare would
    splice box-drawing into the document and produce YAML that cannot parse.
+
+   **`readme-masthead` is for a skill README; `version-badge` is for every other
+   README.** The masthead carries the full `.mast` — stamp, brand line, document
+   kind, issue, byline — and the rule under it, and it requires the README's H1
+   to be the bare skill name so its `^# <name>$` anchor is the same everywhere.
+   A product repo's README has its own title and gets the badge instead.
 
 3. **Pick the font profile for its rendering engine.** `params.font_profile` is
    `browser` by default. Anything going through **fontconfig — WeasyPrint above
