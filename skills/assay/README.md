@@ -34,8 +34,8 @@ not a regression test; it is a decoration.
 | `skills/assay/SKILL.md` | The flow, the one rule, and what may never be graded from. |
 | `skills/assay/scripts/assay.js` | The CLI: `contract`, `trace`, `probe`, `report`, `case`. |
 | `skills/assay/scripts/lib/` | Clause extraction, trace normalization, the probe catalogue, scoring. |
-| `skills/assay/references/rubric.md` | How a run is scored, and what each band means. |
-| `skills/assay/references/probes.md` | The mechanically checkable violations, and what each one catches. |
+| `skills/assay/references/rubric.md` | Where a clause comes from, which files are contract versus commentary, and the recall limit that makes the coverage gap load-bearing. |
+| `skills/assay/references/probes.md` | The eight probes: what each one decides, and what it explicitly cannot and must hand to judgment. |
 | `skills/assay/references/cases.md` | What makes a generated eval case worth keeping. |
 | `skills/assay/evals/baseline/` | A real graded run — this repo's own smith session — frozen and re-scored. |
 
@@ -46,7 +46,7 @@ assay contract --skill smith --out contract.json   # every clause it committed t
 assay trace --run session.jsonl --out trace.json   # the run, as citable events
 assay probe --contract contract.json --trace trace.json
 assay report --contract contract.json --trace trace.json --out ./report
-assay case --skill smith --in draft.test.mjs --assert-absent "…" --prove
+assay case --skill smith --in SKILL.md --assert-absent "<the defect text>" --prove
 ```
 
 Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills),
