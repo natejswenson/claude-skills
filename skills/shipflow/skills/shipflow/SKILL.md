@@ -32,6 +32,7 @@ user; the CLI is the only thing that *does*.
 | `.github/shipflow.json` doesn't exist in the target repo yet | **First-run setup** |
 | `.github/shipflow.json` exists, user wants to check/repair drift | **Re-run / audit** |
 | User asks "any releases pending?" / periodic check-in / after a `dev → main` merge | **Check pending releases** |
+| User wants to cut a release for one named thing ("release devlog") | **Cut a component release** |
 
 ## First-run setup
 
@@ -140,6 +141,70 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 
 4. If no, leave the label as-is — there is no "defer" state in this version; declining is final for that promotion short of a manual dispatch. (Deliberate v1 simplification, not an oversight.)
 
+## Cut a component release
+
+For the conversational "release devlog" flow, prefer the **`release` skill** — it owns the
+bump judgment, the CHANGELOG prose and the run presentation. This section is the CLI contract
+underneath it, and the fallback when that skill is not installed.
+
+A **component** is one independently-versioned thing in a repo: a skill in a monorepo, or the
+repo itself. `release.componentLayout` describes where a component's version, changelog, tag
+and release workflow live, with `{name}` as the only substitution token;
+`release.components` lists the names. A repo with neither gets a single component inferred from
+its root (`package.json`, `CHANGELOG.md`, `v{version}`), so a one-project repo needs no config
+at all and `--component` may be omitted.
+
+1. **Read the state. Never guess it.**
+   ```
+   npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name>
+   ```
+   Returns `state`, the version on main and dev, the last tag, every commit since that tag that
+   touched this component's paths, a `suggestedBump` with its reason, `blockers`, `notes`, and a
+   `statusHash`. `state` decides the path:
+   - `clean` — the released version is what's on main. A bump is needed: go to step 2.
+   - `untagged-bump-on-main` — the bump is already on main and was never tagged (a cancelled or
+     failed release run). **No PR is needed** — `release-cut` dispatches and verifies. Skip to step 3.
+   - `bump-on-dev-unpromoted` — the bump is on dev, waiting for a promotion. Skip to step 3.
+   - `version-behind-tag` — main carries a *lower* version than an existing tag. Stop and ask;
+     this means a tag was cut from something other than main, and guessing is how it gets worse.
+
+2. **Show the user `collateral`, `blockers` and the proposed version, and wait.**
+   **`collateral` is not advisory.** A `dev → main` promotion is atomic and carries all of dev, so
+   every component listed there is released by the same promotion — "release devlog" really does
+   also release them. **Never run `release-cut` without naming that list to the user first.**
+   Releasing something the user did not ask for is the worst thing this flow can do.
+
+   `suggestedBump` is a suggestion. The user decides, and a `suggestedBumpCapped: true` means a
+   breaking change was held at minor because the component is still 0.x — going to 1.0.0 is a
+   release decision, never a commit message's. Then:
+   ```
+   npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \
+     --version <x.y.z> --notes-file <path>
+   ```
+   Local only, no network. It works in a **throwaway git worktree**, so unrelated uncommitted work
+   in the user's tree is untouched and cannot be swept into the release commit. The version bump
+   and the CHANGELOG entry land in **one commit**, because releases are publish-on-merge — a
+   follow-up promotion to fix release notes is too late, the tag is already cut.
+
+3. **Cut it, and prove it.**
+   ```
+   npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \
+     --expect-status-hash <hash-from-step-1> --wait 240
+   ```
+   `--expect-status-hash` is mandatory (same TOCTOU discipline as `apply`'s `--expect-state-hash`);
+   `--skip-hash-check` is a named escape hatch, never a default.
+
+   **`release-cut` is resumable and bounded, and it will usually return `done: false`.** The full
+   path — feature PR, checks, merge, promotion, auto-merge, release run, tag — takes longer than
+   one call should block for. Each call advances as far as it can, then returns the `stage` it is
+   parked at and a `next` line. **Call it again, unchanged, until `done: true`.** It derives every
+   stage from live remote state and never from a record of what a previous call did, so a resumed
+   run and a fresh one are the same code path.
+
+4. **Report the tag, and only the tag.** `done: true` carries `tag` and `releaseUrl`, read back
+   from origin. A dispatched workflow, a merged PR and a green check are **not** a release —
+   `release-cut` confirms the tag exists on the remote before it says done, and so must you.
+
 ## Auto mode (not yet implemented)
 
 `release.mode: "auto"` is a valid value in the config schema (the full design covers automatic tagging via `release-please`), but `shipflow apply` in this version **refuses to run** against a config with `release.mode: "auto"`, with a clear error rather than silently no-oping. If a user asks for fully automatic tagging, tell them it's designed but not yet shipped (see `CHANGELOG.md`) and that `"manual-gate"` — the deliberate ask-before-tagging flow above — is what's available today.
@@ -153,6 +218,15 @@ This is a **separate, later invocation** from the one that ran the promotion's `
 - **`release.releaseCredential` left as (or defaulted to) `GITHUB_TOKEN`:** auto-merge and the required-check gate still work, but `label-release-pending` will silently never run — a `GITHUB_TOKEN`-attributed auto-merge's `pull_request: closed` event never triggers it, so no promotion will ever surface via `shipflow releases`. This fails silently, not loudly — there's no error to catch it — so it must be caught at setup time (step 5) rather than discovered later. If a user reports "releases never show up," check this first.
 - **`--expect-state-hash is required` refusal:** a real apply was attempted with neither `--expect-state-hash` nor `--skip-hash-check`. Go back and get (or re-fetch via `plan`) the hash — don't reach for `--skip-hash-check` just to make the error go away; that flag exists for a deliberate, documented exception, not as a default workaround.
 - **`--force was passed without --force-reason` refusal:** a `--force` flag was about to be sent with no accompanying justification. Stop and get (or write) an explicit reason tied to what the user actually confirmed before retrying — never pass a placeholder string just to satisfy the flag.
+- **`release-cut` returns `done: false`:** not an error. It is parked at the `stage` it reports,
+  waiting on something remote. Call it again with the same arguments. Do not report a release.
+- **`release-status` reports `component-files-dirty`:** this component's own version files or
+  CHANGELOG have uncommitted edits, so a bump would collide with them. Unrelated dirt elsewhere in
+  the tree is reported under `notes` and is deliberately **not** a blocker — `prepare` runs in an
+  isolated worktree specifically so other people's in-flight work is safe.
+- **`release-status` reports `version-unreadable-on-main`:** the component's version files do not
+  exist on main, or they disagree with each other. A disagreement is a hard refusal, never a
+  "pick the highest" — releasing from a disagreeing set tags one version and ships another.
 - **A `gh`/`git` call hangs or times out:** every subprocess call has a 30-second timeout (`ETIMEDOUT` surfaces in the error message). A timeout on `detect`/`plan` usually means a real GitHub outage or rate-limit — retry once, and if it persists, tell the user rather than looping silently.
 
 ## Security rules

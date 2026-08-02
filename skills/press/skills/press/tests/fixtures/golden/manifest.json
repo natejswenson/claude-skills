@@ -28,6 +28,8 @@
     "press-readme",
     "shipflow-readme",
     "eval-agent-ui",
-    "eval-readme"
+    "eval-readme",
+    "release-agent-ui",
+    "release-readme"
   ]
 }
