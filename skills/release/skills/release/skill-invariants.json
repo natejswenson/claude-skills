@@ -12,7 +12,7 @@
     {
       "id": "collateral-named-before-cutting",
       "pattern": "[Nn]ever run `cut` without naming the `collateral` list to the user first",
-      "rationale": "A dev -> main promotion is a single merge of all of dev and cannot be made selective, so cutting a release for one component also releases every other component bumped-but-untagged there. The consequences are not reversible: tags, GitHub Releases, and npm publishes of versions that can never be republished. Releasing something the user did not ask for is the worst outcome this skill has, and naming the list aloud is the only defence."
+      "rationale": "A dev -> main promotion is a single merge of all of dev and cannot be made selective, so every other bumped-but-untagged component has its bump moved to main alongside the one being released. Until 2026-08-02 that also RELEASED them — the release jobs ran on push, so a merge tagged and npm-published everything within seconds, irreversibly. They are now workflow_dispatch-only and cut dispatches exactly one component, so the blast radius is gone; the disclosure stays because the user should still know what their promotion moves and which components are now one dispatch from a release nobody asked for."
     },
     {
       "id": "draft-is-raw-material-not-the-entry",
