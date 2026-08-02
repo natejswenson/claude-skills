@@ -13,9 +13,16 @@ existing sources of truth (SKILL.md frontmatter, package.json):
      package.json names are unreliable for this (e.g. scoped npm names,
      typos, or simply absent for python skills).
   3. Every *present* version field (plugin.json, SKILL.md frontmatter,
-     package.json) is mutually equal -- not just pairwise against one
-     "resolved" value. A skill with only plugin.json + SKILL.md must have
-     those two equal; a skill with all three must have all three equal.
+     package.json, package-lock.json) is mutually equal -- not just pairwise
+     against one "resolved" value. A skill with only plugin.json + SKILL.md
+     must have those two equal; a skill with all of them must have all equal.
+
+     package-lock.json contributes TWO fields, its root ``version`` and
+     ``packages[""].version``, checked as separate entries so a lockfile that
+     disagrees with *itself* fails too. The lockfile was unchecked until
+     2026-08-02, by which point five skills had drifted (shipflow's said 0.2.4
+     against a 0.5.0 package). It matters because ``npm pack``/``npm publish``
+     read the lockfile into the tarball, so the wrong version ships.
 
 Run in CI as the Tier-1.5 gate for every skill, right after score_skill.py.
 """
@@ -50,7 +57,9 @@ def lint_plugin(skill_dir: str) -> dict:
         {
             "errors": [str, ...],   # empty means clean
             "name": {"plugin_json": str|None, "dir": str, "skill_md": str|None},
-            "versions": {"plugin.json": str, "SKILL.md": str, "package.json": str},
+            "versions": {"plugin.json": str, "SKILL.md": str, "package.json": str,
+                         "package-lock.json": str,
+                         'package-lock.json:packages[""]': str},
             # ^ only keys for fields that are actually present in this skill
         }
     """
@@ -85,6 +94,17 @@ def lint_plugin(skill_dir: str) -> dict:
             errors.append(package_err)
             package_data = {}
 
+    # A lockfile is optional -- a skill with no dependencies correctly has none.
+    # But when present it is published inside the npm tarball, so its version
+    # has to agree with everything else.
+    lock_json_path = os.path.join(nested_skill_dir, "package-lock.json")
+    lock_data: dict = {}
+    if os.path.isfile(lock_json_path):
+        lock_data, lock_err = _read_json(lock_json_path)
+        if lock_err is not None:
+            errors.append(lock_err)
+            lock_data = {}
+
     # --- Check 2: name ties (plugin.json.name == dir basename == SKILL.md name) ---
     plugin_name = plugin_data.get("name") if plugin_data else None
     skill_md_name = fm.get("name")
@@ -106,6 +126,11 @@ def lint_plugin(skill_dir: str) -> dict:
         versions["SKILL.md"] = fm["version"]
     if "version" in package_data:
         versions["package.json"] = package_data["version"]
+    if "version" in lock_data:
+        versions["package-lock.json"] = lock_data["version"]
+    root_pkg = lock_data.get("packages", {}).get("")
+    if isinstance(root_pkg, dict) and "version" in root_pkg:
+        versions['package-lock.json:packages[""]'] = root_pkg["version"]
 
     distinct = set(versions.values())
     if len(distinct) > 1:
