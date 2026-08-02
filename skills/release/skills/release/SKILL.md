@@ -105,16 +105,22 @@ node scripts/release.js prepare --repo <path> --component <name> \
 
 Local only, no network. It works in a throwaway git worktree, so unrelated
 uncommitted work in the user's tree is untouched. The version bump and the
-CHANGELOG entry land in **one commit** — releases here are publish-on-merge, so a
-follow-up change to fix release notes is too late; the tag is already cut.
+CHANGELOG entry land in **one commit** — the notes are read off `main` when the
+release is dispatched, so a CHANGELOG arriving in a later promotion than its
+version is notes the release will never carry.
 
 ### 4. Name the collateral, then cut
 
 **Before the irreversible step, say out loud every component in `collateral`.**
-A `dev → main` promotion is atomic and carries all of dev, so those components are
-released by the same promotion — "release devlog" really does also release them,
-with tags and npm publishes that cannot be un-cut. Get an explicit yes on the
-whole list, not just the component that was named.
+A `dev → main` promotion is atomic and carries all of dev, so those components'
+bumps land on `main` with the one you named.
+
+They are **not released** by that. Every caller's release job is
+`workflow_dispatch`-only, and `cut` dispatches exactly one component — so merging
+tags nothing, and each collateral component simply becomes
+`untagged-bump-on-main`, releasable later on purpose. Say the list anyway: the
+user should know what their promotion moves, and which components are now one
+dispatch away from a release nobody asked for.
 
 ```bash
 node scripts/release.js cut --repo <path> --component <name> \
@@ -126,11 +132,16 @@ since the table the user approved — re-run preflight, re-confirm, and pass the
 new hash. Never reach for `--skip-hash-check` to make the error go away.
 
 **`cut` will usually return `done: false`, and that is not an error.** The full
-path — feature PR, checks, merge, promotion, auto-merge, release run, tag — takes
-longer than one call should block for. Each call advances as far as it can and
-reports the `stage` it is parked at. **Call it again, unchanged, until
+path — feature PR, checks, merge, promotion, auto-merge, dispatch, release run,
+tag — takes longer than one call should block for. Each call advances as far as
+it can and reports the `stage` it is parked at. **Call it again, unchanged, until
 `done: true`.** Say one short line between calls (`waiting on the promotion to
 auto-merge…`) so the user sees progress rather than dead air.
+
+**The merge cuts nothing — this skill does.** Every release job in this repo is
+`workflow_dispatch`-only, and `cut` dispatches one named component after its
+promotion lands. That dispatch is the only way a tag is ever created here, which
+is precisely why a merge can no longer surprise anyone with a release.
 
 ### 5. Report the tag, and only the tag
 

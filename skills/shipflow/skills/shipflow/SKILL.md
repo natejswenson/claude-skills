@@ -169,10 +169,13 @@ at all and `--component` may be omitted.
      this means a tag was cut from something other than main, and guessing is how it gets worse.
 
 2. **Show the user `collateral`, `blockers` and the proposed version, and wait.**
-   **`collateral` is not advisory.** A `dev → main` promotion is atomic and carries all of dev, so
-   every component listed there is released by the same promotion — "release devlog" really does
-   also release them. **Never run `release-cut` without naming that list to the user first.**
-   Releasing something the user did not ask for is the worst thing this flow can do.
+   A `dev → main` promotion is atomic and carries all of dev, so every component listed under
+   `collateral` has its bump moved to `main` by the same promotion. It is **not released** by
+   that — every caller's release job is `workflow_dispatch`-only, so merging tags nothing; each
+   becomes `untagged-bump-on-main`, one deliberate `release-cut` away from a tag.
+   **Never run `release-cut` without naming that list to the user first.** They should know what
+   their promotion moves, and which components are now one dispatch from a release nobody asked
+   for.
 
    `suggestedBump` is a suggestion. The user decides, and a `suggestedBumpCapped: true` means a
    breaking change was held at minor because the component is still 0.x — going to 1.0.0 is a
@@ -183,8 +186,9 @@ at all and `--component` may be omitted.
    ```
    Local only, no network. It works in a **throwaway git worktree**, so unrelated uncommitted work
    in the user's tree is untouched and cannot be swept into the release commit. The version bump
-   and the CHANGELOG entry land in **one commit**, because releases are publish-on-merge — a
-   follow-up promotion to fix release notes is too late, the tag is already cut.
+   and the CHANGELOG entry land in **one commit** — the notes are read off `main` at dispatch
+   time, so a CHANGELOG that lands in a later promotion than its version is notes the release
+   will never carry.
 
 3. **Cut it, and prove it.**
    ```
@@ -195,11 +199,15 @@ at all and `--component` may be omitted.
    `--skip-hash-check` is a named escape hatch, never a default.
 
    **`release-cut` is resumable and bounded, and it will usually return `done: false`.** The full
-   path — feature PR, checks, merge, promotion, auto-merge, release run, tag — takes longer than
-   one call should block for. Each call advances as far as it can, then returns the `stage` it is
-   parked at and a `next` line. **Call it again, unchanged, until `done: true`.** It derives every
-   stage from live remote state and never from a record of what a previous call did, so a resumed
-   run and a fresh one are the same code path.
+   path — feature PR, checks, merge, promotion, auto-merge, **dispatch**, release run, tag — takes
+   longer than one call should block for. Each call advances as far as it can, then returns the
+   `stage` it is parked at and a `next` line. **Call it again, unchanged, until `done: true`.** It
+   derives every stage from live remote state and never from a record of what a previous call did,
+   so a resumed run and a fresh one are the same code path.
+
+   **The promotion merging cuts nothing.** `release-cut` dispatches the component's release
+   workflow itself, after the promotion lands — that dispatch is the single point at which any tag
+   is created in this repo, which is why a merge can no longer surprise anyone with a release.
 
 4. **Report the tag, and only the tag.** `done: true` carries `tag` and `releaseUrl`, read back
    from origin. A dispatched workflow, a merged PR and a green check are **not** a release —

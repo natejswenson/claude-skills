@@ -21,7 +21,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -102,12 +103,29 @@ test('trap: every frozen commit reaches the rendered draft', () => {
 });
 
 test('trap: a component with nothing to release is refused, not drafted', () => {
-  // `eval` was frozen at zero unreleased commits, and is still at zero live.
-  // Drafting notes for it must fail: a release whose entry says nothing is how
-  // notes ship saying nothing.
-  const r = run(['changelog-draft', '--repo', REPO_ROOT, '--component', 'eval']);
-  assert.notEqual(r.status, 0, 'changelog-draft on a component with nothing to release must exit non-zero');
-  assert.match(r.stderr, /nothing to write notes about/);
+  // Drafting notes for a component with no unreleased commits must fail: a
+  // release whose entry says nothing is how notes ship saying nothing.
+  //
+  // This drives the FROZEN zero-commit status through `--from`, deliberately
+  // never touching git. The first version of this test shelled out to
+  // `changelog-draft --component eval` against the live repo, which was
+  // environment-dependent and went green locally while failing in CI: the
+  // caller's checkout is shallow with NO TAGS, so `lastTag` resolved to null,
+  // `commitsSince` returned every commit ever touching skills/eval instead of
+  // none, the command succeeded, and the "must exit non-zero" assertion
+  // inverted. A full clone (including a `git worktree`, which is how this was
+  // verified) has tags and cannot reproduce it. A baseline that reads live git
+  // state is not a baseline — this skill's own invariants say so.
+  const dir = mkdtempSync(join(tmpdir(), 'release-trap-'));
+  try {
+    copyFileSync(join(BASELINE, 'status-eval.json'), join(dir, 'status-eval.json'));
+    const r = run(['changelog-draft', '--from', dir, '--out', join(dir, 'out')]);
+    assert.notEqual(r.status, 0, 'a status set with zero unreleased commits must exit non-zero, not emit an empty draft');
+    assert.match(r.stderr, /zero commits|render was a no-op/);
+    assert.ok(!existsSync(join(dir, 'out', 'changelog-draft-eval.md')), 'no draft file may be written for a component with nothing to release');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('trap: cut refuses without a status hash', () => {
@@ -143,6 +161,48 @@ test('corpus: every declared component resolves to real files, over a real floor
     assert.ok(
       existsSync(join(REPO_ROOT, '.github', 'workflows', layout.workflowFile.replaceAll('{name}', name))),
       `${name}: no caller workflow — nothing would cut its tag`
+    );
+  }
+});
+
+test('corpus: no release job can be triggered by a push — dispatch is the only release path', () => {
+  // The single most important structural property of this repo's release model,
+  // and the one most likely to be undone by a well-meaning edit.
+  //
+  // Until 2026-08-02 the release jobs also ran on `push` to main, so a
+  // `dev -> main` merge tagged and npm-published every bumped component within
+  // seconds — no dispatch, no decision. It cost two releases: city-report-v0.4.0
+  // shipped with stale notes, and shipflow-v0.4.0 went to npm off a merge nobody
+  // had approved as a release.
+  //
+  // `release cut` now dispatches deliberately, so re-adding `push` here would
+  // double-release; and this assertion is what makes that impossible to do
+  // quietly.
+  // Match on the `uses:` line specifically, not a bare mention of the filename:
+  // press-propagate.yml discusses `_release.yml` in a comment while having no
+  // release job at all, and a looser filter reported it as unguarded. An audit
+  // that flags a file which can never release anything is the "cries wolf"
+  // failure this repo already fixed once, in CLAUDE.md's required-check audit.
+  const dir = join(REPO_ROOT, '.github', 'workflows');
+  const callers = readdirSync(dir).filter(
+    (f) => f.endsWith('.yml') && /^\s*uses:\s*\.\/\.github\/workflows\/_release\.yml\s*$/m.test(readFileSync(join(dir, f), 'utf8'))
+  );
+  assert.ok(
+    callers.length >= MIN_COMPONENTS,
+    `only ${callers.length} caller workflow(s) found, floor is ${MIN_COMPONENTS} — the resolver matched nothing and would report every caller safe`
+  );
+  for (const file of callers) {
+    const yaml = readFileSync(join(dir, file), 'utf8');
+    const releaseJob = yaml.slice(yaml.indexOf('\n  release:'));
+    const cond = /^\s*if:\s*(.+)$/m.exec(releaseJob)?.[1] ?? '';
+    assert.ok(cond, `${file}: the release job has no if: condition at all — it would run on every trigger`);
+    assert.ok(
+      cond.includes("github.event_name == 'workflow_dispatch'"),
+      `${file}: the release job must be gated on workflow_dispatch, got: ${cond}`
+    );
+    assert.ok(
+      !cond.includes("'push'"),
+      `${file}: the release job admits push events again — a dev -> main merge would cut a tag with no dispatch. This is the exact regression that released city-report-v0.4.0 with stale notes and shipflow-v0.4.0 to npm unasked.`
     );
   }
 });

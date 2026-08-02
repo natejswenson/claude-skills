@@ -30,6 +30,7 @@ import {
   latestVersionTagged,
   commitsSince,
   prepare,
+  readStatus,
   tagFor,
 } from '../lib/release.mjs';
 import { git } from '../lib/gh.mjs';
@@ -348,6 +349,30 @@ test('prepare: refuses to reuse a CHANGELOG version already written', () => {
   const again = prepare(repo, config, name, '0.2.0', '- second');
   assert.equal(again.ok, true, 'off a clean dev this is a legitimate retry');
   cleanupWorktree(repo, again.worktree);
+});
+
+test('status: a shallow clone is a blocker, because its commit ranges lie', () => {
+  // `git log <tag>..<ref>` needs full ancestry to exclude what the tag already
+  // covers. A grafted history under-applies that exclusion and returns commits
+  // that shipped long ago — without erroring. Found for real: a depth-1
+  // checkout of this repo's main reported 1 unreleased commit for a component
+  // a full clone reported as 0.
+  const { repo, config, name } = makeSkillRepo('theta');
+  git(['tag', `${name}-v0.1.0`], { cwd: repo });
+  const full = readStatus(repo, config, name);
+  assert.equal(full.blockers.some((b) => b.id === 'shallow-clone'), false, 'a full clone must not be flagged shallow');
+
+  const shallow = mkdtempSync(join(tmpdir(), 'shipflow-shallow-'));
+  repos.push(shallow);
+  rmSync(shallow, { recursive: true, force: true });
+  const cloned = git(['clone', '--depth', '1', '--branch', 'dev', `file://${repo}`, shallow]);
+  assert.equal(cloned.status, 0, `clone failed: ${cloned.stderr}`);
+  assert.equal(git(['rev-parse', '--is-shallow-repository'], { cwd: shallow }).stdout.trim(), 'true');
+
+  const status = readStatus(shallow, config, name);
+  const blocker = status.blockers.find((b) => b.id === 'shallow-clone');
+  assert.ok(blocker, `a shallow clone must be blocked; got: ${status.blockers.map((b) => b.id).join(', ') || 'no blockers'}`);
+  assert.match(blocker.detail, /--unshallow/, 'the blocker must say how to fix it');
 });
 
 // ─── tags and commit ranges, against a real git repo ─────────────────────────
