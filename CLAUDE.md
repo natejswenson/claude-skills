@@ -286,6 +286,7 @@ below its own floor.
 | eval | a real graded run — this repo's own skillfactory session, frozen as a normalized trace, scored against skillfactory's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
 | skillfactory | a real `scaffold` run of the `repocount` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
 | release | real `shipflow release-status` output for three components spanning many/one/zero unreleased commits, with the rendered CHANGELOG draft re-run and byte-compared; plus every skill in the repo as a component corpus | the draft grouper silently dropping a commit while still emitting a complete-looking entry; `cut` proceeding without its TOCTOU hash; a fixture refresh collapsing every input to "nothing to release" so the golden passes over nothing; a newly-shipped skill never being declared in `release.components`, so `preflight` reports on 12 of 13 and looks complete |
+| pluginsync | a real run — this machine's actual `claude plugin list --json` against this repo's actual plugin versions, frozen and byte-compared; plus a marketplace whose source has no `plugin.json`, and the live repo's plugin set as a corpus | the report's columns, action classification or restart footer drifting; an unreadable source being dropped instead of reported, so a partially-read marketplace renders as "everything matches"; the resolver matching nothing and calling an empty table up to date |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -369,7 +370,8 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
+  `ci / pluginsync`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:

@@ -1,0 +1,122 @@
+{
+  "$comment": "Captured from a real machine and a real repo. The golden report is pinned against THIS, so it survives unrelated skill releases. Refresh with: node evals/fixtures/update.mjs --from-live",
+  "capturedFrom": "natejswenson/claude-skills + the local Claude Code plugin install",
+  "catalog": [
+    {
+      "name": "devlog",
+      "version": "0.13.0"
+    },
+    {
+      "name": "ghostwriter",
+      "version": "0.14.1"
+    },
+    {
+      "name": "ghostwriter-x",
+      "version": "0.2.1"
+    },
+    {
+      "name": "resume",
+      "version": "2.0.0"
+    },
+    {
+      "name": "github-stats",
+      "version": "0.1.1"
+    },
+    {
+      "name": "shipflow",
+      "version": "0.3.3"
+    },
+    {
+      "name": "city-report",
+      "version": "0.4.0"
+    },
+    {
+      "name": "press",
+      "version": "0.9.0"
+    },
+    {
+      "name": "ghfactory",
+      "version": "0.1.2"
+    },
+    {
+      "name": "skillfactory",
+      "version": "0.2.0"
+    },
+    {
+      "name": "eval",
+      "version": "0.1.0"
+    },
+    {
+      "name": "pluginsync",
+      "version": "0.1.0"
+    }
+  ],
+  "installed": [
+    {
+      "id": "eval@claude-skills",
+      "version": "0.1.0",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "city-report@claude-skills",
+      "version": "0.4.0",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "devlog@claude-skills",
+      "version": "0.13.0",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "ghfactory@claude-skills",
+      "version": "0.1.2",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "ghostwriter-x@claude-skills",
+      "version": "0.2.1",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "ghostwriter@claude-skills",
+      "version": "0.14.1",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "github-stats@claude-skills",
+      "version": "0.1.1",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "press@claude-skills",
+      "version": "0.9.0",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "resume@claude-skills",
+      "version": "2.0.0",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "shipflow@claude-skills",
+      "version": "0.3.3",
+      "scope": "user",
+      "enabled": true
+    },
+    {
+      "id": "skillfactory@claude-skills",
+      "version": "0.2.0",
+      "scope": "user",
+      "enabled": true
+    }
+  ]
+}

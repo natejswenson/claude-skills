@@ -1,9 +1,5 @@
 {
   "name": "claude-skills",
-  "description": "A monorepo of self-contained, independently-released Claude Code productivity skills.",
-  "owner": {
-    "name": "Nate Swenson"
-  },
   "plugins": [
     {
       "name": "devlog",
@@ -48,10 +44,6 @@
     {
       "name": "eval",
       "source": "./skills/eval"
-    },
-    {
-      "name": "release",
-      "source": "./skills/release"
     },
     {
       "name": "pluginsync",
