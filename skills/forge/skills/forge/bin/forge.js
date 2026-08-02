@@ -96,7 +96,7 @@ async function cmdVerify(args) {
       : `${v.refs.length}/${v.refs.length} resolved`],
     ['0', 'action refs current', stale.length ? `${stale.length} behind` : 'all current'],
     ['1', 'actionlint', v.lint.ran ? (v.lint.findings.length ? `${v.lint.findings.length} findings` : 'clean') : `skipped — ${v.lint.reason}`],
-    ['2', 'zizmor', v.audit.ran ? (v.blocking.length ? `${v.blocking.length} blocking of ${v.audit.findings.length}` : `clean (${v.audit.findings.length} advisory)`) : `skipped — ${v.audit.reason}`],
+    ['2', 'zizmor', v.audit.ran ? (v.blocking.length ? `${v.blocking.length} blocking of ${v.audit.findings.length}` : `clean (${v.audit.findings.length} advisory)`) : v.audit.reason.startsWith('skipped') ? v.audit.reason : `skipped — ${v.audit.reason}`],
   ]));
 
   if (v.badRefs.length) {
@@ -120,8 +120,10 @@ async function cmdVerify(args) {
     ]))}`);
   }
   if (v.blocking.length) {
-    console.log(`\n${table(['Line', 'Severity', 'Rule', 'Message'], v.blocking.map((f) => [
-      f.line ?? '—', f.severity, f.rule, f.message.slice(0, 60),
+    // The file column matters the moment more than one file is checked — without
+    // it a repo-wide run prints a wall of line numbers with no way to act on them.
+    console.log(`\n${table(['File', 'Line', 'Severity', 'Rule', 'Message'], v.blocking.map((f) => [
+      (f.file || '').split('/').pop() || '—', f.line ?? '—', f.severity, f.rule, f.message.slice(0, 52),
     ]))}`);
   }
 

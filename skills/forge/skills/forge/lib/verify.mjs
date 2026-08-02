@@ -138,7 +138,12 @@ export async function runZizmor(files) {
     const { stdout } = await exec(bin, args, { maxBuffer: 1 << 24 });
     return { ran: true, findings: parseZizmor(stdout) };
   } catch (err) {
-    if (err.code === 14 && typeof err.stdout === 'string') {
+    // 11-14 all mean "findings", by increasing severity — NOT failure. Handling
+    // only 14 meant that whenever the worst finding was below High, forge
+    // reported "zizmor unavailable" and silently dropped the entire security
+    // rung. A gate that goes quiet exactly when it has less to say is worse than
+    // one that fails loudly.
+    if (err.code >= 11 && err.code <= 14 && typeof err.stdout === 'string') {
       return { ran: true, findings: parseZizmor(err.stdout) };
     }
     // 3 means zizmor collected no inputs at all — a vacuous run, not a clean one.
@@ -158,14 +163,18 @@ function parseZizmor(stdout) {
   }
   const rows = Array.isArray(parsed) ? parsed : (parsed.findings ?? []);
   return rows.map((f) => {
-    const loc = f.locations?.[0]?.concrete ?? {};
+    const loc = f.locations?.[0] ?? {};
+    // The path is symbolic, not concrete — `concrete` carries only the span. And
+    // `start_point.row` is 0-indexed, so a finding on line 1 reported as line 0
+    // sends the reader to the wrong place, or to no place at all.
+    const row = loc.concrete?.location?.start_point?.row;
     return {
       rule: f.ident ?? f.rule ?? 'unknown',
       severity: f.determinations?.severity ?? f.severity ?? 'unknown',
       confidence: f.determinations?.confidence ?? 'unknown',
       message: f.desc ?? f.description ?? '',
-      file: loc.location?.path ?? f.path ?? '',
-      line: loc.location?.start_point?.row ?? null,
+      file: loc.symbolic?.key?.Local?.verbatim_path ?? f.path ?? '',
+      line: typeof row === 'number' ? row + 1 : null,
     };
   });
 }
