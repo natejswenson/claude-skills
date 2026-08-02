@@ -165,6 +165,41 @@ test('corpus: every declared component resolves to real files, over a real floor
   }
 });
 
+test('corpus: no release job can be triggered by a push — dispatch is the only release path', () => {
+  // The single most important structural property of this repo's release model,
+  // and the one most likely to be undone by a well-meaning edit.
+  //
+  // Until 2026-08-02 the release jobs also ran on `push` to main, so a
+  // `dev -> main` merge tagged and npm-published every bumped component within
+  // seconds — no dispatch, no decision. It cost two releases: city-report-v0.4.0
+  // shipped with stale notes, and shipflow-v0.4.0 went to npm off a merge nobody
+  // had approved as a release.
+  //
+  // `release cut` now dispatches deliberately, so re-adding `push` here would
+  // double-release; and this assertion is what makes that impossible to do
+  // quietly.
+  const dir = join(REPO_ROOT, '.github', 'workflows');
+  const callers = readdirSync(dir).filter((f) => f.endsWith('.yml') && readFileSync(join(dir, f), 'utf8').includes('_release.yml'));
+  assert.ok(
+    callers.length >= MIN_COMPONENTS,
+    `only ${callers.length} caller workflow(s) found, floor is ${MIN_COMPONENTS} — the resolver matched nothing and would report every caller safe`
+  );
+  for (const file of callers) {
+    const yaml = readFileSync(join(dir, file), 'utf8');
+    const releaseJob = yaml.slice(yaml.indexOf('\n  release:'));
+    const cond = /^\s*if:\s*(.+)$/m.exec(releaseJob)?.[1] ?? '';
+    assert.ok(cond, `${file}: the release job has no if: condition at all — it would run on every trigger`);
+    assert.ok(
+      cond.includes("github.event_name == 'workflow_dispatch'"),
+      `${file}: the release job must be gated on workflow_dispatch, got: ${cond}`
+    );
+    assert.ok(
+      !cond.includes("'push'"),
+      `${file}: the release job admits push events again — a dev -> main merge would cut a tag with no dispatch. This is the exact regression that released city-report-v0.4.0 with stale notes and shipflow-v0.4.0 to npm unasked.`
+    );
+  }
+});
+
 test('corpus: every skill in the repo is declared as a component', () => {
   // The failure this catches: a new skill ships, nobody adds it to
   // release.components, and `release preflight` reports on 12 of 13 while

@@ -337,11 +337,19 @@ function dirtyPaths(repoPath, relPaths) {
   return r.stdout.split('\n').map((l) => l.slice(3).trim()).filter(Boolean);
 }
 
-// Every OTHER component whose version at `dev` carries no tag. Those ride along
-// on the same dev → main promotion — a promotion is atomic and carries all of
-// dev, so "release devlog" physically also releases them. Surfacing this list
-// is not advisory: releasing a component the user never named is the worst
-// thing this engine can do, and the only defence is saying so first.
+// Every OTHER component whose version at `dev` carries no tag. A promotion is
+// atomic and carries all of dev, so these components' bumps land on `main`
+// alongside the one being released, whether or not anyone asked.
+//
+// They are NOT released by that. Since the release jobs became
+// workflow_dispatch-only, landing on main tags nothing — each of these simply
+// becomes `untagged-bump-on-main`, releasable later by an explicit `release-cut`.
+// That is a far safer default than the old behaviour, where the same promotion
+// tagged and npm-published every one of them within seconds of merging.
+//
+// It is still worth saying out loud: the user should know what their promotion
+// is moving to main, and which components are now sitting one dispatch away
+// from a release they did not ask for.
 export function collateralComponents(repoPath, config, exceptName, devRef) {
   const out = [];
   for (const name of listComponentNames(config, repoPath)) {
@@ -745,12 +753,38 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   if (!landed.done) {
     return { ok: true, done: false, stage: 'promotion-open', promotion, tag, log, next: 'call release-cut again — waiting on the promotion to auto-merge' };
   }
+
+  // 6. The promotion landing cuts NOTHING on its own. Every caller's release
+  //    job is `workflow_dispatch`-only by deliberate design, so that this line
+  //    is the single point at which a tag is ever created — one named
+  //    component, released because someone asked for it.
+  //
+  //    This is load-bearing, not ceremony: until 2026-08-02 the release jobs
+  //    also ran on `push`, and a `dev -> main` merge therefore tagged and npm-
+  //    published everything bumped on dev, seconds after merging, with no
+  //    dispatch involved. Removing `push` without adding this dispatch would
+  //    leave cut() waiting forever for a tag nobody cuts.
+  //
+  //    Safe to re-run: _release.yml no-ops on an existing tag, and its
+  //    `concurrency: release-<skill>` group serialises a resumed call behind
+  //    an in-flight one.
+  const already = tagExistsOnRemote(repoPath, tag);
+  if (!(already.ok && already.exists)) {
+    const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
+    if (d.status !== 0) {
+      return { ok: false, error: `the promotion merged but dispatching ${component.workflowFile} failed: ${d.stderr}. Nothing is tagged; re-run release-cut to retry the dispatch.` };
+    }
+    note('dispatch', `dispatched ${component.workflowFile} on ${mainBranch} — this, not the merge, is what cuts the tag`);
+  }
   return waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, promotion);
 }
 
 function releaseBody(name, version, collateral) {
   const extra = collateral.length
-    ? `\n\n**This promotion also releases:** ${collateral.map((c) => `\`${c.tag}\``).join(', ')} — a promotion is atomic and carries all of dev.`
+    ? `\n\n**This promotion also moves these bumps to main** (a promotion is atomic and carries all of dev): ` +
+      `${collateral.map((c) => `\`${c.tag}\``).join(', ')}. ` +
+      `They are **not** released by merging — the release jobs are \`workflow_dispatch\`-only — but each becomes ` +
+      `\`untagged-bump-on-main\`, one \`release-cut\` away from a tag.`
     : '';
   return `Promotes \`${name}\` v${version} to main.${extra}`;
 }

@@ -16,8 +16,8 @@ Every one of these can succeed while no tag is ever cut:
 
 - **A dispatched workflow.** `gh workflow run` exits 0 as soon as GitHub accepts
   the request. The run itself can fail a minute later.
-- **A merged promotion.** The promotion merging into main is what *triggers* the
-  release job. The job can still error, be cancelled, or be skipped.
+- **A merged promotion.** Merging into `main` does not trigger a release at all —
+  the release jobs are `workflow_dispatch`-only. It only moves the version there.
 - **A green check.** `ci / <name>` passing means the tests passed, not that
   `release` ran — the release job is a separate job with its own conditions.
 - **A `_release.yml` run that succeeded.** It deliberately no-ops when the tag
@@ -42,18 +42,26 @@ The tag, fetched back from origin with `git ls-remote`, is the only evidence.
   already exists. This means a tag was cut from something other than main. There
   is no safe automatic recovery; stop and ask.
 
-## Collateral, and why it is not a footnote
+## Collateral, and why it is still worth saying
 
 A `dev → main` promotion is a single merge of the entire `dev` branch. It cannot
 be made selective. So every component sitting on dev with a version that has no
-tag is released by the same promotion that releases the one you named.
+tag has its bump moved to `main` by the same promotion.
 
-The consequences are not reversible: tags get cut, GitHub Releases get published,
-and skills with `npm-publish: true` get published to a registry that does not
-allow re-publishing a version.
+**It is not released by that.** Every caller's release job is
+`workflow_dispatch`-only, and `cut` dispatches exactly one named component. A
+merge tags nothing; each collateral component simply becomes
+`untagged-bump-on-main` and can be released later, deliberately.
 
-That is why `collateral` is spoken aloud before the irreversible step, and why an
-approval covers the whole list rather than the one component the user typed.
+This was not always true, and the history is the reason the rule exists. Until
+2026-08-02 the release jobs also ran on `push`, so a promotion tagged and
+npm-published every bumped component within seconds of merging — irreversibly, to
+a registry that does not allow re-publishing a version. Two releases went out
+that way before it was changed.
+
+So the disclosure stays, with a smaller claim behind it: the user should know
+what their promotion moves to `main`, and which components are now one dispatch
+away from a release nobody asked for.
 
 ## The 0.x cap
 

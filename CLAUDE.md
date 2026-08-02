@@ -14,11 +14,16 @@ read it before opening any PR.
   so `gh stack init` always takes `--base dev`, never the default `main` (see Stacked PRs).
 - **Never push directly to `main`.** It is protected; every `ci / <skill>` check must pass and
   a PR is required. `dev` is unprotected — direct pushes there are fine.
-- **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
-  (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills, **and**
-  `plugin.json.version` in `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5
-  lint fails the PR if it diverges) **and** add a `CHANGELOG.md` entry in the same change. A
-  `dev → main` merge with no bump is a no-op release.
+- **A merge never cuts a tag. `/release` does.** Every per-skill `release` job is
+  `workflow_dispatch`-only, so promoting `dev → main` moves a version bump to `main` and stops
+  there. The tag is cut when — and only when — that skill's workflow is dispatched, which is what
+  the `release` skill does after the promotion lands. **Never add `push` back to a release job's
+  `if:`** (see the release-process section for the two releases that cost).
+  Releasing still requires the version bumped (`package.json` for node skills, `SKILL.md`
+  frontmatter `version:` for python skills, **and** `plugin.json.version` in
+  `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5 lint fails the PR if it
+  diverges) **and** a `CHANGELOG.md` entry in the same change, since `_release.yml` reads the notes
+  off `main` at dispatch time.
 - **Always delete a feature branch as soon as it's merged** — local *and* remote. The repo has
   `delete_branch_on_merge` on, so a PR merged on GitHub auto-removes its head. If you merge or
   integrate any other way (CLI, direct push, squash), delete the branch by hand:
@@ -195,26 +200,31 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    (this bypasses `release-dispatch`, so clear the `release-pending` label by hand:
    `gh pr edit <number> --remove-label release-pending`.)
 
-> The per-skill `release` job (`needs: ci`) runs on a push to `main` **or** an on-demand
-> `workflow_dispatch` (step 6).
+> **The per-skill `release` job (`needs: ci`) runs on `workflow_dispatch` and nothing else.**
+> A push to `main` runs that skill's `ci` job and cuts nothing. **A dispatch is the only way a
+> tag is ever created in this repo**, and `/release` is the thing that dispatches it.
 >
-> **⚠️ A `dev → main` auto-merge DOES fire the push trigger — releases are effectively
-> publish-on-merge, not dispatch-gated.** This file previously claimed the bot `GITHUB_TOKEN`
-> suppresses push events; that is wrong, and it cost a release. Observed 2026-07-28: PR #94
-> auto-merged at 14:37:04, a `push`-triggered `city-report` run started at 14:37:07, and it cut
-> `city-report-v0.4.0` at 14:37:32 — before a planned CHANGELOG edit had landed, so the GitHub
-> Release carried stale notes. The later `release-dispatch` succeeded but was a **no-op**: the
-> `_release` workflow skips when the tag already exists, so it silently could not correct anything.
+> **This changed on 2026-08-02, and the history is why the rule is absolute.** The release jobs
+> used to run on `push` to `main` as well, and a `dev → main` auto-merge *does* fire push events —
+> so promotions were effectively publish-on-merge. It cost two releases:
+> - **2026-07-28:** PR #94 auto-merged at 14:37:04; a `push`-triggered `city-report` run started
+>   at 14:37:07 and cut `city-report-v0.4.0` at 14:37:32, before a planned CHANGELOG edit had
+>   landed, so the GitHub Release carried stale notes. The later `release-dispatch` succeeded but
+>   was a **no-op** — `_release` skips an existing tag, so it silently corrected nothing.
+> - **2026-08-02:** PR #159 merged at 19:34:55 and `shipflow-v0.4.0` was tagged *and published to
+>   npm* seconds later, with no dispatch and no decision.
 >
-> Consequences to plan around:
-> - **Land the CHANGELOG in the same promotion as the version bump.** A follow-up promotion to fix
->   release notes is too late — the tag is already cut from the first one.
-> - To *hold* a release, keep the version bump off `main` (open the promotion as a draft), not by
->   withholding the dispatch.
+> Consequences to plan around, under the current (dispatch-only) rule:
+> - **Land the CHANGELOG in the same change as the version bump.** `_release.yml` reads the notes
+>   off whatever is on `main` when the dispatch happens, and skips a tag that already exists — so
+>   notes arriving later are notes the release will never carry, and no retry fixes it.
+> - To *hold* a release, simply do not dispatch. The bump can sit on `main` as
+>   `untagged-bump-on-main` indefinitely; that is a normal, safe state.
 > - To repair notes after the fact: `gh release edit <tag> --notes-file <file>`. Re-cutting instead
 >   means deleting a published tag, which is worse.
-> - `release-dispatch` remains useful for re-running a failed release or one whose push run was
->   cancelled; treat it as a retry path, not the primary trigger.
+> - **Never re-add `push` to a release job's `if:`.** Every caller carries a comment saying so.
+>   Removing the gate without also removing `release-cut`'s dispatch would double-release; removing
+>   the dispatch without the gate brings back publish-on-merge.
 
 ## CI architecture (how the gate works)
 
