@@ -22,6 +22,8 @@
     "forge-agent-ui",
     "forge-readme",
     "smith-agent-ui",
-    "smith-readme"
+    "smith-readme",
+    "assay-agent-ui",
+    "assay-readme"
   ]
 }

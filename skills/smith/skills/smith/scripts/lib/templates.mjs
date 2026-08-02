@@ -135,7 +135,7 @@ version: 0.1.0
 
 You are running the **${spec.name}** skill.
 
-**Announce at start:** "I'm using the ${spec.name} skill to ${spec.summary[0].toLowerCase()}${spec.summary.slice(1).replace(/\.$/, '')}."
+**Announce at start:** "I'm using the ${spec.name} skill — ${spec.summary.replace(/\.$/, '')}."
 
 > Commands below run from the directory containing this \`SKILL.md\` (\`$SKILL_DIR\`).
 > Resolve it once. Pass \`--repo <path>\` to work against the user's repo.

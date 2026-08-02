@@ -5,6 +5,22 @@ All notable changes to the **smith** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-01
+
+### Fixed
+
+- **The scaffolded announce line is grammatical again.** The SKILL.md template
+  built it as `"I'm using the <name> skill to " + summary.toLowerCase()`, which
+  reads correctly only when the summary is written in the imperative. smith's
+  own spec template asks for a summary "in the voice of a person", and the
+  natural third-person answer produced `"…skill to grades a real run of a
+  skill"` on every scaffold. The summary is now spliced in apposition rather
+  than after `to`, which is grammatical whatever voice it is written in.
+
+  Found by grading a real smith run with the new `assay` skill, and pinned by a
+  generated regression case (`scripts/tests/generated/j-5-announce-grammar.test.mjs`)
+  that was observed failing before the fix landed.
+
 ## [0.1.0] - 2026-08-01
 
 ### Added

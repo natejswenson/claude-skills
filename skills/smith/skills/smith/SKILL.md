@@ -2,7 +2,7 @@
 name: smith
 description: Create a new Claude Code skill end to end — branded with press, wired into CI by forge, promoted by shipflow, split into deterministic scripts and model judgment, and not finished until a real run of it is frozen as its baseline eval. Use when the user says "create a skill", "new skill", "make me a skill that", "scaffold a skill", "add a skill to the marketplace", or wants an idea turned into a versioned, tested, installable skill.
 user_invocable: true
-version: 0.1.0
+version: 0.1.1
 ---
 
 # /smith — skills that are finished, not just written

@@ -1,0 +1,563 @@
+{
+  "name": "ghostwriter",
+  "sources": [
+    "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+    "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-0f1192db",
+      "tag": "inv",
+      "text": "post_outcome\\.py",
+      "severity": "high",
+      "rationale": "The publish log + self-reported outcomes are the ONLY compliant performance signal (no LinkedIn member analytics API; scraping banned by ToS). Dropping the check-in reference severs the skill's feedback loop and reverts topic/format choice to blind priors.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-17bffcf2",
+      "tag": "inv",
+      "text": "verify_sources\\.py",
+      "severity": "high",
+      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). This is a soft check that the gate isn't unreferenced; the HARD enforcement that publishing runs the gate is code-tested in tests/test_linkedin_post.py (enforce_source_gate) — not this regex.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-242b83b3",
+      "tag": "inv",
+      "text": "(never put sources[\\s\\S]{0,60}?post\\s+body|sources stay in the sidecar)",
+      "severity": "high",
+      "rationale": "verify_sources never inspects the post body; keeping sources out of the body is prose-only (and in-body links also crush reach).",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-24b9b0c2",
+      "tag": "inv",
+      "text": "fold ~210 chars",
+      "severity": "high",
+      "rationale": "The ~210-char '…see more' fold decides LinkedIn reach, and the fold-marked draft presentation is the only place the user actually SEES where their post cuts off before approving it. Prose-only; deleting it regresses to showing drafts with no fold visibility.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-3860846e",
+      "tag": "inv",
+      "text": "voice-notes\\.md[^.]{0,80}same turn,?\\sbefore redrafting",
+      "severity": "high",
+      "rationale": "In-session voice corrections were lost twice in one real session (the user had to repeat the no-AI-closings rule). Persist-before-redraft lives only in this prose; deleting it regresses to corrections evaporating at session end.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-462a78ea",
+      "tag": "inv",
+      "text": "after .{0,40}save.{0,200}before .{0,40}show",
+      "severity": "high",
+      "rationale": "Generate flow ordering is load-bearing: research must run AFTER Save (the slug/sidecar path exists) and BEFORE Show (the shown draft is already source-backed).",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5567449b",
+      "tag": "inv",
+      "text": "stops? on the\\s+last real point",
+      "severity": "high",
+      "rationale": "AI-sounding endings are the user's #1, most-repeated content complaint across sessions. The pre-show ending check is prose-only; the voice_judge eval samples it but nothing else forces it at draft time.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5ede5898",
+      "tag": "inv",
+      "text": "never render a form\\s+the user\\s+didn.t\\s+choose",
+      "severity": "high",
+      "rationale": "Rendering a visual before asking wasted a full card build in a real session (user wanted a carousel). One form question before any authoring is prose-only.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5f8d1dbf",
+      "tag": "inv",
+      "text": "never\\s+(auto-?publish|publish[^.\\n]without[^.\\n]approval)",
+      "severity": "high",
+      "rationale": "linkedin_post.py has NO approval check in code; approval-before-publish lives only in this prose. Deleting it lets the agent publish to the user's real profile without consent.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-841a7c56",
+      "tag": "inv",
+      "text": "check-in and the menu ride in the same single",
+      "severity": "high",
+      "rationale": "Session-start round trips are the UX tax paid every single run: the 0.14.0 pass merged the outcome check-in and the idea menu into ONE AskUserQuestion dialog. This rule is prose-only; deleting it regresses to two sequential question dialogs before any work starts.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8baca375",
+      "tag": "inv",
+      "text": "(allow-unverified[^.\\n]human-only|agent must never (set|self-apply) it)",
+      "severity": "high",
+      "rationale": "--allow-unverified is the single bypass of the source gate; it is enforced only by this human-only convention.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a308d40c",
+      "tag": "inv",
+      "text": "transcription of a real session,\\snot an\\sinvention",
+      "severity": "high",
+      "rationale": "A real session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's actual output ('I want my terminal cards to represent my actual agents'). Capture-before-author lives only in this prose; the term-misaligned lint checks alignment, not provenance.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-e8633359",
+      "tag": "inv",
+      "text": "(never automate posting|ToS\\s§?\\s3\\.1|decline and explain)",
+      "severity": "high",
+      "rationale": "LinkedIn ToS §3.1 exposure: this is the only instruction telling the agent to decline scheduled/looped/unattended posting.",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-01700fdc",
+      "tag": "skill",
+      "text": "The how-to family (4 on-brand layouts — rotate them; never use the same how-to card twice in a row).",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 426
+      }
+    },
+    {
+      "id": "skill-035272b2",
+      "tag": "skill",
+      "text": "Author as condensation, never invention.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 373
+      }
+    },
+    {
+      "id": "skill-05681963",
+      "tag": "skill",
+      "text": "fix the sidecar / redo the research step, not the gate",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 585
+      }
+    },
+    {
+      "id": "skill-06b8b285",
+      "tag": "skill",
+      "text": "Posture: propose, don't interrogate.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 102
+      }
+    },
+    {
+      "id": "skill-18769eb4",
+      "tag": "skill",
+      "text": "Narrate the gate — it's the slow step; never go silent through it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 249
+      }
+    },
+    {
+      "id": "skill-19d259db",
+      "tag": "skill",
+      "text": "Release radar — current through TODAY, not through the last digest.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 164
+      }
+    },
+    {
+      "id": "skill-1dc23f45",
+      "tag": "skill",
+      "text": "run it yourself",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 364
+      }
+    },
+    {
+      "id": "skill-2d6304d2",
+      "tag": "skill",
+      "text": "Prefer over a Mermaid diagram for architecture posts.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 445
+      }
+    },
+    {
+      "id": "skill-2fa28046",
+      "tag": "skill",
+      "text": "Icons must fit the post.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 396
+      }
+    },
+    {
+      "id": "skill-396edfe1",
+      "tag": "skill",
+      "text": "transcription of a real session, not an invention",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 361
+      }
+    },
+    {
+      "id": "skill-3ae99895",
+      "tag": "skill",
+      "text": "Give every option an ASCII `preview` sketch of what THIS post would get:",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 294
+      }
+    },
+    {
+      "id": "skill-4e9bb774",
+      "tag": "skill",
+      "text": "Trending now (live, run-day — VERIFIED trending, not vibes).",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 152
+      }
+    },
+    {
+      "id": "skill-57207552",
+      "tag": "skill",
+      "text": "never invent structure, numbers, or relationships that aren't true",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 493
+      }
+    },
+    {
+      "id": "skill-5b2d3a72",
+      "tag": "skill",
+      "text": ". If you can't source a claim, cut it — don't ship it. -",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 620
+      }
+    },
+    {
+      "id": "skill-768534e4",
+      "tag": "skill",
+      "text": "Never pass `--no-open` in an interactive Generate session",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 500
+      }
+    },
+    {
+      "id": "skill-7ede9bdd",
+      "tag": "skill",
+      "text": "Never fabricate",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 326
+      }
+    },
+    {
+      "id": "skill-810e1cdc",
+      "tag": "skill",
+      "text": "one** `AskUserQuestion`, never the old generic 2–3-question interview.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 211
+      }
+    },
+    {
+      "id": "skill-84d10e8d",
+      "tag": "skill",
+      "text": "composed, not templated",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 302
+      }
+    },
+    {
+      "id": "skill-8798695c",
+      "tag": "skill",
+      "text": "Optimize for SAVES, not applause.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 551
+      }
+    },
+    {
+      "id": "skill-8d208e3b",
+      "tag": "skill",
+      "text": ", add `--document images/<slug>.pdf --title \"<short title>\"` instead (image and document are mutually exclusive). Prefer the carousel for educational posts (higher reach). Always `--dry-run` once first; document upload is the same flow as images but posts to `/rest/documents`. - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm. 3.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 590
+      }
+    },
+    {
+      "id": "skill-8f3271ea",
+      "tag": "skill",
+      "text": "— fix the sidecar / redo the research instead (same spirit as \"never publish without explicit approval\"). -",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 623
+      }
+    },
+    {
+      "id": "skill-a72b03ee",
+      "tag": "skill",
+      "text": "— and wait for the answer. The Publish tap immediately after seeing the exact full text is the explicit approval; an edited draft is re-shown and re-asked the same way. Do not publish unprompted.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 281
+      }
+    },
+    {
+      "id": "skill-aea0c31d",
+      "tag": "skill",
+      "text": "Reach is largely decided in the first 30–60 minutes (see `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour: reply to every comment with substance (a question back, not just \"thanks\"), go comment on 5+ other people's posts to signal activity, and — if the post references a link — drop that link in the",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 598
+      }
+    },
+    {
+      "id": "skill-b1323ab2",
+      "tag": "skill",
+      "text": "Show the user the rendered PNG",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 512
+      }
+    },
+    {
+      "id": "skill-b996974b",
+      "tag": "skill",
+      "text": "Use the accumulated outcomes everywhere you choose:",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 116
+      }
+    },
+    {
+      "id": "skill-bd0a08ba",
+      "tag": "skill",
+      "text": "Personal data lives in `~/.claude/ghostwriter/`, not the repo.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 16
+      }
+    },
+    {
+      "id": "skill-bf44c474",
+      "tag": "skill",
+      "text": "now (links in the body suppress reach). The script can't do these; they are the single biggest fix for low reach. Never run the non-`--dry-run` publish command without a clear, specific approval from the user for that exact draft. --- ## Guardrails -",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 602
+      }
+    },
+    {
+      "id": "skill-cc3f2c1d",
+      "tag": "skill",
+      "text": "Keep this invisible.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 38
+      }
+    },
+    {
+      "id": "skill-cd279e9e",
+      "tag": "skill",
+      "text": "Never fabricate or exaggerate",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 224
+      }
+    },
+    {
+      "id": "skill-d43c5b47",
+      "tag": "skill",
+      "text": "Confirm the anchor, then draft.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 207
+      }
+    },
+    {
+      "id": "skill-daec290b",
+      "tag": "skill",
+      "text": "Show the slides",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 539
+      }
+    },
+    {
+      "id": "skill-f2fe0ed1",
+      "tag": "skill",
+      "text": "show the full draft in the LinkedIn-true format",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 271
+      }
+    },
+    {
+      "id": "skill-f5a37e8a",
+      "tag": "skill",
+      "text": "never ship a template's default icons or placeholder strings",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 398
+      }
+    },
+    {
+      "id": "skill-f7b3e66a",
+      "tag": "skill",
+      "text": "`.env`, `data/`, and `drafts/` are gitignored; keep it that way. Don't echo the access token or client secret in chat. -",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 614
+      }
+    },
+    {
+      "id": "skill-fd95de19",
+      "tag": "skill",
+      "text": "Run `mkdir -p ~/.claude/ghostwriter && cp .env.example ~/.claude/ghostwriter/.env`, then write their Client ID/Secret into `~/.claude/ghostwriter/.env` (edit the file; never echo the secret back in chat). 3.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 57
+      }
+    },
+    {
+      "id": "skill-ff79c8a9",
+      "tag": "skill",
+      "text": "Research & fact-check — every external claim must be backed by ≥3 real, live sources (the post is *generated from* sources).",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 228
+      }
+    }
+  ]
+}

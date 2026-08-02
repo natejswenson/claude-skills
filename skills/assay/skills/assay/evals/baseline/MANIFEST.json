@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/assay.js report --contract evals/fixtures/contracts/smith.json --trace evals/fixtures/run-trace.json --skill smith --out $OUT",
+  "artifacts": [
+    {
+      "path": "probe.json",
+      "bytes": 6666,
+      "sha256": "a006456c259b542b7484413fda1b3580549cb50e8904828ac658f54e480ac6c1"
+    },
+    {
+      "path": "report.md",
+      "bytes": 11255,
+      "sha256": "7c5b6ca1e7142584bc786b94443ff373915d2b1a8242d2a011164d550b5210fc"
+    }
+  ]
+}

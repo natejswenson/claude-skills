@@ -1,6 +1,6 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
-  "label": "scaffold-golden",
+  "label": "the-real-run",
   "command": "cp -R evals/inputs/house/. $OUT && node scripts/smith.js scaffold --spec evals/inputs/demo.spec.json --repo $OUT --today 2026-08-01 >/dev/null",
   "artifacts": [
     {
@@ -60,8 +60,8 @@
     },
     {
       "path": "skills/tally/skills/tally/SKILL.md",
-      "bytes": 3146,
-      "sha256": "f0b599c9094985617e6d2fd724f55353624644edc510645555e32dcef27e5566"
+      "bytes": 3147,
+      "sha256": "8097a69a025249971c4aa8dc694a8dc0a95e436c5ce74062fd276cac5a77132f"
     },
     {
       "path": "skills/tally/skills/tally/package.json",

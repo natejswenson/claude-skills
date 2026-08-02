@@ -1,0 +1,146 @@
+{
+  "name": "github-stats",
+  "sources": [
+    "skills/github-stats/skills/github-stats/SKILL.md",
+    "skills/github-stats/skills/github-stats/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-3c57f359",
+      "tag": "inv",
+      "text": "gh auth status",
+      "severity": "high",
+      "rationale": "Every script path shells out to `gh`. Without the auth pre-check the failure surfaces as a confusing empty result or a raw CLI error rather than the actionable 'run gh auth login'.",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-7094bd0b",
+      "tag": "inv",
+      "text": "Do not invent or recompute numbers",
+      "severity": "high",
+      "rationale": "The Rules-section restatement of the above. Both exist because this is the single easiest rule for an agent to rationalise away when the script's output does not answer the exact question asked.",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8832282a",
+      "tag": "inv",
+      "text": "never compute stats by hand\\s\\n?\\sfrom raw API JSON",
+      "severity": "high",
+      "rationale": "The whole value of this skill is that one deterministic script produces every number, so two runs agree and the figures match the original CLI. An agent that reads raw API JSON and does its own arithmetic produces plausible numbers that silently disagree with the script — indistinguishable from correct output to the user.",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a3ec8190",
+      "tag": "inv",
+      "text": "Never auto-create",
+      "severity": "high",
+      "rationale": "Creating a repository is the only state-changing, outward-facing action in the skill. This prose is the only thing standing between a casual 'set me up a repo for this' and an unconfirmed public repository on the user's account.",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a882ffc5",
+      "tag": "inv",
+      "text": "Always confirm the\\s\\n?\\sname, visibility, and description",
+      "severity": "high",
+      "rationale": "Visibility in particular: defaulting to public when the user assumed private is an irreversible disclosure, not a cosmetic mistake.",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-f1b7cec0",
+      "tag": "inv",
+      "text": "match the original CLI.Don't \"fix\" them silently",
+      "severity": "high",
+      "rationale": "Commits are bounded per repo and PR/issue close rates are ESTIMATED from a <=100-item sample. Both look like bugs to a well-meaning reader. 'Fixing' either silently breaks parity with github-stats-cli, which is the only external reference this skill can be checked against (eval/run_eval.py).",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-d289c436",
+      "tag": "skill",
+      "text": "never create without explicit confirmation",
+      "severity": "high",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/SKILL.md",
+        "line": 53
+      }
+    },
+    {
+      "id": "skill-dc844c4c",
+      "tag": "skill",
+      "text": "never compute stats by hand from raw API JSON.",
+      "severity": "high",
+      "source": {
+        "file": "skills/github-stats/skills/github-stats/SKILL.md",
+        "line": 14
+      }
+    }
+  ]
+}
