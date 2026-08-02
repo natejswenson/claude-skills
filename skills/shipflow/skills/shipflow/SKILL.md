@@ -63,7 +63,7 @@ user; the CLI is the only thing that *does*.
 4. **Confirm branch names and required checks with the user.** Show `workflows.jobNames` from the detect output as candidate `requiredChecks` (this list is already filtered to jobs from workflows that actually trigger on `pull_request` — a job that only runs on `schedule`/`workflow_dispatch` can never satisfy a required check, so it's never offered as a candidate) and let the user confirm/edit the list. **An empty `requiredChecks` list is a fail-open state, not a valid steady state** — `shipflow apply` will hard-refuse to enable auto-merge with zero required checks (see Error handling below). Don't let the user skip this without understanding that consequence.
 
    **If the candidate list is empty, a CI workflow has to exist before auto-merge
-   can be enabled. Hand that job to the `forge` skill** — authoring and *verifying*
+   can be enabled. Hand that job to the `ghfactory` skill** — authoring and *verifying*
    workflow YAML is its whole subject, and it does things shipflow never will:
    it resolves every action ref against the real API (no linter checks that an
    action exists), validates each `with:` key against the action's own
@@ -71,10 +71,10 @@ user; the CLI is the only thing that *does*.
    and zizmor before showing you anything. Two skills answering "scaffold me a CI
    workflow" differently is worse than either answer.
 
-   > Use the forge skill to create a `pull_request`-triggered build+test workflow
+   > Use the ghfactory skill to create a `pull_request`-triggered build+test workflow
    > for this repo, then come back here with the job name.
 
-   **If forge is not installed**, draft it here instead: investigate the repo
+   **If ghfactory is not installed**, draft it here instead: investigate the repo
    directly (`package.json`, `Cargo.toml`, `project.yml`/`.xcodeproj`, `go.mod`,
    `pyproject.toml`, or whatever's actually there) and write a minimal,
    conservative `pull_request`-triggered build+test workflow.

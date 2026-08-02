@@ -1,0 +1,316 @@
+{
+  "name": "ghfactory",
+  "sources": [
+    "skills/ghfactory/skills/ghfactory/SKILL.md",
+    "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-31081757",
+      "tag": "inv",
+      "text": "never say a workflow works",
+      "severity": "high",
+      "rationale": "Rungs 0-2 prove refs are real and the YAML is clean. Only a green CI run proves it works. Conflating the two is exactly the failure this skill was built against.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-7e360067",
+      "tag": "inv",
+      "text": "never\\s+hand-write it",
+      "severity": "high",
+      "rationale": "The brand lives in press/brand/tokens.json and nowhere else. Hand-writing a masthead recreates precisely the drift press exists to end — this brand was previously eight hand-ported copies across four repos with five names for the same orange.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8f140216",
+      "tag": "inv",
+      "text": "never interpolate .github\\.event\\.. into a `run:` block",
+      "severity": "high",
+      "rationale": "`${{ }}` is textual substitution performed before the shell sees the string, so an attacker-controlled PR title is source code, not an argument. This is the most common real vulnerability in real workflows.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-b51f4e65",
+      "tag": "inv",
+      "text": "secret\\s+names only",
+      "severity": "high",
+      "rationale": "Detection reads `gh secret list` to know what exists. A secret VALUE entering the process or the transcript would turn a convenience feature into a credential leak.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-d2dc9b38",
+      "tag": "inv",
+      "text": "recommend against it\\s\\n?\\suntil the check has gone green once",
+      "severity": "high",
+      "rationale": "A required check that never passes blocks every future merge — a repo-wide outage produced by a helpful default. The check must be observed green before it gates anything.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-f8405e17",
+      "tag": "inv",
+      "text": "staleness is invisible to every linter",
+      "severity": "high",
+      "rationale": "A hand-written fixture pinning actions/checkout@v5 passed actionlint AND zizmor completely clean while two majors behind. Published research puts the typical workflow 7+ months behind. Existence is not currency, and only ghfactory reports the difference.",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 180
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 184
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 191
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 175
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 199
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 172
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 189
+      }
+    },
+    {
+      "id": "rule-87292e96",
+      "tag": "rule",
+      "text": "Say which rung you reached, and never claim more.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 22
+      }
+    },
+    {
+      "id": "skill-028673be",
+      "tag": "skill",
+      "text": "Never add a required status check without asking, and recommend against it until the check has gone green once.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 153
+      }
+    },
+    {
+      "id": "skill-2a8f3664",
+      "tag": "skill",
+      "text": "fix what it finds, re-run.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 118
+      }
+    },
+    {
+      "id": "skill-3435cc20",
+      "tag": "skill",
+      "text": "Never silently overwrite an existing workflow.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 151
+      }
+    },
+    {
+      "id": "skill-3acc420d",
+      "tag": "skill",
+      "text": "Never emit an action ref you have not resolved.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 156
+      }
+    },
+    {
+      "id": "skill-4ecd9bf5",
+      "tag": "skill",
+      "text": "Never interpolate `${{ github.event.* }}` into a `run:` block.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 158
+      }
+    },
+    {
+      "id": "skill-81b2de7a",
+      "tag": "skill",
+      "text": "Never write secrets, tokens, or a `.env` into a workflow.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 161
+      }
+    },
+    {
+      "id": "skill-8b97984b",
+      "tag": "skill",
+      "text": "Run the commands the workflow will run — locally, now.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 61
+      }
+    },
+    {
+      "id": "skill-9e3eeb00",
+      "tag": "skill",
+      "text": "table from `verify` - the YAML *only if asked*; on an update show the diff hunk, never the whole file ### 5. Stamp the masthead and write ```bash node bin/ghfactory.js header <file> --purpose \"<one line: what this workflow is for>\" ``` Every generated workflow carries the press masthead as a marked region.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 122
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 14
+      }
+    },
+    {
+      "id": "skill-d7c32408",
+      "tag": "skill",
+      "text": "Resolve versions live; never recall them.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 108
+      }
+    },
+    {
+      "id": "skill-e158f0ab",
+      "tag": "skill",
+      "text": "Never ask about anything in that table.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghfactory/skills/ghfactory/SKILL.md",
+        "line": 84
+      }
+    }
+  ]
+}

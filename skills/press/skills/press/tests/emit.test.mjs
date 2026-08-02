@@ -301,7 +301,7 @@ test('readme-masthead refuses to emit when the brand line is not a token', () =>
 const GHA_PARAMS = {
   title: 'CI · node test',
   purpose: 'Lint and test on every pull request into main.',
-  generator: 'forge',
+  generator: 'ghfactory',
   generator_version: '0.1.0',
 };
 

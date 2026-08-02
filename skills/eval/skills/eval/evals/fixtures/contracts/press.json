@@ -1,0 +1,217 @@
+{
+  "name": "press",
+  "sources": [
+    "skills/press/skills/press/SKILL.md",
+    "skills/press/skills/press/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-d75b3fa7",
+      "tag": "house",
+      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-ffae6e92",
+      "tag": "house",
+      "text": "A release is cut by a version bump, not by a merge.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-4d4583f3",
+      "tag": "inv",
+      "text": "Never write a bare\\s+`npx @natjswenson/press`",
+      "severity": "high",
+      "rationale": "A bare npx invocation with no version reference silently prefers a stale global install over the registry; this exact failure cost this repo a release with shipflow. The rule was originally 'always pin @latest'; from 0.4.0 consumers pin an EXACT version instead, because a mutable reference in a repo that auto-deploys to prod is a supply-chain hole and propagate now handles the bumping. Either form avoids the stale-global trap — a bare invocation is the thing that must never appear.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-50b1c464",
+      "tag": "inv",
+      "text": "wins on conflict",
+      "severity": "high",
+      "rationale": "ghostwriter's learned voice and devlog's release-note shape are personal, per-medium, and higher-signal than the universal floor. Without this precedence rule, folding voice into press would degrade both.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-7c8cdbd9",
+      "tag": "inv",
+      "text": "gone missing.{0,400}resolved zero targets",
+      "severity": "high",
+      "rationale": "A gate that only detects byte drift silently passes when a region is deleted or when nothing resolved. Those two are the ways this check turns decorative, so they must stay named in the contract.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-960553e1",
+      "tag": "inv",
+      "text": "add it to `brand/tokens\\.json` and re-emit\\. Never invent one locally",
+      "severity": "high",
+      "rationale": "Three genuinely-shared tokens (ink_faint, the terminal quartet, two paper steps) were found undeclared during the first migration precisely because consumers invented values locally. The escape hatch has to point back to tokens.json.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-9b52aa4e",
+      "tag": "inv",
+      "text": "pinned check can never answer",
+      "severity": "high",
+      "rationale": "The propagation design rests on these being separate questions: a pinned check proves the region is intact, never that it is current. natejswenson.io sat two releases behind with green CI. If this line goes, the next person 'simplifies' by dropping propagate or by unpinning consumers, and either choice reopens a real failure.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-d7b338db",
+      "tag": "inv",
+      "text": "spliced into a consuming SKILL\\.md",
+      "severity": "high",
+      "rationale": "A consuming skill is a separately installed plugin and cannot read this skill's files at runtime. If this degrades into 'reference the press docs', the agent-UI and voice contracts silently stop applying.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-e7f3c8de",
+      "tag": "inv",
+      "text": "Re-render one real artifact per affected medium and look at it",
+      "severity": "high",
+      "rationale": "A token change is the one edit that touches every product at once, and no test asserts taste. The visual confirmation step is the only thing standing between a one-character edit and shipping it everywhere.",
+      "source": {
+        "file": "skills/press/skills/press/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "rule-eebb3b9b",
+      "tag": "rule",
+      "text": "Never write a brand value into a file by hand.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 23
+      }
+    },
+    {
+      "id": "skill-4732152b",
+      "tag": "skill",
+      "text": "fontconfig — WeasyPrint above all — must say `fontconfig`",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 183
+      }
+    },
+    {
+      "id": "skill-65d3a57c",
+      "tag": "skill",
+      "text": "zero** targets. The last two matter most — a checker that verifies nothing reports \"all clean\", which is exactly how a gate turns decorative. On failure it prints the diff and the exact `press emit` command that fixes it. Run that; do not hand-edit the region. ## How a change reaches every product There are",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 76
+      }
+    },
+    {
+      "id": "skill-6b82747d",
+      "tag": "skill",
+      "text": "Never generate a whole file.",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 208
+      }
+    },
+    {
+      "id": "skill-9a4a2af7",
+      "tag": "skill",
+      "text": "Show the rendered artifact, not a description of it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 62
+      }
+    },
+    {
+      "id": "skill-9c9e2545",
+      "tag": "skill",
+      "text": "Read `brand/laws.md` first, then `brand/components.md`.",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 45
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "skill-c2512084",
+      "tag": "skill",
+      "text": "Get the values from the CLI, never from memory:",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 51
+      }
+    }
+  ]
+}
