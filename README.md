@@ -28,6 +28,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`skillfactory`](skills/skillfactory) | ![skillfactory](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=skillfactory-v*&label=&sort=semver&color=blue) | `/skillfactory` | Node | The skill that makes skills — branded, wired, split into code and judgment, and not finished until a real run is frozen as its baseline eval. |
 | [`eval`](skills/eval) | ![eval](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=eval-v*&label=&sort=semver&color=blue) | `/eval` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
 | [`release`](skills/release) | ![release](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=release-v*&label=&sort=semver&color=blue) | `/release` | Node | Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist. |
+| [`pluginsync`](skills/pluginsync) | ![pluginsync](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=pluginsync-v*&label=&sort=semver&color=blue) | `/pluginsync` | Node | Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -49,6 +50,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install skillfactory@claude-skills
 /plugin install eval@claude-skills
 /plugin install release@claude-skills
+/plugin install pluginsync@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -71,6 +73,7 @@ ln -sfn "$PWD/skills/ghfactory/skills/ghfactory"               ~/.claude/skills/
 ln -sfn "$PWD/skills/skillfactory/skills/skillfactory" ~/.claude/skills/skillfactory
 ln -sfn "$PWD/skills/eval/skills/eval" ~/.claude/skills/eval
 ln -sfn "$PWD/skills/release/skills/release" ~/.claude/skills/release
+ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
 ```
 </details>
 

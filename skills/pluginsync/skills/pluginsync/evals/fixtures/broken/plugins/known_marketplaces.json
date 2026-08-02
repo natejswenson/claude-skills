@@ -1,0 +1,9 @@
+{
+  "claude-skills": {
+    "source": {
+      "source": "directory",
+      "path": "./marketplace"
+    },
+    "installLocation": "./marketplace"
+  }
+}
