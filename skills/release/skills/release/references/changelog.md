@@ -65,9 +65,17 @@ typed. A release note says what changed for the reader.
 
 ## The rule that costs the most when broken
 
-**The version bump and its CHANGELOG entry land in the same change.** Releases
-here are publish-on-merge: the tag is cut from the promotion that carries the
-bump, and `_release.yml` skips a tag that already exists. A follow-up change to
-fix the notes is too late — the GitHub Release is already published with whatever
-was there. Repairing it afterwards means `gh release edit <tag> --notes-file`,
-because re-cutting means deleting a published tag, which is worse.
+**The version bump and its CHANGELOG entry land in the same change.** `_release.yml`
+reads the notes off whatever is on `main` at the moment the release is dispatched,
+and skips a tag that already exists. So a CHANGELOG entry that arrives in a later
+promotion than its version bump is notes the release will never carry, and no
+retry fixes it — the tag is already there, so the workflow no-ops. Repairing it
+afterwards means `gh release edit <tag> --notes-file`, because re-cutting means
+deleting a published tag, which is worse.
+
+This used to be far sharper: until 2026-08-02 the release jobs also ran on
+`push`, so a `dev → main` merge tagged and npm-published within seconds and the
+window between bump and notes was measured in seconds too. Releases are now
+`workflow_dispatch`-only, so there is time between landing the bump and cutting
+the tag. Do not treat that as licence to split them — the dispatch usually
+follows the merge immediately, because `release cut` does both.

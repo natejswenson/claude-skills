@@ -2,7 +2,33 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
-## 0.4.1 (2026-08-02) — a shallow clone cannot answer "what is unreleased?"
+## 0.5.0 (2026-08-02) — the merge stops cutting tags; the dispatch is the release
+
+### Changed
+
+- **`release-cut` now dispatches the component's release workflow itself, after
+  the promotion lands.** Previously it merged the promotion and then *waited*
+  for a tag that a `push`-triggered job happened to cut. That made a merge the
+  real release trigger, which meant any promotion released everything bumped on
+  `dev` — whether or not anyone asked, and irreversibly for skills that publish
+  to npm.
+
+  Paired with every caller's `release` job becoming `workflow_dispatch`-only,
+  this makes the dispatch the **single point at which a tag is ever created**.
+  A `dev → main` merge now moves a version bump to `main` and stops there; the
+  component simply becomes `untagged-bump-on-main` until someone releases it on
+  purpose.
+
+  The two halves are load-bearing together. Removing the `push` gate without
+  this dispatch leaves `release-cut` waiting forever for a tag nobody cuts;
+  adding the dispatch without removing the gate double-releases.
+
+- **`collateral` means something smaller and safer now.** It still lists every
+  other component whose bump the same promotion moves to `main` — that is
+  unavoidable, a promotion is atomic — but those components are no longer
+  *released* by it. The disclosure stays because the user should know what their
+  promotion moves, and which components are now one dispatch from a release
+  nobody asked for.
 
 ### Fixed
 
