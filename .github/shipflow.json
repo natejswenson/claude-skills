@@ -14,6 +14,6 @@
   "branchCleanup": { "deleteOnMerge": true, "protectedBranches": ["dev", "main"] },
   "enforceAdmins": false,
   "renderedTemplateHashes": {
-    ".github/workflows/dev-to-main-automerge.yml": "6bc4b307b3d7928fa3b26f3ee6d281a9c4b59e7f6e8766576b688e519b21baef"
+    ".github/workflows/dev-to-main-automerge.yml": "cc7f3f2efe68758a96735e5ac489513689e3b6eb295ff129c6904595eeeaac23"
   }
 }

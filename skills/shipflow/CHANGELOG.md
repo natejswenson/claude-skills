@@ -2,6 +2,39 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.3.3 (2026-08-01) — least-privilege permissions in every rendered workflow
+
+- **Every rendered workflow granted its permissions at the workflow level, so
+  every job in the file got them whether it needed them or not.** zizmor flags
+  this as `excessive-permissions` (High), and it was failing this repo's own
+  `security / workflows` gate on `dev-to-main-automerge.yml`. All six templates
+  now deny by default (`permissions: {}`) and grant per job.
+
+  A workflow-level grant is not just untidy — it silently extends to jobs added
+  later that were never reviewed for it. Scoping is the fix; waiving the rule
+  would have kept the finding *and* the exposure.
+
+- **`contents: write` is dropped from the auto-merge workflows entirely, not
+  moved.** `gh pr merge --auto` only *enables* native auto-merge, which is a
+  pull-requests operation; GitHub performs the merge itself afterwards under its
+  own automation rather than this token. Those workflows now grant
+  `pull-requests: write` to the two jobs that call `gh`, and nothing else.
+
+  Where `release.releaseCredential` names a real PAT (the supported setup), the
+  workflow token's permissions never applied to those steps in the first place.
+  These grants are what matters for a repo that left the credential defaulted to
+  `GITHUB_TOKEN`.
+
+### Fixed
+
+- **The gitflow merge-back workflows could not open their own fallback PR.**
+  `release-merge-back` and `hotfix-merge-back` granted only `contents: write`,
+  but their "on any failure, open a PR for manual resolution" step calls
+  `gh pr create` — which needs `pull-requests: write`. Under a defaulted
+  `GITHUB_TOKEN` that step would have failed exactly when it was needed most:
+  after a merge conflict, with nothing else left to surface it. Found while
+  scoping the permissions above, not by a report.
+
 ## 0.3.2 (2026-07-28) — attempted npm-page fix; did NOT work
 
 - **Attempted and failed: making npmjs.com render the README.** 0.3.1 put
