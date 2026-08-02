@@ -255,6 +255,7 @@ below its own floor.
 | devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
 | press | every brand value as it existed in 8 files across 4 repos *before* press generated any of them | a token edit silently changing a colour a shipped product depends on; a generated region drifting or vanishing |
 | forge | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
+| smith | a real `scaffold` run of the `tally` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, and this repo's own 9 shipped skills as a conformance corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance resolver matching nothing and calling it "all conformant" |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -309,7 +310,7 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / forge`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / forge`, `ci / smith`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:
@@ -332,6 +333,19 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
 `dev` (the head).
 
 ## Adding a new skill
+
+> **Use `/smith` instead of doing this by hand.** `smith scaffold` applies steps
+> 1–8 below as one all-or-nothing change (and reads the action SHAs out of the
+> callers this repo already ships, rather than copying a stale pin), then
+> `smith verify --skill <name>` reports which rung it reached. The list below is
+> what smith does, kept here because it is the specification smith is checked
+> against — `ci / smith` fails if the two drift apart.
+>
+> Two things smith writes but **cannot apply**: `.github/repo-settings.sh` only
+> takes effect when an admin runs it, and the baseline-eval table row above is
+> prose. And step 10 is deliberately not automated past the declaration —
+> `smith freeze` requires a real run, and the scaffolded `baseline.test.mjs`
+> **fails** until it gets one.
 
 1. Copy a caller `<skill>.yml`. **Keep the `pull_request` trigger un-filtered** and **keep the `ci`
    job's `permissions: { contents: read, pull-requests: read }`** — both are load-bearing

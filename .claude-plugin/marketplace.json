@@ -40,6 +40,10 @@
     {
       "name": "forge",
       "source": "./skills/forge"
+    },
+    {
+      "name": "smith",
+      "source": "./skills/smith"
     }
   ]
 }

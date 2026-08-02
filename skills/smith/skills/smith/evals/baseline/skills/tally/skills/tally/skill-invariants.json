@@ -1,0 +1,64 @@
+{
+  "comment": "What must not silently disappear from tally. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "smith": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never report a count you did not read from the repository it",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "read the repo's counts",
+        "command": "node scripts/tally.js count"
+      },
+      {
+        "step": "resolve the release convention",
+        "command": "node scripts/tally.js detect"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide which of the counts actually matters today",
+        "why": "urgency is context no file records"
+      },
+      {
+        "step": "phrase the recommendation",
+        "why": "the same numbers mean different things before and after a release"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "a count silently going to zero, which reads as good news — pinned against a real tally run against a repository with known counts."
+    },
+    {
+      "id": "empty-repo-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "reporting zeroes instead of refusing, which is the failure that looks like success — pinned against a repository with no remote."
+    }
+  ]
+}

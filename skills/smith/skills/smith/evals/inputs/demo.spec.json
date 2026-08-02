@@ -1,0 +1,40 @@
+{
+  "$comment": "The spec the frozen golden was scaffolded from. A realistic one on purpose — a degenerate spec would pin a tree no real skill resembles, and the golden would stop being evidence about anything.",
+  "name": "tally",
+  "summary": "Count what a repository owes you — open PRs, stale branches, unreleased commits — as one table.",
+  "description": "Report what a repository currently owes: open pull requests and how long each has waited, branches merged but never deleted, and commits sitting on main with no release tag. Use when the user asks \"what's outstanding\", \"any stale branches\", \"what hasn't shipped\", or wants a repo hygiene check before a release.",
+  "oneRule": "Never report a count you did not read from the repository itself — an estimate is a guess wearing a number.",
+  "stack": "node",
+  "npmPublish": false,
+  "commands": [
+    { "name": "detect", "does": "the repo's remote, default branch and release convention, as one table" },
+    { "name": "count", "does": "open PRs, stale branches and unreleased commits, each with its age" }
+  ],
+  "split": {
+    "deterministic": [
+      { "step": "read the repo's counts", "command": "node scripts/tally.js count" },
+      { "step": "resolve the release convention", "command": "node scripts/tally.js detect" }
+    ],
+    "nondeterministic": [
+      { "step": "decide which of the counts actually matters today", "why": "urgency is context no file records" },
+      { "step": "phrase the recommendation", "why": "the same numbers mean different things before and after a release" }
+    ]
+  },
+  "references": [
+    { "file": "anatomy.md", "is": "the fixed shape of a tally report" }
+  ],
+  "evalPlan": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "pinnedAgainst": "a real tally run against a repository with known counts",
+      "catches": "a count silently going to zero, which reads as good news"
+    },
+    {
+      "id": "empty-repo-trap",
+      "kind": "trap",
+      "pinnedAgainst": "a repository with no remote",
+      "catches": "reporting zeroes instead of refusing, which is the failure that looks like success"
+    }
+  ]
+}
