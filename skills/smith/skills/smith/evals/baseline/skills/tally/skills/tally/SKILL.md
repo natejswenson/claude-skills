@@ -9,7 +9,7 @@ version: 0.1.0
 
 You are running the **tally** skill.
 
-**Announce at start:** "I'm using the tally skill to count what a repository owes you — open PRs, stale branches, unreleased commits — as one table."
+**Announce at start:** "I'm using the tally skill — Count what a repository owes you — open PRs, stale branches, unreleased commits — as one table."
 
 > Commands below run from the directory containing this `SKILL.md` (`$SKILL_DIR`).
 > Resolve it once. Pass `--repo <path>` to work against the user's repo.

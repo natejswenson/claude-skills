@@ -255,7 +255,8 @@ below its own floor.
 | devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
 | press | every brand value as it existed in 8 files across 4 repos *before* press generated any of them | a token edit silently changing a colour a shipped product depends on; a generated region drifting or vanishing |
 | forge | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
-| smith | a real `scaffold` run of the `tally` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 10 shipped skills as a conformance corpus, and their 10 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
+| assay | a real graded run — this repo's own smith session, frozen as a normalized trace, scored against smith's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
+| smith | a real `scaffold` run of the `tally` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -339,7 +340,7 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / forge`, `ci / smith`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / forge`, `ci / smith`, `ci / assay`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:
