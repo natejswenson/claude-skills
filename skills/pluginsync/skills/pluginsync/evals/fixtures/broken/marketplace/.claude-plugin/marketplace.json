@@ -1,0 +1,13 @@
+{
+  "name": "claude-skills",
+  "plugins": [
+    {
+      "name": "intact",
+      "source": "./skills/intact"
+    },
+    {
+      "name": "no-plugin-json",
+      "source": "./skills/no-plugin-json"
+    }
+  ]
+}

@@ -30,6 +30,8 @@
     "eval-agent-ui",
     "eval-readme",
     "release-agent-ui",
-    "release-readme"
+    "release-readme",
+    "pluginsync-agent-ui",
+    "pluginsync-readme"
   ]
 }
