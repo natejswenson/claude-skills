@@ -28,7 +28,7 @@ const REPO = join(HERE, '..', '..', '..', '..', '..', '..');
  * every assertion below would then iterate an empty list and report every
  * README as conforming.
  */
-const MIN_CORPUS = 10;
+const MIN_CORPUS = 11;
 
 const readmeOf = (name) => readFileSync(join(REPO, 'skills', name, 'README.md'), 'utf8');
 

@@ -120,16 +120,16 @@
       "kind": "corpus",
       "test": "scripts/tests/conformance.test.mjs",
       "corpus_glob": "../../../*/skills/*/SKILL.md",
-      "min_corpus": 9,
+      "min_corpus": 11,
       "update_command": "node scripts/smith.js verify --all --repo ../../..",
-      "rationale": "The house tier is only trustworthy about a new skill if it is right about the nine already shipped. The floor is the anti-vacuity rule: a conformance resolver that silently matched nothing would report 'all conformant' having checked zero skills — the exact way a gate turns decorative. Pinned against real, shipped, working skills rather than a synthetic tree, so a rule that drifts away from what this repo actually does goes red."
+      "rationale": "The house tier is only trustworthy about a new skill if it is right about the ten already shipped. The floor is the anti-vacuity rule: a conformance resolver that silently matched nothing would report 'all conformant' having checked zero skills — the exact way a gate turns decorative. Pinned against real, shipped, working skills rather than a synthetic tree, so a rule that drifts away from what this repo actually does goes red."
     },
     {
       "id": "readme-house-style-corpus",
       "kind": "corpus",
       "test": "scripts/tests/readme.test.mjs",
       "corpus_glob": "../../../*/README.md",
-      "min_corpus": 10,
+      "min_corpus": 11,
       "update_command": "node scripts/smith.js verify --all --repo ../../..",
       "rationale": "Pinned against the READMEs this repo actually ships, so a contract strict enough to reject work already published fails here rather than in a release — the same reason press lints its own shipped stylesheets. The floor of 10 is the anti-vacuity rule: the glob resolves from inside the nested skill dir, and one wrong `..` would match nothing and report every README as conforming. Two-sided by construction: the corpus must pass, and each of six targeted mutations of a real README — decorated H1, deleted masthead, prose instead of the inventory table, a reordered head, a missing foot section, a Quick start with no command — must be caught by the specific check that exists for it, which is stronger than merely failing somewhere."
     }
