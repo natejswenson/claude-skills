@@ -150,6 +150,18 @@ test('frontmatter: version is read from the YAML block and NOWHERE else', () => 
   );
 });
 
+test('version sources: TOML and YAML are read, but only at column zero', () => {
+  const repo = makeRepo();
+  // A real pyproject.toml shape: the project's own version at column zero, a
+  // dependency pin indented under a [tool.*] table. Matching the indented one
+  // would release the wrong number, silently.
+  writeFile(repo, 'pyproject.toml', '[project]\nname = "budget"\nversion = "0.3.0"\n\n[tool.other]\n  version = "9.9.9"\n');
+  // A real project.yml shape: same trap, plus a trailing comment.
+  writeFile(repo, 'project.yml', 'name: app\nversion: 2.1.0 # marketing version\ntargets:\n  App:\n    version: 8.8.8\n');
+  assert.equal(readVersionAt(repo, { versionFiles: ['pyproject.toml'] }, null).version, '0.3.0');
+  assert.equal(readVersionAt(repo, { versionFiles: ['project.yml'] }, null).version, '2.1.0');
+});
+
 test('version sources: files that disagree are a hard refusal, not a best guess', () => {
   const repo = makeRepo();
   writeFile(repo, 'skills/x/package.json', JSON.stringify({ version: '1.0.0' }));

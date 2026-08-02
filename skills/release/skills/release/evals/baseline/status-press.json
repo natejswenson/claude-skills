@@ -1,0 +1,50 @@
+{
+  "component": {
+    "name": "press",
+    "versionFiles": [
+      "skills/press/skills/press/package.json",
+      "skills/press/skills/press/SKILL.md",
+      "skills/press/.claude-plugin/plugin.json"
+    ],
+    "changelog": "skills/press/CHANGELOG.md",
+    "workflowFile": "press.yml",
+    "paths": [
+      "skills/press"
+    ],
+    "inferredLayout": false
+  },
+  "state": "clean",
+  "versionOnMain": "0.9.0",
+  "versionOnDev": "0.9.0",
+  "versionSources": [
+    {
+      "file": "skills/press/skills/press/package.json",
+      "version": "0.9.0"
+    },
+    {
+      "file": "skills/press/skills/press/SKILL.md",
+      "version": "0.9.0"
+    },
+    {
+      "file": "skills/press/.claude-plugin/plugin.json",
+      "version": "0.9.0"
+    }
+  ],
+  "lastTag": "press-v0.9.0",
+  "commits": [
+    {
+      "sha": "0907422f",
+      "conventional": true,
+      "type": "refactor",
+      "scope": null,
+      "subject": "name three skills after the job they do, and enforce it (#156)",
+      "breaking": false
+    }
+  ],
+  "suggestedBump": "patch",
+  "suggestedBumpReason": "fixes and chores only",
+  "suggestedBumpCapped": false,
+  "nextVersion": "0.9.1",
+  "collateral": [],
+  "blockers": []
+}

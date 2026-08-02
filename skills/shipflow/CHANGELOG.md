@@ -41,6 +41,14 @@ All notable changes to `@natjswenson/shipflow` are documented here.
   back from origin: a dispatched workflow, a merged PR and a green check are all
   still "not done."
 
+- **Version files can be `package.json`, `SKILL.md` frontmatter, `pyproject.toml`
+  or a top-level `project.yml`.** A component model that only reads
+  `package.json` is not generic, it is a node model — the first two non-node
+  repos this was pointed at were a Python project and an Xcode project. TOML and
+  YAML are matched at column zero only: both formats nest, and an indented
+  `version` is a dependency pin, not the project's own version. Releasing the
+  wrong number is worse than reporting none.
+
 ### Fixed
 
 - **`dispatchReleaseWorkflow` ignored the `ownerRepo` it was given.** It shelled

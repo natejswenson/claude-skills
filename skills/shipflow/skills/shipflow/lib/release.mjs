@@ -185,6 +185,15 @@ export function readFrontmatterVersion(text) {
   return null;
 }
 
+// TOML (`version = "1.2.3"`) and YAML (`version: 1.2.3`) are matched only at
+// column zero. Both formats nest — a pyproject.toml has `version` keys under
+// `[tool.*]` tables and a project.yml has them under target definitions — and an
+// indented match is some dependency's pin, not the project's own version.
+// Deliberately not a real parser: shipflow has no dependencies, and the one
+// line it needs is unambiguous when anchored.
+const TOML_VERSION_RE = /^version\s*=\s*["']([^"'\n]+)["']/m;
+const YAML_VERSION_RE = /^version:\s*["']?([^"'\n#]+?)["']?\s*(?:#.*)?$/m;
+
 function versionFromSource(relPath, text) {
   if (relPath.endsWith('.json')) {
     try {
@@ -194,6 +203,8 @@ function versionFromSource(relPath, text) {
     }
   }
   if (relPath.endsWith('.md')) return readFrontmatterVersion(text);
+  if (relPath.endsWith('.toml')) return TOML_VERSION_RE.exec(text)?.[1] ?? null;
+  if (relPath.endsWith('.yml') || relPath.endsWith('.yaml')) return YAML_VERSION_RE.exec(text)?.[1] ?? null;
   return null;
 }
 
@@ -478,6 +489,12 @@ function writeVersionInto(relPath, text, version) {
       }
     }
     return null;
+  }
+  if (relPath.endsWith('.toml')) {
+    return TOML_VERSION_RE.test(text) ? text.replace(TOML_VERSION_RE, (m, v) => m.replace(v, version)) : null;
+  }
+  if (relPath.endsWith('.yml') || relPath.endsWith('.yaml')) {
+    return YAML_VERSION_RE.test(text) ? text.replace(YAML_VERSION_RE, (m, v) => m.replace(v, version)) : null;
   }
   return null;
 }
