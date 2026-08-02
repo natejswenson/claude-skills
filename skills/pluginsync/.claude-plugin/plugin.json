@@ -1,0 +1,10 @@
+{
+  "name": "pluginsync",
+  "version": "0.1.0",
+  "description": "Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/pluginsync",
+  "license": "MIT"
+}
