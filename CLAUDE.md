@@ -254,9 +254,9 @@ below its own floor.
 | resume | a real tailored résumé × 28 real job postings | JD-keyword coverage ceasing to discriminate — i.e. every eval score becoming meaningless while still looking like a number |
 | devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
 | press | every brand value as it existed in 8 files across 4 repos *before* press generated any of them | a token edit silently changing a colour a shipped product depends on; a generated region drifting or vanishing |
-| forge | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
-| assay | a real graded run — this repo's own smith session, frozen as a normalized trace, scored against smith's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
-| smith | a real `scaffold` run of the `tally` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
+| ghfactory | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
+| eval | a real graded run — this repo's own skillfactory session, frozen as a normalized trace, scored against skillfactory's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
+| skillfactory | a real `scaffold` run of the `repocount` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -266,7 +266,7 @@ below its own floor.
 
 `skills/press/skills/press/brand/tokens.json` is the **only** place a brand value is written
 down — colours, the terminal-panel palette, font stacks, the monogram. Since press 0.8.0
-that includes the masthead every forge-generated GitHub Actions workflow wears, via the
+that includes the masthead every ghfactory-generated GitHub Actions workflow wears, via the
 `yaml` region syntax and the `gha-header` emitter. Every consumer receives
 those values in a **generated region** spliced into an otherwise hand-written file:
 
@@ -299,8 +299,8 @@ reason documented for shipflow above: a bare `npx` silently prefers a stale glob
 ## The README house style
 
 Every skill's `README.md` follows one shape: **fixed head, free tail, fixed foot**. The spec is
-`skills/smith/skills/smith/references/readme.md`; `gradeReadme`
-(`skills/smith/skills/smith/scripts/lib/readme.mjs`) checks it; `smith verify` reports it as the
+`skills/skillfactory/skills/skillfactory/references/readme.md`; `gradeReadme`
+(`skills/skillfactory/skills/skillfactory/scripts/lib/readme.mjs`) checks it; `skillfactory verify` reports it as the
 house-tier `readme-structure` check.
 
 ```
@@ -318,7 +318,7 @@ Three things that bite:
 - **The H1 must be exactly `# <name>`.** press's `<name>-readme` target anchors its masthead on
   `^# <name>$`. A decorated title does not error — it *detaches* the region, and the next
   `press emit --init` splices a second masthead below the first.
-- **The gate lives in `ci / marketplace`**, which runs `smith verify --all` unconditionally, for
+- **The gate lives in `ci / marketplace`**, which runs `skillfactory verify --all` unconditionally, for
   the same reason `lint_baseline.py` does: a README edited in *some other skill's* PR would never
   be graded by a path-filtered check, which is how a house style rots one PR at a time.
 - **The tail is free on purpose.** devlog's configuration reference and ghostwriter's compliance
@@ -340,7 +340,7 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / forge`, `ci / smith`, `ci / assay`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:
@@ -364,17 +364,17 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
 
 ## Adding a new skill
 
-> **Use `/smith` instead of doing this by hand.** `smith scaffold` applies steps
+> **Use `/skillfactory` instead of doing this by hand.** `skillfactory scaffold` applies steps
 > 1–8 below as one all-or-nothing change (and reads the action SHAs out of the
 > callers this repo already ships, rather than copying a stale pin), then
-> `smith verify --skill <name>` reports which rung it reached. The list below is
-> what smith does, kept here because it is the specification smith is checked
-> against — `ci / smith` fails if the two drift apart.
+> `skillfactory verify --skill <name>` reports which rung it reached. The list below is
+> what skillfactory does, kept here because it is the specification skillfactory is checked
+> against — `ci / skillfactory` fails if the two drift apart.
 >
-> Two things smith writes but **cannot apply**: `.github/repo-settings.sh` only
+> Two things skillfactory writes but **cannot apply**: `.github/repo-settings.sh` only
 > takes effect when an admin runs it, and the baseline-eval table row above is
 > prose. And step 10 is deliberately not automated past the declaration —
-> `smith freeze` requires a real run, and the scaffolded `baseline.test.mjs`
+> `skillfactory freeze` requires a real run, and the scaffolded `baseline.test.mjs`
 > **fails** until it gets one. Step 11's masthead is likewise a separate
 > `press emit --init`: the brand is generated, so the scaffolder registers the
 > target but never writes the region itself.
@@ -420,9 +420,9 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
     for node skills); no CI wiring is needed beyond that. Pin it against a **real past run** of the
     skill, not a synthetic fixture — that is the whole point.
 11. **Write `README.md` in the house style and splice its masthead** (see The README house style,
-    above). `smith scaffold` writes a conforming README; `press emit --init --target <skill>-readme`
+    above). `skillfactory scaffold` writes a conforming README; `press emit --init --target <skill>-readme`
     adds the brand region, which the scaffolded README deliberately lacks until then. `ci /
-    marketplace` runs `smith verify --all` unconditionally, so a README that misses the shape
+    marketplace` runs `skillfactory verify --all` unconditionally, so a README that misses the shape
     fails the PR.
 
 ## Design docs
