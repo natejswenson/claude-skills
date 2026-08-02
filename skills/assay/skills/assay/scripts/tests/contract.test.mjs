@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { extractContract, clauseId } from '../lib/contract.mjs';
-import { normalizeTranscript, redact } from '../lib/trace.mjs';
+import { normalizeTranscript, redact, literalMatcher } from '../lib/trace.mjs';
 
 /** A throwaway repo with one skill in it, shaped exactly like a real one. */
 function fakeRepo(skillMd, invariants = null, claudeMd = null) {
@@ -173,4 +173,22 @@ test('secrets never reach a fixture', () => {
 test('an unparseable line is counted, never silently skipped', () => {
   const { dropped } = normalizeTranscript('not json\n{"type":"system"}');
   assert.equal(dropped.unparsed, 1);
+});
+
+test('--grep matches literal substrings, never a compiled pattern', () => {
+  // Regression: these lookups were built with `new RegExp(userInput)`, which
+  // CodeQL correctly flagged as regex injection — a pathological pattern from a
+  // script or a pasted command hangs the process. Metacharacters must now be
+  // inert, and alternation is expressed with commas instead.
+  const hit = literalMatcher('| tail, | awk');
+  assert.ok(hit('npm test 2>&1 | tail -12'));
+  assert.ok(hit("x | awk '{print}'"));
+  assert.ok(!hit('npm test --silent'));
+
+  const literal = literalMatcher('a|b');
+  assert.ok(literal('contains a|b verbatim'), 'the pipe must be a character, not alternation');
+  assert.ok(!literal('contains only a'), 'the pattern was compiled as a regex');
+
+  assert.ok(literalMatcher('(a+)+$')('value (a+)+$ here'), 'a catastrophic-backtracking pattern must be inert text');
+  assert.throws(() => literalMatcher('  ,  '), /at least one substring/);
 });

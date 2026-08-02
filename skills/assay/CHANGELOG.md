@@ -47,3 +47,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Grading this skill's own creation run surfaced a defect in smith's SKILL.md
   template, fixed in smith 0.1.1 and pinned by a generated case.
+
+- CodeQL flagged the `--grep` lookups as **regex injection** (2 high): both built
+  a `RegExp` from a command-line argument, so a pathological pattern from a
+  script or a pasted command could hang the process. `--grep` now takes
+  comma-separated **literal** substrings with OR semantics — which covered every
+  real lookup anyway — and a regression test asserts metacharacters stay inert.

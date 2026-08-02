@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, resolve } from 'node:path';
 
 import { extractContract } from './lib/contract.mjs';
-import { traceFile, counts } from './lib/trace.mjs';
+import { traceFile, counts, literalMatcher } from './lib/trace.mjs';
 import { runProbes, resolveFindings } from './lib/probes.mjs';
 import { buildProbeReport, renderReport, table } from './lib/report.mjs';
 import { generateCase } from './lib/cases.mjs';
@@ -75,13 +75,13 @@ async function cmdContract(args) {
   // A judgment finding cites a clause id. Finding that id must not require
   // reading the contract JSON into the conversation.
   if (args.grep) {
-    const re = new RegExp(args.grep, 'i');
-    const hits = contract.clauses.filter((c) => re.test(c.text));
+    const hit = literalMatcher(args.grep);
+    const hits = contract.clauses.filter((c) => hit(c.text));
     console.log(
       table(
         ['Clause', 'Severity', 'Source', 'Text'],
         hits.map((c) => [c.id, c.severity, `${c.source.file}:${c.source.line}`, c.text.replace(/\s+/g, ' ').slice(0, 90)]),
-      ) || `no clauses match /${args.grep}/`,
+      ) || `no clauses contain any of: ${args.grep}`,
     );
     console.log('');
     console.log(table(['Matched', 'Of'], [[hits.length, contract.clauses.length]]));
@@ -115,13 +115,13 @@ async function cmdTrace(args) {
   // hunting for that by eye through a JSON file is how a grader ends up
   // grepping a fixture into the conversation. One call, already a table.
   if (args.grep) {
-    const re = new RegExp(args.grep, 'i');
-    const hits = trace.events.filter((e) => re.test(`${e.text ?? ''}${e.command ?? ''}${e.path ?? ''}${e.name ?? ''}`));
+    const hit = literalMatcher(args.grep);
+    const hits = trace.events.filter((e) => hit(`${e.text ?? ''}${e.command ?? ''}${e.path ?? ''}${e.name ?? ''}`));
     console.log(
       table(
         ['Event', 'Line', 'Kind', 'What'],
         hits.map((e) => [e.id, e.line, e.kind, (e.command ?? e.path ?? e.text ?? e.name ?? '').replace(/\s+/g, ' ').slice(0, 90)]),
-      ) || `no events match /${args.grep}/`,
+      ) || `no events contain any of: ${args.grep}`,
     );
     console.log('');
     console.log(table(['Matched', 'Of'], [[hits.length, trace.events.length]]));
@@ -260,9 +260,9 @@ async function cmdCase(args) {
 
 const USAGE = `assay v${VERSION} — grade a real run of a skill against the contract that skill committed to.
 
-  assay contract --skill <name> [--repo <path>] [--out <file>]
+  assay contract --skill <name> [--repo <path>] [--out <file>] [--grep <substr,substr>]
   assay contract --all --out <dir> [--repo <path>]
-  assay trace    --run <session.jsonl> [--out <file>]
+  assay trace    --run <session.jsonl> [--out <file>] [--grep <substr,substr>]
   assay probe    --contract <file> --trace <file> [--out <file>]
   assay probe    --contract <file> --trace <file> --check-finding <file>
   assay report   --contract <file> --trace <file> --out <dir> [--judgment <file>]

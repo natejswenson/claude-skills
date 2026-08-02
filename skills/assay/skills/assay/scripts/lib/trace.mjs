@@ -167,6 +167,28 @@ export function traceFile(path) {
   };
 }
 
+/**
+ * `--grep` takes comma-separated LITERAL substrings, matched case-insensitively
+ * with OR semantics — deliberately not a regular expression.
+ *
+ * Building a RegExp out of a command-line argument is regex injection: a
+ * pathological pattern from a script, a CI job or a pasted command hangs the
+ * process on a string nobody audited. Literal alternatives cover every real
+ * lookup here — "the events that piped into awk or tail" — without handing an
+ * untrusted string to the regex engine.
+ */
+export const literalMatcher = (needles) => {
+  const parts = String(needles)
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.length === 0) throw new Error('--grep needs at least one substring');
+  return (haystack) => {
+    const hay = String(haystack).toLowerCase();
+    return parts.some((p) => hay.includes(p));
+  };
+};
+
 export const counts = (events) =>
   events.reduce((acc, e) => {
     acc[e.kind] = (acc[e.kind] ?? 0) + 1;
