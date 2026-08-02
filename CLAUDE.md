@@ -365,15 +365,18 @@ installs a competing ruleset. Key settings here:
   To audit for drift — a skill whose CI runs but does not gate `main`:
   ```bash
   req=$(gh api repos/<owner>/<repo>/branches/main/protection --jq '.required_status_checks.contexts[]' | sed 's|ci / ||')
-  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate'); do
+  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate\|security'); do
     echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
   done
   ```
   (`ci / shipflow` was missing this way from its introduction until 2026-07-28 — its CI ran and
   reported on every PR, but a promotion could auto-merge with it red.)
-  The filter excludes `press-propagate` too: it has only a `propagate` job and no `ci` job, so it
-  can never satisfy a required check. Without that exclusion the audit reports it as drift on every
-  run, and an audit that always cries wolf stops being read.
+  The filter excludes `press-propagate` and `security` too: `press-propagate` has only a
+  `propagate` job, and `security.yml`'s four jobs are all named `security / <job>` — neither has a
+  `ci` job, so neither can ever satisfy a required check. Without those exclusions the audit
+  reports them as drift on every run, and an audit that always cries wolf stops being read.
+  (`security` was missing from this list until 2026-08-02, found by actually running the audit
+  after adding `ci / release` — the snippet predates `security.yml`.)
 
 **Bootstrap note:** `dev-to-main-automerge.yml` is a plain `pull_request`-triggered workflow (not
 `pull_request_target`), so unlike the auto-merge workflow it replaced, it needs **no manual-merge
