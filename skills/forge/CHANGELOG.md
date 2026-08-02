@@ -5,6 +5,31 @@ All notable changes to the **forge** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-01
+
+### Fixed
+
+- **Rung 0 reported a required input as missing even when the action declares a
+  default for it.** `required: true` and `default:` are commonly paired — the
+  runner substitutes the default, so the caller was never obliged to supply
+  anything. `github/codeql-action` pairs them on both `analysis-kinds` and
+  `wait-for-processing`, which meant every correct CodeQL workflow failed rung 0
+  with two phantom findings. Worse than a missed defect: a rung nobody can get
+  green is a rung people learn to ignore, and rung 0 is the one no other tool
+  performs. Found while generating this repo's own security workflow.
+
+  `analysis-kinds` is documented `[Internal] ... intended for internal-use only`,
+  so the alternative fix — setting the inputs explicitly to silence the check —
+  would have written an unsupported input into every generated workflow.
+
+### Added
+
+- A two-sided baseline case for the above, pinned against two real `action.yml`
+  files at the exact SHAs this repo pins: `github/codeql-action/analyze`
+  (required-with-default, must NOT be reported) and `dorny/paths-filter`
+  (required with no default, must still be reported). One side alone would go
+  green the day input checking was turned off entirely.
+
 ## [0.1.1] - 2026-08-01
 
 ### Fixed

@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { collectUses } from '../lib/verify.mjs';
-import { parseUses } from '../lib/resolve.mjs';
+import { parseUses, parseRequired } from '../lib/resolve.mjs';
 import { headerBody, renderHeader } from '../lib/header.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +26,8 @@ const WORKFLOWS = join(HERE, '../../../../../.github/workflows');
 
 const good = readFileSync(join(BASE, 'good.yml'), 'utf8');
 const broken = readFileSync(join(BASE, 'broken.yml'), 'utf8');
+const codeqlAnalyze = readFileSync(join(BASE, 'inputs-codeql-analyze.yml'), 'utf8');
+const pathsFilter = readFileSync(join(BASE, 'inputs-paths-filter.yml'), 'utf8');
 
 // --- anti-vacuity ---------------------------------------------------------
 
@@ -49,6 +51,32 @@ test('collectUses finds real action references across this repo, above a floor',
   let total = 0;
   for (const f of files) total += collectUses(readFileSync(join(WORKFLOWS, f), 'utf8')).length;
   assert.ok(total >= 20, `only ${total} uses found across ${files.length} workflows — parser regressed`);
+});
+
+/**
+ * `required:` is not the same question as "must the caller supply this".
+ *
+ * Both fixtures are real `action.yml` files, frozen at the exact SHAs this
+ * repo's own workflows pin. Two-sided on purpose, because each side fails a
+ * different way:
+ *
+ *   - codeql-analyze declares `wait-for-processing` as required-WITH-default.
+ *     Reporting it missing is a false positive, and a rung that cannot be got
+ *     green is a rung people learn to ignore. This is the regression the test
+ *     was written for — it made rung 0 red on every correct CodeQL workflow.
+ *   - paths-filter declares `filters` as required with NO default. It must
+ *     still be reported, or the fix has simply turned input checking off.
+ */
+test('required-with-default is not missing, required-without-default still is', () => {
+  const analyze = parseRequired(codeqlAnalyze);
+  assert.ok(
+    codeqlAnalyze.includes('wait-for-processing'),
+    'fixture no longer declares wait-for-processing — it was refrozen from a different action',
+  );
+  assert.deepEqual(analyze, [], `defaulted inputs reported as required: ${analyze.join(', ')}`);
+
+  const filter = parseRequired(pathsFilter);
+  assert.ok(filter.includes('filters'), 'filters is required with no default and must still be reported');
 });
 
 // --- rung 0: the parser, two-sided ---------------------------------------
