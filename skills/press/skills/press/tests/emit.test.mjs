@@ -250,6 +250,52 @@ test('version-badge describes what this consumer generates', () => {
   assert.match(body, /The tiles are generated/);
 });
 
+// --- readme-masthead ------------------------------------------------------
+// The masthead is the whole `.mast` in a medium with no CSS, so every part of
+// it that can silently vanish gets its own assertion.
+
+test('readme-masthead carries the full masthead: stamp, name, kind, issue, byline', () => {
+  const body = emitBody(tokens, 'readme-masthead', {}, { version: '9.9.9' });
+  assert.ok(body.includes(`**${tokens.identity.stamp}**`), 'no stamp');
+  assert.ok(body.includes(tokens.identity.name.toUpperCase()), 'no brand line');
+  assert.ok(body.includes('CLAUDE CODE SKILL'), 'no document kind');
+  assert.match(body, /PRESS v9\.9\.9/, 'no issue');
+  assert.ok(body.includes(tokens.identity.byline), 'no byline');
+});
+
+/**
+ * The blank line before the rule is the difference between a masthead over a
+ * rule and the entire eyebrow silently becoming a setext H2. Nothing but a
+ * rendered page shows that, so it is asserted on the bytes instead.
+ */
+test('readme-masthead ends on a rule separated by a blank line, not a setext heading', () => {
+  const body = emitBody(tokens, 'readme-masthead', {}, { version: '1.0.0' });
+  const lines = body.split('\n');
+  assert.equal(lines.at(-1), '---', 'the rule under the masthead is gone');
+  assert.equal(lines.at(-2), '', 'no blank line — the eyebrow renders as a heading, not a masthead');
+});
+
+test('readme-masthead takes the version from run context, so a release moves it', () => {
+  const a = emitBody(tokens, 'readme-masthead', {}, { version: '1.0.0' });
+  const b = emitBody(tokens, 'readme-masthead', {}, { version: '2.0.0' });
+  assert.notEqual(a, b, 'a new release must change the masthead, or it can never be detected stale');
+});
+
+test('readme-masthead sets the eyebrow in caps, the masthead treatment', () => {
+  const body = emitBody(tokens, 'readme-masthead', { document_kind: 'design doc' }, { version: '1.0.0' });
+  assert.ok(body.includes('DESIGN DOC'), body);
+});
+
+/**
+ * The negative side: the identity is read from tokens, never defaulted to a
+ * literal. A token deleted from `identity` must fail loudly rather than emit a
+ * masthead for nobody.
+ */
+test('readme-masthead refuses to emit when the brand line is not a token', () => {
+  const anonymous = { ...tokens, identity: { ...tokens.identity, name: undefined } };
+  assert.throws(() => emitBody(anonymous, 'readme-masthead', {}, { version: '1.0.0' }), EmitError);
+});
+
 // --- gha-header -----------------------------------------------------------
 
 const GHA_PARAMS = {

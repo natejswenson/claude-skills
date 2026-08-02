@@ -35,8 +35,8 @@
     },
     {
       "path": "skills/press/skills/press/targets.json",
-      "bytes": 960,
-      "sha256": "6deeb8b11ec81c7d363def29438018c7d0d9b6365f5eed01a36e84bc9aaad00f"
+      "bytes": 920,
+      "sha256": "10d3fcb97a0725e89055eacffdd89ae3a25858d5fd0aec32364a1fdf2973ccc8"
     },
     {
       "path": "skills/tally/.claude-plugin/plugin.json",
@@ -55,8 +55,8 @@
     },
     {
       "path": "skills/tally/README.md",
-      "bytes": 371,
-      "sha256": "5ca4901d1bbbfa027f9310cdae2443aa764a35c9a0352bec5496bacf5ebc2f08"
+      "bytes": 2021,
+      "sha256": "c9e1b493393d976a11c0a10b156ee471f43951319aa300b8bda722fb1dce30cb"
     },
     {
       "path": "skills/tally/skills/tally/SKILL.md",

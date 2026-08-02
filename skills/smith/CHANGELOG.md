@@ -5,7 +5,50 @@ All notable changes to the **smith** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] - 2026-08-01
+## [0.2.0] - 2026-08-01
+
+### Added
+
+- **The README house style, as a check.** Ten skills shipped ten READMEs — 28 to
+  279 lines, no two section orders alike, three different H1 forms. A reader
+  arriving from the marketplace had to re-learn where "how do I install this"
+  lived on every one.
+
+  The shape is **fixed head, free tail, fixed foot**: masthead, standfirst, the
+  one rule as a pull quote, then *Why install this → What you get → Quick start
+  → Triggers → Requirements*, anything the skill needs, then *Development →
+  Changelog → License*. `references/readme.md` is the contract,
+  `scripts/lib/readme.mjs` checks it, and `smith verify` reports it as
+  `readme-structure`.
+
+  The tail is free on purpose: devlog's configuration reference and
+  ghostwriter's compliance notes are real content that no five-section template
+  has room for, and forcing them out would move detail into files nobody opens.
+
+- **`ci / marketplace` now runs `smith verify --all`,** unconditionally, so a
+  README edited in *some other skill's* PR is still graded. Placed there rather
+  than in a per-skill caller for the same reason as `lint_baseline.py`: it is a
+  cross-skill invariant, and a path-filtered check would let a new skill land
+  green without ever being evaluated.
+
+- **A README corpus baseline,** pinned against the ten READMEs this repo
+  actually ships, with six targeted mutations on the negative side — decorated
+  H1, deleted masthead, prose instead of the inventory table, a reordered head,
+  a missing foot section, a Quick start with no command. Each asserts the
+  *specific* check that exists for it fired, not merely that grading failed.
+
+### Changed
+
+- **`readme-structure` is a house-tier check, not smith-tier.** Every shipped
+  skill was retrofitted to the contract in the same change, so the tier is true
+  the day it lands — the opposite of the retroactive rule this file warns about.
+- **The scaffolded README is now a real README,** filled from the spec rather
+  than four lines and an install link: the inventory table comes from the
+  declared split and references, and Triggers come from the quoted phrases in
+  `description:` — the literal text a request is matched against, so the two
+  cannot disagree.
+- **The scaffolder writes a `readme-masthead` press target** (press 0.9.0)
+  instead of `version-badge`, anchored on a bare `# <name>` H1.
 
 ### Fixed
 
