@@ -2,7 +2,7 @@
 name: skillfactory
 description: Create a new Claude Code skill end to end — branded with press, wired into CI by ghfactory, promoted by shipflow, split into deterministic scripts and model judgment, and not finished until a real run of it is frozen as its baseline eval. Use when the user says "create a skill", "new skill", "make me a skill that", "scaffold a skill", "add a skill to the marketplace", or wants an idea turned into a versioned, tested, installable skill.
 user_invocable: true
-version: 0.3.0
+version: 0.4.0
 ---
 
 # /skillfactory — skills that are finished, not just written
@@ -68,7 +68,7 @@ exist. Prose pretending to be code is the thing the declaration exists to catch.
 |---|---|
 | read every registry the house keeps | `node scripts/skillfactory.js detect` |
 | grade a spec before it costs anything | `node scripts/skillfactory.js check-spec` |
-| emit the tree and all seven wiring points | `node scripts/skillfactory.js scaffold` |
+| emit the tree and all eight wiring points | `node scripts/skillfactory.js scaffold` |
 | turn a real run into a baseline eval | `node scripts/skillfactory.js freeze` |
 | run the ladder and report the rung | `node scripts/skillfactory.js verify` |
 
@@ -137,7 +137,7 @@ check.
 node scripts/skillfactory.js scaffold --spec <file> [--dry-run]
 ```
 
-The tree plus all seven wiring points, applied all-or-nothing: an unresolvable
+The tree plus all eight wiring points, applied all-or-nothing: an unresolvable
 anchor aborts before the first byte is written. Wiring a skill in halfway is
 worse than not wiring it, because the half that landed makes the rest look done.
 
@@ -250,7 +250,7 @@ Two things skillfactory writes but cannot apply, and must be said out loud:
 | `scripts/lib/freeze.mjs` | a real run turned into a reproducible eval |
 | `references/anatomy.md` | the fixed shape of a generated skill |
 | `references/readme.md` | the README house style: fixed head, free tail, fixed foot |
-| `references/wiring.md` | the seven registries, and what breaks when one is missed |
+| `references/wiring.md` | the eight registries, and what breaks when one is missed |
 | `references/evals.md` | what makes a baseline real instead of decorative |
 
 ## Maintainer reference — not part of a user run
