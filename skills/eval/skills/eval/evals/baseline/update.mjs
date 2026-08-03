@@ -13,7 +13,14 @@
  * with eval. Frozen inputs make the byte comparison a statement about THIS
  * skill's behaviour and nothing else.
  *
- *   node evals/baseline/update.mjs [--session <path-to-session.jsonl>]
+ *   node evals/baseline/update.mjs [--session <path-to-session.jsonl>] [--contracts]
+ *
+ * **The contracts are only re-extracted when --contracts is given.** They are a
+ * frozen input for the same reason the trace is: they are lifted from a live
+ * repo that changes every PR, so re-extracting them on every refresh made this
+ * command unable to reproduce the committed baseline — it attributed repo
+ * movement to eval drift, which is the one thing a golden must never do. Pass
+ * --contracts when the corpus genuinely needs to catch up with the repo.
  *
  * **The trace is only re-frozen when --session is given.** Without it, the
  * committed run-trace.json is reused, so this command reproduces the committed
@@ -70,8 +77,12 @@ const requested = argOf('--session');
 const session = requested === 'latest' ? latestSession() : requested;
 mkdirSync(FIXTURES, { recursive: true });
 
-console.log(`→ freezing contracts for every skill in ${REPO}`);
-run('node', ['scripts/eval.js', 'contract', '--all', '--repo', REPO, '--out', join(FIXTURES, 'contracts')]);
+if (process.argv.includes('--contracts')) {
+  console.log(`→ re-extracting contracts for every skill in ${REPO}`);
+  run('node', ['scripts/eval.js', 'contract', '--all', '--repo', REPO, '--out', join(FIXTURES, 'contracts')]);
+} else {
+  console.log('→ keeping the committed contract fixtures (pass --contracts to re-extract from the live repo)');
+}
 
 if (session) {
   console.log(`→ freezing a NEW run: ${session}`);

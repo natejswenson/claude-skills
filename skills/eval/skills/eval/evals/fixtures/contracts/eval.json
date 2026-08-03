@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,24 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
-      }
-    },
-    {
-      "id": "inv-658ac01f",
-      "tag": "inv",
-      "text": "Never grade from a summary",
-      "severity": "high",
-      "rationale": "Grading an account of a run instead of the run is how a grader starts hallucinating politely. The transcript is on disk; there is never a reason to accept a retelling of it.",
-      "source": {
-        "file": "skills/eval/skills/eval/skill-invariants.json",
-        "line": 1
+        "line": 27
       }
     },
     {
@@ -138,9 +137,39 @@
       }
     },
     {
-      "id": "rule-b691a05c",
+      "id": "rule-3c404f24",
       "tag": "rule",
-      "text": "Not the user's account of the run, not your own memory of it, not a description someone pasted. Grade the transcript, or say you cannot grade. -",
+      "text": "Never report a finding count as a verdict on a run.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 28
+      }
+    },
+    {
+      "id": "rule-62436eec",
+      "tag": "rule",
+      "text": "Never assert what it did not observe: every finding must cite one exact transcript event and one exact contract clause, and a generated eval case is kept only if it is run and observed to fail against the skill as it exists today.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 21
+      }
+    },
+    {
+      "id": "rule-6470e22a",
+      "tag": "rule",
+      "text": "Always report the coverage gap in the same breath",
+      "severity": "critical",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 29
+      }
+    },
+    {
+      "id": "rule-7b2f649b",
+      "tag": "rule",
+      "text": "Never grade from a summary.",
       "severity": "critical",
       "source": {
         "file": "skills/eval/skills/eval/SKILL.md",
@@ -155,16 +184,6 @@
       "source": {
         "file": "skills/eval/skills/eval/SKILL.md",
         "line": 156
-      }
-    },
-    {
-      "id": "skill-62436eec",
-      "tag": "skill",
-      "text": "Never assert what it did not observe: every finding must cite one exact transcript event and one exact contract clause, and a generated eval case is kept only if it is run and observed to fail against the skill as it exists today.",
-      "severity": "high",
-      "source": {
-        "file": "skills/eval/skills/eval/SKILL.md",
-        "line": 148
       }
     },
     {
@@ -205,6 +224,16 @@
       "source": {
         "file": "skills/eval/skills/eval/SKILL.md",
         "line": 94
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/eval/skills/eval/SKILL.md",
+        "line": 14
       }
     },
     {

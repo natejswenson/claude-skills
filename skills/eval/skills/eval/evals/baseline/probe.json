@@ -7,21 +7,25 @@
       "skills/skillfactory/skills/skillfactory/skill-invariants.json",
       "CLAUDE.md"
     ],
-    "clauses": 32
+    "clauses": 30
   },
   "trace": {
     "events": 416
   },
   "coverage": {
-    "examined": 9,
-    "unexamined": 23,
+    "examined": 10,
+    "unexamined": 20,
     "probesApplied": [
       "announce-once",
       "brand-bypass",
       "done-without-freeze",
       "file-contents-in-chat",
       "pipeline-reshaping",
-      "pr-into-main"
+      "pr-into-main",
+      "unobserved-test-claim"
+    ],
+    "probesUnbound": [
+      "question-budget"
     ]
   },
   "findings": [
@@ -146,14 +150,6 @@
       "detail": "reshapes output in the shell: `cd /private/tmp/claude-501/-Users-natejswenson-localrepo-claude-skills/c596ab69-7897-4b11-89b9-982e7a33044a/scratchpad/r`"
     },
     {
-      "id": "f-f61ee1f4",
-      "probe": "announce-once",
-      "clauseId": "press-8f262e00",
-      "eventId": "e2",
-      "severity": "medium",
-      "detail": "no \"using the skillfactory skill\" announcement anywhere in the run"
-    },
-    {
       "id": "f-fa23ff8b",
       "probe": "announce-once",
       "clauseId": "skill-bfb1b27b",
@@ -187,7 +183,11 @@
     },
     {
       "probe": "pr-into-main",
-      "cannot": "a PR opened through the GitHub MCP tools or the web UI rather than the gh CLI"
+      "cannot": "a PR opened through the GitHub MCP tools or the web UI rather than the gh CLI; a `gh pr create` with no --base at all in a repo whose default branch is main; and whether a branch named like the integration branch really is one"
+    },
+    {
+      "probe": "unobserved-test-claim",
+      "cannot": "every other kind of unobserved claim — \"it works\", \"CI is green\", \"the brand is in sync\". Those are the same defect and only judgment can catch them"
     }
   ]
 }

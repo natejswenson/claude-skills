@@ -55,6 +55,10 @@ export function coverageOf({ probed, judgment = [] }) {
 /** The findings a run produced, as the machine decided them. */
 export function buildProbeReport({ contract, trace, probed, skill, judgment = [] }) {
   const applicable = PROBES.filter((p) => contract.clauses.some((c) => p.appliesTo.test(c.text)));
+  // The same arithmetic report.md and the CLI use. Reading probe-only numbers
+  // here shipped a finding count beside a gap that ignored those very findings
+  // — the 0.2.1 defect, surviving in the artifact a machine consumer trusts.
+  const cov = coverageOf({ probed, judgment });
   return {
     $comment:
       'Machine-decided findings only. Every finding cites one clause id that exists in the contract and one event id that exists in the trace; anything that failed to resolve is in `rejected`, never softened into a maybe.',
@@ -62,9 +66,16 @@ export function buildProbeReport({ contract, trace, probed, skill, judgment = []
     contract: { sources: contract.sources, clauses: contract.clauses.length },
     trace: { events: trace.events.length },
     coverage: {
-      examined: probed.examined.length,
-      unexamined: probed.unexamined.length,
+      examined: cov.examined,
+      unexamined: cov.gap,
+      // Emitted only when there is a split, so a machine-only run — which is
+      // what the frozen baseline pins — serialises exactly as it did before.
+      ...(cov.judgmentExamined > 0 ? { probeExamined: cov.probeExamined, judgmentExamined: cov.judgmentExamined } : {}),
       probesApplied: applicable.map((p) => p.id).sort(),
+      // Named, because a probe that bound nothing is not a probe that found
+      // nothing: either the skill never made that promise, or it phrased it in
+      // words the probe does not recognise, and those are different facts.
+      probesUnbound: probed.unbound ?? [],
     },
     findings: probed.findings,
     rejected: probed.rejected,
@@ -170,5 +181,19 @@ export function renderReport({ contract, trace, probed, skill, judgment = [] }) 
     out.push(table(['Probe', 'Cannot decide'], applicable.map((p) => [p.id, clip(p.cannot, 150)])));
   }
   out.push('');
+
+  // Rendered only when a probe bound nothing, so a contract every probe found a
+  // clause in reads exactly as it did before — and the frozen baseline with it.
+  const unbound = probed.unbound ?? [];
+  if (unbound.length > 0) {
+    out.push('## Probes that found no clause to attach to');
+    out.push('');
+    out.push(
+      `${unbound.length} probe(s) bound to nothing in this contract: ${unbound.join(', ')}. ` +
+        'Either this skill never made that promise, or it phrased it in words the probe does not recognise — ' +
+        'those are different facts, and neither is "clean".',
+    );
+    out.push('');
+  }
   return `${out.join('\n')}`;
 }

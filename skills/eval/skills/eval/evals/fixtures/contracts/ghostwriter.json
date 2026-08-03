@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -240,6 +250,16 @@
       }
     },
     {
+      "id": "skill-0d91cbb8",
+      "tag": "skill",
+      "text": "cut it or don't ship the post — never fabricate a citation or a fact.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 242
+      }
+    },
+    {
       "id": "skill-18769eb4",
       "tag": "skill",
       "text": "Narrate the gate — it's the slow step; never go silent through it.",
@@ -267,6 +287,16 @@
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
         "line": 364
+      }
+    },
+    {
+      "id": "skill-24676db7",
+      "tag": "skill",
+      "text": "Never publish without explicit approval",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 612
       }
     },
     {
@@ -310,6 +340,16 @@
       }
     },
     {
+      "id": "skill-48b70f4b",
+      "tag": "skill",
+      "text": "Never fabricate a detail to clear this bar.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 211
+      }
+    },
+    {
       "id": "skill-4e9bb774",
       "tag": "skill",
       "text": "Trending now (live, run-day — VERIFIED trending, not vibes).",
@@ -317,6 +357,16 @@
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
         "line": 152
+      }
+    },
+    {
+      "id": "skill-4f7d319a",
+      "tag": "skill",
+      "text": "Never print or commit secrets.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 614
       }
     },
     {
@@ -330,13 +380,33 @@
       }
     },
     {
-      "id": "skill-5b2d3a72",
+      "id": "skill-582d56e2",
       "tag": "skill",
-      "text": ". If you can't source a claim, cut it — don't ship it. -",
+      "text": "never in the post body",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 620
+        "line": 619
+      }
+    },
+    {
+      "id": "skill-59699101",
+      "tag": "skill",
+      "text": "Don't fabricate facts",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 616
+      }
+    },
+    {
+      "id": "skill-68b625c0",
+      "tag": "skill",
+      "text": "Every external/world claim must clear the source contract",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 616
       }
     },
     {
@@ -360,16 +430,6 @@
       }
     },
     {
-      "id": "skill-810e1cdc",
-      "tag": "skill",
-      "text": "one** `AskUserQuestion`, never the old generic 2–3-question interview.",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 211
-      }
-    },
-    {
       "id": "skill-84d10e8d",
       "tag": "skill",
       "text": "composed, not templated",
@@ -390,43 +450,23 @@
       }
     },
     {
-      "id": "skill-8d208e3b",
+      "id": "skill-9244ec21",
       "tag": "skill",
-      "text": ", add `--document images/<slug>.pdf --title \"<short title>\"` instead (image and document are mutually exclusive). Prefer the carousel for educational posts (higher reach). Always `--dry-run` once first; document upload is the same flow as images but posts to `/rest/documents`. - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm. 3.",
+      "text": "Compliance (LinkedIn API ToS §3.1) — never automate posting.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 590
+        "line": 626
       }
     },
     {
-      "id": "skill-8f3271ea",
+      "id": "skill-aeb86628",
       "tag": "skill",
-      "text": "— fix the sidecar / redo the research instead (same spirit as \"never publish without explicit approval\"). -",
+      "text": "The agent must never set it to get past a failed gate",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 623
-      }
-    },
-    {
-      "id": "skill-a72b03ee",
-      "tag": "skill",
-      "text": "— and wait for the answer. The Publish tap immediately after seeing the exact full text is the explicit approval; an edited draft is re-shown and re-asked the same way. Do not publish unprompted.",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 281
-      }
-    },
-    {
-      "id": "skill-aea0c31d",
-      "tag": "skill",
-      "text": "Reach is largely decided in the first 30–60 minutes (see `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour: reply to every comment with substance (a question back, not just \"thanks\"), go comment on 5+ other people's posts to signal activity, and — if the post references a link — drop that link in the",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 598
+        "line": 622
       }
     },
     {
@@ -457,16 +497,6 @@
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
         "line": 16
-      }
-    },
-    {
-      "id": "skill-bf44c474",
-      "tag": "skill",
-      "text": "now (links in the body suppress reach). The script can't do these; they are the single biggest fix for low reach. Never run the non-`--dry-run` publish command without a clear, specific approval from the user for that exact draft. --- ## Guardrails -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 602
       }
     },
     {
@@ -520,6 +550,16 @@
       }
     },
     {
+      "id": "skill-f47fc26f",
+      "tag": "skill",
+      "text": "never put sources, links, or a \"Sources\" section in the post body",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 240
+      }
+    },
+    {
       "id": "skill-f5a37e8a",
       "tag": "skill",
       "text": "never ship a template's default icons or placeholder strings",
@@ -527,26 +567,6 @@
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
         "line": 398
-      }
-    },
-    {
-      "id": "skill-f7b3e66a",
-      "tag": "skill",
-      "text": "`.env`, `data/`, and `drafts/` are gitignored; keep it that way. Don't echo the access token or client secret in chat. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 614
-      }
-    },
-    {
-      "id": "skill-fd95de19",
-      "tag": "skill",
-      "text": "Run `mkdir -p ~/.claude/ghostwriter && cp .env.example ~/.claude/ghostwriter/.env`, then write their Client ID/Secret into `~/.claude/ghostwriter/.env` (edit the file; never echo the secret back in chat). 3.",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 57
       }
     },
     {
