@@ -29,6 +29,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`eval`](skills/eval) | ![eval](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=eval-v*&label=&sort=semver&color=blue) | `/eval` | Node | Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases. |
 | [`release`](skills/release) | ![release](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=release-v*&label=&sort=semver&color=blue) | `/release` | Node | Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist. |
 | [`pluginsync`](skills/pluginsync) | ![pluginsync](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=pluginsync-v*&label=&sort=semver&color=blue) | `/pluginsync` | Node | Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. |
+| [`issueflow`](skills/issueflow) | ![issueflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issueflow-v*&label=&sort=semver&color=blue) | `/issueflow` | Node | Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -51,6 +52,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install eval@claude-skills
 /plugin install release@claude-skills
 /plugin install pluginsync@claude-skills
+/plugin install issueflow@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -74,6 +76,7 @@ ln -sfn "$PWD/skills/skillfactory/skills/skillfactory" ~/.claude/skills/skillfac
 ln -sfn "$PWD/skills/eval/skills/eval" ~/.claude/skills/eval
 ln -sfn "$PWD/skills/release/skills/release" ~/.claude/skills/release
 ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
+ln -sfn "$PWD/skills/issueflow/skills/issueflow" ~/.claude/skills/issueflow
 ```
 </details>
 
