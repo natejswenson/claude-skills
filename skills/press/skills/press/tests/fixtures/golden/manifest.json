@@ -32,6 +32,8 @@
     "release-agent-ui",
     "release-readme",
     "pluginsync-agent-ui",
-    "pluginsync-readme"
+    "pluginsync-readme",
+    "issueflow-agent-ui",
+    "issueflow-readme"
   ]
 }

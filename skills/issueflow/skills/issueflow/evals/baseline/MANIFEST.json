@@ -1,0 +1,15 @@
+{
+  "comment": "Frozen from a real issueflow run against natejswenson/local-fitness#133. Regenerate with `node evals/baseline/update.mjs`.",
+  "source": "natejswenson/local-fitness#133",
+  "artifacts": {
+    "board.txt": "8525996d8949254f",
+    "start.txt": "e913d2aeb9d3fb4b",
+    "brief-investigate.md": "5bca620bd6354bdc",
+    "brief-design.md": "c017ccab2324a2a2",
+    "brief-implement.md": "a43b0ca4ee2e3634",
+    "stage-investigate.json": "60936f47d54e4f3a",
+    "stage-design.json": "b16ff0ef911238aa",
+    "stage-implement.json": "48d8240cabfc5e2f",
+    "stage-test.json": "139eb2d73773de33"
+  }
+}
