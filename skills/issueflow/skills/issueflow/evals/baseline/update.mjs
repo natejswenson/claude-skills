@@ -19,6 +19,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STAGES } from '../../scripts/lib/stages.mjs';
+import { renderComment } from '../../scripts/lib/checkpoint.mjs';
+import { loadRun } from '../../scripts/lib/run.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -67,6 +69,17 @@ export function generate() {
 
   // implement — briefable for real, because both stages it inherits are approved.
   artifacts['brief-implement.md'] = readBrief(cli(['brief', '--stage', 'implement', '--run-dir', runDir]), runDir, 'root-implement');
+
+  // The sticky issue comment this run would have posted. It is the durable
+  // record of the whole run, so it is frozen for the same reason the briefs
+  // are: it crosses out of this machine, and nobody reviews what is not pinned.
+  //
+  // Stage timings are stripped first. They are wall-clock, so freezing them
+  // would pin the speed of the machine that last ran this script — the golden
+  // pins the comment's SHAPE, and `durationOf` is covered by its own unit test.
+  const state = loadRun(runDir);
+  for (const s of [...state.stages, ...state.lanes.flatMap((l) => l.stages)]) s.at = {};
+  artifacts['checkpoint-comment.md'] = renderComment(runDir, state);
 
   // The shipped stage contract, one file per stage. Four files, four stages:
   // the corpus floor is what stops a resolver that matches nothing from

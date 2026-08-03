@@ -58,3 +58,64 @@ export function createPr(cwd, { head, base, title, bodyFile, draft }) {
   if (draft) args.push('--draft');
   return gh(args, cwd).trim().split('\n').filter(Boolean).pop() ?? '';
 }
+
+/** Just the issue's state, for the cheap "has reality moved?" check before every advance. */
+export function issueState(cwd, number) {
+  const raw = gh(['issue', 'view', String(number), '--json', 'state,stateReason,closedAt,url'], cwd);
+  return JSON.parse(raw);
+}
+
+/**
+ * Every pull request whose head is `branch`, open or closed.
+ *
+ * Closed ones matter most: a merged pull request for a lane means the work
+ * already landed, and a run still walking that lane is a run about to redo it.
+ */
+export function prsForBranch(cwd, branch) {
+  const raw = gh(
+    ['pr', 'list', '--head', branch, '--state', 'all', '--limit', '10', '--json', 'number,state,url,mergedAt,baseRefName'],
+    cwd,
+  );
+  return JSON.parse(raw);
+}
+
+/**
+ * The numeric comment id GitHub hides in a comment's own URL.
+ *
+ * `gh` reports comments by URL, and the REST endpoint that edits one wants the
+ * number. This is the seam between them.
+ */
+export const commentIdFromUrl = (url) => Number(/#issuecomment-(\d+)/.exec(String(url ?? ''))?.[1]) || null;
+
+/** Every comment on the issue, so a run resumed elsewhere can find the one it owns. */
+export function issueComments(cwd, number) {
+  const raw = gh(['issue', 'view', String(number), '--json', 'comments'], cwd);
+  return (JSON.parse(raw).comments ?? []).map((c) => ({ ...c, commentId: commentIdFromUrl(c.url) }));
+}
+
+/** Post the run's sticky comment for the first time. Returns its id and URL. */
+export function addIssueComment(cwd, { number, bodyFile }) {
+  const url = gh(['issue', 'comment', String(number), '--body-file', bodyFile], cwd)
+    .trim().split('\n').filter(Boolean).pop() ?? '';
+  return { url, commentId: commentIdFromUrl(url) };
+}
+
+/**
+ * Rewrite the run's sticky comment in place.
+ *
+ * Editing rather than appending is the whole point: a gated run makes six or
+ * more transitions, and six comments on an issue is noise nobody reads.
+ *
+ * The body crosses as a JSON file through `--input` rather than as a `-F`
+ * field: a markdown body is arbitrary text, and `gh`'s field parsing applies
+ * type conversion to it.
+ */
+export function updateIssueComment(cwd, { owner, name, commentId, inputFile }) {
+  const raw = gh(
+    ['api', `repos/${owner}/${name}/issues/comments/${commentId}`, '-X', 'PATCH', '--input', inputFile,
+      '--jq', '.html_url'],
+    cwd,
+  );
+  const url = raw.trim();
+  return { url, commentId };
+}

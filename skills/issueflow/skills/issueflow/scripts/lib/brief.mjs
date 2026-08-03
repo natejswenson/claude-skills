@@ -61,19 +61,39 @@ function inheritedSection(dir, run, step) {
   ].join('\n');
 }
 
-function contextSection(dir, run, step) {
+/**
+ * Where the stage works, and on what.
+ *
+ * `workdir` is the lane's own git worktree when it has one. Naming it here is
+ * what keeps two concurrent lanes — and the test stage's revert-and-rerun proof
+ * — out of the user's live checkout. A stage that is handed a worktree must not
+ * wander back to the main repo, so the row says which one is which.
+ */
+function contextSection(dir, run, step, workdir) {
   const rows = [
-    ['repo', run.repo.path],
+    ['work in', workdir ?? run.repo.path],
+    ['repository', run.repo.path],
     ['branch', step.lane ? step.lane.branch : '(no branch yet — this stage does not commit)'],
     ['base branch', step.lane ? step.lane.base : run.policy.base],
     ['work item', step.lane ? `${step.lane.slug} — ${step.lane.title}` : 'the whole issue'],
   ];
   if (step.stage.id === 'test') rows.push(['evidence file', evidencePath(dir, step)]);
-  return ['## Working context', '', bar(['Field', 'Value'], rows)].join('\n');
+  const out = ['## Working context', '', bar(['Field', 'Value'], rows)];
+  if (workdir && workdir !== run.repo.path) {
+    out.push(
+      '',
+      '`work in` is a git worktree of the same repository, checked out on this',
+      'lane\'s branch. Run every command there. It shares the repository\'s history,',
+      'so a commit you make in it is a commit on the branch — but the user\'s own',
+      'checkout is a different directory and may hold uncommitted work, so do not',
+      'touch it.',
+    );
+  }
+  return out.join('\n');
 }
 
 /** Render the brief for one step. Pure given the run state and what is on disk. */
-export function renderBrief(dir, run, step, issue) {
+export function renderBrief(dir, run, step, issue, workdir = null) {
   const declared = stage(step.stage.id);
   const out = [
     `# issueflow brief — ${declared.title}`,
@@ -101,7 +121,7 @@ export function renderBrief(dir, run, step, issue) {
     '',
     declared.forbids,
     '',
-    contextSection(dir, run, step),
+    contextSection(dir, run, step, workdir),
     '',
     '## Deliver',
     '',
@@ -118,10 +138,10 @@ export function renderBrief(dir, run, step, issue) {
 }
 
 /** Write the brief and return everything the orchestrator needs to dispatch it. */
-export function writeBrief(dir, run, step, issue) {
+export function writeBrief(dir, run, step, issue, workdir = null) {
   const path = briefPath(dir, step);
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, renderBrief(dir, run, step, issue));
+  writeFileSync(path, renderBrief(dir, run, step, issue, workdir));
   return {
     step: step.key,
     stage: step.stage.id,
@@ -129,6 +149,7 @@ export function writeBrief(dir, run, step, issue) {
     agent: step.stage.agent,
     prompt: path,
     artifact: artifactPath(dir, step),
+    workdir: workdir ?? run.repo.path,
   };
 }
 

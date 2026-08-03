@@ -25,6 +25,16 @@
       "rationale": "The per-stage model is the whole reason this is four subagents rather than one loop: investigation and design get the strongest model because a wrong answer there is cheapest to produce and most expensive to find. An orchestrator that quietly runs everything on one model has kept the ceremony and thrown away the design."
     },
     {
+      "id": "every-gate-checkpoints",
+      "pattern": "Every state change is checkpointed",
+      "rationale": "The run's whole record — four subagents' worth of investigation, design, implementation and proof — lives outside the target repo and outside git. Until 0.2.0 none of it reached GitHub before `ship`, which on the measured run never ran: 23 minutes of opus and sonnet output existed only as untracked files under $HOME and one unpushed commit. A gated pipeline that cannot survive losing the machine is a pipeline whose gates were the only thing it delivered."
+    },
+    {
+      "id": "reconcile-before-advancing",
+      "pattern": "Never advance over drift you have not shown the user",
+      "rationale": "A run holds a model of the world it built at `start` and never checks again. On the measured run the change was pushed, merged, promoted and the issue closed while the run sat at a gate — and it then approved that stage, briefed the next one and dispatched a subagent against a branch whose pull request had already merged. Asking before advancing is the difference between a stale run and a wrong one."
+    },
+    {
       "id": "the-orchestrator-does-no-stage-work",
       "pattern": "Never do a stage's work yourself",
       "rationale": "Collapsing a stage into the orchestrator's own context destroys the isolation that makes each stage's artifact reviewable on its own, and produces an approval gate over work the approver has already been told the conclusion of."
@@ -55,6 +65,10 @@
       {
         "step": "report the state of an interrupted run so it resumes without guessing",
         "command": "node scripts/issueflow.js status"
+      },
+      {
+        "step": "list every run on this machine, so a run can be found without remembering its directory",
+        "command": "node scripts/issueflow.js runs"
       },
       {
         "step": "push the branch and open the pull request under the repo's own policy",
@@ -104,10 +118,11 @@
         "evals/baseline/board.txt",
         "evals/baseline/brief-investigate.md",
         "evals/baseline/brief-design.md",
-        "evals/baseline/brief-implement.md"
+        "evals/baseline/brief-implement.md",
+        "evals/baseline/checkpoint-comment.md"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and \u2014 the expensive one \u2014 a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. A floor of 3 issue rows on the frozen board, plus an assertion that the Detail column still reports more than one value, stops a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
+      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and \u2014 the expensive one \u2014 a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Since 0.2.0 it also pins the sticky issue comment, which is the ONLY artifact of a run that leaves the machine: a comment that lost the board, lost an approved artifact, or grew a local path is a run that cannot be recovered or a home directory published to a public issue, and nothing else in the repo would notice. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
     },
     {
       "id": "unapproved-stage-trap",
@@ -118,7 +133,31 @@
         "evals/inputs/artifacts/investigate.md"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose design artifact is real and complete on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero \u2014 plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns five of these red."
+      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose design artifact is real and complete on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero \u2014 plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
+    },
+    {
+      "id": "dependency-graph-pair",
+      "kind": "trap",
+      "test": "scripts/tests/gate.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/gate.test.mjs\"",
+      "rationale": "0.2.0 replaced the gate's flat prefix scan with a real dependency graph, which LOOSENS it \u2014 so it needs a two-sided pair, not a single assertion. One half proves a stacked lane still cannot be implemented before the lane it branches off (the loosening opened no hole); the other proves a lane CAN be implemented while the lane below it is still being tested (the concurrency is real rather than decorative). Either half alone passes over a graph that is wrong in the other direction, which is exactly how a parallelism feature ends up shipping as a comment. A third case asserts a hole two levels down is still named rather than hidden behind the step above it."
+    },
+    {
+      "id": "offline-means-offline",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
+      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network \u2014 spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 \u2014 and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+    },
+    {
+      "id": "worktree-isolation",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
+      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the test stage's revert-and-rerun proof is only safe for the same reason \u2014 before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo \u2014 the first offline eval run of this feature left a stray `feature/issue-133` branch in claude-skills itself."
     },
     {
       "id": "stage-contract-corpus",
