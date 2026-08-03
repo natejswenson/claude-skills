@@ -70,6 +70,20 @@ test('the-real-run: the frozen board is a real board, not an empty one', () => {
   assert.ok(details.size >= 2, `every issue reported Detail "${[...details]}" — the signal has stopped discriminating`);
 });
 
+test('the-real-run: no padded table cell carries a path, so the golden survives another machine', () => {
+  // `table()` pads cells to the widest value. A cell holding an absolute path is
+  // therefore as wide as the machine's tmpdir — /var/folders/… on macOS,
+  // /tmp/… on Linux — and normalising the path afterwards shrinks the text but
+  // not the padding, so the golden disagreed with CI on the separator row alone.
+  // Paths belong on their own line.
+  for (const name of ['board.txt', 'start.txt']) {
+    for (const line of frozen(name).split('\n')) {
+      if (!line.startsWith('|')) continue;
+      assert.doesNotMatch(line, /\/(tmp|var|home|Users)\//, `${name} puts a machine-dependent path in a padded cell: ${line}`);
+    }
+  }
+});
+
 test('the-real-run: each frozen brief carries the issue and the artifacts it inherits', () => {
   const investigate = frozen('brief-investigate.md');
   assert.match(investigate, /tool descriptions promise behavior/, 'the investigate brief lost the issue body');

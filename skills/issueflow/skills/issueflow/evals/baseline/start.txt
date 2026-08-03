@@ -1,6 +1,8 @@
-| Issue                          | Run                                                                        | Branch            | Base |
-|--------------------------------|----------------------------------------------------------------------------|-------------------|------|
-| natejswenson/local-fitness#133 | <RUN> | feature/issue-133 | main |
+| Issue                          | Branch            | Base |
+|--------------------------------|-------------------|------|
+| natejswenson/local-fitness#133 | feature/issue-133 | main |
+
+Run: <RUN>
 
 | Step           | Model  | State   | Gate    |
 |----------------|--------|---------|---------|

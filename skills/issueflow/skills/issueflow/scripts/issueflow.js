@@ -115,10 +115,13 @@ async function cmdStart(args) {
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 
   print(
-    ['Issue', 'Run', 'Branch', 'Base'],
-    [[`${info.owner}/${info.name}#${issue.number}`, dir, branchFor(policy, issue.number, 'root'), policy.base]],
+    ['Issue', 'Branch', 'Base'],
+    [[`${info.owner}/${info.name}#${issue.number}`, branchFor(policy, issue.number, 'root'), policy.base]],
   );
-  console.log('');
+  // The run path goes on its own line, never in a padded cell. An absolute path
+  // is both long enough to blow the table's width out and machine-dependent, so
+  // a table containing one cannot be compared across two machines.
+  console.log(`\nRun: ${dir}\n`);
   runBoard(run);
   nextLine(run);
 }
@@ -141,10 +144,9 @@ async function cmdBrief(args) {
   const info = writeBrief(dir, run, step, loadIssue(dir));
   step.stage.state = step.stage.state === 'pending' ? 'briefed' : step.stage.state;
   saveRun(dir, run);
-  print(
-    ['Stage', 'Model', 'Agent', 'Artifact it must write'],
-    [[info.stage, info.model, info.agent, info.artifact]],
-  );
+  // Paths stay out of padded cells — see the note in cmdStart.
+  print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
+  console.log(`\nIt must write: ${info.artifact}`);
   // The brief is handed over as a path, not pasted: it is long, the user has no
   // reason to read it in the transcript, and a subagent can open a file. The
   // file is still the only channel — this is how it is delivered.
@@ -186,10 +188,10 @@ async function cmdStatus(args) {
   const { dir } = locate(args);
   const run = loadRun(dir);
   print(
-    ['Issue', 'Run', 'Split', 'Lanes'],
-    [[`${run.repo.owner}/${run.repo.name}#${run.issue.number}`, dir, String(run.split), String(run.lanes.length)]],
+    ['Issue', 'Split', 'Lanes'],
+    [[`${run.repo.owner}/${run.repo.name}#${run.issue.number}`, String(run.split), String(run.lanes.length)]],
   );
-  console.log('');
+  console.log(`\nRun: ${dir}\n`);
   runBoard(run);
   nextLine(run);
 }
