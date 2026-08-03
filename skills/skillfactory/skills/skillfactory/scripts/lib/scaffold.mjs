@@ -107,7 +107,24 @@ export function planEdits(spec, house) {
     why: 'a consumer missing from targets.json is invisible to `press check`',
   });
 
-  // 4-6. The three human-readable registries. Anchored on the last existing
+  // 4. The release components. A skill absent from here is invisible to the
+  //    `release` skill entirely — `preflight` reports on every OTHER component
+  //    and looks complete — and `ci / release`'s corpus baseline fails the PR.
+  //    Kept sorted, because the committed list is sorted and a diff that also
+  //    reorders is a diff nobody reads.
+  edits.push({
+    path: '.github/shipflow.json',
+    json: (data) => {
+      const components = data.release?.components;
+      if (!Array.isArray(components) || components.includes(n)) return null;
+      components.push(n);
+      components.sort();
+      return data;
+    },
+    why: 'a component missing from release.components cannot be released, and ci / release fails the PR',
+  });
+
+  // 5-7. The three human-readable registries. Anchored on the last existing
   //      skill so a new one always lands at the end of the list it belongs to.
   const prev = house.marketplaceNames[house.marketplaceNames.length - 1];
   edits.push(

@@ -1,8 +1,8 @@
 {
-  "name": "pluginsync",
+  "name": "issueflow",
   "sources": [
-    "skills/pluginsync/skills/pluginsync/SKILL.md",
-    "skills/pluginsync/skills/pluginsync/skill-invariants.json",
+    "skills/issueflow/skills/issueflow/SKILL.md",
+    "skills/issueflow/skills/issueflow/skill-invariants.json",
     "CLAUDE.md"
   ],
   "clauses": [
@@ -72,8 +72,8 @@
       "text": "One script call, not a pipeline.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 156
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 217
       }
     },
     {
@@ -82,8 +82,8 @@
       "text": "Report in tables, with named columns.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 160
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 221
       }
     },
     {
@@ -92,8 +92,8 @@
       "text": "Never claim a visual result without the artifact.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 167
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 228
       }
     },
     {
@@ -102,8 +102,8 @@
       "text": "Never print file contents into the conversation.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 151
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 212
       }
     },
     {
@@ -112,8 +112,8 @@
       "text": "Announce the skill once, at the start",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 175
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 236
       }
     },
     {
@@ -122,8 +122,8 @@
       "text": "Keep the machinery invisible.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 148
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 209
       }
     },
     {
@@ -132,38 +132,18 @@
       "text": "Show, don't describe.",
       "severity": "medium",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 165
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 226
       }
     },
     {
-      "id": "rule-26bc1cbe",
+      "id": "rule-95d3a758",
       "tag": "rule",
-      "text": "Never say a plugin is updated because a command succeeded.",
+      "text": "No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.",
       "severity": "critical",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 36
-      }
-    },
-    {
-      "id": "rule-791b3480",
-      "tag": "rule",
-      "text": "A plugin is not refreshed until the new version is read back off disk, and it is not live until Claude Code restarts — report those as three different states and never collapse them into one.",
-      "severity": "critical",
-      "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 20
-      }
-    },
-    {
-      "id": "skill-0838d62a",
-      "tag": "skill",
-      "text": "An unreadable source is an error row, never a dropped one.",
-      "severity": "high",
-      "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 121
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 21
       }
     },
     {
@@ -172,18 +152,28 @@
       "text": "Never ask about anything in it",
       "severity": "high",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 65
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 64
       }
     },
     {
-      "id": "skill-86ad48e8",
+      "id": "skill-245bacf4",
       "tag": "skill",
-      "text": "Never report a stalled row as updated.",
+      "text": "Never do a stage's work yourself.",
       "severity": "high",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 118
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 175
+      }
+    },
+    {
+      "id": "skill-8aff2a42",
+      "tag": "skill",
+      "text": "Never dispatch a stage on a model other than the one `brief` names.",
+      "severity": "high",
+      "source": {
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 174
       }
     },
     {
@@ -192,8 +182,8 @@
       "text": "Never claim a result you did not observe.",
       "severity": "high",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 116
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 179
       }
     },
     {
@@ -202,28 +192,18 @@
       "text": "Announce at start:",
       "severity": "high",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 13
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 14
       }
     },
     {
-      "id": "skill-c6e55217",
+      "id": "skill-e7fa6a2d",
       "tag": "skill",
-      "text": "Never uninstall an orphan without being asked.",
+      "text": "Never edit an artifact to get past the gate.",
       "severity": "high",
       "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 120
-      }
-    },
-    {
-      "id": "skill-ce73898c",
-      "tag": "skill",
-      "text": "Never uninstall an orphan on your own",
-      "severity": "high",
-      "source": {
-        "file": "skills/pluginsync/skills/pluginsync/SKILL.md",
-        "line": 84
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 178
       }
     }
   ]

@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -101,17 +111,6 @@
       }
     },
     {
-      "id": "inv-9b52aa4e",
-      "tag": "inv",
-      "text": "pinned check can never answer",
-      "severity": "high",
-      "rationale": "The propagation design rests on these being separate questions: a pinned check proves the region is intact, never that it is current. natejswenson.io sat two releases behind with green CI. If this line goes, the next person 'simplifies' by dropping propagate or by unpinning consumers, and either choice reopens a real failure.",
-      "source": {
-        "file": "skills/press/skills/press/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
       "id": "inv-d7b338db",
       "tag": "inv",
       "text": "spliced into a consuming SKILL\\.md",
@@ -144,6 +143,16 @@
       }
     },
     {
+      "id": "skill-2f231411",
+      "tag": "skill",
+      "text": "A pinned check can never answer the second question",
+      "severity": "high",
+      "source": {
+        "file": "skills/press/skills/press/SKILL.md",
+        "line": 92
+      }
+    },
+    {
       "id": "skill-4732152b",
       "tag": "skill",
       "text": "fontconfig — WeasyPrint above all — must say `fontconfig`",
@@ -151,16 +160,6 @@
       "source": {
         "file": "skills/press/skills/press/SKILL.md",
         "line": 183
-      }
-    },
-    {
-      "id": "skill-65d3a57c",
-      "tag": "skill",
-      "text": "zero** targets. The last two matter most — a checker that verifies nothing reports \"all clean\", which is exactly how a gate turns decorative. On failure it prints the diff and the exact `press emit` command that fixes it. Run that; do not hand-edit the region. ## How a change reaches every product There are",
-      "severity": "high",
-      "source": {
-        "file": "skills/press/skills/press/SKILL.md",
-        "line": 76
       }
     },
     {

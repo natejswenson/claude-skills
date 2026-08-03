@@ -79,7 +79,14 @@ function boldClauses(source, file, { tag, pressTag = null, severity, pressSeveri
   const ranges = pressTag ? pressRanges(source) : [];
   const region = slice ?? [0, source.length];
   const out = [];
-  const re = /\*\*([\s\S]{5,400}?)\*\*/g;
+  // The inner must not span a `**`, or a bold span too short to satisfy a
+  // minimum-length inner cannot close on its own delimiter: the opener runs on
+  // to the NEXT `**` and from there the matcher captures the prose BETWEEN
+  // rules instead of the rules, flipping back only at the next short span.
+  // Measured on ghostwriter: `**Auth**` cost the contract "Never print or
+  // commit secrets." and admitted the sentence after it at severity high.
+  // Length is filtered by MIN_CLAUSE below, which is where it belongs.
+  const re = /\*\*((?:[^*]|\*(?!\*))+?)\*\*/g;
   let m;
   while ((m = re.exec(source)) !== null) {
     if (m.index < region[0] || m.index >= region[1]) continue;
