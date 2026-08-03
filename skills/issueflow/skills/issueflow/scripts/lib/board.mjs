@@ -80,7 +80,14 @@ export function issueRows(issues) {
 }
 
 export const ISSUE_COLUMNS = ['#', 'Issue', 'Labels', 'Comments', 'Updated', 'Detail'];
-export const BOARD_COLUMNS = ['Step', 'Model', 'State', 'Gate'];
+export const BOARD_COLUMNS = ['Step', 'Model', 'State', 'Took', 'Gate'];
 
-/** One row per gate step, from `run.board()`. */
-export const boardRows = (rows) => rows.map((r) => [r.step, r.model, r.state, r.gate]);
+/**
+ * One row per gate step, from `run.board()`.
+ *
+ * `Took` is the stage's own time — briefed until the subagent wrote its
+ * artifact — and deliberately excludes the wait for the human. A run that spent
+ * ten minutes implementing and twenty waiting for a reader should not report
+ * thirty minutes of model time.
+ */
+export const boardRows = (rows) => rows.map((r) => [r.step, r.model, r.state, r.took ?? '—', r.gate]);

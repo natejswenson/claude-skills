@@ -52,15 +52,26 @@ export function resolvePolicy(repoPath, defaultBranch = 'main') {
   };
 }
 
-/** A branch-safe slug. Never empty, never longer than a git ref wants to be. */
+/**
+ * A branch-safe slug. Never empty, never longer than a git ref wants to be, and
+ * never cut mid-word.
+ *
+ * A hard slice at `max` produced `shipflow-refuses-the-ambiguous-f` on a real
+ * run — a slug that reads as a typo in the branch name, the lane column, the
+ * pull request title and the run board, all of which a human looks at. Backing
+ * off to the last whole word costs a few characters and buys a name that looks
+ * deliberate.
+ */
 export function slugify(text, max = 32) {
-  const slug = String(text ?? '')
+  const full = String(text ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, max)
-    .replace(/-+$/g, '');
-  return slug || 'issue';
+    .replace(/^-+|-+$/g, '');
+  if (full.length <= max) return full || 'issue';
+  // Slice one past the limit so a boundary landing exactly on it still counts.
+  const boundary = full.slice(0, max + 1).lastIndexOf('-');
+  const cut = boundary > 0 ? full.slice(0, boundary) : full.slice(0, max);
+  return cut.replace(/-+$/g, '') || 'issue';
 }
 
 /** The branch one lane lands on. Deterministic from the issue and the lane. */

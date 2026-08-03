@@ -1,6 +1,6 @@
 {
   "name": "issueflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins.",
   "author": {
     "name": "Nate Swenson"
