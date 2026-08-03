@@ -20,7 +20,7 @@ const sh = (cmd, cwd) => execFileSync('bash', ['-lc', cmd], { cwd, encoding: 'ut
 test('the frozen run covers real artifacts', () => {
   // Anti-vacuity floor: a manifest over zero artifacts would let every
   // assertion below iterate nothing and still report green.
-  assert.ok(manifest.artifacts.length >= 18, 'the frozen run lost artifacts — refresh or explain');
+  assert.ok(manifest.artifacts.length >= 19, 'the frozen run lost artifacts — refresh or explain');
   for (const a of manifest.artifacts) {
     assert.ok(existsSync(join(BASELINE, a.path)), `frozen artifact missing: ${a.path}`);
   }

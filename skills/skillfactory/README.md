@@ -35,7 +35,7 @@ cannot go green on a skill nobody has run. Rung 3 is structural, not a promise.
 | `skills/skillfactory/scripts/skillfactory.js` | The CLI: `detect`, `spec`, `check-spec`, `scaffold`, `freeze`, `verify`. |
 | `skills/skillfactory/scripts/lib/` | The registries, the two-tier conformance list, the scaffold plan, the README contract. |
 | `skills/skillfactory/references/anatomy.md` | The fixed shape of a generated skill. |
-| `skills/skillfactory/references/wiring.md` | The seven registries, and what breaks when one is missed. |
+| `skills/skillfactory/references/wiring.md` | The eight registries, and what breaks when one is missed. |
 | `skills/skillfactory/references/evals.md` | What makes a baseline real instead of decorative. |
 | `skills/skillfactory/references/readme.md` | The README house style every skill here follows. |
 | `skills/skillfactory/evals/` | A real `scaffold` run of the `repocount` demo spec, re-run and byte-compared. |
@@ -45,7 +45,7 @@ cannot go green on a skill nobody has run. Rung 3 is structural, not a promise.
 ```bash
 skillfactory detect                                   # every registry, as one table
 skillfactory check-spec --spec repocount.spec.json        # graded harder than CI, while it is still free
-skillfactory scaffold  --spec repocount.spec.json         # the tree + all seven wiring points
+skillfactory scaffold  --spec repocount.spec.json         # the tree + all eight wiring points
 skillfactory freeze --skill repocount --from ./run --command "…" --trap-command "…"
 skillfactory verify --skill repocount                     # the ladder, and which rung you reached
 ```

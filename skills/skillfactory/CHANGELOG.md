@@ -5,6 +5,41 @@ All notable changes to the **skillfactory** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-02
+
+### Fixed
+
+- **A scaffolded release job no longer admits `push`.** The caller template still
+  emitted `(github.event_name == 'push' || github.event_name == 'workflow_dispatch')`,
+  the trigger this repo banned on 2026-08-02 after it cost two releases —
+  `city-report` v0.4.0 tagged with stale notes before a planned CHANGELOG edit
+  landed, and `shipflow` v0.4.0 tagged *and published to npm* seconds after a
+  merge with no dispatch and no decision. A `dev → main` auto-merge fires push
+  events, so every scaffolded skill shipped publish-on-merge. Found by
+  `ci / release` on `issueflow`'s first PR — one PR too late, because by then the
+  caller is written and the fix is manual.
+- **`references/wiring.md` still taught the old behaviour.** It carried a
+  "Releases are publish-on-merge" section describing exactly what was reversed.
+  A scaffolder and a reference that both predate a change are how the change gets
+  undone. Replaced with what is actually true, including why never to generate
+  `push` back in.
+
+### Added
+
+- **An eighth wiring point: `.github/shipflow.json`'s `release.components`.**
+  `scaffold` wired seven registries and not this one, so every new skill was
+  invisible to the `release` skill entirely — `preflight` reported on every
+  *other* component and looked complete — and `ci / release`'s corpus baseline
+  failed the PR. The list is kept sorted, because the committed one is sorted and
+  a wiring diff that also reorders is a diff nobody reads.
+- **`scripts/tests/wiring.test.mjs`** — named assertions for both defects above,
+  deliberately **not** in `baseline.test.mjs`. `freeze` regenerates that file from
+  a template and silently deletes anything hand-written in it, which is exactly
+  the moment someone is trying to make a failing golden go green. Verified
+  non-vacuous: reverting the template *and* re-freezing still fails these.
+- The fixture house now contains a `.github/shipflow.json`, so the scaffold golden
+  models a real repo rather than one missing a registry.
+
 ## [0.3.0] - 2026-08-01
 
 ### Added
