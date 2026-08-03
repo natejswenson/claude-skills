@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", or "break this issue into smaller pieces". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 # /issueflow — one open issue to a pull request, through four gated stages
@@ -41,6 +41,7 @@ step whose command does not exist fails `skillfactory verify`.
 | enforce the gate — record an artifact, record the approval, advance only then | `node scripts/issueflow.js accept` |
 | expand an approved design's work items into stacked child lanes | `node scripts/issueflow.js split` |
 | report the state of an interrupted run so it resumes without guessing | `node scripts/issueflow.js status` |
+| list every run on this machine, so one can be found without remembering its path | `node scripts/issueflow.js runs` |
 | push the branch and open the pull request under the repo's own policy | `node scripts/issueflow.js ship` |
 
 | Model judgment — nothing on disk answers it | Why |
@@ -77,9 +78,19 @@ If the user already named an issue ("fix issue 42"), skip straight to `start`.
 node scripts/issueflow.js start --repo <path> --issue <n>
 ```
 
-Freezes the issue and its comments to disk and opens the state machine. From
-here on the run directory is the state — nothing about it lives in this
-conversation, so an interrupted run resumes with `status`.
+Freezes the issue and its comments to disk, opens the state machine, and posts
+the run's comment on the issue. It also prints the issue itself — title, labels,
+comment count, detail — so **never call `gh issue view` after it**.
+
+From here on the run directory is the state. An interrupted run resumes with
+`status`; a run whose directory you have forgotten is found with `runs`.
+
+**Every state change is checkpointed.** `start`, `accept`, `split` and `ship`
+each push the lane's branch and rewrite one comment on the issue carrying the
+board, the lanes and every approved artifact. This is what makes the run
+survive losing the machine — and it is why the issue, not this conversation, is
+the record. If a checkpoint row says `failed`, say so plainly: the approval is
+recorded locally and the run is **not** backed up.
 
 ### 3. For each stage: brief → dispatch → show → approve
 
@@ -89,12 +100,30 @@ This is the whole loop, and it repeats four times (more when the run splits).
 node scripts/issueflow.js brief --run-dir <run>   # or --stage <id> [--lane <slug>]
 ```
 
-It returns the stage, its **model**, its agent type and the artifact the stage
-must write, then prints the exact dispatch prompt to use. **Dispatch exactly one
-subagent, on exactly the model it names** — `opus` for investigate and design,
-`sonnet` for implement and test. The models are the point: the two stages where
-a wrong answer is expensive to discover get the strongest model, and the two
-bounded by an approved document get the faster one.
+It returns the stage, its **model**, its agent type, the artifact the stage must
+write and the directory it works in, then prints the exact dispatch prompt to
+use. **Dispatch exactly one subagent, on exactly the model it names** — `opus`
+for investigate and design, `sonnet` for implement and test. The models are the
+point: the two stages where a wrong answer is expensive to discover get the
+strongest model, and the two bounded by an approved document get the faster one.
+
+**Dispatch in the background and say what is running.** These stages take
+minutes — five for investigate, ten for implement on the run this was measured
+against — and a foreground dispatch is that long with nothing on screen. One
+short lowercase line as it starts, then the result.
+
+**When more than one stage can run, run them together:**
+
+```bash
+node scripts/issueflow.js brief --run-dir <run> --ready
+```
+
+`--ready` briefs every stage whose gate is open and prints them as one list.
+A split run reaches this constantly — a lane's test and the next lane's
+implement are independent, and each lane works in its own git worktree, so they
+genuinely can run at once. **Dispatch them as N subagents in ONE message.**
+Running them one at a time is how the measured run left its second lane
+untouched.
 
 The dispatch prompt is one line pointing at the rendered brief. **Pass it as
 given.** Do not summarise the brief, do not add context, do not attach your own
@@ -112,10 +141,21 @@ to approve it.
 node scripts/issueflow.js accept --run-dir <run> --stage <id> [--lane <slug>]
 ```
 
-`accept` refuses an empty artifact, an artifact missing the sections that stage
-owes the next one, and a `test` stage with no recorded output. **Those refusals
-are the product.** Never edit an artifact yourself to get past one — send the
-stage back with what the gate said.
+`accept` refuses an empty artifact, an artifact whose required sections are not
+*headings*, and a `test` stage whose evidence holds no runner result at all.
+**Those refusals are the product.** Never edit an artifact yourself to get past
+one — send the stage back with what the gate said.
+
+It also asks GitHub whether the world moved: an issue that has been closed, or a
+lane whose pull request already merged, **stops the run**. Read what it found and
+tell the user before reaching for `--force`. On the run this was measured
+against, the change was merged and the issue closed while the run sat at this
+gate, and the run went on to dispatch a subagent against a branch that no longer
+mattered.
+
+`accept` reports the facts you would otherwise shell out for — branch, HEAD,
+commits over `origin/<base>`, whether the tree is clean, the parsed test result.
+**Never run `git status`, `git log` or `grep` over the evidence to get them.**
 
 To record a stage as deliberately not done:
 `accept --stage <id> --skip "<reason>"`. It never becomes approved, so `ship`
@@ -127,8 +167,12 @@ The design stage lists work items under `## Work items`. If it did, show them an
 ask before expanding — a split multiplies the gates, and that is the user's call.
 
 ```bash
-node scripts/issueflow.js split --run-dir <run> --items-json <path>
+node scripts/issueflow.js split --run-dir <run>
 ```
+
+It reads the items out of the **approved design itself**. Never hand-write an
+items JSON file: that is a second copy of a decision the user already signed off,
+and on the measured run the retyped copy differed from the artifact.
 
 Each item becomes a lane with its own branch, its own `implement` and `test`
 stages, and its own pull request stacked on the lane below it. The shared stages
@@ -152,12 +196,17 @@ shipped** — not a pushed branch, not a green check.
 | Command | Returns |
 |---|---|
 | `board` | every open issue as a pick-table, plus the repo's resolved branch policy |
-| `start --issue <n>` | the frozen issue on disk, the state machine, and the run board |
-| `brief [--stage] [--lane]` | the next stage's model, agent, artifact and the exact dispatch prompt |
-| `accept [--stage] [--lane] [--skip]` | the gate: records an artifact and its approval, or refuses and says why |
-| `split --items-json <path>` | one lane per work item, each stacked on the one below |
-| `status` | the run board for an interrupted run |
-| `ship [--dry-run]` | a pushed branch and an open pull request per lane |
+| `start --issue <n>` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue |
+| `brief [--stage] [--lane]` | the next stage's model, agent, artifact, worktree and the exact dispatch prompt |
+| `brief --ready` | **every** stage whose gate is open, for dispatch in one message |
+| `accept [--stage] [--lane] [--skip] [--force]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
+| `split` | one lane per work item read from the approved design, each stacked on the one below |
+| `status` | the run board, what has drifted on GitHub, and what can run now |
+| `runs` | every run on this machine, with what it is waiting on |
+| `ship [--dry-run] [--force]` | a pushed branch and an open pull request per lane, and the per-stage timings |
+
+`--offline` suppresses every network call and the checkpoint. It is for the
+evals; a real run should never pass it.
 
 ## Requirements
 
@@ -171,6 +220,12 @@ shipped** — not a pushed branch, not a green check.
 ## Rules that are not negotiable
 
 - **No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.**
+- **Every state change is checkpointed.** The branch is pushed and the issue's
+  comment is rewritten at every gate. A run that exists only on this machine is
+  a run one crash away from having produced nothing.
+- **Never advance over drift you have not shown the user.** If `accept` says the
+  work already merged, that is the answer — `--force` is for after they decide,
+  never before.
 - **Never dispatch a stage on a model other than the one `brief` names.**
 - **Never do a stage's work yourself.** An orchestrator that investigates the
   issue "quickly, to save a dispatch" has collapsed four isolated contexts into
@@ -186,10 +241,15 @@ shipped** — not a pushed branch, not a green check.
 
 | Path | Is |
 |---|---|
-| `scripts/issueflow.js` | the CLI: `board`, `start`, `brief`, `accept`, `split`, `status`, `ship` |
+| `scripts/issueflow.js` | the CLI: `board`, `start`, `brief`, `accept`, `split`, `status`, `runs`, `ship` |
 | `scripts/lib/stages.mjs` | the four stages: model, agent, artifact, what each is asked and refused |
-| `scripts/lib/run.mjs` | the state machine and the gate — `blockers()` is the one rule as code |
+| `scripts/lib/run.mjs` | the state machine and the gate — `dependencies()` and `blockers()` are the one rule as code |
 | `scripts/lib/brief.mjs` | the dispatch-prompt renderer |
+| `scripts/lib/checkpoint.mjs` | the push and the sticky issue comment — how a run survives this machine |
+| `scripts/lib/reconcile.mjs` | what has moved on GitHub since the run last looked |
+| `scripts/lib/worktree.mjs` | a checkout per lane, so two lanes never share a tree |
+| `scripts/lib/evidence.mjs` | reading a test runner's own summary out of the evidence file |
+| `scripts/lib/verify.mjs` | the facts `accept` reports instead of the orchestrator shelling out for them |
 | `references/anatomy.md` | the run directory, the stage state machine, and what each stage's artifact owes the next one |
 | `references/dispatch.md` | the dispatch-prompt contract — what must cross into a cold subagent, what may never, and why the prompt is rendered rather than written |
 | `references/decomposition.md` | when an issue splits, how work items become stacked pull request layers, and what a split may not do |

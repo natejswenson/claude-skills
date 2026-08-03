@@ -112,7 +112,8 @@ Do not go beyond the approved design. A better idea found mid-implementation goe
 
 | Field | Value |
 |---|---|
-| repo | <REPO> |
+| work in | <REPO> |
+| repository | <REPO> |
 | branch | feature/issue-133 |
 | base branch | main |
 | work item | root — MCP audit: tool descriptions promise behavior the handlers don't deliver |

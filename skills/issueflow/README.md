@@ -19,24 +19,33 @@ its own isolated context, each writes one artifact to disk, and **nothing
 advances until you have read that artifact and said yes.**
 
 The gate is not a habit the orchestrator is asked to keep — it is code.
-`accept` refuses an empty artifact, an artifact missing the sections the next
-stage needs, and a test stage with no recorded output. `ship` refuses to open a
-pull request over any stage that is unapproved, including one that was
-explicitly skipped.
+`accept` refuses an empty artifact, an artifact whose required sections are not
+headings, and a test stage whose evidence holds no runner result at all. `ship`
+refuses to open a pull request over any stage that is unapproved, including one
+that was explicitly skipped.
+
+**Every gate leaves a trace on GitHub.** The lane's branch is pushed and one
+comment on the issue is rewritten in place, carrying the board, the branches and
+every approved artifact — so a run survives losing the machine that started it,
+and the issue rather than someone's terminal is the record of how the change was
+decided. Before advancing, it asks GitHub what is actually true: an issue that
+has been closed, or a lane whose pull request already merged, stops the run
+rather than being approved over.
 
 The models are picked per stage, not per run: `opus` investigates and designs,
 where a wrong answer is cheapest to produce and most expensive to discover;
 `sonnet` implements and tests, bounded by a design you already approved.
 
 And when an issue turns out to be four changes, it says so — and expands into
-four stacked pull requests, each reviewable alone.
+four stacked pull requests, each reviewable alone, each in its own git worktree
+so the independent ones can be worked at the same time.
 
 ## What you get
 
 | Path | What it provides |
 |---|---|
 | `skills/issueflow/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/issueflow/scripts/` | The deterministic half — `board`, `start`, `brief`, `accept`, `split`, `status`, `ship`. |
+| `skills/issueflow/scripts/` | The deterministic half — `board`, `start`, `brief`, `accept`, `split`, `status`, `runs`, `ship`. |
 | `skills/issueflow/references/anatomy.md` | The run directory, the stage state machine, and what each stage's artifact owes the next one. |
 | `skills/issueflow/references/dispatch.md` | The dispatch-prompt contract — what must cross into a cold subagent, what may never, and why the prompt is rendered rather than written. |
 | `skills/issueflow/references/decomposition.md` | When an issue splits, how work items become stacked pull request layers, and what a split may not do. |
@@ -58,18 +67,24 @@ Ask for it in words — the skill drives the commands:
 > **3**
 
 ```
-| Step           | Model  | State    | Gate    |
-|----------------|--------|----------|---------|
-| investigate    | opus   | approved | open    |
-| design         | opus   | pending  | open    |
-| root/implement | sonnet | pending  | blocked |
-| root/test      | sonnet | pending  | blocked |
+| Step           | Model  | State    | Took  | Gate    |
+|----------------|--------|----------|-------|---------|
+| investigate    | opus   | approved | 4m58s | open    |
+| design         | opus   | briefed  | —     | open    |
+| root/implement | sonnet | pending  | —     | blocked |
+| root/test      | sonnet | pending  | —     | blocked |
+
+| Checkpoint    | State   | Detail                                    |
+|---------------|---------|-------------------------------------------|
+| issue comment | updated | https://github.com/…/issues/3#issuecomment-… |
 ```
 
 Each stage is dispatched, its artifact is shown to you, and the run stops until
-you approve it. `Detail` is how much the issue text specifies — never a size
-estimate, because nothing readable from issue prose knows how big "port the
-admin CMS" is.
+you approve it — and every approval is pushed to the issue before you are asked
+for the next one. `Took` is the stage's own time, briefed until it delivered, so
+the model is not billed for how long you spent reading. `Detail` is how much the
+issue text specifies — never a size estimate, because nothing readable from
+issue prose knows how big "port the admin CMS" is.
 
 Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
 for work matching the triggers below.

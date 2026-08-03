@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { artifactPath, gateSteps } from './run.mjs';
+import { gateSteps } from './run.mjs';
 import { createPr } from './gh.mjs';
 
 export class ShipError extends Error {}
@@ -41,9 +41,24 @@ const branchExists = (repo, branch) => {
   }
 };
 
-/** Commits on `branch` that are not on `base` — zero means nothing to open a pull request about. */
+/**
+ * Commits on `branch` that are not on `base` — zero means nothing to open a
+ * pull request about.
+ *
+ * Measured against `origin/<base>` when the remote has it, because a local
+ * `dev` that has not been fetched in a week reports commits that landed days
+ * ago as this change's own. A stacked base is a sibling lane's branch, which
+ * lives locally until that lane is pushed, so it falls back to the local ref.
+ */
 const commitsAhead = (repo, branch, base) => {
-  const out = git(['rev-list', '--count', `${base}..${branch}`], repo);
+  let ref = base;
+  try {
+    git(['rev-parse', '--verify', `refs/remotes/origin/${base}`], repo);
+    ref = `origin/${base}`;
+  } catch {
+    ref = base;
+  }
+  const out = git(['rev-list', '--count', `${ref}..${branch}`], repo);
   return Number.parseInt(out, 10) || 0;
 };
 
@@ -69,13 +84,17 @@ export function prBody(dir, run, lane) {
   ];
   const test = own.find((s) => s.stage.id === 'test');
   if (test?.stage.evidence) {
+    if (test.stage.result) lines.push(`\`${test.stage.result}\``, '');
     const output = readFileSync(test.stage.evidence, 'utf8').trim().split('\n');
     const tail = output.slice(-25);
     lines.push('```', ...(output.length > tail.length ? [`… ${output.length - tail.length} earlier lines`] : []), ...tail, '```');
   } else {
     lines.push('_none recorded_');
   }
-  lines.push('', '---', '', `<sub>Opened by issueflow. Artifacts: \`${artifactPath(dir, own[0] ?? shared[0])}\`</sub>`, '');
+  // No absolute path here. `dir` is `/Users/<someone>/.claude/issueflow/…`, and
+  // this body is published — it named the maintainer's home directory in every
+  // pull request the skill opened.
+  lines.push('', '---', '', '<sub>Opened by issueflow. Every stage artifact is in this run\'s comment on the issue.</sub>', '');
   return lines.join('\n');
 }
 
