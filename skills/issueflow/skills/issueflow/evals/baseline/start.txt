@@ -1,0 +1,14 @@
+| Issue                          | Branch            | Base |
+|--------------------------------|-------------------|------|
+| natejswenson/local-fitness#133 | feature/issue-133 | main |
+
+Run: <RUN>
+
+| Step           | Model  | State   | Gate    |
+|----------------|--------|---------|---------|
+| investigate    | opus   | pending | open    |
+| design         | opus   | pending | blocked |
+| root/implement | sonnet | pending | blocked |
+| root/test      | sonnet | pending | blocked |
+
+Next: `issueflow brief --stage investigate` (opus)
