@@ -5,6 +5,35 @@ All notable changes to the **eval** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-02
+
+### Fixed
+
+- **A clause a judgment finding cited was still counted in the coverage gap.**
+  `probed` only records what the machine looked at, so a clause reached by
+  judgment stayed in `probed.unexamined` — it printed in the "clauses nobody
+  examined" table directly underneath the finding built on it, and the sentence
+  above that table ("N clauses had no probe **and no judgment finding**") was
+  false about its own report. Found by grading a real ghostwriter run: both
+  clauses the three findings cited were listed as unexamined.
+
+  Coverage is now probe coverage plus whatever judgment cited, and the
+  `clauses examined` row shows the split (`4 of 54 (2 probe, 2 judgment)`) so
+  machine-decided and model-decided coverage stay distinguishable. The
+  increment is counted off the unexamined list rather than off the judgment
+  array, so a clause both a probe and a judgment finding touched is not counted
+  twice.
+
+- **The CLI summary disagreed with the artifact it had just written.**
+  `eval report`'s terminal table read the same probe-only numbers, so the
+  conversation showed one coverage gap and `report.md` another. Both now call
+  one exported `coverageOf`, because two copies of this arithmetic is how one
+  of them goes stale.
+
+- The frozen baseline is unchanged and still byte-compares: the judgment split
+  is emitted only when judgment findings exist, so a machine-only run renders
+  exactly as it did before.
+
 ## [0.2.0] - 2026-08-01
 
 ### Changed
