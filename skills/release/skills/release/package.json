@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/release",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist.",
   "license": "MIT",
   "author": "Nate Swenson",
