@@ -2,7 +2,7 @@
 name: release
 description: Cut a release for one named skill, package or service and prove the tag exists. Use when the user says "release devlog", "release ghostwriter", "cut a release for press", "ship a new version of X", "what is unreleased", "tag the current main", or asks whether something has a release pending. Reads the commits on main since the last tag, proposes a semver bump and a CHANGELOG entry, waits for approval, then lands the bump and reports the tag URL — never claiming a release happened until the tag is read back from the remote.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 # /release — one named thing, one tag, proven
@@ -67,12 +67,20 @@ commit count and the blockers are all facts.
 | `state` | Means | Path |
 |---|---|---|
 | `clean` | the released version is what's on main | needs a bump — step 2 |
-| `untagged-bump-on-main` | the bump is on main but was never tagged | **no PR needed** — skip to step 4 |
+| `untagged-bump-on-main` | the bump is on main but was never tagged, **and `On dev` equals `On main`** | **no PR needed** — skip to step 4 |
 | `bump-on-dev-unpromoted` | the bump is on dev, waiting to be promoted | skip to step 4 |
 | `version-behind-tag` | main carries a *lower* version than an existing tag | **stop and ask** |
 
 `version-behind-tag` means a tag was cut from something other than main. Do not
 guess your way out of it; guessing is how it gets worse.
+
+**`untagged-bump-on-main` is not, by itself, permission to cut.** Check `On dev`
+against `On main` in the table. If they differ, dev already carries a newer
+version than the one sitting untagged on main — cutting now would tag the
+wrong one. shipflow reports this as the `dev-ahead-of-main` blocker; `cut`
+refuses it before dispatching anything, either promote `dev → main` and
+re-run `preflight`, or pass `--version` to shipflow's `release-cut` naming
+exactly the version on main you mean to release.
 
 If `blockers` is non-empty, report them and stop. They are not warnings.
 
