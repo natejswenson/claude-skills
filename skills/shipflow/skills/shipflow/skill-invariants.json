@@ -105,6 +105,11 @@
       "id": "ambiguous-pattern-no-silent-pick",
       "pattern": "present all 3 (templates|patterns).{0,60}ask the user to choose",
       "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
+    },
+    {
+      "id": "untagged-bump-is-not-permission-to-cut",
+      "pattern": "is not, by itself, permission to cut",
+      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "release-status", "release-prepare", "release-cut", "rename-default-branch"],
@@ -120,6 +125,14 @@
       ],
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "This monorepo dogfoods shipflow on itself, so .github/shipflow.json and the workflow rendered from it are a genuine input/output pair from a real `apply` run, and that config's renderedTemplateHashes is the receipt shipflow wrote at the time. The baseline re-runs config -> params -> render and asserts byte equality against the frozen golden, that the golden's sha256 still equals the recorded receipt, and that the frozen golden still equals the repo's live committed workflow (so the fixture cannot quietly go stale). Byte-exactness is correct here and nowhere else in the baseline suite: for a workflow file, one changed character is a behavior change to the repo's merge automation. The paired negative assertions (quote injection rejected, missing param throws, merge method actually reaches the output) stop the golden from passing while the validators rot -- the missing-param one found a real bug on its first run: a present-but-undefined param rendered the literal string 'undefined' into `branches: [...]`, installing a workflow that could never fire."
+    },
+    {
+      "id": "dev-ahead-fast-path-refused",
+      "kind": "trap",
+      "test": "tests/release.test.mjs",
+      "fixtures": [],
+      "update_command": "these are regression tests built inline against a real temp git repo (makeThreeWayRepo / makeUnpromotedRepo) — nothing to refresh",
+      "rationale": "#173: release-cut's fast path used to act on `state` alone, so when main carried an untagged bump AND dev independently carried something higher, it silently tagged the OLDER version (main's) while reporting success -- hit for real during `/release eval` on 2026-08-03. Pinned against the exact reported shape (lastTag < main < dev) plus its D2 sibling (the same ambiguity on a component's never-released first bump, which a fix scoped only to the `cmpSemver > 0` branch would leave exposed). The known-bad half: cut() must refuse before any dispatch is ever reachable, naming both versions; --version must be a confirmation validated against what is actually on the named branch, never a bare bypass; and the dev-ahead-of-main blocker must stay two-sided -- absent in `clean` and in `bump-on-dev-unpromoted` (where devAhead is normal, expected shape, not an ambiguity), or a blocker that is always on for those states stops being read."
     }
   ]
 }

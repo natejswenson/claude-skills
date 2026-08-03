@@ -2,6 +2,37 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.6.0 (2026-08-03) — the ambiguous fast path is refused, not guessed
+
+### Fixed
+
+- **`release-cut`'s fast path could silently tag the OLDER version.** When a
+  component's `main` carried an untagged bump *and* `dev` independently carried
+  something higher — `lastTag < main < dev` — `readStatus` collapsed both facts
+  into the single `untagged-bump-on-main` state, and `cut()`'s fast path acted
+  on that state alone, dispatching a release for whatever sat on `main` while
+  the version actually being released sat, unread, on `dev`. Hit for real
+  during `/release eval` on 2026-08-03: `main` was at 0.2.1, `dev` at 0.3.0 —
+  `cut` would have tagged `eval-v0.2.1` and reported success. Caught only by
+  reading `release.mjs` before running the irreversible step.
+
+  `readStatus` now reports a `devAhead` fact (`{ version, aheadOfMain: true }`)
+  independently of `state` — including on a component's never-released first
+  bump, the sibling case a fix scoped only to the existing `state` branch would
+  have missed — plus a `dev-ahead-of-main` blocker, scoped to exactly the state
+  where the fast path is armed. A new pure `resolveReleaseTarget(status,
+  requestedVersion)` is the single place the release target is now decided;
+  `cut()` calls it once, before any network call, and refuses outright when
+  the target is ambiguous, naming both versions. There is no longer a code
+  path on which the tag `cut` waits for can disagree with the version it
+  decided to release.
+
+  The refusal is escapable, deliberately not inescapable: `release-cut` gains
+  `--version <x.y.z>`, a *confirmation* rather than a bypass — it is only ever
+  accepted when it names a version already present on `main` or `dev` in that
+  status, so there is no value of it that releases a version which isn't
+  actually on the branch being dispatched.
+
 ## 0.5.0 (2026-08-02) — the merge stops cutting tags; the dispatch is the release
 
 ### Changed
