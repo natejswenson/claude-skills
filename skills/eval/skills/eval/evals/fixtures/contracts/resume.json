@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -167,6 +177,16 @@
       }
     },
     {
+      "id": "skill-11e9d365",
+      "tag": "skill",
+      "text": "Say so, with its date",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 80
+      }
+    },
+    {
       "id": "skill-13f05150",
       "tag": "skill",
       "text": "One script call, not a pipeline.",
@@ -174,16 +194,6 @@
       "source": {
         "file": "skills/resume/skills/resume/SKILL.md",
         "line": 36
-      }
-    },
-    {
-      "id": "skill-15e2e2cc",
-      "tag": "skill",
-      "text": "— `press` (default) or `ats-plain`, or a path to their own `.css`. Both shipped themes are rendered every run anyway (Step 3), so don't ask. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/resume/skills/resume/SKILL.md",
-        "line": 98
       }
     },
     {
@@ -197,13 +207,13 @@
       }
     },
     {
-      "id": "skill-6650d034",
+      "id": "skill-1e28c2bf",
       "tag": "skill",
-      "text": "A bare URL is a complete request; don't ask for anything else. 2.",
+      "text": "Ask for this only when Step 1 reported no stored résumé",
       "severity": "high",
       "source": {
         "file": "skills/resume/skills/resume/SKILL.md",
-        "line": 91
+        "line": 94
       }
     },
     {
@@ -244,16 +254,6 @@
       "source": {
         "file": "skills/resume/skills/resume/SKILL.md",
         "line": 28
-      }
-    },
-    {
-      "id": "skill-ba60779b",
-      "tag": "skill",
-      "text": ", e.g. *\"Using your stored résumé (saved 12 June).\"* Never tailor from a stored résumé without telling the user which one you used — a résumé from six months ago produces a confidently wrong application, and the run looks identical to a correct one. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/resume/skills/resume/SKILL.md",
-        "line": 81
       }
     },
     {

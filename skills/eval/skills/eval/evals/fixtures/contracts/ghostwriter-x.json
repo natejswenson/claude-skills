@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -221,6 +231,16 @@
       }
     },
     {
+      "id": "skill-03f31c8c",
+      "tag": "skill",
+      "text": "When it fails, run a recovery, not a debugging session.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 669
+      }
+    },
+    {
       "id": "skill-05681963",
       "tag": "skill",
       "text": "fix the sidecar / redo the research step, not the gate",
@@ -241,13 +261,33 @@
       }
     },
     {
-      "id": "skill-13f10b65",
+      "id": "skill-0d91cbb8",
       "tag": "skill",
-      "text": "if the approved draft calls for a public link, it is the last tweet of the thread (already in the draft file) — never inserted at publish time into a text the user didn't see. - Never attach a visual the user hasn't seen and approved; if it changes, re-show and re-confirm. 3.",
+      "text": "cut it or don't ship the post — never fabricate a citation or a fact.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 662
+        "line": 345
+      }
+    },
+    {
+      "id": "skill-185ce56a",
+      "tag": "skill",
+      "text": "Verify the mechanism against the real binary, not the docs.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 283
+      }
+    },
+    {
+      "id": "skill-18769eb4",
+      "tag": "skill",
+      "text": "Narrate the gate — it's the slow step; never go silent through it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 352
       }
     },
     {
@@ -261,16 +301,6 @@
       }
     },
     {
-      "id": "skill-1ce58415",
-      "tag": "skill",
-      "text": "to read their own x.com analytics and paste the figures in; the agent never fetches x.com, so that is not scraping. Revisit the whole loop if the account upgrades. 1.",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 173
-      }
-    },
-    {
       "id": "skill-1dc23f45",
       "tag": "skill",
       "text": "run it yourself",
@@ -278,16 +308,6 @@
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
         "line": 487
-      }
-    },
-    {
-      "id": "skill-205dd79b",
-      "tag": "skill",
-      "text": "Say what you're doing and what came back: `ran ruff 0.15.5 vs 0.16.0 on local-fitness → 9 errors became 138`, `render 2 failed clip-overflow at 688px, cutting a row`. Silence during a long stretch reads as a hang, and it hides the decisions the user would most want to interrupt. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 358
       }
     },
     {
@@ -301,23 +321,33 @@
       }
     },
     {
-      "id": "skill-239a81f3",
+      "id": "skill-24676db7",
       "tag": "skill",
-      "text": "Measurements from step 3a were produced by *you*, in this session, not by the user at their keyboard. First-person framing (\"I ran…\", \"my repo\", \"my CI never moved\") is",
+      "text": "Never publish without explicit approval",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 297
+        "line": 711
       }
     },
     {
-      "id": "skill-2b41ade3",
+      "id": "skill-2c2984ad",
       "tag": "skill",
-      "text": "— numbered tweets, each in its own fenced block, each headed by its live weighted count in the form `[n/N · used/280]` (from `x_len.py`, not estimated): - A single post is `[1/1 · 243/280]` + the tweet. - One metadata line under the last block: `single|thread of N · save: <the thing a reader keeps> · lane: <lane>` (+ `link rides in final reply: <url>` when applicable). -",
+      "text": "Say when you'll ask how it did, and mention the quota if it's tight.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 382
+        "line": 695
+      }
+    },
+    {
+      "id": "skill-2d472d08",
+      "tag": "skill",
+      "text": "read the script before writing any probe against it",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 687
       }
     },
     {
@@ -338,6 +368,16 @@
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
         "line": 17
+      }
+    },
+    {
+      "id": "skill-331b6166",
+      "tag": "skill",
+      "text": "show the full draft in the X-true format",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 382
       }
     },
     {
@@ -371,6 +411,56 @@
       }
     },
     {
+      "id": "skill-3d5a00fc",
+      "tag": "skill",
+      "text": "The draft was never created, so nothing posted and a retry is safe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 679
+      }
+    },
+    {
+      "id": "skill-4049515d",
+      "tag": "skill",
+      "text": "Read-only, always.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 289
+      }
+    },
+    {
+      "id": "skill-48b70f4b",
+      "tag": "skill",
+      "text": "Never fabricate a detail to clear this bar.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 272
+      }
+    },
+    {
+      "id": "skill-495284b4",
+      "tag": "skill",
+      "text": "never add fully autonomous / scheduled posting",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 726
+      }
+    },
+    {
+      "id": "skill-4be8d09b",
+      "tag": "skill",
+      "text": "Add Q3 only when step 3a produced first-person measurements",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 399
+      }
+    },
+    {
       "id": "skill-4e9bb774",
       "tag": "skill",
       "text": "Trending now (live, run-day — VERIFIED trending, not vibes).",
@@ -381,13 +471,23 @@
       }
     },
     {
-      "id": "skill-51ae6ecc",
+      "id": "skill-4f7d319a",
       "tag": "skill",
-      "text": "— run `python3 scripts/x_len.py --file drafts/<slug>.md --thread` and fix any overflow now, not at publish. -",
+      "text": "Never print or commit secrets.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 375
+        "line": 713
+      }
+    },
+    {
+      "id": "skill-51f6d6d5",
+      "tag": "skill",
+      "text": "never go more than ~2 tool calls without a user-facing line.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 357
       }
     },
     {
@@ -411,23 +511,33 @@
       }
     },
     {
-      "id": "skill-5b2d3a72",
+      "id": "skill-582d56e2",
       "tag": "skill",
-      "text": ". If you can't source a claim, cut it — don't ship it. -",
+      "text": "never in the post body",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 719
+        "line": 718
       }
     },
     {
-      "id": "skill-5d4ffedd",
+      "id": "skill-59699101",
       "tag": "skill",
-      "text": "one** `AskUserQuestion`, never a generic multi-question interview.",
+      "text": "Don't fabricate facts",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 272
+        "line": 715
+      }
+    },
+    {
+      "id": "skill-68b625c0",
+      "tag": "skill",
+      "text": "Every external/world claim must clear the source contract",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 715
       }
     },
     {
@@ -441,13 +551,13 @@
       }
     },
     {
-      "id": "skill-71a98a6e",
+      "id": "skill-73d27556",
       "tag": "skill",
-      "text": ". Typefully's `list_social_set_analytics_posts` and `get_social_set_analytics_followers` are official, COMPLIANCE-clean endpoints that return `403 MONETIZATION_ERROR` on the free plan (verified 2026-07-27) — don't re-probe them every session. If the user ever wants real numbers sooner, the zero-cost path is for",
+      "text": "Single vs thread is never outcome-driven.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 170
+        "line": 157
       }
     },
     {
@@ -461,16 +571,6 @@
       }
     },
     {
-      "id": "skill-77f299d3",
-      "tag": "skill",
-      "text": "`.env`, `data/`, and `drafts/` are gitignored; keep it that way. Don't echo the Typefully API key in chat. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 713
-      }
-    },
-    {
       "id": "skill-7ede9bdd",
       "tag": "skill",
       "text": "Never fabricate",
@@ -478,6 +578,16 @@
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
         "line": 448
+      }
+    },
+    {
+      "id": "skill-81416da5",
+      "tag": "skill",
+      "text": "Posting time is never outcome-driven.",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+        "line": 158
       }
     },
     {
@@ -491,53 +601,43 @@
       }
     },
     {
-      "id": "skill-899539b5",
+      "id": "skill-8fffd45b",
       "tag": "skill",
-      "text": "use first person for a run on a machine or repo that isn't theirs. Everything else in Authenticity still applies: no invented numbers, ever. 4.",
+      "text": "The narration floor applies to every slow stretch, not just this one.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 303
+        "line": 356
       }
     },
     {
-      "id": "skill-8a2364cc",
+      "id": "skill-926893fd",
       "tag": "skill",
-      "text": "Run `--help`, check that the flags and defaults you're about to publish actually exist. Docs drift; a shipped post that names a flag that isn't there is the most embarrassing failure mode this skill has. -",
+      "text": "paywalled, not forbidden",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 283
+        "line": 170
       }
     },
     {
-      "id": "skill-8cf09690",
+      "id": "skill-a4f0e7d1",
       "tag": "skill",
-      "text": "Emit one short status line per claim as it resolves — `checking: \"Sonnet 5 ships computer-use GA\" → vendor announcement + docs ✓` — and one close line when the gate passes: `3 claims · 5 distinct hosts · gate passed`. -",
+      "text": "Check the printed Typefully link before re-running",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 352
+        "line": 685
       }
     },
     {
-      "id": "skill-9b202625",
+      "id": "skill-aeb86628",
       "tag": "skill",
-      "text": "— X has no fold: the first tweet must stand alone, carry the post's sharpest number or tension in its first line, and earn the tap into the rest. If the best number sits in tweet 3, move it up. -",
+      "text": "The agent must never set it to get past a failed gate",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 372
-      }
-    },
-    {
-      "id": "skill-9fea17f8",
-      "tag": "skill",
-      "text": "Content shape decides, always. -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 157
+        "line": 721
       }
     },
     {
@@ -551,13 +651,13 @@
       }
     },
     {
-      "id": "skill-bf14c85d",
+      "id": "skill-bc7a5b3d",
       "tag": "skill",
-      "text": "Reach is largely decided in the first 30–60 minutes (see `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour: reply to every substantive response with substance (a question back, not just \"thanks\"), and go engage in a couple of adjacent conversations. The script can't do these; they are the single biggest fix for low reach. 5.",
+      "text": "Capture what you ran",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 690
+        "line": 292
       }
     },
     {
@@ -568,16 +668,6 @@
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
         "line": 222
-      }
-    },
-    {
-      "id": "skill-cac94ad4",
-      "tag": "skill",
-      "text": ", say so here too, with the reset date — the free plan's cap is otherwise discovered by eating a 402 on a post they already approved. Never run the non-`--dry-run` publish command without a clear, specific approval from the user for that exact draft. --- ## Guardrails -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 700
       }
     },
     {
@@ -621,43 +711,33 @@
       }
     },
     {
-      "id": "skill-dbf7c05f",
+      "id": "skill-dd3fca56",
       "tag": "skill",
-      "text": "— name (to yourself) the thing a reader keeps: a command, a checklist, a reusable model. A thread with nothing to keep is a lower-reach personal post on purpose — fine, but don't pad it with fake utility. Fix what fails, then",
+      "text": "`--draft-only` is the fallback, not a shortcut.",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 379
+        "line": 656
       }
     },
     {
-      "id": "skill-e0fda719",
+      "id": "skill-e6588768",
       "tag": "skill",
-      "text": "after any edit, the first line is `Changed: <one-line summary>`, then the full draft in the same format — the user should never re-read the whole thread hunting for the edit. Then ask with a single `AskUserQuestion`",
+      "text": "medians, not means",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 388
+        "line": 159
       }
     },
     {
-      "id": "skill-e4b90cfd",
+      "id": "skill-f47fc26f",
       "tag": "skill",
-      "text": "one** position, stating the N. Never drop a lane entirely. -",
+      "text": "never put sources, links, or a \"Sources\" section in the post body",
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 155
-      }
-    },
-    {
-      "id": "skill-eafe52a9",
-      "tag": "skill",
-      "text": "Analysis and reporting commands only — linters, `--help`, `--dry-run`, `--check`, read queries. Never a command that writes, installs into, or mutates the user's repos, and never anything in a work-confidential repo (interests.md → Off-limits). -",
-      "severity": "high",
-      "source": {
-        "file": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
-        "line": 289
+        "line": 342
       }
     },
     {

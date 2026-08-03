@@ -162,6 +162,7 @@ async function cmdProbe(args) {
       raw,
       new Map(contract.clauses.map((c) => [c.id, c])),
       new Set(trace.events.map((e) => e.id)),
+      { strict: true },
     );
     console.log(table(['Supplied', 'Citations resolve', 'Rejected'], [[raw.length, findings.length, rejected.length]]));
     if (rejected.length > 0) {
@@ -206,6 +207,7 @@ async function cmdReport(args) {
     judgment,
     new Map(contract.clauses.map((c) => [c.id, c])),
     new Set(trace.events.map((e) => e.id)),
+    { strict: true },
   );
   if (judgedOut.length > 0) {
     console.log(table(['Judgment finding', 'Refused because'], judgedOut.map((r) => [r.id ?? '(no id)', r.why])));

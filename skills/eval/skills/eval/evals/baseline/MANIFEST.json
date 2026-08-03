@@ -5,13 +5,13 @@
   "artifacts": [
     {
       "path": "probe.json",
-      "bytes": 6715,
-      "sha256": "9a37cd2bf2334ab059ccc86de0b051042ba7998fad940f36becb025b94500e07"
+      "bytes": 6933,
+      "sha256": "ef0773d07fd59c09b0cd3e764ce9fe8e7c1eef38f233ee59515222ebe00eaa11"
     },
     {
       "path": "report.md",
-      "bytes": 12519,
-      "sha256": "a90881e557481f137ea81bed7c508fc650f972370281c63a70a3506d2505601c"
+      "bytes": 11394,
+      "sha256": "dca2db0e9fd78626ffe7cfc07aaf4b27740e7f0aba1ca22077a55daaeb8335ec"
     }
   ]
 }
