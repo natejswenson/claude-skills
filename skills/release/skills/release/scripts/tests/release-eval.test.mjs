@@ -26,7 +26,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { groupCommits, renderDraft, resolveShipflow } from '../release.js';
+import { PREFLIGHT_HEADERS, groupCommits, renderDraft, resolveShipflow } from '../release.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(HERE, '..', '..');
@@ -60,14 +60,25 @@ test('baseline: a real status still renders its frozen changelog draft byte-for-
 
 test('baseline: the frozen runs still describe the shapes they were chosen for', () => {
   // The fixture set is only meaningful if it still spans the three shapes the
-  // grouper and the state machine behave differently on. A refresh that
-  // collapsed them all to "no commits" would leave every assertion above
-  // passing over nothing.
+  // grouper behaves differently on (all three fixtures are state: "clean" —
+  // this does not span the state machine; that is pinned separately by
+  // shipflow's own tests/release.test.mjs). A refresh that collapsed them all
+  // to "no commits" would leave every assertion above passing over nothing.
   assert.ok(frozen('ghostwriter').commits.length >= 5, 'the many-commit fixture no longer has many commits');
   assert.equal(frozen('press').commits.length, 1, 'the single-commit fixture changed shape');
   assert.equal(frozen('eval').commits.length, 0, 'the no-commit fixture changed shape');
   const types = new Set(frozen('ghostwriter').commits.map((c) => c.type));
   assert.ok(types.size >= 3, `the many-commit fixture spans only ${types.size} commit type(s) — it no longer exercises grouping`);
+});
+
+test('preflight: the On dev column cannot silently vanish', () => {
+  // Issue #173: dev carrying a newer version than main is the fact that was
+  // silently dropped. Layer 1 (shipflow) makes `cut` refuse the ambiguity;
+  // this is the layer-2 half — the table the operator actually reads must
+  // show `On main` and `On dev` side by side so the mismatch is visible
+  // before `cut` is ever called, not just after it refuses.
+  assert.ok(PREFLIGHT_HEADERS.includes('On main'), 'the On main column is missing from the preflight table');
+  assert.ok(PREFLIGHT_HEADERS.includes('On dev'), 'the On dev column is missing from the preflight table');
 });
 
 // ─── trap: the known-bad half ────────────────────────────────────────────────

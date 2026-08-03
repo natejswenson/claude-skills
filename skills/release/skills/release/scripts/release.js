@@ -26,8 +26,13 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 
 // Every mutating step is one of shipflow's `release-*` commands, which landed
 // in 0.4.0. An older shipflow fails three steps later with an obscure "Unknown
-// command" — checking up front turns that into one plain sentence.
-const MIN_SHIPFLOW = '0.4.0';
+// command" — checking up front turns that into one plain sentence. Bumped to
+// 0.6.0 for `devAhead` / the `dev-ahead-of-main` refusal (issue #173): an
+// older shipflow returns a status that looks identical but silently lets
+// `cut` tag whatever is on main even when dev already carries the version
+// actually being released — the same failure this gate exists to catch, so
+// the gate itself must not be satisfiable by the shipflow that has it.
+const MIN_SHIPFLOW = '0.6.0';
 
 function argv(args) {
   const out = { _: [] };
@@ -124,6 +129,10 @@ function declaredComponents(repoPath) {
 
 // ─── preflight ───────────────────────────────────────────────────────────────
 
+// Extracted so the "`On dev` cannot silently vanish" regression can assert
+// against it directly rather than re-parsing console output.
+export const PREFLIGHT_HEADERS = ['Component', 'State', 'On main', 'On dev', 'Last tag', 'Unreleased commits', 'Blockers'];
+
 async function cmdPreflight(args) {
   const repo = resolve(args.repo ?? '.');
   const names = args.component ? [args.component] : declaredComponents(repo);
@@ -137,7 +146,7 @@ async function cmdPreflight(args) {
     try {
       status = shipflow(repo, call);
     } catch (err) {
-      rows.push([name ?? '(root)', 'ERROR', '—', '—', '—', err.message.slice(0, 60)]);
+      rows.push([name ?? '(root)', 'ERROR', '—', '—', '—', '—', err.message.slice(0, 60)]);
       continue;
     }
     meta ??= status;
@@ -146,6 +155,7 @@ async function cmdPreflight(args) {
       s.component.name,
       s.state,
       s.versionOnMain ?? '—',
+      s.versionOnDev ?? '—',
       s.lastTag ?? 'never released',
       String(s.commits.length),
       s.blockers.length ? s.blockers.map((b) => b.id).join(', ') : '—',
@@ -153,10 +163,7 @@ async function cmdPreflight(args) {
     if (names.length === 1) detail.push(s);
   }
 
-  console.log(table(
-    ['Component', 'State', 'On main', 'Last tag', 'Unreleased commits', 'Blockers'],
-    rows,
-  ));
+  console.log(table(PREFLIGHT_HEADERS, rows));
 
   for (const s of detail) {
     if (s.commits.length > 0) {

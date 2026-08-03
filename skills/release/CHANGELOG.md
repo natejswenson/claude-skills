@@ -5,6 +5,35 @@ All notable changes to the **release** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-03
+
+### Added
+
+- **`preflight`'s table gains an `On dev` column**, printed immediately after
+  `On main`. `On main` and `On dev` disagreeing is the fact that `release-cut`
+  used to act on silently — cutting whatever untagged bump sat on main even
+  when dev already carried the version actually meant to ship (issue #173).
+  The column puts that fact in the table the operator reads, next to
+  shipflow's new `dev-ahead-of-main` blocker, which already flows through the
+  existing blocker column unchanged.
+
+### Changed
+
+- **`MIN_SHIPFLOW` raised `0.4.0` → `0.6.0`.** shipflow 0.6.0 is where `cut`
+  refuses to dispatch a release when dev is ahead of main instead of guessing;
+  an older shipflow returns a status that looks identical and silently lacks
+  that refusal, which is the exact failure this bump closes off rather than
+  merely reports.
+
+### Fixed
+
+- **A `skill-invariants.json` rationale overclaimed what its own fixtures
+  cover.** `frozen-inputs-still-span-the-shapes` said its three fixtures span
+  "the grouper and the state machine"; no assertion in this skill reads
+  `state`, and all three fixtures are `state: "clean"`. Corrected to name only
+  the grouper — the state machine is pinned separately, by shipflow's own
+  `tests/release.test.mjs`.
+
 ## [0.1.0] - 2026-08-02
 
 ### Added
