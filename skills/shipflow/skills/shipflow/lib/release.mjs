@@ -442,6 +442,33 @@ export function readStatus(repoPath, config, name) {
     state = 'untagged-bump-on-main'; // never released; whatever is on main is the first release
   }
 
+  // A fact, not a state — computed independently of the branch above so it is
+  // ALSO set when lastVersion is null (a component's first release). Folding
+  // this into `state` is the bug this field exists to fix (#173): "main has an
+  // untagged bump" and "dev already carries something higher" are
+  // independently true, and a single mutually-exclusive `state` string can
+  // only ever report one of them. `cut()`'s fast path acts on `state` alone —
+  // without `devAhead`, it would dispatch a release for whatever is on main
+  // while the version actually being released sits unread on dev.
+  const devAhead = onMain.ok && onDev.ok && cmpSemver(onDev.version, onMain.version) > 0
+    ? { version: onDev.version, aheadOfMain: true }
+    : null;
+
+  // The fast path is only armed in `untagged-bump-on-main`, so this blocker is
+  // deliberately scoped to that state alone. `bump-on-dev-unpromoted` also has
+  // `devAhead` set — that is its normal, expected shape (no fast path is
+  // reachable there, nothing can be mis-tagged) — and flagging it too would
+  // permanently mark a routine state as blocked, which is how a blocker stops
+  // being read.
+  if (devAhead && state === 'untagged-bump-on-main') {
+    blockers.push({
+      id: 'dev-ahead-of-main',
+      detail: `${mainBranch} carries ${onMain.version} but ${devBranch} carries ${devAhead.version} — cutting here would tag ` +
+        `${tagFor(component, onMain.version)}, not ${tagFor(component, devAhead.version)}. Promote ${devBranch} → ${mainBranch} ` +
+        `and re-run status, or pass --version ${onMain.version} to release exactly what is on ${mainBranch}.`,
+    });
+  }
+
   const since = commitsSince(repoPath, component, lastTag, mainRef);
   const suggestion = suggestBump(since.commits, onMain.version ?? '0.0.0');
   const nextVersion = suggestion.bump && onMain.ok ? bumpSemver(onMain.version, suggestion.bump) : null;
@@ -476,6 +503,7 @@ export function readStatus(repoPath, config, name) {
     state,
     versionOnMain: onMain.version,
     versionOnDev: onDev.version,
+    devAhead,
     versionSources: onMain.sources,
     lastTag,
     commits: since.commits,
@@ -631,6 +659,55 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
   }
 }
 
+// ─── resolving the release target ────────────────────────────────────────────
+// The one place a target version is decided. Before this existed, `cut()`
+// derived it twice, ten lines apart — once preferring dev, once preferring
+// main — and those two derivations could disagree. That disagreement IS #173:
+// the fast path would tag whatever sat on main while the version actually
+// being released sat, unread, on dev. `cut()` now calls this once, before any
+// network call, and uses its result for both the dispatch and the tag it
+// waits for, so there is no longer a code path where those two can differ.
+//
+// Pure function of a `readStatus()` result plus an optional operator-supplied
+// `requestedVersion` (`--version`). `requestedVersion` is a CONFIRMATION, not
+// a bypass: it is only ever accepted when it matches a version already
+// present on `main` or `dev` in this status, so there is no value of it that
+// releases a version which isn't actually on the branch being dispatched.
+export function resolveReleaseTarget(status, requestedVersion = null) {
+  const { state, versionOnMain, versionOnDev, devAhead, component } = status;
+
+  if (state === 'untagged-bump-on-main') {
+    if (!devAhead) {
+      // The common, unambiguous case: whatever is on main is the only
+      // candidate, dev has nothing higher.
+      return { ok: true, version: versionOnMain, via: 'dispatch-on-main' };
+    }
+    if (requestedVersion === versionOnMain) {
+      // Confirmed: release exactly what is on main, knowingly leaving dev's
+      // higher version for a later, separate release.
+      return { ok: true, version: versionOnMain, via: 'dispatch-on-main', confirmed: true };
+    }
+    if (requestedVersion === versionOnDev) {
+      return {
+        ok: false,
+        error: `${versionOnDev} is on dev but not on main — a dispatch on main cannot cut it. ` +
+          `Promote dev → main first, then re-run release-status.`,
+      };
+    }
+    return {
+      ok: false,
+      error: `${component.name}: main carries ${versionOnMain} but dev carries ${versionOnDev} — ambiguous which one ` +
+        `to release, so refusing to guess. Promote dev → main and re-run release-status to release ${versionOnDev}, ` +
+        `or pass --version ${versionOnMain} to release exactly what is on main.`,
+    };
+  }
+
+  // Every other state (`clean`, `bump-on-dev-unpromoted`, `version-behind-tag`)
+  // already has a single unambiguous candidate — dev, when it carries the
+  // prepared bump, else main — matching what `cut()` used before this existed.
+  return { ok: true, version: versionOnDev ?? versionOnMain, via: 'prepared-branch' };
+}
+
 // ─── cut ─────────────────────────────────────────────────────────────────────
 // Resumable and bounded on purpose. The full path (feature PR → checks → merge
 // → promotion → auto-merge → release run → tag) routinely takes longer than a
@@ -651,7 +728,7 @@ function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHash = null, skipHashCheck = false, ownerRepo, pollSeconds = 15 } = {}) {
+export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHash = null, skipHashCheck = false, ownerRepo, pollSeconds = 15, version = null } = {}) {
   const component = resolveComponent(repoPath, config, name);
   const mainBranch = config?.branches?.main ?? 'main';
   const devBranch = config?.branches?.dev ?? 'dev';
@@ -667,7 +744,14 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
     }
   }
 
-  const targetVersion = status.versionOnDev ?? status.versionOnMain;
+  // The ONLY place the release target is decided — see resolveReleaseTarget's
+  // own comment for why. Called before any network call, so an ambiguous
+  // three-way state (#173: main has an untagged bump AND dev carries
+  // something higher) is refused here rather than acted on by the fast path
+  // below.
+  const target = resolveReleaseTarget(status, version);
+  if (!target.ok) return { ok: false, error: target.error };
+  const targetVersion = target.version;
   const tag = tagFor(component, targetVersion);
   const branch = releaseBranchName(name, targetVersion);
   const deadline = Date.now() + waitSeconds * 1000;
@@ -676,15 +760,16 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
 
   // Fast path: the bump is already on main and simply was never tagged (a
   // failed or cancelled push run). No PR is needed at all — dispatch and prove.
-  if (status.state === 'untagged-bump-on-main') {
-    const already = tagExistsOnRemote(repoPath, tagFor(component, status.versionOnMain));
+  if (target.via === 'dispatch-on-main') {
+    const already = tagExistsOnRemote(repoPath, tag);
     if (already.ok && already.exists) {
-      return { ok: true, done: true, stage: 'tag', tag: tagFor(component, status.versionOnMain), note: 'already released' };
+      return { ok: true, done: true, stage: 'tag', tag, targetVersion, note: 'already released' };
     }
     const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
     if (d.status !== 0) return { ok: false, error: `workflow dispatch failed: ${d.stderr}` };
     note('dispatch', `dispatched ${component.workflowFile} on ${mainBranch}`);
-    return waitForTag(repoPath, tagFor(component, status.versionOnMain), deadline, pollSeconds, log, ownerRepo, null);
+    const result = waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, null);
+    return { ...result, targetVersion };
   }
 
   // 1. push the prepared branch
@@ -721,7 +806,7 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   if (featurePr) {
     const gate = waitForChecks(ownerRepo, featurePr, deadline, pollSeconds, log);
     if (!gate.ok) return gate;
-    if (!gate.done) return { ok: true, done: false, stage: 'feature-pr', featurePr, tag, log, next: 'call release-cut again — waiting on the feature PR’s checks' };
+    if (!gate.done) return { ok: true, done: false, stage: 'feature-pr', featurePr, tag, targetVersion, log, next: 'call release-cut again — waiting on the feature PR’s checks' };
     const method = config?.mergeMethod?.featureToDevMethod ?? 'squash';
     const merged = spawnArgs('gh', ['pr', 'merge', String(featurePr), '--repo', ownerRepo, `--${method}`, '--delete-branch']);
     if (merged.status !== 0) return { ok: false, error: `gh pr merge failed on the feature PR: ${merged.stderr}` };
@@ -751,7 +836,7 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   const landed = waitForMerge(ownerRepo, promotion, deadline, pollSeconds, log);
   if (!landed.ok) return landed;
   if (!landed.done) {
-    return { ok: true, done: false, stage: 'promotion-open', promotion, tag, log, next: 'call release-cut again — waiting on the promotion to auto-merge' };
+    return { ok: true, done: false, stage: 'promotion-open', promotion, tag, targetVersion, log, next: 'call release-cut again — waiting on the promotion to auto-merge' };
   }
 
   // 6. The promotion landing cuts NOTHING on its own. Every caller's release
@@ -776,7 +861,8 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
     }
     note('dispatch', `dispatched ${component.workflowFile} on ${mainBranch} — this, not the merge, is what cuts the tag`);
   }
-  return waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, promotion);
+  const result = waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, promotion);
+  return { ...result, targetVersion };
 }
 
 function releaseBody(name, version, collateral) {
