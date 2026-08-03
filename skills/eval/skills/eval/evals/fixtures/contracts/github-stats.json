@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {

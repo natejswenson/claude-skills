@@ -23,7 +23,21 @@ const cli = (args) => execFileSync('node', [join(SKILL, 'scripts', 'eval.js'), .
 test('the frozen contract corpus is real and above its floor', () => {
   assert.ok(existsSync(CONTRACTS), `no frozen contracts at ${CONTRACTS} — run evals/baseline/update.mjs`);
   const files = readdirSync(CONTRACTS).filter((f) => f.endsWith('.json'));
-  assert.ok(files.length >= 10, `contract corpus is ${files.length} file(s), below the declared floor of 10`);
+
+  // Against the LIVE skill list, not a constant. A static floor cannot notice a
+  // newly shipped skill never entering the corpus: the corpus held 12 of the 14
+  // skills in this repo and still cleared a floor of 10, so it reported on 12
+  // and looked complete — the exact failure mode this skill grades others for.
+  const shipped = readdirSync(join(REPO, 'skills')).filter((n) =>
+    existsSync(join(REPO, 'skills', n, 'skills', n, 'SKILL.md')),
+  );
+  const frozen = new Set(files.map((f) => f.replace(/\.json$/, '')));
+  const missing = shipped.filter((n) => !frozen.has(n));
+  assert.deepEqual(
+    missing,
+    [],
+    `these shipped skills have no frozen contract, so the corpus reports on ${frozen.size} of ${shipped.length} and looks complete: ${missing.join(', ')} — run evals/baseline/update.mjs --contracts`,
+  );
 
   for (const f of files) {
     const contract = JSON.parse(readFileSync(join(CONTRACTS, f), 'utf8'));
