@@ -32,6 +32,8 @@ import {
   prepare,
   readStatus,
   tagFor,
+  resolveReleaseTarget,
+  cut,
 } from '../lib/release.mjs';
 import { git } from '../lib/gh.mjs';
 
@@ -410,6 +412,153 @@ test('commits: only commits touching this component’s paths are counted', () =
   assert.equal(suggestBump(r.commits, '0.1.0').bump, 'patch');
 });
 
+// ─── #173: the ambiguous fast path is refused, not guessed ──────────────────
+// `readStatus` used to collapse two independently-true facts — "main has an
+// untagged bump" and "dev already carries something higher" — into one
+// mutually-exclusive `state` string, and `cut()`'s fast path acted on that
+// string alone. Hit for real during `/release eval` on 2026-08-03: `main` was
+// 0.2.1 (untagged), `dev` was 0.3.0 (the work actually being released), and
+// the fast path would have tagged `eval-v0.2.1` — the OLDER version — while
+// reporting success. Every test below is offline: no `gh` call is ever
+// reachable from any of them, because the refusal happens in
+// `resolveReleaseTarget`, before `cut()` ever touches the network.
+
+test('status: the reporter’s exact three-way state — tag < main < dev — surfaces devAhead and a blocker', () => {
+  const { repo, config, name } = makeThreeWayRepo('kappa');
+  const status = readStatus(repo, config, name);
+  assert.equal(status.state, 'untagged-bump-on-main');
+  assert.equal(status.versionOnMain, '0.2.1');
+  assert.equal(status.versionOnDev, '0.3.0');
+  assert.equal(status.lastTag, `${name}-v0.2.0`);
+  assert.deepEqual(status.devAhead, { version: '0.3.0', aheadOfMain: true });
+  const blocker = status.blockers.find((b) => b.id === 'dev-ahead-of-main');
+  assert.ok(blocker, `expected a dev-ahead-of-main blocker; got: ${status.blockers.map((b) => b.id).join(', ') || 'none'}`);
+  assert.match(blocker.detail, /0\.2\.1/);
+  assert.match(blocker.detail, /0\.3\.0/);
+});
+
+test('cut: refuses the three-way ambiguous state before any dispatch, naming both versions', () => {
+  const { repo, config, name } = makeThreeWayRepo('lambda');
+  const result = cut(repo, config, name, { skipHashCheck: true, ownerRepo: 'x/y' });
+  assert.equal(result.ok, false, 'an ambiguous three-way state must never be silently resolved');
+  assert.match(result.error, /0\.2\.1/, 'the refusal must name the version on main');
+  assert.match(result.error, /0\.3\.0/, 'the refusal must name the version on dev');
+  // Asserted on the message text, not merely ok:false — in a remote-less temp
+  // repo a bare ok:false could also be satisfied by a `gh` call simply
+  // failing, which would be a false pass for this exact defect.
+  assert.equal(result.tag, undefined, 'a refusal must happen before any tag is derived — no fast path was ever entered');
+  assert.equal(result.log, undefined, 'a refusal must happen before cut() begins its stage log at all');
+});
+
+test('status + cut: the never-released branch (D2) is covered too — no tag anywhere, not just the c > 0 branch', () => {
+  // A fix that only patched the `cmpSemver(onMain.version, lastVersion) > 0`
+  // branch would leave a component's very first release exposed to the
+  // identical failure, because `devAhead` is what has to be computed
+  // independently of `lastVersion` being null.
+  const { repo, config, name } = makeSkillRepo('mu'); // 0.1.0 on dev, no tags at all
+  git(['branch', 'main'], { cwd: repo }); // main == dev == 0.1.0, still untagged
+  bumpOnBranch(repo, name, 'dev', '0.2.0'); // dev ahead; main never released
+  git(['checkout', 'dev'], { cwd: repo });
+
+  const status = readStatus(repo, config, name);
+  assert.equal(status.lastTag, null);
+  assert.equal(status.state, 'untagged-bump-on-main', 'never-released main is still the first-release shape of this state');
+  assert.deepEqual(status.devAhead, { version: '0.2.0', aheadOfMain: true });
+  assert.ok(status.blockers.some((b) => b.id === 'dev-ahead-of-main'));
+
+  const result = cut(repo, config, name, { skipHashCheck: true, ownerRepo: 'x/y' });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /0\.1\.0/);
+  assert.match(result.error, /0\.2\.0/);
+});
+
+test('resolveReleaseTarget: --version is a confirmation, not a bypass', () => {
+  const { repo, config, name } = makeThreeWayRepo('nu');
+  const status = readStatus(repo, config, name);
+
+  // Asking for the version already on dev is refused — a dispatch on main can
+  // never cut it, no matter how it's asked for.
+  const askedForDev = resolveReleaseTarget(status, status.versionOnDev);
+  assert.equal(askedForDev.ok, false);
+  assert.match(askedForDev.error, /dev/i);
+  assert.match(askedForDev.error, /main/i);
+
+  // Naming exactly what's on main is accepted — a deliberate, confirmed
+  // choice to release main's version and leave dev's for later.
+  assert.deepEqual(resolveReleaseTarget(status, status.versionOnMain), {
+    ok: true, version: status.versionOnMain, via: 'dispatch-on-main', confirmed: true,
+  });
+
+  // Nothing else unlocks it: a version that is on neither branch, garbage
+  // input, and no answer at all are every one a refusal.
+  assert.equal(resolveReleaseTarget(status, '9.9.9').ok, false);
+  assert.equal(resolveReleaseTarget(status, 'not-a-version').ok, false);
+  assert.equal(resolveReleaseTarget(status, null).ok, false, 'omitting --version entirely must not default to picking one side');
+});
+
+test('cut: the version it acts on is the SAME one resolveReleaseTarget resolved — one derivation, not two', () => {
+  // Before this fix, cut() derived the target version twice, ten lines apart
+  // — once preferring dev (used to compute the branch/tag), once preferring
+  // main (used only inside the fast path). This proves there is now exactly
+  // one derivation: the branch name in cut()'s own (offline, network-free)
+  // "does not exist" refusal must name the SAME version resolveReleaseTarget
+  // independently resolves for this status.
+  const { repo, config, name } = makeUnpromotedRepo('xi');
+  const status = readStatus(repo, config, name);
+  assert.equal(status.state, 'bump-on-dev-unpromoted');
+  const target = resolveReleaseTarget(status, null);
+  assert.equal(target.ok, true);
+  assert.equal(target.version, '0.2.0');
+
+  const result = cut(repo, config, name, { skipHashCheck: true, ownerRepo: 'x/y' });
+  assert.equal(result.ok, false);
+  assert.match(result.error, new RegExp(releaseBranchName(name, target.version).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+test('devAhead / the dev-ahead-of-main blocker: two-sided — absent everywhere nothing can be mis-tagged', () => {
+  // clean: main == dev == lastTag. No fact to report, nothing ambiguous.
+  const { repo: cleanRepo, config: cleanConfig, name: cleanName } = makeSkillRepo('omicron');
+  git(['tag', `${cleanName}-v0.1.0`], { cwd: cleanRepo });
+  git(['branch', 'main'], { cwd: cleanRepo });
+  const cleanStatus = readStatus(cleanRepo, cleanConfig, cleanName);
+  assert.equal(cleanStatus.state, 'clean');
+  assert.equal(cleanStatus.devAhead, null);
+  assert.equal(cleanStatus.blockers.some((b) => b.id === 'dev-ahead-of-main'), false);
+  assert.deepEqual(resolveReleaseTarget(cleanStatus, null), { ok: true, version: '0.1.0', via: 'prepared-branch' });
+
+  // bump-on-dev-unpromoted: devAhead IS set (that is this state's normal,
+  // expected shape — no fast path is reachable here, nothing can be
+  // mis-tagged) but the blocker must NOT fire. A blocker that is always on
+  // for this state stops being read.
+  const { repo: upRepo, config: upConfig, name: upName } = makeUnpromotedRepo('pi');
+  const upStatus = readStatus(upRepo, upConfig, upName);
+  assert.equal(upStatus.state, 'bump-on-dev-unpromoted');
+  assert.deepEqual(upStatus.devAhead, { version: '0.2.0', aheadOfMain: true });
+  assert.equal(upStatus.blockers.some((b) => b.id === 'dev-ahead-of-main'), false, 'devAhead is this state’s normal shape, not a blocker');
+
+  // plain untagged-bump-on-main: dev == main, so devAhead never even sets.
+  const { repo: plainRepo, config: plainConfig, name: plainName } = makeSkillRepo('rho');
+  git(['tag', `${plainName}-v0.1.0`], { cwd: plainRepo });
+  git(['branch', 'main'], { cwd: plainRepo });
+  bumpOnBranch(plainRepo, plainName, 'main', '0.2.0');
+  bumpOnBranch(plainRepo, plainName, 'dev', '0.2.0'); // dev matches main exactly
+  git(['checkout', 'dev'], { cwd: plainRepo });
+  const plainStatus = readStatus(plainRepo, plainConfig, plainName);
+  assert.equal(plainStatus.state, 'untagged-bump-on-main');
+  assert.equal(plainStatus.devAhead, null);
+  assert.equal(plainStatus.blockers.some((b) => b.id === 'dev-ahead-of-main'), false);
+  assert.deepEqual(resolveReleaseTarget(plainStatus, null), { ok: true, version: '0.2.0', via: 'dispatch-on-main' });
+});
+
+test('devAhead adds a fact, never renames a state — the three-way case is still plain untagged-bump-on-main', () => {
+  // `state` is a public field of a published npm package's JSON output,
+  // consumed by two SKILL.md decision tables and possibly unseen consumers
+  // elsewhere. The fix adds `devAhead`; it must never rename or add a state.
+  const { repo, config, name } = makeThreeWayRepo('sigma');
+  const status = readStatus(repo, config, name);
+  assert.equal(status.state, 'untagged-bump-on-main');
+});
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 const repos = [];
@@ -457,6 +606,45 @@ function makeSkillRepo(name) {
       components: [name],
     },
   };
+  return { repo, config, name };
+}
+
+// Bumps only the two version files makeSkillRepo commits eagerly (package.json
+// and plugin.json — SKILL.md is deliberately absent from these fixtures, and
+// readVersionAt already tolerates a version file that doesn't exist). Commits
+// directly on `branch`, so the caller is responsible for returning to whatever
+// branch it wants checked out afterward.
+function bumpOnBranch(repo, name, branch, version) {
+  git(['checkout', branch], { cwd: repo });
+  writeFile(repo, `skills/${name}/skills/${name}/package.json`, `{\n  "name": "${name}",\n  "version": "${version}"\n}\n`);
+  writeFile(repo, `skills/${name}/.claude-plugin/plugin.json`, `{\n  "name": "${name}",\n  "version": "${version}"\n}\n`);
+  git(['add', '--', `skills/${name}`], { cwd: repo });
+  git(['commit', '-m', `chore(${name}): release v${version}`], { cwd: repo });
+}
+
+// #173's exact reported shape: `lastTag < main < dev`. Tagged 0.2.0, main
+// untagged-bumped to 0.2.1, dev independently bumped past both to 0.3.0.
+function makeThreeWayRepo(name) {
+  const { repo, config } = makeSkillRepo(name); // 0.1.0 on dev
+  git(['branch', 'main'], { cwd: repo }); // main starts equal to dev's initial commit
+  bumpOnBranch(repo, name, 'main', '0.2.0');
+  git(['tag', `${name}-v0.2.0`], { cwd: repo });
+  bumpOnBranch(repo, name, 'main', '0.2.1'); // untagged bump on main
+  bumpOnBranch(repo, name, 'dev', '0.3.0'); // dev ahead of both
+  git(['checkout', 'dev'], { cwd: repo });
+  return { repo, config, name };
+}
+
+// The neighbouring, unambiguous state: main == lastTag, dev carries a
+// prepared-but-unpromoted bump. devAhead is set here too (dev IS higher than
+// main) but it is this state's ordinary shape, not #173's ambiguity — no fast
+// path is reachable from it, so nothing can be mis-tagged.
+function makeUnpromotedRepo(name) {
+  const { repo, config } = makeSkillRepo(name); // 0.1.0 on dev
+  git(['tag', `${name}-v0.1.0`], { cwd: repo }); // lastTag == main == 0.1.0
+  git(['branch', 'main'], { cwd: repo });
+  bumpOnBranch(repo, name, 'dev', '0.2.0'); // prepared on dev, not yet promoted
+  git(['checkout', 'dev'], { cwd: repo });
   return { repo, config, name };
 }
 

@@ -164,6 +164,11 @@ at all and `--component` may be omitted.
    - `clean` — the released version is what's on main. A bump is needed: go to step 2.
    - `untagged-bump-on-main` — the bump is already on main and was never tagged (a cancelled or
      failed release run). **No PR is needed** — `release-cut` dispatches and verifies. Skip to step 3.
+     **`untagged-bump-on-main` is not, by itself, permission to cut.** Check `devAhead` first: if
+     it is set, dev already carries a *higher* version than what's on main, and cutting here would
+     tag the version on main, not the one on dev — the version you almost certainly mean to
+     release. `release-cut` refuses in this shape unless you pass `--version` naming exactly which
+     one to release (see step 3); it never guesses.
    - `bump-on-dev-unpromoted` — the bump is on dev, waiting for a promotion. Skip to step 3.
    - `version-behind-tag` — main carries a *lower* version than an existing tag. Stop and ask;
      this means a tag was cut from something other than main, and guessing is how it gets worse.
@@ -197,6 +202,15 @@ at all and `--component` may be omitted.
    ```
    `--expect-status-hash` is mandatory (same TOCTOU discipline as `apply`'s `--expect-state-hash`);
    `--skip-hash-check` is a named escape hatch, never a default.
+
+   If step 1's `devAhead` was set, `release-cut` refuses outright with an error naming both
+   versions — this is the ambiguous three-way state (main has an untagged bump, dev already
+   carries something higher) where guessing would tag the wrong one. Promote `dev → main` and
+   re-run `release-status` to release what's on dev (the normal recovery), **or** add
+   `--version <x.y.z>` naming exactly the version on main, if you deliberately mean to release
+   that one and leave dev's higher version for later. `--version` is a confirmation, not a
+   bypass — it is only ever accepted when it matches a version already on main or dev; anything
+   else is refused the same as passing nothing.
 
    **`release-cut` is resumable and bounded, and it will usually return `done: false`.** The full
    path — feature PR, checks, merge, promotion, auto-merge, **dispatch**, release run, tag — takes

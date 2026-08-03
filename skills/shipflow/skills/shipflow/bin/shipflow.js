@@ -336,6 +336,7 @@ function cmdReleaseCut(args) {
       'expect-status-hash': { type: 'string' },
       'skip-hash-check': { type: 'boolean', default: false },
       wait: { type: 'string' },
+      version: { type: 'string' },
     },
   });
   const resolved = resolveReleaseArgs(values, 'release-cut');
@@ -348,6 +349,7 @@ function cmdReleaseCut(args) {
       expectStatusHash: values['expect-status-hash'] ?? null,
       skipHashCheck: values['skip-hash-check'],
       ownerRepo,
+      version: values.version ?? null,
     });
     if (!result.ok) return fail(`release-cut: ${result.error}${result.currentStatusHash ? ` (current statusHash: ${result.currentStatusHash})` : ''}`);
     printJson(result);
@@ -388,7 +390,7 @@ Commands:
   release-dispatch --repo <path> --pr <number> --workflow-file <file>... --ref <ref>
   release-status --repo <path> [--component <name>]
   release-prepare --repo <path> [--component <name>] --version <x.y.z> --notes-file <path> [--date <YYYY-MM-DD>]
-  release-cut --repo <path> [--component <name>] (--expect-status-hash <hash> | --skip-hash-check) [--wait <seconds>]
+  release-cut --repo <path> [--component <name>] (--expect-status-hash <hash> | --skip-hash-check) [--wait <seconds>] [--version <x.y.z>]
   rename-default-branch --repo <path> --branch <current-name> --to <new-name>
 
 Every command prints JSON to stdout.`);
