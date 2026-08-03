@@ -2,7 +2,7 @@
 name: eval
 description: Grade a real run of a skill against its own committed contract, then turn each confirmed failure into a permanent eval case. Use when the user says "evaluate this run", "grade this skill", "eval this run", "how good was that run", "did the skill follow its own rules", "audit this transcript", "write evals for my skill", "deepen the evals", or "my evals are decorative" — or wants a session transcript checked for results it claimed but never observed.
 user_invocable: true
-version: 0.2.1
+version: 0.3.0
 ---
 
 # /eval — grade the run, not the intention

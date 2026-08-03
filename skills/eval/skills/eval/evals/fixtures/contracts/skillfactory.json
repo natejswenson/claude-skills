@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -90,17 +100,6 @@
       }
     },
     {
-      "id": "inv-115ea544",
-      "tag": "inv",
-      "text": "Never overwrite an existing skill",
-      "severity": "high",
-      "rationale": "A skills/<name> directory that already exists is far more likely to be someone's work than a mistake. Overwriting one destroys uncommitted work with no diff shown and no undo.",
-      "source": {
-        "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
       "id": "inv-632adfeb",
       "tag": "inv",
       "text": "never silently proceed as though it made no difference",
@@ -112,33 +111,11 @@
       }
     },
     {
-      "id": "inv-68117608",
-      "tag": "inv",
-      "text": "Never open a PR into `main`",
-      "severity": "high",
-      "rationale": "The only path to main is a dev -> main promotion. A feature PR against main bypasses the integration branch and, because releases here are publish-on-merge, can cut a tag from an unreviewed state.",
-      "source": {
-        "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
       "id": "inv-7b28d752",
       "tag": "inv",
       "text": "an unresolvable anchor aborts before the first byte is written",
       "severity": "high",
       "rationale": "A half-applied wiring is worse than none, because the half that landed makes the rest look done. `ci / shipflow` sat un-required from the day it was introduced for exactly this reason.",
-      "source": {
-        "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
-      "id": "inv-9a5e5b0a",
-      "tag": "inv",
-      "text": "Never call a skill done below rung 3",
-      "severity": "high",
-      "rationale": "Rungs 0-2 prove the scaffolding is correct, which is not the same as the skill working. Conflating them is exactly the failure this skill was built against, and it is the failure that ships skills with decorative evals.",
       "source": {
         "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
         "line": 1
@@ -161,17 +138,6 @@
       "text": "only takes effect when an admin runs it",
       "severity": "high",
       "rationale": "Editing the contexts array in repo-settings.sh changes a file, not GitHub. A skill whose check is written down but never applied goes green on every PR and gates nothing — the most convincing possible form of a missing gate.",
-      "source": {
-        "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
-      "id": "inv-fe657281",
-      "tag": "inv",
-      "text": "Never weaken a check to get green",
-      "severity": "high",
-      "rationale": "check-spec and the baseline trap are adversarial on purpose. The moment either is edited to accommodate a failing input, every skill made afterwards inherits a gate that no longer gates. Fix the input.",
       "source": {
         "file": "skills/skillfactory/skills/skillfactory/skill-invariants.json",
         "line": 1
@@ -258,23 +224,13 @@
       }
     },
     {
-      "id": "skill-1dae0e7d",
+      "id": "skill-403ffa48",
       "tag": "skill",
-      "text": "`check-spec` and the baseline trap exist to be argued with, not edited. Fix the input. -",
+      "text": "Never overwrite an existing skill.",
       "severity": "high",
       "source": {
         "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
-        "line": 228
-      }
-    },
-    {
-      "id": "skill-37df8a89",
-      "tag": "skill",
-      "text": "same** change: releases here are publish-on-merge, so a follow-up promotion to fix release notes is too late — the tag is already cut. Two things skillfactory writes but cannot apply, and must be said out loud: -",
-      "severity": "high",
-      "source": {
-        "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
-        "line": 211
+        "line": 230
       }
     },
     {
@@ -288,13 +244,23 @@
       }
     },
     {
-      "id": "skill-62038661",
+      "id": "skill-56f4e046",
       "tag": "skill",
-      "text": "Say which rung you reached. -",
+      "text": "Never call a skill done below rung 3.",
       "severity": "high",
       "source": {
         "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
-        "line": 224
+        "line": 53
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
+        "line": 233
       }
     },
     {
@@ -308,6 +274,16 @@
       }
     },
     {
+      "id": "skill-aede694a",
+      "tag": "skill",
+      "text": "Never weaken a check to get green.",
+      "severity": "high",
+      "source": {
+        "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
+        "line": 228
+      }
+    },
+    {
       "id": "skill-bfb1b27b",
       "tag": "skill",
       "text": "Announce at start:",
@@ -318,13 +294,13 @@
       }
     },
     {
-      "id": "skill-db1638ff",
+      "id": "skill-e90edaed",
       "tag": "skill",
-      "text": ", so the agent writes it. What the baseline *catches* is judgment, not a template. ## Rules that are not negotiable -",
+      "text": "Never open a PR into `main`.",
       "severity": "high",
       "source": {
         "file": "skills/skillfactory/skills/skillfactory/SKILL.md",
-        "line": 219
+        "line": 226
       }
     },
     {

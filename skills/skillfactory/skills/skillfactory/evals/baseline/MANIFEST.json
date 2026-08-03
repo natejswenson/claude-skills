@@ -14,14 +14,19 @@
       "sha256": "1541cd36e0c96aa93a6233ec6b765901162024f4517584078c411fc4e7ca75a7"
     },
     {
+      "path": ".github/shipflow.json",
+      "bytes": 852,
+      "sha256": "d0ad15c91a3da5034935e1cbf320baea393f936f6180deac25a70756356930c3"
+    },
+    {
       "path": ".github/workflows/press.yml",
       "bytes": 1178,
       "sha256": "7a9202270c0b52203d6e2850b91ed8491a3819c811eb568d07589476e238d09f"
     },
     {
       "path": ".github/workflows/repocount.yml",
-      "bytes": 3182,
-      "sha256": "b2ffecc29a1111053d3bf1da1cf7a3429205cd3db645c9b28099af3204595ce6"
+      "bytes": 3371,
+      "sha256": "331ca41a954ca82b146e30b5c721b92f696e47933a4394460403f1f05bd85787"
     },
     {
       "path": "CLAUDE.md",

@@ -13,8 +13,23 @@
  * trusting each probe to remember.
  */
 import { createHash } from 'node:crypto';
+import { SEVERITY_ORDER } from './contract.mjs';
 
 const sha8 = (s) => createHash('sha256').update(s).digest('hex').slice(0, 8);
+
+/**
+ * When a probe binds to several clauses, one act must still be one finding.
+ * The clause it gets cited against is the skill's own rule ahead of shared
+ * presentation boilerplate (severity), then the more specific wording (length),
+ * then id so the choice is deterministic.
+ */
+const mostSpecific = (clauses) =>
+  [...clauses].sort(
+    (a, b) =>
+      (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9) ||
+      b.text.length - a.text.length ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  )[0];
 
 const bash = (events) => events.filter((e) => e.kind === 'tool-use' && e.name === 'Bash');
 const said = (events) => events.filter((e) => e.kind === 'assistant');
@@ -124,17 +139,38 @@ export const PROBES = [
   {
     id: 'pr-into-main',
     appliesTo: /never (open a )?PR into `?main|never PR a feature branch straight into|never push directly to `?main/i,
-    what: 'a pull request opened against main, or a direct push to it',
-    cannot: 'a PR opened through the GitHub MCP tools or the web UI rather than the gh CLI',
+    what: 'a pull request opened against main from a branch other than the integration branch, or a direct push to it',
+    cannot:
+      'a PR opened through the GitHub MCP tools or the web UI rather than the gh CLI; a `gh pr create` with no --base at all in a repo whose default branch is main; and whether a branch named like the integration branch really is one',
     decide: (events) => {
+      // Each pattern carries the clause form it belongs to. Without this every
+      // bound clause received every hit, so one `gh pr create` also produced a
+      // finding citing "never push directly to main" — a category error about
+      // an event that is not a push.
       const bad = [
-        [/gh\s+pr\s+create[\s\S]*--base[= ]\s*main\b/, 'opens a PR whose base is main'],
-        [/git\s+push\s+\S+\s+(HEAD:)?main\b/, 'pushes straight to main'],
+        {
+          re: /gh\s+pr\s+(create|edit)\b[\s\S]*?--base[= ]\s*["']?main\b/,
+          // The sanctioned promotion is a PR from the integration branch into
+          // main. Measured: all 6 of this probe's real firings were exactly
+          // that — the repo's own release procedure, reported as breaking the
+          // repo's own rule.
+          exempt: /--head[= ]\s*["']?(dev|develop|integration)\b/,
+          detail: 'opens or retargets a PR whose base is main',
+          appliesTo: /never (open a )?PR into `?main|never PR a feature branch straight into/i,
+        },
+        {
+          re: /git\s+push\s+\S+\s+(\S+:)?main(?![\w./-])/,
+          detail: 'pushes straight to main',
+          appliesTo: /never push directly to `?main/i,
+        },
       ];
       const out = [];
       for (const e of bash(events)) {
-        for (const [re, detail] of bad) {
-          if (re.test(e.command ?? '')) out.push({ eventId: e.id, detail });
+        const command = e.command ?? '';
+        for (const { re, exempt, detail, appliesTo } of bad) {
+          if (!re.test(command)) continue;
+          if (exempt && exempt.test(command)) continue;
+          out.push({ eventId: e.id, detail, appliesTo });
         }
       }
       return out;
@@ -191,20 +227,28 @@ export function runProbes({ contract, events, skill }) {
   const examined = new Set();
   const raw = [];
 
-  for (const clause of contract.clauses) {
-    for (const probe of PROBES) {
-      if (!probe.appliesTo.test(clause.text)) continue;
-      examined.add(clause.id);
-      for (const hit of probe.decide(events, { clause, skill })) {
-        raw.push({
-          id: findingId(probe.id, clause.id, hit.eventId),
-          probe: probe.id,
-          clauseId: clause.id,
-          eventId: hit.eventId,
-          severity: clause.severity,
-          detail: hit.detail,
-        });
-      }
+  // One pass per PROBE, not per clause. Deciding once per bound clause meant a
+  // single act produced one finding for every clause the probe matched, so no
+  // event a multi-clause-bound probe fired on was ever counted once.
+  const unbound = [];
+  for (const probe of PROBES) {
+    const bound = contract.clauses.filter((c) => probe.appliesTo.test(c.text));
+    if (bound.length === 0) {
+      unbound.push(probe.id);
+      continue;
+    }
+    for (const c of bound) examined.add(c.id);
+    for (const hit of probe.decide(events, { clause: mostSpecific(bound), clauses: bound, skill })) {
+      const narrowed = hit.appliesTo ? bound.filter((c) => hit.appliesTo.test(c.text)) : bound;
+      const clause = mostSpecific(narrowed.length > 0 ? narrowed : bound);
+      raw.push({
+        id: findingId(probe.id, clause.id, hit.eventId),
+        probe: probe.id,
+        clauseId: clause.id,
+        eventId: hit.eventId,
+        severity: clause.severity,
+        detail: hit.detail,
+      });
     }
   }
 
@@ -214,6 +258,9 @@ export function runProbes({ contract, events, skill }) {
     rejected,
     examined: [...examined].sort(),
     unexamined: contract.clauses.filter((c) => !examined.has(c.id)).map((c) => c.id),
+    // A probe that found no clause to attach to left no trace in any output,
+    // so the report read clean over a rule it never located.
+    unbound: unbound.sort(),
   };
 }
 
@@ -222,19 +269,31 @@ export function runProbes({ contract, events, skill }) {
  * resolve is dropped and counted — never softened into a "possible" finding,
  * because a possible finding is an assertion with a hedge in front of it.
  */
-export function resolveFindings(raw, clausesById, eventIds) {
+export function resolveFindings(raw, clausesById, eventIds, { strict = false } = {}) {
   const findings = [];
   const rejected = [];
   const seen = new Set();
   for (const f of raw) {
     const problems = [];
+    // `strict` is for findings this skill did not generate. Probe ids are
+    // content-addressed, so a repeat there really is the same fact and
+    // collapsing it is right; a judgment finding is written by hand, and
+    // collapsing two of them on a missing or repeated id loses one silently —
+    // which is the softening this skill exists to refuse.
+    if (strict) {
+      if (!f.id) problems.push('finding has no id, so it cannot be cited or counted');
+      else if (seen.has(f.id)) problems.push(`duplicate finding id ${f.id}`);
+      if (f.severity !== undefined && !(f.severity in SEVERITY_ORDER)) {
+        problems.push(`severity ${JSON.stringify(f.severity)} is not one of ${Object.keys(SEVERITY_ORDER).join(', ')}`);
+      }
+    }
     if (!clausesById.has(f.clauseId)) problems.push(`clause ${f.clauseId} does not resolve`);
     if (!eventIds.has(f.eventId)) problems.push(`event ${f.eventId} does not resolve`);
     if (problems.length > 0) {
       rejected.push({ ...f, why: problems.join('; ') });
       continue;
     }
-    if (seen.has(f.id)) continue;
+    if (!strict && seen.has(f.id)) continue;
     seen.add(f.id);
     findings.push(f);
   }

@@ -1,7 +1,7 @@
 {
   "name": "@natjswenson/skillfactory",
-  "version": "0.3.0",
-  "description": "The skill that makes skills — branded, wired, verified, and not finished until a real run is frozen as its baseline",
+  "version": "0.4.0",
+  "description": "The skill that makes skills \u2014 branded, wired, verified, and not finished until a real run is frozen as its baseline",
   "license": "MIT",
   "author": "Nate Swenson",
   "homepage": "https://github.com/natejswenson/claude-skills",

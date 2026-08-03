@@ -23,7 +23,17 @@
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 27
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
       }
     },
     {
@@ -37,9 +47,9 @@
       }
     },
     {
-      "id": "house-d75b3fa7",
+      "id": "house-9c5a5051",
       "tag": "house",
-      "text": "add a `CHANGELOG.md` entry in the same change. A `dev → main` merge with no bump is a no-op release. -",
+      "text": "Never add `push` back to a release job's `if:`",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
@@ -47,13 +57,13 @@
       }
     },
     {
-      "id": "house-ffae6e92",
+      "id": "house-d8d0747a",
       "tag": "house",
-      "text": "A release is cut by a version bump, not by a merge.",
+      "text": "Always delete a feature branch as soon as it's merged",
       "severity": "high",
       "source": {
         "file": "CLAUDE.md",
-        "line": 17
+        "line": 27
       }
     },
     {
@@ -73,6 +83,28 @@
       "text": "even when detected values already look correct",
       "severity": "high",
       "rationale": "First live end-to-end run (2026-07-14, against natejswenson/1.00s) showed an orchestrating agent can silently skip the confirmation turn when detected values look right. This line makes the interview checkpoint explicit and unskippable, not just implied by 'confirm with the user.'",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5b363f3a",
+      "tag": "inv",
+      "text": "refuses any `--force` without an accompanying reason",
+      "severity": "high",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-002): --force had zero code-level friction beyond the flag itself, so a confused or prompt-injected agent could force through an unprotected merge or a tampered template with no audit trail. --force now requires --force-reason, echoed back in the apply result.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-6a7e051a",
+      "tag": "inv",
+      "text": "A dispatched workflow, a merged PR and a green check are not a release",
+      "severity": "high",
+      "rationale": "Every intermediate signal in the release path can succeed while the tag is never cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml deliberately no-ops when a tag already exists. The only evidence a release happened is the tag fetched back from origin, which is why release-cut polls for it and why the agent must not report success from anything else.",
       "source": {
         "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
         "line": 1
@@ -112,11 +144,44 @@
       }
     },
     {
+      "id": "inv-85d1f2a6",
+      "tag": "inv",
+      "text": "going to 1\\.0\\.0 is a\\s+release decision, never a commit message",
+      "severity": "high",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0 — an API-stability promise no commit message is entitled to make on the maintainer's behalf. suggestBump caps it at minor and reports capped: true so the promotion is offered, never taken.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
       "id": "inv-9031a7a4",
       "tag": "inv",
       "text": "refuses to run.{0,40}against a config with `release\\.mode: \"auto\"`",
       "severity": "high",
       "rationale": "Auto mode is unimplemented in this version; it must fail loudly, never silently no-op, so a user's config request isn't silently ignored.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a112a6a0",
+      "tag": "inv",
+      "text": "[Nn]ever run `release-cut` without naming that list to the user first",
+      "severity": "high",
+      "rationale": "A dev -> main promotion is atomic and carries ALL of dev, so cutting a release for one named component also releases every other component sitting bumped-but-untagged on dev. That is the worst failure this flow has — the user asked for one thing and got several, with tags and npm publishes that cannot be un-cut. The collateral list must be spoken aloud before the irreversible step, not merely present in JSON the agent may skim past.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a17d790c",
+      "tag": "inv",
+      "text": "throwaway git worktree",
+      "severity": "high",
+      "rationale": "A real repo's working tree routinely holds unrelated uncommitted work from parallel sessions — this monorepo's did, including an entire untracked skill, while this feature was written. Branching and staging under that tree is how someone else's in-flight work gets swept into a release commit. The isolated worktree makes that structurally impossible rather than relying on careful pathspecs.",
       "source": {
         "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
         "line": 1
@@ -210,6 +275,26 @@
       }
     },
     {
+      "id": "skill-087434fa",
+      "tag": "skill",
+      "text": "Read the state. Never guess it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 157
+      }
+    },
+    {
+      "id": "skill-12c2da68",
+      "tag": "skill",
+      "text": "Never run `release-cut` without naming that list to the user first.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 176
+      }
+    },
+    {
       "id": "skill-15e1327e",
       "tag": "skill",
       "text": "This skill never mutates repo state directly.",
@@ -226,7 +311,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 38
+        "line": 39
       }
     },
     {
@@ -236,7 +321,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 104
+        "line": 105
       }
     },
     {
@@ -246,7 +331,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 46
+        "line": 47
       }
     },
     {
@@ -256,7 +341,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 55
+        "line": 56
       }
     },
     {
@@ -266,7 +351,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 63
+        "line": 64
       }
     },
     {
@@ -276,7 +361,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 86
+        "line": 87
       }
     },
     {
@@ -286,7 +371,27 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 91
+        "line": 92
+      }
+    },
+    {
+      "id": "skill-742aa791",
+      "tag": "skill",
+      "text": "Show the user `collateral`, `blockers` and the proposed version, and wait.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 171
+      }
+    },
+    {
+      "id": "skill-7b5c5b18",
+      "tag": "skill",
+      "text": "Report the tag, and only the tag.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 212
       }
     },
     {
@@ -296,7 +401,17 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 96
+        "line": 97
+      }
+    },
+    {
+      "id": "skill-8635f358",
+      "tag": "skill",
+      "text": "Report the result.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 118
       }
     },
     {
@@ -306,7 +421,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 81
+        "line": 82
       }
     },
     {
@@ -316,7 +431,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 96
+        "line": 97
       }
     },
     {
@@ -326,7 +441,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 163
+        "line": 245
       }
     },
     {
@@ -346,17 +461,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 63
-      }
-    },
-    {
-      "id": "skill-c5b611ae",
-      "tag": "skill",
-      "text": "and** `--force-reason \"<short justification>\"` — the CLI refuses any `--force` without an accompanying reason, and that reason is echoed back in the apply result for auditability. Write a real justification tied to the user's actual confirmation (e.g. `--force-reason \"user confirmed hand-edit override for the branch-rename migration on 2026-07-15\"`), never a placeholder string. 11.",
-      "severity": "high",
-      "source": {
-        "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 115
+        "line": 64
       }
     },
     {
@@ -366,7 +471,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 94
+        "line": 95
       }
     }
   ]
