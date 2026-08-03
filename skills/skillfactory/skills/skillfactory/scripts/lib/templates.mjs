@@ -613,7 +613,10 @@ ${spec.stack === 'node' ? setup : ''}
 ${tier2}
   release:
     needs: ci
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # Dispatch-only, deliberately. Never re-add \`push\` here: a dev → main
+    # auto-merge fires push events, which made promotions publish-on-merge and
+    # cost two unplanned releases. \`/release\` dispatches this job.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/_release.yml
     with:
       skill: ${spec.name}${spec.npmPublish ? '\n      npm-publish: true' : ''}

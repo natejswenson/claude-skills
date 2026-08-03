@@ -1,0 +1,40 @@
+{
+  "branches": {
+    "main": "main",
+    "dev": "dev"
+  },
+  "featureBranchPrefix": "feature/",
+  "mergeMethod": {
+    "featureToDevMethod": "squash",
+    "devToMainMethod": "merge"
+  },
+  "protectionOwner": "external",
+  "release": {
+    "enabled": true,
+    "mode": "manual-gate",
+    "componentLayout": {
+      "versionFiles": [
+        "skills/{name}/skills/{name}/package.json",
+        "skills/{name}/skills/{name}/SKILL.md",
+        "skills/{name}/.claude-plugin/plugin.json"
+      ],
+      "changelog": "skills/{name}/CHANGELOG.md",
+      "tagPattern": "{name}-v{version}",
+      "paths": [
+        "skills/{name}"
+      ],
+      "workflowFile": "{name}.yml"
+    },
+    "components": [
+      "press",
+      "repocount"
+    ]
+  },
+  "branchCleanup": {
+    "deleteOnMerge": true,
+    "protectedBranches": [
+      "dev",
+      "main"
+    ]
+  }
+}

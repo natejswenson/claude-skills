@@ -439,6 +439,11 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
 7. Add a `{name, source}` entry for the new skill to root `.claude-plugin/marketplace.json`
    (`source` must be `./skills/<skill>`; `name` must equal both the directory name and the
    `plugin.json.name` at that source).
+7b. **Declare the skill in `.github/shipflow.json`'s `release.components`** (kept sorted).
+   Without it the skill can never be released — `release preflight` reports on every *other*
+   component and looks complete — and `ci / release`'s corpus baseline fails the PR.
+   `skillfactory scaffold` applies this since 0.4.0; before then it did not, which is how
+   `issueflow` reached its first PR undeclared.
 8. Add the Tier-1.5 `python tools/lint_plugin.py skills/<skill>` step to the new caller's `ci` job,
    right after its `score_skill.py` step, gated on the same `steps.changes.outputs.<skill>`
    condition as every other step. `ci / marketplace` needs no per-skill change — its unconditional
