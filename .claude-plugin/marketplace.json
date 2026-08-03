@@ -56,6 +56,10 @@
     {
       "name": "pluginsync",
       "source": "./skills/pluginsync"
+    },
+    {
+      "name": "issueflow",
+      "source": "./skills/issueflow"
     }
   ]
 }

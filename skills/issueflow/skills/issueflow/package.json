@@ -1,0 +1,42 @@
+{
+  "name": "@natjswenson/issueflow",
+  "version": "0.1.0",
+  "description": "Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/claude-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natejswenson/claude-skills/issues"
+  },
+  "keywords": [
+    "issueflow",
+    "claude-code",
+    "claude-skill"
+  ],
+  "type": "module",
+  "bin": {
+    "issueflow": "scripts/issueflow.js"
+  },
+  "files": [
+    "scripts/",
+    "references/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
+    "postpack": "rm -f README.md LICENSE CHANGELOG.md"
+  }
+}
