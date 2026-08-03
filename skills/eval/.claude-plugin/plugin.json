@@ -1,6 +1,6 @@
 {
   "name": "eval",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Grades a real run of a skill against the contract that skill committed to, keeps only the findings it can cite, and turns the ones that will recur into permanent eval cases.",
   "author": {
     "name": "Nate Swenson"

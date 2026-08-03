@@ -26,6 +26,32 @@ export const table = (headers, rows) => {
 const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n - 1)}…`);
 const bySeverity = (a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9);
 
+/**
+ * Coverage is probe coverage PLUS whatever judgment cited.
+ *
+ * `probed` only knows what the machine looked at, so a clause a judgment
+ * finding is built on stays in `probed.unexamined` — which prints it in the gap
+ * table directly underneath the finding that examined it, and makes the gap
+ * sentence ("no probe and no judgment finding") false about its own report.
+ *
+ * The increment is counted off the unexamined list rather than off `judgment`,
+ * so a clause both a probe and a judgment finding touched is not counted twice.
+ * Lives here, exported, because the CLI prints the same numbers to the terminal
+ * and two copies of this arithmetic is how one of them goes stale.
+ */
+export function coverageOf({ probed, judgment = [] }) {
+  const judged = new Set(judgment.map((f) => f.clauseId));
+  const judgmentExamined = probed.unexamined.filter((id) => judged.has(id));
+  const gapIds = probed.unexamined.filter((id) => !judged.has(id));
+  return {
+    probeExamined: probed.examined.length,
+    judgmentExamined: judgmentExamined.length,
+    examined: probed.examined.length + judgmentExamined.length,
+    gapIds,
+    gap: gapIds.length,
+  };
+}
+
 /** The findings a run produced, as the machine decided them. */
 export function buildProbeReport({ contract, trace, probed, skill, judgment = [] }) {
   const applicable = PROBES.filter((p) => contract.clauses.some((c) => p.appliesTo.test(c.text)));
@@ -56,6 +82,14 @@ export function renderReport({ contract, trace, probed, skill, judgment = [] }) 
   const all = [...probed.findings, ...judgment].sort(bySeverity);
   const applicable = PROBES.filter((p) => contract.clauses.some((c) => p.appliesTo.test(c.text)));
 
+  const cov = coverageOf({ probed, judgment });
+  // The split is shown only when there is one, so a machine-only run renders
+  // exactly as it did before judgment existed.
+  const examinedCell =
+    cov.judgmentExamined > 0
+      ? `${cov.examined} of ${contract.clauses.length} (${cov.probeExamined} probe, ${cov.judgmentExamined} judgment)`
+      : `${cov.examined} of ${contract.clauses.length}`;
+
   const tally = all.reduce((acc, f) => {
     acc[f.severity] = (acc[f.severity] ?? 0) + 1;
     return acc;
@@ -71,7 +105,7 @@ export function renderReport({ contract, trace, probed, skill, judgment = [] }) 
         ['skill graded', skill],
         ['contract sources', contract.sources.join(', ')],
         ['clauses extracted', contract.clauses.length],
-        ['clauses examined', `${probed.examined.length} of ${contract.clauses.length}`],
+        ['clauses examined', examinedCell],
         ['trace events', trace.events.length],
         ['findings (machine)', probed.findings.length],
         ['findings (judgment)', judgment.length],
@@ -113,11 +147,11 @@ export function renderReport({ contract, trace, probed, skill, judgment = [] }) 
   out.push('## The clauses nobody examined');
   out.push('');
   out.push(
-    `${probed.unexamined.length} of ${contract.clauses.length} clauses had no probe and no judgment finding. ` +
+    `${cov.gap} of ${contract.clauses.length} clauses had no probe and no judgment finding. ` +
       'Their absence from Findings above means nothing was checked, not that nothing was wrong.',
   );
   out.push('');
-  const gap = probed.unexamined.map((id) => byId.get(id)).filter(Boolean).sort(bySeverity);
+  const gap = cov.gapIds.map((id) => byId.get(id)).filter(Boolean).sort(bySeverity);
   if (gap.length > 0) {
     out.push(
       table(
