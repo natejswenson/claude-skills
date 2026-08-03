@@ -45,7 +45,7 @@ test('the-real-run: re-running the frozen inputs reproduces every artifact byte 
   const manifest = JSON.parse(frozen('MANIFEST.json'));
   const names = Object.keys(manifest.artifacts);
 
-  assert.ok(names.length >= 9, `the golden set collapsed to ${names.length} artifacts — run \`${REFRESH}\``);
+  assert.ok(names.length >= 10, `the golden set collapsed to ${names.length} artifacts — run \`${REFRESH}\``);
   assert.deepEqual(
     Object.keys(produced).sort(),
     names.sort(),
@@ -97,6 +97,50 @@ test('the-real-run: each frozen brief carries the issue and the artifacts it inh
   assert.match(implement, /shared\/investigate\.md/);
   assert.match(implement, /shared\/design\.md/, 'the implement brief lost the design — the subagent would start blind');
   assert.match(implement, /feature\/issue-133/, 'the implement brief lost the branch it must commit to');
+});
+
+// ---------------------------------------------------------------------------
+// checkpoint-comment — the durable record, pinned like the briefs are.
+//
+// This is the artifact that leaves the machine. Everything else in this run
+// lives under `$HOME`; if the comment is wrong, the run is unrecoverable and
+// nothing else notices.
+// ---------------------------------------------------------------------------
+test('the-real-run: the frozen checkpoint comment carries the run, its board and its approved artifacts', () => {
+  const comment = frozen('checkpoint-comment.md');
+
+  assert.ok(
+    comment.startsWith('<!-- issueflow:run natejswenson/local-fitness#133 -->'),
+    'the marker is how a run is adopted on another machine — it must lead the comment',
+  );
+  assert.match(comment, /\| investigate \| opus \| ✅ approved \|/, 'the board lost its approved stages');
+  assert.match(comment, /\| root \| `feature\/issue-133` \| `main` \|/, 'the lane table lost its branch');
+  // Both approved artifacts, in full — this is what makes the issue the record.
+  assert.match(comment, /<details><summary><b>investigate<\/b>/);
+  assert.match(comment, /<details><summary><b>design<\/b>/);
+  assert.match(comment, /tools\.py:296-304/, 'the investigation body is not actually in the comment');
+  assert.ok(comment.length > 5000, `the comment is ${comment.length} bytes — an empty record would pass every check above`);
+});
+
+test('the-real-run: the checkpoint comment publishes no local path and no wall-clock timing', () => {
+  const comment = frozen('checkpoint-comment.md');
+  // Only the part this module writes. An artifact's own body is reproduced
+  // verbatim on purpose — a subagent that quoted its repo path is quoting
+  // itself, and rewriting a decision record is worse than publishing one.
+  const rendered = comment.split('<details>')[0];
+  assert.ok(rendered.includes('| Lane |'), 'the split found no rendered section to check');
+  // The pull request body leaked `/Users/<someone>/.claude/issueflow/…` for
+  // exactly this reason: this text is posted to a public issue.
+  for (const line of rendered.split('\n')) {
+    assert.doesNotMatch(line, /\/(Users|home)\/[a-z]/i, `the comment publishes a local path: ${line.slice(0, 120)}`);
+  }
+  // The Took column must be frozen empty: a duration here would pin the speed
+  // of whichever machine last ran the refresh.
+  const board = comment.split('\n').filter((l) => /^\| (investigate|design|root\/)/.test(l));
+  assert.ok(board.length >= 4, `the frozen board has ${board.length} rows — a board over nothing proves nothing`);
+  for (const row of board) {
+    assert.match(row, /\| — \|$|\| — \|\s*$/, `a wall-clock duration was frozen into the golden: ${row}`);
+  }
 });
 
 // ---------------------------------------------------------------------------

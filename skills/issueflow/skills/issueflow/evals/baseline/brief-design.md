@@ -114,7 +114,8 @@ Do not write the implementation. A design doc containing the finished diff is a 
 
 | Field | Value |
 |---|---|
-| repo | <REPO> |
+| work in | <REPO> |
+| repository | <REPO> |
 | branch | (no branch yet — this stage does not commit) |
 | base branch | main |
 | work item | the whole issue |
