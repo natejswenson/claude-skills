@@ -238,7 +238,7 @@ test('slugify never yields an empty branch segment', () => {
 
 test('detail counts characters, not soft-wrapped lines', () => {
   // Both bodies are ONE physical line. Scoring on newlines would rank them
-  // identically, which is how dinnerdeck#7 read as three lines and 461 chars.
+  // identically, which is how a real 461-character issue read as three lines.
   const short = { body: 'fix it' };
   const long = { body: 'word '.repeat(400) };
   assert.equal(long.body.trim().split('\n').length, 1, 'the fixture must be one physical line');

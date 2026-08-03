@@ -2,10 +2,10 @@
  * The pick-table, and the detail signal behind its last column.
  *
  * The column deliberately does NOT estimate size. Nothing readable from issue
- * prose knows how much work an issue is: dinnerdeck#4 is "port the admin CMS to
- * the Workers stack" in five lines, and any text heuristic calls that small.
- * A column that says `S` there is not a weak signal, it is a wrong answer
- * wearing a confident label.
+ * prose knows how much work an issue is — an issue that says "port the admin CMS
+ * to the new stack" in five lines is weeks of work, and every text heuristic
+ * calls it small. A column that says `S` there is not a weak signal, it is a
+ * wrong answer wearing a confident label.
  *
  * What the text CAN answer is how much of the work the issue actually
  * specifies. That is worth a column on its own terms — a thin issue under a
@@ -27,9 +27,9 @@ const count = (text, re) => (text.match(re) ?? []).length;
 /**
  * How much of the work this issue actually specifies.
  *
- * Character count, not line count: issue prose is soft-wrapped, so
- * dinnerdeck#7 is three "lines" and 461 characters. Counting newlines reads
- * every wrapped paragraph as a one-liner.
+ * Character count, not line count: issue prose is soft-wrapped, so a real issue
+ * this was developed against is three "lines" and 461 characters. Counting
+ * newlines reads every wrapped paragraph as a one-liner.
  */
 export function detailOf(issue) {
   const body = issue.body ?? '';
