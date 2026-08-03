@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { extractContract } from './lib/contract.mjs';
 import { traceFile, counts, literalMatcher } from './lib/trace.mjs';
 import { runProbes, resolveFindings } from './lib/probes.mjs';
-import { buildProbeReport, renderReport, table } from './lib/report.mjs';
+import { buildProbeReport, coverageOf, renderReport, table } from './lib/report.mjs';
 import { generateCase } from './lib/cases.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -220,10 +220,13 @@ async function cmdReport(args) {
   writeJson(join(out, 'probe.json'), buildProbeReport({ contract, trace, probed, skill, judgment: judged }));
   writeFileSync(join(out, 'report.md'), renderReport({ contract, trace, probed, skill, judgment: judged }));
 
+  // Same arithmetic as report.md, from the same place: a terminal summary that
+  // disagrees with the artifact it just wrote is the bug this shares a fix with.
+  const cov = coverageOf({ probed, judgment: judged });
   console.log(
     table(
       ['Skill', 'Clauses', 'Examined', 'Machine findings', 'Judgment findings', 'Coverage gap'],
-      [[skill, contract.clauses.length, probed.examined.length, probed.findings.length, judged.length, probed.unexamined.length]],
+      [[skill, contract.clauses.length, cov.examined, probed.findings.length, judged.length, cov.gap]],
     ),
   );
   console.log('');
