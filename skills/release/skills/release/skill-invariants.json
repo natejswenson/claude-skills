@@ -103,7 +103,7 @@
         "evals/baseline/status-eval.json"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The real `release-status` outputs the golden renders from, plus the assertion that they still span the three shapes the grouper and the state machine behave differently on: many commits across 3+ types, exactly one, and exactly zero. Without this, a refresh that collapsed every fixture to 'no commits' would leave the byte-comparison above passing over nothing — the fixture set would still exist and would still check anything."
+      "rationale": "The real `release-status` outputs the golden renders from, plus the assertion that they still span the three shapes the grouper behaves differently on: many commits across 3+ types, exactly one, and exactly zero. (Not the state machine too, despite what this rationale used to claim — all three fixtures are `state: \"clean\"`, and no test here asserts any `state` value; shipflow's own `tests/release.test.mjs` is what pins the state machine, including the `devAhead` / `dev-ahead-of-main` shapes from issue #173.) Without this, a refresh that collapsed every fixture to 'no commits' would leave the byte-comparison above passing over nothing — the fixture set would still exist and would still check anything."
     },
     {
       "id": "clean-component-is-refused",
