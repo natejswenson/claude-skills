@@ -41,6 +41,21 @@
   Two brochures must never carry the same scene. If your instinct is a generic
   box-and-arrow, go back and find the mechanism.
 
+  ── THE PROOF FIGURE ─────────────────────────────────────────────────────────
+  The third fact is the one slot no script can fill, so it is the one that goes
+  stale. COUNT IT FROM THE ARTIFACT — the manifests, the test run, the tags —
+  never quote it from a README, a design doc or a CHANGELOG note. Those record
+  what was true when they were written.
+
+  This has already gone wrong once: a devlog brochure claimed 61 published
+  guides because CLAUDE.md said 61. Counting the site's manifests gave 121. The
+  version, date and install steps on that card were all correct, because they
+  were read from the release; the only wrong number was the one a human typed.
+
+  If you cannot count it today, use a figure you can (tests in the suite, tags
+  cut, files under a path) or drop the third fact. A brochure with two honest
+  facts beats one with three where a reader cannot tell which is stale.
+
   ── EVIDENCE ─────────────────────────────────────────────────────────────────
     python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
   reads the version, tag, publish date, BOTH install steps and the skill's own
