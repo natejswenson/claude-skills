@@ -1,0 +1,105 @@
+{
+  "title": "Shipped",
+  "window": {
+    "since": "2026-07-28T00:00:00Z",
+    "until": "2026-08-04T00:00:00Z"
+  },
+  "headline": "A week spent making the tools prove what they claim, rather than report it.",
+  "standfirst": [
+    "The largest single piece of work was a ground-up rewrite of the r\u00e9sum\u00e9 generator. The most consequential were three separate fixes to tools that had been quietly reporting success they had not earned.",
+    "The through-line was verification. A release tool that could tag the wrong version. A publisher that called a page live before it was reachable. An issue-to-pull-request flow that ran for nearly an hour and never touched the tracker at all. Each was found by running the thing and measuring it, not by reviewing it."
+  ],
+  "sections": [
+    {
+      "title": "Shipped",
+      "items": [
+        {
+          "title": "The r\u00e9sum\u00e9 generator was rebuilt around one structure and swappable themes",
+          "text": "Seven fixed templates were replaced by a single semantic document styled by an interchangeable theme. Adding a new look used to mean extending a hardcoded set of preset knobs; it is now a stylesheet. This is a breaking change and the old template names are gone.",
+          "receipts": [
+            "release:natejswenson/claude-skills@resume-v2.0.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"14\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"16\" y=\"20\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"22\" y=\"26\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"28\" y=\"32\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"34\" y=\"38\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"40\" y=\"44\" width=\"42\" height=\"54\" stroke-width=\"1\"/><rect x=\"46\" y=\"50\" width=\"42\" height=\"54\" stroke-width=\"2.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"124\">7 fixed</tspan></text><line x1=\"102\" y1=\"62\" x2=\"146\" y2=\"62\" stroke-width=\"2\"/><polyline points=\"137,55 146,62 137,69\" stroke-width=\"2\"/><rect x=\"160\" y=\"14\" width=\"72\" height=\"90\" stroke-width=\"2.5\"/><line x1=\"172\" y1=\"32\" x2=\"208\" y2=\"32\"/><line x1=\"172\" y1=\"46\" x2=\"220\" y2=\"46\"/><line x1=\"172\" y1=\"60\" x2=\"208\" y2=\"60\"/><line x1=\"172\" y1=\"74\" x2=\"220\" y2=\"74\"/><line x1=\"172\" y1=\"88\" x2=\"208\" y2=\"88\"/><line x1=\"232\" y1=\"44\" x2=\"252\" y2=\"44\" stroke-width=\"2\"/><polyline points=\"243,38 252,44 243,50\" stroke-width=\"2\"/><rect x=\"256\" y=\"14\" width=\"54\" height=\"22\" stroke-width=\"1\"/><rect x=\"256\" y=\"44\" width=\"54\" height=\"22\" stroke-width=\"2.5\"/><rect x=\"256\" y=\"74\" width=\"54\" height=\"22\" stroke-width=\"1\" stroke-dasharray=\"4 3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"160\" y=\"124\">1 structure \u00b7 themes</tspan></text></svg>"
+        },
+        {
+          "title": "Installed tooling can now be reconciled against what is actually published",
+          "text": "A new tool compares what is installed on the machine against what the catalogue offers, installs what is missing, and refuses to call anything live until the restart that makes it so. Before it, a released version and an installed version could differ silently for days.",
+          "receipts": [
+            "release:natejswenson/claude-skills@pluginsync-v0.1.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"14\">INSTALLED</tspan></text><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"252\" y=\"14\">PUBLISHED</tspan></text><line x1=\"10\" y1=\"22\" x2=\"130\" y2=\"22\" stroke-width=\"1\"/><line x1=\"190\" y1=\"22\" x2=\"310\" y2=\"22\" stroke-width=\"1\"/><line x1=\"10\" y1=\"42\" x2=\"106\" y2=\"42\" stroke-width=\"2.5\"/><line x1=\"214\" y1=\"42\" x2=\"310\" y2=\"42\" stroke-width=\"2.5\"/><line x1=\"146\" y1=\"38\" x2=\"174\" y2=\"38\"/><line x1=\"146\" y1=\"46\" x2=\"174\" y2=\"46\"/><line x1=\"10\" y1=\"64\" x2=\"64\" y2=\"64\" stroke-width=\"2.5\"/><line x1=\"206\" y1=\"64\" x2=\"310\" y2=\"64\" stroke-width=\"2.5\"/><line x1=\"176\" y1=\"64\" x2=\"144\" y2=\"64\" stroke-width=\"2\"/><polyline points=\"153,58 144,64 153,70\" stroke-width=\"2\"/><line x1=\"10\" y1=\"86\" x2=\"82\" y2=\"86\" stroke-width=\"2.5\"/><line x1=\"210\" y1=\"86\" x2=\"310\" y2=\"86\" stroke-width=\"2.5\"/><line x1=\"176\" y1=\"86\" x2=\"144\" y2=\"86\" stroke-width=\"2\"/><polyline points=\"153,80 144,86 153,92\" stroke-width=\"2\"/><line x1=\"10\" y1=\"108\" x2=\"100\" y2=\"108\" stroke-width=\"2.5\"/><line x1=\"214\" y1=\"108\" x2=\"310\" y2=\"108\" stroke-width=\"2.5\"/><line x1=\"146\" y1=\"108\" x2=\"174\" y2=\"108\" stroke-dasharray=\"4 4\"/><circle cx=\"160\" cy=\"97\" r=\"5\"/></svg>"
+        },
+        {
+          "title": "City demographic reports reached their first solid release",
+          "text": "Public census data for any American city, answered conversationally and rendered as a report. The underlying data source returns confident-looking wrong answers for small places, so the work was mostly in detecting that and refusing to publish it.",
+          "receipts": [
+            "release:natejswenson/claude-skills@city-report-v0.4.0",
+            "session:6e973fac-f93d-417a-b9d7-a80b688ebfcd"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"14\" width=\"88\" height=\"44\" stroke-width=\"2.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"22\" y=\"42\">200 OK</tspan></text><line x1=\"54\" y1=\"58\" x2=\"54\" y2=\"96\" stroke-width=\"2\"/><polyline points=\"47,87 54,96 61,87\" stroke-width=\"2\"/><line x1=\"98\" y1=\"36\" x2=\"150\" y2=\"36\" stroke-width=\"2\"/><polyline points=\"141,29 150,36 141,43\" stroke-width=\"2\"/><rect x=\"156\" y=\"14\" width=\"154\" height=\"82\" stroke-width=\"1\" stroke-dasharray=\"5 4\"/><line x1=\"170\" y1=\"28\" x2=\"296\" y2=\"28\" stroke-width=\"1\" stroke-dasharray=\"3 5\"/><line x1=\"170\" y1=\"42\" x2=\"296\" y2=\"42\" stroke-width=\"1\" stroke-dasharray=\"3 5\"/><line x1=\"170\" y1=\"56\" x2=\"296\" y2=\"56\" stroke-width=\"1\" stroke-dasharray=\"3 5\"/><line x1=\"170\" y1=\"70\" x2=\"296\" y2=\"70\" stroke-width=\"1\" stroke-dasharray=\"3 5\"/><line x1=\"170\" y1=\"84\" x2=\"296\" y2=\"84\" stroke-width=\"1\" stroke-dasharray=\"3 5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"206\" y=\"112\">0 rows</tspan></text><line x1=\"10\" y1=\"104\" x2=\"120\" y2=\"104\" stroke-width=\"3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"124\">refused</tspan></text></svg>"
+        }
+      ]
+    },
+    {
+      "title": "Made safer",
+      "items": [
+        {
+          "title": "The release tool could tag the wrong version and call it a success",
+          "text": "When a component had an untagged version waiting to promote and a newer one still in progress, the tool collapsed both facts into one state and released the older of the two \u2014 reporting success either way. It now refuses the ambiguous case instead of guessing.",
+          "receipts": [
+            "release:natejswenson/claude-skills@shipflow-v0.6.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><line x1=\"40\" y1=\"18\" x2=\"40\" y2=\"112\" stroke-width=\"2\"/><line x1=\"24\" y1=\"40\" x2=\"56\" y2=\"40\" stroke-width=\"2.5\"/><line x1=\"24\" y1=\"88\" x2=\"56\" y2=\"88\" stroke-width=\"2.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"66\" y=\"36\">dev</tspan></text><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"66\" y=\"84\">main</tspan></text><line x1=\"108\" y1=\"40\" x2=\"176\" y2=\"40\" stroke-dasharray=\"4 4\"/><line x1=\"108\" y1=\"88\" x2=\"176\" y2=\"88\" stroke-width=\"2\"/><polyline points=\"167,82 176,88 167,94\" stroke-width=\"2\"/><rect x=\"182\" y=\"70\" width=\"72\" height=\"36\" stroke-width=\"2.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"192\" y=\"92\">older</tspan></text><line x1=\"272\" y1=\"16\" x2=\"272\" y2=\"118\" stroke-width=\"3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"196\" y=\"124\">refused now</tspan></text><line x1=\"182\" y1=\"60\" x2=\"254\" y2=\"60\" stroke-width=\"1\" stroke-dasharray=\"4 3\"/></svg>"
+        },
+        {
+          "title": "Publishing reported success on a page nobody could open",
+          "text": "Content, images and index all landed correctly, every step returned clean, and the page was unreachable for an hour because the site's own registry had never been told the project existed. Publishing and being reachable are now checked as two different things.",
+          "receipts": [
+            "release:natejswenson/claude-skills@devlog-v0.13.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"30\" width=\"34\" height=\"30\" stroke-width=\"2\"/><polyline points=\"18,45 24,51 36,38\" stroke-width=\"2\"/><rect x=\"56\" y=\"30\" width=\"34\" height=\"30\" stroke-width=\"2\"/><polyline points=\"64,45 70,51 82,38\" stroke-width=\"2\"/><rect x=\"102\" y=\"30\" width=\"34\" height=\"30\" stroke-width=\"2\"/><polyline points=\"110,45 116,51 128,38\" stroke-width=\"2\"/><rect x=\"148\" y=\"30\" width=\"34\" height=\"30\" stroke-width=\"2\"/><polyline points=\"156,45 162,51 174,38\" stroke-width=\"2\"/><line x1=\"44\" y1=\"45\" x2=\"56\" y2=\"45\"/><line x1=\"90\" y1=\"45\" x2=\"102\" y2=\"45\"/><line x1=\"136\" y1=\"45\" x2=\"148\" y2=\"45\"/><line x1=\"194\" y1=\"45\" x2=\"212\" y2=\"45\" stroke-dasharray=\"3 4\"/><rect x=\"216\" y=\"24\" width=\"94\" height=\"42\" stroke-width=\"1\" stroke-dasharray=\"5 4\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"228\" y=\"50\">no route</tspan></text><line x1=\"10\" y1=\"80\" x2=\"310\" y2=\"80\" stroke-width=\"1\"/><line x1=\"216\" y1=\"90\" x2=\"310\" y2=\"90\" stroke-width=\"3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"108\">pushed \u2260 reachable</tspan></text></svg>"
+        },
+        {
+          "title": "An automated workflow ran for an hour without touching the tracker",
+          "text": "Measured end to end against a real piece of work: fifty-seven minutes, of which half was review time, and not one result was ever written back to where the team would see it. Every stage now checkpoints its output as it completes, and independent stages run at the same time.",
+          "receipts": [
+            "release:natejswenson/claude-skills@issueflow-v0.2.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"20\" width=\"44\" height=\"28\" stroke-width=\"2\"/><rect x=\"64\" y=\"20\" width=\"44\" height=\"28\" stroke-width=\"2\"/><rect x=\"118\" y=\"20\" width=\"44\" height=\"28\" stroke-width=\"2\"/><rect x=\"172\" y=\"20\" width=\"44\" height=\"28\" stroke-width=\"2\"/><line x1=\"54\" y1=\"34\" x2=\"64\" y2=\"34\" stroke-width=\"2\"/><line x1=\"108\" y1=\"34\" x2=\"118\" y2=\"34\" stroke-width=\"2\"/><line x1=\"162\" y1=\"34\" x2=\"172\" y2=\"34\" stroke-width=\"2\"/><line x1=\"10\" y1=\"62\" x2=\"226\" y2=\"62\" stroke-width=\"1\"/><line x1=\"10\" y1=\"58\" x2=\"10\" y2=\"66\"/><line x1=\"64\" y1=\"58\" x2=\"64\" y2=\"66\"/><line x1=\"118\" y1=\"58\" x2=\"118\" y2=\"66\"/><line x1=\"172\" y1=\"58\" x2=\"172\" y2=\"66\"/><line x1=\"226\" y1=\"58\" x2=\"226\" y2=\"66\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"84\">57m</tspan></text><line x1=\"32\" y1=\"70\" x2=\"32\" y2=\"98\" stroke-width=\"2\"/><polyline points=\"26,89 32,98 38,89\" stroke-width=\"2\"/><line x1=\"86\" y1=\"70\" x2=\"86\" y2=\"98\" stroke-width=\"2\"/><polyline points=\"80,89 86,98 92,89\" stroke-width=\"2\"/><line x1=\"140\" y1=\"70\" x2=\"140\" y2=\"98\" stroke-width=\"2\"/><polyline points=\"134,89 140,98 146,89\" stroke-width=\"2\"/><line x1=\"194\" y1=\"70\" x2=\"194\" y2=\"98\" stroke-width=\"2\"/><polyline points=\"188,89 194,98 200,89\" stroke-width=\"2\"/><rect x=\"10\" y=\"100\" width=\"300\" height=\"24\" stroke-width=\"2.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"238\" y=\"116\">tracker</tspan></text></svg>"
+        }
+      ]
+    },
+    {
+      "title": "Groundwork",
+      "items": [
+        {
+          "title": "The visual brand became one source instead of eight copies",
+          "text": "Fifteen releases in seven days consolidating colours, type and layout into a single definition that every product now generates from rather than copies. The same values previously existed as eight hand-ported duplicates under five different names for one shade of orange.",
+          "receipts": [
+            "release:natejswenson/claude-skills@press-v0.9.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"12\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"40\" y=\"12\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"10\" y=\"40\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"40\" y=\"40\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"10\" y=\"68\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"40\" y=\"68\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"10\" y=\"96\" width=\"24\" height=\"18\" stroke-width=\"1\"/><rect x=\"40\" y=\"96\" width=\"24\" height=\"18\" stroke-width=\"1\"/><line x1=\"34\" y1=\"21\" x2=\"118\" y2=\"65\"/><line x1=\"64\" y1=\"21\" x2=\"118\" y2=\"65\"/><line x1=\"34\" y1=\"49\" x2=\"118\" y2=\"65\"/><line x1=\"64\" y1=\"49\" x2=\"118\" y2=\"65\"/><line x1=\"34\" y1=\"77\" x2=\"118\" y2=\"65\"/><line x1=\"64\" y1=\"77\" x2=\"118\" y2=\"65\"/><line x1=\"34\" y1=\"105\" x2=\"118\" y2=\"65\"/><line x1=\"64\" y1=\"105\" x2=\"118\" y2=\"65\"/><rect x=\"122\" y=\"44\" width=\"62\" height=\"42\" stroke-width=\"3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"132\" y=\"70\">tokens</tspan></text><line x1=\"184\" y1=\"65\" x2=\"228\" y2=\"28\" stroke-width=\"2\"/><line x1=\"184\" y1=\"65\" x2=\"228\" y2=\"64\" stroke-width=\"2\"/><line x1=\"184\" y1=\"65\" x2=\"228\" y2=\"100\" stroke-width=\"2\"/><rect x=\"232\" y=\"18\" width=\"78\" height=\"22\" stroke-width=\"2\"/><rect x=\"232\" y=\"54\" width=\"78\" height=\"22\" stroke-width=\"2\"/><rect x=\"232\" y=\"90\" width=\"78\" height=\"22\" stroke-width=\"2\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"124\">8 copies \u2192 1 source</tspan></text></svg>"
+        },
+        {
+          "title": "Every tool now ships a test set pinned to a run that really happened",
+          "text": "Rather than hand-written fixtures, each tool's tests are frozen against real past output and re-run on every change. Two of the fixes above were found this way \u2014 by replaying a recorded run and measuring it, which is not something a code review can do.",
+          "receipts": [
+            "session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b",
+            "release:natejswenson/claude-skills@eval-v0.3.0"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><rect x=\"10\" y=\"22\" width=\"130\" height=\"34\" stroke-width=\"2\"/><line x1=\"20\" y1=\"28\" x2=\"20\" y2=\"50\"/><line x1=\"32\" y1=\"28\" x2=\"32\" y2=\"50\"/><line x1=\"44\" y1=\"28\" x2=\"44\" y2=\"50\"/><line x1=\"56\" y1=\"28\" x2=\"56\" y2=\"50\"/><line x1=\"68\" y1=\"28\" x2=\"68\" y2=\"50\"/><line x1=\"80\" y1=\"28\" x2=\"80\" y2=\"50\"/><line x1=\"92\" y1=\"28\" x2=\"92\" y2=\"50\"/><line x1=\"104\" y1=\"28\" x2=\"104\" y2=\"50\"/><line x1=\"116\" y1=\"28\" x2=\"116\" y2=\"50\"/><line x1=\"128\" y1=\"28\" x2=\"128\" y2=\"50\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"72\">recorded run</tspan></text><line x1=\"146\" y1=\"39\" x2=\"146\" y2=\"17\" stroke-width=\"2\"/><line x1=\"140\" y1=\"17\" x2=\"152\" y2=\"17\" stroke-width=\"2\"/><rect x=\"180\" y=\"22\" width=\"130\" height=\"34\" stroke-width=\"2\" stroke-dasharray=\"5 4\"/><line x1=\"190\" y1=\"28\" x2=\"190\" y2=\"50\"/><line x1=\"202\" y1=\"28\" x2=\"202\" y2=\"50\"/><line x1=\"214\" y1=\"28\" x2=\"214\" y2=\"50\"/><line x1=\"226\" y1=\"28\" x2=\"226\" y2=\"50\"/><line x1=\"238\" y1=\"28\" x2=\"238\" y2=\"50\"/><line x1=\"250\" y1=\"28\" x2=\"250\" y2=\"50\"/><line x1=\"262\" y1=\"28\" x2=\"262\" y2=\"50\"/><line x1=\"274\" y1=\"28\" x2=\"274\" y2=\"50\"/><line x1=\"286\" y1=\"28\" x2=\"286\" y2=\"50\"/><line x1=\"298\" y1=\"28\" x2=\"298\" y2=\"50\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"180\" y=\"72\">re-run</tspan></text><line x1=\"10\" y1=\"92\" x2=\"310\" y2=\"92\" stroke-width=\"1\"/><line x1=\"146\" y1=\"104\" x2=\"174\" y2=\"104\" stroke-width=\"3\"/><line x1=\"146\" y1=\"114\" x2=\"174\" y2=\"114\" stroke-width=\"3\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"118\">byte for byte</tspan></text></svg>"
+        },
+        {
+          "title": "The fitness and spending products kept shipping alongside the tooling",
+          "text": "Both advanced several versions over the same week \u2014 coaching accuracy and interface work on one, historical data backfill on the other. Neither is tooling; both are the reason the tooling has to be reliable.",
+          "receipts": [
+            "release:natejswenson/local-fitness@v0.49.0",
+            "release:natejswenson/local-budget@v0.3.0",
+            "session:a6707485-13a3-42b7-9e95-9a82b7278d90"
+          ],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" font-family=\"ui-monospace, monospace\"><line x1=\"10\" y1=\"46\" x2=\"310\" y2=\"46\" stroke-width=\"2\"/><line x1=\"10\" y1=\"96\" x2=\"310\" y2=\"96\" stroke-width=\"2\"/><line x1=\"40\" y1=\"38\" x2=\"40\" y2=\"46\" stroke-width=\"2.5\"/><circle cx=\"40\" cy=\"34\" r=\"3.5\"/><line x1=\"106\" y1=\"34\" x2=\"106\" y2=\"46\" stroke-width=\"2.5\"/><circle cx=\"106\" cy=\"30\" r=\"3.5\"/><line x1=\"172\" y1=\"30\" x2=\"172\" y2=\"46\" stroke-width=\"2.5\"/><circle cx=\"172\" cy=\"26\" r=\"3.5\"/><line x1=\"238\" y1=\"26\" x2=\"238\" y2=\"46\" stroke-width=\"2.5\"/><circle cx=\"238\" cy=\"22\" r=\"3.5\"/><line x1=\"56\" y1=\"88\" x2=\"56\" y2=\"96\" stroke-width=\"2.5\"/><circle cx=\"56\" cy=\"84\" r=\"3.5\"/><line x1=\"144\" y1=\"83\" x2=\"144\" y2=\"96\" stroke-width=\"2.5\"/><circle cx=\"144\" cy=\"79\" r=\"3.5\"/><line x1=\"232\" y1=\"78\" x2=\"232\" y2=\"96\" stroke-width=\"2.5\"/><circle cx=\"232\" cy=\"74\" r=\"3.5\"/><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"24\">fitness</tspan></text><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"10\" y=\"74\">spending</tspan></text><text fill=\"currentColor\" stroke=\"none\" font-size=\"9\" letter-spacing=\"0.06em\"><tspan x=\"248\" y=\"120\">one week</tspan></text><line x1=\"10\" y1=\"110\" x2=\"238\" y2=\"110\" stroke-dasharray=\"4 4\"/></svg>"
+        }
+      ]
+    }
+  ]
+}

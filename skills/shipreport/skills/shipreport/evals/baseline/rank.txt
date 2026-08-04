@@ -1,0 +1,27 @@
+| #  | Kind    | Item                 | Score | Signals                                   | Receipt                                                 |
+|----|---------|----------------------|-------|-------------------------------------------|---------------------------------------------------------|
+| 1  | release | resume v2.0.0        | 80    | release+50 major+20 corroborated+10       | release:natejswenson/claude-skills@resume-v2.0.0        |
+| 2  | release | devlog v0.13.0       | 76    | release+50 minor+10 x4+6 corroborated+10  | release:natejswenson/claude-skills@devlog-v0.13.0       |
+| 3  | release | press v0.9.0         | 76    | release+50 minor+10 x15+6 corroborated+10 | release:natejswenson/claude-skills@press-v0.9.0         |
+| 4  | release | v0.49.0              | 76    | release+50 minor+10 x4+6 corroborated+10  | release:natejswenson/local-fitness@v0.49.0              |
+| 5  | release | shipflow v0.6.0      | 76    | release+50 minor+10 x6+6 corroborated+10  | release:natejswenson/claude-skills@shipflow-v0.6.0      |
+| 6  | release | city-report v0.4.0   | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@city-report-v0.4.0   |
+| 7  | release | assay v0.1.0         | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@assay-v0.1.0         |
+| 8  | release | smith v0.2.0         | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@smith-v0.2.0         |
+| 9  | release | ghfactory v0.2.0     | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@ghfactory-v0.2.0     |
+| 10 | release | pluginsync v0.1.0    | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@pluginsync-v0.1.0    |
+| 11 | release | eval v0.3.0          | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@eval-v0.3.0          |
+| 12 | release | issueflow v0.2.0     | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@issueflow-v0.2.0     |
+| —  | release | skillfactory v0.4.0  | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@skillfactory-v0.4.0  |
+| —  | release | release v0.2.0       | 70    | release+50 minor+10 corroborated+10       | release:natejswenson/claude-skills@release-v0.2.0       |
+| —  | release | v0.3.0               | 66    | release+50 minor+10 x3+6                  | release:natejswenson/local-budget@v0.3.0                |
+| —  | release | ghostwriter-x v0.2.1 | 62    | release+50 patch+2 corroborated+10        | release:natejswenson/claude-skills@ghostwriter-x-v0.2.1 |
+| —  | release | forge v0.1.2         | 62    | release+50 patch+2 corroborated+10        | release:natejswenson/claude-skills@forge-v0.1.2         |
+
+552 lower-scoring candidate(s) not shown — `--all` prints every one.
+
+| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Others' releases dropped | Floor | Top |
+|-------------------------|------------|----------------|----------------|-------------------|---------------|--------------------------|-------|-----|
+| 2026-07-28 → 2026-08-04 | 569        | 12             | 17             | 34                | 69            | 1                        | 20    | 12  |
+
+not yours, so not counted: Blaizzy/mlx-vlm (1) — your commits and pull requests there are still ranked. `--owner <org>` to claim, `--all-owners` to disable.
