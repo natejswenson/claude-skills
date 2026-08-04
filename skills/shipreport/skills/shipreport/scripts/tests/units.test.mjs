@@ -210,6 +210,18 @@ test('raw identifiers in prose are refused — the audience contract', () => {
   }
 });
 
+test('nested angle brackets cannot hide a raw identifier from the gate', () => {
+  // CodeQL flagged the single-pass strip that used to live here: `<<em>em>`
+  // survives one replace and re-forms a tag, which on the detection side is a
+  // way to smuggle an identifier past the prose check.
+  for (const bad of ['We merged <<em>em>#412<<em>/em> this week.', 'Landed in <<b>b>natejswenson/claude-skills.']) {
+    const d = okDraft();
+    d.sections[0].items[0].text = bad;
+    const r = checkDraft(d, CORPUS);
+    assert.ok(!r.ok, `nested tags hid an identifier: ${bad}`);
+  }
+});
+
 test('a session moment resolves, and a wrong uuid does not', () => {
   assert.ok(resolveReceipt(CORPUS, 'session:abc#u-1'));
   assert.equal(resolveReceipt(CORPUS, 'session:abc#u-nope'), null);

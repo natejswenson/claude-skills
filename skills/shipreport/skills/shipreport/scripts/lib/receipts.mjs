@@ -43,7 +43,21 @@ const claimsOf = (draft) => {
   return out;
 };
 
-const stripTags = (s) => String(s).replace(/<[^>]*>/g, '');
+/**
+ * Strip tags to a fixed point, not in one pass.
+ *
+ * One pass is incomplete: `<<em>em>` loses the inner `<em>` and leaves a fresh
+ * `<em>` behind. Here that is not an injection — `render` escapes everything and
+ * only ever un-escapes a literal `<em>` — but this runs on the *detection* side,
+ * so an incomplete strip is a way to hide a raw identifier from the gate. Each
+ * pass strictly shortens the string, so this terminates.
+ */
+const stripTags = (s) => {
+  let out = String(s);
+  let prev;
+  do { prev = out; out = out.replace(/<[^>]*>/g, ''); } while (out !== prev);
+  return out;
+};
 
 export function checkDraft(draft, corpus) {
   const rows = [];
