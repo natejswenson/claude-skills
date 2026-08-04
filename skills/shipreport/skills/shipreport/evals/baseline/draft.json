@@ -1,0 +1,71 @@
+{
+  "title": "Shipped",
+  "window": { "since": "2026-07-28T00:00:00Z", "until": "2026-08-04T00:00:00Z" },
+  "headline": "A week spent making the tools <em>prove</em> what they claim, rather than report it.",
+  "standfirst": [
+    "The largest single piece of work was a ground-up rewrite of the résumé generator. The most consequential were three separate fixes to tools that had been quietly reporting success they had not earned.",
+    "The through-line was verification. A release tool that could tag the wrong version. A publisher that called a page live before it was reachable. An issue-to-pull-request flow that ran for nearly an hour and never touched the tracker at all. Each was found by running the thing and measuring it, not by reviewing it."
+  ],
+  "sections": [
+    {
+      "title": "Shipped",
+      "items": [
+        {
+          "title": "The résumé generator was rebuilt around one structure and swappable themes",
+          "text": "Seven fixed templates were replaced by a single semantic document styled by an interchangeable theme. Adding a new look used to mean extending a hardcoded set of preset knobs; it is now a stylesheet. This is a breaking change and the old template names are gone.",
+          "receipts": ["release:natejswenson/claude-skills@resume-v2.0.0"]
+        },
+        {
+          "title": "Installed tooling can now be reconciled against what is actually published",
+          "text": "A new tool compares what is installed on the machine against what the catalogue offers, installs what is missing, and refuses to call anything live until the restart that makes it so. Before it, a released version and an installed version could differ silently for days.",
+          "receipts": ["release:natejswenson/claude-skills@pluginsync-v0.1.0"]
+        },
+        {
+          "title": "City demographic reports reached their first solid release",
+          "text": "Public census data for any American city, answered conversationally and rendered as a report. The underlying data source returns confident-looking wrong answers for small places, so the work was mostly in detecting that and refusing to publish it.",
+          "receipts": ["release:natejswenson/claude-skills@city-report-v0.4.0", "session:6e973fac-f93d-417a-b9d7-a80b688ebfcd"]
+        }
+      ]
+    },
+    {
+      "title": "Made safer",
+      "items": [
+        {
+          "title": "The release tool could tag the wrong version and call it a success",
+          "text": "When a component had an untagged version waiting to promote and a newer one still in progress, the tool collapsed both facts into one state and released the older of the two — reporting success either way. It now refuses the ambiguous case instead of guessing.",
+          "receipts": ["release:natejswenson/claude-skills@shipflow-v0.6.0"]
+        },
+        {
+          "title": "Publishing reported success on a page nobody could open",
+          "text": "Content, images and index all landed correctly, every step returned clean, and the page was unreachable for an hour because the site's own registry had never been told the project existed. Publishing and being reachable are now checked as two different things.",
+          "receipts": ["release:natejswenson/claude-skills@devlog-v0.13.0"]
+        },
+        {
+          "title": "An automated workflow ran for an hour without touching the tracker",
+          "text": "Measured end to end against a real piece of work: fifty-seven minutes, of which half was review time, and not one result was ever written back to where the team would see it. Every stage now checkpoints its output as it completes, and independent stages run at the same time.",
+          "receipts": ["release:natejswenson/claude-skills@issueflow-v0.2.0"]
+        }
+      ]
+    },
+    {
+      "title": "Groundwork",
+      "items": [
+        {
+          "title": "The visual brand became one source instead of eight copies",
+          "text": "Fifteen releases in seven days consolidating colours, type and layout into a single definition that every product now generates from rather than copies. The same values previously existed as eight hand-ported duplicates under five different names for one shade of orange.",
+          "receipts": ["release:natejswenson/claude-skills@press-v0.9.0"]
+        },
+        {
+          "title": "Every tool now ships a test set pinned to a run that really happened",
+          "text": "Rather than hand-written fixtures, each tool's tests are frozen against real past output and re-run on every change. Two of the fixes above were found this way — by replaying a recorded run and measuring it, which is not something a code review can do.",
+          "receipts": ["session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b", "release:natejswenson/claude-skills@eval-v0.3.0"]
+        },
+        {
+          "title": "The fitness and spending products kept shipping alongside the tooling",
+          "text": "Both advanced several versions over the same week — coaching accuracy and interface work on one, historical data backfill on the other. Neither is tooling; both are the reason the tooling has to be reliable.",
+          "receipts": ["release:natejswenson/local-fitness@v0.49.0", "release:natejswenson/local-budget@v0.3.0", "session:a6707485-13a3-42b7-9e95-9a82b7278d90"]
+        }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,10 @@
     {
       "name": "issueflow",
       "source": "./skills/issueflow"
+    },
+    {
+      "name": "shipreport",
+      "source": "./skills/shipreport"
     }
   ]
 }

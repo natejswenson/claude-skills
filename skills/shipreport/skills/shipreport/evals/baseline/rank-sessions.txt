@@ -1,0 +1,23 @@
+| # | Kind    | Item                                                 | Score | Signals                                                    | Receipt                                      |
+|---|---------|------------------------------------------------------|-------|------------------------------------------------------------|----------------------------------------------|
+| — | session | local-fitness-improvement-pass                       | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:834376d6-13cd-4460-8bd5-91210eaf9945 |
+| — | session | Improve local fitness with UX, accuracy, persona, an | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:fcc5321b-d8dd-4444-83be-03b24409e544 |
+| — | session | city-report-data-usa                                 | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:6e973fac-f93d-417a-b9d7-a80b688ebfcd |
+| — | session | baseline-eval-sets-skills                            | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b |
+| — | session | Prepare release and add city-report skill            | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:d7202468-7986-4235-8427-3df2e1451efb |
+| — | session | resume-agent-ui-cleanup                              | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:a8b3d235-e36f-402a-9656-286204332e95 |
+| — | session | report-card-rubric-split                             | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:21bfb35c-7b6c-448e-b56f-098ae1d5f08e |
+| — | session | backfill-amazon-connector-history                    | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:a6707485-13a3-42b7-9e95-9a82b7278d90 |
+| — | session | Create 280 character version with image              | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:ee1a074e-be3c-40c2-b02f-f8550026e40c |
+| — | session | Create lesson entries with quality assessment        | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:59991318-8bce-4489-9ad0-df91fa4c8cf5 |
+| — | session | Create skill evaluation generation tool with dogfood | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:570d8c44-b17a-484f-bdc6-b2c1cf85d92f |
+| — | session | ns-refresh-marketplace                               | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:4c2593d2-ebe4-4367-9c03-826566cf19a4 |
+| — | session | Base directory for this skill: ~/localrepo/claude-sk | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:941a4c10-1d23-4802-81d4-1104d44a78af |
+| — | session | Update devlog with new Claude skills                 | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:281813c9-c3db-429a-b795-f2c340b42e91 |
+| — | session | Fix the package lock                                 | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:22116012-c358-412f-aa6d-e5c518ecc41b |
+
+555 lower-scoring candidate(s) not shown — `--all` prints every one.
+
+| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Floor | Top |
+|-------------------------|------------|----------------|----------------|-------------------|---------------|-------|-----|
+| 2026-07-28 → 2026-08-04 | 570        | 12             | 18             | 34                | 69            | 20    | 12  |

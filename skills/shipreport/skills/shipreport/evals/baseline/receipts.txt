@@ -1,0 +1,19 @@
+| Claim                                          | Receipt                                               | Resolved |
+|------------------------------------------------|-------------------------------------------------------|----------|
+| The résumé generator was rebuilt around one st | release:natejswenson/claude-skills@resume-v2.0.0      | yes      |
+| Installed tooling can now be reconciled agains | release:natejswenson/claude-skills@pluginsync-v0.1.0  | yes      |
+| City demographic reports reached their first s | release:natejswenson/claude-skills@city-report-v0.4.0 | yes      |
+| City demographic reports reached their first s | session:6e973fac-f93d-417a-b9d7-a80b688ebfcd          | yes      |
+| The release tool could tag the wrong version a | release:natejswenson/claude-skills@shipflow-v0.6.0    | yes      |
+| Publishing reported success on a page nobody c | release:natejswenson/claude-skills@devlog-v0.13.0     | yes      |
+| An automated workflow ran for an hour without  | release:natejswenson/claude-skills@issueflow-v0.2.0   | yes      |
+| The visual brand became one source instead of  | release:natejswenson/claude-skills@press-v0.9.0       | yes      |
+| Every tool now ships a test set pinned to a ru | session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b          | yes      |
+| Every tool now ships a test set pinned to a ru | release:natejswenson/claude-skills@eval-v0.3.0        | yes      |
+| The fitness and spending products kept shippin | release:natejswenson/local-fitness@v0.49.0            | yes      |
+| The fitness and spending products kept shippin | release:natejswenson/local-budget@v0.3.0              | yes      |
+| The fitness and spending products kept shippin | session:a6707485-13a3-42b7-9e95-9a82b7278d90          | yes      |
+
+| Claims | Receipts | Unresolved | Verdict                   |
+|--------|----------|------------|---------------------------|
+| 9      | 13       | 0          | every claim has a receipt |
