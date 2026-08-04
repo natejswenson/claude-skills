@@ -1,0 +1,101 @@
+{
+  "scanned": 50,
+  "taken": [
+    {
+      "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "threadId": "thr-677b9018d3",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-80adbc8db2",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/press@0.6.1"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-9d344bc4d0",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/press@0.6.0"
+    },
+    {
+      "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "threadId": "thr-3b002806e0",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #3: Real Results. Real People. RocketReach."
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-2dcd0dd6d1",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.13.0"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-86be8278b9",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.12.0"
+    },
+    {
+      "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "threadId": "thr-9fba2ce8bc",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #2: Stop Chasing, Start Connecting"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-451b37d0fa",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.11.2"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-2f849a008c",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.2"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-11697368dc",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.11.1"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-b4b54f4021",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.1"
+    },
+    {
+      "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "threadId": "thr-4bf9fd6084",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.0"
+    }
+  ],
+  "spared": [],
+  "overlaps": [],
+  "queries": [
+    {
+      "ruleId": "support-npmjs-com",
+      "query": "from:support@npmjs.com category:promotions OR category:updates in:inbox"
+    },
+    {
+      "ruleId": "success-e-rocketreach-co",
+      "query": "from:success@e.rocketreach.co category:promotions OR category:updates in:inbox"
+    }
+  ]
+}

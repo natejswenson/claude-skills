@@ -1,0 +1,39 @@
+| Rule id                         | Sender                          | In sample | Bulk | Example subject                                |
+|---------------------------------|---------------------------------|-----------|------|------------------------------------------------|
+| support-npmjs-com               | support@npmjs.com               | 9         | 9    | Successfully published @natjswenson/press@0.6… |
+| success-e-rocketreach-co        | success@e.rocketreach.co        | 3         | 3    | Success Tips #4: Save Time & Boost Outreach w… |
+| sender-3ee497-message-fedex-com | sender-3ee497@message.fedex.com | 2         | 2    | FedEx Values Your Feedback                     |
+| authorservices-packtpub-com     | authorservices@packtpub.com     | 1         | 1    | Published Report Email                         |
+| marketing-e-rocketreach-co      | marketing@e.rocketreach.co      | 1         | 1    | ATTN Nate: Extra 30% OFF already reduced pric… |
+| noreply-github-com              | noreply@github.com              | 1         | 1    | [GitHub] A fine-grained personal access token… |
+| noreply-glassdoor-com           | noreply@glassdoor.com           | 1         | 1    | Glassdoor is now part of Indeed                |
+| notifications-typefully-com     | notifications@typefully.com     | 1         | 1    | New API key created for your account           |
+| sender-819c52-typefully-com     | sender-819c52@typefully.com     | 1         | 1    | Welcome to your new social media workspace     |
+| sender-c21113-onlinejmc-com     | sender-c21113@onlinejmc.com     | 1         | 1    | New Bus Rider Registration                     |
+| support-api-bible               | support@api.bible               | 1         | 1    | Upgrade to Pro - more Bibles, insights, and f… |
+| workspace-noreply-google-com    | workspace-noreply@google.com    | 1         | 1    | You now have promotional access to AI features |
+
+| Withheld sender                            | In sample | Why not proposed                                                         |
+|--------------------------------------------|-----------|--------------------------------------------------------------------------|
+| careers@recruiting.uhg.com                 | 5         | sender looks financial, medical, educational, governmental or recruiting |
+| person6@example.invalid                    | 3         | no bulk-mail marker — may be a person, not a sender                      |
+| sender-d32881@mail.fidelity.com            | 3         | sender looks financial, medical, educational, governmental or recruiting |
+| alerts@notify.wellsfargo.com               | 2         | sender looks financial, medical, educational, governmental or recruiting |
+| person4@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| person9@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| mychartmessage@sanfordhealth.org           | 1         | sender looks financial, medical, educational, governmental or recruiting |
+| no-reply@mail.goodreads.com                | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| noreply@tractive.com                       | 1         | cluster contains a login code, receipt or verification you cannot lose   |
+| person1@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person2@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person3@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person5@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person7@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person8@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| sender-3832e9@shareholderdocs.fidelity.com | 1         | sender looks financial, medical, educational, governmental or recruiting |
+
+| Sampled | Proposed | Withheld |
+|---------|----------|----------|
+| 50      | 12       | 16       |
+
+nothing has been trashed — these are candidates. Accept the ones you want with `rules --add`.

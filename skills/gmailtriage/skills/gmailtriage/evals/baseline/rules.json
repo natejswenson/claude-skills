@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "support-npmjs-com",
+      "action": "trash",
+      "match": {
+        "from": "support@npmjs.com",
+        "hasUnsubscribe": true
+      },
+      "note": "bulk mail from support@npmjs.com — 9 in the sample, e.g. \"Successfully published @natjswenson/press@0.6.1\""
+    },
+    {
+      "id": "success-e-rocketreach-co",
+      "action": "trash",
+      "match": {
+        "from": "success@e.rocketreach.co",
+        "hasUnsubscribe": true
+      },
+      "note": "bulk mail from success@e.rocketreach.co — 3 in the sample, e.g. \"Success Tips #4: Save Time & Boost Outreach with RocketReach\""
+    }
+  ]
+}
