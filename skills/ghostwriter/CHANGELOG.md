@@ -4,6 +4,47 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-08-04
+
+### Added
+
+- **`brochure` card type — a one-page product brochure for a shipped release of
+  one of your own skills.** Not a launch announcement (`date`) and not an
+  explainer (`brief`): the product page. A nameplate carrying the skill's name,
+  the shipped version and the date it shipped; the headline; what the skill
+  **refuses** to do, quoted from its own one rule rather than paraphrased into
+  something softer; exactly three capabilities; and the install line as the
+  largest saveable element on the card.
+
+- **`scripts/release_facts.py` — the evidence the brochure is allowed to claim.**
+  A brochure is marketing, which is why it needs a *harder* evidence rule than an
+  ordinary card, not a softer one. The version, tag, publish date, install
+  command and one rule are read off the released artifact, so a card cannot
+  advertise a version nobody can install. It refuses outright when a skill has no
+  published release.
+
+  It reads the newest release **whose tag belongs to that skill** — in a monorepo
+  a repo-wide "latest" would print another skill's version under this skill's
+  name — and orders by semver, because `0.10.0` sorts below `0.9.0` as a string.
+
+  It returns facts and never writes a card: composing one is judgment, and a
+  brochure this script could generate would be the same brochure every time.
+
+### Fixed
+
+- **`chip-wrap` measured the border box, so a padded `.cmd` was reported as
+  wrapped while sitting on one line.** It now measures the content box against
+  the computed line height. Found by giving the brochure's install line the
+  padding its prominence needs; it would have nagged every card with a generous
+  chip.
+
+### Notes
+
+The brochure needs its own `#canvas.card.brochure.light` height rule — without
+one a portrait card silently inherits the 1200x1200 square default and
+everything below the fold is clipped. The render lint catches it, but only after
+a render, which is worth knowing before adding the next light card type.
+
 ## [0.14.1] - 2026-07-18
 
 Two real-session UX fixes (SKILL.md only — no script changes), one of which corrects behavior

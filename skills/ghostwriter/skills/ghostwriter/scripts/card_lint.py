@@ -364,6 +364,17 @@ LINT_JS = r"""
   if (cls.includes('flow'))
     budget(count('.fnode'), 'stages in flow', 3, 5,
       'flow takes 3–5 stages; collapse stages or switch to a carousel');
+  if (cls.includes('brochure')) {
+    budget(count('.cap'), 'capabilities in brochure', 3, 3,
+      'brochure takes exactly 3 capabilities — cut to the three a reader would repeat');
+    // A brochure without its version, its refusal or its install line is an
+    // advert with no product in it.
+    for (const [sel, what] of [['.pname', 'product name'], ['.pver', 'version'],
+                               ['.refuses .rtext', 'refusal'], ['code.cmd', 'install line']])
+      if (count(sel) !== 1)
+        push('FAIL', 'count-budget',
+          'brochure needs exactly one ' + what + ' (' + sel + ') — found ' + count(sel));
+  }
   if (cls.includes('code')) {
     const n = count('.line');
     if (n > 13)
@@ -387,8 +398,14 @@ LINT_JS = r"""
   // 6. chip-wrap WARN — a .cmd that wraps past one line.
   for (const el of canvas.querySelectorAll('.cmd')) {
     if (!visible(el)) continue;
-    const fs = parseFloat(getComputedStyle(el).fontSize);
-    if (el.getBoundingClientRect().height > 1.7 * fs * 1.3)
+    // Measure the CONTENT box, not the border box: comparing the padded height
+    // against a line height flags any generously-padded chip as wrapped even
+    // when it sits on one line.
+    const cs = getComputedStyle(el);
+    const fs = parseFloat(cs.fontSize);
+    const lh = parseFloat(cs.lineHeight) || fs * 1.3;
+    const inner = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (inner > 1.7 * lh)
       push('WARN', 'chip-wrap', '.cmd wraps to two+ lines: "' + txt(el) +
         '" — a one-line command reads best');
   }

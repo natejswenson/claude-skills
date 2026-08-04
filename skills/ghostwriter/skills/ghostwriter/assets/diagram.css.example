@@ -1284,3 +1284,109 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   border-bottom: 8px solid var(--border); top: 56px; bottom: 56px; left: 84px; right: 84px; }
 .card.slide.press .rail { background: var(--surface-2); }
 .card.slide.press.cta .action { color: #F5F0E6; border-radius: 0; }
+
+/* --- BROCHURE card type -------------------------------------------------
+   A one-page product brochure for a shipped release. Rules and whitespace
+   only: no rounded panels, no shadows, no fills — the nameplate rule, the
+   refusal block's left rule, and the capability spacing carry the structure. */
+
+/* Portrait 4:5. Without this the type inherits the 1200x1200 square default and
+   everything below the fold is clipped — the render lint catches it, but only
+   after a render. */
+#canvas.card.brochure.light {
+  height: 1500px;
+  padding: 78px 80px 70px;
+  gap: 26px;
+  justify-content: flex-start;
+}
+
+.card.brochure .nameplate {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding-bottom: 22px;
+  margin-bottom: 30px;
+  border-bottom: 8px solid var(--text);
+}
+
+.card.brochure .pname {
+  font: 800 84px/1 var(--font);
+  letter-spacing: -0.035em;
+  color: var(--text);
+}
+
+.card.brochure .pver {
+  font: 700 40px/1 var(--mono, var(--font));
+  letter-spacing: -0.01em;
+  color: var(--press-sig, var(--accent));
+  border: 4px solid var(--press-sig, var(--accent));
+  padding: 8px 16px;
+}
+
+.card.brochure .pdate {
+  margin-left: auto;
+  font: 500 28px/1 var(--mono, var(--font));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.card.brochure h1 { font-size: 76px; margin: 0 0 22px; letter-spacing: -0.025em; }
+
+.card.brochure .refuses {
+  border-left: 10px solid var(--text);
+  padding: 6px 0 6px 30px;
+  margin: 34px 0 40px;
+}
+
+.card.brochure .rlabel {
+  font: 700 26px/1 var(--mono, var(--font));
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.card.brochure .rtext {
+  font: italic 400 40px/1.42 var(--serif, Georgia, serif);
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.card.brochure .caps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 34px;
+  margin-bottom: 42px;
+}
+
+.card.brochure .cap { display: flex; flex-direction: column; gap: 14px; }
+
+.card.brochure .cap .glyph { width: 66px; height: 66px; }
+
+.card.brochure .capt {
+  /* 29px is what one line of a 331px column actually holds — the budget was
+     written at 22 chars before the column existed, and every title wrapped. */
+  font: 700 29px/1.2 var(--font);
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.card.brochure .cape { font: 400 28px/1.35 var(--font); color: var(--muted); }
+
+/* The install line is the whole call to action, so it is the biggest saveable
+   thing on the card, not a footnote. `margin-top: auto` absorbs the slack above
+   it so it always sits against the caption instead of floating mid-card. */
+.card.brochure code.cmd {
+  align-self: stretch;
+  margin-top: auto;
+  font: 700 34px/1.25 var(--mono);
+  color: var(--text);
+  background: none;
+  border: 4px solid var(--text);
+  border-radius: 0;
+  padding: 20px 26px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
