@@ -30,6 +30,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`release`](skills/release) | ![release](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=release-v*&label=&sort=semver&color=blue) | `/release` | Node | Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist. |
 | [`pluginsync`](skills/pluginsync) | ![pluginsync](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=pluginsync-v*&label=&sort=semver&color=blue) | `/pluginsync` | Node | Reconcile the plugins installed on this machine with what the marketplace actually offers, and never call a plugin live before the restart that makes it so. |
 | [`issueflow`](skills/issueflow) | ![issueflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issueflow-v*&label=&sort=semver&color=blue) | `/issueflow` | Node | Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins. |
+| [`shipreport`](skills/shipreport) | ![shipreport](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipreport-v*&label=&sort=semver&color=blue) | `/shipreport` | Node | Turns a stretch of real commits, pull requests and Claude Code sessions into a short executive summary a stakeholder can read — and refuses to print a line it cannot back with a receipt. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -53,6 +54,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install release@claude-skills
 /plugin install pluginsync@claude-skills
 /plugin install issueflow@claude-skills
+/plugin install shipreport@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -77,6 +79,7 @@ ln -sfn "$PWD/skills/eval/skills/eval" ~/.claude/skills/eval
 ln -sfn "$PWD/skills/release/skills/release" ~/.claude/skills/release
 ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
 ln -sfn "$PWD/skills/issueflow/skills/issueflow" ~/.claude/skills/issueflow
+ln -sfn "$PWD/skills/shipreport/skills/shipreport" ~/.claude/skills/shipreport
 ```
 </details>
 

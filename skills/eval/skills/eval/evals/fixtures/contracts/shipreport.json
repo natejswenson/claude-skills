@@ -1,8 +1,8 @@
 {
-  "name": "issueflow",
+  "name": "shipreport",
   "sources": [
-    "skills/issueflow/skills/issueflow/SKILL.md",
-    "skills/issueflow/skills/issueflow/skill-invariants.json",
+    "skills/shipreport/skills/shipreport/SKILL.md",
+    "skills/shipreport/skills/shipreport/skill-invariants.json",
     "CLAUDE.md"
   ],
   "clauses": [
@@ -67,24 +67,13 @@
       }
     },
     {
-      "id": "inv-e9928ba7",
-      "tag": "inv",
-      "text": "Every state change is checkpointed",
-      "severity": "high",
-      "rationale": "The run's whole record — four subagents' worth of investigation, design, implementation and proof — lives outside the target repo and outside git. Until 0.2.0 none of it reached GitHub before `ship`, which on the measured run never ran: 23 minutes of opus and sonnet output existed only as untracked files under $HOME and one unpushed commit. A gated pipeline that cannot survive losing the machine is a pipeline whose gates were the only thing it delivered.",
-      "source": {
-        "file": "skills/issueflow/skills/issueflow/skill-invariants.json",
-        "line": 1
-      }
-    },
-    {
       "id": "press-13f05150",
       "tag": "press",
       "text": "One script call, not a pipeline.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 277
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 193
       }
     },
     {
@@ -93,8 +82,8 @@
       "text": "Report in tables, with named columns.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 281
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 197
       }
     },
     {
@@ -103,8 +92,8 @@
       "text": "Never claim a visual result without the artifact.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 288
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 204
       }
     },
     {
@@ -113,8 +102,8 @@
       "text": "Never print file contents into the conversation.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 272
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 188
       }
     },
     {
@@ -123,8 +112,8 @@
       "text": "Announce the skill once, at the start",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 296
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 212
       }
     },
     {
@@ -133,8 +122,8 @@
       "text": "Keep the machinery invisible.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 269
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 185
       }
     },
     {
@@ -143,58 +132,98 @@
       "text": "Show, don't describe.",
       "severity": "medium",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 286
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 202
       }
     },
     {
-      "id": "rule-95d3a758",
+      "id": "rule-2139cc85",
       "tag": "rule",
-      "text": "No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.",
+      "text": "Every claim in the report carries a receipt — a commit SHA, pull request number, release tag or session event id that resolves against the local corpus — and a ranked item whose receipt does not resolve is dropped from the report, never softened into vague prose.",
       "severity": "critical",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
         "line": 21
+      }
+    },
+    {
+      "id": "skill-019f6ab2",
+      "tag": "skill",
+      "text": "fix the draft, never the checker.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 111
       }
     },
     {
       "id": "skill-19dea7cf",
       "tag": "skill",
-      "text": "Never ask about anything in it",
+      "text": "never ask about anything in it",
       "severity": "high",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 51
+      }
+    },
+    {
+      "id": "skill-1bcb7c4a",
+      "tag": "skill",
+      "text": "Do not write numbers.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 100
+      }
+    },
+    {
+      "id": "skill-35024145",
+      "tag": "skill",
+      "text": "Never fix a refusal by weakening the gate.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 148
+      }
+    },
+    {
+      "id": "skill-48c53f43",
+      "tag": "skill",
+      "text": "Never hand-write a brand value.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 150
+      }
+    },
+    {
+      "id": "skill-681a48dc",
+      "tag": "skill",
+      "text": "Never write the sentence first and then hunt for a receipt to attach.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 90
+      }
+    },
+    {
+      "id": "skill-7c068c00",
+      "tag": "skill",
+      "text": "Never count activity as achievement.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 145
+      }
+    },
+    {
+      "id": "skill-80c2a070",
+      "tag": "skill",
+      "text": "Do not re-explain the redaction counts",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
         "line": 65
-      }
-    },
-    {
-      "id": "skill-201a5e00",
-      "tag": "skill",
-      "text": "Never advance over drift you have not shown the user.",
-      "severity": "high",
-      "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 226
-      }
-    },
-    {
-      "id": "skill-245bacf4",
-      "tag": "skill",
-      "text": "Never do a stage's work yourself.",
-      "severity": "high",
-      "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 230
-      }
-    },
-    {
-      "id": "skill-8aff2a42",
-      "tag": "skill",
-      "text": "Never dispatch a stage on a model other than the one `brief` names.",
-      "severity": "high",
-      "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 229
       }
     },
     {
@@ -203,28 +232,18 @@
       "text": "Never claim a result you did not observe.",
       "severity": "high",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 234
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 143
       }
     },
     {
-      "id": "skill-96f176aa",
+      "id": "skill-94111a97",
       "tag": "skill",
-      "text": "Never run `git status`, `git log` or `grep` over the evidence to get them.",
+      "text": "Never pass `--no-open` in an interactive session",
       "severity": "high",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 158
-      }
-    },
-    {
-      "id": "skill-a6020647",
-      "tag": "skill",
-      "text": "never call `gh issue view` after it",
-      "severity": "high",
-      "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 83
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 121
       }
     },
     {
@@ -233,18 +252,18 @@
       "text": "Announce at start:",
       "severity": "high",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
         "line": 14
       }
     },
     {
-      "id": "skill-e7fa6a2d",
+      "id": "skill-e1abd78c",
       "tag": "skill",
-      "text": "Never edit an artifact to get past the gate.",
+      "text": "The line is guidance, not a filter.",
       "severity": "high",
       "source": {
-        "file": "skills/issueflow/skills/issueflow/SKILL.md",
-        "line": 233
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 101
       }
     }
   ]
