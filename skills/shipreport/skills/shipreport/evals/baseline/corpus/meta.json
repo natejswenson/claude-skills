@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "watermark": {},
+  "redactions": {},
+  "login": "natejswenson",
+  "_comment": "Frozen from a real run. Session digests are field-projected: firstPrompt and full uuid lists are dropped because nothing downstream reads them and this repo is public."
+}

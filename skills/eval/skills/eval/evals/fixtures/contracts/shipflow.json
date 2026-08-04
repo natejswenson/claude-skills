@@ -232,6 +232,17 @@
       }
     },
     {
+      "id": "inv-d340a3e7",
+      "tag": "inv",
+      "text": "is not, by itself, permission to cut",
+      "severity": "high",
+      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
       "id": "inv-e7745397",
       "tag": "inv",
       "text": "Do NOT silently pick either value",
@@ -291,7 +302,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 176
+        "line": 181
       }
     },
     {
@@ -381,7 +392,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 171
+        "line": 176
       }
     },
     {
@@ -391,7 +402,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 212
+        "line": 226
       }
     },
     {
@@ -441,7 +452,7 @@
       "severity": "high",
       "source": {
         "file": "skills/shipflow/skills/shipflow/SKILL.md",
-        "line": 245
+        "line": 259
       }
     },
     {
