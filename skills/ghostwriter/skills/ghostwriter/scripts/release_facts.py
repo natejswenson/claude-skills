@@ -184,8 +184,16 @@ def main(argv: list[str] | None = None) -> int:
         "published": (rel.get("publishedAt") or "")[:10],
         "releaseUrl": f"https://github.com/{slug}/releases/tag/{rel['tagName']}",
         "repo": slug,
-        "install": f"/plugin install {skill}@{MARKETPLACE}",
+        # BOTH steps, always. `/plugin install` alone does nothing until the
+        # marketplace is added, so a card showing only the second line
+        # advertises a command that does not work — the exact failure this
+        # module exists to prevent.
         "marketplace": f"/plugin marketplace add {slug}",
+        "install": f"/plugin install {skill}@{MARKETPLACE}",
+        "installSteps": [
+            f"/plugin marketplace add {slug}",
+            f"/plugin install {skill}@{MARKETPLACE}",
+        ],
         "description": frontmatter_description(md),
         "oneRule": one_rule(md),
         "changelogBullets": changelog_bullets(repo, skill, version),
@@ -196,7 +204,8 @@ def main(argv: list[str] | None = None) -> int:
         ["version", facts["version"]],
         ["tag", facts["tag"]],
         ["published", facts["published"] or "—"],
-        ["install", facts["install"]],
+        ["install step 1", facts["installSteps"][0]],
+        ["install step 2", facts["installSteps"][1]],
         ["one rule", "present" if facts["oneRule"] else "— (none declared)"],
         ["changelog bullets", str(len(facts["changelogBullets"]))],
     ]))

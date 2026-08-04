@@ -14,11 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (version, ship date, one proof figure) → `.pull` carrying what the skill
   **refuses** to do in its own words → `.cmdbar` install line → colophon.
 
-  It adds **no CSS**. Press is a brand system rather than a template, so a new
-  card shape is the existing vocabulary arranged for one job — three body
-  components, the maximum Press allows. Keep the refusal when swapping a
-  component: a brochure that only lists features is an advert, and the refusal
-  is what makes it a claim.
+  A slender vertical **`.plate`** runs down the left third carrying one original
+  line-art scene composed for *that* release, the way a devlog cover is composed:
+  name the mechanism, not the topic, and draw that. Ink only — the h1 `.sig`
+  pivot is the card's one signature moment, so an orange drawing would be a
+  second loud thing the brand does not allow. Two brochures must never carry the
+  same scene.
+
+  Everything beside the plate is stock Press vocabulary. The only new rules are
+  the two-column layout itself, because a vertical plate is the one shape Press
+  did not already provide. Keep the refusal when swapping a component: a brochure
+  that only lists features is an advert, and the refusal is what makes it a claim.
 
 - **`scripts/release_facts.py` — the evidence the brochure is allowed to claim.**
   A brochure is marketing, which is why it needs a *harder* evidence rule than an
@@ -35,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   brochure this script could generate would be the same brochure every time.
 
 ### Fixed
+
+- **The card showed only `/plugin install <skill>@claude-skills`, which does
+  nothing on its own.** The marketplace has to be added first, so the single
+  command it advertised did not work — precisely the failure `release_facts.py`
+  exists to prevent, arriving through the half of the install path the script
+  did not surface. `installSteps` now carries both lines, the template renders
+  both, and the render lint fails a brochure that shows one.
 
 - **`chip-wrap` measured the border box, so a padded command chip was reported as
   wrapped while sitting on one line.** It now measures the content box against

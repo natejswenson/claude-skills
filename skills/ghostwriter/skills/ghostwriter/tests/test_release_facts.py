@@ -245,3 +245,25 @@ def test_module_entrypoint_is_wired(monkeypatch, tmp_path):
     _wire(monkeypatch)
     monkeypatch.setattr("sys.argv", ["release_facts.py", "demo", "--repo", str(tmp_path)])
     assert rf.main() == 0
+
+
+def test_install_is_two_steps_because_one_does_not_work(monkeypatch, tmp_path, capsys):
+    # `/plugin install` does nothing until the marketplace has been added, so a
+    # card showing only the second line advertises a command that does not work.
+    # That is the exact failure this module exists to prevent, and it shipped
+    # once before the steps were split.
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    out = tmp_path / "facts.json"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--json", str(out)]) == 0
+
+    facts = json.loads(out.read_text())
+    assert facts["installSteps"] == [
+        "/plugin marketplace add o/r",
+        "/plugin install demo@claude-skills",
+    ]
+    assert facts["installSteps"][0] == facts["marketplace"]
+    assert facts["installSteps"][1] == facts["install"]
+
+    printed = capsys.readouterr().out
+    assert "install step 1" in printed and "install step 2" in printed

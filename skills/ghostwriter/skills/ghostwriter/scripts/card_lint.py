@@ -368,11 +368,18 @@ LINT_JS = r"""
     budget(count('.fact'), 'facts in brochure', 3, 3,
       'brochure takes exactly 3 facts — version, ship date, and one proof figure');
     // A brochure without its refusal is an advert. The pull quote is the claim.
-    for (const [sel, what] of [['.pull .q', 'refusal (.pull .q)'],
-                               ['.cmdbar', 'install line (.cmdbar)']])
-      if (count(sel) !== 1)
-        push('FAIL', 'count-budget',
-          'brochure needs exactly one ' + what + ' — found ' + count(sel));
+    if (count('.pull .q') !== 1)
+      push('FAIL', 'count-budget',
+        'brochure needs exactly one refusal (.pull .q) — found ' + count('.pull .q'));
+    // BOTH install steps. `/plugin install` does nothing until the marketplace
+    // has been added, so one command bar advertises something that does not work.
+    if (count('.install .cmdbar') !== 2)
+      push('FAIL', 'count-budget',
+        'brochure shows BOTH install steps — found ' + count('.install .cmdbar') +
+        ' .cmdbar in .install (marketplace add, then plugin install)');
+    if (count('.plate svg') !== 1)
+      push('FAIL', 'count-budget',
+        'brochure needs exactly one plate illustration — found ' + count('.plate svg'));
   }
 
   if (cls.includes('code')) {

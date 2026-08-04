@@ -6,86 +6,126 @@
 </head>
 <!--
   BROCHURE — a PRESS composition for a SHIPPED release of one of your own skills.
-  Not a launch announcement and not an explainer: the product page. It adds NO
-  new CSS; it is the Press vocabulary arranged for one job, which is what
-  "brand system, not a template" means. Read assets/card-language.md first.
+  Not a launch announcement and not an explainer: the product page.
 
-  THE COMPOSITION (masthead -> headline -> standfirst -> facts -> pull -> cmdbar
-  -> colophon). Three body components, the maximum Press allows:
-    .facts   the identity: version, ship date, and one proof figure
-    .pull    the THESIS — what the skill refuses to do, in its own words
-    .cmdbar  the install line, the thing a reader saves
+  THE SHAPE: masthead across the top · a slender vertical PLATE down the left
+  third carrying an illustration composed for THIS release · the reading column
+  beside it · the two install steps full width · colophon. Body components in
+  the column are stock Press vocabulary (.facts, .pull) — read
+  assets/card-language.md before composing.
 
-  Swap a component if the release calls for it (.bigstat when a number is the
-  story, .term when a real session proves it) — but keep the refusal. A brochure
-  that only lists features is an advert; the refusal is what makes it a claim.
+  ── THE PLATE ────────────────────────────────────────────────────────────────
+  The plate is the reason to make a brochure rather than a list. Compose ONE
+  original line-art scene for this release, the same way a devlog cover is
+  composed — editorial ink line work in the spirit of a technical schematic, not
+  an icon and not a stock shape.
 
-  EVIDENCE FIRST — this is marketing, so the bar is higher, not lower:
+  Before drawing, name the MECHANISM, not the topic. Not "a release tool" but
+  "two versions and a selector that picked the lower one". Not "a summariser"
+  but "a claim, and the receipt that has to resolve before it prints". Then draw
+  that, tall: viewBox "0 0 300 900", key points on a 10-unit grid, ink reaching
+  most of the height. A short mark floating in a tall empty plate reads as a
+  placeholder.
+
+  INK ONLY. The card's one signature moment is the h1 .sig pivot (the stamp is
+  the identity mark). An orange drawing would be a second loud thing, which the
+  brand does not allow — use stroke weight, dashes and gaps for emphasis
+  instead. Paint attributes may be currentColor or none, nothing else.
+
+  Two brochures must never carry the same scene. If your instinct is a generic
+  box-and-arrow, go back and find the mechanism.
+
+  ── EVIDENCE ─────────────────────────────────────────────────────────────────
     python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
-  reads the version, tag, publish date, install line and the skill's own one
-  rule off the RELEASED artifact. Never type a version or an install command by
-  hand. A skill with no published release has no brochure to make yet.
+  reads the version, tag, publish date, BOTH install steps and the skill's own
+  one rule off the RELEASED artifact. Never type a version or an install command
+  by hand. `installSteps` has two entries and the card shows both: `/plugin
+  install` does nothing until the marketplace has been added, so a card showing
+  only the second line advertises a command that does not work. A skill with no
+  published release has no brochure to make yet.
 
   Render portrait 4:5 (the default --size 1200x1500):
     render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
 
   CONTENT BUDGET (hard limits; the render lint enforces the measurable ones):
-    eyebrow <=24 chars, one line    h1 <=2 lines (~13 chars/line; add class
-    "compact" for ~20 chars/line)   stand <=3 lines (~46ch measure)
-    EXACTLY 3 .fact — .fval <=14 chars · .flabel and .fcap one line each
-    .pull .q <=2 lines              .cmdbar <=44 chars, one line
-    colophon .out <=52 chars
+    eyebrow <=24 chars, one line    h1 <=2 lines (~11 chars/line beside the
+    plate; add class "compact" for ~16)   stand <=4 lines (~34ch measure)
+    EXACTLY 3 .fact — .fval <=11 chars beside the plate · .flabel/.fcap one line
+    .pull .q <=3 lines              EXACTLY 2 .cmdbar, <=52 chars each, one line
+    colophon .out <=52 chars        plate svg viewBox "0 0 300 900"
 
-  The composition is marked with data-card="brochure" rather than a class: it
-  carries no styling of its own, and a class with no rule in diagram.css is a
-  typo waiting to happen (the template tests enforce that).
+  The composition is marked with data-card="brochure" rather than a class: the
+  layout rules key off the attribute, and a class with no rule in diagram.css is
+  a typo waiting to happen (the template tests enforce that).
 
-  CLASS LEGEND: h1 .sig = the ONE signature-colored pivot phrase · .stand =
-  serif standfirst · .facts/.fact = the spec strip (.flabel .fval .fcap) ·
-  .pull > .q = the thesis (.qrule above it) · .cmdbar = ink command bar ·
-  .colophon = outcome line. The .stamp pulls your monogram from --stamp; the
-  byline/avatar from --byline/--avatar (diagram.css).
+  CLASS LEGEND: .plate = the vertical illustration · .col = the reading column ·
+  h1 .sig = the ONE signature-colored pivot · .stand = serif standfirst ·
+  .facts/.fact = the spec strip (.flabel .fval .fcap) · .pull > .q = the thesis ·
+  .install > .cmdbar = the two install steps · .colophon = outcome line.
 -->
 <body>
   <div id="canvas" class="card press" data-card="brochure">
+
     <div class="mast">
       <div class="stamp"></div>
       <div class="eyebrow">Eyebrow Label · <span class="no">No. 001</span></div>
       <div class="footer brand"></div>
     </div>
 
-    <h1>One sharp headline <span class="sig">pivot phrase.</span></h1>
+    <!-- PLATE: replace this entirely with a scene composed for THIS release.
+         Ink only, viewBox "0 0 300 900". See the plate notes above. -->
+    <div class="plate">
+      <svg viewBox="0 0 300 900" fill="none" stroke="currentColor" stroke-width="3"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect x="40" y="60" width="220" height="780"/>
+        <line x1="40" y1="200" x2="260" y2="200"/>
+        <line x1="80" y1="320" x2="220" y2="320"/>
+        <line x1="80" y1="460" x2="220" y2="460"/>
+        <line x1="80" y1="600" x2="220" y2="600"/>
+        <circle cx="150" cy="740" r="40"/>
+      </svg>
+    </div>
 
-    <p class="stand">Two or three serif sentences on what this is for, with the
-      <strong>key claim bolded</strong>. Keep it to three rendered lines.</p>
+    <div class="col">
+      <h1>One headline <span class="sig">pivot.</span></h1>
 
-    <!-- identity: every value read from the release, never typed -->
-    <div class="facts">
-      <div class="fact">
-        <span class="flabel">Version</span>
-        <span class="fval">v0.0.0</span>
-        <span class="fcap">what this release is</span>
+      <p class="stand">Two or three serif sentences on what this is for, with the
+        <strong>key claim bolded</strong>.</p>
+
+      <!-- identity: every value read from the release, never typed -->
+      <div class="facts">
+        <div class="fact">
+          <span class="flabel">Version</span>
+          <span class="fval">v0.0.0</span>
+          <span class="fcap">what this release is</span>
+        </div>
+        <div class="fact">
+          <span class="flabel">Shipped</span>
+          <span class="fval">2026-01-01</span>
+          <span class="fcap">how it was proven</span>
+        </div>
+        <div class="fact">
+          <span class="flabel">Label</span>
+          <span class="fval">0</span>
+          <span class="fcap">one real proof figure</span>
+        </div>
       </div>
-      <div class="fact">
-        <span class="flabel">Shipped</span>
-        <span class="fval">2026-01-01</span>
-        <span class="fcap">how it was proven</span>
-      </div>
-      <div class="fact">
-        <span class="flabel">Label</span>
-        <span class="fval">0</span>
-        <span class="fcap">one real proof figure</span>
+
+      <!-- the thesis: what it refuses to do, quoted rather than paraphrased -->
+      <div class="pull">
+        <div class="qrule"></div>
+        <div class="q">The one rule, quoted from the skill rather than softened
+          into something easier to promise.</div>
       </div>
     </div>
 
-    <!-- the thesis: what it refuses to do, quoted rather than paraphrased -->
-    <div class="pull">
-      <div class="qrule"></div>
-      <div class="q">The one rule, quoted from the skill rather than softened
-        into something easier to promise.</div>
+    <!-- both steps: /plugin install does nothing until the marketplace is added -->
+    <div class="install">
+      <span class="step-no">01</span>
+      <code class="cmdbar">the --actual first command</code>
+      <span class="step-no">02</span>
+      <code class="cmdbar">the --actual second command</code>
     </div>
-
-    <code class="cmdbar">the --actual command or config</code>
 
     <div class="colophon">
       <span>The outcome</span>

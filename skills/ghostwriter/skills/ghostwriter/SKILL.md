@@ -457,8 +457,9 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   - `assets/card-template-brochure.html` — **brochure (a Press composition)**: the product page
     for a shipped release of one of YOUR skills. Masthead → headline → standfirst → `.facts`
     (version, ship date, one proof figure) → `.pull` carrying what the skill **refuses** to do in
-    its own words → `.cmdbar` install line → colophon. Adds no CSS; it is the Press vocabulary
-    arranged for one job. **Run `scripts/release_facts.py <skill> --json <file>` first** — it reads
+    its own words → **both** install steps → colophon, with a slender vertical `.plate` down the
+    left third holding an illustration composed for *that* release (ink only — the h1 `.sig` is the
+    card's one signature moment). **Run `scripts/release_facts.py <skill> --json <file>` first** — it reads
     the version, tag, date, install command and one rule off the *released* artifact, so the card
     cannot advertise a version nobody can install. Keep the refusal: a brochure that only lists
     features is an advert.
@@ -493,7 +494,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
   | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
   | `date` | — | date-sub ≤40 chars | |
-  | `brochure` (press) | exactly 3 facts | `.fval` ≤14 · `.pull .q` ≤2 lines · `.cmdbar` ≤44 one line · `.stand` ≤3 lines | needs exactly one `.pull .q` and one `.cmdbar`; facts come from `release_facts.py`, never typed |
+  | `brochure` (press) | exactly 3 facts | `.fval` ≤11 beside the plate · `.pull .q` ≤3 lines · **2** `.cmdbar` ≤52 each · `.stand` ≤4 lines · plate `viewBox="0 0 300 900"` | needs one `.pull .q`, one `.plate svg`, and BOTH install steps; facts come from `release_facts.py`, never typed |
   | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
 
   Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)
