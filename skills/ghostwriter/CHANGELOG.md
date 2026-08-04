@@ -4,6 +4,91 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-08-04
+
+### Added
+
+- **`brochure` — a Press composition for a shipped release of one of your own
+  skills.** Not a launch announcement and not an explainer: the product page.
+  Masthead → headline with one signature pivot → serif standfirst → `.facts`
+  (version, ship date, one proof figure) → `.pull` carrying what the skill
+  **refuses** to do in its own words → `.cmdbar` install line → colophon.
+
+  A slender vertical **`.plate`** runs down the left third carrying one original
+  line-art scene composed for *that* release, the way a devlog cover is composed:
+  name the mechanism, not the topic, and draw that. Ink only — the h1 `.sig`
+  pivot is the card's one signature moment, so an orange drawing would be a
+  second loud thing the brand does not allow. Two brochures must never carry the
+  same scene.
+
+  The plate has three paints, all bound to brand tokens rather than typed:
+  `stroke="currentColor"` for ink line work, `.ink-fill` for a solid block,
+  `.knock` for paper knocked out of one, and `.sig-fill` for **at most one**
+  accent mark — spent on the single thing the drawing is about. The render lint
+  fails a plate carrying two.
+
+  Everything beside the plate is stock Press vocabulary. The only new rules are
+  the two-column layout itself, because a vertical plate is the one shape Press
+  did not already provide. Keep the refusal when swapping a component: a brochure
+  that only lists features is an advert, and the refusal is what makes it a claim.
+
+- **`release_facts.py --scaffold` — the brochure starts correct instead of being
+  assembled by hand.** It writes the card with every factual slot already filled
+  from the release and leaves the judgment slots marked `TODO`. A card assembled
+  by hand is a card whose version, date and install steps depend on whoever
+  assembled it; this is what makes a second brochure as right as the first.
+
+  The example plate carries `id="plate-example"` and the render lint **fails**
+  while it survives, so the demo drawing can never ship as somebody's release.
+
+- **`scripts/release_facts.py` — the evidence the brochure is allowed to claim.**
+  A brochure is marketing, which is why it needs a *harder* evidence rule than an
+  ordinary card, not a softer one. The version, tag, publish date, install
+  command and one rule are read off the released artifact, so a card cannot
+  advertise a version nobody can install. A skill with no published release is
+  refused outright rather than rendered with a blank version.
+
+  It reads the newest release **whose tag belongs to that skill** — in a monorepo
+  a repo-wide "latest" would print another skill's version under this skill's
+  name — and orders by semver, because `0.10.0` sorts below `0.9.0` as a string.
+
+  It returns facts and never writes a card: composing one is judgment, and a
+  brochure this script could generate would be the same brochure every time.
+
+### Fixed
+
+- **The changelog reader knew only one dialect, and said "no bullets" when it
+  meant "no entry found".** This repo writes both `## [0.13.0] - 2026-07-29` and
+  `## 0.13.0 (2026-07-29) — title`; matching only the first returned an empty
+  list for devlog, which reads as a release that added nothing. Both forms parse
+  now.
+
+- **A skill with no `## The one rule` left a silent blank.** The brochure still
+  needs a refusal, so the scaffold now says what to do instead — quote it from
+  the release notes, or drop the pull quote rather than invent a promise nobody
+  made. devlog is the case: it declares no one rule, and *"a push is not a
+  route"* comes from its 0.13.0 notes.
+
+- **The proof figure had no rule, and went stale on its first outing.** A devlog
+  brochure claimed 61 published guides because `CLAUDE.md` said 61; counting the
+  site's manifests gave **121**. Everything read from the release was right and
+  the only wrong number was the one a human typed. The template now says to
+  count the third fact from the artifact — never quote it from a README, a
+  design doc or a changelog note — and to drop it rather than ship a figure that
+  cannot be counted today.
+
+- **The card showed only `/plugin install <skill>@claude-skills`, which does
+  nothing on its own.** The marketplace has to be added first, so the single
+  command it advertised did not work — precisely the failure `release_facts.py`
+  exists to prevent, arriving through the half of the install path the script
+  did not surface. `installSteps` now carries both lines, the template renders
+  both, and the render lint fails a brochure that shows one.
+
+- **`chip-wrap` measured the border box, so a padded command chip was reported as
+  wrapped while sitting on one line.** It now measures the content box against
+  the computed line height. Found while sizing the brochure's install line; it
+  would have nagged every card with a generous chip, not just this one.
+
 ## [0.14.1] - 2026-07-18
 
 Two real-session UX fixes (SKILL.md only — no script changes), one of which corrects behavior
