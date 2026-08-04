@@ -115,8 +115,13 @@ def changelog_bullets(repo: Path, skill: str, version: str) -> list[str]:
     if not path.exists():
         return []
     text = path.read_text(encoding="utf-8")
-    m = re.search(rf"^##\s*\[{re.escape(version)}\].*?\n(.*?)(?=^##\s*\[|\Z)",
-                  text, re.S | re.M)
+    # Two dialects live in this repo and a brochure must not care which:
+    #   ## [0.13.0] - 2026-07-29        (Keep a Changelog)
+    #   ## 0.13.0 (2026-07-29) — title  (devlog's)
+    # Matching only the first returned an empty list for the second, which reads
+    # as "this release added nothing" rather than "I could not find the entry".
+    v = re.escape(version)
+    m = re.search(rf"^##\s*\[?{v}\]?[^\n]*\n(.*?)(?=^##\s+\[?\d|\Z)", text, re.S | re.M)
     if not m:
         return []
     # A bullet wraps across lines, so its continuation has to be folded in
@@ -162,7 +167,9 @@ _QUOTE_OLD = (
 def scaffold(facts: dict) -> str:
     """The brochure with every FACTUAL slot already filled from the release."""
     html = TEMPLATE.read_text(encoding="utf-8")
-    rule = facts.get("oneRule") or "TODO - this skill declares no one rule"
+    rule = facts.get("oneRule") or (
+        "TODO - this skill declares no '## The one rule'; quote the refusal from "
+        "its release notes, or drop the pull quote rather than inventing a promise")
     # A quote that runs long stops being a pull quote; keep the leading clause.
     if len(rule) > 96:
         rule = rule.split(" — ")[0].split(", and ")[0].rstrip(".,") + "."

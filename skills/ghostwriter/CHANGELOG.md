@@ -57,6 +57,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The changelog reader knew only one dialect, and said "no bullets" when it
+  meant "no entry found".** This repo writes both `## [0.13.0] - 2026-07-29` and
+  `## 0.13.0 (2026-07-29) — title`; matching only the first returned an empty
+  list for devlog, which reads as a release that added nothing. Both forms parse
+  now.
+
+- **A skill with no `## The one rule` left a silent blank.** The brochure still
+  needs a refusal, so the scaffold now says what to do instead — quote it from
+  the release notes, or drop the pull quote rather than invent a promise nobody
+  made. devlog is the case: it declares no one rule, and *"a push is not a
+  route"* comes from its 0.13.0 notes.
+
+- **The proof figure had no rule, and went stale on its first outing.** A devlog
+  brochure claimed 61 published guides because `CLAUDE.md` said 61; counting the
+  site's manifests gave **121**. Everything read from the release was right and
+  the only wrong number was the one a human typed. The template now says to
+  count the third fact from the artifact — never quote it from a README, a
+  design doc or a changelog note — and to drop it rather than ship a figure that
+  cannot be counted today.
+
 - **The card showed only `/plugin install <skill>@claude-skills`, which does
   nothing on its own.** The marketplace has to be added first, so the single
   command it advertised did not work — precisely the failure `release_facts.py`

@@ -300,3 +300,49 @@ def test_scaffold_shortens_a_rule_too_long_to_be_a_pull_quote(tmp_path, monkeypa
     html = out.read_text()
     assert "Every claim carries a receipt that resolves against the local corpus." in html
     assert "ranked item" not in html, "the trailing clause should have been cut"
+
+
+# ── the changelog dialect that returned zero bullets ────────────────────────
+
+DEVLOG_STYLE = """# Changelog
+
+## 0.13.0 (2026-07-29) — a publish run now proves the entry is live
+
+A paragraph of context that is not a bullet.
+
+- **Added: `publish-entry` returns `firstEntryForProject`.** True when the call
+  created a project's first live entry.
+- **Changed: the confirmation block leads with the verified live URL.**
+
+## 0.12.0 (2026-07-28) — five composition slots
+
+- An older bullet that must not leak forward.
+"""
+
+
+def test_changelog_reads_both_heading_dialects(tmp_path):
+    # devlog writes `## 0.13.0 (date) — title`, not `## [0.13.0] - date`.
+    # Matching only the bracketed form returned [], which reads as "this release
+    # added nothing" rather than "I could not find the entry".
+    _skill(tmp_path, changelog=DEVLOG_STYLE, skill_md="")
+    got = rf.changelog_bullets(tmp_path, "demo", "0.13.0")
+    assert len(got) == 2, got
+    assert got[0].startswith("Added: publish-entry returns firstEntryForProject.")
+    assert not any("older bullet" in b for b in got), "the previous version leaked in"
+
+    # and the bracketed dialect still works
+    _skill(tmp_path, name="kc", changelog=CHANGELOG, skill_md="")
+    assert len(rf.changelog_bullets(tmp_path, "kc", "0.2.0")) == 2
+
+
+def test_a_missing_one_rule_says_what_to_do_instead_of_inventing_one(tmp_path, monkeypatch):
+    # devlog declares no `## The one rule`. The brochure still needs a refusal,
+    # so the scaffold has to point at the release notes rather than leave a
+    # blank that gets filled with a promise nobody made.
+    _skill(tmp_path, skill_md="---\nname: demo\n---\n# no rule section\n")
+    _wire(monkeypatch)
+    out = tmp_path / "card.html"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--scaffold", str(out)]) == 0
+    html = out.read_text()
+    assert "declares no" in html and "release notes" in html
+    assert "TODO" in html, "the slot must stay obviously unfinished"
