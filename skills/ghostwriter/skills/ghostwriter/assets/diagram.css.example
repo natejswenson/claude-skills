@@ -1284,3 +1284,77 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   border-bottom: 8px solid var(--border); top: 56px; bottom: 56px; left: 84px; right: 84px; }
 .card.slide.press .rail { background: var(--surface-2); }
 .card.slide.press.cta .action { color: #F5F0E6; border-radius: 0; }
+
+/* --- BROCHURE composition (Press) ---------------------------------------
+   The only layout Press does not already provide: a slender vertical plate
+   down the left third carrying an illustration composed for THIS release,
+   with the reading column beside it. Masthead, install block and colophon
+   span both columns so the frame stays the Press frame.
+   Everything else on the card is stock Press vocabulary. */
+
+#canvas.card.press[data-card="brochure"] {
+  display: grid;
+  grid-template-columns: 336px 1fr;
+  grid-template-rows: auto 1fr auto auto;
+  column-gap: 58px;
+  row-gap: 0;
+  align-content: start;
+  justify-content: stretch;
+}
+
+#canvas.card.press[data-card="brochure"] > .mast,
+#canvas.card.press[data-card="brochure"] > .install,
+#canvas.card.press[data-card="brochure"] > .colophon { grid-column: 1 / -1; }
+
+/* the plate: a hairline rule on its right edge separates it from the column,
+   in keeping with "rules divide, whitespace groups" */
+.card.press[data-card="brochure"] .plate {
+  grid-column: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-right: 44px;
+  border-right: 2px solid var(--rule);
+}
+
+.card.press[data-card="brochure"] .plate svg { width: 100%; height: auto; display: block; }
+
+.card.press[data-card="brochure"] .col {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 34px;
+  min-width: 0;
+}
+
+.card.press[data-card="brochure"] .col > * { margin: 0; }
+
+/* the install block: both steps, side by side, full width */
+.card.press[data-card="brochure"] .install {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 20px;
+  row-gap: 14px;
+  margin-top: 40px;
+}
+
+.card.press[data-card="brochure"] .install .step-no {
+  font: 700 26px/1 var(--mono);
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+}
+
+.card.press[data-card="brochure"] .install .cmdbar { white-space: nowrap; }
+
+/* A value must never break mid-token: "2026-08-04" split across two lines at
+   the hyphen in the narrower column beside the plate. */
+.card.press[data-card="brochure"] .fact .fval { white-space: nowrap; }
+
+/* The plate's ink follows the card; a single accent mark is allowed inside it
+   (see the template's plate notes) and paper knockouts sit on solid ink. */
+.card.press[data-card="brochure"] .plate svg { color: var(--ink); }
+.card.press[data-card="brochure"] .plate .sig-fill { fill: var(--press-sig); }
+.card.press[data-card="brochure"] .plate .ink-fill { fill: var(--ink); }
+.card.press[data-card="brochure"] .plate .knock { fill: none; stroke: var(--paper); }
