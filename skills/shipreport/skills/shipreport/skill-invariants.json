@@ -18,6 +18,11 @@
       "id": "detection-is-the-question-budget",
       "pattern": "never ask about anything in it",
       "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "art-is-composed-not-generated",
+      "pattern": "A generic icon is a failure",
+      "rationale": "The card scenes are the reason the sheet is worth looking at. The moment a run reaches for a stock glyph the report becomes a list with decoration, and nothing in code can tell the difference between a lazy drawing and a considered one."
     }
   ],
   "split": {

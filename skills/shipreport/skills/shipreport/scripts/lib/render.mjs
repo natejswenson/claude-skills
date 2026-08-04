@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { appendix } from './receipts.mjs';
 import { collapseReleaseSeries, foldSquashCommits } from './rank.mjs';
-import { glyphSvg, iconFor } from './glyphs.mjs';
+import { validateDraftArt } from './art.mjs';
 
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -105,33 +105,25 @@ ${strip.map((x) => `        <div class="stat"><div class="value">${esc(x.n)}</di
       </div>
     </div>`;
 
+  // Every card's scene is validated before a byte is written, so a report can
+  // never half-render with one illustration missing.
+  validateDraftArt(draft);
+
   const sectionsHtml = (draft.sections ?? []).map((s) => {
-    // House rule, from ghostwriter's card catalogue: meaningful and few. Two
-    // items in one section wearing the same glyph means at least one of them
-    // was decorated rather than described.
-    const seen = new Map();
-    for (const it of s.items ?? []) {
-      const g = iconFor(it, (it.receipts ?? [])[0]);
-      if (seen.has(g)) throw new Error(`section "${s.title}": glyph "${g}" used by both "${seen.get(g)}" and "${it.title}" — pick one that matches the idea`);
-      seen.set(g, it.title);
-    }
     const rows = (s.items ?? []).map((it) => {
       const receipts = it.receipts ?? [];
-      const icon = iconFor(it, receipts[0]);
       const citesHtml = receipts.map((r) => {
         const hit = lookup(corpus, r);
         return hit?.url
           ? `<a class="cite" href="${esc(hit.url)}">${esc(citeLabel(r))}</a>`
           : `<span class="cite">${esc(citeLabel(r))}</span>`;
       }).join('');
-      return `        <div class="lrow">
-          ${glyphSvg(icon)}
-          <div class="lbody">
-            <h3 class="lt">${esc(it.title)}</h3>
-            <p class="le">${esc(it.text)}</p>
-            <div class="cites">${citesHtml}</div>
-          </div>
-        </div>`;
+      return `        <article class="lrow">
+          <figure class="art">${it.art}</figure>
+          <h3 class="lt">${esc(it.title)}</h3>
+          <p class="le">${esc(it.text)}</p>
+          <div class="cites">${citesHtml}</div>
+        </article>`;
     }).join('\n');
 
     return `
@@ -175,10 +167,11 @@ ${css}
       <div class="byline">${esc(byline)}</div>
     </header>
 
-    <h1>${esc(stripTags(draft.headline))}</h1>
-
-    <div class="standfirst">
+    <div class="lede">
+      <h1>${esc(stripTags(draft.headline))}</h1>
+      <div class="standfirst">
 ${standfirstHtml}
+      </div>
     </div>
 ${heroHtml}
 ${sectionsHtml}

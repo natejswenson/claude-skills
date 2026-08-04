@@ -20,7 +20,7 @@ import { foldSquashCommits, collapseReleaseSeries, parseTag, rankItems } from '.
 import { checkDraft, appendix } from '../lib/receipts.mjs';
 import { resolveReceipt } from '../lib/corpus.mjs';
 import { computeNumbers, heroFigure, renderHtml } from '../lib/render.mjs';
-import { glyphSvg, iconFor, GLYPH_NAMES, UnknownGlyph } from '../lib/glyphs.mjs';
+import { validateArt, validateDraftArt, artFingerprint, ArtProblem, VIEWBOX, MIN_PRIMITIVES } from '../lib/art.mjs';
 
 const CSS_PATH = join(HERE, '..', '..', 'assets', 'report.css');
 
@@ -280,47 +280,58 @@ test('no frozen session digest carries prompt text', () => {
   assert.deepEqual(leaked, [], 'a frozen session digest carries prompt text');
 });
 
-// ── glyphs: meaningful and few ──────────────────────────────────────────────
+// ── card art: validated, never generated ───────────────────────────────────
 
-test('an unknown glyph throws instead of rendering nothing', () => {
-  // A silently-missing icon looks like a layout bug, and layout bugs get
-  // "fixed" by deleting the slot.
-  assert.throws(() => glyphSvg('definitely-not-a-glyph'), UnknownGlyph);
-  assert.match(glyphSvg('rocket'), /^<svg class="gl" viewBox="0 0 24 24"/);
+const scene = (extra = '') => `<svg viewBox="${VIEWBOX}" fill="none" stroke="currentColor">`
+  + '<rect x="10" y="10" width="40" height="40"/><line x1="0" y1="0" x2="10" y2="10"/>'
+  + '<circle cx="20" cy="20" r="5"/><polyline points="1,1 2,2"/><path d="M0 0h10"/>'
+  + extra + '</svg>';
+
+test('art must exist, be one svg, and share the frame', () => {
+  assert.throws(() => validateArt(undefined, 'x'), ArtProblem);
+  assert.throws(() => validateArt('', 'x'), ArtProblem);
+  assert.throws(() => validateArt('<div>nope</div>', 'x'), /single inline <svg>/);
+  assert.throws(() => validateArt(scene().replace(VIEWBOX, '0 0 10 10'), 'x'), /viewBox/);
+  assert.deepEqual(validateArt(scene(), 'x'), { primitives: 5 });
 });
 
-test('every catalogued glyph is stroke-only, per the house card conventions', () => {
-  assert.ok(GLYPH_NAMES.length >= 20, `catalogue collapsed to ${GLYPH_NAMES.length} glyphs`);
-  for (const name of GLYPH_NAMES) {
-    const svg = glyphSvg(name);
-    assert.match(svg, /fill="none"/, `${name} is not stroke-only`);
-    assert.match(svg, /stroke="currentColor"/, `${name} hardcodes a stroke colour instead of inheriting the token`);
-    assert.ok(!/fill="(?!none)/.test(svg), `${name} carries a fill — laws.md §2 forbids fills`);
+test('a lone shape is refused as a placeholder', () => {
+  const thin = `<svg viewBox="${VIEWBOX}"><circle cx="5" cy="5" r="2"/></svg>`;
+  assert.throws(() => validateArt(thin, 'x'), new RegExp(`below the floor of ${MIN_PRIMITIVES}`));
+});
+
+test('a colour literal in art is refused — the brand is generated, never typed', () => {
+  for (const bad of ['<rect fill="#E8501F" x="0" y="0" width="1" height="1"/>',
+    "<line stroke='red' x1='0' y1='0' x2='1' y2='1'/>",
+    '<rect fill="rgb(1,2,3)" x="0" y="0" width="1" height="1"/>']) {
+    assert.throws(() => validateArt(scene(bad), 'x'), /hardcodes a colour/, bad);
+  }
+  // currentColor and none are the two permitted paints
+  assert.ok(validateArt(scene('<rect fill="none" stroke="currentColor" x="0" y="0" width="1" height="1"/>'), 'x'));
+});
+
+test('art may not reach off the page or execute', () => {
+  for (const bad of ['<script>x()</script>', '<image href="a.png"/>', '<foreignObject/>',
+    '<rect onload="x()" x="0" y="0" width="1" height="1"/>',
+    '<use href="https://evil/x"/>']) {
+    assert.throws(() => validateArt(scene(bad), 'x'), ArtProblem, bad);
   }
 });
 
-test('an item with no icon falls back by the kind of its first receipt', () => {
-  assert.equal(iconFor({}, 'release:o/r@v1.0.0'), 'rocket');
-  assert.equal(iconFor({}, 'session:abc'), 'search');
-  assert.equal(iconFor({ icon: 'scale' }, 'release:o/r@v1.0.0'), 'scale', 'an explicit icon wins over the fallback');
+test('two cards may never wear the same scene, and jitter does not launder it', () => {
+  const item = (title, art) => ({ title, text: 't', receipts: ['pr:o/r#12'], art });
+  const draft = { sections: [{ title: 'S', items: [item('One', scene()), item('Two', scene())] }] };
+  assert.throws(() => validateDraftArt(draft), /already used by "One"/);
+
+  // the fingerprint normalises whitespace and numeric jitter
+  assert.equal(artFingerprint(scene()), artFingerprint(scene().replace('x="10"', 'x="10.4"  ')));
 });
 
-test('two items in one section may not wear the same glyph', () => {
-  const draft = {
-    headline: 'x',
-    standfirst: [],
-    sections: [{
-      title: 'Shipped',
-      items: [
-        { title: 'One', text: 'a', receipts: ['pr:o/r#12'], icon: 'shield' },
-        { title: 'Two', text: 'b', receipts: ['pr:o/r#12'], icon: 'shield' },
-      ],
-    }],
-  };
-  assert.throws(
-    () => renderHtml({ draft, corpus: CORPUS, window: { since: 'a', until: 'b' }, items: [], cssPath: CSS_PATH }),
-    /glyph "shield" used by both/,
-  );
+test('the real draft carries nine distinct scenes', () => {
+  const draft = JSON.parse(readFileSync(join(HERE, '..', '..', 'evals', 'baseline', 'draft.json'), 'utf8'));
+  const { total, distinct } = validateDraftArt(draft);
+  assert.ok(total >= 9, `the frozen draft lost cards: ${total}`);
+  assert.equal(total, distinct, 'two cards share a scene');
 });
 
 // ── the hero figure ─────────────────────────────────────────────────────────

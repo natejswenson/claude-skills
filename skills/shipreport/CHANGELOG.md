@@ -45,11 +45,19 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   and the strip are computed from the window rather than authored, because there
   is no receipt shape for a figure.
 
-- **A glyph per card, meaningful and few.** 24×24 stroke-only icons on the same
-  conventions as ghostwriter's card catalogue, so the sheet and the cards read as
-  one publication. There is deliberately no hash-to-icon fallback: an icon chosen
-  by hashing a title is decoration wearing the costume of meaning. An unknown
-  glyph throws, and two items in one section sharing a glyph throws.
+- **One original line-art scene per card, composed not catalogued.** The same
+  contract devlog uses for its covers, one level smaller: read the item, name the
+  concrete mechanism, draw *that*. Two versions and a selector that took the lower
+  one; a chain whose links all report green and whose last one is missing; eight
+  near-identical copies collapsing into one definition. A drawing this repo could
+  generate would be the same drawing every time, which is the failure the idea
+  exists to avoid — so `scripts/lib/art.mjs` validates and never draws.
+
+  It refuses: a missing scene, anything that is not a single `<svg>`, a colour
+  literal (the brand is generated, never typed), a `<script>`/`<image>`/
+  `<foreignObject>`/external reference/inline handler, fewer than five drawing
+  elements, a `viewBox` other than the shared frame, and two cards whose scenes
+  match on a fingerprint that normalises whitespace and numeric jitter.
 
 ### The brand laws this obeys
 
@@ -61,6 +69,12 @@ the hero figure, per §1; a test counts them. `press lint` runs in `ci / shiprep
 alongside `press check`, because only the lint catches a hand-written hex or a
 letter-spacing above the extraction ceiling in the hand-written half of the
 stylesheet — it caught a literal white on its first run.
+
+### Density
+
+Three cards to a row rather than two, so a three-item section is exactly one row
+and leaves no orphan void; headline and standfirst share one band instead of
+stacking with a third of the sheet empty to the right.
 
 ### Notes
 

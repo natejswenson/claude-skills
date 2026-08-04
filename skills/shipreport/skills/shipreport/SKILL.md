@@ -90,7 +90,23 @@ artifact.
 **Never write the sentence first and then hunt for a receipt to attach.** The
 gate cannot catch that, and nothing can.
 
-### 5. Write the draft
+### 5. Compose the art — one original scene per card
+
+**This is the step that makes the sheet worth looking at, and it is judgment.**
+Read `references/illustration.md` first. Each card carries a small line-art scene
+composed for *that* item, depicting the concrete mechanism — two versions and a
+selector that picked the lower one; a chain whose links all report green and
+whose last one is missing; eight near-identical copies collapsing into one
+definition.
+
+- **A generic icon is a failure**, however tidy. The title already says what the
+  item is; the drawing shows how it worked or failed.
+- **No two cards may look alike.** `render` refuses duplicates on a normalised
+  fingerprint, but the real test is the eye.
+- **Ink only.** The accent budget is already spent on the stamp and the hero
+  figure, so a colour literal is refused outright.
+
+### 6. Write the draft
 
 A JSON file — `references/receipts.md` has the shape. Three things to hold:
 
@@ -102,7 +118,7 @@ A JSON file — `references/receipts.md` has the shape. Three things to hold:
   the ranking buried something that mattered, cite it anyway — then say which
   weight was wrong.
 
-### 6. Gate it
+### 7. Gate it
 
 ```bash
 node scripts/shipreport.js receipts --draft <file>
@@ -112,7 +128,7 @@ If it refuses, **fix the draft, never the checker.** A claim that cannot find a
 receipt is a claim to delete or shrink — "investigated" is a real, citable
 outcome; "fixed" is not, until something merged.
 
-### 7. Render, and show it
+### 8. Render, and show it
 
 ```bash
 node scripts/shipreport.js render --draft <file> --out <file.html>
@@ -148,7 +164,11 @@ Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
 - **Never fix a refusal by weakening the gate.** `receipts` is argued with by
   changing the draft.
 - **Never hand-write a brand value.** `assets/report.css`'s `:root` block is a
-  press-generated region; change `tokens.json` and re-run `press emit`.
+  press-generated region; change `tokens.json` and re-run `press emit`. Card art
+  may paint only `currentColor` or `none` — a hex in a drawing is a brand value
+  written down in a second place.
+- **Never let a card wear a generic icon.** A scene that would look right on any
+  other card has not found the mechanism yet.
 
 <!-- press:agent-ui -->
 
@@ -163,11 +183,13 @@ Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
 | `scripts/lib/corpus.mjs` | the cache, the watermark, and receipt resolution |
 | `scripts/lib/rank.mjs` | scoring, squash folding, release-series collapse, the line |
 | `scripts/lib/receipts.mjs` | the one rule as code: receipt, resolution, no raw ids in prose |
-| `scripts/lib/render.mjs` | the press-styled sheet; computes the numbers strip itself |
+| `scripts/lib/render.mjs` | the press-styled sheet, composed from press's named components |
+| `scripts/lib/art.mjs` | the card-art contract — validated, never generated |
 | `assets/report.css` | the sheet's stylesheet — its `:root` is a press region |
 | `references/anatomy.md` | the fixed shape of the report — its sections, the receipt appendix, and what is never allowed in the body |
 | `references/ranking.md` | the scoring function, why each signal is weighted the way it is, and what drawing the line means |
 | `references/receipts.md` | the citation contract — what counts as a resolvable receipt, and the drop rule that follows when one does not resolve |
+| `references/illustration.md` | how to compose a card's scene, and what the validator refuses |
 | `references/sources.md` | where the data comes from — the session transcript shape, the GitHub queries, the redaction classes, and the watermark model that makes the second run cheap |
 
 ## Maintainer reference — not part of a user run
