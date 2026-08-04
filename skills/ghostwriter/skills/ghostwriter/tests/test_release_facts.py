@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from scripts import release_facts as rf
+import release_facts as rf
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
