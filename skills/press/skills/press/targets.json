@@ -731,6 +731,12 @@
             "token": "paper_surface"
           },
           {
+            "token": "ink_faint"
+          },
+          {
+            "token": "paper_elevated"
+          },
+          {
             "token": "ink"
           },
           {

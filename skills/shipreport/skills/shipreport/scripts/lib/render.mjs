@@ -1,21 +1,38 @@
 /**
  * The press-styled sheet.
  *
- * The numbers strip is computed here from the corpus, never taken from the
- * draft: a figure the model typed is a figure the model could have invented,
- * and there is no receipt shape for "12".
+ * Composed from the named component vocabulary in press's `brand/components.md`
+ * — masthead, headline, standfirst, big stat, stat strip, ledger, data table,
+ * colophon — because those names are the contract that makes this sheet and a
+ * dev-log card read as the same publication.
+ *
+ * Two laws bind the markup rather than the CSS, so they are stated here too:
+ * the accent is spent exactly twice (the stamp, and the hero figure), and
+ * structure is carried by rules and whitespace — this file never emits a
+ * container to group things.
  */
 import { readFileSync } from 'node:fs';
 import { appendix } from './receipts.mjs';
 import { collapseReleaseSeries, foldSquashCommits } from './rank.mjs';
+import { glyphSvg, iconFor } from './glyphs.mjs';
 
 const esc = (s) => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** Only <em> survives from the draft's prose, and only in the headline. */
-const inlineEm = (s) => esc(s).replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>');
-
 const day = (iso) => String(iso ?? '').slice(0, 10);
+
+/**
+ * Drafts used to mark an accent pivot in the headline with <em>. The accent is
+ * now spent on the stamp and the hero figure, which is the two the law allows,
+ * so a third would break it — the tag is stripped rather than rendered, so an
+ * older draft degrades to clean text instead of printing markup.
+ */
+const stripTags = (s) => {
+  let out = String(s ?? '');
+  let prev;
+  do { prev = out; out = out.replace(/<[^>]*>/g, ''); } while (out !== prev);
+  return out;
+};
 
 const KIND_LABEL = { pr: 'pull request', commit: 'commit', release: 'release', session: 'session' };
 
@@ -36,7 +53,7 @@ export function computeNumbers(windowItems) {
   const n = (k) => kept.filter((i) => i.kind === k).length;
   const repos = new Set(kept.filter((i) => i.repo).map((i) => i.repo));
   const out = [
-    { k: 'released', n: n('release'), hot: n('release') > 0 },
+    { k: 'released', n: n('release') },
     { k: 'merged', n: n('pr') },
     { k: 'commits', n: n('commit') },
     { k: 'sessions', n: n('session') },
@@ -45,7 +62,19 @@ export function computeNumbers(windowItems) {
   return out.filter((x) => x.n > 0);
 }
 
-const citeUrl = (item) => item?.url ?? null;
+/**
+ * The hero is whichever figure the window actually turned on: releases if
+ * anything shipped, otherwise merged work, otherwise sessions. A zero hero is
+ * never printed — a week where nothing shipped says so in the prose, not with a
+ * giant nought.
+ */
+export function heroFigure(numbers) {
+  for (const key of ['released', 'merged', 'sessions', 'commits']) {
+    const hit = numbers.find((x) => x.k === key);
+    if (hit && hit.n > 0) return hit;
+  }
+  return null;
+}
 
 const citeLabel = (receipt) => {
   if (receipt.startsWith('pr:')) return receipt.replace(/^pr:.*#/, 'PR #');
@@ -55,51 +84,85 @@ const citeLabel = (receipt) => {
   return receipt;
 };
 
+const lookup = (corpus, r) => corpus.github[r] ?? corpus.sessions[r] ?? null;
+
 export function renderHtml({ draft, corpus, window: win, items, cssPath, stamp = 'NS', byline = '' }) {
   const css = readFileSync(cssPath, 'utf8');
   const numbers = computeNumbers(items);
+  const hero = heroFigure(numbers);
   const cites = appendix(draft, corpus);
 
-  const numbersHtml = numbers.length === 0 ? '' : `
-    <div class="numbers">
-${numbers.map((x) => `      <div><div class="n${x.hot ? ' hot' : ''}">${esc(x.n)}</div><div class="k">${esc(x.k)}</div></div>`).join('\n')}
+  const strip = numbers.filter((x) => !hero || x.k !== hero.k);
+
+  const heroHtml = !hero ? '' : `
+    <div class="hero">
+      <div class="bigstat">
+        <div class="fig">${esc(hero.n)}</div>
+        <div class="kicker">${esc(hero.k)}</div>
+      </div>
+      <div class="stat-strip">
+${strip.map((x) => `        <div class="stat"><div class="value">${esc(x.n)}</div><div class="label">${esc(x.k)}</div></div>`).join('\n')}
+      </div>
     </div>`;
 
-  const sectionsHtml = (draft.sections ?? []).map((s) => `
-    <section>
-      <h2>${esc(s.title)}</h2>
-${(s.items ?? []).map((it) => `      <div class="item">
-        <h3>${esc(it.title)}</h3>
-        <p>${esc(it.text)}</p>
-        <div class="cites">${(it.receipts ?? []).map((r) => {
-    const hit = corpus.github[r] ?? corpus.sessions[r] ?? null;
-    const url = citeUrl(hit);
-    return url
-      ? `<a class="cite" href="${esc(url)}">${esc(citeLabel(r))}</a>`
-      : `<span class="cite">${esc(citeLabel(r))}</span>`;
-  }).join('')}</div>
-      </div>`).join('\n')}
-    </section>`).join('\n');
+  const sectionsHtml = (draft.sections ?? []).map((s) => {
+    // House rule, from ghostwriter's card catalogue: meaningful and few. Two
+    // items in one section wearing the same glyph means at least one of them
+    // was decorated rather than described.
+    const seen = new Map();
+    for (const it of s.items ?? []) {
+      const g = iconFor(it, (it.receipts ?? [])[0]);
+      if (seen.has(g)) throw new Error(`section "${s.title}": glyph "${g}" used by both "${seen.get(g)}" and "${it.title}" — pick one that matches the idea`);
+      seen.set(g, it.title);
+    }
+    const rows = (s.items ?? []).map((it) => {
+      const receipts = it.receipts ?? [];
+      const icon = iconFor(it, receipts[0]);
+      const citesHtml = receipts.map((r) => {
+        const hit = lookup(corpus, r);
+        return hit?.url
+          ? `<a class="cite" href="${esc(hit.url)}">${esc(citeLabel(r))}</a>`
+          : `<span class="cite">${esc(citeLabel(r))}</span>`;
+      }).join('');
+      return `        <div class="lrow">
+          ${glyphSvg(icon)}
+          <div class="lbody">
+            <h3 class="lt">${esc(it.title)}</h3>
+            <p class="le">${esc(it.text)}</p>
+            <div class="cites">${citesHtml}</div>
+          </div>
+        </div>`;
+    }).join('\n');
+
+    return `
+    <section class="report-section">
+      <h2 class="block-title"><span>${esc(s.title)}</span><span class="count">${(s.items ?? []).length}</span></h2>
+      <div class="ledger">
+${rows}
+      </div>
+    </section>`;
+  }).join('\n');
 
   const appendixHtml = cites.length === 0 ? '' : `
-    <section class="receipts">
-      <h2>Receipts</h2>
-      <table>
+    <section class="report-section">
+      <h2 class="block-title"><span>Receipts</span><span class="count">${cites.length}</span></h2>
+      <table class="data">
         <thead><tr><th>id</th><th>what</th><th>when</th></tr></thead>
         <tbody>
-${cites.map(({ receipt, item }) => `          <tr><td class="id">${esc(citeLabel(receipt))}</td><td>${item.url ? `<a href="${esc(item.url)}">${esc(item.title)}</a>` : esc(item.title)}<br><span style="color:var(--dim)">${esc(KIND_LABEL[item.kind] ?? item.kind)}${item.repo ? ` · ${esc(item.repo)}` : ''}${item.project ? ` · ${esc(item.project)}` : ''}</span></td><td class="id">${esc(day(item.at))}</td></tr>`).join('\n')}
+${cites.map(({ receipt, item }) => `          <tr><td class="id">${esc(citeLabel(receipt))}</td><td>${item.url ? `<a href="${esc(item.url)}">${esc(item.title)}</a>` : esc(item.title)}<br><span class="sub">${esc(KIND_LABEL[item.kind] ?? item.kind)}${item.repo ? ` · ${esc(item.repo)}` : ''}${item.project ? ` · ${esc(item.project)}` : ''}</span></td><td class="id">${esc(day(item.at))}</td></tr>`).join('\n')}
         </tbody>
       </table>
     </section>`;
 
   const standfirstHtml = (draft.standfirst ?? []).map((p) => `      <p>${esc(p)}</p>`).join('\n');
+  const title = draft.title ?? 'Shipped';
 
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(draft.title ?? 'Shipped')} — ${esc(day(win.since))} to ${esc(day(win.until))}</title>
+<title>${esc(title)} — ${esc(day(win.since))} to ${esc(day(win.until))}</title>
 <style>
 ${css}
 </style>
@@ -107,22 +170,23 @@ ${css}
 <body>
   <main class="sheet">
     <header class="masthead">
-      <h1>${esc(draft.title ?? 'Shipped')}</h1>
-      <div class="window">${esc(day(win.since))} → ${esc(day(win.until))}</div>
+      <div class="stamp">${esc(stamp)}</div>
+      <div class="eyebrow">${esc(title)} · executive summary · ${esc(day(win.since))} → ${esc(day(win.until))}</div>
+      <div class="byline">${esc(byline)}</div>
     </header>
 
-    <p class="headline">${inlineEm(draft.headline ?? '')}</p>
+    <h1>${esc(stripTags(draft.headline))}</h1>
 
     <div class="standfirst">
 ${standfirstHtml}
     </div>
-${numbersHtml}
+${heroHtml}
 ${sectionsHtml}
 ${appendixHtml}
 
     <footer class="colophon">
-      <span class="stamp">${esc(stamp)}</span>
-      <span>${esc(byline)}</span>
+      <span>every claim above resolves to a listed receipt</span>
+      <span>${esc(day(win.since))} → ${esc(day(win.until))}</span>
     </footer>
   </main>
 </body>

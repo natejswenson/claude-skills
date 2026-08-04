@@ -68,9 +68,21 @@ jobs:
       - if: steps.changes.outputs.shipreport == 'true'
         run: python tools/lint_plugin.py skills/shipreport
 
-      # Tier 1.6 — brand drift, this skill's regions only
+      # Tier 1.6 — brand drift, this skill's regions only. The theme target is
+      # listed too: the report stylesheet carries a generated token region, and
+      # omitting it here means the region could drift without failing the PR
+      # that caused it, which is the whole point of the per-skill check.
       - if: steps.changes.outputs.shipreport == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target shipreport-agent-ui --target shipreport-readme
+        run: >-
+          node skills/press/skills/press/bin/press.js check --repo .
+          --target shipreport-agent-ui --target shipreport-readme --target shipreport-theme
+
+      # Tier 1.7 — brand LAWS, not just the token region. `press check` proves
+      # the generated block matches; only `press lint` catches a hand-written
+      # hex or a letter-spacing above the extraction ceiling in the hand-written
+      # half of the stylesheet. It caught a literal white here on first run.
+      - if: steps.changes.outputs.shipreport == 'true'
+        run: node skills/press/skills/press/bin/press.js lint skills/shipreport/skills/shipreport/assets/report.css
 
       # Tier 2 — shipreport's own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.

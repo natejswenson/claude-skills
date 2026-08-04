@@ -19,7 +19,10 @@ import { repoName } from '../lib/github.mjs';
 import { foldSquashCommits, collapseReleaseSeries, parseTag, rankItems } from '../lib/rank.mjs';
 import { checkDraft, appendix } from '../lib/receipts.mjs';
 import { resolveReceipt } from '../lib/corpus.mjs';
-import { computeNumbers } from '../lib/render.mjs';
+import { computeNumbers, heroFigure, renderHtml } from '../lib/render.mjs';
+import { glyphSvg, iconFor, GLYPH_NAMES, UnknownGlyph } from '../lib/glyphs.mjs';
+
+const CSS_PATH = join(HERE, '..', '..', 'assets', 'report.css');
 
 // ── redaction ───────────────────────────────────────────────────────────────
 
@@ -275,4 +278,77 @@ test('no frozen session digest carries prompt text', () => {
   const se = JSON.parse(readFileSync(join(HERE, '..', '..', 'evals', 'baseline', 'corpus', 'sessions.json'), 'utf8'));
   const leaked = Object.entries(se).filter(([, v]) => 'firstPrompt' in v).map(([k]) => k);
   assert.deepEqual(leaked, [], 'a frozen session digest carries prompt text');
+});
+
+// ── glyphs: meaningful and few ──────────────────────────────────────────────
+
+test('an unknown glyph throws instead of rendering nothing', () => {
+  // A silently-missing icon looks like a layout bug, and layout bugs get
+  // "fixed" by deleting the slot.
+  assert.throws(() => glyphSvg('definitely-not-a-glyph'), UnknownGlyph);
+  assert.match(glyphSvg('rocket'), /^<svg class="gl" viewBox="0 0 24 24"/);
+});
+
+test('every catalogued glyph is stroke-only, per the house card conventions', () => {
+  assert.ok(GLYPH_NAMES.length >= 20, `catalogue collapsed to ${GLYPH_NAMES.length} glyphs`);
+  for (const name of GLYPH_NAMES) {
+    const svg = glyphSvg(name);
+    assert.match(svg, /fill="none"/, `${name} is not stroke-only`);
+    assert.match(svg, /stroke="currentColor"/, `${name} hardcodes a stroke colour instead of inheriting the token`);
+    assert.ok(!/fill="(?!none)/.test(svg), `${name} carries a fill — laws.md §2 forbids fills`);
+  }
+});
+
+test('an item with no icon falls back by the kind of its first receipt', () => {
+  assert.equal(iconFor({}, 'release:o/r@v1.0.0'), 'rocket');
+  assert.equal(iconFor({}, 'session:abc'), 'search');
+  assert.equal(iconFor({ icon: 'scale' }, 'release:o/r@v1.0.0'), 'scale', 'an explicit icon wins over the fallback');
+});
+
+test('two items in one section may not wear the same glyph', () => {
+  const draft = {
+    headline: 'x',
+    standfirst: [],
+    sections: [{
+      title: 'Shipped',
+      items: [
+        { title: 'One', text: 'a', receipts: ['pr:o/r#12'], icon: 'shield' },
+        { title: 'Two', text: 'b', receipts: ['pr:o/r#12'], icon: 'shield' },
+      ],
+    }],
+  };
+  assert.throws(
+    () => renderHtml({ draft, corpus: CORPUS, window: { since: 'a', until: 'b' }, items: [], cssPath: CSS_PATH }),
+    /glyph "shield" used by both/,
+  );
+});
+
+// ── the hero figure ─────────────────────────────────────────────────────────
+
+test('the hero is the figure the window actually turned on', () => {
+  assert.deepEqual(heroFigure([{ k: 'released', n: 3 }, { k: 'merged', n: 9 }]), { k: 'released', n: 3 });
+  // Nothing released: the hero falls through rather than printing a giant zero.
+  assert.deepEqual(heroFigure([{ k: 'merged', n: 9 }, { k: 'sessions', n: 2 }]), { k: 'merged', n: 9 });
+  assert.equal(heroFigure([]), null);
+});
+
+test('the rendered sheet spends the accent exactly twice', () => {
+  // laws.md §1: one loud colour, spent once or twice — here the stamp and the
+  // hero figure. A third use is the law failing quietly.
+  const draft = JSON.parse(readFileSync(join(HERE, '..', '..', 'evals', 'baseline', 'draft.json'), 'utf8'));
+  const corpusDir = join(HERE, '..', '..', 'evals', 'baseline', 'corpus');
+  const corpus = {
+    dir: corpusDir,
+    meta: {},
+    github: JSON.parse(readFileSync(join(corpusDir, 'github.json'), 'utf8')),
+    sessions: JSON.parse(readFileSync(join(corpusDir, 'sessions.json'), 'utf8')),
+  };
+  const html = renderHtml({
+    draft, corpus, window: draft.window, items: Object.values(corpus.github), cssPath: CSS_PATH,
+  });
+  const body = html.slice(html.indexOf('<body'));
+  assert.equal((body.match(/class="stamp"/g) ?? []).length, 1);
+  assert.equal((body.match(/class="fig"/g) ?? []).length, 1);
+  // and the markup never draws a container to group things
+  assert.ok(!/border-radius/.test(html.slice(html.indexOf('<body'))), 'radius in the markup');
 });

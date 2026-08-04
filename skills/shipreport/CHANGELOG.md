@@ -37,10 +37,30 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   prose. It exits non-zero, and `render` re-runs it rather than trusting that it
   passed earlier.
 
-- **`render` — a press-styled sheet.** Report stylesheet tokens come from the
-  `shipreport-theme` press region, so no brand value is written here. The numbers
-  strip is computed from the window rather than authored, because there is no
-  receipt shape for a figure.
+- **`render` — a press-styled sheet composed from the named component
+  vocabulary.** Masthead with stamp and eyebrow, headline, standfirst, a hero
+  `.bigstat` figure, a ruled `.stat-strip`, sections of `.ledger` cards laid two
+  to a row, a `table.data` receipt appendix, and a colophon. Tokens come from the
+  `shipreport-theme` press region, so no brand value is written here. The hero
+  and the strip are computed from the window rather than authored, because there
+  is no receipt shape for a figure.
+
+- **A glyph per card, meaningful and few.** 24×24 stroke-only icons on the same
+  conventions as ghostwriter's card catalogue, so the sheet and the cards read as
+  one publication. There is deliberately no hash-to-icon fallback: an icon chosen
+  by hashing a title is decoration wearing the costume of meaning. An unknown
+  glyph throws, and two items in one section sharing a glyph throws.
+
+### The brand laws this obeys
+
+The card grid is divided by ink rules and proximity — **never by drawing a
+container** — because `laws.md` §2 forbids rounded corners, shadows, gradients,
+fills and boxes inside boxes, and says plainly that this is the brand rather than
+minimalism awaiting a fix. The accent is spent exactly twice, on the stamp and
+the hero figure, per §1; a test counts them. `press lint` runs in `ci / shipreport`
+alongside `press check`, because only the lint catches a hand-written hex or a
+letter-spacing above the extraction ceiling in the hand-written half of the
+stylesheet — it caught a literal white on its first run.
 
 ### Notes
 
