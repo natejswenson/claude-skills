@@ -21,10 +21,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   second loud thing the brand does not allow. Two brochures must never carry the
   same scene.
 
+  The plate has three paints, all bound to brand tokens rather than typed:
+  `stroke="currentColor"` for ink line work, `.ink-fill` for a solid block,
+  `.knock` for paper knocked out of one, and `.sig-fill` for **at most one**
+  accent mark — spent on the single thing the drawing is about. The render lint
+  fails a plate carrying two.
+
   Everything beside the plate is stock Press vocabulary. The only new rules are
   the two-column layout itself, because a vertical plate is the one shape Press
   did not already provide. Keep the refusal when swapping a component: a brochure
   that only lists features is an advert, and the refusal is what makes it a claim.
+
+- **`release_facts.py --scaffold` — the brochure starts correct instead of being
+  assembled by hand.** It writes the card with every factual slot already filled
+  from the release and leaves the judgment slots marked `TODO`. A card assembled
+  by hand is a card whose version, date and install steps depend on whoever
+  assembled it; this is what makes a second brochure as right as the first.
+
+  The example plate carries `id="plate-example"` and the render lint **fails**
+  while it survives, so the demo drawing can never ship as somebody's release.
 
 - **`scripts/release_facts.py` — the evidence the brochure is allowed to claim.**
   A brochure is marketing, which is why it needs a *harder* evidence rule than an

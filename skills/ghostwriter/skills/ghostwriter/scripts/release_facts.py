@@ -148,11 +148,53 @@ def table(headers: list[str], rows: list[list[str]]) -> str:
                       *(line(r) for r in rows)])
 
 
+TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "card-template-brochure.html"
+
+# Judgment slots stay marked; factual slots are substituted. Repeatability is the
+# whole point: a card assembled by hand is a card whose version, date and install
+# steps depend on whoever assembled it.
+_QUOTE_OLD = (
+    '<div class="q">The one rule, quoted from the skill rather than softened\n'
+    '          into something easier to promise.</div>'
+)
+
+
+def scaffold(facts: dict) -> str:
+    """The brochure with every FACTUAL slot already filled from the release."""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    rule = facts.get("oneRule") or "TODO - this skill declares no one rule"
+    # A quote that runs long stops being a pull quote; keep the leading clause.
+    if len(rule) > 96:
+        rule = rule.split(" — ")[0].split(", and ")[0].rstrip(".,") + "."
+
+    subs = [
+        ('<div class="eyebrow">Eyebrow Label · <span class="no">No. 001</span></div>',
+         f'<div class="eyebrow">Release · <span class="no">{facts["skill"]}</span></div>'),
+        ('<span class="fval">v0.0.0</span>', f'<span class="fval">v{facts["version"]}</span>'),
+        ('<span class="fval">2026-01-01</span>', f'<span class="fval">{facts["published"]}</span>'),
+        ('<code class="cmdbar">the --actual first command</code>',
+         f'<code class="cmdbar">{facts["installSteps"][0]}</code>'),
+        ('<code class="cmdbar">the --actual second command</code>',
+         f'<code class="cmdbar">{facts["installSteps"][1]}</code>'),
+        (_QUOTE_OLD, f'<div class="q">{rule}</div>'),
+        ('<span class="fcap">how it was proven</span>',
+         '<span class="fcap">tag read back from origin</span>'),
+        ('<h1>One headline <span class="sig">pivot.</span></h1>',
+         '<h1>TODO headline <span class="sig">pivot.</span></h1>'),
+    ]
+    for old, new in subs:
+        html = html.replace(old, new, 1)
+    return html
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("skill")
     ap.add_argument("--repo", default=".")
     ap.add_argument("--json", dest="json_out")
+    ap.add_argument("--scaffold", dest="scaffold_out",
+                    help="write a brochure card with every FACTUAL slot filled "
+                         "from the release; judgment slots stay marked TODO")
     args = ap.parse_args(argv)
 
     repo = Path(args.repo).resolve()
@@ -216,6 +258,13 @@ def main(argv: list[str] | None = None) -> int:
         print("\nRaw material — rewrite, never paste:")
         for b in facts["changelogBullets"][:6]:
             print(f"  - {b[:110]}")
+
+    if args.scaffold_out:
+        out = Path(args.scaffold_out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(scaffold(facts), encoding="utf-8")
+        print(f"\nwrote {args.scaffold_out} — facts filled; compose the plate, "
+              "the headline, the standfirst and the proof figure")
 
     if args.json_out:
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)

@@ -27,10 +27,16 @@
   most of the height. A short mark floating in a tall empty plate reads as a
   placeholder.
 
-  INK ONLY. The card's one signature moment is the h1 .sig pivot (the stamp is
-  the identity mark). An orange drawing would be a second loud thing, which the
-  brand does not allow — use stroke weight, dashes and gaps for emphasis
-  instead. Paint attributes may be currentColor or none, nothing else.
+  THE THREE PAINTS (never a raw hex — these bind to the brand tokens):
+    stroke="currentColor"  ink line work, the default; vary stroke-width 2-9
+    class="ink-fill"       a solid ink block, for a masthead or a heavy bar
+    class="knock"          paper knocked OUT of a solid block
+    class="sig-fill"       THE accent mark — AT MOST ONE per plate
+
+  Spend the accent on the single thing the drawing is about: the seal that says
+  it resolved, the one rung that was chosen, the link that was missing. A second
+  accent mark, or an accent used for mere decoration, breaks the card — the h1
+  .sig pivot is already the loud moment and the stamp is the identity mark.
 
   Two brochures must never carry the same scene. If your instinct is a generic
   box-and-arrow, go back and find the mechanism.
@@ -53,6 +59,7 @@
     EXACTLY 3 .fact — .fval <=11 chars beside the plate · .flabel/.fcap one line
     .pull .q <=3 lines              EXACTLY 2 .cmdbar, <=52 chars each, one line
     colophon .out <=52 chars        plate svg viewBox "0 0 300 900"
+    plate: <=1 .sig-fill · id="plate-example" must be gone
 
   The composition is marked with data-card="brochure" rather than a class: the
   layout rules key off the attribute, and a class with no rule in diagram.css is
@@ -72,17 +79,23 @@
       <div class="footer brand"></div>
     </div>
 
-    <!-- PLATE: replace this entirely with a scene composed for THIS release.
-         Ink only, viewBox "0 0 300 900". See the plate notes above. -->
+    <!-- EXAMPLE ONLY — replace this whole svg with a scene composed for THIS
+         release. The render lint FAILS while id="plate-example" survives, so a
+         brochure cannot ship the demo drawing. It shows the three paints. -->
     <div class="plate">
-      <svg viewBox="0 0 300 900" fill="none" stroke="currentColor" stroke-width="3"
+      <svg id="plate-example" viewBox="0 0 300 900" fill="none" stroke="currentColor"
            stroke-linecap="round" stroke-linejoin="round">
-        <rect x="40" y="60" width="220" height="780"/>
-        <line x1="40" y1="200" x2="260" y2="200"/>
-        <line x1="80" y1="320" x2="220" y2="320"/>
-        <line x1="80" y1="460" x2="220" y2="460"/>
-        <line x1="80" y1="600" x2="220" y2="600"/>
-        <circle cx="150" cy="740" r="40"/>
+        <rect class="ink-fill" x="66" y="104" width="168" height="56" stroke="none"/>
+        <line class="knock" x1="80" y1="124" x2="194" y2="124" stroke-width="7"/>
+        <line class="knock" x1="80" y1="142" x2="160" y2="142" stroke-width="5"/>
+        <line x1="66" y1="200" x2="234" y2="200" stroke-width="2" stroke-dasharray="5 7"/>
+        <line x1="66" y1="300" x2="234" y2="300" stroke-width="5"/>
+        <line x1="66" y1="400" x2="200" y2="400" stroke-width="5"/>
+        <line x1="66" y1="500" x2="234" y2="500" stroke-width="5"/>
+        <line x1="66" y1="600" x2="180" y2="600" stroke-width="5"/>
+        <line x1="66" y1="668" x2="234" y2="668" stroke-width="9"/>
+        <rect class="sig-fill" x="88" y="716" width="112" height="96" stroke="none"/>
+        <polyline class="knock" points="110,764 132,786 178,736" stroke-width="9"/>
       </svg>
     </div>
 

@@ -377,6 +377,14 @@ LINT_JS = r"""
       push('FAIL', 'count-budget',
         'brochure shows BOTH install steps — found ' + count('.install .cmdbar') +
         ' .cmdbar in .install (marketplace add, then plugin install)');
+    // The demo drawing must never ship: a brochure whose plate is the example
+    // is a brochure nobody composed.
+    if (canvas.querySelector('#plate-example'))
+      push('FAIL', 'placeholder', 'the plate is still the template example ' +
+        '(id="plate-example") — compose a scene for THIS release');
+    if (count('.plate .sig-fill') > 1)
+      push('FAIL', 'count-budget', count('.plate .sig-fill') +
+        ' accent marks in the plate — at most one; the h1 .sig is the loud moment');
     if (count('.plate svg') !== 1)
       push('FAIL', 'count-budget',
         'brochure needs exactly one plate illustration — found ' + count('.plate svg'));

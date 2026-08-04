@@ -459,9 +459,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     (version, ship date, one proof figure) → `.pull` carrying what the skill **refuses** to do in
     its own words → **both** install steps → colophon, with a slender vertical `.plate` down the
     left third holding an illustration composed for *that* release (ink only — the h1 `.sig` is the
-    card's one signature moment). **Run `scripts/release_facts.py <skill> --json <file>` first** — it reads
-    the version, tag, date, install command and one rule off the *released* artifact, so the card
-    cannot advertise a version nobody can install. Keep the refusal: a brochure that only lists
+    card's one signature moment). **Start from the scaffold, never by hand:**
+    `python3 scripts/release_facts.py <skill> --scaffold images/<slug>.html` writes the card with
+    every *factual* slot already filled from the released artifact — version, ship date, both
+    install steps, the one rule quoted — and leaves the judgment slots marked `TODO`. Compose the
+    plate, the headline, the standfirst and the proof figure; the render lint **fails** while the
+    example plate (`id="plate-example"`) survives, so a demo drawing cannot ship. Keep the refusal: a brochure that only lists
     features is an advert.
   - `assets/card-template-stem.html` — **STEM type** (education / outreach): the warm one — a
     SMALL toy-block S·T·E·M accent over a real topic graphic (the build / experiment / result).

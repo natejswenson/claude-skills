@@ -267,3 +267,36 @@ def test_install_is_two_steps_because_one_does_not_work(monkeypatch, tmp_path, c
 
     printed = capsys.readouterr().out
     assert "install step 1" in printed and "install step 2" in printed
+
+
+def test_scaffold_fills_every_factual_slot_and_marks_the_rest(monkeypatch, tmp_path):
+    # Repeatability: a card assembled by hand is a card whose version, date and
+    # install steps depend on whoever assembled it.
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    out = tmp_path / "card.html"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--scaffold", str(out)]) == 0
+    html = out.read_text()
+
+    for fact in ["v0.10.0", "2026-02-01",
+                 "/plugin marketplace add o/r", "/plugin install demo@claude-skills",
+                 "Never ship a claim it cannot back."]:
+        assert fact in html, f"scaffold left {fact!r} unfilled"
+
+    # judgment slots stay obviously unfinished
+    assert "TODO headline" in html
+    assert 'id="plate-example"' in html, "the example plate must survive for the author to replace"
+    for placeholder in ["v0.0.0", "2026-01-01", "the --actual first command"]:
+        assert placeholder not in html, f"{placeholder!r} survived substitution"
+
+
+def test_scaffold_shortens_a_rule_too_long_to_be_a_pull_quote(tmp_path, monkeypatch):
+    long_rule = ("Every claim carries a receipt that resolves against the local corpus — "
+                 "and a ranked item whose receipt does not resolve is dropped entirely")
+    _skill(tmp_path, skill_md=f"---\nname: demo\n---\n\n## The one rule\n\n**{long_rule}**\n")
+    _wire(monkeypatch)
+    out = tmp_path / "card.html"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--scaffold", str(out)]) == 0
+    html = out.read_text()
+    assert "Every claim carries a receipt that resolves against the local corpus." in html
+    assert "ranked item" not in html, "the trailing clause should have been cut"

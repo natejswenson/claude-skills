@@ -1351,3 +1351,10 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 /* A value must never break mid-token: "2026-08-04" split across two lines at
    the hyphen in the narrower column beside the plate. */
 .card.press[data-card="brochure"] .fact .fval { white-space: nowrap; }
+
+/* The plate's ink follows the card; a single accent mark is allowed inside it
+   (see the template's plate notes) and paper knockouts sit on solid ink. */
+.card.press[data-card="brochure"] .plate svg { color: var(--ink); }
+.card.press[data-card="brochure"] .plate .sig-fill { fill: var(--press-sig); }
+.card.press[data-card="brochure"] .plate .ink-fill { fill: var(--ink); }
+.card.press[data-card="brochure"] .plate .knock { fill: none; stroke: var(--paper); }
