@@ -70,6 +70,26 @@ alongside `press check`, because only the lint catches a hand-written hex or a
 letter-spacing above the extraction ceiling in the hand-written half of the
 stylesheet — it caught a literal white on its first run.
 
+### Ownership — found by running a three-month window
+
+- **A release of somebody else's project is no longer counted as your shipped
+  work.** Releases are fetched for every repo the user touched, so one docs pull
+  request to an external project imported **eleven** of its releases into the
+  window and ranked one of them seventh. The receipts gate cannot catch this: the
+  release is real, so the citation resolves. **The one rule stops fabrication,
+  not misattribution** — hence a separate filter rather than a stricter receipt.
+
+  Pull requests and commits in an external repo are kept, because contributing to
+  someone else's project is your work and releasing it is not. The owner set
+  defaults to the authenticated login; `--owner <org>` claims an organisation and
+  `--all-owners` disables the filter. Drops are never silent — `rank` names each
+  excluded project and its count.
+
+- **`render` applies the same rule to the numbers strip.** It did not at first,
+  and the sheet read "21 released" directly beneath a ranking that had found 19 —
+  the same defect in a second place, which is the usual shape of a filter that
+  lives in only one of two call sites.
+
 ### Density
 
 Three cards to a row rather than two, so a three-item section is exactly one row

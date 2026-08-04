@@ -16,7 +16,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 import { redact, newCounts, totalRedactions } from '../lib/redact.mjs';
 import { repoName } from '../lib/github.mjs';
-import { foldSquashCommits, collapseReleaseSeries, parseTag, rankItems } from '../lib/rank.mjs';
+import { foldSquashCommits, collapseReleaseSeries, parseTag, rankItems, dropForeignReleases } from '../lib/rank.mjs';
 import { checkDraft, appendix } from '../lib/receipts.mjs';
 import { resolveReceipt } from '../lib/corpus.mjs';
 import { computeNumbers, heroFigure, renderHtml } from '../lib/render.mjs';
@@ -362,4 +362,49 @@ test('the rendered sheet spends the accent exactly twice', () => {
   assert.equal((body.match(/class="fig"/g) ?? []).length, 1);
   // and the markup never draws a container to group things
   assert.ok(!/border-radius/.test(html.slice(html.indexOf('<body'))), 'radius in the markup');
+});
+
+// ── ownership: a release of someone else's project is not your shipped work ──
+
+test("another owner's releases are dropped, and their PRs and commits are not", () => {
+  // One docs pull request to an external repo pulled eleven of that project's
+  // releases into a three-month window and ranked one of them seventh. The
+  // receipts gate cannot catch it: the release is real, so the citation
+  // resolves. The one rule stops fabrication, not misattribution.
+  const items = [
+    { id: 'r1', kind: 'release', repo: 'me/mine', tag: 'v1.0.0', title: 'mine', at: '2026-08-01T00:00:00Z' },
+    { id: 'r2', kind: 'release', repo: 'them/theirs', tag: 'v9.0.0', title: 'theirs', at: '2026-08-01T00:00:00Z' },
+    { id: 'p1', kind: 'pr', repo: 'them/theirs', number: 5, title: 'docs: a real contribution', at: '2026-08-01T00:00:00Z' },
+    { id: 'c1', kind: 'commit', repo: 'them/theirs', title: 'docs: a real contribution', at: '2026-08-01T00:00:00Z' },
+  ];
+  const owners = new Set(['me']);
+
+  const { kept, foreign } = dropForeignReleases(items, owners);
+  assert.deepEqual(foreign.map((f) => f.id), ['r2']);
+  assert.deepEqual(kept.map((k) => k.id), ['r1', 'p1', 'c1'], 'contributing to a project is still your work');
+
+  const ranked = rankItems(items, { owners });
+  assert.ok(!ranked.ranked.some((i) => i.repo === 'them/theirs' && i.kind === 'release'));
+  assert.equal(ranked.foreign.length, 1);
+
+  // no owners declared → no filtering, so an existing corpus never silently shrinks
+  assert.equal(rankItems(items, { owners: null }).foreign.length, 0);
+  assert.equal(dropForeignReleases(items, new Set()).foreign.length, 0);
+});
+
+test('the numbers strip applies the same ownership rule as the ranking', () => {
+  // These disagreed once: the sheet read "21 released" under a ranking that had
+  // found 19, because the filter lived only in rank.
+  const items = [
+    { kind: 'release', repo: 'me/mine', tag: 'v1.0.0', at: '2026-08-01T00:00:00Z' },
+    { kind: 'release', repo: 'them/theirs', tag: 'v9.0.0', at: '2026-08-01T00:00:00Z' },
+  ];
+  const owners = new Set(['me']);
+  assert.equal(computeNumbers(items, owners).find((x) => x.k === 'released').n, 1);
+  assert.equal(computeNumbers(items, null).find((x) => x.k === 'released').n, 2);
+  assert.equal(
+    computeNumbers(items, owners).find((x) => x.k === 'released').n,
+    rankItems(items, { owners }).ranked.filter((i) => i.kind === 'release').length,
+    'the strip and the ranking must not disagree',
+  );
 });

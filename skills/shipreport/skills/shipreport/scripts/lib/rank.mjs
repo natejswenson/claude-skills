@@ -147,9 +147,38 @@ export function scoreItem(item, ctx) {
  * Rank everything in the window and draw the line. `top` and `floor` are both
  * caps: an item must beat the floor AND make the cut.
  */
-export function rankItems(items, { top = 12, floor = 20 } = {}) {
-  const series = collapseReleaseSeries(items);
-  const collapsed = items.filter((i) => i.kind === 'release').length - series.filter((i) => i.kind === 'release').length;
+export const repoOwner = (repo) => String(repo ?? '').split('/')[0] || null;
+
+/**
+ * A release of somebody else's project is not your shipped work.
+ *
+ * Releases are fetched for every repo the user touched, so a single drive-by
+ * contribution imports that project's whole release history. One docs pull
+ * request to an external repo pulled eleven of its releases into a three-month
+ * window and ranked one of them seventh.
+ *
+ * The receipts gate cannot catch this: the release is real, so the citation
+ * resolves. The one rule stops fabrication, not misattribution — which is why
+ * this is a separate filter and not a stricter receipt.
+ *
+ * Pull requests and commits in an external repo are kept. Contributing to
+ * someone else's project IS your work; releasing it is not.
+ */
+export function dropForeignReleases(items, owners) {
+  if (!owners || owners.size === 0) return { kept: items, foreign: [] };
+  const kept = [];
+  const foreign = [];
+  for (const it of items) {
+    if (it.kind === 'release' && !owners.has(repoOwner(it.repo))) foreign.push(it);
+    else kept.push(it);
+  }
+  return { kept, foreign };
+}
+
+export function rankItems(items, { top = 12, floor = 20, owners = null } = {}) {
+  const { kept: owned, foreign } = dropForeignReleases(items, owners);
+  const series = collapseReleaseSeries(owned);
+  const collapsed = owned.filter((i) => i.kind === 'release').length - series.filter((i) => i.kind === 'release').length;
   const { kept, folded } = foldSquashCommits(series);
   const shippedRepos = [...new Set(kept.filter((i) => i.kind === 'pr' || i.kind === 'release').map((i) => i.repo))];
   const sessionProjects = new Set(kept.filter((i) => i.kind === 'session').map((i) => i.project));
@@ -163,5 +192,5 @@ export function rankItems(items, { top = 12, floor = 20 } = {}) {
     it.above = it.score >= floor && placed < top;
     if (it.above) placed += 1;
   }
-  return { ranked: scored, folded, collapsed, above: scored.filter((i) => i.above), top, floor };
+  return { ranked: scored, folded, collapsed, foreign, above: scored.filter((i) => i.above), top, floor };
 }

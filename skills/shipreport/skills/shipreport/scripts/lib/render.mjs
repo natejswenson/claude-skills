@@ -13,7 +13,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { appendix } from './receipts.mjs';
-import { collapseReleaseSeries, foldSquashCommits } from './rank.mjs';
+import { collapseReleaseSeries, foldSquashCommits, dropForeignReleases } from './rank.mjs';
 import { validateDraftArt } from './art.mjs';
 
 const esc = (s) => String(s ?? '')
@@ -45,10 +45,14 @@ const KIND_LABEL = { pr: 'pull request', commit: 'commit', release: 'release', s
  * still *about* the whole window, so the strip has to count the whole window or
  * it quietly contradicts the prose it sits under.
  *
- * Releases are counted as collapsed series, so this figure and `rank`'s agree.
+ * Releases are counted as collapsed series AND filtered by ownership, so this
+ * figure and `rank`'s agree. They did not once: the strip read 21 released
+ * where rank had found 19, because the ownership filter lived only in rank and
+ * the strip was still counting two external projects' releases.
  */
-export function computeNumbers(windowItems) {
-  const series = collapseReleaseSeries(windowItems);
+export function computeNumbers(windowItems, owners = null) {
+  const { kept: owned } = dropForeignReleases(windowItems, owners);
+  const series = collapseReleaseSeries(owned);
   const { kept } = foldSquashCommits(series);
   const n = (k) => kept.filter((i) => i.kind === k).length;
   const repos = new Set(kept.filter((i) => i.repo).map((i) => i.repo));
@@ -86,9 +90,9 @@ const citeLabel = (receipt) => {
 
 const lookup = (corpus, r) => corpus.github[r] ?? corpus.sessions[r] ?? null;
 
-export function renderHtml({ draft, corpus, window: win, items, cssPath, stamp = 'NS', byline = '' }) {
+export function renderHtml({ draft, corpus, window: win, items, cssPath, stamp = 'NS', byline = '', owners = null }) {
   const css = readFileSync(cssPath, 'utf8');
-  const numbers = computeNumbers(items);
+  const numbers = computeNumbers(items, owners);
   const hero = heroFigure(numbers);
   const cites = appendix(draft, corpus);
 

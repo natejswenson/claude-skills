@@ -131,9 +131,14 @@ function loadRanked(args) {
   const corpus = loadCorpus(corpusDir(args));
   const win = resolveWindow(args);
   const items = inWindow(allItems(corpus), win.since, win.until);
+  // Releases are only yours when you own the repo. `--owner` extends that to an
+  // org; `--all-owners` disables the filter entirely and says so in the table.
+  const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
+  const owners = args.allOwners ? null : new Set(declared);
   const ranked = rankItems(items, {
     top: Number(args.top ?? 12),
     floor: Number(args.floor ?? 20),
+    owners,
   });
   return { corpus, win, ranked };
 }
@@ -170,7 +175,7 @@ async function cmdRank(args) {
   // as "33 components were released" and reached a draft as a false figure —
   // it is the number *absorbed* into a series, not the number remaining.
   console.log(table(
-    ['Window', 'Candidates', 'Above the line', 'Release series', 'Releases absorbed', 'Squash folded', 'Floor', 'Top'],
+    ['Window', 'Candidates', 'Above the line', 'Release series', 'Releases absorbed', 'Squash folded', "Others' releases dropped", 'Floor', 'Top'],
     [[
       `${win.since.slice(0, 10)} → ${win.until.slice(0, 10)}`,
       ranked.ranked.length,
@@ -178,10 +183,19 @@ async function cmdRank(args) {
       ranked.ranked.filter((i) => i.kind === 'release').length,
       ranked.collapsed,
       ranked.folded.length,
+      ranked.foreign.length,
       ranked.floor,
       ranked.top,
     ]],
   ));
+
+  // Never a silent drop: name the projects whose releases were excluded, so a
+  // wrong owner list is visible rather than quietly shrinking the report.
+  if (ranked.foreign.length) {
+    const byRepo = new Map();
+    for (const f of ranked.foreign) byRepo.set(f.repo, (byRepo.get(f.repo) ?? 0) + 1);
+    console.log(`\nnot yours, so not counted: ${[...byRepo].map(([r, n]) => `${r} (${n})`).join(', ')} — your commits and pull requests there are still ranked. \`--owner <org>\` to claim, \`--all-owners\` to disable.`);
+  }
 
   if (args.out) {
     writeFileSync(resolve(args.out), JSON.stringify({ window: win, above: ranked.above, all: ranked.ranked }, null, 2) + '\n');
@@ -234,6 +248,9 @@ async function cmdRender(args) {
   }
 
   const win = draft.window ?? resolveWindow(args);
+  // Same ownership rule as `rank`, or the strip and the ranking disagree.
+  const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
+  const owners = args.allOwners ? null : new Set(declared);
   // The strip counts the window, not the citations — see computeNumbers.
   const items = inWindow(allItems(corpus), String(win.since), String(win.until));
 
@@ -245,6 +262,7 @@ async function cmdRender(args) {
     cssPath: join(HERE, '..', 'assets', 'report.css'),
     stamp: args.stamp ?? 'NS',
     byline: args.byline ?? '',
+    owners,
   });
 
   const out = resolve(args.out ?? join(process.cwd(), 'shipreport.html'));

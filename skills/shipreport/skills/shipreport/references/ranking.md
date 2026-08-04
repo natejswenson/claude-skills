@@ -41,6 +41,30 @@ shipped, or a repository whose work has sessions behind it. Two independent
 sources agreeing is the closest thing available to evidence, and it is exactly
 what a single-source summary cannot offer.
 
+## Ownership: whose release is it
+
+**A release of somebody else's project is not your shipped work.**
+
+Releases are fetched for every repository the user touched, so a single drive-by
+contribution imports that project's entire release history. One documentation
+pull request to an external repo pulled **eleven** of its releases into a
+three-month window and ranked one of them seventh.
+
+The receipts gate cannot catch this. The release is real, so the citation
+resolves — **the one rule stops fabrication, not misattribution**, which is why
+this is a separate filter and not a stricter receipt.
+
+- Pull requests and commits in an external repo are **kept**. Contributing to
+  someone else's project is your work; releasing it is not.
+- The owner set defaults to the authenticated login. `--owner <org>` adds an
+  organisation whose releases genuinely are yours; `--all-owners` disables the
+  filter.
+- Drops are **never silent**: `rank` names each excluded project and its count,
+  so a wrong owner list is visible instead of quietly shrinking the report.
+
+`render` applies the same rule to the numbers strip. It did not once, and the
+sheet read "21 released" directly under a ranking that had found 19.
+
 ## Two collapses that happen before scoring
 
 **Squash folding.** A squash-merged pull request appears twice: once as the PR

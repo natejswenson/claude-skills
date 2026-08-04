@@ -16,8 +16,10 @@
 | — | session | Update devlog with new Claude skills                 | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:281813c9-c3db-429a-b795-f2c340b42e91 |
 | — | session | Fix the package lock                                 | 32    | session+10 heavy-edit+6 long+4 skill-run+2 corroborated+10 | session:22116012-c358-412f-aa6d-e5c518ecc41b |
 
-555 lower-scoring candidate(s) not shown — `--all` prints every one.
+554 lower-scoring candidate(s) not shown — `--all` prints every one.
 
-| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Floor | Top |
-|-------------------------|------------|----------------|----------------|-------------------|---------------|-------|-----|
-| 2026-07-28 → 2026-08-04 | 570        | 12             | 18             | 34                | 69            | 20    | 12  |
+| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Others' releases dropped | Floor | Top |
+|-------------------------|------------|----------------|----------------|-------------------|---------------|--------------------------|-------|-----|
+| 2026-07-28 → 2026-08-04 | 569        | 12             | 17             | 34                | 69            | 1                        | 20    | 12  |
+
+not yours, so not counted: Blaizzy/mlx-vlm (1) — your commits and pull requests there are still ranked. `--owner <org>` to claim, `--all-owners` to disable.

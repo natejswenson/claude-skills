@@ -18,8 +18,10 @@
 | —  | release | ghostwriter-x v0.2.1 | 62    | release+50 patch+2 corroborated+10        | release:natejswenson/claude-skills@ghostwriter-x-v0.2.1 |
 | —  | release | forge v0.1.2         | 62    | release+50 patch+2 corroborated+10        | release:natejswenson/claude-skills@forge-v0.1.2         |
 
-553 lower-scoring candidate(s) not shown — `--all` prints every one.
+552 lower-scoring candidate(s) not shown — `--all` prints every one.
 
-| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Floor | Top |
-|-------------------------|------------|----------------|----------------|-------------------|---------------|-------|-----|
-| 2026-07-28 → 2026-08-04 | 570        | 12             | 18             | 34                | 69            | 20    | 12  |
+| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Others' releases dropped | Floor | Top |
+|-------------------------|------------|----------------|----------------|-------------------|---------------|--------------------------|-------|-----|
+| 2026-07-28 → 2026-08-04 | 569        | 12             | 17             | 34                | 69            | 1                        | 20    | 12  |
+
+not yours, so not counted: Blaizzy/mlx-vlm (1) — your commits and pull requests there are still ranked. `--owner <org>` to claim, `--all-owners` to disable.
