@@ -364,17 +364,17 @@ LINT_JS = r"""
   if (cls.includes('flow'))
     budget(count('.fnode'), 'stages in flow', 3, 5,
       'flow takes 3–5 stages; collapse stages or switch to a carousel');
-  if (cls.includes('brochure')) {
-    budget(count('.cap'), 'capabilities in brochure', 3, 3,
-      'brochure takes exactly 3 capabilities — cut to the three a reader would repeat');
-    // A brochure without its version, its refusal or its install line is an
-    // advert with no product in it.
-    for (const [sel, what] of [['.pname', 'product name'], ['.pver', 'version'],
-                               ['.refuses .rtext', 'refusal'], ['code.cmd', 'install line']])
+  if ((canvas.dataset.card || '') === 'brochure') {
+    budget(count('.fact'), 'facts in brochure', 3, 3,
+      'brochure takes exactly 3 facts — version, ship date, and one proof figure');
+    // A brochure without its refusal is an advert. The pull quote is the claim.
+    for (const [sel, what] of [['.pull .q', 'refusal (.pull .q)'],
+                               ['.cmdbar', 'install line (.cmdbar)']])
       if (count(sel) !== 1)
         push('FAIL', 'count-budget',
-          'brochure needs exactly one ' + what + ' (' + sel + ') — found ' + count(sel));
+          'brochure needs exactly one ' + what + ' — found ' + count(sel));
   }
+
   if (cls.includes('code')) {
     const n = count('.line');
     if (n > 13)

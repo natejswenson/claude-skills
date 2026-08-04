@@ -454,13 +454,14 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     illustrative; the labeled figures must be accurate.
   - `assets/card-template-date.html` — **date type** (a launch / deprecation / event): a realistic
     ADMIT-ONE ticket as the centerpiece; the headline names the event, the date is the hero.
-  - `assets/card-template-brochure.html` — **brochure type** (a shipped release of one of YOUR
-    skills): the product page — a nameplate (`.pname` + `.pver` pill + `.pdate`), the headline,
-    what it **refuses** to do quoted from the skill's own one rule (`.refuses`), exactly three
-    capabilities (`.caps > .cap`), and the install line in a `code.cmd` chip. **Run
-    `scripts/release_facts.py <skill> --json <file>` first** — it reads the version, tag, date,
-    install command and one rule off the *released* artifact, so the card cannot advertise a
-    version nobody can install. Distinct from `date` (an event) and `brief` (an explainer).
+  - `assets/card-template-brochure.html` — **brochure (a Press composition)**: the product page
+    for a shipped release of one of YOUR skills. Masthead → headline → standfirst → `.facts`
+    (version, ship date, one proof figure) → `.pull` carrying what the skill **refuses** to do in
+    its own words → `.cmdbar` install line → colophon. Adds no CSS; it is the Press vocabulary
+    arranged for one job. **Run `scripts/release_facts.py <skill> --json <file>` first** — it reads
+    the version, tag, date, install command and one rule off the *released* artifact, so the card
+    cannot advertise a version nobody can install. Keep the refusal: a brochure that only lists
+    features is an advert.
   - `assets/card-template-stem.html` — **STEM type** (education / outreach): the warm one — a
     SMALL toy-block S·T·E·M accent over a real topic graphic (the build / experiment / result).
     Reach for it when the tone is kid-energy / inspirational.
@@ -492,7 +493,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
   | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
   | `date` | — | date-sub ≤40 chars | |
-  | `brochure` | exactly 3 caps | `.pname` ≤18 · `.pver` ≤10 · `.capt` ≤18 one line · `.cape` ≤54 one line · `.rtext` ≤3 lines · `.cmd` ≤45 one line | needs exactly one `.pname`, `.pver`, `.rtext`, `code.cmd`; facts come from `release_facts.py`, never typed |
+  | `brochure` (press) | exactly 3 facts | `.fval` ≤14 · `.pull .q` ≤2 lines · `.cmdbar` ≤44 one line · `.stand` ≤3 lines | needs exactly one `.pull .q` and one `.cmdbar`; facts come from `release_facts.py`, never typed |
   | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
 
   Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)

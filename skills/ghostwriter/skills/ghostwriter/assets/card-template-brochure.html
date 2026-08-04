@@ -1,94 +1,96 @@
 <!doctype html>
-<!--
-  BROCHURE card TYPE (light system) — a one-page brochure for a SHIPPED release of
-  one of your own skills. Not a launch announcement (that's `date`) and not an
-  explainer (that's `brief`): this is the product page — what it is, what it
-  refuses to do, what you get, and the line that installs it.
-
-  Copy to images/<slug>.html, fill in from REAL facts, then render at PORTRAIT 4:5:
-    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
-
-  EVIDENCE FIRST — this is marketing, so the bar is higher, not lower:
-    python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
-  reads the version, tag, publish date, install line and the skill's own "one
-  rule" off the released artifact. Never type a version or an install command by
-  hand; a brochure that advertises a version nobody can install is the one
-  failure this card cannot survive. If the skill has no published release, there
-  is no brochure to make yet.
-
-  Class is `card light brochure`. Building blocks:
-    .nameplate   the product identity: .pname + .pver pill + .pdate
-    .lead        one line on what it is (from the skill's own description)
-    .refuses     the differentiator — what it will NOT do, in its own words
-    .caps > .cap the three things you get (.capt title + .cape one-line detail)
-    code.cmd     the install line, exactly as release_facts.py returned it
-    .caption     the proof line — say what is verified, never what is hoped
-
-  ICONS: pick from assets/card-icons.md and match each glyph to the capability.
-  Meaningful and few. Generic shapes are a last resort. Never ship the defaults.
-
-  CONTENT BUDGET (the render lint enforces the measurable ones):
-    eyebrow <=24 chars, one line · h1 <=2 lines (~28 chars/line) · caption <=60 chars
-    .pname <=18 chars · .pver <=10 · .lead <=3 lines · .refuses <=3 lines
-    EXACTLY 3 .cap — .capt <=18 chars one line · .cape <=54 chars one line
-    .cmd <=45 chars, one line, never wrapped
--->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <link rel="stylesheet" href="diagram.css" />
 </head>
-<body>
-  <div id="canvas" class="card light brochure">
+<!--
+  BROCHURE — a PRESS composition for a SHIPPED release of one of your own skills.
+  Not a launch announcement and not an explainer: the product page. It adds NO
+  new CSS; it is the Press vocabulary arranged for one job, which is what
+  "brand system, not a template" means. Read assets/card-language.md first.
 
-    <div class="toprow">
-      <div class="eyebrow">Eyebrow Label</div>
+  THE COMPOSITION (masthead -> headline -> standfirst -> facts -> pull -> cmdbar
+  -> colophon). Three body components, the maximum Press allows:
+    .facts   the identity: version, ship date, and one proof figure
+    .pull    the THESIS — what the skill refuses to do, in its own words
+    .cmdbar  the install line, the thing a reader saves
+
+  Swap a component if the release calls for it (.bigstat when a number is the
+  story, .term when a real session proves it) — but keep the refusal. A brochure
+  that only lists features is an advert; the refusal is what makes it a claim.
+
+  EVIDENCE FIRST — this is marketing, so the bar is higher, not lower:
+    python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
+  reads the version, tag, publish date, install line and the skill's own one
+  rule off the RELEASED artifact. Never type a version or an install command by
+  hand. A skill with no published release has no brochure to make yet.
+
+  Render portrait 4:5 (the default --size 1200x1500):
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  CONTENT BUDGET (hard limits; the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line    h1 <=2 lines (~13 chars/line; add class
+    "compact" for ~20 chars/line)   stand <=3 lines (~46ch measure)
+    EXACTLY 3 .fact — .fval <=14 chars · .flabel and .fcap one line each
+    .pull .q <=2 lines              .cmdbar <=44 chars, one line
+    colophon .out <=52 chars
+
+  The composition is marked with data-card="brochure" rather than a class: it
+  carries no styling of its own, and a class with no rule in diagram.css is a
+  typo waiting to happen (the template tests enforce that).
+
+  CLASS LEGEND: h1 .sig = the ONE signature-colored pivot phrase · .stand =
+  serif standfirst · .facts/.fact = the spec strip (.flabel .fval .fcap) ·
+  .pull > .q = the thesis (.qrule above it) · .cmdbar = ink command bar ·
+  .colophon = outcome line. The .stamp pulls your monogram from --stamp; the
+  byline/avatar from --byline/--avatar (diagram.css).
+-->
+<body>
+  <div id="canvas" class="card press" data-card="brochure">
+    <div class="mast">
+      <div class="stamp"></div>
+      <div class="eyebrow">Eyebrow Label · <span class="no">No. 001</span></div>
       <div class="footer brand"></div>
     </div>
 
-    <!-- product identity: name, the shipped version, the date it shipped -->
-    <div class="nameplate">
-      <div class="pname">skillname</div>
-      <div class="pver">v0.0.0</div>
-      <div class="pdate">shipped 2026-01-01</div>
-    </div>
+    <h1>One sharp headline <span class="sig">pivot phrase.</span></h1>
 
-    <h1>One sharp headline for what it does.</h1>
+    <p class="stand">Two or three serif sentences on what this is for, with the
+      <strong>key claim bolded</strong>. Keep it to three rendered lines.</p>
 
-    <p class="lead">One or two lines on what this is for, with the
-      <strong>load-bearing phrase</strong> in full-ink bold.</p>
-
-    <!-- the differentiator: what it refuses to do, in the skill's own words -->
-    <div class="refuses">
-      <div class="rlabel">It refuses to</div>
-      <div class="rtext">The one rule, quoted from the skill rather than
-        paraphrased into something softer.</div>
-    </div>
-
-    <!-- exactly three capabilities -->
-    <!-- ICONS: examples only — replace each <svg> with a topic icon from assets/card-icons.md that fits THIS capability. Never ship the defaults. -->
-    <div class="caps">
-      <div class="cap">
-        <div class="glyph tint-blue"><svg class="s-blue" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></div>
-        <div class="capt">Step title</div>
-        <div class="cape">One-line detail</div>
+    <!-- identity: every value read from the release, never typed -->
+    <div class="facts">
+      <div class="fact">
+        <span class="flabel">Version</span>
+        <span class="fval">v0.0.0</span>
+        <span class="fcap">what this release is</span>
       </div>
-      <div class="cap">
-        <div class="glyph tint-teal"><svg class="s-teal" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></div>
-        <div class="capt">Step title</div>
-        <div class="cape">One-line detail</div>
+      <div class="fact">
+        <span class="flabel">Shipped</span>
+        <span class="fval">2026-01-01</span>
+        <span class="fcap">how it was proven</span>
       </div>
-      <div class="cap">
-        <div class="glyph tint-green"><svg class="s-green" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-        <div class="capt">Step title</div>
-        <div class="cape">One-line detail</div>
+      <div class="fact">
+        <span class="flabel">Label</span>
+        <span class="fval">0</span>
+        <span class="fcap">one real proof figure</span>
       </div>
     </div>
 
-    <!-- the line readers save: exactly what release_facts.py returned -->
-    <code class="cmd">the --actual command or config</code>
+    <!-- the thesis: what it refuses to do, quoted rather than paraphrased -->
+    <div class="pull">
+      <div class="qrule"></div>
+      <div class="q">The one rule, quoted from the skill rather than softened
+        into something easier to promise.</div>
+    </div>
 
-    <div class="caption">What is verified — never what is hoped.</div>
+    <code class="cmdbar">the --actual command or config</code>
+
+    <div class="colophon">
+      <span>The outcome</span>
+      <span class="out">what the reader gets, in one serif line</span>
+    </div>
   </div>
 </body>
 </html>

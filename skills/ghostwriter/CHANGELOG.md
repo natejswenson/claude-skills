@@ -8,20 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`brochure` card type — a one-page product brochure for a shipped release of
-  one of your own skills.** Not a launch announcement (`date`) and not an
-  explainer (`brief`): the product page. A nameplate carrying the skill's name,
-  the shipped version and the date it shipped; the headline; what the skill
-  **refuses** to do, quoted from its own one rule rather than paraphrased into
-  something softer; exactly three capabilities; and the install line as the
-  largest saveable element on the card.
+- **`brochure` — a Press composition for a shipped release of one of your own
+  skills.** Not a launch announcement and not an explainer: the product page.
+  Masthead → headline with one signature pivot → serif standfirst → `.facts`
+  (version, ship date, one proof figure) → `.pull` carrying what the skill
+  **refuses** to do in its own words → `.cmdbar` install line → colophon.
+
+  It adds **no CSS**. Press is a brand system rather than a template, so a new
+  card shape is the existing vocabulary arranged for one job — three body
+  components, the maximum Press allows. Keep the refusal when swapping a
+  component: a brochure that only lists features is an advert, and the refusal
+  is what makes it a claim.
 
 - **`scripts/release_facts.py` — the evidence the brochure is allowed to claim.**
   A brochure is marketing, which is why it needs a *harder* evidence rule than an
   ordinary card, not a softer one. The version, tag, publish date, install
   command and one rule are read off the released artifact, so a card cannot
-  advertise a version nobody can install. It refuses outright when a skill has no
-  published release.
+  advertise a version nobody can install. A skill with no published release is
+  refused outright rather than rendered with a blank version.
 
   It reads the newest release **whose tag belongs to that skill** — in a monorepo
   a repo-wide "latest" would print another skill's version under this skill's
@@ -32,18 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **`chip-wrap` measured the border box, so a padded `.cmd` was reported as
+- **`chip-wrap` measured the border box, so a padded command chip was reported as
   wrapped while sitting on one line.** It now measures the content box against
-  the computed line height. Found by giving the brochure's install line the
-  padding its prominence needs; it would have nagged every card with a generous
-  chip.
-
-### Notes
-
-The brochure needs its own `#canvas.card.brochure.light` height rule — without
-one a portrait card silently inherits the 1200x1200 square default and
-everything below the fold is clipped. The render lint catches it, but only after
-a render, which is worth knowing before adding the next light card type.
+  the computed line height. Found while sizing the brochure's install line; it
+  would have nagged every card with a generous chip, not just this one.
 
 ## [0.14.1] - 2026-07-18
 
