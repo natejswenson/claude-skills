@@ -25,6 +25,7 @@ step whose command does not exist fails `skillfactory verify`.
 
 | Deterministic — the machine decides | Command |
 |---|---|
+| report whether this mailbox has any rules yet, and the single next thing to do | `node scripts/gmailtriage.js setup` |
 | cluster a real inbox sample into candidate rules by sender, mailing list and bulk-mail markers, with counts and a sample subject for each | `node scripts/gmailtriage.js propose` |
 | validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, or matches nothing | `node scripts/gmailtriage.js rules` |
 | evaluate the stored rules against the inbox and enumerate exactly which threads each would take, without touching any of them | `node scripts/gmailtriage.js plan` |
@@ -38,6 +39,20 @@ step whose command does not exist fails `skillfactory verify`.
 | judge when a plan looks wrong and should be questioned rather than applied | a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which |
 
 ## The flow
+
+### 0. Setup — always first, and the only thing safe to run cold
+
+```bash
+node scripts/gmailtriage.js setup
+```
+
+It says whether any rules exist and what the next step is. **On a first run it
+prints a short walkthrough — read it out rather than diving into tables.** The
+user should learn, before anything is fetched, that nothing is trashed until
+they accept a rule and that trash is recoverable.
+
+If it reports a rule file that will not load, stop. Nothing runs against a rule
+set that does not validate.
 
 ### 1. Fetch the sample — the agent does this, not the script
 
@@ -63,6 +78,11 @@ into the conversation.
 ```bash
 node scripts/gmailtriage.js propose --threads threads.json --out candidates.json
 ```
+
+**If it proposes nothing, read out the reason it gives.** An empty candidate
+list is a result, and `propose` says which of three things produced it — every
+sender below the threshold, every sender withheld by a guard, or no bulk mail at
+all. Never present an empty table on its own; that reads as a broken skill.
 
 Report **both** tables it prints. The withheld table is the interesting half —
 it is where the user finds the sender they wanted a rule for, and why the skill
@@ -114,6 +134,7 @@ trash is recoverable for 30 days. Offer `undo`; do not bury it.
 
 | Command | Returns |
 |---|---|
+| `gmailtriage setup` | state, rule count, rule file — plus a first-run walkthrough when nothing is configured |
 | `gmailtriage propose` | read a slice of the user's real inbox, cluster it by sender, list, and bulk-mail markers, and return a table of candidate rules — pattern, what it matches, how many threads in the sample, and a sample subject — so a first run starts from the user's own mail rather than from generic defaults. Proposes only; writes no rule and trashes nothing. |
 | `gmailtriage rules` | read, validate and write the rule file, returning a table of rule id, action, the Gmail query it compiles to, and whether that query is well-formed — so a rule that would silently match everything or nothing is visible before it ever runs. |
 | `gmailtriage plan` | evaluate every rule against the inbox and return the exact set of threads each rule would trash, as a table of rule id, thread count, sender and subject, plus a total and any thread matched by more than one rule. Reads only; trashes nothing. |
