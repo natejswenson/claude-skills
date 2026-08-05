@@ -1,0 +1,116 @@
+{
+  "labels": [
+    {
+      "labelId": "CHAT",
+      "name": "CHAT"
+    },
+    {
+      "labelId": "SENT",
+      "name": "SENT"
+    },
+    {
+      "labelId": "INBOX",
+      "name": "INBOX"
+    },
+    {
+      "labelId": "IMPORTANT",
+      "name": "IMPORTANT"
+    },
+    {
+      "labelId": "TRASH",
+      "name": "TRASH"
+    },
+    {
+      "labelId": "DRAFT",
+      "name": "DRAFT"
+    },
+    {
+      "labelId": "SPAM",
+      "name": "SPAM"
+    },
+    {
+      "labelId": "STARRED",
+      "name": "STARRED"
+    },
+    {
+      "labelId": "UNREAD",
+      "name": "UNREAD"
+    },
+    {
+      "labelId": "Label_1017d5cf",
+      "name": "Folder 90f6"
+    },
+    {
+      "labelId": "Label_6943c555",
+      "name": "Folder 7d01"
+    },
+    {
+      "labelId": "Label_2",
+      "name": "Cleanup"
+    },
+    {
+      "labelId": "Label_3",
+      "name": "Cleanup/Promotions"
+    },
+    {
+      "labelId": "Label_03c9d3f1",
+      "name": "Folder c97e"
+    },
+    {
+      "labelId": "Label_3342700677964876718",
+      "name": "Receipts"
+    },
+    {
+      "labelId": "Label_3953032868769717139",
+      "name": "Reciepts"
+    },
+    {
+      "labelId": "Label_4",
+      "name": "Cleanup/Newsletters"
+    },
+    {
+      "labelId": "Label_9f27ecec",
+      "name": "Folder c74b"
+    },
+    {
+      "labelId": "Label_8405f32c",
+      "name": "Folder f4b8"
+    },
+    {
+      "labelId": "Label_ff6442c3",
+      "name": "Folder fd1b"
+    },
+    {
+      "labelId": "Label_824223884357394311",
+      "name": "Financial Advisor"
+    },
+    {
+      "labelId": "Label_49834577",
+      "name": "Folder 3b69"
+    },
+    {
+      "labelId": "Label_ebe791a4",
+      "name": "Folder 5b08"
+    },
+    {
+      "labelId": "Label_73f5917c",
+      "name": "Folder ee21"
+    },
+    {
+      "labelId": "Label_6",
+      "name": "Job Search"
+    },
+    {
+      "labelId": "Label_7",
+      "name": "Investments"
+    },
+    {
+      "labelId": "Label_8",
+      "name": "Banking"
+    },
+    {
+      "labelId": "Label_9",
+      "name": "School"
+    }
+  ]
+}

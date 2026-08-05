@@ -1,0 +1,12 @@
+| Destination | Status | Label id                  | Used by                           |
+|-------------|--------|---------------------------|-----------------------------------|
+| Job Search  | exists | Label_6                   | sort-careers-recruiting-uhg-com   |
+| Banking     | exists | Label_8                   | sort-alerts-notify-wellsfargo-com |
+| School      | exists | Label_9                   | sort-onlinejmc-com                |
+| Reciepts    | exists | Label_3953032868769717139 | sort-existing-folder              |
+
+| Destinations | Your labels | To create |
+|--------------|-------------|-----------|
+| 4            | 19          | 0         |
+
+every folder these rules need already exists. Safe to plan and apply.
