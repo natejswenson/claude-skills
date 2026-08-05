@@ -85,6 +85,11 @@ or to raise `--top` — never to let the timestamp choose.
 `--kind session` (or `pr`, `release`, `commit`) narrows the table when you want
 one source. That flag exists so you never pipe this output through `grep`.
 
+**`rank` also prints the figures the sheet will show** — released, merged,
+commits, sessions, repos. Read them and never restate them: they exist here so
+the prose is written with the real numbers visible, not so the prose can repeat
+them. The strip prints them itself.
+
 ### 4. Read what you are about to describe
 
 This is the step that separates a real report from a plausible one. For each item
@@ -132,7 +137,14 @@ A JSON file — `references/receipts.md` has the shape. Three things to hold:
 - **No identifier in any prose field.** No `#412`, no hash, no `owner/repo`.
   The gate fails the draft, and the reason is the audience: an identifier in a
   sentence assumes a reader who already knows your repositories.
-- **Do not write numbers.** `render` computes the strip from the cited items.
+- **Do not write a count of shipped things — this is a gate now, not advice.**
+  `render` computes the strip, and a count in the headline or standfirst is a
+  second copy of a figure printed an inch away. The second real run wrote
+  "Eleven components shipped, two of them brand new" above a strip reading 16
+  released, with 15 releases cited and 3 of them first — every number wrong,
+  and the right ones rendered adjacent. Numbers *inside* an item's prose are
+  fine and often the point: they belong to the artifact you are describing, not
+  to this window.
 - **The line is guidance, not a filter.** Anything in the corpus resolves. If
   the ranking buried something that mattered, cite it anyway — then say which
   weight was wrong.
@@ -171,18 +183,22 @@ Offer to adjust; do not narrate the design.
 | Command | Returns |
 |---|---|
 | `shipreport index` | source, since, seen, new, cached — plus redaction counts and the new watermark |
-| `shipreport rank` | rank, kind, item, score, signals, receipt — then window, candidates, above-the-line, folds, floor, top, and a tie warning when the line is arbitrary |
-| `shipreport show` | receipt, kind, when, title — then each artifact's body from the corpus |
+| `shipreport rank` | rank, kind, item, score, signals, receipt — then the figures the sheet will print, the window/candidates/folds table, and a tie warning when the line is arbitrary |
+| `shipreport show` | receipt, kind, when, title — then each artifact's body from the corpus, sharing one total character budget |
 | `shipreport receipts` | claim, receipt, resolved — then a verdict with unresolved and prose counts; **exits non-zero on any failure** |
 | `shipreport render` | section, items, receipts — then cards, size and window, and the output path |
 
 Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--kind
 release|pr|commit|session`, `--limit N`, `--near N`, `--all` (print every
-candidate), `--chars N` (`show`), `--full` (force a backfill), `--corpus <dir>`.
+candidate), `--chars N` (`show`'s **total** budget, split across the receipts you
+ask for), `--full` (force a backfill), `--corpus <dir>`.
 
-**Run every one of these bare.** The output is already bounded and already a
-table. Piping through `tail` or `head` silently eats the head of a table, and
-`grep` is never needed — `--kind` and `--limit` do that job.
+**Run every one of these bare.** The output is bounded — `rank` by `--limit`,
+`show` by a total character budget that shrinks as you ask for more artifacts.
+Piping through `tail` or `head` silently eats the head of a table; `grep` is
+never needed, because `--kind` and `--limit` do that job. If some output really
+is too long to read, that is a missing bound worth fixing, not a pipeline worth
+adding.
 
 ## Rules that are not negotiable
 

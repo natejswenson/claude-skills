@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import { validateArt, ArtProblem } from '../lib/art.mjs';
-import { checkDraft, isRepoSlug } from '../lib/receipts.mjs';
+import { checkDraft, isRepoSlug, statedCounts } from '../lib/receipts.mjs';
 import { rankItems, scopeOf, tieAtTheLine } from '../lib/rank.mjs';
 import { redactDeep } from '../lib/redact.mjs';
 import { excerpt, RELEASE_BODY_MAX } from '../lib/github.mjs';
@@ -163,6 +163,58 @@ test('the verdict distinguishes an unresolved receipt from a prose violation', (
   assert.equal(r.rows.filter((x) => x[2] === 'NO').length, 1);
 });
 
+// ── a hand-written count never reaches the sheet ────────────────────────────
+// The second graded run (2026-08-05) put "Eleven components shipped, two of them
+// brand new" in the standfirst. The strip printed 16 released an inch below it,
+// 15 releases were cited, and 3 were first releases. Every number wrong, with
+// the correct ones rendered adjacent — drift arriving as a quantity rather than
+// as a verb, which is the one failure mode the receipts gate did not cover.
+
+const NUMBERS = [{ k: 'released', n: 16 }, { k: 'merged', n: 142 }, { k: 'sessions', n: 148 }];
+const draftSaying = (headline, standfirst, text = 'Plain prose.') => ({
+  headline,
+  standfirst,
+  sections: [{ title: 'Shipped', items: [{ title: 'An outcome', text, receipts: ['pr:natejswenson/claude-skills#1'] }] }],
+});
+
+test('a count of shipped things in the standfirst is refused', () => {
+  const r = checkDraft(draftSaying('A week of work', ['Eleven components shipped, two of them brand new.']), CORPUS, NUMBERS);
+  assert.ok(!r.ok, 'the exact prose that reached a real sheet was allowed through');
+  assert.match(r.problems.join(' '), /writes a count the strip already computes \(16 released\)/);
+});
+
+test('a count is refused even when it happens to be right', () => {
+  // The rule is "do not write numbers", not "write them correctly". A count
+  // that is right today is still the figure written down in a second place,
+  // which is how the strip and the prose drift apart tomorrow.
+  const r = checkDraft(draftSaying('A week of work', ['Sixteen releases went out.']), CORPUS, NUMBERS);
+  assert.ok(!r.ok);
+});
+
+test('numbers that belong to the artifact are not counts of the window', () => {
+  // Two-sided, and this is the half that matters: item prose quotes measured
+  // facts constantly, and flagging those would be the "plus/minus" false
+  // positive all over again.
+  const fine = [
+    draftSaying('A week spent making the tools prove things', ['The thread is correction, not volume.']),
+    draftSaying('A week of work', ['Measured over 240 real cards spanning 730 days.']),
+    draftSaying('A week of work', ['Run against forty-seven transcripts, wrong on six of six.']),
+    // The same shape as the refused case, but inside an item — a fact about the
+    // past of one component, not a count of this window.
+    draftSaying('A week of work', ['A rubric gained precision.'], 'Ten components carried ten hand-written front pages.'),
+  ];
+  for (const d of fine) {
+    const r = checkDraft(d, CORPUS, NUMBERS);
+    assert.ok(r.ok, `refused legitimate prose: ${JSON.stringify(d.standfirst)} / ${d.sections[0].items[0].text} → ${r.problems.join('; ')}`);
+  }
+});
+
+test('the count scanner reads both digits and words, and maps them to a figure', () => {
+  const found = statedCounts(draftSaying('A week', ['142 pull requests merged and eleven skills shipped.']));
+  assert.deepEqual(found.map((c) => c.key).sort(), ['merged', 'released']);
+  assert.equal(statedCounts(draftSaying('A week', ['Nothing countable here.'])).length, 0);
+});
+
 // ── the ranking has to actually rank ────────────────────────────────────────
 
 const release = (tag, at, extra = {}) => ({
@@ -297,6 +349,29 @@ test('a cached body is excerpted rather than stored whole', () => {
   // Two-sided: a short body is untouched, not padded or marked.
   assert.equal(excerpt('Fixed a typo.', RELEASE_BODY_MAX), 'Fixed a typo.');
   assert.equal(excerpt(null, RELEASE_BODY_MAX), '');
+});
+
+test('show shares one total budget instead of multiplying per receipt', () => {
+  // `--chars` alone multiplied: six receipts at 2400 each is 14k characters, and
+  // the run answered that by piping `show` through `head`/`tail` three times —
+  // working around this skill's own "run every command bare" rule, which was
+  // false for the one command that had no bound.
+  const src = readFileSync(join(SKILL, 'scripts', 'shipreport.js'), 'utf8');
+  assert.match(src, /budget \/ Math\.max\(1, receipts\.length\)/,
+    'show no longer divides its character budget across the receipts asked for');
+});
+
+test('a forced backfill is not reported as an incremental pass', () => {
+  const src = readFileSync(join(SKILL, 'scripts', 'shipreport.js'), 'utf8');
+  assert.match(src, /args\.full \? 'full — forced backfill'/,
+    '`index --full` reports the opposite of what it just did');
+});
+
+test('a four-item section lays out in pairs, not three-plus-an-orphan', () => {
+  const src = readFileSync(join(SKILL, 'scripts', 'lib', 'render.mjs'), 'utf8');
+  assert.match(src, /n === 2 \|\| n === 4/, 'the column count no longer fits the section');
+  const css = readFileSync(join(SKILL, 'assets', 'report.css'), 'utf8');
+  assert.match(css, /\.ledger--pairs\s*\{[^}]*repeat\(2/, 'the pairs layout has no CSS behind it');
 });
 
 test('release and pull request bodies are actually requested from gh', () => {

@@ -130,10 +130,21 @@ ${strip.map((x) => `        <div class="stat"><div class="value">${esc(x.n)}</di
         </article>`;
     }).join('\n');
 
+    // The column count fits the section rather than the other way round.
+    //
+    // A fixed three-column grid orphans a four-item section: three cards, then
+    // one alone with two empty columns beside it and the row's full height of
+    // white. It reads as a section that failed to finish rather than as a
+    // deliberate ragged edge. Two and four both divide cleanly by two; one is
+    // left narrow on purpose, because a lone card stretched across the page
+    // stretches its scene with it.
+    const n = (s.items ?? []).length;
+    const cols = (n === 2 || n === 4) ? ' ledger--pairs' : '';
+
     return `
     <section class="report-section">
-      <h2 class="block-title"><span>${esc(s.title)}</span><span class="count">${(s.items ?? []).length}</span></h2>
-      <div class="ledger">
+      <h2 class="block-title"><span>${esc(s.title)}</span><span class="count">${n}</span></h2>
+      <div class="ledger${cols}">
 ${rows}
       </div>
     </section>`;

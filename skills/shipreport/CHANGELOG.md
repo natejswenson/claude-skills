@@ -99,6 +99,49 @@ four defects the run worked around rather than hit.
   `<set>`; and protocol-relative `<use href="//host/…">`, which slipped a guard
   that named only `http` and `https`.
 
+### Fixed — from a second graded run, of 0.2.0 itself
+
+The 0.2.0 changes worked: the run took 242s against 318s, the ranking drew the
+line by score rather than by timestamp, `--kind session` replaced a `grep`, and
+step 4 made no network call. Grading *that* run found four more.
+
+- **A hand-written count reached the sheet — and it was wrong.** The standfirst
+  read "Eleven components shipped, two of them brand new" while the computed
+  strip printed **16 released** an inch below it; 15 releases were cited and 3
+  were first releases. Every number wrong, with the correct ones rendered
+  adjacent. `render.mjs` records fixing this contradiction once before from the
+  computed side; this was the hand-written side.
+
+  The root cause is ordering: the strip is computed at `render`, *after* the
+  prose exists, so a model with no figure in front of it counts its own cards.
+  **`rank` now prints the same figures the sheet will**, and the gate refuses a
+  count of shipped things in the headline or standfirst — enforcing the rule
+  SKILL.md already stated ("do not write numbers") rather than a weaker
+  must-match version, because a count that is right today is still the figure
+  written down twice. Numbers *inside* an item's prose stay legal: they belong to
+  the artifact being described, and flagging them would be the "plus/minus"
+  false positive all over again.
+
+- **`show`'s output had no bound, so the run piped it three times.** `--chars`
+  was a per-item cap that multiplied — six receipts at 2400 is 14k characters —
+  and 0.2.0 had just added the rule "run every one of these bare, the output is
+  already bounded", which was false for the one command it also added. `--chars`
+  is now a **total** budget divided across the receipts asked for, so asking for
+  more artifacts buys less of each and a single call is always safe to run bare.
+
+- **`index --full` reported "incremental — new items only"** — the label read the
+  watermark and ignored the flag, describing the opposite of what had just run.
+
+- **A four-item section orphaned its last card.** The ledger was a fixed
+  three-column grid, so four items rendered as three plus one alone beside a full
+  row-height of white, reading as a section that failed to finish. Two- and
+  four-item sections now lay out in pairs, with the column dividers moving to
+  match.
+
+- **`receipts` printed `Prose: 0` beside `REFUSED` again**, because the new count
+  check did not increment the counter that column reports. Same
+  self-contradiction the column was added to end, one release later.
+
 ### Changed
 
 - **Speed.** `fetchReleases` now fetches repositories concurrently instead of

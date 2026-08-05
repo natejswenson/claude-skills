@@ -20,7 +20,7 @@ import { fetchAll } from './lib/github.mjs';
 import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir, resolveReceipt } from './lib/corpus.mjs';
 import { rankItems } from './lib/rank.mjs';
 import { checkDraft } from './lib/receipts.mjs';
-import { renderHtml } from './lib/render.mjs';
+import { renderHtml, computeNumbers } from './lib/render.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
@@ -120,8 +120,12 @@ async function cmdIndex(args) {
     ? table(['Redacted', 'Count'], red)
     : table(['Redacted', 'Count'], [['(nothing matched)', 0]]));
   console.log('');
+  // `--full` is a backfill whatever the watermark says. Reporting it as
+  // "incremental — new items only" described the opposite of what just ran.
   console.log(table(['Pass', 'Corpus', 'Watermark'], [[
-    first ? 'first — backfilled a year' : 'incremental — new items only',
+    args.full ? 'full — forced backfill'
+      : first ? 'first — backfilled a year'
+        : 'incremental — new items only',
     dir.replace(home, '~'),
     corpus.meta.watermark.github.slice(0, 19) + 'Z',
   ]]));
@@ -148,11 +152,11 @@ function loadRanked(args) {
     // is a question a seven-day slice cannot answer.
     history: allItems(corpus),
   });
-  return { corpus, win, ranked };
+  return { corpus, win, ranked, numbers: computeNumbers(items, owners) };
 }
 
 async function cmdRank(args) {
-  const { win, ranked } = loadRanked(args);
+  const { win, ranked, numbers } = loadRanked(args);
   if (ranked.ranked.length === 0) {
     throw new Error(`no items in ${win.since.slice(0, 10)}..${win.until.slice(0, 10)} — run \`shipreport index\` first, or widen --days`);
   }
@@ -197,6 +201,19 @@ async function cmdRank(args) {
     ]],
   ));
 
+  // The figures the sheet will print, shown BEFORE any prose exists.
+  //
+  // They used to be computed at `render`, which is after the draft is written —
+  // so a model with no figure in front of it counted its own cards. The second
+  // real run put "Eleven components shipped" in the standfirst and the strip
+  // rendered "16 released" an inch below it. Printing them here is the fix; the
+  // gate that refuses a hand-written count is the backstop.
+  if (numbers.length) {
+    console.log('');
+    console.log(table(numbers.map((n) => n.k), [numbers.map((n) => n.n)]));
+    console.log('the sheet prints these figures itself — never write a count into the prose.');
+  }
+
   // The line is only a finding when it means something. Say so when it does not,
   // rather than leaving the agent to notice a column of identical numbers.
   if (ranked.tie) {
@@ -239,7 +256,16 @@ async function cmdShow(args) {
     throw new Error('show: name at least one receipt — e.g. `show release:owner/repo@v1.2.0` (the Receipt column of `rank`)');
   }
 
-  const max = Number(args.chars ?? 2400);
+  // A TOTAL budget, divided among the receipts asked for — not a per-item cap.
+  //
+  // `--chars` alone multiplies: six receipts at 2400 is 14k characters, and the
+  // second real run answered that by piping `show` through `head` and `tail`
+  // three times — working around the very rule this skill added ("run every one
+  // bare, the output is already bounded"). The rule was false for the one
+  // command that had no bound. Asking for more artifacts now buys less of each,
+  // which is what makes a single call safe to run bare.
+  const budget = Number(args.chars ?? 6000);
+  const max = Math.max(400, Math.floor(budget / Math.max(1, receipts.length)));
   const missing = [];
   const found = [];
   for (const r of receipts) {
@@ -266,7 +292,9 @@ async function cmdShow(args) {
         : '(no body for this kind of item)');
       continue;
     }
-    console.log(body.length > max ? `${body.slice(0, max).trimEnd()}\n… [truncated, --chars N for more]` : body);
+    console.log(body.length > max
+      ? `${body.slice(0, max).trimEnd()}\n… [${body.length - max} more characters — \`--chars ${budget * 2}\` raises the budget, or ask for fewer receipts]`
+      : body);
   }
 
   if (missing.length) {
@@ -302,7 +330,11 @@ function readDraft(args) {
 async function cmdReceipts(args) {
   const corpus = loadCorpus(corpusDir(args));
   const draft = readDraft(args);
-  const { rows, problems, proseProblems, ok } = checkDraft(draft, corpus);
+  const win = draft.window ?? resolveWindow(args);
+  const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
+  const owners = args.allOwners ? null : new Set(declared);
+  const numbers = computeNumbers(inWindow(allItems(corpus), String(win.since), String(win.until)), owners);
+  const { rows, problems, proseProblems, ok } = checkDraft(draft, corpus, numbers);
 
   if (rows.length) console.log(table(['Claim', 'Receipt', 'Resolved'], rows));
   console.log('');
@@ -330,20 +362,21 @@ async function cmdRender(args) {
   const corpus = loadCorpus(corpusDir(args));
   const draft = readDraft(args);
 
-  // The gate runs again here. `receipts` passing earlier is not a promise that
-  // the draft on disk right now is the one that passed.
-  const { problems, ok } = checkDraft(draft, corpus);
-  if (!ok) {
-    for (const p of problems) console.error(`shipreport: ${p}`);
-    throw new Error('render refused — a claim in this draft has no resolvable receipt');
-  }
-
   const win = draft.window ?? resolveWindow(args);
   // Same ownership rule as `rank`, or the strip and the ranking disagree.
   const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
   const owners = args.allOwners ? null : new Set(declared);
   // The strip counts the window, not the citations — see computeNumbers.
   const items = inWindow(allItems(corpus), String(win.since), String(win.until));
+
+  // The gate runs again here, against the same figures the sheet is about to
+  // print. `receipts` passing earlier is not a promise that the draft on disk
+  // right now is the one that passed.
+  const { problems, ok } = checkDraft(draft, corpus, computeNumbers(items, owners));
+  if (!ok) {
+    for (const p of problems) console.error(`shipreport: ${p}`);
+    throw new Error('render refused — a claim in this draft has no resolvable receipt');
+  }
 
   const html = renderHtml({
     draft,

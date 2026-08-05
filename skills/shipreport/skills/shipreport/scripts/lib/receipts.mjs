@@ -73,6 +73,50 @@ export function isRepoSlug(slug, corpus) {
   return true;
 }
 
+/**
+ * A count of shipped things, written into prose that sits directly above the
+ * computed strip.
+ *
+ * The second real run put "Eleven components shipped, two of them brand new" in
+ * the standfirst. The strip printed **16 released** an inch below it, 15 releases
+ * were actually cited, and 3 were first releases — every number wrong, and the
+ * correct ones rendered adjacent. `render.mjs` records fixing this exact
+ * contradiction once before ("the sheet read 21 released where rank had found
+ * 19"), and it came back through the other door: not a miscomputed figure, a
+ * hand-written one.
+ *
+ * The root cause is ordering — the strip is computed at `render`, after the
+ * prose exists, so a model with no figure in front of it counts its own cards.
+ * `rank` now prints the same figures. This is the gate behind that.
+ *
+ * It enforces the rule already written in SKILL.md — *do not write numbers, the
+ * strip is computed* — rather than a weaker "must match" version, because a
+ * count that happens to be right today is still a second place the figure is
+ * written down. **Headline and standfirst only:** item prose legitimately quotes
+ * counts from inside the artifact it describes ("ten components carried ten
+ * different front pages" is a fact about the past, not about this window), and
+ * flagging those would be the false-positive class all over again.
+ */
+const NUMBER_WORD = '(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty)';
+const COUNTED_NOUN = {
+  released: ['releases?', 'components?', 'skills?', 'tools?', 'packages?'],
+  merged: ['pull requests?', 'prs?'],
+  commits: ['commits?'],
+  sessions: ['sessions?'],
+  repos: ['repos?', 'repositories', 'repository'],
+};
+
+/** Counts of shipped things stated in the headline or standfirst. */
+export function statedCounts(draft) {
+  const text = [draft.headline ?? '', ...(draft.standfirst ?? [])].join('\n');
+  const out = [];
+  for (const [key, nouns] of Object.entries(COUNTED_NOUN)) {
+    const re = new RegExp(`\\b(${NUMBER_WORD})\\s+(?:\\w+\\s+){0,2}?(${nouns.join('|')})\\b`, 'gi');
+    for (const m of text.matchAll(re)) out.push({ key, said: m[1], noun: m[2], phrase: m[0].trim() });
+  }
+  return out;
+}
+
 /** Every `owner/repo` the corpus has ever seen, and every owner of one. */
 const repoCache = new WeakMap();
 function repoSets(corpus) {
@@ -131,9 +175,20 @@ const stripTags = (s) => {
   return out;
 };
 
-export function checkDraft(draft, corpus) {
+export function checkDraft(draft, corpus, numbers = null) {
   const rows = [];
   const problems = [];
+
+  // Counted as prose problems, because that is what they are — and because the
+  // verdict table has to explain its own verdict. Printing `Prose: 0` beside
+  // `REFUSED` is the exact confusion that got the Prose column added.
+  let proseProblems = 0;
+  const figure = (key) => numbers?.find((n) => n.k === key)?.n;
+  for (const c of statedCounts(draft)) {
+    const computed = figure(c.key);
+    proseProblems += 1;
+    problems.push(`headline/standfirst: "${c.phrase}" writes a count the strip already computes${computed === undefined ? '' : ` (${computed} ${c.key})`} — say what changed, not how many`);
+  }
 
   for (const claim of claimsOf(draft)) {
     if (claim.receipts.length === 0) {
@@ -148,7 +203,6 @@ export function checkDraft(draft, corpus) {
     }
   }
 
-  let proseProblems = 0;
   for (const [where, text] of proseOf(draft)) {
     const clean = stripTags(text);
     for (const { cls, re, confirm } of RAW_ID) {
