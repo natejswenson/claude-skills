@@ -101,6 +101,85 @@ const projectMatchesRepo = (project, repo) => {
   return repo.split('/')[1] === project;
 };
 
+/**
+ * Every magnitude signal below is a tier, not a threshold, and the reason is a
+ * real run.
+ *
+ * On 2026-08-05 a release-heavy week ranked twelve items at *exactly* 70 —
+ * `release+50 minor+10 corroborated+10` and nothing else — so the line between
+ * what reached the report and what did not was drawn by a timestamp tiebreak.
+ * Every session in that window scored exactly 32 for the same reason: `edits>=20`
+ * and `turns>=60` are thresholds that top out, so a twenty-edit session and a
+ * two-hundred-edit session were indistinguishable, and no session reached the
+ * report at all.
+ *
+ * A threshold answers "did this clear a bar". Ranking needs "how much", so these
+ * keep climbing.
+ */
+const tier = (n, steps) => {
+  let bonus = 0;
+  for (const [floor, points] of steps) if (n >= floor) bonus = points;
+  return bonus;
+};
+
+// Deliberately capped below `major`'s +20: a pull request count measures how
+// finely work was split as much as how much of it there was, so a well-squashed
+// breaking release must never be out-ranked by a fragmented routine one.
+const BACKING_TIERS = [[1, 4], [2, 7], [3, 10], [6, 13], [12, 16]];
+const NOTES_TIERS = [[200, 3], [1000, 6], [2500, 9]];
+const EDIT_TIERS = [[1, 1], [5, 3], [20, 6], [50, 9], [100, 12]];
+const TURN_TIERS = [[60, 4], [150, 7], [300, 10]];
+// There is deliberately no duration signal. A digest's start and end bound the
+// wall-clock span of the transcript, not the work in it — real sessions span
+// thirty hours across two days — so it saturates immediately and ranks sitting
+// still above shipping. Edits and turns are the magnitude; elapsed time is not.
+
+/** `feat(press): …` → `press`. The scope is how a release finds its own work. */
+export const scopeOf = (title) => {
+  const m = /^(?:feat|fix|perf|refactor|docs|test|chore|build|ci|style|revert)(?:\(([^)]*)\))?!?:/i.exec(String(title ?? ''));
+  return m?.[1]?.trim().toLowerCase() || null;
+};
+
+/**
+ * How much in-window work stands behind a release.
+ *
+ * `corroborated+10` is cross-source evidence — a session happened in a directory
+ * named like this repo — and it fires identically for a release backed by fifteen
+ * pull requests and one backed by none. That is a yes/no fact, and a ranking
+ * needs a quantity, so this is a separate signal rather than a rewrite of it.
+ *
+ * A component tag (`press-v0.9.0`) counts only the work scoped to that component,
+ * which is what stops every skill in a monorepo from claiming the same backing.
+ * A repo-level tag (`v0.50.0`) counts the whole repo, because that is what it
+ * released.
+ */
+export function backingCount(item, ctx) {
+  const repo = ctx.backing.get(item.repo);
+  if (!repo) return 0;
+  const component = item.kind === 'release' ? (parseTag(item.tag)?.component ?? '') : '';
+  if (component && repo.byScope.has(component)) return repo.byScope.get(component);
+  if (component) return 0;
+  return repo.total;
+}
+
+/**
+ * A component's first release is news in a way its fourth minor is not, and it
+ * scored identically until now.
+ *
+ * Both conditions are required. "Nothing earlier in the corpus" alone would call
+ * any release first once it fell off the back of the year-long backfill; an
+ * initial version number alone would be fooled by a repo that re-cut 0.1.0.
+ */
+export function isFirstRelease(item, ctx) {
+  const p = parseTag(item.tag);
+  if (!p) return false;
+  const initial = (p.major === 0 && p.minor === 1 && p.patch === 0)
+    || (p.major === 1 && p.minor === 0 && p.patch === 0);
+  if (!initial) return false;
+  const earliest = ctx.firstSeen.get(`${item.repo}::${p.component}`);
+  return !earliest || earliest >= item.at;
+}
+
 export function scoreItem(item, ctx) {
   const signals = [];
   let score = KIND_BASE[item.kind] ?? 0;
@@ -123,12 +202,24 @@ export function scoreItem(item, ctx) {
     const bonus = BUMP_BONUS[item.bump] ?? 0;
     if (bonus) { score += bonus; signals.push(`${item.bump}+${bonus}`); }
     if ((item.releaseCount ?? 1) >= 3) { score += 6; signals.push(`x${item.releaseCount}+6`); }
+    if (isFirstRelease(item, ctx)) { score += 12; signals.push('first+12'); }
+
+    const backed = backingCount(item, ctx);
+    const backedBonus = tier(backed, BACKING_TIERS);
+    if (backedBonus) { score += backedBonus; signals.push(`backed×${backed}+${backedBonus}`); }
+
+    // The changelog is the only measure of a release's size the corpus holds.
+    // Zero here means "no body cached", which a corpus indexed before bodies
+    // were cached will report for everything — see `index --full`.
+    const notes = tier(String(item.body ?? '').length, NOTES_TIERS);
+    if (notes) { score += notes; signals.push(`notes+${notes}`); }
   }
 
   if (item.kind === 'session') {
-    if (item.edits >= 20) { score += 6; signals.push('heavy-edit+6'); }
-    else if (item.edits >= 5) { score += 3; signals.push('edited+3'); }
-    if (item.assistantTurns >= 60) { score += 4; signals.push('long+4'); }
+    const editBonus = tier(item.edits ?? 0, EDIT_TIERS);
+    if (editBonus) { score += editBonus; signals.push(`edits×${item.edits}+${editBonus}`); }
+    const turnBonus = tier(item.assistantTurns ?? 0, TURN_TIERS);
+    if (turnBonus) { score += turnBonus; signals.push(`turns×${item.assistantTurns}+${turnBonus}`); }
     if (item.edits === 0 && item.userTurns < 4) { score -= 15; signals.push('lookaround-15'); }
     if ((item.skills ?? []).length) { score += 2; signals.push('skill-run+2'); }
     // A session whose project matches a repo that shipped in this window is
@@ -175,14 +266,43 @@ export function dropForeignReleases(items, owners) {
   return { kept, foreign };
 }
 
-export function rankItems(items, { top = 12, floor = 20, owners = null } = {}) {
+/**
+ * How much work backs each repo in the window, and when each component was first
+ * seen releasing. `history` is the WHOLE corpus, not the window — "is this the
+ * first release" is a question the window cannot answer.
+ */
+export function buildContext(kept, history = []) {
+  const backing = new Map();
+  for (const it of kept) {
+    if (it.kind !== 'pr' && it.kind !== 'commit') continue;
+    if (!backing.has(it.repo)) backing.set(it.repo, { total: 0, byScope: new Map() });
+    const b = backing.get(it.repo);
+    b.total += 1;
+    const scope = scopeOf(it.title);
+    if (scope) b.byScope.set(scope, (b.byScope.get(scope) ?? 0) + 1);
+  }
+
+  const firstSeen = new Map();
+  for (const it of history) {
+    if (it.kind !== 'release' || !it.at) continue;
+    const p = parseTag(it.tag);
+    if (!p) continue;
+    const key = `${it.repo}::${p.component}`;
+    const prev = firstSeen.get(key);
+    if (!prev || it.at < prev) firstSeen.set(key, it.at);
+  }
+
+  return { backing, firstSeen };
+}
+
+export function rankItems(items, { top = 12, floor = 20, owners = null, history = null } = {}) {
   const { kept: owned, foreign } = dropForeignReleases(items, owners);
   const series = collapseReleaseSeries(owned);
   const collapsed = owned.filter((i) => i.kind === 'release').length - series.filter((i) => i.kind === 'release').length;
   const { kept, folded } = foldSquashCommits(series);
   const shippedRepos = [...new Set(kept.filter((i) => i.kind === 'pr' || i.kind === 'release').map((i) => i.repo))];
   const sessionProjects = new Set(kept.filter((i) => i.kind === 'session').map((i) => i.project));
-  const ctx = { shippedRepos, sessionProjects };
+  const ctx = { shippedRepos, sessionProjects, ...buildContext(kept, history ?? items) };
 
   const scored = kept.map((i) => ({ ...i, ...scoreItem(i, ctx) }))
     .sort((a, b) => b.score - a.score || String(a.at).localeCompare(String(b.at)) || a.id.localeCompare(b.id));
@@ -192,5 +312,31 @@ export function rankItems(items, { top = 12, floor = 20, owners = null } = {}) {
     it.above = it.score >= floor && placed < top;
     if (it.above) placed += 1;
   }
-  return { ranked: scored, folded, collapsed, foreign, above: scored.filter((i) => i.above), top, floor };
+  const above = scored.filter((i) => i.above);
+  return { ranked: scored, folded, collapsed, foreign, above, top, floor, tie: tieAtTheLine(scored, above) };
+}
+
+/**
+ * Whether the line was drawn by the ranking or by a tiebreak.
+ *
+ * When the last item above the line and the first item below it share a score,
+ * the cut is arbitrary — the sort falls through to timestamp and then to id, and
+ * neither is a reason one piece of work reached the report and another did not.
+ *
+ * This used to be prose asking the agent to notice a table of identical numbers.
+ * It is the deterministic half's job: `rank` draws the line, so `rank` is what
+ * has to say when the line means nothing.
+ */
+export function tieAtTheLine(scored, above) {
+  if (above.length === 0 || above.length === scored.length) return null;
+  const last = above[above.length - 1];
+  const next = scored[above.length];
+  if (!next || next.score !== last.score) return null;
+  const shared = scored.filter((i) => i.score === last.score);
+  return {
+    score: last.score,
+    count: shared.length,
+    included: shared.filter((i) => i.above).length,
+    excluded: shared.filter((i) => !i.above).length,
+  };
 }

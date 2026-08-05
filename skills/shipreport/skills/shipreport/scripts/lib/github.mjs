@@ -26,6 +26,26 @@ const json = (s, fallback = []) => {
   try { return JSON.parse(s); } catch { return fallback; }
 };
 
+/**
+ * Bodies are cached so that "read what you are about to describe" costs nothing.
+ *
+ * Without them the corpus holds a release's tag, date and url but not a word of
+ * what it says, so the only way to read one is `gh release view` per item — three
+ * network round trips and sixteen kilobytes of changelog printed into the
+ * conversation, which is what the first real run did.
+ *
+ * They are excerpted rather than stored whole: the corpus is read in full by
+ * every later run, and a body is evidence for one paragraph, not an archive.
+ */
+export const RELEASE_BODY_MAX = 6000;
+export const PR_BODY_MAX = 2000;
+
+export const excerpt = (text, max) => {
+  const s = String(text ?? '').replace(/\r\n/g, '\n').trim();
+  if (s.length <= max) return s;
+  return `${s.slice(0, max).trimEnd()}\n… [${s.length - max} more characters not cached]`;
+};
+
 export async function whoami() {
   const out = await gh(['api', 'user', '--jq', '.login']);
   return out.trim();
@@ -38,7 +58,7 @@ export const repoName = (r) => r?.nameWithOwner ?? r?.fullName ?? null;
 
 export async function fetchPulls(login, since, limit = 300) {
   const out = await gh(['search', 'prs', '--author', login, '--merged-at', `>=${since}`,
-    '--limit', String(limit), '--json', 'number,title,repository,closedAt,createdAt,url,labels,state']);
+    '--limit', String(limit), '--json', 'number,title,repository,closedAt,createdAt,url,labels,state,body']);
   return json(out).map((p) => ({
     id: `pr:${repoName(p.repository)}#${p.number}`,
     kind: 'pr',
@@ -46,6 +66,7 @@ export async function fetchPulls(login, since, limit = 300) {
     number: p.number,
     repo: repoName(p.repository),
     title: p.title,
+    body: excerpt(p.body, PR_BODY_MAX),
     url: p.url,
     at: p.closedAt || p.createdAt,
     labels: (p.labels ?? []).map((l) => l.name),
@@ -77,13 +98,18 @@ export async function fetchCommits(login, since, limit = 300) {
     .filter((c) => c.at && c.repo);
 }
 
+/**
+ * Repos are fetched concurrently. Serially awaiting one `gh api` per repo made
+ * the first-run year backfill scale with the number of repos touched, which is
+ * the slowest thing this skill does and the only part of it that is pure waiting.
+ */
 export async function fetchReleases(repos, since) {
-  const items = [];
-  for (const repo of repos) {
+  const perRepo = await Promise.all(repos.map(async (repo) => {
     const out = await gh(['api', `repos/${repo}/releases?per_page=100`,
-      '--jq', '.[] | {tag: .tag_name, name: .name, at: .published_at, url: .html_url, draft: .draft}'],
+      '--jq', '.[] | {tag: .tag_name, name: .name, at: .published_at, url: .html_url, draft: .draft, body: .body}'],
     { allowFail: true });
-    if (!out) continue;
+    if (!out) return [];
+    const items = [];
     for (const line of out.split('\n')) {
       if (!line.trim()) continue;
       let r;
@@ -96,12 +122,16 @@ export async function fetchReleases(repos, since) {
         tag: r.tag,
         repo,
         title: r.name || r.tag,
+        body: excerpt(r.body, RELEASE_BODY_MAX),
         url: r.url,
         at: r.at,
       });
     }
-  }
-  return items;
+    return items;
+  }));
+  // Flattened in the order `repos` was given, so a fetch is reproducible
+  // regardless of which request happened to return first.
+  return perRepo.flat();
 }
 
 /**

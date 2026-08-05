@@ -21,7 +21,7 @@ Use it when the work needs a repeatable process and a result you can inspect.
 | Path | What it provides |
 |---|---|
 | `skills/shipreport/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/shipreport/scripts/` | The deterministic half — `index`, `rank`, `receipts`, `render`. |
+| `skills/shipreport/scripts/` | The deterministic half — `index`, `rank`, `show`, `receipts`, `render`. |
 | `skills/shipreport/references/anatomy.md` | The fixed shape of the report — its sections, the receipt appendix, and what is never allowed in the body. |
 | `skills/shipreport/references/ranking.md` | The scoring function, why each signal is weighted the way it is, and what drawing the line means. |
 | `skills/shipreport/references/receipts.md` | The citation contract — what counts as a resolvable receipt, and the drop rule that follows when one does not resolve. |
