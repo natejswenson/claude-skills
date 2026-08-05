@@ -196,3 +196,47 @@ test('a school behind a vendor domain is withheld, not proposed', () => {
   assert.equal(candidates.length, 0);
   assert.match(withheld[0].why, /educational/);
 });
+
+// ── an empty result must explain itself ─────────────────────────────────────
+
+test('propose says WHY it proposed nothing, in each of the three cases', () => {
+  const t = (over) => ({ id: `x${Math.random()}`, subject: 'Sale', date: '2026-08-01T00:00:00Z',
+    labelIds: ['INBOX'], category: 'promotions', hasUnsubscribe: true, ...over });
+
+  // below the threshold — names the closest cluster so the user can widen
+  const below = propose([t({ from: 'a@shop.example' }), t({ from: 'a@shop.example' })], { minCount: 5 });
+  assert.equal(below.candidates.length, 0);
+  assert.equal(below.reason.kind, 'below-threshold');
+  assert.match(below.reason.text, /--min-count 2/);
+  assert.equal(below.below[0].count, 2);
+
+  // everything guarded — the safe answer, said as such
+  const guarded = propose([t({ from: 'careers@acme.com' }), t({ from: 'careers@acme.com' })], { minCount: 1 });
+  assert.equal(guarded.reason.kind, 'all-withheld');
+  assert.match(guarded.reason.text, /safe answer, not a broken one/);
+
+  // nothing bulk at all
+  const empty = propose([], { minCount: 1 });
+  assert.equal(empty.reason.kind, 'nothing-bulk');
+});
+
+test('a successful propose carries no reason', () => {
+  const t = (i) => ({ id: `b${i}`, from: 'noreply@shop.example', subject: 'Sale',
+    date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: 'promotions', hasUnsubscribe: true });
+  const r = propose([t(1), t(2), t(3)], { minCount: 2 });
+  assert.equal(r.candidates.length, 1);
+  assert.equal(r.reason, null);
+});
+
+test('the "closest sender" list never dangles a person as a near-candidate', () => {
+  // A person with 2 threads must be withheld as a person, not offered as
+  // something a lower threshold would catch.
+  const person = (i) => ({ id: `p${i}`, from: 'a.realtor@agency.example', subject: 'Re: paperwork',
+    date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: null, hasUnsubscribe: false });
+  const bulk = (i) => ({ id: `b${i}`, from: 'noreply@shop.example', subject: 'Sale',
+    date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: 'promotions', hasUnsubscribe: true });
+
+  const r = propose([person(1), person(2), bulk(1), bulk(2)], { minCount: 5 });
+  assert.deepEqual(r.below.map((b) => b.from), ['noreply@shop.example']);
+  assert.ok(r.withheld.some((w) => w.from === 'a.realtor@agency.example' && /may be a person/.test(w.why)));
+});

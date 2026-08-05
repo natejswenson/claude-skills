@@ -33,6 +33,10 @@
   "split": {
     "deterministic": [
       {
+        "step": "report whether this mailbox has any rules yet, and the single next thing to do \u2014 the only command safe to run before anything is configured",
+        "command": "node scripts/gmailtriage.js setup"
+      },
+      {
         "step": "cluster a real inbox sample into candidate rules by sender, mailing list and bulk-mail markers, with counts and a sample subject for each",
         "command": "node scripts/gmailtriage.js propose"
       },

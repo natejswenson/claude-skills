@@ -56,14 +56,75 @@ const writeJson = (p, v) => {
 const defaultRules = () => join(homedir(), '.gmailtriage', 'rules.json');
 const trim = (s, n) => (String(s ?? '').length > n ? String(s).slice(0, n - 1) + '…' : String(s ?? ''));
 
+// ── setup ───────────────────────────────────────────────────────────────────
+
+/**
+ * Where this mailbox stands, and the single next thing to do.
+ *
+ * A first run should never open with an empty table. This says, in one look,
+ * whether any rules exist, and it is the only command safe to run before
+ * anything has been configured.
+ */
+async function cmdSetup(args) {
+  const file = resolve(args.file ?? defaultRules());
+  const exists = existsSync(file);
+  let rows = [];
+  let broken = null;
+  if (exists) {
+    try { rows = validateRuleSet(JSON.parse(readFileSync(file, 'utf8'))); }
+    catch (e) { broken = e.message; }
+  }
+
+  const first = !exists || rows.length === 0;
+  console.log(table(['State', 'Rules', 'Rule file'], [[
+    broken ? 'rule file will not load' : first ? 'first run — no rules yet' : 'ready',
+    broken ? '—' : rows.length,
+    file.replace(homedir(), '~'),
+  ]]));
+
+  if (broken) {
+    console.log(`\nthe rule file exists but does not validate: ${broken}`);
+    console.log('fix it, or move it aside and start again — nothing will run against a rule set that does not load.');
+    process.exitCode = 1;
+    return;
+  }
+
+  if (first) {
+    console.log(`
+Nothing is configured yet, and nothing will be trashed until you say so.
+
+  1. I read a slice of your inbox and cluster it by sender.
+  2. You get candidate rules drawn from YOUR mail — with counts and an example
+     subject — plus the senders I refused to suggest, and why.
+  3. You accept the ones you want. Those become your rules.
+  4. Every later run plans first, and only ever trashes what a rule you accepted
+     named. Trash is recoverable for 30 days, and \`undo\` restores a whole run.
+
+Next: fetch a sample, then \`propose\`.`);
+    return;
+  }
+
+  console.log(table(['Rule id', 'Action', 'Matches on'], rows.map((r) => [r.id, r.action, r.fields.join(', ')])));
+  console.log('\nNext: fetch a sample, then `plan`.');
+}
+
 // ── propose ─────────────────────────────────────────────────────────────────
 
 async function cmdPropose(args) {
   const threads = readJson(args.threads ?? '', 'propose: --threads <file.json> of fetched threads');
-  const { candidates, withheld, sampled } = propose(threads, { minCount: Number(args.minCount ?? 3) });
+  const { candidates, withheld, below, reason, sampled } = propose(threads, { minCount: Number(args.minCount ?? 3) });
 
-  console.log(table(['Rule id', 'Sender', 'In sample', 'Bulk', 'Example subject'],
-    candidates.map((c) => [c.id, c.from, c.count, c.bulkCount, trim(c.sample, 46)])));
+  if (candidates.length) {
+    console.log(table(['Rule id', 'Sender', 'In sample', 'Bulk', 'Example subject'],
+      candidates.map((c) => [c.id, c.from, c.count, c.bulkCount, trim(c.sample, 46)])));
+  } else {
+    console.log(`No candidates — ${reason.text}`);
+    if (below.length) {
+      console.log('');
+      console.log(table(['Closest sender', 'In sample', 'Why not proposed'],
+        below.slice(0, 5).map((b) => [b.from, b.count, b.why])));
+    }
+  }
 
   if (withheld.length) {
     console.log('');
@@ -72,7 +133,8 @@ async function cmdPropose(args) {
   }
 
   console.log('');
-  console.log(table(['Sampled', 'Proposed', 'Withheld'], [[sampled, candidates.length, withheld.length]]));
+  console.log(table(['Sampled', 'Proposed', 'Withheld by a guard', 'Below threshold'],
+    [[sampled, candidates.length, withheld.length, below.length]]));
   console.log('\nnothing has been trashed — these are candidates. Accept the ones you want with `rules --add`.');
 
   if (args.out) console.error(`wrote ${writeJson(args.out, { candidates: candidates.map(candidateToRule), withheld })}`);
@@ -185,6 +247,7 @@ async function cmdUndo(args) {
 
 const USAGE = `gmailtriage v${VERSION} — triage a Gmail inbox against rules you wrote.
 
+  gmailtriage setup   [--file <rules.json>]
   gmailtriage propose --threads <f.json> [--min-count N] [--out <f.json>]
   gmailtriage rules   [--file <rules.json>] [--add <f.json>]
   gmailtriage plan    --threads <f.json> [--rules <f.json>] [--preview N] [--out <plan.json>]
@@ -201,6 +264,7 @@ async function main() {
   if (args.version) return console.log(VERSION);
   try {
     switch (cmd) {
+      case 'setup': return await cmdSetup(args);
       case 'propose': return await cmdPropose(args);
       case 'rules': return await cmdRules(args);
       case 'plan': return await cmdPlan(args);

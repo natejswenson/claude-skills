@@ -30,6 +30,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   field (a typo is a rule that silently never fires), a one-character match, a
   duplicate id, or a rule with no note.
 
+- **`setup` — the only command safe to run cold.** It reports whether any rules
+  exist and the single next step, and on a first run prints a short walkthrough:
+  nothing is trashed until you accept a rule, and trash is recoverable. A first
+  run should never open with an empty table.
+
+- **An empty proposal explains itself.** `propose` now names which of three
+  things produced no candidates — every sender below the threshold, every sender
+  withheld by a guard, or no bulk mail at all — and lists the closest clusters
+  with the threshold that would reach them.
+
 ### Found by the first run against a live inbox
 
 - **It proposed trashing an active job pipeline.** Five threads from a careers
@@ -47,6 +57,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - **Written-file paths moved to stderr.** On stdout they made every golden
   host-dependent, because the path carries the machine's tmpdir.
+
+- **The bulk check now runs before the threshold check.** Reversed, a person with
+  two threads landed in the "closest sender" list, so the new explanation invited
+  the user to lower the threshold to catch their own realtor. `below` must only
+  ever hold senders that would genuinely become candidates.
 
 ### Notes
 
