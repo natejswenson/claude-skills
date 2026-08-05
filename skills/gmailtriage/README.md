@@ -6,24 +6,34 @@
 ---
 <!-- <<< press:masthead -->
 
-*Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk.*
+*Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk.*
 
-> **A message is trashed only because a rule the user wrote matched it, and never because the model judged it junk — the model may propose a rule, but it may never act as one, so every trashed thread can be named by the rule that took it.**
+> **A message is trashed only because a rule the user wrote matched it, and never because the model judged it junk — and the same holds for every other move, so a thread is labelled or archived only by a rule too. The model may propose a rule, but it may never act as one: every thread that moved can be named by the rule that moved it.**
 
 ## Why install this
 
-Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk. It ships the method as well as the commands: 5 steps the machine decides outright, and 3 the model has to judge, with the line between them written down in `skill-invariants.json` rather than left to taste.
+Two things happen to mail you do not want in your inbox: some of it should go in
+the bin, and most of it should go in a folder. This does both, under rules you
+wrote and can read six months later.
 
-Use it when the work needs a repeatable process and a result you can inspect.
+A first run reads your actual inbox **and the folders you already have**, then
+proposes rules drawn from both — bulk mail worth trashing, and mail worth
+keeping but filing, matched into your own vocabulary rather than a parallel set
+of folders invented beside it. Nothing moves until you accept a rule.
+
+It ships the method as well as the commands: 7 steps the machine decides
+outright, and 4 the model has to judge, with the line between them written down
+in `skill-invariants.json` rather than left to taste.
 
 ## What you get
 
 | Path | What it provides |
 |---|---|
 | `skills/gmailtriage/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/gmailtriage/scripts/` | The deterministic half — `propose`, `rules`, `plan`, `apply`, `undo`. |
-| `skills/gmailtriage/references/rules.md` | The rule format, what each field means, and the checks a rule must survive before it can trash anything. |
-| `skills/gmailtriage/references/safety.md` | Why trash is never permanent deletion, what the receipt records, and how an unwanted run is undone. |
+| `skills/gmailtriage/scripts/` | The deterministic half — `setup`, `propose`, `rules`, `labels`, `plan`, `apply`, `undo`. |
+| `skills/gmailtriage/references/rules.md` | The rule format, what each field means, and the checks a rule must survive before it can move anything. |
+| `skills/gmailtriage/references/sorting.md` | What a "folder" actually is in Gmail, how a move is performed and reversed, and why the destination is your word and not the skill's. |
+| `skills/gmailtriage/references/safety.md` | Why nothing here is permanent deletion, what the receipt records, and how an unwanted run is undone. |
 | `skills/gmailtriage/references/gmail.md` | The Gmail tool surface this skill is built on — the query syntax, the page limits, and the operations that do not exist. |
 | `skills/gmailtriage/references/proposing.md` | How a first run turns a real inbox into candidate rules, and the clusters it deliberately never proposes. |
 | `skills/gmailtriage/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
@@ -31,12 +41,30 @@ Use it when the work needs a repeatable process and a result you can inspect.
 ## Quick start
 
 ```bash
-gmailtriage propose   # read a slice of the user's real inbox, cluster it by sender, list, and bulk-mail markers, and return a table of candidate rules — pattern, what it matches, how many threads in the sample, and a sample subject — so a first run starts from the user's own mail rather than from generic defaults. Proposes only; writes no rule and trashes nothing.
-gmailtriage rules     # read, validate and write the rule file, returning a table of rule id, action, the Gmail query it compiles to, and whether that query is well-formed — so a rule that would silently match everything or nothing is visible before it ever runs.
-gmailtriage plan      # evaluate every rule against the inbox and return the exact set of threads each rule would trash, as a table of rule id, thread count, sender and subject, plus a total and any thread matched by more than one rule. Reads only; trashes nothing.
-gmailtriage apply     # trash exactly the threads a named plan listed, refusing any thread the plan did not name, and write a receipt file recording every thread id it moved so the run can be undone. Returns a table of rule id, threads trashed, and threads skipped with the reason.
-gmailtriage undo      # read a receipt from a previous apply and restore every thread it trashed, returning a table of thread id, restored yes or no, and the rule that had taken it — so a run the user regrets is reversible without hunting through the Gmail trash by hand.
+gmailtriage setup     # where this mailbox stands, and the single next thing to do
+gmailtriage propose   # cluster your real inbox into two tables — bulk mail worth trashing, and mail
+                      # worth filing, each matched against the folders you already have. Moves nothing.
+gmailtriage rules     # validate and store rules, showing the Gmail query each compiles to, where it
+                      # files to, and whether the thread leaves the inbox
+gmailtriage labels    # reconcile every destination against your real labels; exits non-zero naming
+                      # exactly what must be created, so a run never dies halfway through
+gmailtriage plan      # exactly which threads each rule takes, where each goes, and how many leave
+                      # the inbox. Reads only.
+gmailtriage apply     # authorise exactly what the plan named, per action, and write a receipt
+gmailtriage undo      # reverse a whole run — untrash, unlabel, and put back in the inbox
 ```
+
+### What a rule looks like
+
+```json
+{ "id": "sort-chase", "action": "label", "label": "Finance/Chase",
+  "match": { "from": "@chase.com" }, "note": "statements — read monthly, not daily" }
+```
+
+Gmail has no folders, so a sort rule does two things: adds the label, and
+removes `INBOX`. `keepInInbox: true` tags in place instead — which is what the
+skill proposes for any sender that also delivers login codes, so you can file
+your receipts and still find the code you are waiting for.
 
 Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
 for work matching the triggers below.
@@ -46,11 +74,13 @@ for work matching the triggers below.
 - "clean my inbox"
 - "gmailtriage"
 - "triage my email"
-- "delete my junk mail"
 - "sort my gmail"
+- "file my email into folders"
+- "auto-label my mail"
+- "set up my email rules"
+- "delete my junk mail"
 - "unsubscribe and clean up"
 - "why is my inbox full"
-- "set up my email rules"
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
