@@ -49,6 +49,32 @@ export const allItems = (corpus) => [...Object.values(corpus.github), ...Object.
 export const inWindow = (items, since, until) =>
   items.filter((i) => i.at && i.at >= since && i.at <= until);
 
+/**
+ * Which artifacts have actually been read, and when.
+ *
+ * SKILL.md says of writing a sentence first and hunting for a receipt after:
+ * "the gate cannot catch that, and nothing can". That is true of the sentence,
+ * but not of the reading. The third graded run cited three receipts it never
+ * passed to `show` — a pull request, a session and a release — writing them from
+ * a previous run's memory. Every one resolved, so the gate passed them.
+ *
+ * This is deliberately a *report*, never a refusal: citing something read
+ * through the ranked table alone is legitimate, and a hard gate here would
+ * refuse honest work. It only makes the question askable.
+ */
+export const readsFile = (dir) => join(dir, 'reads.json');
+
+export function loadReads(dir) {
+  return read(readsFile(dir), null);
+}
+
+export function recordReads(dir, receipts, now) {
+  const log = read(readsFile(dir), {});
+  for (const r of receipts) log[r] = now;
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(readsFile(dir), stable(sortKeys(log)));
+}
+
 /** Resolve one receipt id against the corpus. The one rule runs through here. */
 export function resolveReceipt(corpus, receipt) {
   if (typeof receipt !== 'string' || !receipt) return null;

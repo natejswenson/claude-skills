@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/shipreport",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turns a stretch of real commits, pull requests and Claude Code sessions into a short executive summary a stakeholder can read — and refuses to print a line it cannot back with a receipt.",
   "license": "MIT",
   "author": "Nate Swenson",
