@@ -236,7 +236,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 585
+        "line": 598
       }
     },
     {
@@ -296,7 +296,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 612
+        "line": 625
       }
     },
     {
@@ -366,7 +366,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 614
+        "line": 627
       }
     },
     {
@@ -376,7 +376,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 493
+        "line": 506
       }
     },
     {
@@ -386,7 +386,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 619
+        "line": 632
       }
     },
     {
@@ -396,7 +396,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 616
+        "line": 629
       }
     },
     {
@@ -406,7 +406,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 616
+        "line": 629
       }
     },
     {
@@ -416,7 +416,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 500
+        "line": 513
       }
     },
     {
@@ -446,7 +446,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 551
+        "line": 564
       }
     },
     {
@@ -456,7 +456,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 626
+        "line": 639
       }
     },
     {
@@ -466,7 +466,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 622
+        "line": 635
       }
     },
     {
@@ -476,7 +476,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 512
+        "line": 525
       }
     },
     {
@@ -497,6 +497,16 @@
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
         "line": 16
+      }
+    },
+    {
+      "id": "skill-c67a1487",
+      "tag": "skill",
+      "text": "Start from the scaffold, never by hand:",
+      "severity": "high",
+      "source": {
+        "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+        "line": 462
       }
     },
     {
@@ -536,7 +546,7 @@
       "severity": "high",
       "source": {
         "file": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
-        "line": 539
+        "line": 552
       }
     },
     {

@@ -1,0 +1,111 @@
+{
+  "comment": "What must not silently disappear from gmailtriage. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "A message is trashed only because a rule the user wrote matc",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "plan-is-the-authorisation",
+      "pattern": "Never trash a thread the plan did not name",
+      "rationale": "The scaffolded invariant here was about a detect step this skill does not have. This is the one that matters: the plan is the authorisation, and a thread outside it has no rule behind it. Lose this line and `apply` becomes advisory."
+    },
+    {
+      "id": "trash-is-not-deletion",
+      "pattern": "Never call trash \"deleted\"",
+      "rationale": "Trash is recoverable for 30 days and the MCP has no permanent delete. Calling it deletion overstates the risk to the user and, worse, invites someone to 'fix' the skill by reaching for a destructive operation that does not exist."
+    },
+    {
+      "id": "guards-constrain-proposals-not-users",
+      "pattern": "the guard is on what the skill suggests",
+      "rationale": "The withheld list is about what the skill proposes, never about what the user may decide. Losing the distinction turns a helpful default into a tool that argues with its owner."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "report whether this mailbox has any rules yet, and the single next thing to do \u2014 the only command safe to run before anything is configured",
+        "command": "node scripts/gmailtriage.js setup"
+      },
+      {
+        "step": "cluster a real inbox sample into candidate rules by sender, mailing list and bulk-mail markers, with counts and a sample subject for each",
+        "command": "node scripts/gmailtriage.js propose"
+      },
+      {
+        "step": "validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, or matches nothing",
+        "command": "node scripts/gmailtriage.js rules"
+      },
+      {
+        "step": "evaluate the stored rules against the inbox and enumerate exactly which threads each would take, without touching any of them",
+        "command": "node scripts/gmailtriage.js plan"
+      },
+      {
+        "step": "trash exactly the threads the plan named, refuse anything it did not, and write a receipt of every thread id moved",
+        "command": "node scripts/gmailtriage.js apply"
+      },
+      {
+        "step": "restore every thread listed in a previous run's receipt",
+        "command": "node scripts/gmailtriage.js undo"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide which proposed rules are actually safe to accept, and which cluster is a newsletter the user genuinely reads",
+        "why": "a sender sending fifty near-identical bulk messages looks the same whether it is a retailer the user ignores or the school district they need; only the user knows which"
+      },
+      {
+        "step": "word each rule so a reader six months later can tell what it was meant to catch",
+        "why": "a Gmail query is precise and unreadable, and a rule nobody can interpret is a rule nobody will dare to edit"
+      },
+      {
+        "step": "judge when a plan looks wrong and should be questioned rather than applied",
+        "why": "a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan \u2014 pinned against a real triage run over a frozen, redacted corpus of this account's own threads \u2014 propose, rules and plan re-run and byte-compared."
+    },
+    {
+      "id": "apply-refuses-a-thread-the-plan-did-not-name",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the one rule failing silently \u2014 the model, or a bug, trashing something no rule named \u2014 pinned against a receipt-producing apply run handed a thread id absent from its plan."
+    },
+    {
+      "id": "a-rule-matching-everything-is-refused",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "a malformed or over-broad rule reaching apply, which is how one bad rule empties an inbox \u2014 pinned against a rule whose compiled query is empty or matches the entire mailbox."
+    },
+    {
+      "id": "corpus-floor",
+      "kind": "corpus",
+      "test": "scripts/tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/*",
+      "min_corpus": 8,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing \u2014 pinned against the frozen thread corpus and rule set, with a declared minimum count."
+    }
+  ]
+}

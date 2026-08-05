@@ -14,6 +14,6 @@
 | The fitness and spending products kept shippin | release:natejswenson/local-budget@v0.3.0              | yes      |
 | The fitness and spending products kept shippin | session:a6707485-13a3-42b7-9e95-9a82b7278d90          | yes      |
 
-| Claims | Receipts | Unresolved | Verdict                   |
-|--------|----------|------------|---------------------------|
-| 9      | 13       | 0          | every claim has a receipt |
+| Claims | Receipts | Unresolved | Prose | Verdict                   |
+|--------|----------|------------|-------|---------------------------|
+| 9      | 13       | 0          | 0     | every claim has a receipt |

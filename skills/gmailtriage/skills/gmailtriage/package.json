@@ -1,7 +1,7 @@
 {
-  "name": "@natjswenson/shipreport",
-  "version": "0.2.0",
-  "description": "Turns a stretch of real commits, pull requests and Claude Code sessions into a short executive summary a stakeholder can read — and refuses to print a line it cannot back with a receipt.",
+  "name": "@natjswenson/gmailtriage",
+  "version": "0.1.0",
+  "description": "Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk.",
   "license": "MIT",
   "author": "Nate Swenson",
   "homepage": "https://github.com/natejswenson/claude-skills",
@@ -13,13 +13,13 @@
     "url": "https://github.com/natejswenson/claude-skills/issues"
   },
   "keywords": [
-    "shipreport",
+    "gmailtriage",
     "claude-code",
     "claude-skill"
   ],
   "type": "module",
   "bin": {
-    "shipreport": "scripts/shipreport.js"
+    "gmailtriage": "scripts/gmailtriage.js"
   },
   "files": [
     "scripts/",
