@@ -1,0 +1,22 @@
+| Rule id                  | Authorised threads |
+|--------------------------|--------------------|
+| success-e-rocketreach-co | 3                  |
+| support-npmjs-com        | 9                  |
+
+| Authorised | Refused |
+|------------|---------|
+| 12         | 0       |
+
+trash exactly these thread ids and nothing else:
+thr-677b9018d3
+thr-80adbc8db2
+thr-9d344bc4d0
+thr-3b002806e0
+thr-2dcd0dd6d1
+thr-86be8278b9
+thr-9fba2ce8bc
+thr-451b37d0fa
+thr-2f849a008c
+thr-11697368dc
+thr-b4b54f4021
+thr-4bf9fd6084

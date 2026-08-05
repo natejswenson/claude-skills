@@ -1,0 +1,37 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --min-count 1 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-04T00:00:00Z > $OUT/apply.txt",
+  "artifacts": [
+    {
+      "path": "apply.txt",
+      "bytes": 506,
+      "sha256": "d1c0a7bc935414702b1d82a56025c2ac44d5251d5689341b3d7a0bf6636b5448"
+    },
+    {
+      "path": "candidates.json",
+      "bytes": 7897,
+      "sha256": "781950c6338a1d8b867671c31ead9156a63f3f560e5ce3bf1ede9fb79d0b8161"
+    },
+    {
+      "path": "plan.json",
+      "bytes": 3019,
+      "sha256": "4172bd81af9b7431bf00b29e05eff7fe64c8c6491036ddd17f190389afa7d41b"
+    },
+    {
+      "path": "plan.txt",
+      "bytes": 1548,
+      "sha256": "685a3ee8177fd776bbbbf6eb790e736dc8e9cbf54db247b57e26c54e7c315893"
+    },
+    {
+      "path": "propose.txt",
+      "bytes": 4575,
+      "sha256": "b21709734308e22765fc36cf2c232f6411bb680c0018b674e29cd71e2212543c"
+    },
+    {
+      "path": "receipt.json",
+      "bytes": 2406,
+      "sha256": "af57aa2b8603e7ddf41fc59b3e5f63b9e3c4a98fb8c145b57fa7ea2c5fc78327"
+    }
+  ]
+}

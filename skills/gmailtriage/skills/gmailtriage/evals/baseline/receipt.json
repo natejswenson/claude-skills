@@ -1,0 +1,78 @@
+{
+  "at": "2026-08-04T00:00:00Z",
+  "count": 12,
+  "entries": [
+    {
+      "threadId": "thr-677b9018d3",
+      "ruleId": "success-e-rocketreach-co",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach"
+    },
+    {
+      "threadId": "thr-80adbc8db2",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/press@0.6.1"
+    },
+    {
+      "threadId": "thr-9d344bc4d0",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/press@0.6.0"
+    },
+    {
+      "threadId": "thr-3b002806e0",
+      "ruleId": "success-e-rocketreach-co",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #3: Real Results. Real People. RocketReach."
+    },
+    {
+      "threadId": "thr-2dcd0dd6d1",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.13.0"
+    },
+    {
+      "threadId": "thr-86be8278b9",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.12.0"
+    },
+    {
+      "threadId": "thr-9fba2ce8bc",
+      "ruleId": "success-e-rocketreach-co",
+      "from": "success@e.rocketreach.co",
+      "subject": "Success Tips #2: Stop Chasing, Start Connecting"
+    },
+    {
+      "threadId": "thr-451b37d0fa",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.11.2"
+    },
+    {
+      "threadId": "thr-2f849a008c",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.2"
+    },
+    {
+      "threadId": "thr-11697368dc",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/devlog@0.11.1"
+    },
+    {
+      "threadId": "thr-b4b54f4021",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.1"
+    },
+    {
+      "threadId": "thr-4bf9fd6084",
+      "ruleId": "support-npmjs-com",
+      "from": "support@npmjs.com",
+      "subject": "Successfully published @natjswenson/shipflow@0.3.0"
+    }
+  ]
+}
