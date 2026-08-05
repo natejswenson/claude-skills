@@ -7,9 +7,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateRule, validateRuleSet, toGmailQuery, matches, RuleProblem } from '../lib/rules.mjs';
 import {
-  propose, candidateToRule, plan, authorise, buildReceipt, NotAuthorised,
+  validateRule, validateRuleSet, validateDestination, toGmailQuery, matches,
+  normaliseLabel, destinationsOf, reconcileDestinations, archives, RuleProblem,
+} from '../lib/rules.mjs';
+import {
+  propose, candidateToRule, candidateToSortRule, plan, authorise, buildReceipt,
+  undoPlan, matchDestination, NotAuthorised,
   isProtected, hasProtectedSubject,
 } from '../lib/plan.mjs';
 
@@ -155,13 +159,25 @@ test('authorise passes exactly the plan, and defaults to all of it', () => {
 
 test('a thread the plan never named is refused', () => {
   assert.throws(() => authorise(planDoc, ['t1', 'nope']), NotAuthorised);
-  assert.throws(() => authorise(planDoc, ['nope']), /not named by the plan/);
+  assert.throws(() => authorise(planDoc, ['nope']), /not authorised to be trashed/);
 });
 
 test('a label rule does not authorise a trash', () => {
   // t3 is in the plan, but under a label action — trashing it would be an
   // action no rule asked for.
   assert.throws(() => authorise(planDoc, ['t3']), NotAuthorised);
+  // And the message says so, rather than claiming the thread is absent. "Not
+  // in the plan" would be a lie that sends the reader looking for the wrong bug.
+  assert.throws(() => authorise(planDoc, ['t3']), /under a different action/);
+});
+
+test('a trash rule does not authorise a sort — the mirror, and the dangerous half', () => {
+  // The other direction is what protects the mailbox: a plan that authorises
+  // trashing t1 must not be usable to file t1 somewhere, and vice versa. One
+  // shared authorisation set would make every plan a permission slip for both.
+  assert.throws(() => authorise(planDoc, ['t1'], 'label'), NotAuthorised);
+  assert.throws(() => authorise(planDoc, ['t1'], 'label'), /not authorised to be moved/);
+  assert.deepEqual(authorise(planDoc, null, 'label').map((e) => e.threadId), ['t3']);
 });
 
 test('an empty plan authorises nothing', () => {
@@ -239,4 +255,231 @@ test('the "closest sender" list never dangles a person as a near-candidate', () 
   const r = propose([person(1), person(2), bulk(1), bulk(2)], { minCount: 5 });
   assert.deepEqual(r.below.map((b) => b.from), ['noreply@shop.example']);
   assert.ok(r.withheld.some((w) => w.from === 'a.realtor@agency.example' && /may be a person/.test(w.why)));
+});
+
+// ── sorting: destinations ───────────────────────────────────────────────────
+
+test('a label rule can never name one of Gmail\'s own labels', () => {
+  // The reason this list exists: without it, {"action":"label","label":"TRASH"}
+  // destroys mail through the action that exists precisely so nothing is
+  // destroyed, bypassing every trash guard in the file.
+  for (const bad of ['TRASH', 'Trash', 'spam', 'INBOX', 'SENT', 'STARRED', 'CATEGORY_PROMOTIONS']) {
+    assert.throws(
+      () => validateRule(rule({ action: 'label', label: bad })),
+      RuleProblem,
+      `"${bad}" was accepted as a destination`,
+    );
+  }
+  assert.throws(() => validateDestination('TRASH'), /would destroy it/);
+  assert.throws(() => validateDestination('SENT'), /Gmail owns it/);
+});
+
+test('a malformed destination is refused before it can be applied', () => {
+  assert.throws(() => validateRule(rule({ action: 'label' })), /must name the label/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: '   ' })), /must name the label/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: '/Leading' })), /empty nesting level/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: 'Trailing/' })), /empty nesting level/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: 'A//B' })), /empty nesting level/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: 'x'.repeat(226) })), /Gmail's limit/);
+  // and the good case still passes, or the assertions above prove nothing
+  assert.equal(validateRule(rule({ action: 'label', label: 'Finance/Chase' })).label, 'Finance/Chase');
+});
+
+test('only a label rule carries a destination or a keepInInbox', () => {
+  assert.throws(() => validateRule(rule({ action: 'trash', label: 'Shopping' })), /does not sort/);
+  assert.throws(() => validateRule(rule({ action: 'trash', keepInInbox: true })), /nothing else archives/);
+  assert.throws(() => validateRule(rule({ action: 'label', label: 'X', keepInInbox: 'yes' })), /true or false/);
+});
+
+test('an unknown rule key is refused — "keepInbox" would archive silently', () => {
+  // The typo that matters: keepInbox for keepInInbox reads as "leave it in the
+  // inbox" and does the opposite, with nothing anywhere saying so.
+  assert.throws(() => validateRule(rule({ action: 'label', label: 'X', keepInbox: true })), /unknown rule key/);
+});
+
+test('a label rule archives by default and opts out explicitly', () => {
+  assert.equal(archives({ action: 'label', label: 'X' }), true);
+  assert.equal(archives({ action: 'label', label: 'X', keepInInbox: true }), false);
+  assert.equal(archives({ action: 'label', label: 'X', keepInInbox: false }), true);
+  assert.equal(archives({ action: 'trash' }), false);
+  assert.equal(archives({ action: 'keep' }), false);
+});
+
+test('one folder, however it is spelled', () => {
+  assert.equal(normaliseLabel('Receipts'), normaliseLabel('receipts'));
+  assert.equal(normaliseLabel(' Finance / Chase '), 'finance/chase');
+  assert.equal(normaliseLabel('Bank  Statements'), 'bank statements');
+  // but nesting is real structure, not noise
+  assert.notEqual(normaliseLabel('Finance/Chase'), normaliseLabel('Chase'));
+
+  const doc = { rules: [
+    { id: 'a', action: 'label', label: 'Receipts', match: { from: 'a@x.com' }, note: 'one' },
+    { id: 'b', action: 'label', label: 'receipts', match: { from: 'b@x.com' }, note: 'two' },
+  ] };
+  const [d] = destinationsOf(doc);
+  assert.equal(destinationsOf(doc).length, 1, 'two spellings became two folders');
+  assert.deepEqual(d.ruleIds, ['a', 'b']);
+  assert.deepEqual(d.variants, ['receipts'], 'the disagreement must be reported, not silently resolved');
+});
+
+test('reconcile names exactly the folders that must be created first', () => {
+  const doc = { rules: [
+    { id: 'a', action: 'label', label: 'Shopping', match: { from: 'a@x.com' }, note: 'one' },
+    { id: 'b', action: 'label', label: 'Finance/Chase', match: { from: 'b@x.com' }, note: 'two' },
+    { id: 'c', action: 'trash', match: { from: 'c@x.com' }, note: 'not a destination' },
+  ] };
+  // list_labels shape, and a bare-string list, must both work
+  for (const have of [[{ name: 'shopping', type: 'user' }], ['shopping']]) {
+    const r = reconcileDestinations(doc, have);
+    assert.deepEqual(r.map((d) => d.name), ['Shopping', 'Finance/Chase']);
+    assert.deepEqual(r.map((d) => d.exists), [true, false]);
+  }
+  assert.deepEqual(reconcileDestinations(doc, []).filter((d) => d.exists), []);
+});
+
+// ── sorting: what propose does with the withheld half ───────────────────────
+
+const bulkFrom = (from, subject, n) => Array.from({ length: n }, (_, i) => ({
+  id: `${from}-${i}`, from, subject, date: '2026-08-01T00:00:00Z',
+  labelIds: ['INBOX', 'CATEGORY_UPDATES'], category: 'updates', hasUnsubscribe: true,
+}));
+
+test('a sender withheld from trashing is offered for sorting', () => {
+  // This is the whole point of the feature: a bank is a terrible trash
+  // candidate and the best sort candidate in the mailbox.
+  const r = propose(bulkFrom('news@chase.com', 'Your monthly summary', 4), { minCount: 3 });
+  assert.equal(r.candidates.length, 0, 'a bank must never be a trash candidate');
+  assert.equal(r.sortable.length, 1);
+  assert.equal(r.sortable[0].from, 'news@chase.com');
+  assert.equal(r.sortable[0].keepInInbox, false, 'a plain bank cluster is filed and archived');
+});
+
+test('a cluster that ever delivered a code is filed but never archived', () => {
+  // You can file your receipts and still find, in your inbox, the login code
+  // you are sitting there waiting for.
+  const r = propose([
+    ...bulkFrom('news@chase.com', 'Your monthly summary', 3),
+    ...bulkFrom('news@chase.com', 'Your security code', 1),
+  ], { minCount: 3 });
+  assert.equal(r.sortable.length, 1);
+  assert.equal(r.sortable[0].keepInInbox, true);
+  assert.equal(candidateToSortRule(r.sortable[0], 'Finance').keepInInbox, true);
+});
+
+test('a person is never sorted, however many threads they send', () => {
+  // The single most damaging thing this skill could do is archive a human's
+  // mail out of the inbox. "No bulk marker" is the only withholding reason
+  // that also withholds sorting.
+  const person = Array.from({ length: 9 }, (_, i) => ({
+    id: `p${i}`, from: 'a.realtor@agency.example', subject: 'Re: paperwork',
+    date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: null, hasUnsubscribe: false,
+  }));
+  const r = propose(person, { minCount: 2 });
+  assert.equal(r.sortable.length, 0);
+  assert.equal(r.sortReason.kind, 'only-people');
+});
+
+test('an empty sort table says which of three things produced it', () => {
+  // Two-sided with the test above: an empty table that cannot explain itself
+  // reads as a broken skill, which is how a real result gets ignored.
+  const belowT = propose(bulkFrom('news@chase.com', 'Summary', 2), { minCount: 9 });
+  assert.equal(belowT.sortable.length, 0);
+  assert.equal(belowT.sortReason.kind, 'below-threshold');
+
+  const nothing = propose(bulkFrom('noreply@shop.example', 'Sale', 4), { minCount: 2 });
+  assert.ok(nothing.candidates.length > 0);
+  assert.equal(nothing.sortReason.kind, 'nothing-to-file');
+
+  assert.equal(propose([], { minCount: 1 }).sortReason.kind, 'nothing-to-file');
+});
+
+test('a destination is matched to an existing label, never invented', () => {
+  const labels = ['Finance/Chase', 'Shopping', 'School'];
+  assert.equal(matchDestination('news@chase.com', labels), 'Finance/Chase');
+  assert.equal(matchDestination('alerts@shopping.example.com', labels), 'Shopping');
+  // no fuzzy matching: a coin-flip folder is worse than no folder, because the
+  // user stops trusting where anything went
+  assert.equal(matchDestination('news@chasebankonline.com', labels), null);
+  assert.equal(matchDestination('hello@acmecorp.com', labels), null);
+  // and noise words match nothing, or every sender lands in "Mail"
+  assert.equal(matchDestination('noreply@notifications.acme.com', ['Notifications', 'Mail']), null);
+});
+
+test('an unhoused cluster is reported unhoused, never given a guessed name', () => {
+  // Naming a folder is a judgment about how the user thinks. A script that
+  // guesses files a school district into a folder named after its mail vendor.
+  const r = propose(bulkFrom('centralschools@parentvendor.example', 'Bus registration', 4), { minCount: 3, labels: [] });
+  assert.equal(r.sortable.length, 1);
+  assert.equal(r.sortable[0].destination, null);
+  assert.equal(r.sortable[0].unhoused, true);
+  assert.equal(r.unhoused, 1);
+  assert.throws(() => candidateToSortRule(r.sortable[0]), /no destination/);
+  // with a name supplied, it becomes a real, valid rule
+  const built = candidateToSortRule(r.sortable[0], 'School');
+  assert.equal(validateRule(built).label, 'School');
+  assert.equal(built.match.hasUnsubscribe, undefined, 'filing is not conditional on bulk the way trashing is');
+});
+
+// ── sorting: the plan, the receipt, and the undo ────────────────────────────
+
+test('a sort rule stops taking a thread already filed there', () => {
+  // Without this a keepInInbox rule reports the same twelve threads every run
+  // forever, and "this rule suddenly took ten times its usual volume" — the
+  // signal the skill tells you to stop on — stops meaning anything.
+  const r = { id: 'x', action: 'label', label: 'Shopping', match: { from: 'noreply@shop.example' }, note: 'shop' };
+  assert.equal(matches(r, thread()), true);
+  assert.equal(matches(r, thread({ labels: ['Shopping'] })), false);
+  assert.equal(matches(r, thread({ labels: ['shopping'] })), false, 'case must not create a second folder');
+  assert.equal(matches(r, thread({ labels: ['Other'] })), true);
+  // and the compiled query says so too
+  assert.match(toGmailQuery(r), /-label:Shopping/);
+});
+
+test('the plan carries the destination and whether the thread leaves the inbox', () => {
+  const doc = { rules: [
+    { id: 'file-it', action: 'label', label: 'Shopping', match: { from: 'noreply@shop.example' }, note: 'shop' },
+  ] };
+  const p = plan([thread()], doc);
+  assert.deepEqual(p.destinations, ['Shopping']);
+  assert.equal(p.taken[0].label, 'Shopping');
+  assert.equal(p.taken[0].archive, true);
+
+  const stay = { rules: [{ ...doc.rules[0], keepInInbox: true }] };
+  assert.equal(plan([thread()], stay).taken[0].archive, false);
+});
+
+test('the receipt records what was done, not merely to what', () => {
+  const p = { taken: [
+    { ruleId: 'file-it', action: 'label', label: 'Shopping', archive: true, threadId: 't9', from: 'a@b.c', subject: 'S' },
+  ] };
+  const [e] = buildReceipt(authorise(p, null, 'label'), { at: '2026-08-05T00:00:00Z' }).entries;
+  assert.equal(e.action, 'label');
+  assert.equal(e.label, 'Shopping');
+  assert.equal(e.archived, true);
+});
+
+test('undo reverses each action with the call that actually reverses it', () => {
+  const receipt = { at: 'now', entries: [
+    { threadId: 't1', ruleId: 'junk', action: 'trash', label: null, archived: false },
+    { threadId: 't2', ruleId: 'file', action: 'label', label: 'Shopping', archived: true },
+    { threadId: 't3', ruleId: 'tag', action: 'label', label: 'Receipts', archived: false },
+  ] };
+  const u = undoPlan(receipt);
+  assert.deepEqual(u.untrash.map((e) => e.threadId), ['t1']);
+  assert.deepEqual(u.unlabel.map((g) => g.label), ['Shopping', 'Receipts']);
+  // only the archived one gets INBOX back — re-inboxing t3 would move mail the
+  // run never moved
+  assert.deepEqual(u.reinbox.map((e) => e.threadId), ['t2']);
+});
+
+test('a 0.1.0 receipt still undoes — an old receipt must not become unusable', () => {
+  // 0.1.0 wrote no `action` because trashing was the only thing it could do.
+  const old = { at: 'then', entries: [
+    { threadId: 't1', ruleId: 'junk', from: 'a@b.c', subject: 'S' },
+    { threadId: 't2', ruleId: 'junk', from: 'a@b.c', subject: 'S' },
+  ] };
+  const u = undoPlan(old);
+  assert.deepEqual(u.untrash.map((e) => e.threadId), ['t1', 't2']);
+  assert.deepEqual(u.unlabel, []);
+  assert.deepEqual(u.reinbox, []);
 });
