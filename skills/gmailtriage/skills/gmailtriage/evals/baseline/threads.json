@@ -1,5 +1,28 @@
 [
   {
+    "id": "thr-d9b1bea50d",
+    "from": "person1@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-08-04T22:46:28Z",
+    "labelIds": [
+      "IMPORTANT",
+      "INBOX"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-e8320500fa",
+    "from": "person2@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-08-04T19:48:26Z",
+    "labelIds": [
+      "INBOX"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
     "id": "thr-9d367cec76",
     "from": "marketing@e.rocketreach.co",
     "subject": "ATTN Nate: Extra 30% OFF already reduced pricing for a limited time",
@@ -130,17 +153,6 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-86462bfe42",
-    "from": "person5@example.invalid",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T19:30:20Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
     "id": "thr-29647d4d14",
     "from": "careers@recruiting.uhg.com",
     "subject": "Invitation to Self-identify for 2365825 - Principal Software Engineer",
@@ -173,6 +185,17 @@
     "labelIds": [
       "INBOX",
       "IMPORTANT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-86462bfe42",
+    "from": "person5@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-07-30T19:30:20Z",
+    "labelIds": [
+      "INBOX"
     ],
     "category": null,
     "hasUnsubscribe": false
@@ -590,6 +613,107 @@
     "labelIds": [
       "INBOX",
       "CATEGORY_UPDATES"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-7152e11e92",
+    "from": "no-reply@ashbyhq.com",
+    "subject": "Nate - Thanks for applying to Obvious!",
+    "date": "2026-07-24T00:31:14Z",
+    "labelIds": [
+      "INBOX"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-cc626500d1",
+    "from": "paymentmessage@sanfordhealth.org",
+    "subject": "You have a new statement",
+    "date": "2026-07-23T13:32:05Z",
+    "labelIds": [
+      "UNREAD",
+      "INBOX"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-4427e5aad6",
+    "from": "noreply@candidates.workablemail.com",
+    "subject": "Thanks for applying to Panorama Education",
+    "date": "2026-07-22T14:12:27Z",
+    "labelIds": [
+      "INBOX"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-db4b63a0cc",
+    "from": "person4@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-07-21T19:13:46Z",
+    "labelIds": [
+      "INBOX"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1867188229",
+    "from": "sender-c21113@onlinejmc.com",
+    "subject": "2026-27 Activities Registration",
+    "date": "2026-07-21T18:39:40Z",
+    "labelIds": [
+      "UNREAD",
+      "INBOX"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-43e6c1129c",
+    "from": "person3@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-07-15T17:58:08Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_8171544980942827259",
+      "INBOX"
+    ],
+    "labels": [
+      "Folder fd1b"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-531a9985a7",
+    "from": "person11@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-07-15T13:36:59Z",
+    "labelIds": [
+      "IMPORTANT",
+      "SENT",
+      "INBOX"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-9950d40187",
+    "from": "person12@example.invalid",
+    "subject": "(personal thread)",
+    "date": "2026-07-11T14:21:28Z",
+    "labelIds": [
+      "Label_3953032868769717139",
+      "INBOX"
+    ],
+    "labels": [
+      "Reciepts"
     ],
     "category": "updates",
     "hasUnsubscribe": true

@@ -28,85 +28,49 @@
       "note": "bulk mail from sender-3ee497@message.fedex.com — 2 in the sample, e.g. \"FedEx Values Your Feedback\""
     },
     {
-      "id": "authorservices-packtpub-com",
-      "action": "trash",
-      "match": {
-        "from": "authorservices@packtpub.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from authorservices@packtpub.com — 1 in the sample, e.g. \"Published Report Email\""
-    },
-    {
-      "id": "marketing-e-rocketreach-co",
-      "action": "trash",
-      "match": {
-        "from": "marketing@e.rocketreach.co",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from marketing@e.rocketreach.co — 1 in the sample, e.g. \"ATTN Nate: Extra 30% OFF already reduced pricing for a limit\""
-    },
-    {
-      "id": "noreply-github-com",
-      "action": "trash",
-      "match": {
-        "from": "noreply@github.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from noreply@github.com — 1 in the sample, e.g. \"[GitHub] A fine-grained personal access token has been added\""
-    },
-    {
-      "id": "noreply-glassdoor-com",
-      "action": "trash",
-      "match": {
-        "from": "noreply@glassdoor.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from noreply@glassdoor.com — 1 in the sample, e.g. \"Glassdoor is now part of Indeed\""
-    },
-    {
-      "id": "notifications-typefully-com",
-      "action": "trash",
-      "match": {
-        "from": "notifications@typefully.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from notifications@typefully.com — 1 in the sample, e.g. \"New API key created for your account\""
-    },
-    {
-      "id": "sender-819c52-typefully-com",
-      "action": "trash",
-      "match": {
-        "from": "sender-819c52@typefully.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from sender-819c52@typefully.com — 1 in the sample, e.g. \"Welcome to your new social media workspace\""
-    },
-    {
       "id": "sender-c21113-onlinejmc-com",
       "action": "trash",
       "match": {
         "from": "sender-c21113@onlinejmc.com",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from sender-c21113@onlinejmc.com — 1 in the sample, e.g. \"New Bus Rider Registration\""
+      "note": "bulk mail from sender-c21113@onlinejmc.com — 2 in the sample, e.g. \"New Bus Rider Registration\""
+    }
+  ],
+  "sortCandidates": [],
+  "unhoused": [
+    {
+      "id": "sort-careers-recruiting-uhg-com",
+      "from": "careers@recruiting.uhg.com",
+      "count": 5,
+      "bulkCount": 3,
+      "sample": "Invitation to Self-identify for 2365825 - Principal Software Engineer",
+      "keepInInbox": true,
+      "destination": null,
+      "why": "sender looks financial, medical, educational, governmental or recruiting",
+      "unhoused": true
     },
     {
-      "id": "support-api-bible",
-      "action": "trash",
-      "match": {
-        "from": "support@api.bible",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from support@api.bible — 1 in the sample, e.g. \"Upgrade to Pro - more Bibles, insights, and flexibility\""
+      "id": "sort-sender-d32881-mail-fidelity-com",
+      "from": "sender-d32881@mail.fidelity.com",
+      "count": 3,
+      "bulkCount": 3,
+      "sample": "New statement available",
+      "keepInInbox": true,
+      "destination": null,
+      "why": "sender looks financial, medical, educational, governmental or recruiting",
+      "unhoused": true
     },
     {
-      "id": "workspace-noreply-google-com",
-      "action": "trash",
-      "match": {
-        "from": "workspace-noreply@google.com",
-        "hasUnsubscribe": true
-      },
-      "note": "bulk mail from workspace-noreply@google.com — 1 in the sample, e.g. \"You now have promotional access to AI features\""
+      "id": "sort-alerts-notify-wellsfargo-com",
+      "from": "alerts@notify.wellsfargo.com",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "Insufficient funds notice/Extra Day Grace Period",
+      "keepInInbox": false,
+      "destination": null,
+      "why": "sender looks financial, medical, educational, governmental or recruiting",
+      "unhoused": true
     }
   ],
   "withheld": [
@@ -116,7 +80,19 @@
       "count": 5,
       "bulkCount": 3,
       "sample": "Invitation to Self-identify for 2365825 - Principal Software Engineer",
+      "sensitive": true,
+      "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "person4-example-invalid",
+      "from": "person4@example.invalid",
+      "count": 3,
+      "bulkCount": 0,
+      "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
       "id": "person6-example-invalid",
@@ -124,6 +100,8 @@
       "count": 3,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -132,6 +110,8 @@
       "count": 3,
       "bulkCount": 3,
       "sample": "New statement available",
+      "sensitive": true,
+      "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
@@ -140,14 +120,38 @@
       "count": 2,
       "bulkCount": 2,
       "sample": "Insufficient funds notice/Extra Day Grace Period",
+      "sensitive": false,
+      "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
-      "id": "person4-example-invalid",
-      "from": "person4@example.invalid",
+      "id": "person1-example-invalid",
+      "from": "person1@example.invalid",
       "count": 2,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "person2-example-invalid",
+      "from": "person2@example.invalid",
+      "count": 2,
+      "bulkCount": 0,
+      "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "person3-example-invalid",
+      "from": "person3@example.invalid",
+      "count": 2,
+      "bulkCount": 0,
+      "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -156,6 +160,8 @@
       "count": 2,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -164,6 +170,18 @@
       "count": 1,
       "bulkCount": 1,
       "sample": "New Message",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "no-reply-ashbyhq-com",
+      "from": "no-reply@ashbyhq.com",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Nate - Thanks for applying to Obvious!",
+      "sensitive": false,
+      "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
@@ -172,7 +190,19 @@
       "count": 1,
       "bulkCount": 0,
       "sample": "New Books to Read in August",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "noreply-candidates-workablemail-com",
+      "from": "noreply@candidates.workablemail.com",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Thanks for applying to Panorama Education",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
       "id": "noreply-tractive-com",
@@ -180,30 +210,28 @@
       "count": 1,
       "bulkCount": 1,
       "sample": "Confirm your email address",
+      "sensitive": true,
+      "kind": "protected-subject",
       "why": "cluster contains a login code, receipt or verification you cannot lose"
     },
     {
-      "id": "person1-example-invalid",
-      "from": "person1@example.invalid",
+      "id": "paymentmessage-sanfordhealth-org",
+      "from": "paymentmessage@sanfordhealth.org",
       "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "why": "no bulk-mail marker — may be a person, not a sender"
+      "bulkCount": 1,
+      "sample": "You have a new statement",
+      "sensitive": true,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
-      "id": "person2-example-invalid",
-      "from": "person2@example.invalid",
+      "id": "person11-example-invalid",
+      "from": "person11@example.invalid",
       "count": 1,
       "bulkCount": 0,
       "sample": "(personal thread)",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person3-example-invalid",
-      "from": "person3@example.invalid",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -212,6 +240,8 @@
       "count": 1,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -220,6 +250,8 @@
       "count": 1,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -228,6 +260,8 @@
       "count": 1,
       "bulkCount": 0,
       "sample": "(personal thread)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
@@ -236,6 +270,8 @@
       "count": 1,
       "bulkCount": 1,
       "sample": "INSPIRE ETFS Important Information",
+      "sensitive": false,
+      "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     }
   ]

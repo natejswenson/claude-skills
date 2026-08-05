@@ -1,23 +1,35 @@
-| Rule id                  | Action | Threads |
-|--------------------------|--------|---------|
-| success-e-rocketreach-co | trash  | 3       |
-| support-npmjs-com        | trash  | 9       |
+| Rule id                           | Action | Destination | Leaves inbox | Threads |
+|-----------------------------------|--------|-------------|--------------|---------|
+| sort-existing-folder              | label  | Reciepts    | no           | 3       |
+| success-e-rocketreach-co          | trash  | —           | —            | 3       |
+| support-npmjs-com                 | trash  | —           | —            | 9       |
+| sort-careers-recruiting-uhg-com   | label  | Job Search  | no           | 5       |
+| sort-onlinejmc-com                | label  | School      | yes          | 2       |
+| sort-alerts-notify-wellsfargo-com | label  | Banking     | yes          | 2       |
 
-| Rule id                  | From                     | Subject                                        |
-|--------------------------|--------------------------|------------------------------------------------|
-| success-e-rocketreach-co | success@e.rocketreach.co | Success Tips #4: Save Time & Boost Outreach w… |
-| support-npmjs-com        | support@npmjs.com        | Successfully published @natjswenson/press@0.6… |
-| support-npmjs-com        | support@npmjs.com        | Successfully published @natjswenson/press@0.6… |
-| success-e-rocketreach-co | success@e.rocketreach.co | Success Tips #3: Real Results. Real People. R… |
-| support-npmjs-com        | support@npmjs.com        | Successfully published @natjswenson/devlog@0.… |
-| support-npmjs-com        | support@npmjs.com        | Successfully published @natjswenson/devlog@0.… |
-| success-e-rocketreach-co | success@e.rocketreach.co | Success Tips #2: Stop Chasing, Start Connecti… |
-| support-npmjs-com        | support@npmjs.com        | Successfully published @natjswenson/devlog@0.… |
+| Rule id                         | Goes to    | From                           | Subject                                  |
+|---------------------------------|------------|--------------------------------|------------------------------------------|
+| sort-existing-folder            | Reciepts   | sender-d32881@mail.fidelity.c… | New statement available                  |
+| success-e-rocketreach-co        | trash      | success@e.rocketreach.co       | Success Tips #4: Save Time & Boost Outr… |
+| support-npmjs-com               | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
+| support-npmjs-com               | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
+| success-e-rocketreach-co        | trash      | success@e.rocketreach.co       | Success Tips #3: Real Results. Real Peo… |
+| sort-careers-recruiting-uhg-com | Job Search | careers@recruiting.uhg.com     | Invitation to Self-identify for 2365825… |
+| sort-careers-recruiting-uhg-com | Job Search | careers@recruiting.uhg.com     | Multifactor authentication access code   |
+| sort-existing-folder            | Reciepts   | sender-d32881@mail.fidelity.c… | New Fidelity Government Cash Reserves s… |
 
-4 more not shown — `--preview N` to widen.
+16 more not shown — `--preview N` to widen.
 
-| Scanned | Would trash | Kept by a keep rule | Overlaps |
-|---------|-------------|---------------------|----------|
-| 50      | 12          | 0                   | 0        |
+| Folder     | Threads |
+|------------|---------|
+| Reciepts   | 3       |
+| Job Search | 5       |
+| School     | 2       |
+| Banking    | 2       |
+reconcile these against your real labels with `labels` before applying.
 
-nothing has been trashed — this is what the rules would take.
+| Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
+|---------|-------------|------------|-----------------------|---------------------|----------|
+| 60      | 12          | 12         | 4                     | 0                   | 0        |
+
+nothing has moved — this is what the rules would do.

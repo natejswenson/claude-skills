@@ -1,78 +1,222 @@
 {
-  "at": "2026-08-04T00:00:00Z",
-  "count": 12,
+  "at": "2026-08-05T12:00:00Z",
+  "count": 24,
   "entries": [
     {
       "threadId": "thr-677b9018d3",
       "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach"
     },
     {
       "threadId": "thr-80adbc8db2",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.1"
     },
     {
       "threadId": "thr-9d344bc4d0",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.0"
     },
     {
       "threadId": "thr-3b002806e0",
       "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #3: Real Results. Real People. RocketReach."
     },
     {
       "threadId": "thr-2dcd0dd6d1",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.13.0"
     },
     {
       "threadId": "thr-86be8278b9",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.12.0"
     },
     {
       "threadId": "thr-9fba2ce8bc",
       "ruleId": "success-e-rocketreach-co",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #2: Stop Chasing, Start Connecting"
     },
     {
       "threadId": "thr-451b37d0fa",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.2"
     },
     {
       "threadId": "thr-2f849a008c",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.2"
     },
     {
       "threadId": "thr-11697368dc",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.1"
     },
     {
       "threadId": "thr-b4b54f4021",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.1"
     },
     {
       "threadId": "thr-4bf9fd6084",
       "ruleId": "support-npmjs-com",
+      "action": "trash",
+      "label": null,
+      "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.0"
+    },
+    {
+      "threadId": "thr-5b3a2a4424",
+      "ruleId": "sort-existing-folder",
+      "action": "label",
+      "label": "Reciepts",
+      "archived": false,
+      "from": "sender-d32881@mail.fidelity.com",
+      "subject": "New statement available"
+    },
+    {
+      "threadId": "thr-29647d4d14",
+      "ruleId": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "archived": false,
+      "from": "careers@recruiting.uhg.com",
+      "subject": "Invitation to Self-identify for 2365825 - Principal Software Engineer"
+    },
+    {
+      "threadId": "thr-61bda61d79",
+      "ruleId": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "archived": false,
+      "from": "careers@recruiting.uhg.com",
+      "subject": "Multifactor authentication access code"
+    },
+    {
+      "threadId": "thr-152d987378",
+      "ruleId": "sort-existing-folder",
+      "action": "label",
+      "label": "Reciepts",
+      "archived": false,
+      "from": "sender-d32881@mail.fidelity.com",
+      "subject": "New Fidelity Government Cash Reserves shareholder report available"
+    },
+    {
+      "threadId": "thr-ff1df25c76",
+      "ruleId": "sort-onlinejmc-com",
+      "action": "label",
+      "label": "School",
+      "archived": true,
+      "from": "sender-c21113@onlinejmc.com",
+      "subject": "New Bus Rider Registration"
+    },
+    {
+      "threadId": "thr-2e4b8a02e8",
+      "ruleId": "sort-alerts-notify-wellsfargo-com",
+      "action": "label",
+      "label": "Banking",
+      "archived": true,
+      "from": "alerts@notify.wellsfargo.com",
+      "subject": "Insufficient funds notice/Extra Day Grace Period"
+    },
+    {
+      "threadId": "thr-b9fe0e33af",
+      "ruleId": "sort-alerts-notify-wellsfargo-com",
+      "action": "label",
+      "label": "Banking",
+      "archived": true,
+      "from": "alerts@notify.wellsfargo.com",
+      "subject": "Your balance is at or below zero"
+    },
+    {
+      "threadId": "thr-99c9daac4c",
+      "ruleId": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "archived": false,
+      "from": "careers@recruiting.uhg.com",
+      "subject": "Principal Software Engineer Opening at UnitedHealth Group"
+    },
+    {
+      "threadId": "thr-ff4652becd",
+      "ruleId": "sort-existing-folder",
+      "action": "label",
+      "label": "Reciepts",
+      "archived": false,
+      "from": "sender-d32881@mail.fidelity.com",
+      "subject": "Action Requested: Consent to Electronic Delivery"
+    },
+    {
+      "threadId": "thr-7910ca33f8",
+      "ruleId": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "archived": false,
+      "from": "careers@recruiting.uhg.com",
+      "subject": "Principal Engineer - Remote-2373361 Opening at UnitedHealth Group"
+    },
+    {
+      "threadId": "thr-9b3700be74",
+      "ruleId": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "archived": false,
+      "from": "careers@recruiting.uhg.com",
+      "subject": "Multifactor authentication access code"
+    },
+    {
+      "threadId": "thr-1867188229",
+      "ruleId": "sort-onlinejmc-com",
+      "action": "label",
+      "label": "School",
+      "archived": true,
+      "from": "sender-c21113@onlinejmc.com",
+      "subject": "2026-27 Activities Registration"
     }
   ]
 }

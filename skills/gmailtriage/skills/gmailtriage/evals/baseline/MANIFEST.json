@@ -1,37 +1,42 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
   "label": "the-real-run",
-  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --min-count 1 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-04T00:00:00Z > $OUT/apply.txt",
+  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt",
   "artifacts": [
     {
       "path": "apply.txt",
-      "bytes": 506,
-      "sha256": "d1c0a7bc935414702b1d82a56025c2ac44d5251d5689341b3d7a0bf6636b5448"
+      "bytes": 1732,
+      "sha256": "d16a4fc4456bc16cfe55cd121fcea1e7d57cd5673b26238cd44b09819e361855"
     },
     {
       "path": "candidates.json",
-      "bytes": 7897,
-      "sha256": "781950c6338a1d8b867671c31ead9156a63f3f560e5ce3bf1ede9fb79d0b8161"
+      "bytes": 8887,
+      "sha256": "ca270202f4490abd1eb50987b586bd1e26973893ebb76b51df4e664af4179335"
+    },
+    {
+      "path": "labels.txt",
+      "bytes": 735,
+      "sha256": "70b7ea823cfdd27bf5be76a7e68e10b3a81796bbbe18977593e7d39e07e9965f"
     },
     {
       "path": "plan.json",
-      "bytes": 3019,
-      "sha256": "4172bd81af9b7431bf00b29e05eff7fe64c8c6491036ddd17f190389afa7d41b"
+      "bytes": 7847,
+      "sha256": "8c2bf93298ebfc786b4b7618f3291979b5b57a7e398911b1090f8c901f3ec2e5"
     },
     {
       "path": "plan.txt",
-      "bytes": 1548,
-      "sha256": "685a3ee8177fd776bbbbf6eb790e736dc8e9cbf54db247b57e26c54e7c315893"
+      "bytes": 2578,
+      "sha256": "7ee4398b8e683ec860ebef9b3fc8dfd799cf16c011956429a0443cd29d5eefa7"
     },
     {
       "path": "propose.txt",
-      "bytes": 4662,
-      "sha256": "6b38e796c34f0db58b924c9953ab2b1e0f83e88a9abf7a17c749f78da3c16402"
+      "bytes": 5226,
+      "sha256": "8d37b682bc6df1ac059ab522a681ec946facde397039ca0ce1bb540689d881a7"
     },
     {
       "path": "receipt.json",
-      "bytes": 2406,
-      "sha256": "af57aa2b8603e7ddf41fc59b3e5f63b9e3c4a98fb8c145b57fa7ea2c5fc78327"
+      "bytes": 6657,
+      "sha256": "f0ed9790ec2bae4efbb6d69bdec08e9f851a71c037e3f3e7eeb70ab9a0b113a0"
     }
   ]
 }

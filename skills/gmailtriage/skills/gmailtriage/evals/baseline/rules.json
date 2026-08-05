@@ -18,6 +18,44 @@
         "hasUnsubscribe": true
       },
       "note": "bulk mail from success@e.rocketreach.co — 3 in the sample, e.g. \"Success Tips #4: Save Time & Boost Outreach with RocketReach\""
+    },
+    {
+      "id": "sort-careers-recruiting-uhg-com",
+      "action": "label",
+      "label": "Job Search",
+      "keepInInbox": true,
+      "match": {
+        "from": "careers@recruiting.uhg.com"
+      },
+      "note": "file mail from careers@recruiting.uhg.com — 5 in the sample — tagged in place, never archived: this sender also delivers codes or receipts"
+    },
+    {
+      "id": "sort-alerts-notify-wellsfargo-com",
+      "action": "label",
+      "label": "Banking",
+      "match": {
+        "from": "alerts@notify.wellsfargo.com"
+      },
+      "note": "file mail from alerts@notify.wellsfargo.com — 2 in the sample, e.g. \"Insufficient funds notice/Extra Day Grace Period\""
+    },
+    {
+      "id": "sort-onlinejmc-com",
+      "action": "label",
+      "label": "School",
+      "match": {
+        "from": "@onlinejmc.com"
+      },
+      "note": "file the school district's mail — bus registration and activity sign-ups, worth keeping and not worth the inbox"
+    },
+    {
+      "id": "sort-existing-folder",
+      "action": "label",
+      "label": "Reciepts",
+      "keepInInbox": true,
+      "match": {
+        "from": "@mail.fidelity.com"
+      },
+      "note": "files into a folder this mailbox ALREADY has, misspelling and all — the case where no label needs creating"
     }
   ]
 }

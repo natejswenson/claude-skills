@@ -1,13 +1,17 @@
-| Rule id                  | Authorised threads |
-|--------------------------|--------------------|
-| success-e-rocketreach-co | 3                  |
-| support-npmjs-com        | 9                  |
+| Rule id                           | Action | Destination | Authorised threads |
+|-----------------------------------|--------|-------------|--------------------|
+| success-e-rocketreach-co          | trash  | —           | 3                  |
+| support-npmjs-com                 | trash  | —           | 9                  |
+| sort-existing-folder              | file   | Reciepts    | 3                  |
+| sort-careers-recruiting-uhg-com   | file   | Job Search  | 5                  |
+| sort-onlinejmc-com                | file   | School      | 2                  |
+| sort-alerts-notify-wellsfargo-com | file   | Banking     | 2                  |
 
-| Authorised | Refused |
-|------------|---------|
-| 12         | 0       |
+| Authorised | To trash | To file | To archive | Refused |
+|------------|----------|---------|------------|---------|
+| 24         | 12       | 12      | 4          | 0       |
 
-trash exactly these thread ids and nothing else:
+TRASH exactly these thread ids and nothing else:
 thr-677b9018d3
 thr-80adbc8db2
 thr-9d344bc4d0
@@ -20,3 +24,31 @@ thr-2f849a008c
 thr-11697368dc
 thr-b4b54f4021
 thr-4bf9fd6084
+
+LABEL "Reciepts" onto exactly these thread ids and nothing else:
+thr-5b3a2a4424
+thr-152d987378
+thr-ff4652becd
+
+LABEL "Job Search" onto exactly these thread ids and nothing else:
+thr-29647d4d14
+thr-61bda61d79
+thr-99c9daac4c
+thr-7910ca33f8
+thr-9b3700be74
+
+LABEL "School" onto exactly these thread ids and nothing else:
+thr-ff1df25c76
+thr-1867188229
+
+LABEL "Banking" onto exactly these thread ids and nothing else:
+thr-2e4b8a02e8
+thr-b9fe0e33af
+
+then REMOVE the INBOX label from exactly these thread ids — this is the "move":
+thr-ff1df25c76
+thr-2e4b8a02e8
+thr-b9fe0e33af
+thr-1867188229
+
+8 filed thread(s) stay in the inbox by rule. Do NOT remove INBOX from those.
