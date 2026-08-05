@@ -64,6 +64,10 @@
     {
       "name": "shipreport",
       "source": "./skills/shipreport"
+    },
+    {
+      "name": "gmailtriage",
+      "source": "./skills/gmailtriage"
     }
   ]
 }

@@ -37,6 +37,8 @@
     "issueflow-readme",
     "shipreport-agent-ui",
     "shipreport-readme",
-    "shipreport-theme"
+    "shipreport-theme",
+    "gmailtriage-agent-ui",
+    "gmailtriage-readme"
   ]
 }
