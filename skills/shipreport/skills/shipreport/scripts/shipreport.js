@@ -248,9 +248,11 @@ async function cmdShow(args) {
     found.push({ receipt: r, item });
   }
 
-  console.log(table(['Receipt', 'Kind', 'When', 'Title'], found.map(({ receipt, item }) => [
-    receipt, item.kind, String(item.at ?? '').slice(0, 10), String(item.title ?? '').slice(0, 60),
-  ])));
+  if (found.length) {
+    console.log(table(['Receipt', 'Kind', 'When', 'Title'], found.map(({ receipt, item }) => [
+      receipt, item.kind, String(item.at ?? '').slice(0, 10), String(item.title ?? '').slice(0, 60),
+    ])));
+  }
 
   for (const { receipt, item } of found) {
     console.log(`\n── ${receipt} ──`);
