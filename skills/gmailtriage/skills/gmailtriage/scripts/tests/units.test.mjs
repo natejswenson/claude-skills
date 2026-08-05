@@ -175,3 +175,24 @@ test('the receipt records the rule behind every thread', () => {
   assert.deepEqual(r.entries.map((e) => e.ruleId), ['bulk-sender', 'bulk-sender']);
   assert.ok(r.entries.every((e) => e.threadId && e.subject !== undefined));
 });
+
+test('the guard reads the whole address, not just the domain', () => {
+  // A live run proposed trashing a school district hiding behind a vendor
+  // domain: hawleyschools@onlinejmc.com carries every marker in the LOCAL part
+  // and none in the domain.
+  assert.equal(isProtected('hawleyschools@onlinejmc.com'), true);
+  assert.equal(isProtected('careers@somevendor.io'), true);
+  assert.equal(isProtected('billing-noreply@somevendor.io'), false);
+  assert.equal(isProtected('marketing@e.rocketreach.co'), false);
+  assert.equal(isProtected(null), false);
+});
+
+test('a school behind a vendor domain is withheld, not proposed', () => {
+  const t = (i) => ({
+    id: `s${i}`, from: 'hawleyschools@onlinejmc.com', subject: 'Bus registration',
+    date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: 'updates', hasUnsubscribe: true,
+  });
+  const { candidates, withheld } = propose([t(1), t(2), t(3), t(4)], { minCount: 2 });
+  assert.equal(candidates.length, 0);
+  assert.match(withheld[0].why, /educational/);
+});

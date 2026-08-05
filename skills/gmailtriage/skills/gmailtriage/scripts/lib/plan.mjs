@@ -60,7 +60,15 @@ export const NEVER_PROPOSE_SUBJECT = [
   /\breceipt\b|\binvoice\b|\bstatement\b/i,
 ];
 
-export const isProtected = (domain) => !!domain && NEVER_PROPOSE.some((re) => re.test(domain));
+/**
+ * Checks the WHOLE address, not just the domain.
+ *
+ * `hawleyschools@onlinejmc.com` is a school district behind a vendor's domain:
+ * the domain carries no marker at all and the local part carries all of it. A
+ * live run proposed trashing it — bus registration and activity sign-ups —
+ * because the guard only ever looked to the right of the @.
+ */
+export const isProtected = (address) => !!address && NEVER_PROPOSE.some((re) => re.test(String(address).toLowerCase()));
 
 export const hasProtectedSubject = (group) =>
   group.some((t) => NEVER_PROPOSE_SUBJECT.some((re) => re.test(String(t.subject ?? ''))));
@@ -81,7 +89,7 @@ export function propose(threads, { minCount = 3 } = {}) {
   const candidates = [];
   const withheld = [];
   for (const [addr, group] of byAddr) {
-    const domain = addr.split('@')[1];
+    // the whole address, because the marker is often in the local part
     const bulk = group.filter((t) => t.hasUnsubscribe).length;
     const row = {
       id: addr.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40),
@@ -90,7 +98,7 @@ export function propose(threads, { minCount = 3 } = {}) {
       bulkCount: bulk,
       sample: group[0].subject ?? '',
     };
-    if (isProtected(domain)) { withheld.push({ ...row, why: 'sender looks financial, medical, educational, governmental or recruiting' }); continue; }
+    if (isProtected(addr)) { withheld.push({ ...row, why: 'sender looks financial, medical, educational, governmental or recruiting' }); continue; }
     if (hasProtectedSubject(group)) { withheld.push({ ...row, why: 'cluster contains a login code, receipt or verification you cannot lose' }); continue; }
     if (group.length < minCount) continue;
     if (bulk === 0) { withheld.push({ ...row, why: 'no bulk-mail marker — may be a person, not a sender' }); continue; }
