@@ -142,7 +142,51 @@ step 4 made no network call. Grading *that* run found four more.
   check did not increment the counter that column reports. Same
   self-contradiction the column was added to end, one release later.
 
+### Fixed — from a third graded run
+
+186s against 242s against the original 318s; one narrated pause; one piped
+command out of six. The remaining findings are about what a run *knows*, not how
+it moves.
+
+- **Three citations were written from memory, not from the artifact.** The run
+  cited a pull request, a session and a release it never opened — carrying them
+  from an earlier run — and every one resolved, so the gate passed them. SKILL.md
+  said of exactly this: "the gate cannot catch that, and nothing can." That is
+  true of the sentence and false of the reading.
+
+  `show` now records what it opened, and `receipts` names any citation that was
+  never opened. It **reports and never refuses**: an item cited from the ranked
+  table alone is legitimate, and a hard gate would refuse honest work. It is
+  silent when there is no read log at all, because absence of evidence is not a
+  finding. A `--brief` scan deliberately records nothing — skimming eight titles
+  must not look like having read them. The log is written only against the real
+  corpus, so a frozen fixture never gains a file by being inspected.
+
+- **`--brief` ate the receipt after it.** `show --brief release:a release:b` read
+  only `release:b`: the parser could not tell a boolean flag from `--days 7`, so
+  the first receipt became the flag's value and nothing reported a missing
+  artifact, because nothing knew one had been asked for. Booleans are now
+  declared. The bug was latent for every existing boolean flag.
+
+- **`show --brief`** — the opening lines of many artifacts at once, for deciding
+  *which* to read closely. Its absence is why the run piped `show` through `tail`
+  when scanning eight releases: the total budget bounded the output, but there
+  was no way to ask for less of each.
+
 ### Changed
+
+- **The documented card-art label budget was wrong, and is corrected by
+  measurement rather than loosened.** It said 2–4 words per scene; 8 of 10 scenes
+  in the third run exceeded it, and several of those are the best cards in the
+  sheet. The budget is now stated as roughly six to twelve words. The reference
+  also records what actually breaks — **placement, not word count**: the one
+  visibly broken card carried a 23-character label, well inside any budget, whose
+  baseline landed on top of a rectangle. No validator was added for this on
+  purpose: a check on word count would refuse the eight-short-label card that
+  reads perfectly and still pass the one that collides, and a gate that fires on
+  the wrong cases is one this repo has already paid to learn about.
+
+- `rank`'s figures table uses the same capitalised headers as every other table.
 
 - **Speed.** `fetchReleases` now fetches repositories concurrently instead of
   awaiting one `gh api` per repository in sequence — the dominant cost of the

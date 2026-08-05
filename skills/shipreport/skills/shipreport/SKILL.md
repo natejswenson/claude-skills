@@ -106,8 +106,18 @@ round trip per item and prints kilobytes of changelog into the conversation, whi
 this skill's own presentation contract forbids. If `show` reports no body cached,
 the corpus predates body caching — run `index --full` once.
 
-**Never write the sentence first and then hunt for a receipt to attach.** The
-gate cannot catch that, and nothing can.
+**Cite nothing you did not open in this run.** A memory of an artifact from an
+earlier run is not a reading of it, and it resolves exactly as well — so the one
+rule passes it. `receipts` now names citations that were never opened with
+`show`; it reports rather than refuses, because an item read through the ranked
+table alone is legitimately cited. Treat the list as a question to answer, not a
+warning to dismiss.
+
+`--brief` prints the opening lines of many artifacts at once, for deciding
+*which* to read. It deliberately does not count as having read them.
+
+**Never write the sentence first and then hunt for a receipt to attach.** No gate
+catches the order you did things in.
 
 ### 5. Compose the art — one original scene per card
 
@@ -185,7 +195,7 @@ Offer to adjust; do not narrate the design.
 | `shipreport index` | source, since, seen, new, cached — plus redaction counts and the new watermark |
 | `shipreport rank` | rank, kind, item, score, signals, receipt — then the figures the sheet will print, the window/candidates/folds table, and a tie warning when the line is arbitrary |
 | `shipreport show` | receipt, kind, when, title — then each artifact's body from the corpus, sharing one total character budget |
-| `shipreport receipts` | claim, receipt, resolved — then a verdict with unresolved and prose counts; **exits non-zero on any failure** |
+| `shipreport receipts` | claim, receipt, resolved — then a verdict with unresolved and prose counts, and any citation never opened with `show`; **exits non-zero on any failure** |
 | `shipreport render` | section, items, receipts — then cards, size and window, and the output path |
 
 Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--kind

@@ -11,7 +11,9 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, existsSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -372,6 +374,57 @@ test('a four-item section lays out in pairs, not three-plus-an-orphan', () => {
   assert.match(src, /n === 2 \|\| n === 4/, 'the column count no longer fits the section');
   const css = readFileSync(join(SKILL, 'assets', 'report.css'), 'utf8');
   assert.match(css, /\.ledger--pairs\s*\{[^}]*repeat\(2/, 'the pairs layout has no CSS behind it');
+});
+
+// ── round three: provenance, and a flag that ate its own argument ───────────
+
+test('a boolean flag does not swallow the token after it', () => {
+  // `shipreport show --brief release:a release:b` read only `release:b` — the
+  // first receipt silently became the value of `--brief`, and nothing reported
+  // a missing artifact because nothing knew one had been asked for.
+  const out = execFileSync('node', [
+    join(SKILL, 'scripts', 'shipreport.js'), 'show', '--brief',
+    'release:natejswenson/claude-skills@press-v0.9.0',
+    'release:natejswenson/claude-skills@eval-v0.3.0',
+    '--corpus', join(SKILL, 'evals', 'baseline', 'corpus'),
+  ], { encoding: 'utf8' });
+  assert.match(out, /press-v0\.9\.0/, 'the receipt after --brief was swallowed');
+  assert.match(out, /eval-v0\.3\.0/);
+});
+
+test('every boolean the CLI accepts is declared as one', () => {
+  // Two-sided in the structural sense: the guard is the list, so the list has to
+  // stay complete. A boolean added without being declared re-opens the swallow.
+  const src = readFileSync(join(SKILL, 'scripts', 'shipreport.js'), 'utf8');
+  const declared = src.match(/const BOOLEAN_FLAGS = new Set\(\[([\s\S]*?)\]\)/)?.[1] ?? '';
+  for (const flag of ['brief', 'full', 'all', 'allOwners', 'noOpen', 'githubOnly', 'sessionsOnly']) {
+    assert.match(declared, new RegExp(`'${flag}'`), `${flag} is used as a boolean but not declared as one`);
+  }
+});
+
+test('a read log records what was opened, and a brief scan records nothing', async () => {
+  const { recordReads, loadReads } = await import('../lib/corpus.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'shipreport-reads-'));
+  // No log at all means no claim either way — an absence of evidence is not a
+  // finding, which is why `receipts` stays silent rather than reporting all.
+  assert.equal(loadReads(dir), null);
+  recordReads(dir, ['release:o/r@v1'], '2026-08-05T00:00:00.000Z');
+  assert.deepEqual(loadReads(dir), { 'release:o/r@v1': '2026-08-05T00:00:00.000Z' });
+  recordReads(dir, ['pr:o/r#2'], '2026-08-05T01:00:00.000Z');
+  assert.deepEqual(Object.keys(loadReads(dir)).sort(), ['pr:o/r#2', 'release:o/r@v1']);
+});
+
+test('show never writes a read log into a fixture corpus', () => {
+  // A frozen corpus must not gain a file because someone inspected it, or the
+  // baseline drifts on being read.
+  const before = existsSync(join(SKILL, 'evals', 'baseline', 'corpus', 'reads.json'));
+  execFileSync('node', [
+    join(SKILL, 'scripts', 'shipreport.js'), 'show',
+    'release:natejswenson/claude-skills@press-v0.9.0',
+    '--corpus', join(SKILL, 'evals', 'baseline', 'corpus'),
+  ], { encoding: 'utf8' });
+  assert.equal(existsSync(join(SKILL, 'evals', 'baseline', 'corpus', 'reads.json')), before,
+    'reading a fixture corpus wrote into it');
 });
 
 test('release and pull request bodies are actually requested from gh', () => {

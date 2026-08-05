@@ -6,12 +6,12 @@
     {
       "path": "rank-sessions.txt",
       "bytes": 4281,
-      "sha256": "df2e14a1df25e454aba1517882bfef024849d74f91717cf69dcf3afeefe63c5a"
+      "sha256": "f65a36f8be7226f2f3141954738b254974e544fcdf3e863312792373db2b51ae"
     },
     {
       "path": "rank.txt",
       "bytes": 4064,
-      "sha256": "9533d47f9777f5f5f05967905bf74014b0068466678b9ba41224fe917c5cb414"
+      "sha256": "19beb5dbf520cbe2e4e5960f0c954d92dfbaff2ff378fef1d2de7c147f7c7490"
     },
     {
       "path": "receipts.txt",

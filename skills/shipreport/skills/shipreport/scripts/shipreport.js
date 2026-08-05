@@ -17,13 +17,29 @@ import { promisify } from 'node:util';
 import { newCounts, countsTable, totalRedactions, redactDeep } from './lib/redact.mjs';
 import { indexSessions, defaultTranscriptRoot } from './lib/sessions.mjs';
 import { fetchAll } from './lib/github.mjs';
-import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir, resolveReceipt } from './lib/corpus.mjs';
+import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir, resolveReceipt, recordReads, loadReads } from './lib/corpus.mjs';
 import { rankItems } from './lib/rank.mjs';
 import { checkDraft } from './lib/receipts.mjs';
 import { renderHtml, computeNumbers } from './lib/render.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
+
+/**
+ * Flags that take no value.
+ *
+ * Without this list a boolean flag swallows the token after it, because the
+ * parser cannot tell `--brief <receipt>` from `--days 7`. `shipreport show
+ * --brief release:o/r@v1 release:o/r@v2` silently read only the *second*
+ * receipt — the first became the value of `--brief`, and nothing reported a
+ * missing artifact because nothing knew one had been asked for.
+ *
+ * Every boolean the CLI accepts belongs here; adding one without adding it here
+ * reintroduces exactly that silent swallow.
+ */
+const BOOLEAN_FLAGS = new Set([
+  'full', 'all', 'allOwners', 'noOpen', 'githubOnly', 'sessionsOnly', 'brief', 'version', 'dryRun',
+]);
 
 function argv(args) {
   const out = { _: [] };
@@ -33,6 +49,7 @@ function argv(args) {
       const [k, inline] = a.slice(2).split('=');
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
+      else if (BOOLEAN_FLAGS.has(key)) out[key] = true;
       else if (args[i + 1] && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
       else out[key] = true;
     } else out._.push(a);
@@ -210,7 +227,10 @@ async function cmdRank(args) {
   // gate that refuses a hand-written count is the backstop.
   if (numbers.length) {
     console.log('');
-    console.log(table(numbers.map((n) => n.k), [numbers.map((n) => n.n)]));
+    console.log(table(
+      numbers.map((n) => n.k.charAt(0).toUpperCase() + n.k.slice(1)),
+      [numbers.map((n) => n.n)],
+    ));
     console.log('the sheet prints these figures itself — never write a count into the prose.');
   }
 
@@ -250,8 +270,14 @@ async function cmdRank(args) {
  * One call, no network, and the body already redacted at ingest.
  */
 async function cmdShow(args) {
-  const corpus = loadCorpus(corpusDir(args));
+  const dir = corpusDir(args);
+  const corpus = loadCorpus(dir);
   const receipts = args._.slice(1);
+  // `--brief` is the scan pass: deciding WHICH artifacts to read closely, rather
+  // than reading them. Without it the third run asked for eight bodies at once
+  // and piped the result through `tail` — the same rule-versus-missing-
+  // affordance failure the total budget was meant to end, one level up.
+  const brief = Boolean(args.brief);
   if (receipts.length === 0) {
     throw new Error('show: name at least one receipt — e.g. `show release:owner/repo@v1.2.0` (the Receipt column of `rank`)');
   }
@@ -265,7 +291,7 @@ async function cmdShow(args) {
   // command that had no bound. Asking for more artifacts now buys less of each,
   // which is what makes a single call safe to run bare.
   const budget = Number(args.chars ?? 6000);
-  const max = Math.max(400, Math.floor(budget / Math.max(1, receipts.length)));
+  const max = brief ? 220 : Math.max(400, Math.floor(budget / Math.max(1, receipts.length)));
   const missing = [];
   const found = [];
   for (const r of receipts) {
@@ -292,9 +318,20 @@ async function cmdShow(args) {
         : '(no body for this kind of item)');
       continue;
     }
-    console.log(body.length > max
-      ? `${body.slice(0, max).trimEnd()}\n… [${body.length - max} more characters — \`--chars ${budget * 2}\` raises the budget, or ask for fewer receipts]`
-      : body);
+    const tail = brief
+      ? '… [--brief; drop it to read this one properly]'
+      : `… [${body.length - max} more characters — \`--chars ${budget * 2}\` raises the budget, or ask for fewer receipts]`;
+    console.log(body.length > max ? `${body.slice(0, max).trimEnd()}\n${tail}` : body);
+  }
+
+  // Recorded only against the real corpus. A fixture directory stays a fixture:
+  // `--corpus evals/baseline/corpus` must never gain a file because someone read
+  // from it, or the frozen baseline drifts on inspection.
+  // A `--brief` pass is a scan, not a reading, so it deliberately records
+  // nothing — otherwise skimming eight titles would look like having read them,
+  // which is the provenance question answering itself falsely.
+  if (found.length && !brief && resolve(dir) === resolve(defaultCorpusDir())) {
+    recordReads(dir, found.map((f) => f.receipt), iso(new Date()));
   }
 
   if (missing.length) {
@@ -348,6 +385,26 @@ async function cmdReceipts(args) {
     proseProblems,
     ok ? 'every claim has a receipt' : 'REFUSED',
   ]]));
+
+  // Provenance, reported and never refused.
+  //
+  // "Never write the sentence first and then hunt for a receipt to attach" is
+  // the one rule's blind spot — such a citation resolves, so the gate passes it.
+  // The third graded run cited three artifacts it had not opened, writing them
+  // from an earlier run's memory. This cannot be a refusal (an item read through
+  // the ranked table alone is legitimately cited), but it can be asked out loud.
+  //
+  // Silent when there is no read log at all: with nothing recorded, "you did not
+  // read this" is not a finding, it is an absence of evidence.
+  const reads = loadReads(corpusDir(args));
+  if (reads) {
+    const unread = [...new Set(rows.map((r) => r[1]))].filter((r) => r !== '(none)' && !reads[r]);
+    if (unread.length) {
+      console.log('');
+      console.log(`${unread.length} of ${new Set(rows.map((r) => r[1])).size} citations were never opened with \`show\`: ${unread.join(', ')}`);
+      console.log('a claim written from memory rather than from the artifact is the drift this skill exists to stop — read them, or drop them.');
+    }
+  }
 
   if (!ok) {
     console.error('');
@@ -422,7 +479,7 @@ const USAGE = `shipreport v${VERSION} — an executive summary of shipped work, 
   shipreport index    [--corpus <dir>] [--days N] [--full] [--github-only|--sessions-only]
   shipreport rank     [--days N | --since <date> --until <date>] [--top N] [--floor N]
                       [--kind release|pr|commit|session] [--limit N] [--near N] [--all] [--out <file>]
-  shipreport show     <receipt> [<receipt>…] [--chars N]
+  shipreport show     <receipt> [<receipt>…] [--chars N] [--brief]
   shipreport receipts --draft <file.json>
   shipreport render   --draft <file.json> [--out <file.html>] [--byline <text>]
 
