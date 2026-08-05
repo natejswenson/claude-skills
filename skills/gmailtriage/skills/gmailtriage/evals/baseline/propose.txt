@@ -32,8 +32,8 @@
 | person8@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
 | sender-3832e9@shareholderdocs.fidelity.com | 1         | sender looks financial, medical, educational, governmental or recruiting |
 
-| Sampled | Proposed | Withheld |
-|---------|----------|----------|
-| 50      | 12       | 16       |
+| Sampled | Proposed | Withheld by a guard | Below threshold |
+|---------|----------|---------------------|-----------------|
+| 50      | 12       | 16                  | 0               |
 
 nothing has been trashed — these are candidates. Accept the ones you want with `rules --add`.

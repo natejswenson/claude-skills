@@ -88,6 +88,7 @@ export function propose(threads, { minCount = 3 } = {}) {
 
   const candidates = [];
   const withheld = [];
+  const below = [];
   for (const [addr, group] of byAddr) {
     // the whole address, because the marker is often in the local part
     const bulk = group.filter((t) => t.hasUnsubscribe).length;
@@ -100,14 +101,34 @@ export function propose(threads, { minCount = 3 } = {}) {
     };
     if (isProtected(addr)) { withheld.push({ ...row, why: 'sender looks financial, medical, educational, governmental or recruiting' }); continue; }
     if (hasProtectedSubject(group)) { withheld.push({ ...row, why: 'cluster contains a login code, receipt or verification you cannot lose' }); continue; }
-    if (group.length < minCount) continue;
+    // The bulk check comes BEFORE the threshold check on purpose. Reversed, a
+    // person with two threads lands in `below`, and the "closest sender" table
+    // then invites the user to lower the threshold to catch their own realtor.
+    // `below` must only ever hold senders that would really become candidates.
     if (bulk === 0) { withheld.push({ ...row, why: 'no bulk-mail marker — may be a person, not a sender' }); continue; }
+    if (group.length < minCount) { below.push({ ...row, why: `only ${group.length} in the sample (threshold ${minCount})` }); continue; }
     candidates.push(row);
   }
 
-  candidates.sort((a, b) => b.count - a.count || a.from.localeCompare(b.from));
-  withheld.sort((a, b) => b.count - a.count || a.from.localeCompare(b.from));
-  return { candidates, withheld, sampled: threads.length };
+  const bySize = (a, b) => b.count - a.count || a.from.localeCompare(b.from);
+  candidates.sort(bySize);
+  withheld.sort(bySize);
+  below.sort(bySize);
+
+  // An empty candidate list is a result, not a failure — but only if it says
+  // which of the three reasons produced it. A bare empty table reads as "the
+  // skill is broken".
+  const reason = candidates.length > 0 ? null
+    : below.length > 0
+      ? { kind: 'below-threshold', best: below[0].count, minCount,
+          text: `no sender reached the threshold of ${minCount}. The largest unguarded cluster has ${below[0].count} (${below[0].from}) — re-run with --min-count ${below[0].count} to see it.` }
+      : withheld.length > 0
+        ? { kind: 'all-withheld',
+            text: `every sender in the sample was withheld by a guard. That is the safe answer, not a broken one — read the withheld table and write a rule by hand for anything you disagree with.` }
+        : { kind: 'nothing-bulk',
+            text: 'no bulk mail in the sample at all. Widen the fetch, or this inbox is already clean.' };
+
+  return { candidates, withheld, below, reason, sampled: threads.length };
 }
 
 /** A candidate turned into a real rule object, ready for validation. */
