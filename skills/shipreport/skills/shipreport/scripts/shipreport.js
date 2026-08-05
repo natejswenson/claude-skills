@@ -14,16 +14,32 @@ import { homedir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import { newCounts, countsTable, totalRedactions } from './lib/redact.mjs';
+import { newCounts, countsTable, totalRedactions, redactDeep } from './lib/redact.mjs';
 import { indexSessions, defaultTranscriptRoot } from './lib/sessions.mjs';
 import { fetchAll } from './lib/github.mjs';
-import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir } from './lib/corpus.mjs';
+import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir, resolveReceipt, recordReads, loadReads } from './lib/corpus.mjs';
 import { rankItems } from './lib/rank.mjs';
 import { checkDraft } from './lib/receipts.mjs';
-import { renderHtml } from './lib/render.mjs';
+import { renderHtml, computeNumbers } from './lib/render.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
+
+/**
+ * Flags that take no value.
+ *
+ * Without this list a boolean flag swallows the token after it, because the
+ * parser cannot tell `--brief <receipt>` from `--days 7`. `shipreport show
+ * --brief release:o/r@v1 release:o/r@v2` silently read only the *second*
+ * receipt — the first became the value of `--brief`, and nothing reported a
+ * missing artifact because nothing knew one had been asked for.
+ *
+ * Every boolean the CLI accepts belongs here; adding one without adding it here
+ * reintroduces exactly that silent swallow.
+ */
+const BOOLEAN_FLAGS = new Set([
+  'full', 'all', 'allOwners', 'noOpen', 'githubOnly', 'sessionsOnly', 'brief', 'version', 'dryRun',
+]);
 
 function argv(args) {
   const out = { _: [] };
@@ -33,6 +49,7 @@ function argv(args) {
       const [k, inline] = a.slice(2).split('=');
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
+      else if (BOOLEAN_FLAGS.has(key)) out[key] = true;
       else if (args[i + 1] && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
       else out[key] = true;
     } else out._.push(a);
@@ -87,7 +104,12 @@ async function cmdIndex(args) {
     const { login, items } = await fetchAll({ since: ghSince.slice(0, 10), login: args.login ?? corpus.meta.login ?? null });
     corpus.meta.login = login;
     ghTotalSeen = items.length;
-    ghAdded = mergeItems(corpus.github, items);
+    // Redaction is at ingest for BOTH sources, never one. Session digests went
+    // through it from the start and GitHub items did not, which was safe only
+    // for as long as nothing but a title was cached. Release and pull request
+    // bodies are arbitrary prose — a pasted token in a changelog is a token
+    // written to the corpus, where every later run and every model pass reads it.
+    ghAdded = mergeItems(corpus.github, redactDeep(items, counts, home));
     rows.push(['github', ghSince.slice(0, 10), ghTotalSeen, ghAdded, Object.keys(corpus.github).length]);
   }
 
@@ -115,8 +137,12 @@ async function cmdIndex(args) {
     ? table(['Redacted', 'Count'], red)
     : table(['Redacted', 'Count'], [['(nothing matched)', 0]]));
   console.log('');
+  // `--full` is a backfill whatever the watermark says. Reporting it as
+  // "incremental — new items only" described the opposite of what just ran.
   console.log(table(['Pass', 'Corpus', 'Watermark'], [[
-    first ? 'first — backfilled a year' : 'incremental — new items only',
+    args.full ? 'full — forced backfill'
+      : first ? 'first — backfilled a year'
+        : 'incremental — new items only',
     dir.replace(home, '~'),
     corpus.meta.watermark.github.slice(0, 19) + 'Z',
   ]]));
@@ -139,12 +165,15 @@ function loadRanked(args) {
     top: Number(args.top ?? 12),
     floor: Number(args.floor ?? 20),
     owners,
+    // The whole corpus, not the window: "is this the component's first release"
+    // is a question a seven-day slice cannot answer.
+    history: allItems(corpus),
   });
-  return { corpus, win, ranked };
+  return { corpus, win, ranked, numbers: computeNumbers(items, owners) };
 }
 
 async function cmdRank(args) {
-  const { win, ranked } = loadRanked(args);
+  const { win, ranked, numbers } = loadRanked(args);
   if (ranked.ranked.length === 0) {
     throw new Error(`no items in ${win.since.slice(0, 10)}..${win.until.slice(0, 10)} — run \`shipreport index\` first, or widen --days`);
   }
@@ -189,6 +218,29 @@ async function cmdRank(args) {
     ]],
   ));
 
+  // The figures the sheet will print, shown BEFORE any prose exists.
+  //
+  // They used to be computed at `render`, which is after the draft is written —
+  // so a model with no figure in front of it counted its own cards. The second
+  // real run put "Eleven components shipped" in the standfirst and the strip
+  // rendered "16 released" an inch below it. Printing them here is the fix; the
+  // gate that refuses a hand-written count is the backstop.
+  if (numbers.length) {
+    console.log('');
+    console.log(table(
+      numbers.map((n) => n.k.charAt(0).toUpperCase() + n.k.slice(1)),
+      [numbers.map((n) => n.n)],
+    ));
+    console.log('the sheet prints these figures itself — never write a count into the prose.');
+  }
+
+  // The line is only a finding when it means something. Say so when it does not,
+  // rather than leaving the agent to notice a column of identical numbers.
+  if (ranked.tie) {
+    const t = ranked.tie;
+    console.log(`\nthe line is a tiebreak, not a ranking: ${t.count} items score ${t.score}, of which ${t.included} made the cut and ${t.excluded} did not. Nothing separates them — treat them as one body of work, or raise \`--top\` to take all ${t.count}.`);
+  }
+
   // Never a silent drop: name the projects whose releases were excluded, so a
   // wrong owner list is visible rather than quietly shrinking the report.
   if (ranked.foreign.length) {
@@ -203,6 +255,106 @@ async function cmdRank(args) {
   }
 }
 
+// ── show ────────────────────────────────────────────────────────────────────
+
+/**
+ * Read the artifact behind a receipt, from the corpus.
+ *
+ * Step 4 of the flow — "read what you are about to describe" — is the step that
+ * separates a real report from a plausible one, and until now the corpus held no
+ * way to do it: a release's body was never cached, so the only route was
+ * `gh release view` per item. The first real run therefore made three networked
+ * `gh` loops and printed roughly sixteen kilobytes of changelog into the
+ * conversation, in a skill whose own presentation contract forbids exactly that.
+ *
+ * One call, no network, and the body already redacted at ingest.
+ */
+async function cmdShow(args) {
+  const dir = corpusDir(args);
+  const corpus = loadCorpus(dir);
+  const receipts = args._.slice(1);
+  // `--brief` is the scan pass: deciding WHICH artifacts to read closely, rather
+  // than reading them. Without it the third run asked for eight bodies at once
+  // and piped the result through `tail` — the same rule-versus-missing-
+  // affordance failure the total budget was meant to end, one level up.
+  const brief = Boolean(args.brief);
+  if (receipts.length === 0) {
+    throw new Error('show: name at least one receipt — e.g. `show release:owner/repo@v1.2.0` (the Receipt column of `rank`)');
+  }
+
+  // A TOTAL budget, divided among the receipts asked for — not a per-item cap.
+  //
+  // `--chars` alone multiplies: six receipts at 2400 is 14k characters, and the
+  // second real run answered that by piping `show` through `head` and `tail`
+  // three times — working around the very rule this skill added ("run every one
+  // bare, the output is already bounded"). The rule was false for the one
+  // command that had no bound. Asking for more artifacts now buys less of each,
+  // which is what makes a single call safe to run bare.
+  const budget = Number(args.chars ?? 6000);
+  const max = brief ? 220 : Math.max(400, Math.floor(budget / Math.max(1, receipts.length)));
+  const missing = [];
+  const found = [];
+  for (const r of receipts) {
+    const item = resolveReceipt(corpus, r);
+    if (!item) { missing.push(r); continue; }
+    found.push({ receipt: r, item });
+  }
+
+  if (found.length) {
+    console.log(table(['Receipt', 'Kind', 'When', 'Title'], found.map(({ receipt, item }) => [
+      receipt, item.kind, String(item.at ?? '').slice(0, 10), String(item.title ?? '').slice(0, 60),
+    ])));
+  }
+
+  for (const { receipt, item } of found) {
+    console.log(`\n── ${receipt} ──`);
+    if (item.url) console.log(item.url);
+    const body = item.kind === 'session' ? sessionBody(item) : String(item.body ?? '').trim();
+    if (!body) {
+      // Never silently print nothing: a body absent because the corpus predates
+      // body caching reads identically to a release with an empty changelog.
+      console.log(item.kind === 'release' || item.kind === 'pr'
+        ? '(no body cached — re-run `shipreport index --full` to backfill bodies)'
+        : '(no body for this kind of item)');
+      continue;
+    }
+    const tail = brief
+      ? '… [--brief; drop it to read this one properly]'
+      : `… [${body.length - max} more characters — \`--chars ${budget * 2}\` raises the budget, or ask for fewer receipts]`;
+    console.log(body.length > max ? `${body.slice(0, max).trimEnd()}\n${tail}` : body);
+  }
+
+  // Recorded only against the real corpus. A fixture directory stays a fixture:
+  // `--corpus evals/baseline/corpus` must never gain a file because someone read
+  // from it, or the frozen baseline drifts on inspection.
+  // A `--brief` pass is a scan, not a reading, so it deliberately records
+  // nothing — otherwise skimming eight titles would look like having read them,
+  // which is the provenance question answering itself falsely.
+  if (found.length && !brief && resolve(dir) === resolve(defaultCorpusDir())) {
+    recordReads(dir, found.map((f) => f.receipt), iso(new Date()));
+  }
+
+  if (missing.length) {
+    console.log('');
+    console.log(`${missing.length} receipt(s) did not resolve: ${missing.join(', ')} — check the Receipt column of \`rank\`, or run \`shipreport index\`.`);
+    process.exitCode = 1;
+  }
+}
+
+/** A session has no body; what it has is the shape of the work done in it. */
+function sessionBody(s) {
+  const tools = Object.entries(s.tools ?? {}).sort(([, a], [, b]) => b - a).slice(0, 8)
+    .map(([k, n]) => `${k}×${n}`).join(', ');
+  const mins = s.start && s.end ? Math.round((Date.parse(s.end) - Date.parse(s.start)) / 60000) : null;
+  return [
+    `project: ${s.project ?? 'unknown'}${(s.branches ?? []).length ? ` · branches: ${s.branches.join(', ')}` : ''}`,
+    `${s.userTurns ?? 0} user turns · ${s.assistantTurns ?? 0} assistant turns · ${s.edits ?? 0} edits${mins === null ? '' : ` · ${mins} min`}`,
+    (s.skills ?? []).length ? `skills: ${s.skills.join(', ')}` : null,
+    tools ? `tools: ${tools}` : null,
+    s.firstPrompt ? `\nopened with:\n${s.firstPrompt}` : null,
+  ].filter(Boolean).join('\n');
+}
+
 // ── receipts ────────────────────────────────────────────────────────────────
 
 function readDraft(args) {
@@ -215,16 +367,44 @@ function readDraft(args) {
 async function cmdReceipts(args) {
   const corpus = loadCorpus(corpusDir(args));
   const draft = readDraft(args);
-  const { rows, problems, ok } = checkDraft(draft, corpus);
+  const win = draft.window ?? resolveWindow(args);
+  const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
+  const owners = args.allOwners ? null : new Set(declared);
+  const numbers = computeNumbers(inWindow(allItems(corpus), String(win.since), String(win.until)), owners);
+  const { rows, problems, proseProblems, ok } = checkDraft(draft, corpus, numbers);
 
   if (rows.length) console.log(table(['Claim', 'Receipt', 'Resolved'], rows));
   console.log('');
-  console.log(table(['Claims', 'Receipts', 'Unresolved', 'Verdict'], [[
+  // `Prose` is its own column because the first real run printed `Unresolved: 0`
+  // beside `Verdict: REFUSED` and the table could not explain itself — two
+  // different failure classes had been collapsed into one word.
+  console.log(table(['Claims', 'Receipts', 'Unresolved', 'Prose', 'Verdict'], [[
     new Set(rows.map((r) => r[0])).size,
     rows.length,
     rows.filter((r) => r[2] === 'NO').length,
+    proseProblems,
     ok ? 'every claim has a receipt' : 'REFUSED',
   ]]));
+
+  // Provenance, reported and never refused.
+  //
+  // "Never write the sentence first and then hunt for a receipt to attach" is
+  // the one rule's blind spot — such a citation resolves, so the gate passes it.
+  // The third graded run cited three artifacts it had not opened, writing them
+  // from an earlier run's memory. This cannot be a refusal (an item read through
+  // the ranked table alone is legitimately cited), but it can be asked out loud.
+  //
+  // Silent when there is no read log at all: with nothing recorded, "you did not
+  // read this" is not a finding, it is an absence of evidence.
+  const reads = loadReads(corpusDir(args));
+  if (reads) {
+    const unread = [...new Set(rows.map((r) => r[1]))].filter((r) => r !== '(none)' && !reads[r]);
+    if (unread.length) {
+      console.log('');
+      console.log(`${unread.length} of ${new Set(rows.map((r) => r[1])).size} citations were never opened with \`show\`: ${unread.join(', ')}`);
+      console.log('a claim written from memory rather than from the artifact is the drift this skill exists to stop — read them, or drop them.');
+    }
+  }
 
   if (!ok) {
     console.error('');
@@ -239,20 +419,21 @@ async function cmdRender(args) {
   const corpus = loadCorpus(corpusDir(args));
   const draft = readDraft(args);
 
-  // The gate runs again here. `receipts` passing earlier is not a promise that
-  // the draft on disk right now is the one that passed.
-  const { problems, ok } = checkDraft(draft, corpus);
-  if (!ok) {
-    for (const p of problems) console.error(`shipreport: ${p}`);
-    throw new Error('render refused — a claim in this draft has no resolvable receipt');
-  }
-
   const win = draft.window ?? resolveWindow(args);
   // Same ownership rule as `rank`, or the strip and the ranking disagree.
   const declared = [args.owner, corpus.meta.login].flat().filter((x) => typeof x === 'string');
   const owners = args.allOwners ? null : new Set(declared);
   // The strip counts the window, not the citations — see computeNumbers.
   const items = inWindow(allItems(corpus), String(win.since), String(win.until));
+
+  // The gate runs again here, against the same figures the sheet is about to
+  // print. `receipts` passing earlier is not a promise that the draft on disk
+  // right now is the one that passed.
+  const { problems, ok } = checkDraft(draft, corpus, computeNumbers(items, owners));
+  if (!ok) {
+    for (const p of problems) console.error(`shipreport: ${p}`);
+    throw new Error('render refused — a claim in this draft has no resolvable receipt');
+  }
 
   const html = renderHtml({
     draft,
@@ -276,9 +457,15 @@ async function cmdRender(args) {
   ]);
   console.log(table(['Section', 'Items', 'Receipts'], rows));
   console.log('');
-  console.log(table(['Wrote', 'Bytes', 'Window'], [[
-    out, html.length, `${String(win.since).slice(0, 10)} → ${String(win.until).slice(0, 10)}`,
+  console.log(table(['Cards', 'Bytes', 'Window'], [[
+    rows.reduce((a, r) => a + r[1], 0),
+    html.length,
+    `${String(win.since).slice(0, 10)} → ${String(win.until).slice(0, 10)}`,
   ]]));
+  // The path goes on its own line, not in a cell. A padded table column holding
+  // an absolute path is both unreadable and a golden that encodes the host's
+  // home directory — it passes locally and fails in CI.
+  console.log(`\nwrote ${out.replace(homedir(), '~')}`);
 
   // The sheet is the product; the user should watch it open rather than read a
   // paragraph about it. `--no-open` exists for CI and for the frozen baseline.
@@ -290,9 +477,15 @@ async function cmdRender(args) {
 const USAGE = `shipreport v${VERSION} — an executive summary of shipped work, where every claim carries a receipt.
 
   shipreport index    [--corpus <dir>] [--days N] [--full] [--github-only|--sessions-only]
-  shipreport rank     [--days N | --since <date> --until <date>] [--top N] [--floor N] [--out <file>]
+  shipreport rank     [--days N | --since <date> --until <date>] [--top N] [--floor N]
+                      [--kind release|pr|commit|session] [--limit N] [--near N] [--all] [--out <file>]
+  shipreport show     <receipt> [<receipt>…] [--chars N] [--brief]
   shipreport receipts --draft <file.json>
   shipreport render   --draft <file.json> [--out <file.html>] [--byline <text>]
+
+Every command's output is already bounded and already a table. Run them bare —
+piping through \`tail\` or \`grep\` silently eats the head of a table, and \`--kind\`
+answers "what did the sessions say" without a pipeline.
 `;
 
 async function main() {
@@ -303,6 +496,7 @@ async function main() {
     switch (cmd) {
       case 'index': return await cmdIndex(args);
       case 'rank': return await cmdRank(args);
+      case 'show': return await cmdShow(args);
       case 'receipts': return await cmdReceipts(args);
       case 'render': return await cmdRender(args);
       default:

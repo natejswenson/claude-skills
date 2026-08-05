@@ -59,7 +59,32 @@ Weight and texture come from what is available without colour:
 | recession | a thinner stroke (1) or a dashed line |
 | "this one is wrong" | a dashed outline, a gap, a struck-through mark |
 | "this one is chosen" | a solid heavy mark against thin neighbours |
-| labels | `<text>` at 9–11 units, mono, sparingly — 2–4 words total |
+| labels | `<text>` at 9–11 units, mono, sparingly — see the budget below |
+
+## The label budget, corrected by measurement
+
+This file used to say **2–4 words total** per scene. Three graded runs rejected
+that number: 8 of 10 scenes in the third exceeded it, and several of those are
+among the best cards in the sheet — `higher, unread` against `lower, dispatched`
+*is* the mechanism on the release card, and no drawing carries it alone.
+
+So the honest budget is **one short label per element the scene needs named,
+around six to twelve words in total.** Past that, cards get cluttered: a
+twenty-three-word scene in that run wrapped a label onto two lines and read as a
+diagram with a caption stuck to it.
+
+**What actually breaks is placement, not word count.** The one visibly broken
+card in that run had a *twenty-three character* label — well inside any budget —
+sitting two units above a rectangle, so it struck through the geometry. Before
+you commit a scene, trace where each `<text>` baseline lands: a label needs its
+own empty band, not a gap that happens to look empty in the markup.
+
+**There is deliberately no validator for this.** Word count is a proxy for
+clutter, and a check on it would refuse the eight-short-label card that reads
+perfectly while still passing the one that collides. A gate that fires on the
+wrong cases teaches people to work around it — this repo has already paid for
+that lesson once, when the receipts gate called the phrase "plus/minus" a
+repository name.
 
 ## What the validator refuses
 

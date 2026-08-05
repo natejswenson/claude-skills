@@ -380,7 +380,7 @@ installs a competing ruleset. Key settings here:
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
   `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
-  `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:

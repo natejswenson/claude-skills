@@ -2,7 +2,7 @@
 name: shipreport
 description: Write an executive summary of the work actually shipped over a chosen time frame, built from real GitHub contributions and real Claude Code session transcripts, ranked so only what mattered appears, and rendered as a press-styled HTML report. Use when the user says "what did I ship this week", "shipreport", "write my weekly summary", "executive summary of my work", "status report for my manager", "what did I get done last month", "summarize what I shipped in July", or wants their commits, merged PRs, cut releases and coding sessions turned into a report someone who wasn't there can read.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 # /shipreport — an executive summary of shipped work, where every claim carries a receipt
@@ -33,7 +33,8 @@ step whose command does not exist fails `skillfactory verify`.
 | Deterministic — the machine decides | Command |
 |---|---|
 | collect GitHub contributions and Claude session transcripts, redact secrets and absolute paths at ingest so nothing unsafe is ever cached, and record a watermark so the second run is cheap | `node scripts/shipreport.js index` |
-| score and order every candidate in the requested window, and draw the line between what appears in the report and what does not | `node scripts/shipreport.js rank` |
+| score and order every candidate in the requested window, draw the line between what appears in the report and what does not, and say when that line was a tiebreak rather than a ranking | `node scripts/shipreport.js rank` |
+| read the artifact behind a receipt — a release's changelog, a pull request's body, a session's shape — from the corpus rather than from the network | `node scripts/shipreport.js show` |
 | resolve every citation in the drafted report back to a real artifact, failing the run when one does not resolve | `node scripts/shipreport.js receipts` |
 | render the ranked items and approved prose into the press-styled HTML report | `node scripts/shipreport.js render` |
 
@@ -72,25 +73,58 @@ skipped.
 node scripts/shipreport.js rank --days 7
 ```
 
-Report the ranked cut as-is. It shows every item above the line, a few near
-misses, and the signals behind each score — so the user can see *why* something
-did or did not make it before a word of prose exists.
+**Paste the table into the conversation.** Not a summary of it — the table. It
+shows every item above the line, a few near misses, and the signals behind each
+score, which is how the user sees *why* something did or did not make it before a
+word of prose exists. A sentence about the ranking is not the ranking.
 
-**If the top items all score identically, say so.** The line is then being drawn
-by a tiebreak, not by ranking, and the report will be arbitrary. That is a
-finding, not a detail to smooth over.
+`rank` says so itself when the cut line falls inside a tie. Repeat that finding;
+do not smooth it over. The remedy is to treat the tied items as one body of work
+or to raise `--top` — never to let the timestamp choose.
+
+`--kind session` (or `pr`, `release`, `commit`) narrows the table when you want
+one source. That flag exists so you never pipe this output through `grep`.
+
+**`rank` also prints the figures the sheet will show** — released, merged,
+commits, sessions, repos. Read them and never restate them: they exist here so
+the prose is written with the real numbers visible, not so the prose can repeat
+them. The strip prints them itself.
 
 ### 4. Read what you are about to describe
 
-This is the step that separates a real report from a plausible one. For each
-item you intend to feature, actually look at it — `gh pr view`, `gh release
-view`, or the session digest in the corpus. Write the sentence **from** the
-artifact.
+This is the step that separates a real report from a plausible one. For each item
+you intend to feature, read the artifact behind it and write the sentence **from**
+it:
 
-**Never write the sentence first and then hunt for a receipt to attach.** The
-gate cannot catch that, and nothing can.
+```bash
+node scripts/shipreport.js show <receipt> <receipt> …
+```
+
+One call, every artifact, no network — the bodies were cached and redacted at
+index time. **Never run `gh release view` or `gh pr view` here.** Doing so costs a
+round trip per item and prints kilobytes of changelog into the conversation, which
+this skill's own presentation contract forbids. If `show` reports no body cached,
+the corpus predates body caching — run `index --full` once.
+
+**Cite nothing you did not open in this run.** A memory of an artifact from an
+earlier run is not a reading of it, and it resolves exactly as well — so the one
+rule passes it. `receipts` now names citations that were never opened with
+`show`; it reports rather than refuses, because an item read through the ranked
+table alone is legitimately cited. Treat the list as a question to answer, not a
+warning to dismiss.
+
+`--brief` prints the opening lines of many artifacts at once, for deciding
+*which* to read. It deliberately does not count as having read them.
+
+**Never write the sentence first and then hunt for a receipt to attach.** No gate
+catches the order you did things in.
 
 ### 5. Compose the art — one original scene per card
+
+**Say what you are about to do first**, in one line naming the card count
+(`composing 13 card scenes…`). This step takes minutes, and a run that goes
+silent for that long has stopped showing its work — the longest gap in the first
+real run was nearly four minutes of nothing.
 
 **This is the step that makes the sheet worth looking at, and it is judgment.**
 Read `references/illustration.md` first. Each card carries a small line-art scene
@@ -113,10 +147,23 @@ A JSON file — `references/receipts.md` has the shape. Three things to hold:
 - **No identifier in any prose field.** No `#412`, no hash, no `owner/repo`.
   The gate fails the draft, and the reason is the audience: an identifier in a
   sentence assumes a reader who already knows your repositories.
-- **Do not write numbers.** `render` computes the strip from the cited items.
+- **Do not write a count of shipped things — this is a gate now, not advice.**
+  `render` computes the strip, and a count in the headline or standfirst is a
+  second copy of a figure printed an inch away. The second real run wrote
+  "Eleven components shipped, two of them brand new" above a strip reading 16
+  released, with 15 releases cited and 3 of them first — every number wrong,
+  and the right ones rendered adjacent. Numbers *inside* an item's prose are
+  fine and often the point: they belong to the artifact you are describing, not
+  to this window.
 - **The line is guidance, not a filter.** Anything in the corpus resolves. If
   the ranking buried something that mattered, cite it anyway — then say which
   weight was wrong.
+
+**Then show what you wrote, and keep going.** Print the headline, the standfirst
+and a numbered table (`#`, `section`, `card title`) — then render. Do not wait for
+approval: the sheet is a local file, and offering to adjust it afterwards costs
+nothing. The point is that the wording reaches the conversation *before* the
+browser opens, so it can be argued with rather than discovered.
 
 ### 7. Gate it
 
@@ -146,12 +193,22 @@ Offer to adjust; do not narrate the design.
 | Command | Returns |
 |---|---|
 | `shipreport index` | source, since, seen, new, cached — plus redaction counts and the new watermark |
-| `shipreport rank` | rank, kind, item, score, signals, receipt — then window, candidates, above-the-line, folds, floor, top |
-| `shipreport receipts` | claim, receipt, resolved — then a verdict; **exits non-zero on any failure** |
-| `shipreport render` | section, items, receipts — then the output path, size and window |
+| `shipreport rank` | rank, kind, item, score, signals, receipt — then the figures the sheet will print, the window/candidates/folds table, and a tie warning when the line is arbitrary |
+| `shipreport show` | receipt, kind, when, title — then each artifact's body from the corpus, sharing one total character budget |
+| `shipreport receipts` | claim, receipt, resolved — then a verdict with unresolved and prose counts, and any citation never opened with `show`; **exits non-zero on any failure** |
+| `shipreport render` | section, items, receipts — then cards, size and window, and the output path |
 
-Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
-(print every candidate), `--full` (force a backfill), `--corpus <dir>`.
+Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--kind
+release|pr|commit|session`, `--limit N`, `--near N`, `--all` (print every
+candidate), `--chars N` (`show`'s **total** budget, split across the receipts you
+ask for), `--full` (force a backfill), `--corpus <dir>`.
+
+**Run every one of these bare.** The output is bounded — `rank` by `--limit`,
+`show` by a total character budget that shrinks as you ask for more artifacts.
+Piping through `tail` or `head` silently eats the head of a table; `grep` is
+never needed, because `--kind` and `--limit` do that job. If some output really
+is too long to read, that is a missing bound worth fixing, not a pipeline worth
+adding.
 
 ## Rules that are not negotiable
 
@@ -162,7 +219,13 @@ Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
   report that says exactly that. A thin week produces a short report, and a
   short honest report is the correct output.
 - **Never fix a refusal by weakening the gate.** `receipts` is argued with by
-  changing the draft.
+  changing the draft. The one exception is a refusal that is simply *wrong* —
+  the gate once called the phrase "plus/minus" a repository name — and the fix
+  for that is a fix to the checker with a test on both sides, never a reworded
+  sentence that was already true.
+- **Never shell out for something the corpus holds.** `show` reads bodies that
+  `index` already fetched and redacted. A `gh` call in the middle of a run is a
+  round trip, a wall of text, and a second unredacted copy of the same data.
 - **Never hand-write a brand value.** `assets/report.css`'s `:root` block is a
   press-generated region; change `tokens.json` and re-run `press emit`. Card art
   may paint only `currentColor` or `none` — a hex in a drawing is a brand value
@@ -176,7 +239,7 @@ Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
 
 | Path | Is |
 |---|---|
-| `scripts/shipreport.js` | the CLI: `index`, `rank`, `receipts`, `render` |
+| `scripts/shipreport.js` | the CLI: `index`, `rank`, `show`, `receipts`, `render` |
 | `scripts/lib/redact.mjs` | the redaction classes, applied at ingest and nowhere else |
 | `scripts/lib/sessions.mjs` | a Claude Code transcript reduced to a citable digest |
 | `scripts/lib/github.mjs` | the only networked code — `gh` searches and release lookups |
@@ -184,7 +247,7 @@ Useful flags: `--days N` / `--since --until`, `--top`, `--floor`, `--all`
 | `scripts/lib/rank.mjs` | scoring, squash folding, release-series collapse, the line |
 | `scripts/lib/receipts.mjs` | the one rule as code: receipt, resolution, no raw ids in prose |
 | `scripts/lib/render.mjs` | the press-styled sheet, composed from press's named components |
-| `scripts/lib/art.mjs` | the card-art contract — validated, never generated |
+| `scripts/lib/art.mjs` | the card-art contract — validated, never generated. `art` is the one field `render` splices unescaped, so this file is the whole boundary between a drawing and the sheet |
 | `assets/report.css` | the sheet's stylesheet — its `:root` is a press region |
 | `references/anatomy.md` | the fixed shape of the report — its sections, the receipt appendix, and what is never allowed in the body |
 | `references/ranking.md` | the scoring function, why each signal is weighted the way it is, and what drawing the line means |

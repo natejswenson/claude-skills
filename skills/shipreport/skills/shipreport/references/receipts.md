@@ -39,12 +39,23 @@ proving something did not work — is citable.
     {
       "title": "Shipped",
       "items": [
-        { "title": "An outcome", "text": "Plain prose.", "receipts": ["pr:o/r#12"] }
+        {
+          "title": "An outcome",
+          "text": "Plain prose.",
+          "receipts": ["pr:o/r#12"],
+          "art": "<svg viewBox=\"0 0 320 130\" fill=\"none\" stroke=\"currentColor\">…</svg>"
+        }
       ]
     }
   ]
 }
 ```
+
+**`art` is required on every item** and `render` refuses a draft without it. It is
+a single inline `<svg>` with exactly `viewBox="0 0 320 130"`, at least five
+drawing elements, and no colour literal anywhere — paint is `currentColor` or
+`none`. `references/illustration.md` is how to compose one; `scripts/lib/art.mjs`
+is what refuses it.
 
 There is no `numbers` field on purpose — `render` computes the strip.
 

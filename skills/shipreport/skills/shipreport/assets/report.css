@@ -239,6 +239,23 @@ h1 {
  * as a section that lost its final item. */
 .ledger > .lrow:nth-last-child(-n+3) { border-bottom: 0; padding-bottom: 0; }
 
+/* Two- and four-item sections lay out in pairs. In a three-wide grid they leave
+ * a lone card beside a full row-height of white, which reads as a section that
+ * failed to finish. The divider rules move with the column count — drawn between
+ * neighbours, never at the end of a row. */
+.ledger--pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ledger--pairs > .lrow:nth-child(2n) {
+  padding-right: 0;
+  margin-right: 0;
+  border-right: 0;
+}
+.ledger--pairs > .lrow:nth-child(odd):not(:last-child) {
+  padding-right: 1.5rem;
+  margin-right: -0.75rem;
+  border-right: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.ledger--pairs > .lrow:nth-last-child(-n+2) { border-bottom: 0; padding-bottom: 0; }
+
 .lt {
   font-size: 0.97rem;
   font-weight: 700;

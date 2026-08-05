@@ -23,6 +23,16 @@
       "id": "art-is-composed-not-generated",
       "pattern": "A generic icon is a failure",
       "rationale": "The card scenes are the reason the sheet is worth looking at. The moment a run reaches for a stock glyph the report becomes a list with decoration, and nothing in code can tell the difference between a lazy drawing and a considered one."
+    },
+    {
+      "id": "never-shell-out-for-what-the-corpus-holds",
+      "pattern": "Never shell out for something the corpus holds",
+      "rationale": "The first real run read its releases with three networked `gh` loops and printed sixteen kilobytes of changelog into the conversation, in a skill whose own presentation contract forbids exactly that. `show` exists so step 4 costs no network and no wall of text; the moment a run reaches for `gh` again, both come back."
+    },
+    {
+      "id": "a-wrong-refusal-is-fixed-in-the-checker",
+      "pattern": "the fix for that is a fix to the checker with a test on both sides",
+      "rationale": "The gate once called the phrase \"plus/minus\" a repository name and the run reworded a true sentence to satisfy it. \"Never weaken the gate\" must not become \"always believe the gate\": a false positive teaches a run that the gate is an obstacle to be worded around, which is how a gate stops being believed at all."
     }
   ],
   "split": {
@@ -32,8 +42,12 @@
         "command": "node scripts/shipreport.js index"
       },
       {
-        "step": "score and order every candidate in the requested window, and draw the line between what appears in the report and what does not",
+        "step": "score and order every candidate in the requested window, draw the line between what appears in the report and what does not, and say when that line was a tiebreak rather than a ranking",
         "command": "node scripts/shipreport.js rank"
+      },
+      {
+        "step": "read the artifact behind a receipt — a release's changelog, a pull request's body, a session's shape — from the corpus rather than from the network",
+        "command": "node scripts/shipreport.js show"
       },
       {
         "step": "resolve every citation in the drafted report back to a real artifact, failing the run when one does not resolve",
@@ -84,6 +98,14 @@
       "fixtures": [],
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "redaction being moved, weakened or skipped so that a secret is written to the on-disk corpus, where every later run and every model pass would read it \u2014 pinned against a real transcript fixture seeded with a token-shaped string and an absolute home path."
+    },
+    {
+      "id": "the-graded-run",
+      "kind": "trap",
+      "test": "scripts/tests/regressions.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the four defects a real run exposed on 2026-08-05 coming back — a ranking whose signals top out so twelve items tie and the line is drawn by a timestamp; the prose gate refusing English (\"plus/minus\" read as a repository) so a run learns to word around it; the art validator admitting a document-scoped <style>, a style-attribute colour or a script URL into the one field `render` splices unescaped; and GitHub items reaching the on-disk corpus without passing through redaction. Deliberately a separate file from baseline.test.mjs, which `skillfactory freeze` regenerates and would delete these guards from."
     },
     {
       "id": "corpus-floor",
