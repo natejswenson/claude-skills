@@ -18,14 +18,30 @@ export const VIEWBOX = '0 0 320 130';
 /** Drawing primitives that count toward the complexity floor. */
 const PRIMITIVE = /<(path|line|polyline|polygon|rect|circle|ellipse|text)\b/g;
 
-/** Anything that reaches off the page, executes, or embeds a bitmap. */
+/**
+ * Anything that reaches off the page, executes, or embeds a bitmap.
+ *
+ * This list is the whole boundary. `render` escapes every other field it
+ * interpolates and splices `art` in raw, because art is markup by definition —
+ * so a shape that gets past here is a shape that reaches the sheet, and the
+ * sheet is opened in a browser from `file://` on its own.
+ */
 const FORBIDDEN = [
   [/<script\b/i, 'a <script> element'],
   [/<image\b/i, 'a raster <image> — the art is line work, not a bitmap'],
   [/<foreignObject\b/i, 'a <foreignObject>'],
-  [/<use\b[^>]*href\s*=\s*["']?https?:/i, 'an external <use> reference'],
+  // An SVG <style> inside inline SVG is NOT scoped to that SVG — it styles the
+  // whole HTML document. One card could restyle the entire sheet, which is the
+  // accent law bypassed completely by the file whose job is to enforce it.
+  [/<style\b/i, 'a <style> element — inline SVG styles are document-scoped, so one card would restyle the whole sheet'],
+  [/<(?:animate|set|animateTransform|animateMotion)\b/i, 'an animation element — a scene is drawn once, not played'],
+  [/<a\b/i, 'an <a> link — the card cites through its receipts, not through the drawing'],
+  // Protocol-relative (`//host/…`) and `data:` both slipped a guard that only
+  // named http and https.
+  [/<use\b[^>]*(?:xlink:)?href\s*=\s*["']?(?:[a-z][a-z0-9+.-]*:|\/\/)/i, 'an external <use> reference'],
   [/\son\w+\s*=/i, 'an inline event handler'],
-  [/url\(\s*["']?(?:https?:)?\/\//i, 'an external url()'],
+  [/(?:xlink:)?href\s*=\s*["']?\s*(?:javascript|data|vbscript):/i, 'a script or data URL'],
+  [/url\(\s*["']?(?:[a-z][a-z0-9+.-]*:)?\/\//i, 'an external url()'],
   [/<!ENTITY/i, 'an entity declaration'],
 ];
 
@@ -35,6 +51,13 @@ const FORBIDDEN = [
  * token that the surrounding CSS already resolved.
  */
 const COLOUR_LITERAL = /(?:fill|stroke|stop-color|flood-color|color)\s*=\s*["']\s*(?!currentColor\b|none\b|inherit\b)([^"']+)["']/gi;
+
+/**
+ * The same law, via the other door. `COLOUR_LITERAL` reads presentation
+ * *attributes*, so `style="fill:#f60"` walked straight past it — a brand value
+ * written down in a second place, which is the one thing press exists to stop.
+ */
+const STYLE_PAINT = /style\s*=\s*["'][^"']*\b(?:fill|stroke|stop-color|flood-color|color)\s*:\s*(?!currentColor\b|none\b|inherit\b)([^;"']+)/i;
 
 export const MIN_PRIMITIVES = 5;
 
@@ -60,8 +83,10 @@ export function validateArt(svg, where) {
   }
 
   const colours = [...svg.matchAll(COLOUR_LITERAL)].map((m) => m[1].trim());
-  if (colours.length) {
-    throw new ArtProblem(`${at}art hardcodes a colour (${colours[0]}) — use currentColor or none so the ink comes from the brand token`);
+  const styled = STYLE_PAINT.exec(svg);
+  if (colours.length || styled) {
+    const found = colours[0] ?? styled[1].trim();
+    throw new ArtProblem(`${at}art hardcodes a colour (${found}) — use currentColor or none so the ink comes from the brand token`);
   }
 
   const n = countPrimitives(svg);
