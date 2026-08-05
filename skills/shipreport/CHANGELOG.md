@@ -5,6 +5,124 @@ All notable changes to the **shipreport** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-05
+
+Measured against the first real run — session `cd77fae8`, 5m18s end to end — and
+fixing what that run showed. The report it produced was correct and the one rule
+held (13 claims, 15 receipts, 0 unresolved), but replaying the transcript found
+four defects the run worked around rather than hit.
+
+### Fixed
+
+- **The ranking did not rank.** Twelve items scored *exactly* 70 —
+  `release+50 minor+10 corroborated+10` and nothing else — so the cut between the
+  twelfth and the thirteenth was drawn by a timestamp, not by score. Every session
+  in the same window scored *exactly* 32, because `edits ≥ 20` and `turns ≥ 60`
+  are thresholds that top out: a twenty-edit session and a two-hundred-edit
+  session were the same number, sessions were unordered, and **none reached the
+  report** — the skill's distinguishing claim failing silently in its first run.
+
+  Four new signals, all tiers rather than thresholds, so they keep climbing:
+  `backed×N` (+4…+16, how much in-window work stands behind a release, scoped by
+  conventional-commit scope so one skill in a monorepo cannot claim another's
+  pull requests), `notes+N` (+3…+9, how much the changelog actually says),
+  `first+12` (a component's first release is news its fourth minor is not), and
+  tiered `edits×N` / `turns×N` for sessions. On the frozen week this takes the
+  ranking from 5 distinct scores to 10 and moves the cut line out of the tie.
+
+  `backed×N` is deliberately capped **below** a major bump's +20: a pull request
+  count measures how finely work was split as much as how much of it there was.
+  There is deliberately **no duration signal** — a digest's start and end bound
+  the wall-clock span of a transcript, not the work in it, and real sessions span
+  thirty hours.
+
+- **`rank` now reports a tie at the line itself.** When the last item above the
+  line and the first below it share a score, it says how many items share it and
+  that nothing separates them. Noticing a column of identical numbers was prose
+  asking the model to spot something; drawing the line is the deterministic
+  half's job, and so is admitting when the line means nothing.
+
+- **The receipts gate refused correct prose.** `\w+/\w+` matched the phrase
+  **"plus/minus"** and reported it as a "raw repo-slug", and the run reworded a
+  true sentence to satisfy it — the exact inversion of *fix the draft, never the
+  checker*. The same pattern matched "CI/CD", "read/write" and "24/7", and
+  `[0-9a-f]{7,40}` matched any seven-digit number and the words "effaced" and
+  "defaced". A slug is now a repository when the corpus knows the owner or the
+  name carries a hyphen, dot, underscore or digit; a hex run is a sha when it
+  mixes letters and digits.
+
+  A false positive here is worse than a miss: it teaches a run that the gate is
+  an obstacle to be worded around.
+
+- **A smuggled identifier was caught only by that false positive.** `<<em>em>#412`
+  collapses to `em>#412`, and the pull-request pattern required whitespace before
+  the `#` — so the case was flagged as a *repo-slug* match on `412/em`, a test
+  passing for the wrong reason. Any non-alphanumeric boundary now counts.
+
+- **`receipts` printed `Unresolved: 0` beside `Verdict: REFUSED`.** Two failure
+  classes had been collapsed into one word; the verdict table now carries its own
+  `Prose` column.
+
+### Added
+
+- **`show <receipt>…` — read the artifact without leaving the corpus.** Release
+  and pull request bodies are now cached at index time (excerpted, and redacted
+  on the way in), so step 4 — *read what you are about to describe* — is one
+  local call. The first run instead made three networked `gh` loops and printed
+  roughly sixteen kilobytes of changelog into the conversation, in a skill whose
+  own presentation contract forbids exactly that. Sessions render as their shape:
+  project, branches, turns, edits, skills, tools and opening prompt.
+
+- **`evals/baseline/update.mjs`.** `skill-invariants.json` had named this file as
+  the one-command refresh for every frozen artifact since the skill shipped, and
+  it did not exist. It re-runs the manifest's own command, diffs each artifact,
+  supports `--dry-run`, and always passes `--trap-command` — without which
+  `skillfactory freeze` regenerates `baseline.test.mjs` with the two-sided
+  assertion replaced by `assert.fail`, leaving the baseline one-sided.
+
+### Security
+
+- **GitHub items now pass through redaction, like session digests always have.**
+  `index` promised to "redact secrets and absolute paths at ingest so nothing
+  unsafe is ever cached" while merging `fetchAll`'s output into the corpus
+  untouched — true only for as long as nothing but a title was stored. Bodies are
+  arbitrary prose, and a token pasted into a changelog is a token written to
+  `~/.shipreport`, where every later run and every model pass reads it.
+
+- **The art validator was the whole boundary and had holes in it.** `art` is the
+  one field `render` splices unescaped, and the sheet opens in a browser from
+  `file://` on its own. Now refused: an SVG `<style>` element (inline SVG styles
+  are **document-scoped**, so one card could restyle the entire sheet — the accent
+  law defeated by the file that enforces it); a colour in a `style` attribute,
+  which bypassed a check that only read presentation attributes; `javascript:`,
+  `data:` and `vbscript:` URLs including via `xlink:href`; `<a>`, `<animate>` and
+  `<set>`; and protocol-relative `<use href="//host/…">`, which slipped a guard
+  that named only `http` and `https`.
+
+### Changed
+
+- **Speed.** `fetchReleases` now fetches repositories concurrently instead of
+  awaiting one `gh api` per repository in sequence — the dominant cost of the
+  first-run year backfill. Together with `show`, a run makes no network call after
+  `index`.
+
+- **The run's shape.** `SKILL.md` now requires the ranked table to be pasted
+  rather than summarised, narrates the card-composition step before the minutes
+  of silence it costs, shows the headline and card titles in the conversation
+  before rendering rather than after, documents `--kind` / `--limit` / `--near`
+  (`--kind` existed precisely so the agent would not `grep`, and went unmentioned,
+  and the agent grepped), and says to run every command bare — the first run piped
+  all four through `tail`.
+
+- **`render` prints its output path on its own line** instead of in a padded
+  table cell, where a 96-character absolute path was both unreadable and a golden
+  encoding the host's home directory.
+
+- **`references/receipts.md`'s draft example now includes `art`**, which `render`
+  requires and the documented shape omitted — the run spent three tool calls
+  hunting the contract, including a grep of a `scripts/lib/glyphs.mjs` that does
+  not exist.
+
 ## [0.1.0] - 2026-08-04
 
 ### Added

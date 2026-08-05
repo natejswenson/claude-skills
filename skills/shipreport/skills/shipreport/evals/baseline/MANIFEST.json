@@ -5,18 +5,18 @@
   "artifacts": [
     {
       "path": "rank-sessions.txt",
-      "bytes": 3900,
-      "sha256": "2b35d312782673da2afe421d019d18e0d78566652424a3cfb37642ee8b37b43d"
+      "bytes": 4049,
+      "sha256": "907abec2306f7cc2990bf2dec178e4072dd294f50fe05bf3dbaa144c52b187b0"
     },
     {
       "path": "rank.txt",
-      "bytes": 3551,
-      "sha256": "889f8c950aee1dfc07a924f71531c94ee0c85fabb1c1c603e31b1283fa43b97d"
+      "bytes": 3832,
+      "sha256": "1442e236b51e8a0e82d1c4fd77e3819d255f7797c103e9bd7a962eb94b26cfc7"
     },
     {
       "path": "receipts.txt",
-      "bytes": 1962,
-      "sha256": "2d0f3a5b4fc8778ce13925298ccb7951e44c4367e2bbada00acc5edf21f1707a"
+      "bytes": 1986,
+      "sha256": "5269c648ad57fe875753c908b2de535f234a86baff9a56d12bebced3cbd4cd5d"
     },
     {
       "path": "report.html",

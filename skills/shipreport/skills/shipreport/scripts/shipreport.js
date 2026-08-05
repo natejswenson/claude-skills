@@ -14,10 +14,10 @@ import { homedir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-import { newCounts, countsTable, totalRedactions } from './lib/redact.mjs';
+import { newCounts, countsTable, totalRedactions, redactDeep } from './lib/redact.mjs';
 import { indexSessions, defaultTranscriptRoot } from './lib/sessions.mjs';
 import { fetchAll } from './lib/github.mjs';
-import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir } from './lib/corpus.mjs';
+import { loadCorpus, saveCorpus, mergeItems, allItems, inWindow, defaultCorpusDir, resolveReceipt } from './lib/corpus.mjs';
 import { rankItems } from './lib/rank.mjs';
 import { checkDraft } from './lib/receipts.mjs';
 import { renderHtml } from './lib/render.mjs';
@@ -87,7 +87,12 @@ async function cmdIndex(args) {
     const { login, items } = await fetchAll({ since: ghSince.slice(0, 10), login: args.login ?? corpus.meta.login ?? null });
     corpus.meta.login = login;
     ghTotalSeen = items.length;
-    ghAdded = mergeItems(corpus.github, items);
+    // Redaction is at ingest for BOTH sources, never one. Session digests went
+    // through it from the start and GitHub items did not, which was safe only
+    // for as long as nothing but a title was cached. Release and pull request
+    // bodies are arbitrary prose — a pasted token in a changelog is a token
+    // written to the corpus, where every later run and every model pass reads it.
+    ghAdded = mergeItems(corpus.github, redactDeep(items, counts, home));
     rows.push(['github', ghSince.slice(0, 10), ghTotalSeen, ghAdded, Object.keys(corpus.github).length]);
   }
 
@@ -139,6 +144,9 @@ function loadRanked(args) {
     top: Number(args.top ?? 12),
     floor: Number(args.floor ?? 20),
     owners,
+    // The whole corpus, not the window: "is this the component's first release"
+    // is a question a seven-day slice cannot answer.
+    history: allItems(corpus),
   });
   return { corpus, win, ranked };
 }
@@ -189,6 +197,13 @@ async function cmdRank(args) {
     ]],
   ));
 
+  // The line is only a finding when it means something. Say so when it does not,
+  // rather than leaving the agent to notice a column of identical numbers.
+  if (ranked.tie) {
+    const t = ranked.tie;
+    console.log(`\nthe line is a tiebreak, not a ranking: ${t.count} items score ${t.score}, of which ${t.included} made the cut and ${t.excluded} did not. Nothing separates them — treat them as one body of work, or raise \`--top\` to take all ${t.count}.`);
+  }
+
   // Never a silent drop: name the projects whose releases were excluded, so a
   // wrong owner list is visible rather than quietly shrinking the report.
   if (ranked.foreign.length) {
@@ -203,6 +218,76 @@ async function cmdRank(args) {
   }
 }
 
+// ── show ────────────────────────────────────────────────────────────────────
+
+/**
+ * Read the artifact behind a receipt, from the corpus.
+ *
+ * Step 4 of the flow — "read what you are about to describe" — is the step that
+ * separates a real report from a plausible one, and until now the corpus held no
+ * way to do it: a release's body was never cached, so the only route was
+ * `gh release view` per item. The first real run therefore made three networked
+ * `gh` loops and printed roughly sixteen kilobytes of changelog into the
+ * conversation, in a skill whose own presentation contract forbids exactly that.
+ *
+ * One call, no network, and the body already redacted at ingest.
+ */
+async function cmdShow(args) {
+  const corpus = loadCorpus(corpusDir(args));
+  const receipts = args._.slice(1);
+  if (receipts.length === 0) {
+    throw new Error('show: name at least one receipt — e.g. `show release:owner/repo@v1.2.0` (the Receipt column of `rank`)');
+  }
+
+  const max = Number(args.chars ?? 2400);
+  const missing = [];
+  const found = [];
+  for (const r of receipts) {
+    const item = resolveReceipt(corpus, r);
+    if (!item) { missing.push(r); continue; }
+    found.push({ receipt: r, item });
+  }
+
+  console.log(table(['Receipt', 'Kind', 'When', 'Title'], found.map(({ receipt, item }) => [
+    receipt, item.kind, String(item.at ?? '').slice(0, 10), String(item.title ?? '').slice(0, 60),
+  ])));
+
+  for (const { receipt, item } of found) {
+    console.log(`\n── ${receipt} ──`);
+    if (item.url) console.log(item.url);
+    const body = item.kind === 'session' ? sessionBody(item) : String(item.body ?? '').trim();
+    if (!body) {
+      // Never silently print nothing: a body absent because the corpus predates
+      // body caching reads identically to a release with an empty changelog.
+      console.log(item.kind === 'release' || item.kind === 'pr'
+        ? '(no body cached — re-run `shipreport index --full` to backfill bodies)'
+        : '(no body for this kind of item)');
+      continue;
+    }
+    console.log(body.length > max ? `${body.slice(0, max).trimEnd()}\n… [truncated, --chars N for more]` : body);
+  }
+
+  if (missing.length) {
+    console.log('');
+    console.log(`${missing.length} receipt(s) did not resolve: ${missing.join(', ')} — check the Receipt column of \`rank\`, or run \`shipreport index\`.`);
+    process.exitCode = 1;
+  }
+}
+
+/** A session has no body; what it has is the shape of the work done in it. */
+function sessionBody(s) {
+  const tools = Object.entries(s.tools ?? {}).sort(([, a], [, b]) => b - a).slice(0, 8)
+    .map(([k, n]) => `${k}×${n}`).join(', ');
+  const mins = s.start && s.end ? Math.round((Date.parse(s.end) - Date.parse(s.start)) / 60000) : null;
+  return [
+    `project: ${s.project ?? 'unknown'}${(s.branches ?? []).length ? ` · branches: ${s.branches.join(', ')}` : ''}`,
+    `${s.userTurns ?? 0} user turns · ${s.assistantTurns ?? 0} assistant turns · ${s.edits ?? 0} edits${mins === null ? '' : ` · ${mins} min`}`,
+    (s.skills ?? []).length ? `skills: ${s.skills.join(', ')}` : null,
+    tools ? `tools: ${tools}` : null,
+    s.firstPrompt ? `\nopened with:\n${s.firstPrompt}` : null,
+  ].filter(Boolean).join('\n');
+}
+
 // ── receipts ────────────────────────────────────────────────────────────────
 
 function readDraft(args) {
@@ -215,14 +300,18 @@ function readDraft(args) {
 async function cmdReceipts(args) {
   const corpus = loadCorpus(corpusDir(args));
   const draft = readDraft(args);
-  const { rows, problems, ok } = checkDraft(draft, corpus);
+  const { rows, problems, proseProblems, ok } = checkDraft(draft, corpus);
 
   if (rows.length) console.log(table(['Claim', 'Receipt', 'Resolved'], rows));
   console.log('');
-  console.log(table(['Claims', 'Receipts', 'Unresolved', 'Verdict'], [[
+  // `Prose` is its own column because the first real run printed `Unresolved: 0`
+  // beside `Verdict: REFUSED` and the table could not explain itself — two
+  // different failure classes had been collapsed into one word.
+  console.log(table(['Claims', 'Receipts', 'Unresolved', 'Prose', 'Verdict'], [[
     new Set(rows.map((r) => r[0])).size,
     rows.length,
     rows.filter((r) => r[2] === 'NO').length,
+    proseProblems,
     ok ? 'every claim has a receipt' : 'REFUSED',
   ]]));
 
@@ -276,9 +365,15 @@ async function cmdRender(args) {
   ]);
   console.log(table(['Section', 'Items', 'Receipts'], rows));
   console.log('');
-  console.log(table(['Wrote', 'Bytes', 'Window'], [[
-    out, html.length, `${String(win.since).slice(0, 10)} → ${String(win.until).slice(0, 10)}`,
+  console.log(table(['Cards', 'Bytes', 'Window'], [[
+    rows.reduce((a, r) => a + r[1], 0),
+    html.length,
+    `${String(win.since).slice(0, 10)} → ${String(win.until).slice(0, 10)}`,
   ]]));
+  // The path goes on its own line, not in a cell. A padded table column holding
+  // an absolute path is both unreadable and a golden that encodes the host's
+  // home directory — it passes locally and fails in CI.
+  console.log(`\nwrote ${out.replace(homedir(), '~')}`);
 
   // The sheet is the product; the user should watch it open rather than read a
   // paragraph about it. `--no-open` exists for CI and for the frozen baseline.
@@ -290,9 +385,15 @@ async function cmdRender(args) {
 const USAGE = `shipreport v${VERSION} — an executive summary of shipped work, where every claim carries a receipt.
 
   shipreport index    [--corpus <dir>] [--days N] [--full] [--github-only|--sessions-only]
-  shipreport rank     [--days N | --since <date> --until <date>] [--top N] [--floor N] [--out <file>]
+  shipreport rank     [--days N | --since <date> --until <date>] [--top N] [--floor N]
+                      [--kind release|pr|commit|session] [--limit N] [--near N] [--all] [--out <file>]
+  shipreport show     <receipt> [<receipt>…] [--chars N]
   shipreport receipts --draft <file.json>
   shipreport render   --draft <file.json> [--out <file.html>] [--byline <text>]
+
+Every command's output is already bounded and already a table. Run them bare —
+piping through \`tail\` or \`grep\` silently eats the head of a table, and \`--kind\`
+answers "what did the sessions say" without a pipeline.
 `;
 
 async function main() {
@@ -303,6 +404,7 @@ async function main() {
     switch (cmd) {
       case 'index': return await cmdIndex(args);
       case 'rank': return await cmdRank(args);
+      case 'show': return await cmdShow(args);
       case 'receipts': return await cmdReceipts(args);
       case 'render': return await cmdRender(args);
       default:
