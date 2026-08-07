@@ -19,10 +19,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   outstanding. Run it every time.
 - **Near-duplicate label detection.** `Receipts` and `Reciepts` both existed in
   a real mailbox for months with mail split across them. Case-folding never saw
-  it, and edit distance alone scores a transposition at 2 and misses it — so the
-  check is sorted-letter equality (catches any transposition exactly) plus edit
-  distance ≤ 1 (catches a dropped character), both floored at 5 characters so it
-  cannot cry wolf on short names.
+  it, and *plain* edit distance scores a transposition at 2 and misses it — so
+  the check is **Damerau**-Levenshtein distance ≤ 1, which treats an adjacent
+  swap as one edit, floored at 5 characters so it cannot cry wolf on short names.
 - **`merge` — fold one folder into another**, in the only safe order: apply the
   target label, *then* remove the source, *then* delete the source folder.
   Reversed, every thread spends the gap between two API calls in neither folder.

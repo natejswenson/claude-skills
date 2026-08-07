@@ -43,14 +43,17 @@ split across them and nothing anywhere saying so.
 
 `normaliseLabel` already collapses case and spacing, so `Receipts`/`receipts`
 were never two folders. It does **not** catch a transposition, and that is the
-common typo. So the check is two tests:
+common typo. So the check is **Damerau**-Levenshtein distance ≤ 1 — Damerau
+specifically, because it treats an adjacent swap as one edit. Plain Levenshtein
+scores `receipts`/`reciepts` at 2, one substitution each way, and a ≤ 1
+threshold on it misses exactly the case this exists for.
 
-- **sorted letters** — catches any transposition exactly and cheaply
-  (`receipts` and `reciepts` are the same multiset);
-- **edit distance ≤ 1** — catches a dropped or added character, which
-  reordering never sees.
+(An earlier version paired this with a sorted-letter anagram check "to catch
+transpositions". A mutation run showed deleting that check broke nothing — the
+Damerau case already covered it — so it was two mechanisms claiming one job,
+and one of them was documented wrongly. It is gone.)
 
-Both floored at 5 characters. Below that almost everything is one edit from
+Floored at 5 characters. Below that almost everything is one edit from
 everything, and a hygiene check that cries wolf stops being read — `NPM` and
 `PNM` are not the same folder.
 

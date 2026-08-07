@@ -71,15 +71,15 @@ export const labelPath = (name) => {
   return out.filter((s) => s.trim() !== '');
 };
 
-/** Letters of a label's leaf segment, sorted. Two anagrams have one spelling. */
-const letterprint = (name) => {
-  const segs = normaliseLabel(name).split('/');
-  return segs[segs.length - 1].replace(/[^a-z0-9]+/g, '').split('').sort().join('');
-};
-
 /**
  * Damerau-Levenshtein, capped — the cap is what keeps this from being a fuzzy
  * matcher. One edit apart is a typo; two is usually two different words.
+ *
+ * **Damerau**, not plain Levenshtein, and that is the whole reason the check
+ * works. `Receipts` → `Reciepts` is an adjacent transposition, which plain edit
+ * distance scores at 2 (one substitution each way) and a ≤ 1 threshold
+ * therefore misses — and a transposition is the commonest way a folder name
+ * gets typed wrong. The `d[i-2][j-2] + 1` case below is what scores it 1.
  */
 function editDistance(a, b, cap = 2) {
   if (Math.abs(a.length - b.length) > cap) return cap + 1;
@@ -108,11 +108,17 @@ export const MIN_NEAR_DUPLICATE_LENGTH = 5;
  * transposition — and that pair is real: this mailbox carried both for months,
  * with mail split across them and no table anywhere saying so.
  *
- * Two tests, because neither alone is enough. Sorted letters catch any
- * transposition exactly and cheaply. Edit distance catches a dropped or added
- * character, which reordering never sees. Both are floored at
- * MIN_NEAR_DUPLICATE_LENGTH: at three characters almost everything is one edit
- * from everything, and a hygiene check that cries wolf stops being read.
+ * One test, not two. An earlier version paired the edit distance with a
+ * sorted-letter (anagram) check "to catch transpositions"; a mutation run
+ * showed removing that check broke nothing, because the distance below is
+ * **Damerau** and already scores an adjacent transposition at 1. The anagram
+ * test only ever added multi-character scrambles, which are not a way anyone
+ * mistypes a folder name — so it was two mechanisms claiming one job, and the
+ * comment explaining it was wrong.
+ *
+ * Floored at MIN_NEAR_DUPLICATE_LENGTH: at three characters almost everything
+ * is one edit from everything, and a hygiene check that cries wolf stops being
+ * read.
  *
  * Compares the LEAF only, so `Finance/Receipts` and `Work/Reciepts` are still
  * flagged — the typo is in the segment, not the path.
@@ -127,8 +133,9 @@ export function isNearDuplicateLabel(a, b) {
   // are two deliberate folders, not one folder misspelled — flagging them would
   // tell the user to merge things they meant to keep apart.
   if (x === y) return false;
-  if (letterprint(a) === letterprint(b)) return true;      // a transposition
-  return editDistance(x, y) <= 1;                          // a dropped or added character
+  // one edit apart: a substitution, a dropped or added character, or — because
+  // this is Damerau — an adjacent transposition
+  return editDistance(x, y) <= 1;
 }
 
 /** Is `parent` a strict ancestor of `child`? `Recruiting` of `Recruiting/UHG`. */

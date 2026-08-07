@@ -705,6 +705,12 @@ test('one folder spelled two ways is detected, including a transposition', () =>
   // misses it; sorted letters catch a transposition exactly.
   assert.equal(isNearDuplicateLabel('Receipts', 'Reciepts'), true);
   assert.equal(isNearDuplicateLabel('Reciepts', 'Receipts'), true, 'the check must be symmetric');
+  // The distance must be DAMERAU. Plain Levenshtein scores an adjacent
+  // transposition at 2 — one substitution each way — so a <= 1 threshold on it
+  // misses the commonest way a folder name is mistyped. Two more real-shaped
+  // transpositions, so dropping the transposition case cannot pass unnoticed.
+  assert.equal(isNearDuplicateLabel('Statements', 'Statmeents'), true, 'transposition handling was lost');
+  assert.equal(isNearDuplicateLabel('Banking', 'Baknign'), false, 'two transpositions is not one typo');
   // a dropped character, which reordering never sees
   assert.equal(isNearDuplicateLabel('Statements', 'Statments'), true);
   // and case/spacing is `normaliseLabel`'s job, not a NEAR duplicate
