@@ -1,0 +1,13 @@
+| Destination         | Status | Named by                        | Label id | Used by                                                |
+|---------------------|--------|---------------------------------|----------|--------------------------------------------------------|
+| Recruiting          | exists | implied — parent of a sub-label | Label_10 | sort-globex, sort-initech, sort-umbrella, sort-soylent |
+| Recruiting/Globex   | exists | a rule                          | Label_15 | sort-globex                                            |
+| Recruiting/Initech  | exists | a rule                          | Label_16 | sort-initech                                           |
+| Recruiting/Umbrella | exists | a rule                          | Label_17 | sort-umbrella                                          |
+| Recruiting/Soylent  | exists | a rule                          | Label_18 | sort-soylent                                           |
+
+| Destinations | Your labels | To create |
+|--------------|-------------|-----------|
+| 5            | 20          | 0         |
+
+every folder these rules need already exists. Safe to plan and apply.

@@ -1,0 +1,249 @@
+{
+  "comment": "What must not silently disappear from gmailtriage. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "A message is trashed only because a rule the user wrote matc",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "plan-is-the-authorisation",
+      "pattern": "Never trash a thread the plan did not name",
+      "rationale": "The scaffolded invariant here was about a detect step this skill does not have. This is the one that matters: the plan is the authorisation, and a thread outside it has no rule behind it. Lose this line and `apply` becomes advisory."
+    },
+    {
+      "id": "authorisation-is-per-action",
+      "pattern": "Never move a thread the plan did not name, and never under an action it did",
+      "rationale": "The sort half of the one rule. A plan that authorises filing a thread into a folder must not equally authorise trashing it — same thread id, same plan, catastrophically different outcome. Lose this line and the two actions collapse into one permission, which is how sorting becomes a way around every trash guard in the skill."
+    },
+    {
+      "id": "a-folder-name-is-the-users-word",
+      "pattern": "Never invent a folder name silently",
+      "rationale": "Naming an unhoused cluster is the one judgment call sorting adds, and it belongs to the user. A skill that guesses files a school district into a folder named after its mail vendor, and mail the user cannot find is mail the user has lost."
+    },
+    {
+      "id": "trash-is-not-deletion",
+      "pattern": "Never call trash \"deleted\"",
+      "rationale": "Trash is recoverable for 30 days and the MCP has no permanent delete. Calling it deletion overstates the risk to the user and, worse, invites someone to 'fix' the skill by reaching for a destructive operation that does not exist. Since 0.2.0 the same line covers archiving, which is not destructive at all."
+    },
+    {
+      "id": "never-leave-a-folder-unmanaged-silently",
+      "pattern": "Never leave a folder unmanaged without saying so",
+      "rationale": "A folder no rule files into stays sorted exactly as long as the user keeps sorting it by hand, and nothing in Gmail ever mentions it. Lose this line and the skill maintains half a mailbox while reporting success over the whole thing — which is worse than maintaining none, because the user stops checking."
+    },
+    {
+      "id": "never-delete-a-label-holding-mail",
+      "pattern": "Never delete a label with mail in it, and never delete one on your own",
+      "rationale": "Deleting an empty folder loses nothing; deleting one holding mail loses the only record of why that mail was kept together, and no receipt can reconstruct it. `merge` exists precisely so a folder with mail in it never has to be deleted."
+    },
+    {
+      "id": "a-sub-label-is-never-named-after-the-vendor",
+      "pattern": "Never name a sub-label after the sender when the sender hosts mail",
+      "rationale": "Splitting a folder into sub-labels re-opens the exact failure the folder-naming rule closed: an applicant tracking system, a signing service or an invoicing platform sends for whoever bought it, so the address names the vendor and the subject names the organisation. Lose this line and `Recruiting/Ashbyhq` files every employer into one folder — the school-district-under-its-mail-vendor bug, committed by the fix for it."
+    },
+    {
+      "id": "a-broad-rule-never-stands-in-front-of-its-own-sub-label",
+      "pattern": "Never let a broad rule stand in front of a rule filing into a sub-label",
+      "rationale": "This pair does not fail, it drifts — fresh mail takes the parent rule and mail already filed skips it and takes the child, so which folder a thread lands in depends only on when it arrived and nothing reports it. Lose this line and nesting silently produces two half-filled folders out of one rule set."
+    },
+    {
+      "id": "guards-constrain-proposals-not-users",
+      "pattern": "the guard is on what the skill suggests",
+      "rationale": "The withheld list is about what the skill proposes, never about what the user may decide. Losing the distinction turns a helpful default into a tool that argues with its owner."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "report whether this mailbox has any rules yet, and the single next thing to do — the only command safe to run before anything is configured",
+        "command": "node scripts/gmailtriage.js setup"
+      },
+      {
+        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims — returning a coverage percentage and exiting non-zero while anything is outstanding",
+        "command": "node scripts/gmailtriage.js audit"
+      },
+      {
+        "step": "fold one folder into another in the only safe order — apply the target label, then remove the source, then delete the source folder — and write a receipt even when no mail moved, so the deleted folder can be restored",
+        "command": "node scripts/gmailtriage.js merge"
+      },
+      {
+        "step": "cluster a real inbox sample into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has",
+        "command": "node scripts/gmailtriage.js propose"
+      },
+      {
+        "step": "cluster a folder that already has mail in it by sender domain, match each cluster against the sub-labels that folder already has, flag the senders that host mail for many organisations, and say when the folder is still one thing",
+        "command": "node scripts/gmailtriage.js subdivide"
+      },
+      {
+        "step": "validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, matches nothing, files into a label Gmail owns, or stands in front of a rule filing into a sub-label of its own destination",
+        "command": "node scripts/gmailtriage.js rules"
+      },
+      {
+        "step": "reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists",
+        "command": "node scripts/gmailtriage.js labels"
+      },
+      {
+        "step": "evaluate the stored rules against a named slice of the mailbox — the inbox by default, or a folder already filed — and enumerate exactly which threads each rule would take, every label each one applies, which of those the thread does not already carry, and which leave the inbox, without touching any of them",
+        "command": "node scripts/gmailtriage.js plan"
+      },
+      {
+        "step": "authorise exactly the threads the plan named, per action, refuse anything it did not, and write a receipt of every move",
+        "command": "node scripts/gmailtriage.js apply"
+      },
+      {
+        "step": "reverse every move listed in a previous run's receipt — untrash, unlabel, and put back in the inbox",
+        "command": "node scripts/gmailtriage.js undo"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide which proposed rules are actually safe to accept, and which cluster is a newsletter the user genuinely reads",
+        "why": "a sender sending fifty near-identical bulk messages looks the same whether it is a retailer the user ignores or the school district they need; only the user knows which"
+      },
+      {
+        "step": "name a folder for a cluster that has no existing home",
+        "why": "a folder name is a decision about how the user already thinks — whether their word is \"Shopping\" or \"Retail\", whether the bank goes under \"Finance\" or its own name — and nothing in the mail says it; a script that guesses files a school district under its mail vendor"
+      },
+      {
+        "step": "decide whether an unmanaged folder should be adopted with a rule or deleted",
+        "why": "a folder holding real mail with no rule behind it wants a rule and an empty one is scaffolding, the remedies are opposite, and the thread count only says which is likely — a folder emptied last week still means something"
+      },
+      {
+        "step": "decide which of two spellings of one folder is the right one",
+        "why": "the skill can prove two labels are one folder; nothing on disk says whether the user's word is \"Receipts\" or \"Reciepts\", and folding mail into the misspelling puts it somewhere they will never think to look"
+      },
+      {
+        "step": "name the organisation behind a sender that hosts mail for many of them",
+        "why": "an applicant tracking system, a signing service and an invoicing platform all send on behalf of whoever bought them, so the address names the vendor and the subject names the organisation; no-reply@ashbyhq.com is Obvious in one thread and someone else in the next, and only reading the subject says which"
+      },
+      {
+        "step": "decide whether a folder is several things or still one",
+        "why": "four employers in Recruiting want splitting and four notices from one bank in Statements do not, and the counts look identical either way; a sub-label holding everything its parent holds has given one pile two names rather than organising anything"
+      },
+      {
+        "step": "word each rule so a reader six months later can tell what it was meant to catch",
+        "why": "a Gmail query is precise and unreadable, and a rule nobody can interpret is a rule nobody will dare to edit"
+      },
+      {
+        "step": "judge when a plan looks wrong and should be questioned rather than applied",
+        "why": "a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which"
+      }
+    ]
+  },
+  "_baseline_comment": "Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake. The corpus is INVENTED, not a redacted mailbox — this skill's fixtures would otherwise be somebody's private mail, and pseudonymising the senders still leaves the shape of a person's life in a public repo. Every domain sits under a reserved TLD and scripts/tests/no-real-data.test.mjs fails the build if that stops being true. What the goldens pin is the SHAPE of a real run — cluster sizes, which senders trip which guard, a folder that wants splitting, a folder spelled two ways, mail no rule claims — reproduced by evals/baseline/make-corpus.mjs.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan — pinned against a frozen synthetic corpus shaped after a real triage run — propose, rules and plan re-run and byte-compared."
+    },
+    {
+      "id": "apply-refuses-a-thread-the-plan-did-not-name",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the one rule failing silently — the model, or a bug, trashing something no rule named — pinned against a receipt-producing apply run handed a thread id absent from its plan."
+    },
+    {
+      "id": "a-rule-matching-everything-is-refused",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a malformed or over-broad rule reaching apply, which is how one bad rule empties an inbox — pinned against a rule whose compiled query is empty or matches the entire mailbox."
+    },
+    {
+      "id": "a-label-rule-cannot-name-a-system-label",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "sorting becoming a way around every trash guard in the skill — a rule declaring {\"action\":\"label\",\"label\":\"TRASH\"} destroys mail through the one action that exists so nothing is destroyed, and no trash guard is looking at a label rule. Pinned against a rule set naming TRASH, SPAM and CATEGORY_PROMOTIONS as destinations."
+    },
+    {
+      "id": "a-sort-authorisation-is-not-a-trash-authorisation",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the two actions collapsing into one permission — a plan that authorises filing a thread into a folder must not authorise trashing it, since it is the same thread id in the same plan with a catastrophically different outcome. Pinned against a real plan whose label-rule thread ids are handed to apply as a trash list."
+    },
+    {
+      "id": "the-real-retroactive-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the sub-label half silently ceasing to work — pinned against a synthetic retroactive run shaped after a real one over a Recruiting folder: subdivide clustering it, and plan re-evaluating the rules against `label:Recruiting` rather than the inbox, both re-run and byte-compared. Catches a cluster losing its home, a vendor-hosted sender being auto-named after its vendor, the parent label dropping out of a sub-label's path, and the retroactive plan reporting archives it would never perform."
+    },
+    {
+      "id": "a-retroactive-run-converges",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a retroactive pass that never finishes — re-planning the frozen Recruiting folder with its sub-labels already applied must take ZERO threads. If label ids stop resolving to names, or the already-filed short-circuit stops firing, every run re-proposes everything the last one filed and the skill silently never converges while every table still looks correct."
+    },
+    {
+      "id": "a-parent-rule-in-front-of-its-own-sub-label-is-refused",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the drift that nesting invites — a rule filing into a folder standing ahead of one filing into a sub-label of it does not fail, it splits the mailbox by arrival time. Pinned two-sided against a rule set carrying that exact pair, which must be refused, and the corrected set, which must pass — so the check cannot be satisfied by refusing nesting outright."
+    },
+    {
+      "id": "the-real-hygiene-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the audit silently ceasing to find what it exists to find — pinned against a synthetic label list and rule set shaped after a real mailbox BEFORE the hygiene pass (5 unmanaged folders, one transposed duplicate pair, 16 unclaimed threads) and AFTER it (100% coverage, clean, exit 0), both re-run and byte-compared. Catches the unmanaged/duplicate/unclaimed classification drifting, the coverage arithmetic changing, and the clean state ceasing to be reachable."
+    },
+    {
+      "id": "audit-does-not-call-filed-mail-unclaimed",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the defect the first live audit had: it reused `plan`, which answers \"is there work to do\" and says no for a thread already sitting in the folder its rule files into — the most claimed thread in the mailbox. That reported 47 of 48 threads as unclaimed, rendering a clean mailbox as a broken one. Pinned two-sided: the frozen audit must find the real orphans and must NOT find the correctly-filed mail."
+    },
+    {
+      "id": "the-near-duplicate-check-neither-misses-nor-cries-wolf",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a hygiene check that is decorative in either direction. Pinned two-sided against the real transposed pair, which must be caught, and against short and genuinely-different label names, which must not be — a check that reports false pairs stops being read, and then the real pair goes unnoticed too."
+    },
+    {
+      "id": "corpus-floor",
+      "kind": "corpus",
+      "test": "scripts/tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/*",
+      "min_corpus": 10,
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing — pinned against the frozen thread corpus, label list and rule set, with a declared minimum count."
+    },
+    {
+      "id": "the-corpus-is-invented-and-stays-that-way",
+      "kind": "trap",
+      "test": "scripts/tests/no-real-data.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/make-corpus.mjs",
+      "rationale": "real mail getting back into a public repo. Every corpus file is checked for a sender domain outside the reserved TLDs and for any organisation this mailbox actually deals with, and the generated fixtures are re-run and byte-compared so a hand-edited one fails — hand-editing is how a real address gets pasted in. Lives in its own file because `skillfactory freeze` rewrites baseline.test.mjs, and this is the guard that must survive a refresh."
+    }
+  ]
+}

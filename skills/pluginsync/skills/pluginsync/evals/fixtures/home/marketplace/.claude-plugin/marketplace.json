@@ -1,0 +1,53 @@
+{
+  "name": "claude-skills",
+  "plugins": [
+    {
+      "name": "devlog",
+      "source": "./skills/devlog"
+    },
+    {
+      "name": "ghostwriter",
+      "source": "./skills/ghostwriter"
+    },
+    {
+      "name": "ghostwriter-x",
+      "source": "./skills/ghostwriter-x"
+    },
+    {
+      "name": "resume",
+      "source": "./skills/resume"
+    },
+    {
+      "name": "github-stats",
+      "source": "./skills/github-stats"
+    },
+    {
+      "name": "shipflow",
+      "source": "./skills/shipflow"
+    },
+    {
+      "name": "city-report",
+      "source": "./skills/city-report"
+    },
+    {
+      "name": "press",
+      "source": "./skills/press"
+    },
+    {
+      "name": "ghfactory",
+      "source": "./skills/ghfactory"
+    },
+    {
+      "name": "skillfactory",
+      "source": "./skills/skillfactory"
+    },
+    {
+      "name": "eval",
+      "source": "./skills/eval"
+    },
+    {
+      "name": "pluginsync",
+      "source": "./skills/pluginsync"
+    }
+  ]
+}

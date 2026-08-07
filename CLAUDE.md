@@ -14,11 +14,16 @@ read it before opening any PR.
   so `gh stack init` always takes `--base dev`, never the default `main` (see Stacked PRs).
 - **Never push directly to `main`.** It is protected; every `ci / <skill>` check must pass and
   a PR is required. `dev` is unprotected — direct pushes there are fine.
-- **A release is cut by a version bump, not by a merge.** To release a skill, bump its version
-  (`package.json` for node skills, `SKILL.md` frontmatter `version:` for python skills, **and**
-  `plugin.json.version` in `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5
-  lint fails the PR if it diverges) **and** add a `CHANGELOG.md` entry in the same change. A
-  `dev → main` merge with no bump is a no-op release.
+- **A merge never cuts a tag. `/release` does.** Every per-skill `release` job is
+  `workflow_dispatch`-only, so promoting `dev → main` moves a version bump to `main` and stops
+  there. The tag is cut when — and only when — that skill's workflow is dispatched, which is what
+  the `release` skill does after the promotion lands. **Never add `push` back to a release job's
+  `if:`** (see the release-process section for the two releases that cost).
+  Releasing still requires the version bumped (`package.json` for node skills, `SKILL.md`
+  frontmatter `version:` for python skills, **and** `plugin.json.version` in
+  `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5 lint fails the PR if it
+  diverges) **and** a `CHANGELOG.md` entry in the same change, since `_release.yml` reads the notes
+  off `main` at dispatch time.
 - **Always delete a feature branch as soon as it's merged** — local *and* remote. The repo has
   `delete_branch_on_merge` on, so a PR merged on GitHub auto-removes its head. If you merge or
   integrate any other way (CLI, direct push, squash), delete the branch by hand:
@@ -124,6 +129,23 @@ any new invocation you add here.
 
 ## Release process (step by step)
 
+> **Use `/release <skill>` instead of doing this by hand.** Since `release` 0.1.0 the whole
+> path below is one flow: `release preflight` reads what's on main and what's unreleased,
+> `release changelog-draft` groups the commits, and `release cut` drives the bump through
+> `feature/* → dev → main` and does not report success until the tag is fetched back from
+> origin. The steps below are the specification it implements, kept here because they are
+> what the skill is checked against — and because steps 3–6 are still the manual fallback.
+>
+> Two things `/release` surfaces that the manual path silently does not:
+> **collateral** (a promotion is atomic and carries all of `dev`, so releasing one skill
+> releases every other bumped-but-untagged one — the list is named before the irreversible
+> step), and the **0.x cap** (a breaking change is held at minor rather than silently
+> declaring 1.0.0).
+>
+> **Every component must be declared** in `.github/shipflow.json`'s `release.components`.
+> `ci / release`'s corpus baseline fails if a directory under `skills/` is missing from it,
+> so a new skill cannot quietly become invisible to the release flow.
+
 **Auto-merge and release tagging are decoupled.** Promoting `dev → main` auto-merges on green; it
 does **not** cut a release tag on its own. Cutting a tag is a separate, deliberate step.
 
@@ -156,6 +178,13 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    fields, so this is normally caught before merge, not at release time (release runs via
    `workflow_dispatch`, which the PR-time lint doesn't gate — see the marketplace design doc's Data
    Flow section).
+   **`package-lock.json` is one of those fields too** (both its root `version` and its
+   `packages[""].version`), so a node skill's bump must touch the lockfile as well —
+   `npm install` does it for free. It went unchecked until 2026-08-02, by which point five
+   skills had drifted (shipflow's lockfile said 0.2.4 against a 0.5.0 package). It matters
+   because `npm pack`/`npm publish` read the lockfile into the tarball, so the wrong version
+   ships to the registry. A skill with **no dependencies** correctly has no lockfile, and its
+   absence is never an error.
 6. **Dispatch and clear the label together:**
    ```
    npx -y @natjswenson/shipflow@latest release-dispatch --repo . --pr <number> \
@@ -178,26 +207,31 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
    (this bypasses `release-dispatch`, so clear the `release-pending` label by hand:
    `gh pr edit <number> --remove-label release-pending`.)
 
-> The per-skill `release` job (`needs: ci`) runs on a push to `main` **or** an on-demand
-> `workflow_dispatch` (step 6).
+> **The per-skill `release` job (`needs: ci`) runs on `workflow_dispatch` and nothing else.**
+> A push to `main` runs that skill's `ci` job and cuts nothing. **A dispatch is the only way a
+> tag is ever created in this repo**, and `/release` is the thing that dispatches it.
 >
-> **⚠️ A `dev → main` auto-merge DOES fire the push trigger — releases are effectively
-> publish-on-merge, not dispatch-gated.** This file previously claimed the bot `GITHUB_TOKEN`
-> suppresses push events; that is wrong, and it cost a release. Observed 2026-07-28: PR #94
-> auto-merged at 14:37:04, a `push`-triggered `city-report` run started at 14:37:07, and it cut
-> `city-report-v0.4.0` at 14:37:32 — before a planned CHANGELOG edit had landed, so the GitHub
-> Release carried stale notes. The later `release-dispatch` succeeded but was a **no-op**: the
-> `_release` workflow skips when the tag already exists, so it silently could not correct anything.
+> **This changed on 2026-08-02, and the history is why the rule is absolute.** The release jobs
+> used to run on `push` to `main` as well, and a `dev → main` auto-merge *does* fire push events —
+> so promotions were effectively publish-on-merge. It cost two releases:
+> - **2026-07-28:** PR #94 auto-merged at 14:37:04; a `push`-triggered `city-report` run started
+>   at 14:37:07 and cut `city-report-v0.4.0` at 14:37:32, before a planned CHANGELOG edit had
+>   landed, so the GitHub Release carried stale notes. The later `release-dispatch` succeeded but
+>   was a **no-op** — `_release` skips an existing tag, so it silently corrected nothing.
+> - **2026-08-02:** PR #159 merged at 19:34:55 and `shipflow-v0.4.0` was tagged *and published to
+>   npm* seconds later, with no dispatch and no decision.
 >
-> Consequences to plan around:
-> - **Land the CHANGELOG in the same promotion as the version bump.** A follow-up promotion to fix
->   release notes is too late — the tag is already cut from the first one.
-> - To *hold* a release, keep the version bump off `main` (open the promotion as a draft), not by
->   withholding the dispatch.
+> Consequences to plan around, under the current (dispatch-only) rule:
+> - **Land the CHANGELOG in the same change as the version bump.** `_release.yml` reads the notes
+>   off whatever is on `main` when the dispatch happens, and skips a tag that already exists — so
+>   notes arriving later are notes the release will never carry, and no retry fixes it.
+> - To *hold* a release, simply do not dispatch. The bump can sit on `main` as
+>   `untagged-bump-on-main` indefinitely; that is a normal, safe state.
 > - To repair notes after the fact: `gh release edit <tag> --notes-file <file>`. Re-cutting instead
 >   means deleting a published tag, which is worse.
-> - `release-dispatch` remains useful for re-running a failed release or one whose push run was
->   cancelled; treat it as a retry path, not the primary trigger.
+> - **Never re-add `push` to a release job's `if:`.** Every caller carries a comment saying so.
+>   Removing the gate without also removing `release-cut`'s dispatch would double-release; removing
+>   the dispatch without the gate brings back publish-on-merge.
 
 ## CI architecture (how the gate works)
 
@@ -249,13 +283,20 @@ below its own floor.
 |---|---|---|
 | ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
 | shipflow | this repo's own `shipflow.json` → rendered workflow (+ its `renderedTemplateHashes` receipt) | any renderer/config-mapping drift; found a real bug on first run (see below) |
+| shipflow (component releases) | covered by `release`'s baseline, which pins **shipflow's own `release-status` output**, plus 23 unit tests that drive a real git repo rather than a mock | a component resolving to the wrong files; `prepare` sweeping unrelated dirty work into a release commit; the `{name}` validator admitting a traversal. Deliberately **not** a second frozen corpus in `ci / shipflow` — it would pin the same artifact twice |
 | city-report | two real cached city bundles (small places, where the `_1` cubes fail first) | a section or headline metric silently vanishing; the Data USA "HTTP 200 + zero rows" trap |
 | github-stats | a stubbed-`gh` end-to-end `overview` golden | assembly regressions the per-function unit tests cannot see |
 | resume | a real tailored résumé × 28 real job postings | JD-keyword coverage ceasing to discriminate — i.e. every eval score becoming meaningless while still looking like a number |
 | devlog | 8 entries actually published to natejswenson.io | a lint rule growing strict enough to reject work a human already shipped |
 | press | every brand value as it existed in 8 files across 4 repos *before* press generated any of them | a token edit silently changing a colour a shipped product depends on; a generated region drifting or vanishing |
-| forge | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
-| smith | a real `scaffold` run of the `tally` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, and this repo's own 9 shipped skills as a conformance corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance resolver matching nothing and calling it "all conformant" |
+| ghfactory | the good/broken workflow pair the ladder was developed against, plus a byte-exact masthead | a rung silently ceasing to catch its defect class; the emitted masthead drifting; `collectUses` matching nothing and reporting "all clean" over zero actions |
+| eval | a real graded run — this repo's own skillfactory session, frozen as a normalized trace, scored against skillfactory's frozen contract; plus every shipped skill's frozen contract as a corpus | the probe catalogue silently ceasing to fire; clause extraction dropping a rule form so the report shrinks while still looking complete; `case` accepting an eval that passes on arrival; a contract resolver matching nothing and grading an empty rubric as clean |
+| skillfactory | a real `scaffold` run of the `repocount` demo spec (re-run and byte-compared, not just diffed), a spec that must be rejected, this repo's own 11 shipped skills as a conformance corpus, and their 11 READMEs as a house-style corpus | the scaffolder drifting a byte; a wiring point silently dropping out of the plan; `check-spec` weakening until it accepts a spec that produces a skill which never triggers; the conformance or README resolver matching nothing and calling it "all conformant" |
+| release | real `shipflow release-status` output for three components spanning many/one/zero unreleased commits, with the rendered CHANGELOG draft re-run and byte-compared; plus every skill in the repo as a component corpus | the draft grouper silently dropping a commit while still emitting a complete-looking entry; `cut` proceeding without its TOCTOU hash; a fixture refresh collapsing every input to "nothing to release" so the golden passes over nothing; a newly-shipped skill never being declared in `release.components`, so `preflight` reports on 12 of 13 and looks complete |
+| pluginsync | a real run — this machine's actual `claude plugin list --json` against this repo's actual plugin versions, frozen and byte-compared; plus a marketplace whose source has no `plugin.json`, and the live repo's plugin set as a corpus | the report's columns, action classification or restart footer drifting; an unreadable source being dropped instead of reported, so a partially-read marketplace renders as "everything matches"; the resolver matching nothing and calling an empty table up to date |
+| shipreport | a real week of this account's own contributions and sessions — 549 contribution records and 124 session digests, frozen and field-projected, with `rank`, `receipts` and the rendered sheet re-run and byte-compared; plus a draft whose only defect is one citation that names a commit not in the corpus | the ranking silently reordering or dropping an item while still emitting a complete-looking report; the receipts gate weakening until a claim with no artifact behind it reaches the sheet; a fixture refresh collapsing the corpus to a handful of items so the golden passes over almost nothing; a session digest carrying prompt text into a public repo |
+| issueflow | a real run against `natejswenson/local-fitness#133` — its real issue list and payload, plus the investigation and design a real opus subagent wrote from the briefs this skill rendered, re-run and byte-compared; a run whose only defect is a missing approval; the four shipped stage contracts as a corpus | a stage brief silently ceasing to carry the artifact it inherits, so a subagent starts blind on work already done — invisible at the call site; a stage changing model, which changes what every run costs and how good it is; the gate weakening until a stage advances on unapproved input, or `ship` opening a PR over one; a fixture refresh collapsing every issue to one `Detail` value so the board passes over a signal that no longer discriminates |
+| gmailtriage | an **invented** mailbox reproducing the shape of three real runs — a 66-thread triage, a `Recruiting` folder split into four sub-labels (two reachable only through an applicant-tracking vendor), and a label cleanup frozen before (9 unmanaged folders, a transposed duplicate pair, 14 unclaimed threads) and after (100%, clean, exit 0) — with every command re-run and byte-compared, plus a retroactive re-plan that must take **zero**. The corpus is generated, never redacted from a mailbox: pseudonymised senders still leak whose life it is | a sub-label rule ceasing to apply its parent; a cluster auto-named after the vendor hosting it rather than the organisation; a broad rule in front of one filing into a sub-label of it, which does not fail but splits the mailbox by arrival time; a retroactive pass ceasing to converge; the audit answering `plan`'s question instead of its own, which reported 47 of 48 correctly-filed threads as unclaimed; the clean state ceasing to be reachable, so the gate could never be satisfied; a merge unlabelling before it labels; and a real sender domain or organisation reaching the corpus at all |
 
 > The devlog corpus is a **curated** subset on purpose: only 17 of 61 published entries satisfy
 > today's contract, the rest predating rules that landed later. Asserting over all 61 would encode
@@ -265,7 +306,7 @@ below its own floor.
 
 `skills/press/skills/press/brand/tokens.json` is the **only** place a brand value is written
 down — colours, the terminal-panel palette, font stacks, the monogram. Since press 0.8.0
-that includes the masthead every forge-generated GitHub Actions workflow wears, via the
+that includes the masthead every ghfactory-generated GitHub Actions workflow wears, via the
 `yaml` region syntax and the `gha-header` emitter. Every consumer receives
 those values in a **generated region** spliced into an otherwise hand-written file:
 
@@ -295,6 +336,35 @@ those targets are already declared and resolve only inside their own checkout. R
 `npx -y @natjswenson/press@latest check --repo .` there. **Always pin `@latest`**, for the same
 reason documented for shipflow above: a bare `npx` silently prefers a stale global install.
 
+## The README house style
+
+Every skill's `README.md` follows one shape: **fixed head, free tail, fixed foot**. The spec is
+`skills/skillfactory/skills/skillfactory/references/readme.md`; `gradeReadme`
+(`skills/skillfactory/skills/skillfactory/scripts/lib/readme.mjs`) checks it; `skillfactory verify` reports it as the
+house-tier `readme-structure` check.
+
+```
+# <name>                     ← line 1, the bare skill name and nothing else
+<press:masthead region>      ← GENERATED by press, never typed
+*standfirst*                 ← one italic line
+> **the one rule**           ← the pull quote
+## Why install this / What you get / Quick start / Triggers / Requirements
+    … anything this skill needs, in any order …
+## Development / Changelog / License
+```
+
+Three things that bite:
+
+- **The H1 must be exactly `# <name>`.** press's `<name>-readme` target anchors its masthead on
+  `^# <name>$`. A decorated title does not error — it *detaches* the region, and the next
+  `press emit --init` splices a second masthead below the first.
+- **The gate lives in `ci / marketplace`**, which runs `skillfactory verify --all` unconditionally, for
+  the same reason `lint_baseline.py` does: a README edited in *some other skill's* PR would never
+  be graded by a path-filtered check, which is how a house style rots one PR at a time.
+- **The tail is free on purpose.** devlog's configuration reference and ghostwriter's compliance
+  notes are real content no five-section template has room for. Order is enforced only on the head
+  and the foot.
+
 ## Repo settings (as code)
 
 `.github/repo-settings.sh` is the idempotent source of truth for repo + `main`/`dev` **protection**
@@ -310,21 +380,25 @@ installs a competing ruleset. Key settings here:
   stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
 - `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
   `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / forge`, `ci / smith`. These names are the job `name:` values — **renaming a caller or its `ci`
+  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
+  `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`. These names are the job `name:` values — **renaming a caller or its `ci`
   job silently un-requires it; update branch protection in the same change.**
   `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
   To audit for drift — a skill whose CI runs but does not gate `main`:
   ```bash
   req=$(gh api repos/<owner>/<repo>/branches/main/protection --jq '.required_status_checks.contexts[]' | sed 's|ci / ||')
-  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate'); do
+  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate\|security'); do
     echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
   done
   ```
   (`ci / shipflow` was missing this way from its introduction until 2026-07-28 — its CI ran and
   reported on every PR, but a promotion could auto-merge with it red.)
-  The filter excludes `press-propagate` too: it has only a `propagate` job and no `ci` job, so it
-  can never satisfy a required check. Without that exclusion the audit reports it as drift on every
-  run, and an audit that always cries wolf stops being read.
+  The filter excludes `press-propagate` and `security` too: `press-propagate` has only a
+  `propagate` job, and `security.yml`'s four jobs are all named `security / <job>` — neither has a
+  `ci` job, so neither can ever satisfy a required check. Without those exclusions the audit
+  reports them as drift on every run, and an audit that always cries wolf stops being read.
+  (`security` was missing from this list until 2026-08-02, found by actually running the audit
+  after adding `ci / release` — the snippet predates `security.yml`.)
 
 **Bootstrap note:** `dev-to-main-automerge.yml` is a plain `pull_request`-triggered workflow (not
 `pull_request_target`), so unlike the auto-merge workflow it replaced, it needs **no manual-merge
@@ -334,18 +408,20 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
 
 ## Adding a new skill
 
-> **Use `/smith` instead of doing this by hand.** `smith scaffold` applies steps
+> **Use `/skillfactory` instead of doing this by hand.** `skillfactory scaffold` applies steps
 > 1–8 below as one all-or-nothing change (and reads the action SHAs out of the
 > callers this repo already ships, rather than copying a stale pin), then
-> `smith verify --skill <name>` reports which rung it reached. The list below is
-> what smith does, kept here because it is the specification smith is checked
-> against — `ci / smith` fails if the two drift apart.
+> `skillfactory verify --skill <name>` reports which rung it reached. The list below is
+> what skillfactory does, kept here because it is the specification skillfactory is checked
+> against — `ci / skillfactory` fails if the two drift apart.
 >
-> Two things smith writes but **cannot apply**: `.github/repo-settings.sh` only
+> Two things skillfactory writes but **cannot apply**: `.github/repo-settings.sh` only
 > takes effect when an admin runs it, and the baseline-eval table row above is
 > prose. And step 10 is deliberately not automated past the declaration —
-> `smith freeze` requires a real run, and the scaffolded `baseline.test.mjs`
-> **fails** until it gets one.
+> `skillfactory freeze` requires a real run, and the scaffolded `baseline.test.mjs`
+> **fails** until it gets one. Step 11's masthead is likewise a separate
+> `press emit --init`: the brand is generated, so the scaffolder registers the
+> target but never writes the region itself.
 
 1. Copy a caller `<skill>.yml`. **Keep the `pull_request` trigger un-filtered** and **keep the `ci`
    job's `permissions: { contents: read, pull-requests: read }`** — both are load-bearing
@@ -365,6 +441,11 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
 7. Add a `{name, source}` entry for the new skill to root `.claude-plugin/marketplace.json`
    (`source` must be `./skills/<skill>`; `name` must equal both the directory name and the
    `plugin.json.name` at that source).
+7b. **Declare the skill in `.github/shipflow.json`'s `release.components`** (kept sorted).
+   Without it the skill can never be released — `release preflight` reports on every *other*
+   component and looks complete — and `ci / release`'s corpus baseline fails the PR.
+   `skillfactory scaffold` applies this since 0.4.0; before then it did not, which is how
+   `issueflow` reached its first PR undeclared.
 8. Add the Tier-1.5 `python tools/lint_plugin.py skills/<skill>` step to the new caller's `ci` job,
    right after its `score_skill.py` step, gated on the same `steps.changes.outputs.<skill>`
    condition as every other step. `ci / marketplace` needs no per-skill change — its unconditional
@@ -387,6 +468,19 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
     looks (`tests/test_*.py` for pytest skills, `tests/**/*.test.mjs` or `scripts/**/*.test.mjs`
     for node skills); no CI wiring is needed beyond that. Pin it against a **real past run** of the
     skill, not a synthetic fixture — that is the whole point.
+
+    **The one exception is a corpus that is somebody's private life.** `gmailtriage` pins the
+    *shape* of a real run — cluster sizes, which senders trip which guard, a folder spelled two
+    ways — reproduced by a committed generator, because the fixtures are otherwise a real mailbox.
+    Redacting one is not enough: with every sender pseudonymised, the public repo still showed
+    which bank, which health system, which school district and which employer the owner had
+    applied to. If a skill's corpus would carry that, invent it and pin the shape, and add a test
+    that fails when a real identifier appears (`skills/gmailtriage/skills/gmailtriage/scripts/tests/no-real-data.test.mjs`).
+11. **Write `README.md` in the house style and splice its masthead** (see The README house style,
+    above). `skillfactory scaffold` writes a conforming README; `press emit --init --target <skill>-readme`
+    adds the brand region, which the scaffolded README deliberately lacks until then. `ci /
+    marketplace` runs `skillfactory verify --all` unconditionally, so a README that misses the shape
+    fails the PR.
 
 ## Design docs
 

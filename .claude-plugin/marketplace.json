@@ -38,12 +38,36 @@
       "source": "./skills/press"
     },
     {
-      "name": "forge",
-      "source": "./skills/forge"
+      "name": "ghfactory",
+      "source": "./skills/ghfactory"
     },
     {
-      "name": "smith",
-      "source": "./skills/smith"
+      "name": "skillfactory",
+      "source": "./skills/skillfactory"
+    },
+    {
+      "name": "eval",
+      "source": "./skills/eval"
+    },
+    {
+      "name": "release",
+      "source": "./skills/release"
+    },
+    {
+      "name": "pluginsync",
+      "source": "./skills/pluginsync"
+    },
+    {
+      "name": "issueflow",
+      "source": "./skills/issueflow"
+    },
+    {
+      "name": "shipreport",
+      "source": "./skills/shipreport"
+    },
+    {
+      "name": "gmailtriage",
+      "source": "./skills/gmailtriage"
     }
   ]
 }

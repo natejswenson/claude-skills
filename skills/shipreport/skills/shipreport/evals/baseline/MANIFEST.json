@@ -1,0 +1,27 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "C=\"--corpus evals/baseline/corpus --since 2026-07-28T00:00:00Z --until 2026-08-04T00:00:00Z\"; node scripts/shipreport.js rank $C > $OUT/rank.txt && node scripts/shipreport.js rank $C --kind session --limit 15 > $OUT/rank-sessions.txt && node scripts/shipreport.js receipts --corpus evals/baseline/corpus --draft evals/baseline/draft.json > $OUT/receipts.txt && node scripts/shipreport.js render --corpus evals/baseline/corpus --draft evals/baseline/draft.json --out $OUT/report.html --byline natejswenson.io --no-open > /dev/null",
+  "artifacts": [
+    {
+      "path": "rank-sessions.txt",
+      "bytes": 4281,
+      "sha256": "f65a36f8be7226f2f3141954738b254974e544fcdf3e863312792373db2b51ae"
+    },
+    {
+      "path": "rank.txt",
+      "bytes": 4064,
+      "sha256": "19beb5dbf520cbe2e4e5960f0c954d92dfbaff2ff378fef1d2de7c147f7c7490"
+    },
+    {
+      "path": "receipts.txt",
+      "bytes": 1986,
+      "sha256": "5269c648ad57fe875753c908b2de535f234a86baff9a56d12bebced3cbd4cd5d"
+    },
+    {
+      "path": "report.html",
+      "bytes": 37208,
+      "sha256": "4742f64a3d6be2eb96d7d6fc40b1bf0c6c42056bf8fa7dc9039342303ab72ff1"
+    }
+  ]
+}

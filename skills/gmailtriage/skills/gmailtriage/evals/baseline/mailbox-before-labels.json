@@ -1,0 +1,144 @@
+{
+  "labels": [
+    {
+      "labelId": "CHAT",
+      "name": "CHAT",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "SENT",
+      "name": "SENT",
+      "threadsTotal": 6
+    },
+    {
+      "labelId": "INBOX",
+      "name": "INBOX",
+      "threadsTotal": 3
+    },
+    {
+      "labelId": "IMPORTANT",
+      "name": "IMPORTANT",
+      "threadsTotal": 18
+    },
+    {
+      "labelId": "TRASH",
+      "name": "TRASH",
+      "threadsTotal": 120
+    },
+    {
+      "labelId": "DRAFT",
+      "name": "DRAFT",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "SPAM",
+      "name": "SPAM",
+      "threadsTotal": 9
+    },
+    {
+      "labelId": "STARRED",
+      "name": "STARRED",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "UNREAD",
+      "name": "UNREAD",
+      "threadsTotal": 11
+    },
+    {
+      "labelId": "Label_10",
+      "name": "Recruiting",
+      "threadsTotal": 13
+    },
+    {
+      "labelId": "Label_15",
+      "name": "Recruiting/Globex",
+      "threadsTotal": 7
+    },
+    {
+      "labelId": "Label_16",
+      "name": "Recruiting/Initech",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_17",
+      "name": "Recruiting/Umbrella",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_18",
+      "name": "Recruiting/Soylent",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_11",
+      "name": "Statements",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_12",
+      "name": "Medical",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_13",
+      "name": "Banking",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_14",
+      "name": "School",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_30",
+      "name": "Receipts",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_31",
+      "name": "Reciepts",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_40",
+      "name": "Old Roof Job",
+      "threadsTotal": 6
+    },
+    {
+      "labelId": "Label_23",
+      "name": "Security",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_5",
+      "name": "Briefings",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_41",
+      "name": "Financial Advisor",
+      "threadsTotal": 5
+    },
+    {
+      "labelId": "Label_42",
+      "name": "Realty",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_43",
+      "name": "Paperwork",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_44",
+      "name": "Scratch",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "Label_45",
+      "name": "Reading List",
+      "threadsTotal": 0
+    }
+  ]
+}

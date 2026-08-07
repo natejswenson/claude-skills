@@ -1,0 +1,28 @@
+| Destination           | Status | Named by                        | Label id | Used by                                                   |
+|-----------------------|--------|---------------------------------|----------|-----------------------------------------------------------|
+| Recruiting            | exists | implied — parent of a sub-label | Label_10 | sort-globex, sort-initech, sort-umbrella, sort-soylent    |
+| Recruiting/Globex     | exists | a rule                          | Label_15 | sort-globex                                               |
+| Recruiting/Initech    | exists | a rule                          | Label_16 | sort-initech                                              |
+| Recruiting/Umbrella   | exists | a rule                          | Label_17 | sort-umbrella                                             |
+| Recruiting/Soylent    | exists | a rule                          | Label_18 | sort-soylent                                              |
+| Statements            | exists | a rule                          | Label_11 | sort-statements                                           |
+| Medical               | exists | a rule                          | Label_12 | sort-medical                                              |
+| Banking               | exists | a rule                          | Label_13 | sort-banking                                              |
+| School                | exists | a rule                          | Label_14 | sort-school                                               |
+| Receipts              | exists | implied — parent of a sub-label | Label_30 | sort-receipts-books, sort-receipts-cloud                  |
+| Receipts/Bookstore    | exists | a rule                          | Label_19 | sort-receipts-books                                       |
+| Receipts/Cloud Vendor | exists | a rule                          | Label_20 | sort-receipts-cloud                                       |
+| Home Claim            | exists | implied — parent of a sub-label | Label_40 | sort-claim-work, sort-claim-insurepay, sort-claim-insurer |
+| Home Claim/Contractor | exists | a rule                          | Label_21 | sort-claim-work                                           |
+| Home Claim/Insurance  | exists | a rule                          | Label_22 | sort-claim-insurepay, sort-claim-insurer                  |
+| Security              | exists | a rule                          | Label_23 | sort-security, sort-modelhub                              |
+| Financial Advisor     | exists | a rule                          | Label_41 | sort-advisor                                              |
+| Realty                | exists | a rule                          | Label_42 | sort-realty                                               |
+| Paperwork             | exists | a rule                          | Label_43 | sort-paperwork, sort-gov                                  |
+| Briefings             | exists | a rule                          | Label_5  | sort-briefings                                            |
+
+| Destinations | Your labels | To create |
+|--------------|-------------|-----------|
+| 20           | 20          | 0         |
+
+every folder these rules need already exists. Safe to plan and apply.

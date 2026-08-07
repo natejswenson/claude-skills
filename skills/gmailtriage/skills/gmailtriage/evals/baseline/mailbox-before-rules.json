@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "trash-packages",
+      "action": "trash",
+      "match": {
+        "from": "support@packages.example",
+        "hasUnsubscribe": true
+      },
+      "note": "registry publish notices, already visible in the registry itself"
+    },
+    {
+      "id": "trash-leadgen",
+      "action": "trash",
+      "match": {
+        "from": "@leadgen.example"
+      },
+      "note": "cold sales outreach — the whole domain, because a second sender walked past the narrow rule"
+    },
+    {
+      "id": "trash-shopfront",
+      "action": "trash",
+      "match": {
+        "from": "@shopfront.example",
+        "hasUnsubscribe": true
+      },
+      "note": "retail promotions"
+    },
+    {
+      "id": "trash-readinglist",
+      "action": "trash",
+      "match": {
+        "from": "@readinglist.example",
+        "hasUnsubscribe": true
+      },
+      "note": "newsletter nobody reads"
+    },
+    {
+      "id": "sort-globex",
+      "action": "label",
+      "label": "Recruiting",
+      "match": {
+        "from": "@globex.example"
+      },
+      "note": "one employer writing from several people"
+    },
+    {
+      "id": "sort-initech",
+      "action": "label",
+      "label": "Recruiting",
+      "match": {
+        "from": "careers@recruiting.initech.example"
+      },
+      "note": "applications from one employer"
+    },
+    {
+      "id": "sort-umbrella",
+      "action": "label",
+      "label": "Recruiting",
+      "match": {
+        "from": "@greenhouse.example"
+      },
+      "note": "applications via a vendor"
+    },
+    {
+      "id": "sort-soylent",
+      "action": "label",
+      "label": "Recruiting",
+      "match": {
+        "from": "@candidates.workable.example"
+      },
+      "note": "applications via a vendor"
+    },
+    {
+      "id": "sort-statements",
+      "action": "label",
+      "label": "Statements",
+      "match": {
+        "from": "northbank.example"
+      },
+      "note": "brokerage document notices — the whole domain, so a second subdomain is still filed"
+    },
+    {
+      "id": "sort-medical",
+      "action": "label",
+      "label": "Medical",
+      "match": {
+        "from": "@valleyhealth.example"
+      },
+      "note": "clinic messages and billing"
+    },
+    {
+      "id": "sort-banking",
+      "action": "label",
+      "label": "Banking",
+      "match": {
+        "from": "@notify.southbank.example"
+      },
+      "note": "balance and overdraft alerts"
+    },
+    {
+      "id": "sort-school",
+      "action": "label",
+      "label": "School",
+      "match": {
+        "from": "centralschools@parentvendor.example"
+      },
+      "note": "district mail behind a vendor domain that carries no marker of its own"
+    },
+    {
+      "id": "sort-receipts",
+      "action": "label",
+      "label": "Receipts",
+      "match": {
+        "from": "donotreply@bookstore.example"
+      },
+      "note": "order confirmations"
+    },
+    {
+      "id": "sort-security",
+      "action": "label",
+      "label": "Security",
+      "keepInInbox": true,
+      "match": {
+        "from": "no-reply@accounts.mailprovider.example"
+      },
+      "note": "account security alerts"
+    },
+    {
+      "id": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "match": {
+        "from": "@wealthpartners.example"
+      },
+      "note": "the whole firm"
+    },
+    {
+      "id": "sort-realty",
+      "action": "label",
+      "label": "Realty",
+      "match": {
+        "from": "@realty.example"
+      },
+      "note": "the agent handling the sale"
+    },
+    {
+      "id": "sort-briefings",
+      "action": "label",
+      "label": "Briefings",
+      "match": {
+        "from": "me@mailprovider.example",
+        "subjectContains": "Morning brief"
+      },
+      "note": "the morning brief only — the evening one lands unclaimed"
+    }
+  ]
+}

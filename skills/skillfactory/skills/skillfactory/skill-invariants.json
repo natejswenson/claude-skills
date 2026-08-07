@@ -1,0 +1,193 @@
+{
+  "comment": "What must not silently disappear from skillfactory. `prose` names guardrails no code enforces \u2014 each one is a rule whose loss would be invisible until it caused the failure it exists to prevent. `split` declares which half of this skill is deterministic. `baseline` names the offline, $0 checks pinned against a real run of the scaffolder.",
+  "skillfactory": {
+    "version": "0.3.0"
+  },
+  "prose": [
+    {
+      "id": "say-which-rung-you-reached",
+      "pattern": "Say which rung you reached, and never claim more",
+      "rationale": "The one rule, inherited deliberately from ghfactory. Anything can emit a folder of markdown; the differentiator is not the generation but the honesty about what was proven. Lose this line and skillfactory becomes another scaffolder that says 'done' about a skill nobody ran."
+    },
+    {
+      "id": "never-done-below-rung-3",
+      "pattern": "Never call a skill done below rung 3",
+      "rationale": "Rungs 0-2 prove the scaffolding is correct, which is not the same as the skill working. Conflating them is exactly the failure this skill was built against, and it is the failure that ships skills with decorative evals."
+    },
+    {
+      "id": "rung-3-is-structural",
+      "pattern": "fails\\*\\* until a real run is frozen",
+      "rationale": "The scaffolded baseline test fails on purpose so `ci / <name>` cannot go green on a skill nobody has run. If this becomes a passing placeholder instead, rung 3 degrades from a gate into a promise, and every promise in this repo has eventually been broken by someone in a hurry."
+    },
+    {
+      "id": "two-sided-or-it-fails",
+      "pattern": "Without `--trap-command` the generated test \\*\\*fails\\*\\*",
+      "rationale": "A baseline that only asserts good-input-passes goes green the day someone weakens a checker. Proven on this very skill: stubbing validateSpec to always return ok left the golden green and turned only the trap red."
+    },
+    {
+      "id": "never-hand-write-a-brand-value",
+      "pattern": "Never hand-write a brand value",
+      "rationale": "The brand lives in press/brand/tokens.json and nowhere else. A hand-written region recreates precisely the drift press exists to end \u2014 this brand was previously eight hand-ported copies across four repos with five names for the same orange."
+    },
+    {
+      "id": "readme-h1-is-the-anchor",
+      "pattern": "keep the H1 exactly the\\s+skill name",
+      "rationale": "press's `<name>-readme` target anchors its masthead on `^# <name>$`. A decorated H1 does not error \u2014 it detaches the region silently, and the next `press emit --init` splices a SECOND masthead below the first. Nothing but a rendered page shows that, so the rule has to survive as prose."
+    },
+    {
+      "id": "never-pr-into-main",
+      "pattern": "Never open a PR into `main`",
+      "rationale": "The only path to main is a dev -> main promotion. A feature PR against main bypasses the integration branch and, because releases here are publish-on-merge, can cut a tag from an unreviewed state."
+    },
+    {
+      "id": "never-weaken-a-check",
+      "pattern": "Never weaken a check to get green",
+      "rationale": "check-spec and the baseline trap are adversarial on purpose. The moment either is edited to accommodate a failing input, every skill made afterwards inherits a gate that no longer gates. Fix the input."
+    },
+    {
+      "id": "never-overwrite-an-existing-skill",
+      "pattern": "Never overwrite an existing skill",
+      "rationale": "A skills/<name> directory that already exists is far more likely to be someone's work than a mistake. Overwriting one destroys uncommitted work with no diff shown and no undo."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "Never ask about anything in them",
+      "rationale": "Three questions maximum is achievable only because detection already answered the rest. A name collision, the required-check set and the pinned action SHAs are facts; asking about a detectable signal is the UX failure that makes a generator feel like a form."
+    },
+    {
+      "id": "one-question-at-a-time",
+      "pattern": "Wait for the answer before asking the next",
+      "rationale": "A batch of questions is a form. The spec is a conversation whose later questions depend on the earlier answers, and asking them all at once produces a spec assembled from defaults nobody chose."
+    },
+    {
+      "id": "the-model-gate",
+      "pattern": "never silently proceed as though it made no difference",
+      "rationale": "The spec, the one rule and the split are judgment. A weaker model produces a skill that passes every lint in this repo and is still bad \u2014 a failure mode with no automated detector, which is why it has to be surfaced to the user instead."
+    },
+    {
+      "id": "wiring-is-all-or-nothing",
+      "pattern": "an unresolvable anchor aborts before the first byte is written",
+      "rationale": "A half-applied wiring is worse than none, because the half that landed makes the rest look done. `ci / shipflow` sat un-required from the day it was introduced for exactly this reason."
+    },
+    {
+      "id": "repo-settings-applies-nothing",
+      "pattern": "only takes effect when an admin runs it",
+      "rationale": "Editing the contexts array in repo-settings.sh changes a file, not GitHub. A skill whose check is written down but never applied goes green on every PR and gates nothing \u2014 the most convincing possible form of a missing gate."
+    },
+    {
+      "id": "name-must-say-what-it-does",
+      "pattern": "Name the skill after the job, never a metaphor",
+      "rationale": "A name is the only thing a user sees before deciding whether the skill is for them, and a metaphor tells them nothing. This repo shipped three of them \u2014 forge, assay and smith \u2014 and renaming each one afterwards cost a directory, a plugin id, a slash command, a tag prefix and a required status check. Lose the rule and the next skill is named the same way, because a metaphor always reads better at the moment you pick it."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "read every registry the house keeps",
+        "command": "node scripts/skillfactory.js detect"
+      },
+      {
+        "step": "grade a spec before it costs anything",
+        "command": "node scripts/skillfactory.js check-spec"
+      },
+      {
+        "step": "emit the tree and all eight wiring points",
+        "command": "node scripts/skillfactory.js scaffold"
+      },
+      {
+        "step": "turn a real run into a baseline eval",
+        "command": "node scripts/skillfactory.js freeze"
+      },
+      {
+        "step": "run the ladder and report the rung",
+        "command": "node scripts/skillfactory.js verify"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "what the skill is for, and what it refuses to do",
+        "why": "the one rule is the only thing that makes a skill more than a prompt, and nothing on disk contains it"
+      },
+      {
+        "step": "which half of the work is deterministic",
+        "why": "a wrong split ships either an unrepeatable skill or a script with a chat interface"
+      },
+      {
+        "step": "what a real run looks like",
+        "why": "only a person knows which run is representative enough to be worth pinning"
+      },
+      {
+        "step": "the prose in SKILL.md and references/",
+        "why": "tone, ordering, and what to leave out"
+      },
+      {
+        "step": "the baseline row in CLAUDE.md's eval table",
+        "why": "what a baseline catches is a judgment about failure modes, not a template"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a REAL scaffold run \u2014 the `repocount` demo spec against a fixture house \u2014 not a synthetic tree. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "scaffold-golden",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/MANIFEST.json",
+        "evals/inputs/demo.spec.json",
+        "evals/inputs/house/.claude-plugin/marketplace.json"
+      ],
+      "update_command": "node scripts/skillfactory.js scaffold --spec evals/inputs/demo.spec.json --repo <fresh copy of evals/inputs/house> --today 2026-08-01 && node scripts/skillfactory.js freeze --skill skillfactory --from <that dir> --command '\u2026' --trap-command '\u2026'",
+      "rationale": "Byte-exact, deliberately \u2014 the same reason it is right for shipflow's rendered workflow and press's emitted regions: the generated bytes ARE the contract, and one changed character is a change to every skill made afterwards. Stronger than a frozen-bytes comparison because the test RE-RUNS the recorded command into a temp directory: it fails when behaviour changes, not merely when someone edits a fixture. It also pins the five registry edits, which is where a wiring regression would otherwise be silent."
+    },
+    {
+      "id": "degraded-spec-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/inputs/degraded.spec.json"
+      ],
+      "update_command": "node scripts/skillfactory.js check-spec --spec evals/inputs/degraded.spec.json --repo evals/inputs/house",
+      "rationale": "Two-sided. Every defect in the degraded spec \u2014 a 23-character description, an empty half of the split, an eval plan with no known-bad case \u2014 passes score_skill.py and every other lint in this repo while producing a skill that never triggers and degrades invisibly. Verified adversarially during development: stubbing validateSpec to always return ok left the golden green and turned only this red, which is the whole point of having it."
+    },
+    {
+      "id": "metaphor-name-trap",
+      "kind": "trap",
+      "test": "scripts/tests/naming.test.mjs",
+      "fixtures": [
+        "evals/inputs/metaphor.spec.json"
+      ],
+      "update_command": "node scripts/skillfactory.js check-spec --spec evals/inputs/metaphor.spec.json --repo evals/inputs/house",
+      "rationale": "Two-sided, and pointed: the trap spec is identical to demo.spec.json in every field except its name, so the only thing that can fail is the name rule \u2014 and the test asserts the failing field is `name`, because a trap that merely fails somewhere stops proving anything the day an unrelated rule tightens. Pinned against a name this repo actually shipped and then had to rename, not an invented bad one."
+    },
+    {
+      "id": "house-conformance-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/conformance.test.mjs",
+      "corpus_glob": "../../../*/skills/*/SKILL.md",
+      "min_corpus": 11,
+      "update_command": "node scripts/skillfactory.js verify --all --repo ../../..",
+      "rationale": "The house tier is only trustworthy about a new skill if it is right about the ten already shipped. The floor is the anti-vacuity rule: a conformance resolver that silently matched nothing would report 'all conformant' having checked zero skills \u2014 the exact way a gate turns decorative. Pinned against real, shipped, working skills rather than a synthetic tree, so a rule that drifts away from what this repo actually does goes red."
+    },
+    {
+      "id": "readme-house-style-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/readme.test.mjs",
+      "corpus_glob": "../../../*/README.md",
+      "min_corpus": 11,
+      "update_command": "node scripts/skillfactory.js verify --all --repo ../../..",
+      "rationale": "Pinned against the READMEs this repo actually ships, so a contract strict enough to reject work already published fails here rather than in a release \u2014 the same reason press lints its own shipped stylesheets. The floor of 10 is the anti-vacuity rule: the glob resolves from inside the nested skill dir, and one wrong `..` would match nothing and report every README as conforming. Two-sided by construction: the corpus must pass, and each of six targeted mutations of a real README \u2014 decorated H1, deleted masthead, prose instead of the inventory table, a reordered head, a missing foot section, a Quick start with no command \u2014 must be caught by the specific check that exists for it, which is stronger than merely failing somewhere."
+    },
+    {
+      "id": "wiring-regression-guards",
+      "kind": "trap",
+      "test": "scripts/tests/wiring.test.mjs",
+      "fixtures": [
+        "evals/baseline/.github/workflows/repocount.yml",
+        "evals/baseline/.github/shipflow.json"
+      ],
+      "update_command": "these read the frozen scaffold; refresh it with the scaffold-golden update_command",
+      "rationale": "Named assertions over the two wiring defects that actually shipped: a release job admitting `push` (the trigger that cost city-report v0.4.0 stale notes and shipflow v0.4.0 an unasked npm publish), and a skill missing from release.components (so `release` cannot see it and `preflight` reports on every other component while looking complete). Deliberately NOT in baseline.test.mjs: `freeze` regenerates that file from a template and silently deletes anything hand-written in it \u2014 exactly when someone is trying to make a failing golden go green. Verified non-vacuous: reverting the template AND re-freezing still fails these."
+    }
+  ]
+}

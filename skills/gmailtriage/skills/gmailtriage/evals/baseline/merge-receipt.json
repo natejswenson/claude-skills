@@ -1,0 +1,32 @@
+{
+  "at": "2026-08-07T12:00:00Z",
+  "count": 2,
+  "entries": [
+    {
+      "threadId": "thr-1a30cb3f",
+      "ruleId": "merge:Reciepts→Receipts",
+      "action": "unlabel",
+      "label": "Reciepts",
+      "added": [],
+      "removed": [
+        "Reciepts"
+      ],
+      "archived": false,
+      "from": "billing@cloudvendor.example",
+      "subject": "Your receipt from Cloud Vendor #2563"
+    },
+    {
+      "threadId": "thr-1a30ea2e",
+      "ruleId": "merge:Reciepts→Receipts",
+      "action": "unlabel",
+      "label": "Reciepts",
+      "added": [],
+      "removed": [
+        "Reciepts"
+      ],
+      "archived": false,
+      "from": "donotreply@bookstore.example",
+      "subject": "Thanks, your order is complete"
+    }
+  ]
+}

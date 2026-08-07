@@ -1,0 +1,42 @@
+{
+  "name": "@natjswenson/release",
+  "version": "0.2.0",
+  "description": "Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/claude-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natejswenson/claude-skills/issues"
+  },
+  "keywords": [
+    "release",
+    "claude-code",
+    "claude-skill"
+  ],
+  "type": "module",
+  "bin": {
+    "release": "scripts/release.js"
+  },
+  "files": [
+    "scripts/",
+    "references/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
+    "postpack": "rm -f README.md LICENSE CHANGELOG.md"
+  }
+}

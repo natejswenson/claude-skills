@@ -1,0 +1,186 @@
+{
+  "name": "city-report",
+  "sources": [
+    "skills/city-report/skills/city-report/SKILL.md",
+    "skills/city-report/skills/city-report/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-1367dc28",
+      "tag": "inv",
+      "text": "Counts are not benchmarked against the state",
+      "severity": "high",
+      "rationale": "A city is part of its state, so benchmarking a count against the state is a category error that produces a meaningless comparison. Rates and medians carry state/national comparisons; counts carry growth-since-2013 instead.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-7ead279b",
+      "tag": "inv",
+      "text": "add a manifest entry and let the guard test check it\\s—?\\snever bypass it",
+      "severity": "high",
+      "rationale": "The escape hatch that would undo the pinned-query design is a one-off fetch 'just for this metric'. Deleting this sentence re-opens exactly the failure mode api-gotchas.md documents.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-c5544d7c",
+      "tag": "inv",
+      "text": "Do not write ad-hoc Data USA queries",
+      "severity": "high",
+      "rationale": "The Data USA API returns HTTP 200 with zero rows for a retired cube and silently SUMS a measure across every dimension not drilled down on, so a wrong query returns a plausible number rather than an error. Asking the household-income cube for Minneapolis without drilling the bucket dimension returns 165438 — which reads like a median income and is actually a household count. Pinned manifest queries are the only defense; this prose is the whole rule.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-d204b3c5",
+      "tag": "inv",
+      "text": "`query\\.py` never touches the network",
+      "severity": "high",
+      "rationale": "The load-once/answer-from-cache split is the skill's core UX claim ('answer questions about it instantly'). If query.py started fetching, every answer would pay full API latency and the skill's promise would quietly break.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-de182820",
+      "tag": "inv",
+      "text": "Do not `cd` into the skill",
+      "severity": "high",
+      "rationale": "report.py writes to ./reports relative to the working directory. A cd into the skill directory buries the user's report inside the plugin install where they will not find it.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-f1c0aa06",
+      "tag": "inv",
+      "text": "Never pass `--no-open` in an interactive session",
+      "severity": "high",
+      "rationale": "The user must see the report open on their own screen rather than being told it was written. Matches the same rule learned for ghostwriter card rendering.",
+      "source": {
+        "file": "skills/city-report/skills/city-report/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-3210a318",
+      "tag": "skill",
+      "text": "Never quote a wide-margin figure as fact.",
+      "severity": "high",
+      "source": {
+        "file": "skills/city-report/skills/city-report/SKILL.md",
+        "line": 111
+      }
+    },
+    {
+      "id": "skill-5d52889c",
+      "tag": "skill",
+      "text": "Never invent a metric.",
+      "severity": "high",
+      "source": {
+        "file": "skills/city-report/skills/city-report/SKILL.md",
+        "line": 121
+      }
+    },
+    {
+      "id": "skill-cb46cfac",
+      "tag": "skill",
+      "text": "Read that digest — it is the working set for the rest of the conversation.",
+      "severity": "high",
+      "source": {
+        "file": "skills/city-report/skills/city-report/SKILL.md",
+        "line": 44
+      }
+    },
+    {
+      "id": "skill-d0b5c8f7",
+      "tag": "skill",
+      "text": "Always state the vintage.",
+      "severity": "high",
+      "source": {
+        "file": "skills/city-report/skills/city-report/SKILL.md",
+        "line": 109
+      }
+    },
+    {
+      "id": "skill-daf6dc93",
+      "tag": "skill",
+      "text": "Read the magnitude, not just the flag",
+      "severity": "high",
+      "source": {
+        "file": "skills/city-report/skills/city-report/SKILL.md",
+        "line": 113
+      }
+    }
+  ]
+}

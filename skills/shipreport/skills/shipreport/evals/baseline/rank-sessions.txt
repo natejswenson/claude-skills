@@ -1,0 +1,30 @@
+| # | Kind    | Item                                                 | Score | Signals                                                           | Receipt                                      |
+|---|---------|------------------------------------------------------|-------|-------------------------------------------------------------------|----------------------------------------------|
+| — | session | city-report-data-usa                                 | 44    | session+10 edits×151+12 turns×681+10 skill-run+2 corroborated+10  | session:6e973fac-f93d-417a-b9d7-a80b688ebfcd |
+| — | session | report-card-rubric-split                             | 44    | session+10 edits×104+12 turns×675+10 skill-run+2 corroborated+10  | session:21bfb35c-7b6c-448e-b56f-098ae1d5f08e |
+| — | session | backfill-amazon-connector-history                    | 44    | session+10 edits×147+12 turns×1357+10 skill-run+2 corroborated+10 | session:a6707485-13a3-42b7-9e95-9a82b7278d90 |
+| — | session | press-brand-consolidation                            | 42    | session+10 edits×100+12 turns×1008+10 corroborated+10             | session:1a681993-cadf-4f49-819c-431b45895197 |
+| — | session | local-fitness-improvement-pass                       | 41    | session+10 edits×76+9 turns×825+10 skill-run+2 corroborated+10    | session:834376d6-13cd-4460-8bd5-91210eaf9945 |
+| — | session | baseline-eval-sets-skills                            | 41    | session+10 edits×63+9 turns×925+10 skill-run+2 corroborated+10    | session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b |
+| — | session | Prepare release and add city-report skill            | 41    | session+10 edits×52+9 turns×459+10 skill-run+2 corroborated+10    | session:d7202468-7986-4235-8427-3df2e1451efb |
+| — | session | resume-agent-ui-cleanup                              | 41    | session+10 edits×62+9 turns×749+10 skill-run+2 corroborated+10    | session:a8b3d235-e36f-402a-9656-286204332e95 |
+| — | session | Create lesson entries with quality assessment        | 41    | session+10 edits×56+9 turns×431+10 skill-run+2 corroborated+10    | session:59991318-8bce-4489-9ad0-df91fa4c8cf5 |
+| — | session | Create skill evaluation generation tool with dogfood | 41    | session+10 edits×59+9 turns×426+10 skill-run+2 corroborated+10    | session:570d8c44-b17a-484f-bdc6-b2c1cf85d92f |
+| — | session | Build multi-agent GitHub issue resolver skill        | 41    | session+10 edits×64+9 turns×376+10 skill-run+2 corroborated+10    | session:ed574478-daad-4c43-984f-9f7745548c1d |
+| — | session | Improve fitness coach MCP and local-fitness skills   | 41    | session+10 edits×92+9 turns×1042+10 skill-run+2 corroborated+10   | session:519c74e2-1936-4612-9eb3-a14452717dec |
+| — | session | Create branded GitHub Actions workflow skill         | 39    | session+10 edits×63+9 turns×578+10 corroborated+10                | session:d4e97bd9-c537-4a18-8162-dbdd609f9e0a |
+| — | session | smith-skill-automation                               | 39    | session+10 edits×57+9 turns×362+10 corroborated+10                | session:a594b4d1-4f10-4567-9a28-81b5c0fc24fe |
+| — | session | readme-house-style                                   | 39    | session+10 edits×50+9 turns×375+10 corroborated+10                | session:c596ab69-7897-4b11-89b9-982e7a33044a |
+
+554 lower-scoring candidate(s) not shown — `--all` prints every one.
+
+| Window                  | Candidates | Above the line | Release series | Releases absorbed | Squash folded | Others' releases dropped | Floor | Top |
+|-------------------------|------------|----------------|----------------|-------------------|---------------|--------------------------|-------|-----|
+| 2026-07-28 → 2026-08-04 | 569        | 12             | 17             | 34                | 69            | 1                        | 20    | 12  |
+
+| Released | Merged | Commits | Sessions | Repos |
+|----------|--------|---------|----------|-------|
+| 17       | 153    | 275     | 124      | 5     |
+the sheet prints these figures itself — never write a count into the prose.
+
+not yours, so not counted: Blaizzy/mlx-vlm (1) — your commits and pull requests there are still ranked. `--owner <org>` to claim, `--all-owners` to disable.

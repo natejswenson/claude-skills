@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/eval.js report --contract evals/fixtures/contracts/skillfactory.json --trace evals/fixtures/run-trace.json --skill skillfactory --out $OUT",
+  "artifacts": [
+    {
+      "path": "probe.json",
+      "bytes": 6933,
+      "sha256": "ef0773d07fd59c09b0cd3e764ce9fe8e7c1eef38f233ee59515222ebe00eaa11"
+    },
+    {
+      "path": "report.md",
+      "bytes": 11394,
+      "sha256": "dca2db0e9fd78626ffe7cfc07aaf4b27740e7f0aba1ca22077a55daaeb8335ec"
+    }
+  ]
+}

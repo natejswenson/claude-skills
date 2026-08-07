@@ -1,0 +1,120 @@
+{
+  "comment": "What must not silently disappear from shipreport. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Every claim in the report carries a receipt \u2014 a commit SHA, ",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "art-is-composed-not-generated",
+      "pattern": "A generic icon is a failure",
+      "rationale": "The card scenes are the reason the sheet is worth looking at. The moment a run reaches for a stock glyph the report becomes a list with decoration, and nothing in code can tell the difference between a lazy drawing and a considered one."
+    },
+    {
+      "id": "never-shell-out-for-what-the-corpus-holds",
+      "pattern": "Never shell out for something the corpus holds",
+      "rationale": "The first real run read its releases with three networked `gh` loops and printed sixteen kilobytes of changelog into the conversation, in a skill whose own presentation contract forbids exactly that. `show` exists so step 4 costs no network and no wall of text; the moment a run reaches for `gh` again, both come back."
+    },
+    {
+      "id": "a-wrong-refusal-is-fixed-in-the-checker",
+      "pattern": "the fix for that is a fix to the checker with a test on both sides",
+      "rationale": "The gate once called the phrase \"plus/minus\" a repository name and the run reworded a true sentence to satisfy it. \"Never weaken the gate\" must not become \"always believe the gate\": a false positive teaches a run that the gate is an obstacle to be worded around, which is how a gate stops being believed at all."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "collect GitHub contributions and Claude session transcripts, redact secrets and absolute paths at ingest so nothing unsafe is ever cached, and record a watermark so the second run is cheap",
+        "command": "node scripts/shipreport.js index"
+      },
+      {
+        "step": "score and order every candidate in the requested window, draw the line between what appears in the report and what does not, and say when that line was a tiebreak rather than a ranking",
+        "command": "node scripts/shipreport.js rank"
+      },
+      {
+        "step": "read the artifact behind a receipt — a release's changelog, a pull request's body, a session's shape — from the corpus rather than from the network",
+        "command": "node scripts/shipreport.js show"
+      },
+      {
+        "step": "resolve every citation in the drafted report back to a real artifact, failing the run when one does not resolve",
+        "command": "node scripts/shipreport.js receipts"
+      },
+      {
+        "step": "render the ranked items and approved prose into the press-styled HTML report",
+        "command": "node scripts/shipreport.js render"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "merge several ranked items into the one outcome a stakeholder would recognise, and choose the headline the time frame was actually about",
+        "why": "the score orders candidates but cannot tell that three pull requests were one piece of work, and nothing on disk records which of them a reader would care about"
+      },
+      {
+        "step": "write the prose for a reader with no context on the code \u2014 plain outcomes, no repository names or commit hashes in the body",
+        "why": "translating a diff into why it mattered is judgment, and the audience is a person who was not there"
+      },
+      {
+        "step": "decide what an ambiguous session actually accomplished when its commits and its transcript disagree",
+        "why": "a session that ends without a commit may have been abandoned or may have been the investigation that made the next day cheap, and only a reader of the transcript can tell"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the ranking silently reordering or dropping an item while still producing a complete-looking report, and the rendered report losing a section or its receipt appendix \u2014 pinned against a real run over a frozen corpus \u2014 this machine's own Claude session transcripts and real GitHub contribution output for a real week, with rank and render re-run and byte-compared."
+    },
+    {
+      "id": "unresolvable-receipt-is-refused",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the receipts gate weakening until a claim with no artifact behind it reaches the report, which is the one rule failing silently \u2014 pinned against a drafted report carrying one citation that names a commit not present in the corpus."
+    },
+    {
+      "id": "secret-never-reaches-the-cache",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "redaction being moved, weakened or skipped so that a secret is written to the on-disk corpus, where every later run and every model pass would read it \u2014 pinned against a real transcript fixture seeded with a token-shaped string and an absolute home path."
+    },
+    {
+      "id": "the-graded-run",
+      "kind": "trap",
+      "test": "scripts/tests/regressions.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the four defects a real run exposed on 2026-08-05 coming back — a ranking whose signals top out so twelve items tie and the line is drawn by a timestamp; the prose gate refusing English (\"plus/minus\" read as a repository) so a run learns to word around it; the art validator admitting a document-scoped <style>, a style-attribute colour or a script URL into the one field `render` splices unescaped; and GitHub items reaching the on-disk corpus without passing through redaction. Deliberately a separate file from baseline.test.mjs, which `skillfactory freeze` regenerates and would delete these guards from."
+    },
+    {
+      "id": "corpus-floor",
+      "kind": "corpus",
+      "test": "scripts/tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/*",
+      "min_corpus": 8,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "a resolver or glob matching nothing and reporting a clean empty run, so the golden passes while checking over zero items. The floor of 8 is the frozen artifact set itself \u2014 the two draft inputs, the frozen corpus, the manifest and the four re-run outputs; losing any one of them goes red. The floor on the corpus CONTENTS (549 contribution records, 124 session digests) is asserted in scripts/tests/units.test.mjs, which freeze does not regenerate."
+    }
+  ]
+}

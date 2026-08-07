@@ -1,0 +1,69 @@
+| Rule id              | Action | Applies                            | Leaves inbox | Threads |
+|----------------------|--------|------------------------------------|--------------|---------|
+| sort-globex          | label  | Recruiting + Recruiting/Globex     | 0 of 7       | 7       |
+| sort-initech         | label  | Recruiting + Recruiting/Initech    | 0 of 4       | 4       |
+| sort-umbrella        | label  | Recruiting + Recruiting/Umbrella   | 0 of 1       | 1       |
+| sort-soylent         | label  | Recruiting + Recruiting/Soylent    | 0 of 1       | 1       |
+| sort-statements      | label  | Statements                         | 0 of 4       | 4       |
+| sort-medical         | label  | Medical                            | 0 of 2       | 2       |
+| sort-banking         | label  | Banking                            | 0 of 2       | 2       |
+| sort-school          | label  | School                             | 0 of 2       | 2       |
+| sort-gov             | label  | Paperwork                          | 1 of 1       | 1       |
+| trash-packages       | trash  | —                                  | —            | 9       |
+| trash-leadgen        | trash  | —                                  | —            | 4       |
+| trash-shopfront      | trash  | —                                  | —            | 3       |
+| trash-readinglist    | trash  | —                                  | —            | 3       |
+| sort-security        | label  | Security                           | 0 of 1       | 1       |
+| sort-modelhub        | label  | Security                           | 0 of 1       | 1       |
+| sort-receipts-cloud  | label  | Receipts + Receipts/Cloud Vendor   | 0 of 1       | 1       |
+| sort-receipts-books  | label  | Receipts + Receipts/Bookstore      | 0 of 1       | 1       |
+| sort-advisor         | label  | Financial Advisor                  | 0 of 5       | 5       |
+| sort-realty          | label  | Realty                             | 0 of 2       | 2       |
+| sort-briefings       | label  | Briefings                          | 1 of 2       | 2       |
+| sort-claim-work      | label  | Home Claim + Home Claim/Contractor | 0 of 3       | 3       |
+| sort-claim-insurepay | label  | Home Claim + Home Claim/Insurance  | 0 of 2       | 2       |
+| sort-claim-insurer   | label  | Home Claim + Home Claim/Insurance  | 0 of 1       | 1       |
+| sort-paperwork       | label  | Paperwork                          | 0 of 4       | 4       |
+
+| Rule id      | Goes to            | From                           | Subject                                  |
+|--------------|--------------------|--------------------------------|------------------------------------------|
+| sort-globex  | Recruiting/Globex  | recruiter0@globex.example      | Interview loop with Globex — stage 1     |
+| sort-globex  | Recruiting/Globex  | recruiter1@globex.example      | Interview loop with Globex — stage 2     |
+| sort-globex  | Recruiting/Globex  | recruiter2@globex.example      | Interview loop with Globex — stage 3     |
+| sort-globex  | Recruiting/Globex  | recruiter3@globex.example      | Interview loop with Globex — stage 4     |
+| sort-globex  | Recruiting/Globex  | recruiter4@globex.example      | Interview loop with Globex — stage 5     |
+| sort-globex  | Recruiting/Globex  | recruiter5@globex.example      | Interview loop with Globex — stage 6     |
+| sort-globex  | Recruiting/Globex  | recruiter6@globex.example      | Interview loop with Globex — stage 7     |
+| sort-initech | Recruiting/Initech | careers@recruiting.initech.ex… | Principal Engineer opening at Initech —… |
+
+58 more not shown — `--preview N` to widen.
+
+| Folder                | Threads | New to the thread |
+|-----------------------|---------|-------------------|
+| Recruiting            | 13      | 13                |
+| Recruiting/Globex     | 7       | 7                 |
+| Recruiting/Initech    | 4       | 4                 |
+| Recruiting/Umbrella   | 1       | 1                 |
+| Recruiting/Soylent    | 1       | 1                 |
+| Statements            | 4       | 4                 |
+| Medical               | 2       | 2                 |
+| Banking               | 2       | 2                 |
+| School                | 2       | 2                 |
+| Paperwork             | 5       | 5                 |
+| Security              | 2       | 2                 |
+| Receipts              | 2       | 2                 |
+| Receipts/Cloud Vendor | 1       | 1                 |
+| Receipts/Bookstore    | 1       | 1                 |
+| Financial Advisor     | 5       | 5                 |
+| Realty                | 2       | 2                 |
+| Briefings             | 2       | 2                 |
+| Home Claim            | 6       | 6                 |
+| Home Claim/Contractor | 3       | 3                 |
+| Home Claim/Insurance  | 3       | 3                 |
+reconcile these against your real labels with `labels` before applying.
+
+| Scope    | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
+|----------|---------|-------------|------------|-----------------------|---------------------|----------|
+| in:inbox | 66      | 19          | 47         | 2                     | 0                   | 0        |
+
+nothing has moved — this is what the rules would do.

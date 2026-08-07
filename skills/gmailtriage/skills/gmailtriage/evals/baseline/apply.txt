@@ -1,0 +1,167 @@
+| Rule id              | Action | Destination           | Authorised threads |
+|----------------------|--------|-----------------------|--------------------|
+| trash-packages       | trash  | —                     | 9                  |
+| trash-leadgen        | trash  | —                     | 4                  |
+| trash-shopfront      | trash  | —                     | 3                  |
+| trash-readinglist    | trash  | —                     | 3                  |
+| sort-globex          | file   | Recruiting/Globex     | 7                  |
+| sort-initech         | file   | Recruiting/Initech    | 4                  |
+| sort-umbrella        | file   | Recruiting/Umbrella   | 1                  |
+| sort-soylent         | file   | Recruiting/Soylent    | 1                  |
+| sort-statements      | file   | Statements            | 4                  |
+| sort-medical         | file   | Medical               | 2                  |
+| sort-banking         | file   | Banking               | 2                  |
+| sort-school          | file   | School                | 2                  |
+| sort-gov             | file   | Paperwork             | 1                  |
+| sort-security        | file   | Security              | 1                  |
+| sort-modelhub        | file   | Security              | 1                  |
+| sort-receipts-cloud  | file   | Receipts/Cloud Vendor | 1                  |
+| sort-receipts-books  | file   | Receipts/Bookstore    | 1                  |
+| sort-advisor         | file   | Financial Advisor     | 5                  |
+| sort-realty          | file   | Realty                | 2                  |
+| sort-briefings       | file   | Briefings             | 2                  |
+| sort-claim-work      | file   | Home Claim/Contractor | 3                  |
+| sort-claim-insurepay | file   | Home Claim/Insurance  | 2                  |
+| sort-claim-insurer   | file   | Home Claim/Insurance  | 1                  |
+| sort-paperwork       | file   | Paperwork             | 4                  |
+
+| Authorised | To trash | To file | Labels to add | To archive | Refused |
+|------------|----------|---------|---------------|------------|---------|
+| 66         | 19       | 47      | 68            | 2          | 0       |
+
+TRASH exactly these thread ids and nothing else:
+thr-1a2e41a4
+thr-1a2e6093
+thr-1a2e7f82
+thr-1a2e9e71
+thr-1a2ebd60
+thr-1a2edc4f
+thr-1a2efb3e
+thr-1a2f1a2d
+thr-1a2f391c
+thr-1a2f580b
+thr-1a2f76fa
+thr-1a2f95e9
+thr-1a2fb4d8
+thr-1a2fd3c7
+thr-1a2ff2b6
+thr-1a3011a5
+thr-1a303094
+thr-1a304f83
+thr-1a306e72
+
+LABEL "Recruiting" onto exactly these thread ids and nothing else:
+thr-1a2b5b3c
+thr-1a2b7a2b
+thr-1a2b991a
+thr-1a2bb809
+thr-1a2bd6f8
+thr-1a2bf5e7
+thr-1a2c14d6
+thr-1a2c33c5
+thr-1a2c52b4
+thr-1a2c71a3
+thr-1a2c9092
+thr-1a2caf81
+thr-1a2cce70
+
+LABEL "Statements" onto exactly these thread ids and nothing else:
+thr-1a2ced5f
+thr-1a2d0c4e
+thr-1a2d2b3d
+thr-1a2d4a2c
+
+LABEL "Medical" onto exactly these thread ids and nothing else:
+thr-1a2d691b
+thr-1a2d880a
+
+LABEL "Banking" onto exactly these thread ids and nothing else:
+thr-1a2da6f9
+thr-1a2dc5e8
+
+LABEL "School" onto exactly these thread ids and nothing else:
+thr-1a2de4d7
+thr-1a2e03c6
+
+LABEL "Paperwork" onto exactly these thread ids and nothing else:
+thr-1a2e22b5
+thr-1a32d91e
+thr-1a32f80d
+thr-1a3316fc
+thr-1a3335eb
+
+LABEL "Security" onto exactly these thread ids and nothing else:
+thr-1a308d61
+thr-1a30ac50
+
+LABEL "Receipts" onto exactly these thread ids and nothing else:
+thr-1a30cb3f
+thr-1a30ea2e
+
+LABEL "Financial Advisor" onto exactly these thread ids and nothing else:
+thr-1a31091d
+thr-1a31280c
+thr-1a3146fb
+thr-1a3165ea
+thr-1a3184d9
+
+LABEL "Realty" onto exactly these thread ids and nothing else:
+thr-1a31a3c8
+thr-1a31c2b7
+
+LABEL "Briefings" onto exactly these thread ids and nothing else:
+thr-1a31e1a6
+thr-1a320095
+
+LABEL "Home Claim" onto exactly these thread ids and nothing else:
+thr-1a321f84
+thr-1a323e73
+thr-1a325d62
+thr-1a327c51
+thr-1a329b40
+thr-1a32ba2f
+
+LABEL "Recruiting/Globex" onto exactly these thread ids and nothing else:
+thr-1a2b5b3c
+thr-1a2b7a2b
+thr-1a2b991a
+thr-1a2bb809
+thr-1a2bd6f8
+thr-1a2bf5e7
+thr-1a2c14d6
+
+LABEL "Recruiting/Initech" onto exactly these thread ids and nothing else:
+thr-1a2c33c5
+thr-1a2c52b4
+thr-1a2c71a3
+thr-1a2c9092
+
+LABEL "Recruiting/Umbrella" onto exactly these thread ids and nothing else:
+thr-1a2caf81
+
+LABEL "Recruiting/Soylent" onto exactly these thread ids and nothing else:
+thr-1a2cce70
+
+LABEL "Receipts/Cloud Vendor" onto exactly these thread ids and nothing else:
+thr-1a30cb3f
+
+LABEL "Receipts/Bookstore" onto exactly these thread ids and nothing else:
+thr-1a30ea2e
+
+LABEL "Home Claim/Contractor" onto exactly these thread ids and nothing else:
+thr-1a321f84
+thr-1a323e73
+thr-1a325d62
+
+LABEL "Home Claim/Insurance" onto exactly these thread ids and nothing else:
+thr-1a327c51
+thr-1a329b40
+thr-1a32ba2f
+
+then REMOVE the INBOX label from exactly these thread ids — this is the "move":
+thr-1a2e22b5
+thr-1a320095
+
+2 filed thread(s) stay in the inbox by rule. Do NOT remove INBOX from those.
+
+43 filed thread(s) had already left the inbox — this run only adds labels to them.
