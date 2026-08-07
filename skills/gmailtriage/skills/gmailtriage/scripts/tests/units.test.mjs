@@ -10,11 +10,13 @@ import assert from 'node:assert/strict';
 import {
   validateRule, validateRuleSet, validateDestination, toGmailQuery, matches,
   normaliseLabel, destinationsOf, reconcileDestinations, archives, RuleProblem,
+  labelPath, isAncestorLabel, subsumes, shadowedRules,
 } from '../lib/rules.mjs';
 import {
   propose, candidateToRule, candidateToSortRule, plan, authorise, buildReceipt,
   undoPlan, matchDestination, NotAuthorised,
   isProtected, hasProtectedSubject,
+  subdivide, clusterToSubRule, vendorHostOf,
 } from '../lib/plan.mjs';
 
 const rule = (over = {}) => ({
@@ -328,11 +330,19 @@ test('reconcile names exactly the folders that must be created first', () => {
     { id: 'b', action: 'label', label: 'Finance/Chase', match: { from: 'b@x.com' }, note: 'two' },
     { id: 'c', action: 'trash', match: { from: 'c@x.com' }, note: 'not a destination' },
   ] };
-  // list_labels shape, and a bare-string list, must both work
+  // list_labels shape, and a bare-string list, must both work.
+  //
+  // `Finance` is in the list without any rule naming it: filing into
+  // `Finance/Chase` applies `Finance` too, so it must exist before anything
+  // moves. Reconciling only the leaf would pass, and then the first apply
+  // would create the parent implicitly — which is precisely what this command
+  // exists to stop.
   for (const have of [[{ name: 'shopping', type: 'user' }], ['shopping']]) {
     const r = reconcileDestinations(doc, have);
-    assert.deepEqual(r.map((d) => d.name), ['Shopping', 'Finance/Chase']);
-    assert.deepEqual(r.map((d) => d.exists), [true, false]);
+    assert.deepEqual(r.map((d) => d.name), ['Shopping', 'Finance', 'Finance/Chase']);
+    assert.deepEqual(r.map((d) => d.exists), [true, false, false]);
+    assert.deepEqual(r.map((d) => d.implied), [false, true, false],
+      'a folder a rule names and one its nesting implies must be distinguishable');
   }
   assert.deepEqual(reconcileDestinations(doc, []).filter((d) => d.exists), []);
 });
@@ -482,4 +492,205 @@ test('a 0.1.0 receipt still undoes — an old receipt must not become unusable',
   assert.deepEqual(u.untrash.map((e) => e.threadId), ['t1', 't2']);
   assert.deepEqual(u.unlabel, []);
   assert.deepEqual(u.reinbox, []);
+});
+
+// ── sub-labels: splitting a folder that grew into several things ────────────
+
+test('a nested destination applies its whole path', () => {
+  assert.deepEqual(labelPath('Recruiting'), ['Recruiting']);
+  assert.deepEqual(labelPath('Recruiting/One Call'), ['Recruiting', 'Recruiting/One Call']);
+  assert.deepEqual(labelPath('A/B/C'), ['A', 'A/B', 'A/B/C']);
+  assert.deepEqual(labelPath(''), []);
+
+  assert.equal(isAncestorLabel('Recruiting', 'Recruiting/UHG'), true);
+  assert.equal(isAncestorLabel('recruiting', 'Recruiting/UHG'), true, 'spelling is not structure');
+  assert.equal(isAncestorLabel('Recruiting', 'Recruiting'), false, 'a folder is not its own ancestor');
+  assert.equal(isAncestorLabel('Recruiting/UHG', 'Recruiting'), false);
+  // the near miss that a naive startsWith gets wrong
+  assert.equal(isAncestorLabel('Rec', 'Recruiting/UHG'), false);
+});
+
+test('a plan files a thread into the parent as well as the sub-label', () => {
+  // Gmail nesting is cosmetic: a thread carrying only `Recruiting/One Call`
+  // does NOT show under `Recruiting`. Without the path, mail filed before a
+  // folder was split carries the parent and mail filed after it does not.
+  const doc = { rules: [
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/One Call', match: { from: '@onecallcm.com' }, note: 'One Call recruiting mail' },
+  ] };
+  const t = { id: 't1', from: 'a@onecallcm.com', subject: 'Interview', labelIds: ['INBOX'] };
+  const p = plan([t], doc);
+  assert.deepEqual(p.taken[0].labels, ['Recruiting', 'Recruiting/One Call']);
+  assert.deepEqual(p.destinations, ['Recruiting', 'Recruiting/One Call']);
+});
+
+test('a retroactive pass adds only what the thread does not already carry', () => {
+  // The undo contract. A thread the user filed into `Recruiting` by hand, then
+  // sub-labelled by this skill, must come back to `Recruiting` — not to
+  // nothing.
+  const doc = { rules: [
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/One Call', match: { from: '@onecallcm.com' }, note: 'One Call recruiting mail' },
+  ] };
+  const filed = { id: 't1', from: 'a@onecallcm.com', subject: 'Interview', labels: ['Recruiting'] };
+  const fresh = { id: 't2', from: 'b@onecallcm.com', subject: 'Interview', labels: ['INBOX'] };
+  const p = plan([filed, fresh], doc);
+
+  assert.deepEqual(p.taken[0].adds, ['Recruiting/One Call'], 'it would re-add a label the thread already had');
+  assert.deepEqual(p.taken[1].adds, ['Recruiting', 'Recruiting/One Call']);
+
+  const r = buildReceipt(p.taken, { at: 'now' });
+  const u = undoPlan(r);
+  // Undoing must never strip `Recruiting` from the thread that already had it.
+  const rec = u.unlabel.find((g) => g.label === 'Recruiting');
+  assert.deepEqual(rec.entries.map((e) => e.threadId), ['t2']);
+  // and innermost first, so a parent is never removed while its child remains
+  assert.deepEqual(u.unlabel.map((g) => g.label), ['Recruiting/One Call', 'Recruiting']);
+});
+
+test('an archiving rule cannot archive mail that already left the inbox', () => {
+  // The one number the user reads on a retroactive pass is "would leave the
+  // inbox", and on that run it is zero. Declaring it per rule instead of per
+  // thread reported 13 moves that would never happen.
+  const doc = { rules: [
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/One Call', match: { from: '@onecallcm.com' }, note: 'One Call recruiting mail' },
+  ] };
+  const inbox = { id: 't1', from: 'a@onecallcm.com', subject: 'S', labelIds: ['INBOX'] };
+  const filed = { id: 't2', from: 'b@onecallcm.com', subject: 'S', labelIds: ['Label_10'], labels: ['Recruiting'] };
+  const p = plan([inbox, filed], doc);
+  assert.equal(p.taken.find((t) => t.threadId === 't1').archive, true);
+  assert.equal(p.taken.find((t) => t.threadId === 't2').archive, false);
+
+  // and a fetch that supplied no labels at all cannot claim otherwise
+  const blind = plan([{ id: 't3', from: 'c@onecallcm.com', subject: 'S' }], doc);
+  assert.equal(blind.taken[0].archive, true, 'absence of evidence became evidence of absence');
+});
+
+test('the scope is a parameter, not a hardcoded inbox', () => {
+  const r = { id: 'x', action: 'label', label: 'Recruiting/UHG', match: { from: '@uhg.com' }, note: 'n' };
+  assert.match(toGmailQuery(r), /\bin:inbox\b/, 'the default is still an inbox run');
+  const retro = toGmailQuery(r, { scope: 'label:Recruiting' });
+  assert.match(retro, /\blabel:Recruiting\b/);
+  assert.doesNotMatch(retro, /\bin:inbox\b/, 'a retroactive pass that still says in:inbox finds nothing');
+  // the idempotence guard survives either way
+  assert.match(retro, /-label:Recruiting\/UHG\b/);
+});
+
+test('a rule that can never fire is detected, not left in the file', () => {
+  const broad = { id: 'a', action: 'trash', match: { from: 'uhg.com' }, note: 'all UHG' };
+  const narrow = { id: 'b', action: 'trash', match: { from: 'careers@recruiting.uhg.com', subjectContains: 'code' }, note: 'codes' };
+  assert.equal(subsumes(broad, narrow), true, 'substring containment is how matches() works');
+  assert.equal(subsumes(narrow, broad), false);
+  // and containment is literal, not "same organisation" — `@uhg.com` is NOT a
+  // substring of `careers@recruiting.uhg.com`, so claiming subsumption there
+  // would kill a rule that really does fire.
+  assert.equal(subsumes({ match: { from: '@uhg.com' } }, narrow), false);
+
+  // every field must be implied, not merely present
+  assert.equal(subsumes({ match: { from: '@x.com', hasUnsubscribe: true } }, { match: { from: 'a@x.com' } }), false);
+  assert.equal(subsumes({ match: { from: '@x.com', hasUnsubscribe: true } }, { match: { from: 'a@x.com', hasUnsubscribe: true } }), true);
+  assert.equal(subsumes({ match: { olderThanDays: 7 } }, { match: { olderThanDays: 3 } }), false, '3 days old is not 7 days old');
+  assert.equal(subsumes({ match: { olderThanDays: 7 } }, { match: { olderThanDays: 30 } }), true);
+  assert.equal(subsumes({ match: { category: 'promotions' } }, { match: { category: 'updates' } }), false);
+
+  // the live rule set's real near-miss: a trash rule for EXPIRED codes must not
+  // be read as shadowing the label rule that keeps fresh ones
+  const expired = { id: 'trash-old', action: 'trash', match: { from: 'careers@recruiting.uhg.com', subjectContains: 'access code', olderThanDays: 7 }, note: 'n' };
+  const fresh = { id: 'keep-new', action: 'label', label: 'Recruiting/UHG', keepInInbox: true, match: { from: 'careers@recruiting.uhg.com', subjectContains: 'access code' }, note: 'n' };
+  assert.equal(subsumes(expired, fresh), false, 'the fresh-code rule was declared dead and would have been deleted');
+
+  const { dead } = shadowedRules([broad, narrow]);
+  assert.deepEqual(dead.map((d) => [d.shadowedBy, d.ruleId]), [['a', 'b']]);
+});
+
+test('a parent rule standing in front of its own sub-label rule is refused', () => {
+  // Not a style complaint. This pair DRIFTS: fresh mail hits the parent rule
+  // first and never reaches the sub-rule, while mail already carrying the
+  // parent skips it (the already-filed short-circuit in `matches`) and does.
+  // Same rule set, two outcomes, decided by when the mail arrived.
+  const doc = { rules: [
+    { id: 'sort-uhg', action: 'label', label: 'Recruiting', match: { from: 'careers@recruiting.uhg.com' }, note: 'UHG recruiting mail' },
+    { id: 'sort-uhg-sub', action: 'label', label: 'Recruiting/UnitedHealth Group', match: { from: 'careers@recruiting.uhg.com' }, note: 'UHG recruiting mail' },
+  ] };
+  assert.throws(() => validateRuleSet(doc), RuleProblem);
+  assert.throws(() => validateRuleSet(doc), /Recruiting\/UnitedHealth Group/);
+
+  // Only THIS order drifts. Sub-label first is a working configuration — the
+  // sub-rule applies the parent too — so it must NOT be refused, merely
+  // reported as leaving the parent rule dead. Refusing both would make the
+  // check look like a complaint about nesting rather than about drift.
+  const swapped = { rules: [doc.rules[1], doc.rules[0]] };
+  const rows = validateRuleSet(swapped);
+  assert.equal(rows.find((r) => r.id === 'sort-uhg').shadowedBy, 'sort-uhg-sub',
+    'the now-dead parent rule was not reported at all');
+
+  // and the corrected set passes, or the check above is just rejecting nesting
+  assert.ok(validateRuleSet({ rules: [
+    { id: 'sort-uhg', action: 'label', label: 'Recruiting/UnitedHealth Group', match: { from: 'careers@recruiting.uhg.com' }, note: 'UHG recruiting mail' },
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/One Call', match: { from: '@onecallcm.com' }, note: 'One Call recruiting mail' },
+  ] }).length === 2);
+});
+
+const filedThread = (from, subject, i) => ({
+  id: `${from}-${i}`, from, subject, date: '2026-08-01T00:00:00Z', labelIds: ['Label_10'], labels: ['Recruiting'],
+});
+
+test('subdivide clusters a folder by sender domain and houses what it can', () => {
+  const threads = [
+    ...Array.from({ length: 7 }, (_, i) => filedThread('Skye_Laskin@onecallcm.com', 'Interview with One Call', i)),
+    ...Array.from({ length: 4 }, (_, i) => filedThread('careers@recruiting.uhg.com', 'Opening at UnitedHealth Group', i)),
+  ];
+  const r = subdivide(threads, { parent: 'Recruiting', labels: ['Recruiting', 'Recruiting/One Call', 'Statements'] });
+
+  assert.equal(r.clusters.length, 2);
+  assert.equal(r.clusters[0].from, '@onecallcm.com');
+  assert.equal(r.clusters[0].count, 7);
+  assert.equal(r.clusters[0].destination, 'Recruiting/One Call', 'an existing sub-label is the home');
+  // UHG has no sub-label yet, and naming one is not this function's job
+  assert.equal(r.clusters[1].destination, null);
+  assert.equal(r.unhoused, 1);
+
+  // Only sub-labels of THIS parent are candidate homes. `Statements` shares no
+  // token here, but a top-level match would be wrong even if it did.
+  assert.deepEqual(r.knownChildren, ['Recruiting/One Call']);
+});
+
+test('subdivide never names a sub-label after the mail vendor', () => {
+  // Ashby sends for whichever employer bought it. `Recruiting/Ashbyhq` files
+  // every one of them into one folder — the same failure as filing a school
+  // district under `Onlinejmc`, committed by the fix for it.
+  assert.equal(vendorHostOf('no-reply@ashbyhq.com'), 'ashbyhq');
+  assert.equal(vendorHostOf('noreply@candidates.workablemail.com'), 'workable');
+  assert.equal(vendorHostOf('careers@recruiting.uhg.com'), null);
+
+  const threads = [
+    filedThread('no-reply@ashbyhq.com', 'Nate - Thanks for applying to Obvious!', 0),
+    filedThread('no-reply@ashbyhq.com', 'Thanks for applying to Someone Else', 1),
+  ];
+  // even when a sub-label exists whose name WOULD match the vendor's domain
+  const r = subdivide(threads, { parent: 'Recruiting', labels: ['Recruiting/Ashbyhq'] });
+  assert.equal(r.clusters[0].vendorHost, 'ashbyhq');
+  assert.equal(r.clusters[0].destination, null, 'it housed a vendor cluster under the vendor');
+  assert.equal(r.vendorHosted, 1);
+  // the subjects are carried, because that is where the organisation's name is
+  assert.equal(r.clusters[0].subjects.length, 2);
+
+  // and a rule for one cannot be built from the sender alone
+  assert.throws(() => clusterToSubRule(r.clusters[0], 'Recruiting/Obvious'), /subjectContains/);
+  const rule = clusterToSubRule(r.clusters[0], 'Recruiting/Obvious', 'Obvious');
+  assert.equal(rule.match.subjectContains, 'Obvious');
+  assert.ok(validateRule(rule));
+});
+
+test('subdivide says so when a folder is still one thing', () => {
+  const threads = Array.from({ length: 4 }, (_, i) => filedThread('Fidelity.eDocuments@mail.fidelity.com', 'New statement', i));
+  const r = subdivide(threads, { parent: 'Statements', labels: [] });
+  assert.equal(r.clusters.length, 1);
+  assert.ok(r.single, 'a one-entity folder must be reported as not worth splitting');
+
+  // and an empty folder is a result with a reason, never a bare empty table
+  const empty = subdivide([], { parent: 'Statements', labels: [] });
+  assert.equal(empty.clusters.length, 0);
+  assert.equal(empty.reason.kind, 'empty-folder');
+  assert.ok(empty.reason.text.includes('Statements'));
+
+  assert.throws(() => subdivide(threads, { parent: '' }), /--parent/);
 });

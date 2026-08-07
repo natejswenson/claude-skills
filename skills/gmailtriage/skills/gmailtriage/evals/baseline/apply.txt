@@ -3,52 +3,52 @@
 | success-e-rocketreach-co          | trash  | —           | 3                  |
 | support-npmjs-com                 | trash  | —           | 9                  |
 | sort-existing-folder              | file   | Reciepts    | 3                  |
-| sort-careers-recruiting-uhg-com   | file   | Job Search  | 5                  |
+| sort-recruiting-org-b             | file   | Job Search  | 5                  |
 | sort-onlinejmc-com                | file   | School      | 2                  |
 | sort-alerts-notify-wellsfargo-com | file   | Banking     | 2                  |
 
-| Authorised | To trash | To file | To archive | Refused |
-|------------|----------|---------|------------|---------|
-| 24         | 12       | 12      | 4          | 0       |
+| Authorised | To trash | To file | Labels to add | To archive | Refused |
+|------------|----------|---------|---------------|------------|---------|
+| 24         | 12       | 12      | 12            | 4          | 0       |
 
 TRASH exactly these thread ids and nothing else:
-thr-677b9018d3
-thr-80adbc8db2
-thr-9d344bc4d0
-thr-3b002806e0
-thr-2dcd0dd6d1
-thr-86be8278b9
-thr-9fba2ce8bc
-thr-451b37d0fa
-thr-2f849a008c
-thr-11697368dc
-thr-b4b54f4021
-thr-4bf9fd6084
+thr-9f2be351fa
+thr-007ef08c2a
+thr-283182e420
+thr-9a7a08c394
+thr-311c9294fb
+thr-a527354dd7
+thr-176d52dbbb
+thr-32b948afc7
+thr-4035bba3f7
+thr-c70f942110
+thr-f2a6a71611
+thr-040d0bab95
 
 LABEL "Reciepts" onto exactly these thread ids and nothing else:
-thr-5b3a2a4424
-thr-152d987378
-thr-ff4652becd
+thr-5732c05f18
+thr-aca33773e8
+thr-add972b026
 
 LABEL "Job Search" onto exactly these thread ids and nothing else:
-thr-29647d4d14
-thr-61bda61d79
-thr-99c9daac4c
-thr-7910ca33f8
-thr-9b3700be74
+thr-e03f205d86
+thr-54380bfb93
+thr-4c0e04344c
+thr-2677fb7c40
+thr-dc8d89ed04
 
 LABEL "School" onto exactly these thread ids and nothing else:
-thr-ff1df25c76
-thr-1867188229
+thr-1c5614afc0
+thr-718963833b
 
 LABEL "Banking" onto exactly these thread ids and nothing else:
-thr-2e4b8a02e8
-thr-b9fe0e33af
+thr-1aca32d193
+thr-ef2fa2e5c1
 
 then REMOVE the INBOX label from exactly these thread ids — this is the "move":
-thr-ff1df25c76
-thr-2e4b8a02e8
-thr-b9fe0e33af
-thr-1867188229
+thr-1c5614afc0
+thr-1aca32d193
+thr-ef2fa2e5c1
+thr-718963833b
 
 8 filed thread(s) stay in the inbox by rule. Do NOT remove INBOX from those.

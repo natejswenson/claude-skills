@@ -3,47 +3,46 @@ TRASH — bulk mail a rule would move to the trash
 | Rule id                         | Sender                          | In sample | Bulk | Example subject                                |
 |---------------------------------|---------------------------------|-----------|------|------------------------------------------------|
 | support-npmjs-com               | support@npmjs.com               | 9         | 9    | Successfully published @natjswenson/press@0.6… |
+| person5-org-b-f922-example      | person5@org-b-f922.example      | 5         | 3    | (personal thread)                              |
 | success-e-rocketreach-co        | success@e.rocketreach.co        | 3         | 3    | Success Tips #4: Save Time & Boost Outreach w… |
-| sender-3ee497-message-fedex-com | sender-3ee497@message.fedex.com | 2         | 2    | FedEx Values Your Feedback                     |
-| sender-c21113-onlinejmc-com     | sender-c21113@onlinejmc.com     | 2         | 2    | New Bus Rider Registration                     |
+| sender-036144-message-fedex-com | sender-036144@message.fedex.com | 2         | 2    | FedEx Values Your Feedback                     |
+| sender-1417f5-onlinejmc-com     | sender-1417f5@onlinejmc.com     | 2         | 2    | New Bus Rider Registration                     |
 
 SORT — mail worth keeping, filed out of the inbox
 
 | Rule id                              | Sender                          | In sample | Destination      | Folder | Leaves inbox         |
 |--------------------------------------|---------------------------------|-----------|------------------|--------|----------------------|
-| sort-careers-recruiting-uhg-com      | careers@recruiting.uhg.com      | 5         | — needs a name — | NEW    | no — tagged in place |
-| sort-sender-d32881-mail-fidelity-com | sender-d32881@mail.fidelity.com | 3         | — needs a name — | NEW    | no — tagged in place |
+| sort-sender-55d189-mail-fidelity-com | sender-55d189@mail.fidelity.com | 3         | — needs a name — | NEW    | no — tagged in place |
 | sort-alerts-notify-wellsfargo-com    | alerts@notify.wellsfargo.com    | 2         | — needs a name — | NEW    | yes                  |
 
-3 sender(s) have no folder that fits. Naming one is your call, not mine —
+2 sender(s) have no folder that fits. Naming one is your call, not mine —
 a folder name is a decision about how you think, and nothing in the mail says it.
 
 | Withheld from trash                        | In sample | Why not proposed                                                         |
 |--------------------------------------------|-----------|--------------------------------------------------------------------------|
-| careers@recruiting.uhg.com                 | 5         | sender looks financial, medical, educational, governmental or recruiting |
-| person4@example.invalid                    | 3         | no bulk-mail marker — may be a person, not a sender                      |
-| person6@example.invalid                    | 3         | no bulk-mail marker — may be a person, not a sender                      |
-| sender-d32881@mail.fidelity.com            | 3         | sender looks financial, medical, educational, governmental or recruiting |
+| person4@org-a-2678.example                 | 3         | no bulk-mail marker — may be a person, not a sender                      |
+| person7@org-a-2678.example                 | 3         | no bulk-mail marker — may be a person, not a sender                      |
+| sender-55d189@mail.fidelity.com            | 3         | sender looks financial, medical, educational, governmental or recruiting |
 | alerts@notify.wellsfargo.com               | 2         | sender looks financial, medical, educational, governmental or recruiting |
-| person1@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
-| person2@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
-| person3@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
-| person9@example.invalid                    | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| person1@org-a-2678.example                 | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| person10@org-a-2678.example                | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| person2@org-a-2678.example                 | 2         | no bulk-mail marker — may be a person, not a sender                      |
+| person3@org-a-2678.example                 | 2         | no bulk-mail marker — may be a person, not a sender                      |
 | mychartmessage@sanfordhealth.org           | 1         | sender looks financial, medical, educational, governmental or recruiting |
 | no-reply@ashbyhq.com                       | 1         | sender looks financial, medical, educational, governmental or recruiting |
 | no-reply@mail.goodreads.com                | 1         | no bulk-mail marker — may be a person, not a sender                      |
 | noreply@candidates.workablemail.com        | 1         | sender looks financial, medical, educational, governmental or recruiting |
 | noreply@tractive.com                       | 1         | cluster contains a login code, receipt or verification you cannot lose   |
 | paymentmessage@sanfordhealth.org           | 1         | sender looks financial, medical, educational, governmental or recruiting |
-| person11@example.invalid                   | 1         | no bulk-mail marker — may be a person, not a sender                      |
-| person5@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
-| person7@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
-| person8@example.invalid                    | 1         | no bulk-mail marker — may be a person, not a sender                      |
-| sender-3832e9@shareholderdocs.fidelity.com | 1         | sender looks financial, medical, educational, governmental or recruiting |
-withheld from TRASHING, not from sorting — 3 of these 20 appear in the sort table above.
+| person11@org-a-2678.example                | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person6@org-a-2678.example                 | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person8@org-a-2678.example                 | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| person9@org-a-2678.example                 | 1         | no bulk-mail marker — may be a person, not a sender                      |
+| sender-a382ce@shareholderdocs.fidelity.com | 1         | sender looks financial, medical, educational, governmental or recruiting |
+withheld from TRASHING, not from sorting — 2 of these 19 appear in the sort table above.
 
 | Sampled | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
 |---------|-------------|-------|------|-------------------|----------|-----------------|
-| 60      | 19          | 4     | 3    | 3                 | 20       | 9               |
+| 60      | 19          | 5     | 2    | 2                 | 19       | 9               |
 
 nothing has moved — these are candidates. Accept the ones you want with `rules --add`.

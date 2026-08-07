@@ -44,12 +44,15 @@ in `skill-invariants.json` rather than left to taste.
 gmailtriage setup     # where this mailbox stands, and the single next thing to do
 gmailtriage propose   # cluster your real inbox into two tables — bulk mail worth trashing, and mail
                       # worth filing, each matched against the folders you already have. Moves nothing.
+gmailtriage subdivide # split a folder that has grown into several things — clusters the mail already
+                      # in it by sender, and says plainly when it is still one thing. Moves nothing.
 gmailtriage rules     # validate and store rules, showing the Gmail query each compiles to, where it
                       # files to, and whether the thread leaves the inbox
 gmailtriage labels    # reconcile every destination against your real labels; exits non-zero naming
                       # exactly what must be created, so a run never dies halfway through
 gmailtriage plan      # exactly which threads each rule takes, where each goes, and how many leave
-                      # the inbox. Reads only.
+                      # the inbox. Reads only. `--scope 'label:X'` applies your rules to the mail
+                      # already in a folder, instead of only to what arrives next.
 gmailtriage apply     # authorise exactly what the plan named, per action, and write a receipt
 gmailtriage undo      # reverse a whole run — untrash, unlabel, and put back in the inbox
 ```

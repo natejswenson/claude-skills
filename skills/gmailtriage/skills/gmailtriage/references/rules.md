@@ -57,8 +57,42 @@ is never ambiguous.
 | a destination over 225 characters | Gmail's own limit |
 | `label` or `keepInInbox` on a rule that is not a label rule | it reads as sorting and does not sort |
 
+| a rule filing into a folder standing in front of one filing into a **sub-label of that folder**, where the first takes everything the second would | this pair does not fail, it drifts — see below |
+
 Validation runs **before** anything is written, so a bad rule never reaches the
 file, let alone a plan.
+
+## Rules that can never fire
+
+`plan` gives a thread to the **first** rule that matches it, so a rule preceded
+by a broader one is dead. Detecting that needs an implication test rather than
+an equality test: `{from: "acme.example"}` takes everything
+`{from: "careers@jobs.acme.example", subjectContains: "code"}` would, because
+matching is substring containment.
+
+Two tiers, because the two cases cost differently:
+
+- **Reported.** A broad trash rule in front of a narrow one leaves dead weight
+  in the file and nothing worse. `rules` names it; nothing is refused, because
+  refusing would break rule sets that already work.
+- **Refused.** A rule filing into `Recruiting` in front of one filing into
+  `Recruiting/Contoso`. That pair *drifts* rather than failing:
+  fresh mail hits the parent rule first and never reaches the sub-rule, while
+  mail already carrying `Recruiting` skips the parent rule — the query and the
+  matcher both exclude a thread already filed at the destination — and does
+  reach it. Which folder a thread ends up in depends on nothing but when it
+  arrived, and no table anywhere says so.
+
+  The fix is to change the broad rule's destination to the sub-label. Moving the
+  sub-rule ahead of it also stops the drift, since a sub-label applies its
+  parent too — but it leaves a rule that can never fire, and the refusal says
+  both.
+
+The check is deliberately conservative: it must never claim subsumption that is
+not there, because a rule wrongly declared dead is a rule someone deletes.
+`@acme.example` is **not** a substring of `careers@jobs.acme.example`, so those two
+are unrelated as far as this check is concerned, and a `trash` rule for codes
+`olderThanDays: 7` does not shadow the `label` rule that keeps fresh ones.
 
 ## The compiled query
 
@@ -66,6 +100,11 @@ Every rule prints the Gmail query it compiles to. That is the point: a user who
 cannot see the query cannot tell an over-broad rule from a precise one. Read it
 before accepting a rule, and treat `category:promotions OR category:updates`
 (what `hasUnsubscribe` compiles to) as the approximation it is.
+
+The query is scoped to a slice of the mailbox — `in:inbox` unless a run says
+otherwise. `--scope 'label:Recruiting'` is how the same rules are evaluated
+against mail that has already been filed, which is what a retroactive pass over
+an existing folder is. See `sorting.md`.
 
 A label rule's query carries `-label:<destination>`, because a sort rule has
 nothing left to do to a thread already filed there. Without it a `keepInInbox`
