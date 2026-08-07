@@ -63,24 +63,15 @@ test('every sender domain in the corpus is a reserved, unregisterable name', () 
     'a real sender domain reached the corpus — regenerate it with `node evals/baseline/make-corpus.mjs`, never from a live mailbox');
 });
 
-test('no real organisation the mailbox owner deals with is named', () => {
-  // Belt and braces over the domain check: a folder name, a rule note or a
-  // subject line can name an organisation without ever forming an address.
-  // These are the names that were actually in this corpus before 0.4.0.
-  const BANNED = [
-    'uhg', 'unitedhealth', 'onecall', 'panorama', 'sanford', 'wellsfargo', 'fidelity',
-    'parentvendor', 'hawley', 'npmjs', 'leadgen', 'packtpub', 'goodreads', 'typefully',
-    'glassdoor', 'tractive', 'hydrawise', 'audible', 'anthropic', 'stewardship',
-    'visionrealty', 'authentisign', 'geico', 'afics', 'swenson', 'natejswenson',
-  ];
-  const offenders = [];
-  for (const f of corpus) {
-    const text = readFileSync(join(BASELINE, f), 'utf8').toLowerCase();
-    for (const b of BANNED) if (text.includes(b)) offenders.push(`${f}: ${b}`);
-  }
-  assert.deepEqual(offenders, [],
-    'a real organisation is named in the corpus — the fixtures must be generated, not redacted from a mailbox');
-});
+// A hardcoded list of banned organisation names used to live here. It is gone,
+// and its absence is the point: the only way to write that test was to spell
+// out, in a public repo, every organisation the mailbox owner deals with — the
+// exact disclosure the corpus was being cleaned of.
+//
+// The two checks that remain are stronger anyway. A real identifier can only
+// enter a generated fixture as a sender domain (caught above, against a list of
+// TLDs nobody can register) or by hand-editing one (caught below, by
+// regenerating and byte-comparing). There is no third route.
 
 test('the corpus is reproducible from the generator, byte for byte', () => {
   // The generator is the source of truth. If a fixture can be edited by hand

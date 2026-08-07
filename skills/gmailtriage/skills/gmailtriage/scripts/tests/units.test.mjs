@@ -517,7 +517,7 @@ test('a plan files a thread into the parent as well as the sub-label', () => {
   // does NOT show under `Recruiting`. Without the path, mail filed before a
   // folder was split carries the parent and mail filed after it does not.
   const doc = { rules: [
-    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'One Call recruiting mail' },
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'Globex recruiting mail' },
   ] };
   const t = { id: 't1', from: 'a@globex.example', subject: 'Interview', labelIds: ['INBOX'] };
   const p = plan([t], doc);
@@ -530,7 +530,7 @@ test('a retroactive pass adds only what the thread does not already carry', () =
   // sub-labelled by this skill, must come back to `Recruiting` — not to
   // nothing.
   const doc = { rules: [
-    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'One Call recruiting mail' },
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'Globex recruiting mail' },
   ] };
   const filed = { id: 't1', from: 'a@globex.example', subject: 'Interview', labels: ['Recruiting'] };
   const fresh = { id: 't2', from: 'b@globex.example', subject: 'Interview', labels: ['INBOX'] };
@@ -553,7 +553,7 @@ test('an archiving rule cannot archive mail that already left the inbox', () => 
   // inbox", and on that run it is zero. Declaring it per rule instead of per
   // thread reported 13 moves that would never happen.
   const doc = { rules: [
-    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'One Call recruiting mail' },
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'Globex recruiting mail' },
   ] };
   const inbox = { id: 't1', from: 'a@globex.example', subject: 'S', labelIds: ['INBOX'] };
   const filed = { id: 't2', from: 'b@globex.example', subject: 'S', labelIds: ['Label_10'], labels: ['Recruiting'] };
@@ -609,8 +609,8 @@ test('a parent rule standing in front of its own sub-label rule is refused', () 
   // parent skips it (the already-filed short-circuit in `matches`) and does.
   // Same rule set, two outcomes, decided by when the mail arrived.
   const doc = { rules: [
-    { id: 'sort-uhg', action: 'label', label: 'Recruiting', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
-    { id: 'sort-uhg-sub', action: 'label', label: 'Recruiting/Initech', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
+    { id: 'sort-initech', action: 'label', label: 'Recruiting', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
+    { id: 'sort-initech-sub', action: 'label', label: 'Recruiting/Initech', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
   ] };
   assert.throws(() => validateRuleSet(doc), RuleProblem);
   assert.throws(() => validateRuleSet(doc), /Recruiting\/Initech/);
@@ -621,13 +621,13 @@ test('a parent rule standing in front of its own sub-label rule is refused', () 
   // check look like a complaint about nesting rather than about drift.
   const swapped = { rules: [doc.rules[1], doc.rules[0]] };
   const rows = validateRuleSet(swapped);
-  assert.equal(rows.find((r) => r.id === 'sort-uhg').shadowedBy, 'sort-uhg-sub',
+  assert.equal(rows.find((r) => r.id === 'sort-initech').shadowedBy, 'sort-initech-sub',
     'the now-dead parent rule was not reported at all');
 
   // and the corrected set passes, or the check above is just rejecting nesting
   assert.ok(validateRuleSet({ rules: [
-    { id: 'sort-uhg', action: 'label', label: 'Recruiting/Initech', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
-    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'One Call recruiting mail' },
+    { id: 'sort-initech', action: 'label', label: 'Recruiting/Initech', match: { from: 'careers@recruiting.initech.example' }, note: 'UHG recruiting mail' },
+    { id: 'sort-oc', action: 'label', label: 'Recruiting/Globex', match: { from: '@globex.example' }, note: 'Globex recruiting mail' },
   ] }).length === 2);
 });
 
@@ -637,7 +637,7 @@ const filedThread = (from, subject, i) => ({
 
 test('subdivide clusters a folder by sender domain and houses what it can', () => {
   const threads = [
-    ...Array.from({ length: 7 }, (_, i) => filedThread('recruiter1@globex.example', 'Interview with One Call', i)),
+    ...Array.from({ length: 7 }, (_, i) => filedThread('recruiter1@globex.example', 'Interview with Globex', i)),
     ...Array.from({ length: 4 }, (_, i) => filedThread('careers@recruiting.initech.example', 'Opening at Initech', i)),
   ];
   const r = subdivide(threads, { parent: 'Recruiting', labels: ['Recruiting', 'Recruiting/Globex', 'Statements'] });

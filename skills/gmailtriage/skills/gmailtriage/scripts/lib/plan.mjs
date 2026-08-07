@@ -284,16 +284,18 @@ export const candidateToSortRule = (c, destination = c.destination) => {
  * near match is a coin flip between `Health Insurance` and `Healthcare`. This
  * one searches only the children the user deliberately created under one
  * parent — a handful of names, all about the same subject — so the risk profile
- * is different, and being too strict has its own cost: `@globex.example` fails
- * an exact match against `Recruiting/Globex` (the token is `globex`, the
- * segment flattens to `onecall`), so a folder the user already made comes back
- * as "needs a name" and a second one is created beside it. That is the exact
+ * is different, and being too strict has its own cost. A sender at
+ * `@globexcorp.example` fails an exact match against a `Recruiting/Globex`
+ * folder the user already made: the address token is `globexcorp`, the segment
+ * flattens to `globex`, and nothing joins them. The cluster comes back as
+ * "needs a name" and a second folder gets created beside the first — the exact
  * failure the strictness was meant to prevent.
  *
  * So: prefix containment in either direction, floored at 4 characters on the
- * shorter side. `onecall` ⊂ `globex` matches; `uhg` against
- * `unitedhealthgroup` does not, and should not — nothing in that address says
- * Initech, and naming it is the user's call.
+ * shorter side. `globex` ⊂ `globexcorp` matches. An initialism does not —
+ * `ihi` against `initechhealthinc` shares no prefix, and should not match,
+ * because nothing in that address says what the initials stand for. Expanding
+ * one is the user's call, not a string comparison's.
  */
 export function matchChildLabel(address, children = []) {
   const tokens = addressTokens(address);
