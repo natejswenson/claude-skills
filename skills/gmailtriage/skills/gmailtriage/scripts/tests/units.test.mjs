@@ -573,7 +573,7 @@ test('the scope is a parameter, not a hardcoded inbox', () => {
   assert.match(retro, /\blabel:Recruiting\b/);
   assert.doesNotMatch(retro, /\bin:inbox\b/, 'a retroactive pass that still says in:inbox finds nothing');
   // the idempotence guard survives either way
-  assert.match(retro, /-label:Recruiting\/UHG\b/);
+  assert.match(retro, /-label:Recruiting\/Initech\b/);
 });
 
 test('a rule that can never fire is detected, not left in the file', () => {
