@@ -181,7 +181,16 @@ function redactLabels(raw) {
       const name = typeof l === 'string' ? l : l?.name ?? l?.label;
       const id = typeof l === 'string' ? null : l?.labelId ?? l?.id ?? null;
       if (!name) return null;
-      return { labelId: redactLabelId(id, name), name: redactLabelName(name) };
+      return {
+        labelId: redactLabelId(id, name),
+        name: redactLabelName(name),
+        // A thread COUNT identifies nobody, and `audit` needs it to tell an
+        // unmanaged folder holding real mail from empty scaffolding — the two
+        // want opposite remedies. Dropping it made every frozen label report
+        // "count unknown", so the classification the golden exists to pin was
+        // never exercised.
+        ...(typeof l === 'object' && l.threadsTotal !== undefined ? { threadsTotal: l.threadsTotal } : {}),
+      };
     }).filter(Boolean),
   };
 }
@@ -201,22 +210,112 @@ function labelMap(path) {
   for (const l of list) {
     const name = typeof l === 'string' ? l : l?.name ?? l?.label;
     const id = typeof l === 'string' ? l : l?.labelId ?? l?.id ?? null;
-    if (name) map.set(id ?? name, { id: redactLabelId(id, name), name: redactLabelName(name) });
+    if (name) map.set(id ?? name, { id: redactLabelId(id, name), name: redactLabelName(name), original: name });
   }
   return map;
 }
 
+/**
+ * Redact a RULE file, using the same mappings the corpus got.
+ *
+ * A rule set is not a mailbox, but it names the same senders and the same
+ * folders — so redacting the corpus and leaving the rules verbatim produces a
+ * fixture where no rule matches anything, and an audit golden over it reports
+ * a mailbox with zero coverage that looks like a real finding.
+ *
+ * Requires `--labels-from`, since a rule's destination has to redact to
+ * whatever the label list called it.
+ */
+function redactRules(doc, known) {
+  const rules = (doc.rules ?? []).map((r) => {
+    const out = { ...r };
+    // An id and a note are prose the user wrote, and both name organisations
+    // freely — `sort-uhg-applications`, "Omega Exteriors invoices via
+    // QuickBooks". Redacting only the matcher and the destination left every
+    // one of them in the corpus AND in the audit golden, which prints rule ids
+    // in its "Filed into by" column.
+    //
+    // The action prefix survives because it carries meaning the golden is
+    // read for; the rest is a stable hash of the original id.
+    const prefix = /^(sort|trash|keep)-/.exec(r.id ?? '')?.[1] ?? 'rule';
+    out.id = `${prefix}-${h(r.id ?? '', 6)}`;
+    out.note = `${r.action} rule, redacted — the original note named an organisation`;
+    if (r.label) {
+      const hit = [...known.values()].find((v) => v.original === r.label);
+      out.label = hit ? hit.name : redactLabelName(r.label);
+    }
+    if (r.match?.from) {
+      // A rule matches a substring of an address, so it may be a bare domain
+      // (`@acme.com`) rather than a whole address. Redact whichever it is
+      // through the same maps the corpus used, so the two still agree.
+      const raw = String(r.match.from);
+      const at = raw.lastIndexOf('@');
+      const domain = (at >= 0 ? raw.slice(at + 1) : raw).toLowerCase();
+      const local = at > 0 ? raw.slice(0, at) : '';
+      if (keepDomain(domain)) out.match = { ...r.match, from: raw.toLowerCase() };
+      else {
+        const d = seenDomains.get(domain) ?? pseudoDomain(domain);
+        // A whole address maps to the person pseudonym the corpus gave it;
+        // a bare domain keeps the `@` so it still matches every sender there.
+        const whole = [...seenPeople.entries()].find(([k]) => k.toLowerCase() === raw.toLowerCase());
+        out.match = { ...r.match, from: whole ? whole[1] : `${local ? '' : '@'}${local ? `${local}@${d}` : d}` };
+      }
+      // A rule that matches on a SUBJECT cannot survive subject redaction: the
+      // subjects it was written against are now "(personal thread)" or a
+      // placeholder, so the rule matches nothing and the fixture reports mail
+      // as unclaimed that the real mailbox files perfectly well — a finding
+      // that looks real and is an artifact of redaction.
+      //
+      // The sender constraint is kept and the subject one dropped. That widens
+      // the rule INSIDE THE FIXTURE ONLY, which is sound here because within a
+      // pseudonymised corpus the sender already identifies the cluster.
+      // `.example` covers both forms a redacted sender takes — the person
+      // pseudonym `personN@org-a.example` and the bare-domain `@org-a.example`
+      // a domain rule becomes. Checking only the first left every domain rule's
+      // subject matcher in place, pointing at subjects that no longer exist.
+      const subjectWasRedacted = /\.example$/.test(out.match.from) || isVendorDomain(domain);
+      if (subjectWasRedacted && out.match.subjectContains) {
+        const { subjectContains, ...rest } = out.match;
+        out.match = rest;
+        // `out.note`, never `r.note` — the original was already replaced above,
+        // and reaching back for it puts every redacted organisation name
+        // straight back into the corpus.
+        out.note = `${out.note} [fixture: subject matcher dropped — the corpus subjects are redacted]`;
+      }
+    }
+    return out;
+  });
+  return { ...doc, rules };
+}
+
 const argv = process.argv.slice(2);
 const labelsMode = argv[0] === '--labels';
-// `--labels-from <real list_labels.json>` resolves each thread's opaque label
-// ids through the SAME redaction the label list gets, so the two halves of the
-// corpus describe one mailbox.
-const lfAt = argv.indexOf('--labels-from');
-const labelsFrom = lfAt >= 0 ? argv[lfAt + 1] : null;
-const args = lfAt >= 0 ? argv.filter((_, i) => i !== lfAt && i !== lfAt + 1) : argv;
+// Flag pairs, stripped out before the two positional arguments are read.
+//
+// `--labels-from` resolves each thread's opaque label ids through the SAME
+// redaction the label list gets, so the two halves of the corpus describe one
+// mailbox. `--rules-in`/`--rules-out` redact a rule set **in the same process**,
+// after the threads — which is the only way it can reuse their sender and
+// folder pseudonyms. Redacting the two separately produces a rule set that
+// matches nothing, and an audit golden over that reports zero coverage while
+// looking like a real finding.
+const flag = (name) => {
+  const i = argv.indexOf(name);
+  return i >= 0 ? argv[i + 1] : null;
+};
+const labelsFrom = flag('--labels-from');
+const rulesIn = flag('--rules-in');
+const rulesOut = flag('--rules-out');
+const FLAGS = ['--labels-from', '--rules-in', '--rules-out'];
+const args = argv.filter((a, i) => !FLAGS.includes(a) && !FLAGS.includes(argv[i - 1]));
 const [src, out] = labelsMode ? args.slice(1) : args;
 if (!src || !out) {
-  console.error('usage: redact.mjs [--labels] [--labels-from <list_labels.json>] <real.json> <out.json>');
+  console.error('usage: redact.mjs [--labels] [--labels-from <list_labels.json>]');
+  console.error('                  [--rules-in <rules.json> --rules-out <out.json>] <real.json> <out.json>');
+  process.exit(2);
+}
+if ((rulesIn || rulesOut) && (!rulesIn || !rulesOut || labelsMode || !labelsFrom)) {
+  console.error('redact.mjs: --rules-in and --rules-out go together, need --labels-from, and run with the THREAD pass');
   process.exit(2);
 }
 
@@ -253,3 +352,10 @@ const threads = JSON.parse(readFileSync(src, 'utf8')).map((t, i) => {
 writeFileSync(out, JSON.stringify(threads, null, 2) + '\n');
 const persons = new Set(threads.filter((t) => isPerson(t.from)).map((t) => t.from)).size;
 console.log(`${threads.length} threads · ${persons} human senders replaced · ids hashed`);
+
+// After the threads, never before: the rule pass reuses the maps they built.
+if (rulesIn) {
+  const doc = redactRules(JSON.parse(readFileSync(rulesIn, 'utf8')), known);
+  writeFileSync(rulesOut, JSON.stringify(doc, null, 2) + '\n');
+  console.log(`${doc.rules.length} rules redacted against the same senders and folders`);
+}

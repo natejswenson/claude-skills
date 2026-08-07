@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE } from './lib/rules.mjs';
-import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, plan, authorise, buildReceipt, undoPlan, NotAuthorised } from './lib/plan.mjs';
+import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised } from './lib/plan.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
@@ -146,6 +146,21 @@ const readLabels = (p) => {
 };
 
 /**
+ * The label list as `list_labels` gave it, keeping `threadsTotal`.
+ *
+ * `readLabels` normalises to `{name, id}`, which is right for matching a
+ * destination and wrong for auditing: an unmanaged folder holding six threads
+ * and an unmanaged folder holding none want opposite remedies — write a rule,
+ * or delete it — and the count is the only thing that distinguishes them.
+ */
+const readLabelsRaw = (p) => {
+  if (!p) return [];
+  const raw = readJson(p, '--labels <file.json> from list_labels');
+  const list = Array.isArray(raw) ? raw : raw.labels ?? raw.result ?? [];
+  return list.map((l) => (typeof l === 'string' ? { name: l } : l)).filter((l) => l?.name ?? l?.label);
+};
+
+/**
  * id → name over EVERY label, system ones included.
  *
  * `readLabels` deliberately drops the system labels, because they are not the
@@ -241,6 +256,137 @@ async function cmdPropose(args) {
       withheld,
     })}`);
   }
+}
+
+// ── audit ───────────────────────────────────────────────────────────────────
+
+/**
+ * Is this label system still coherent?
+ *
+ * Every other command in this skill asks "what do my rules take". None of them
+ * asks whether what the mailbox HAS still makes sense — so a folder no rule
+ * files into, or two spellings of one folder, are invisible for as long as
+ * nobody happens to look. This is the command that looks, and it is meant to
+ * run every time.
+ */
+async function cmdAudit(args) {
+  const labels = readLabelsRaw(args.labels);
+  const doc = readJson(args.rules ?? defaultRules(), 'audit: rule file');
+  validateRuleSet(doc);
+  const threads = args.threads
+    ? (args.labels ? resolveThreadLabels(readJson(args.threads, 'audit: --threads'), readLabelIndex(args.labels))
+      : readJson(args.threads, 'audit: --threads'))
+    : null;
+  const a = audit(labels, doc, threads);
+
+  console.log(table(['Label', 'Threads', 'Status', 'Filed into by'],
+    a.labels.map((l) => [
+      l.name,
+      l.threads ?? '—',
+      l.nearDuplicateOf.length ? `SAME AS ${l.nearDuplicateOf.join(', ')}`
+        : l.managed ? 'managed'
+          : l.empty === true ? 'UNMANAGED — and empty'
+            : l.empty === false ? 'UNMANAGED — holds mail'
+              : 'UNMANAGED — count unknown',
+      l.ruleIds.join(', ') || '—',
+    ])));
+
+  if (a.duplicates.length) {
+    console.log('\none folder, spelled two ways. Mail is split across them and nothing in Gmail says so —');
+    console.log(`fold them together with \`merge --from <wrong> --to <right>\`, then delete the empty one.`);
+  }
+  const orphans = a.unmanaged.filter((l) => l.empty === false && !l.nearDuplicateOf.length);
+  const scaffolding = a.unmanaged.filter((l) => l.empty === true && !l.nearDuplicateOf.length);
+  const unknown = a.unmanaged.filter((l) => l.empty === null && !l.nearDuplicateOf.length);
+  if (orphans.length) {
+    console.log(`\n${orphans.length} folder(s) hold mail no rule files into. They stay sorted exactly as long as`);
+    console.log('you keep sorting them by hand — write a rule, or the next run will not maintain them.');
+  }
+  if (scaffolding.length) {
+    console.log(`\n${scaffolding.length} folder(s) are empty and unmanaged — folders someone made once and never used.`);
+    console.log('Deleting an empty label loses nothing; there is no mail in it to lose.');
+  }
+  if (unknown.length) {
+    console.log(`\n${unknown.length} unmanaged folder(s) came without a thread count, so I cannot tell whether they`);
+    console.log('hold mail or are leftover scaffolding — and those want opposite remedies. Re-fetch');
+    console.log('`list_labels` (it returns `threadsTotal`) before deciding to delete any of them.');
+  }
+
+  if (a.unclaimed) {
+    console.log('\nMAIL NO RULE CLAIMS\n');
+    if (a.unclaimed.clusters.length) {
+      console.log(table(['Sender', 'Threads', 'In inbox', 'Goes to', 'Example subject'],
+        a.unclaimed.clusters.map((c) => [
+          trim(c.from, 34), c.count, c.inInbox ? 'yes' : 'no',
+          c.destination ?? '— needs a name —', trim(c.sample, 40),
+        ])));
+      if (a.unclaimed.clusters.some((c) => c.unhoused) && a.unclaimed.parents.length) {
+        // Printed so a new sender is proposed as a CHILD of something that
+        // already exists. Without this the honest answer to "where does this
+        // go" is always a new top-level folder, and the system sprawls.
+        console.log('\nfolders it could nest under, rather than becoming another top-level one:');
+        console.log('  ' + a.unclaimed.parents.join(' · '));
+      }
+    } else {
+      console.log('nothing — every thread in the sample is claimed by a rule.');
+    }
+  }
+
+  console.log('');
+  console.log(table(['Labels', 'Managed', 'Unmanaged', 'Duplicate spellings', 'Unclaimed mail', 'Coverage'],
+    [[a.labels.length, a.managed, a.unmanaged.length, a.duplicates.length,
+      a.unclaimed ? a.unclaimed.threads : '— not checked —', `${a.coverage}%`]]));
+
+  if (!a.labels.length) {
+    console.log('\nno user labels at all — nothing to audit yet. Run `propose` first.');
+    return;
+  }
+  if (a.clean) {
+    console.log('\nevery folder has a rule, no folder is spelled two ways, and no mail is unclaimed.');
+    return;
+  }
+  console.log('\nthis label system needs attention — see above. Nothing has moved.');
+  process.exitCode = 1;
+}
+
+// ── merge ───────────────────────────────────────────────────────────────────
+
+/**
+ * Fold one folder into another.
+ *
+ * The ordering is the point and it is not cosmetic: the target goes on before
+ * the source comes off. Reversed, every thread spends the gap between two API
+ * calls in neither folder, and a run that dies in that gap leaves it there.
+ */
+async function cmdMerge(args) {
+  const labelsFile = args.labels;
+  const raw = readJson(args.threads ?? '', 'merge: --threads <file.json> of threads carrying the label');
+  const threads = labelsFile ? resolveThreadLabels(raw, readLabelIndex(labelsFile)) : raw;
+  const m = mergeLabels(threads, { from: args.from, to: args.to });
+
+  console.log(table(['Fold', 'Into', 'Threads carrying it', 'Need the target added', 'Already have it'],
+    [[m.from, m.to, m.total, m.label.length, m.alreadyThere]]));
+
+  if (m.total === 0) {
+    console.log(`\nno thread in the sample carries "${m.from}".`);
+    console.log(`If that is the whole mailbox, the folder is empty and can simply be deleted.`);
+    return;
+  }
+
+  const receipt = { at: args.at ?? new Date().toISOString(), count: m.total, entries: mergeReceiptEntries(m) };
+  const out = args.receipt ?? join(homedir(), '.gmailtriage', `receipt-merge-${receipt.at.replace(/[:.]/g, '-')}.json`);
+  console.error(`wrote ${writeJson(out, receipt)}`);
+
+  if (m.label.length) {
+    console.log(`\nfirst, LABEL "${m.to}" onto exactly these thread ids:`);
+    console.log(m.label.map((e) => e.threadId).join('\n'));
+  } else {
+    console.log(`\nevery thread already carries "${m.to}", so nothing needs labelling first.`);
+  }
+  console.log(`\nTHEN — not before — remove "${m.from}" from exactly these thread ids:`);
+  console.log(m.unlabel.map((e) => e.threadId).join('\n'));
+  console.log(`\nfinally, delete the "${m.from}" label itself. It is empty by then, so nothing is lost with it.`);
+  console.log('\ndo these in that order. Removing the old label first leaves the mail in neither folder.');
 }
 
 // ── subdivide ───────────────────────────────────────────────────────────────
@@ -644,6 +790,14 @@ async function cmdUndo(args) {
     console.log(`\nremove the "${label}" label from exactly these thread ids:`);
     console.log(es.map((e) => e.threadId).join('\n'));
   }
+  // Reversing a merge means putting the folded-away folder back — and it was
+  // deleted at the end of that merge, so it has to be created again first.
+  // Emitting a bare `label_thread` here would fail against an id that no
+  // longer exists.
+  for (const { label, entries: es } of u.relabel ?? []) {
+    console.log(`\nre-create the "${label}" label if it is gone, then ADD it back to exactly these thread ids:`);
+    console.log(es.map((e) => e.threadId).join('\n'));
+  }
   if (u.reinbox.length) {
     console.log('\nthen ADD the INBOX label back to exactly these thread ids — they were archived:');
     console.log(u.reinbox.map((e) => e.threadId).join('\n'));
@@ -653,6 +807,8 @@ async function cmdUndo(args) {
 const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against rules you wrote.
 
   gmailtriage setup     [--file <rules.json>]
+  gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
+  gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--scope <query>]
@@ -678,6 +834,8 @@ async function main() {
   try {
     switch (cmd) {
       case 'setup': return await cmdSetup(args);
+      case 'audit': return await cmdAudit(args);
+      case 'merge': return await cmdMerge(args);
       case 'propose': return await cmdPropose(args);
       case 'subdivide': return await cmdSubdivide(args);
       case 'rules': return await cmdRules(args);

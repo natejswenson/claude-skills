@@ -11,12 +11,14 @@ import {
   validateRule, validateRuleSet, validateDestination, toGmailQuery, matches,
   normaliseLabel, destinationsOf, reconcileDestinations, archives, RuleProblem,
   labelPath, isAncestorLabel, subsumes, shadowedRules,
+  isNearDuplicateLabel, MIN_NEAR_DUPLICATE_LENGTH,
 } from '../lib/rules.mjs';
 import {
   propose, candidateToRule, candidateToSortRule, plan, authorise, buildReceipt,
   undoPlan, matchDestination, NotAuthorised,
   isProtected, hasProtectedSubject,
   subdivide, clusterToSubRule, vendorHostOf,
+  audit, mergeLabels, mergeReceiptEntries,
 } from '../lib/plan.mjs';
 
 const rule = (over = {}) => ({
@@ -693,4 +695,151 @@ test('subdivide says so when a folder is still one thing', () => {
   assert.ok(empty.reason.text.includes('Statements'));
 
   assert.throws(() => subdivide(threads, { parent: '' }), /--parent/);
+});
+
+// ── hygiene: is the label system still coherent? ────────────────────────────
+
+test('one folder spelled two ways is detected, including a transposition', () => {
+  // The pair this mailbox actually carried for months, with mail split across
+  // both and nothing in Gmail saying so. Edit distance alone scores it 2 and
+  // misses it; sorted letters catch a transposition exactly.
+  assert.equal(isNearDuplicateLabel('Receipts', 'Reciepts'), true);
+  assert.equal(isNearDuplicateLabel('Reciepts', 'Receipts'), true, 'the check must be symmetric');
+  // a dropped character, which reordering never sees
+  assert.equal(isNearDuplicateLabel('Statements', 'Statments'), true);
+  // and case/spacing is `normaliseLabel`'s job, not a NEAR duplicate
+  assert.equal(isNearDuplicateLabel('Receipts', 'receipts'), false, 'those are the SAME label');
+});
+
+test('the near-duplicate check refuses to cry wolf', () => {
+  // A hygiene check that reports false pairs stops being read, and then the
+  // real pair goes unnoticed too.
+  assert.equal(isNearDuplicateLabel('NPM', 'PNM'), false, 'three characters is below the floor');
+  assert.equal(isNearDuplicateLabel('Medical', 'Banking'), false);
+  assert.equal(isNearDuplicateLabel('Recruiting', 'Receipts'), false);
+  // Deliberately different folders that share a leaf are NOT one folder
+  assert.equal(isNearDuplicateLabel('Finance/Receipts', 'Work/Receipts'), false,
+    'two intentional folders were reported as one misspelling');
+  // but a typo in the leaf is still caught under different parents
+  assert.equal(isNearDuplicateLabel('Finance/Receipts', 'Work/Reciepts'), true);
+  // the floor is real, not incidental
+  assert.ok(MIN_NEAR_DUPLICATE_LENGTH >= 4);
+});
+
+const lbl = (name, threadsTotal) => ({ labelId: `L_${name}`, name, threadsTotal });
+
+test('audit separates a folder holding orphaned mail from empty scaffolding', () => {
+  // Opposite remedies: write a rule for the first, delete the second. Reporting
+  // both as "unmanaged" tells the user to do the wrong thing to one of them.
+  const doc = { rules: [
+    { id: 'sort-bank', action: 'label', label: 'Banking', match: { from: '@bank.example' }, note: 'bank alerts' },
+  ] };
+  const a = audit([lbl('Banking', 2), lbl('Selling_Home', 4), lbl('DevOps_Book', 0), lbl('INBOX', 1)], doc);
+
+  assert.equal(a.labels.length, 3, 'a system label was counted as one of the user\'s folders');
+  assert.deepEqual(a.unmanaged.map((l) => l.name), ['Selling_Home', 'DevOps_Book']);
+  assert.equal(a.unmanaged.find((l) => l.name === 'Selling_Home').empty, false);
+  assert.equal(a.unmanaged.find((l) => l.name === 'DevOps_Book').empty, true);
+  assert.equal(a.coverage, 33);
+  assert.equal(a.clean, false);
+});
+
+test('audit says "count unknown" rather than guessing that a folder holds mail', () => {
+  // A label list without threadsTotal cannot say which remedy applies, and
+  // guessing "holds mail" from a missing field tells the user to write rules
+  // for folders that are empty.
+  const a = audit([{ name: 'Mystery' }], { rules: [] });
+  assert.equal(a.labels[0].empty, null);
+  assert.notEqual(a.labels[0].empty, false);
+});
+
+test('audit counts a correctly-filed thread as claimed, not as unclaimed', () => {
+  // The bug the first live run exposed: `plan` answers "is there work to do",
+  // and says no for a thread already sitting in the folder its rule files
+  // into. Reusing that made the audit report 47 of 48 threads as unclaimed —
+  // a clean mailbox rendered as a broken one.
+  const doc = { rules: [
+    { id: 'sort-bank', action: 'label', label: 'Banking', match: { from: '@bank.example' }, note: 'bank alerts' },
+  ] };
+  const filed = { id: 't1', from: 'alerts@bank.example', subject: 'Balance', labels: ['Banking'] };
+  const orphan = { id: 't2', from: 'someone@nowhere.example', subject: 'Hello', labels: [] };
+
+  const a = audit([lbl('Banking', 1)], doc, [filed, orphan]);
+  assert.equal(a.unclaimed.threads, 1, 'a thread already filed by its own rule was called unclaimed');
+  assert.deepEqual(a.unclaimed.clusters.map((c) => c.from), ['someone@nowhere.example']);
+
+  // and `plan` must still answer its own question the old way, or every run
+  // re-files everything it filed last time
+  assert.equal(plan([filed], doc).taken.length, 0);
+});
+
+test('audit offers existing parents to nest a new sender under', () => {
+  // Without this the honest answer to "where does this go" is always a new
+  // top-level folder, and the label system sprawls instead of growing.
+  const doc = { rules: [{ id: 'r', action: 'label', label: 'Recruiting/Acme', match: { from: '@acme.example' }, note: 'acme jobs' }] };
+  const a = audit([lbl('Recruiting', 5), lbl('Recruiting/Acme', 5)], doc,
+    [{ id: 't', from: 'jobs@newco.example', subject: 'Application received', labels: [] }]);
+  assert.deepEqual(a.unclaimed.parents, ['Recruiting'], 'a sub-label was offered as a nesting parent');
+  assert.equal(a.unclaimed.clusters[0].unhoused, true);
+});
+
+test('audit is clean only when nothing is outstanding', () => {
+  const doc = { rules: [{ id: 'r', action: 'label', label: 'Banking', match: { from: '@bank.example' }, note: 'bank alerts' }] };
+  const clean = audit([lbl('Banking', 1)], doc, [{ id: 't', from: 'a@bank.example', subject: 'S', labels: ['Banking'] }]);
+  assert.equal(clean.clean, true);
+  assert.equal(clean.coverage, 100);
+  // any one of the three findings is enough to make it not clean
+  assert.equal(audit([lbl('Banking', 1), lbl('Stray', 3)], doc).clean, false);
+  assert.equal(audit([lbl('Banking', 1), lbl('Bankign', 0)], doc).clean, false);
+  assert.equal(audit([lbl('Banking', 1)], doc, [{ id: 'x', from: 'q@nowhere.example', subject: 'S', labels: [] }]).clean, false);
+});
+
+// ── merging one folder into another ─────────────────────────────────────────
+
+test('a merge labels before it unlabels', () => {
+  // Ordering is not cosmetic. Reversed, every thread spends the gap between two
+  // API calls in neither folder — and a run that dies in that gap leaves it
+  // there permanently.
+  const threads = [
+    { id: 't1', from: 'a@x.com', subject: 'One', labels: ['Reciepts'] },
+    { id: 't2', from: 'b@x.com', subject: 'Two', labels: ['Reciepts', 'Receipts'] },
+    { id: 't3', from: 'c@x.com', subject: 'Three', labels: ['Banking'] },
+  ];
+  const m = mergeLabels(threads, { from: 'Reciepts', to: 'Receipts' });
+  assert.equal(m.total, 2, 'a thread not carrying the source was swept in');
+  assert.deepEqual(m.label.map((e) => e.threadId), ['t1'], 'only the thread lacking the target needs it');
+  assert.deepEqual(m.unlabel.map((e) => e.threadId), ['t1', 't2'], 'every carrier must lose the source');
+  assert.equal(m.alreadyThere, 1);
+});
+
+test('a merge that moves no mail is still recorded, so it can be undone', () => {
+  // The real case: the typo folder's only thread already carried the correct
+  // one, so the whole operation was "remove the label, delete the folder".
+  // Recording nothing would make it unreversible.
+  const threads = [{ id: 't1', from: 'a@x.com', subject: 'One', labels: ['Reciepts', 'Receipts'] }];
+  const m = mergeLabels(threads, { from: 'Reciepts', to: 'Receipts' });
+  assert.equal(m.label.length, 0);
+  assert.equal(m.unlabel.length, 1);
+
+  const u = undoPlan({ at: 'now', entries: mergeReceiptEntries(m) });
+  assert.deepEqual(u.relabel.map((g) => g.label), ['Reciepts'], 'undo cannot put the folded folder back');
+  assert.deepEqual(u.relabel[0].entries.map((e) => e.threadId), ['t1']);
+  // and it must NOT strip `Receipts`, which this merge never added
+  assert.deepEqual(u.unlabel, []);
+});
+
+test('undoing a merge that DID move mail takes the target back off', () => {
+  const threads = [{ id: 't1', from: 'a@x.com', subject: 'One', labels: ['Reciepts'] }];
+  const m = mergeLabels(threads, { from: 'Reciepts', to: 'Receipts' });
+  const u = undoPlan({ at: 'now', entries: mergeReceiptEntries(m) });
+  assert.deepEqual(u.unlabel.map((g) => g.label), ['Receipts'], 'the label the merge added was left on');
+  assert.deepEqual(u.relabel.map((g) => g.label), ['Reciepts']);
+});
+
+test('a merge refuses the cases that would lose mail', () => {
+  assert.throws(() => mergeLabels([], { from: 'A' }), /--from and --to/);
+  assert.throws(() => mergeLabels([], { from: 'Receipts', to: 'receipts' }), /same label/);
+  // folding a parent into its own child leaves the child holding mail the
+  // parent no longer names
+  assert.throws(() => mergeLabels([], { from: 'Recruiting', to: 'Recruiting/Acme' }), /parent of/);
 });

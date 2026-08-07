@@ -1,0 +1,33 @@
+| Label                   | Threads | Status  | Filed into by                                                   |
+|-------------------------|---------|---------|-----------------------------------------------------------------|
+| Folder 90f6             | 0       | managed | sort-384bba                                                     |
+| Recruiting              | 13      | managed | sort-817cca, sort-fcc9d6, sort-ac3376, sort-00a4d3, sort-6220a7 |
+| Folder 85f8             | 4       | managed | sort-61bdcb                                                     |
+| Folder fec8             | 2       | managed | sort-08c346                                                     |
+| Banking                 | 2       | managed | sort-6e8484                                                     |
+| School                  | 0       | managed | sort-91bc04                                                     |
+| Recruiting/Folder b62d  | 4       | managed | sort-817cca, sort-fcc9d6                                        |
+| Recruiting/Folder c9d2  | 7       | managed | sort-ac3376                                                     |
+| Recruiting/Folder 65b4  | 1       | managed | sort-00a4d3                                                     |
+| Recruiting/Folder b40c  | 1       | managed | sort-6220a7                                                     |
+| Receipts/Folder e6be    | 1       | managed | sort-2edd93                                                     |
+| Receipts/Folder c3b0    | 1       | managed | sort-3e5607                                                     |
+| Folder 95ef/Folder 4e14 | 3       | managed | sort-a72d43                                                     |
+| Folder 95ef/Folder 4731 | 3       | managed | sort-f6a949, sort-cd2f13                                        |
+| Folder 8f6f             | 2       | managed | sort-34ee06, sort-f25a73                                        |
+| Folder c97e             | 4       | managed | sort-4cbca2                                                     |
+| Receipts                | 2       | managed | sort-3e5607, sort-2edd93                                        |
+| Folder 1db6             | 2       | managed | sort-d8c5b1                                                     |
+| Folder 95ef             | 6       | managed | sort-a72d43, sort-f6a949, sort-cd2f13                           |
+| Folder fd1b             | 2       | managed | sort-d2214f                                                     |
+| Financial Advisor       | 5       | managed | sort-3bdcd2                                                     |
+
+MAIL NO RULE CLAIMS
+
+nothing — every thread in the sample is claimed by a rule.
+
+| Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
+|--------|---------|-----------|---------------------|----------------|----------|
+| 21     | 21      | 0         | 0                   | 0              | 100%     |
+
+every folder has a rule, no folder is spelled two ways, and no mail is unclaimed.

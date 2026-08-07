@@ -1,0 +1,312 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "rule-ea510e",
+      "action": "trash",
+      "match": {
+        "from": "authorservices@packtpub.com",
+        "hasUnsubscribe": true
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-c1e070",
+      "action": "trash",
+      "match": {
+        "from": "fedex@message.fedex.com",
+        "hasUnsubscribe": true
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-51fc4c",
+      "action": "trash",
+      "match": {
+        "from": "no-reply@mail.goodreads.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-d1ddc8",
+      "action": "trash",
+      "match": {
+        "from": "@e.rocketreach.co"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-ea4488",
+      "action": "trash",
+      "match": {
+        "from": "support@api.bible"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-60e9d5",
+      "action": "trash",
+      "match": {
+        "from": "noreply@github.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-7a95ac",
+      "action": "trash",
+      "match": {
+        "from": "noreply@glassdoor.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-1cc0cd",
+      "action": "trash",
+      "match": {
+        "from": "workspace-noreply@google.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-6fda15",
+      "action": "trash",
+      "match": {
+        "from": "fabrizio@typefully.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-d962ca",
+      "action": "trash",
+      "match": {
+        "from": "notifications@typefully.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-60fd47",
+      "action": "trash",
+      "match": {
+        "from": "noreply@org-p-7f7e.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-2b0885",
+      "action": "trash",
+      "match": {
+        "from": "do-not-reply@org-q-7a71.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-b4549d",
+      "action": "trash",
+      "match": {
+        "from": "support@npmjs.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-27ef21",
+      "action": "trash",
+      "match": {
+        "from": "noreply@tractive.com"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-1920ec",
+      "action": "trash",
+      "match": {
+        "from": "no-reply@org-r-9c4b.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "trash-deb5f7",
+      "action": "trash",
+      "match": {
+        "from": "person8@org-h-f922.example",
+        "olderThanDays": 7
+      },
+      "note": "trash rule, redacted — the original note named an organisation [fixture: subject matcher dropped — the corpus subjects are redacted]"
+    },
+    {
+      "id": "sort-817cca",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "keepInInbox": true,
+      "match": {
+        "from": "person8@org-h-f922.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation [fixture: subject matcher dropped — the corpus subjects are redacted]"
+    },
+    {
+      "id": "sort-61bdcb",
+      "action": "label",
+      "label": "Folder 85f8",
+      "match": {
+        "from": "fidelity.com"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-3bdcd2",
+      "action": "label",
+      "label": "Financial Advisor",
+      "match": {
+        "from": "@org-o-f8b7.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-d2214f",
+      "action": "label",
+      "label": "Folder fd1b",
+      "match": {
+        "from": "@org-n-6ffe.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-3e5607",
+      "action": "label",
+      "label": "Receipts",
+      "match": {
+        "from": "person13@org-i-56c2.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-739e2f",
+      "action": "trash",
+      "match": {
+        "from": "solmaz@org-s-6a68.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-c92fa1",
+      "action": "trash",
+      "match": {
+        "from": "ben@org-t-ac37.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-53583b",
+      "action": "trash",
+      "match": {
+        "from": "@org-u-fb0c.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-fcc9d6",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "match": {
+        "from": "person8@org-h-f922.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-ac3376",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "match": {
+        "from": "@org-g-13a7.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-00a4d3",
+      "action": "label",
+      "label": "Recruiting/Folder 65b4",
+      "match": {
+        "from": "@ashbyhq.com"
+      },
+      "note": "label rule, redacted — the original note named an organisation [fixture: subject matcher dropped — the corpus subjects are redacted]"
+    },
+    {
+      "id": "sort-6220a7",
+      "action": "label",
+      "label": "Recruiting/Folder b40c",
+      "match": {
+        "from": "@candidates.workablemail.com"
+      },
+      "note": "label rule, redacted — the original note named an organisation [fixture: subject matcher dropped — the corpus subjects are redacted]"
+    },
+    {
+      "id": "sort-08c346",
+      "action": "label",
+      "label": "Folder fec8",
+      "match": {
+        "from": "@sanfordhealth.org"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-6e8484",
+      "action": "label",
+      "label": "Banking",
+      "match": {
+        "from": "@notify.wellsfargo.com"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-91bc04",
+      "action": "label",
+      "label": "School",
+      "match": {
+        "from": "hawleyschools@onlinejmc.com"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-384bba",
+      "action": "label",
+      "label": "Folder 90f6",
+      "match": {
+        "from": "@org-v-5e3f.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-d8c5b1",
+      "action": "label",
+      "label": "Folder c74b",
+      "match": {
+        "from": "person1@org-a-591b.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation [fixture: subject matcher dropped — the corpus subjects are redacted]"
+    },
+    {
+      "id": "rule-a014f3",
+      "action": "trash",
+      "match": {
+        "from": "@org-w-fcb4.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "rule-30bd2e",
+      "action": "trash",
+      "match": {
+        "from": "msa@org-x-acac.example"
+      },
+      "note": "trash rule, redacted — the original note named an organisation"
+    },
+    {
+      "id": "sort-2edd93",
+      "action": "label",
+      "label": "Receipts",
+      "match": {
+        "from": "@org-e-f112.example"
+      },
+      "note": "label rule, redacted — the original note named an organisation"
+    }
+  ]
+}

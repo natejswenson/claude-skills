@@ -1,0 +1,722 @@
+[
+  {
+    "id": "thr-253bf2cefe",
+    "from": "person1@org-a-591b.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-07T16:10:06Z",
+    "labelIds": [
+      "Label_9f27ecec",
+      "SENT"
+    ],
+    "labels": [
+      "Folder 1db6",
+      "SENT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-4432f0ca74",
+    "from": "no-reply@accounts.google.com",
+    "subject": "Security alert",
+    "date": "2026-08-07T15:40:33Z",
+    "labelIds": [
+      "INBOX",
+      "Label_1bbc9933",
+      "UNREAD"
+    ],
+    "labels": [
+      "INBOX",
+      "Folder 8f6f",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-5f721354e7",
+    "from": "person2@org-b-ae1f.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-06T19:20:57Z",
+    "labelIds": [
+      "INBOX",
+      "Label_1bbc9933"
+    ],
+    "labels": [
+      "INBOX",
+      "Folder 8f6f"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-b35ff9b7d9",
+    "from": "person3@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-06T19:06:27Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-51d4751762",
+    "from": "person4@org-d-f922.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-06T14:55:37Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_ffd6a053"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder b62d"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-d9b1bea50d",
+    "from": "person5@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-04T22:46:28Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-e8320500fa",
+    "from": "person6@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-04T19:48:26Z",
+    "labelIds": [
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-e1a1fce992",
+    "from": "person5@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-31T18:08:57Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-29647d4d14",
+    "from": "person4@org-d-f922.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-30T20:27:55Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_ffd6a053"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder b62d"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-8e7f9dea85",
+    "from": "person5@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-29T18:24:10Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-99c9daac4c",
+    "from": "person4@org-d-f922.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-29T00:47:39Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_ffd6a053"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder b62d"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-7910ca33f8",
+    "from": "person4@org-d-f922.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-28T13:14:25Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_ffd6a053"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder b62d"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-9a3a556b97",
+    "from": "person7@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-27T22:54:03Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-c41c8f0efe",
+    "from": "person7@org-c-13a7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-27T19:13:09Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_10",
+      "Label_1b6cce3c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Recruiting",
+      "Recruiting/Folder c9d2"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-7152e11e92",
+    "from": "no-reply@ashbyhq.com",
+    "subject": "Thanks for applying to Organisation A",
+    "date": "2026-07-24T00:31:14Z",
+    "labelIds": [
+      "Label_10",
+      "Label_45069360"
+    ],
+    "labels": [
+      "Recruiting",
+      "Recruiting/Folder 65b4"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-4427e5aad6",
+    "from": "noreply@candidates.workablemail.com",
+    "subject": "Thanks for applying to Organisation B",
+    "date": "2026-07-22T14:12:27Z",
+    "labelIds": [
+      "Label_10",
+      "Label_3c68e212"
+    ],
+    "labels": [
+      "Recruiting",
+      "Recruiting/Folder b40c"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-5b3a2a4424",
+    "from": "sender-d32881@mail.fidelity.com",
+    "subject": "New statement available",
+    "date": "2026-08-03T19:19:43Z",
+    "labelIds": [
+      "Label_dba52d56"
+    ],
+    "labels": [
+      "Folder 85f8"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-152d987378",
+    "from": "sender-d32881@mail.fidelity.com",
+    "subject": "New Fidelity Government Cash Reserves shareholder report available",
+    "date": "2026-07-30T18:04:02Z",
+    "labelIds": [
+      "Label_dba52d56"
+    ],
+    "labels": [
+      "Folder 85f8"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-e46c42b80d",
+    "from": "sender-3832e9@shareholderdocs.fidelity.com",
+    "subject": "INSPIRE ETFS Important Information",
+    "date": "2026-07-30T08:20:42Z",
+    "labelIds": [
+      "Label_dba52d56"
+    ],
+    "labels": [
+      "Folder 85f8"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-ff4652becd",
+    "from": "sender-d32881@mail.fidelity.com",
+    "subject": "Action Requested: Consent to Electronic Delivery",
+    "date": "2026-07-28T20:33:58Z",
+    "labelIds": [
+      "Label_dba52d56"
+    ],
+    "labels": [
+      "Folder 85f8"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1c2594af74",
+    "from": "mychartmessage@sanfordhealth.org",
+    "subject": "New Message",
+    "date": "2026-07-30T19:24:10Z",
+    "labelIds": [
+      "Label_08279009",
+      "UNREAD"
+    ],
+    "labels": [
+      "Folder fec8",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-cc626500d1",
+    "from": "paymentmessage@sanfordhealth.org",
+    "subject": "You have a new statement",
+    "date": "2026-07-23T13:32:05Z",
+    "labelIds": [
+      "Label_08279009",
+      "UNREAD"
+    ],
+    "labels": [
+      "Folder fec8",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-2e4b8a02e8",
+    "from": "alerts@notify.wellsfargo.com",
+    "subject": "Insufficient funds notice/Extra Day Grace Period",
+    "date": "2026-07-29T17:45:29Z",
+    "labelIds": [
+      "Label_13",
+      "UNREAD"
+    ],
+    "labels": [
+      "Banking",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-b9fe0e33af",
+    "from": "alerts@notify.wellsfargo.com",
+    "subject": "Your balance is at or below zero",
+    "date": "2026-07-29T12:38:51Z",
+    "labelIds": [
+      "Label_13",
+      "UNREAD"
+    ],
+    "labels": [
+      "Banking",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-43ca23f38a",
+    "from": "person8@org-e-f112.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-06T01:35:56Z",
+    "labelIds": [
+      "Label_ca71b31b",
+      "Label_3342700677964876718",
+      "UNREAD"
+    ],
+    "labels": [
+      "Receipts/Folder e6be",
+      "Receipts",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-9950d40187",
+    "from": "person9@org-f-56c2.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-11T14:21:28Z",
+    "labelIds": [
+      "Label_82de2ce4",
+      "Label_3342700677964876718"
+    ],
+    "labels": [
+      "Receipts/Folder c3b0",
+      "Receipts"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-7e51a36ccc",
+    "from": "person10@org-g-6a7f.example",
+    "subject": "(personal thread)",
+    "date": "2026-05-12T01:02:51Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_03c9d3f1"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder c97e"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-ad5d7afab9",
+    "from": "person10@org-g-6a7f.example",
+    "subject": "(personal thread)",
+    "date": "2026-05-08T19:04:20Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_03c9d3f1"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder c97e"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-c6742cd38a",
+    "from": "person10@org-g-6a7f.example",
+    "subject": "(personal thread)",
+    "date": "2026-05-08T01:06:23Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_03c9d3f1",
+      "UNREAD"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder c97e",
+      "UNREAD"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-49d8691a72",
+    "from": "person10@org-g-6a7f.example",
+    "subject": "(personal thread)",
+    "date": "2026-05-06T19:59:09Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_03c9d3f1"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder c97e"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-837d4a31c6",
+    "from": "person11@org-h-b4a1.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-17T23:40:06Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_5341c8d1",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder 95ef/Folder 4731",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-095e76c5e5",
+    "from": "person11@org-h-b4a1.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-14T23:28:02Z",
+    "labelIds": [
+      "Label_5341c8d1",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "Folder 95ef/Folder 4731",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-e419151d15",
+    "from": "person12@org-i-7e52.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-14T21:14:55Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_5341c8d1",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder 95ef/Folder 4731",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-cab7f4c673",
+    "from": "person13@org-j-3eaf.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-13T22:25:46Z",
+    "labelIds": [
+      "Label_29b2fecb",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "Folder 95ef/Folder 4e14",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-482cef2a78",
+    "from": "person13@org-j-3eaf.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-13T16:32:18Z",
+    "labelIds": [
+      "Label_29b2fecb",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "Folder 95ef/Folder 4e14",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-4dd51dcb44",
+    "from": "person13@org-j-3eaf.example",
+    "subject": "(personal thread)",
+    "date": "2025-02-12T22:29:15Z",
+    "labelIds": [
+      "Label_29b2fecb",
+      "Label_8405f32c"
+    ],
+    "labels": [
+      "Folder 95ef/Folder 4e14",
+      "Folder 95ef"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-e530d99eca",
+    "from": "person14@org-k-6ffe.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-04T02:49:43Z",
+    "labelIds": [
+      "Label_ff6442c3"
+    ],
+    "labels": [
+      "Folder fd1b"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-43e6c1129c",
+    "from": "person14@org-k-6ffe.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-15T17:58:08Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_ff6442c3"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder fd1b"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-2f61834f62",
+    "from": "person15@org-l-f8b7.example",
+    "subject": "(personal thread)",
+    "date": "2026-08-03T19:11:52Z",
+    "labelIds": [
+      "Label_824223884357394311"
+    ],
+    "labels": [
+      "Financial Advisor"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-adb8bc06c8",
+    "from": "person16@org-l-f8b7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-30T14:08:41Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_824223884357394311"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Financial Advisor"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-dbca33c96a",
+    "from": "person16@org-l-f8b7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-29T16:56:49Z",
+    "labelIds": [
+      "Label_824223884357394311"
+    ],
+    "labels": [
+      "Financial Advisor"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-941a36f07c",
+    "from": "person16@org-l-f8b7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-29T16:56:23Z",
+    "labelIds": [
+      "Label_824223884357394311",
+      "UNREAD"
+    ],
+    "labels": [
+      "Financial Advisor",
+      "UNREAD"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-db4b63a0cc",
+    "from": "person15@org-l-f8b7.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-21T19:13:46Z",
+    "labelIds": [
+      "Label_824223884357394311"
+    ],
+    "labels": [
+      "Financial Advisor"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-531a9985a7",
+    "from": "person1@org-a-591b.example",
+    "subject": "(personal thread)",
+    "date": "2026-07-15T13:36:59Z",
+    "labelIds": [
+      "IMPORTANT",
+      "Label_9f27ecec",
+      "SENT"
+    ],
+    "labels": [
+      "IMPORTANT",
+      "Folder 1db6",
+      "SENT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  }
+]

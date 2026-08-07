@@ -1,12 +1,22 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
   "label": "the-real-run",
-  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" > $OUT/retro-converged.txt",
+  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" > $OUT/retro-converged.txt && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json > $OUT/audit-before.txt || true && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json > $OUT/audit-after.txt && node scripts/gmailtriage.js merge --from Reciepts --to Receipts --threads evals/baseline/mailbox-before.json --labels evals/baseline/mailbox-before-labels.json --receipt $OUT/merge-receipt.json --at 2026-08-07T12:00:00Z > $OUT/merge.txt",
   "artifacts": [
     {
       "path": "apply.txt",
       "bytes": 1780,
       "sha256": "9dad78fdd17dc212700fbbf8639e53f34b797ee50885b7490b6ce2d202abf47f"
+    },
+    {
+      "path": "audit-after.txt",
+      "bytes": 3038,
+      "sha256": "f3c5a676c4dfac1024d670290d005bde731cb6144bc1f2989404e5257ba806c9"
+    },
+    {
+      "path": "audit-before.txt",
+      "bytes": 4893,
+      "sha256": "fc7a6cd2ee6445f7d70320a35eb636d46a32c38131178039e2983ee4a24b5801"
     },
     {
       "path": "candidates.json",
@@ -17,6 +27,16 @@
       "path": "labels.txt",
       "bytes": 801,
       "sha256": "e4dce195743258f5a82d82e15b4bb2a2dbb420272499695762f7e545dbd69913"
+    },
+    {
+      "path": "merge-receipt.json",
+      "bytes": 389,
+      "sha256": "a12cde6835c4e9d28928b5496a8d92aa57ac115e1908e2d885b9e8a76fe26211"
+    },
+    {
+      "path": "merge.txt",
+      "bytes": 613,
+      "sha256": "928eb72c1af246931d388f12d95cfc5118af10b87b55d90edf33205de8bdfe92"
     },
     {
       "path": "plan.json",
@@ -35,8 +55,8 @@
     },
     {
       "path": "receipt.json",
-      "bytes": 7197,
-      "sha256": "17e127a724eca3625837fae9bd442010b02e5e626cd391820d8ad3bd56b1f9cf"
+      "bytes": 7701,
+      "sha256": "93f396383d6cf133f4179c52b08c44b856e239d0852dc6e368cb467c03c5b2f7"
     },
     {
       "path": "retro-apply.txt",
@@ -65,8 +85,8 @@
     },
     {
       "path": "retro-receipt.json",
-      "bytes": 4233,
-      "sha256": "e350abe1649a087d43dd927501b812f822eae17334682bd091be35e0aec8335c"
+      "bytes": 4506,
+      "sha256": "f1b3a2b7d8bcba1421bd14303eeecf54990b4b8275c4ccb70c626953ebaec986"
     },
     {
       "path": "subdivide-candidates.json",

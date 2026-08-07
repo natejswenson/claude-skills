@@ -44,6 +44,10 @@ in `skill-invariants.json` rather than left to taste.
 gmailtriage setup     # where this mailbox stands, and the single next thing to do
 gmailtriage propose   # cluster your real inbox into two tables — bulk mail worth trashing, and mail
                       # worth filing, each matched against the folders you already have. Moves nothing.
+gmailtriage audit     # is this label system still coherent? folders no rule manages, folders that are
+                      # one folder spelled two ways, and mail no rule claims. Non-zero while any of it
+                      # is outstanding. Run it every time.
+gmailtriage merge     # fold one folder into another, in the only safe order, with a receipt
 gmailtriage subdivide # split a folder that has grown into several things — clusters the mail already
                       # in it by sender, and says plainly when it is still one thing. Moves nothing.
 gmailtriage rules     # validate and store rules, showing the Gmail query each compiles to, where it

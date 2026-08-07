@@ -1,0 +1,154 @@
+{
+  "labels": [
+    {
+      "labelId": "CHAT",
+      "name": "CHAT",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "SENT",
+      "name": "SENT",
+      "threadsTotal": 8
+    },
+    {
+      "labelId": "INBOX",
+      "name": "INBOX",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "IMPORTANT",
+      "name": "IMPORTANT",
+      "threadsTotal": 20
+    },
+    {
+      "labelId": "TRASH",
+      "name": "TRASH",
+      "threadsTotal": 953
+    },
+    {
+      "labelId": "DRAFT",
+      "name": "DRAFT",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "SPAM",
+      "name": "SPAM",
+      "threadsTotal": 18
+    },
+    {
+      "labelId": "STARRED",
+      "name": "STARRED",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "UNREAD",
+      "name": "UNREAD",
+      "threadsTotal": 9
+    },
+    {
+      "labelId": "Label_1017d5cf",
+      "name": "Folder 90f6",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "Label_10",
+      "name": "Recruiting",
+      "threadsTotal": 13
+    },
+    {
+      "labelId": "Label_dba52d56",
+      "name": "Folder 85f8",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_08279009",
+      "name": "Folder fec8",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_13",
+      "name": "Banking",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_14",
+      "name": "School",
+      "threadsTotal": 0
+    },
+    {
+      "labelId": "Label_ffd6a053",
+      "name": "Recruiting/Folder b62d",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_1b6cce3c",
+      "name": "Recruiting/Folder c9d2",
+      "threadsTotal": 7
+    },
+    {
+      "labelId": "Label_45069360",
+      "name": "Recruiting/Folder 65b4",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_3c68e212",
+      "name": "Recruiting/Folder b40c",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_ca71b31b",
+      "name": "Receipts/Folder e6be",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_82de2ce4",
+      "name": "Receipts/Folder c3b0",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_29b2fecb",
+      "name": "Folder 95ef/Folder 4e14",
+      "threadsTotal": 3
+    },
+    {
+      "labelId": "Label_5341c8d1",
+      "name": "Folder 95ef/Folder 4731",
+      "threadsTotal": 3
+    },
+    {
+      "labelId": "Label_1bbc9933",
+      "name": "Folder 8f6f",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_03c9d3f1",
+      "name": "Folder c97e",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_3342700677964876718",
+      "name": "Receipts",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_9f27ecec",
+      "name": "Folder 1db6",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_8405f32c",
+      "name": "Folder 95ef",
+      "threadsTotal": 6
+    },
+    {
+      "labelId": "Label_ff6442c3",
+      "name": "Folder fd1b",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_824223884357394311",
+      "name": "Financial Advisor",
+      "threadsTotal": 5
+    }
+  ]
+}

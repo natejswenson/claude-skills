@@ -35,6 +35,16 @@
       "rationale": "Trash is recoverable for 30 days and the MCP has no permanent delete. Calling it deletion overstates the risk to the user and, worse, invites someone to 'fix' the skill by reaching for a destructive operation that does not exist. Since 0.2.0 the same line covers archiving, which is not destructive at all."
     },
     {
+      "id": "never-leave-a-folder-unmanaged-silently",
+      "pattern": "Never leave a folder unmanaged without saying so",
+      "rationale": "A folder no rule files into stays sorted exactly as long as the user keeps sorting it by hand, and nothing in Gmail ever mentions it. Lose this line and the skill maintains half a mailbox while reporting success over the whole thing — which is worse than maintaining none, because the user stops checking."
+    },
+    {
+      "id": "never-delete-a-label-holding-mail",
+      "pattern": "Never delete a label with mail in it, and never delete one on your own",
+      "rationale": "Deleting an empty folder loses nothing; deleting one holding mail loses the only record of why that mail was kept together, and no receipt can reconstruct it. `merge` exists precisely so a folder with mail in it never has to be deleted."
+    },
+    {
       "id": "a-sub-label-is-never-named-after-the-vendor",
       "pattern": "Never name a sub-label after the sender when the sender hosts mail",
       "rationale": "Splitting a folder into sub-labels re-opens the exact failure the folder-naming rule closed: an applicant tracking system, a signing service or an invoicing platform sends for whoever bought it, so the address names the vendor and the subject names the organisation. Lose this line and `Recruiting/Ashbyhq` files every employer into one folder — the school-district-under-its-mail-vendor bug, committed by the fix for it."
@@ -53,8 +63,16 @@
   "split": {
     "deterministic": [
       {
-        "step": "report whether this mailbox has any rules yet, and the single next thing to do \u2014 the only command safe to run before anything is configured",
+        "step": "report whether this mailbox has any rules yet, and the single next thing to do — the only command safe to run before anything is configured",
         "command": "node scripts/gmailtriage.js setup"
+      },
+      {
+        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims — returning a coverage percentage and exiting non-zero while anything is outstanding",
+        "command": "node scripts/gmailtriage.js audit"
+      },
+      {
+        "step": "fold one folder into another in the only safe order — apply the target label, then remove the source, then delete the source folder — and write a receipt even when no mail moved, so the deleted folder can be restored",
+        "command": "node scripts/gmailtriage.js merge"
       },
       {
         "step": "cluster a real inbox sample into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has",
@@ -95,6 +113,14 @@
         "why": "a folder name is a decision about how the user already thinks — whether their word is \"Shopping\" or \"Retail\", whether the bank goes under \"Finance\" or its own name — and nothing in the mail says it; a script that guesses files a school district under its mail vendor"
       },
       {
+        "step": "decide whether an unmanaged folder should be adopted with a rule or deleted",
+        "why": "a folder holding real mail with no rule behind it wants a rule and an empty one is scaffolding, the remedies are opposite, and the thread count only says which is likely — a folder emptied last week still means something"
+      },
+      {
+        "step": "decide which of two spellings of one folder is the right one",
+        "why": "the skill can prove two labels are one folder; nothing on disk says whether the user's word is \"Receipts\" or \"Reciepts\", and folding mail into the misspelling puts it somewhere they will never think to look"
+      },
+      {
         "step": "name the organisation behind a sender that hosts mail for many of them",
         "why": "an applicant tracking system, a signing service and an invoicing platform all send on behalf of whoever bought them, so the address names the vendor and the subject names the organisation; no-reply@ashbyhq.com is Obvious in one thread and someone else in the next, and only reading the subject says which"
       },
@@ -120,7 +146,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan \u2014 pinned against a real triage run over a frozen, redacted corpus of this account's own threads \u2014 propose, rules and plan re-run and byte-compared."
+      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan — pinned against a real triage run over a frozen, redacted corpus of this account's own threads — propose, rules and plan re-run and byte-compared."
     },
     {
       "id": "apply-refuses-a-thread-the-plan-did-not-name",
@@ -128,7 +154,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the one rule failing silently \u2014 the model, or a bug, trashing something no rule named \u2014 pinned against a receipt-producing apply run handed a thread id absent from its plan."
+      "rationale": "the one rule failing silently — the model, or a bug, trashing something no rule named — pinned against a receipt-producing apply run handed a thread id absent from its plan."
     },
     {
       "id": "a-rule-matching-everything-is-refused",
@@ -136,7 +162,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "a malformed or over-broad rule reaching apply, which is how one bad rule empties an inbox \u2014 pinned against a rule whose compiled query is empty or matches the entire mailbox."
+      "rationale": "a malformed or over-broad rule reaching apply, which is how one bad rule empties an inbox — pinned against a rule whose compiled query is empty or matches the entire mailbox."
     },
     {
       "id": "a-label-rule-cannot-name-a-system-label",
@@ -144,7 +170,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "sorting becoming a way around every trash guard in the skill \u2014 a rule declaring {\"action\":\"label\",\"label\":\"TRASH\"} destroys mail through the one action that exists so nothing is destroyed, and no trash guard is looking at a label rule. Pinned against a rule set naming TRASH, SPAM and CATEGORY_PROMOTIONS as destinations."
+      "rationale": "sorting becoming a way around every trash guard in the skill — a rule declaring {\"action\":\"label\",\"label\":\"TRASH\"} destroys mail through the one action that exists so nothing is destroyed, and no trash guard is looking at a label rule. Pinned against a rule set naming TRASH, SPAM and CATEGORY_PROMOTIONS as destinations."
     },
     {
       "id": "a-sort-authorisation-is-not-a-trash-authorisation",
@@ -152,7 +178,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the two actions collapsing into one permission \u2014 a plan that authorises filing a thread into a folder must not authorise trashing it, since it is the same thread id in the same plan with a catastrophically different outcome. Pinned against a real plan whose label-rule thread ids are handed to apply as a trash list."
+      "rationale": "the two actions collapsing into one permission — a plan that authorises filing a thread into a folder must not authorise trashing it, since it is the same thread id in the same plan with a catastrophically different outcome. Pinned against a real plan whose label-rule thread ids are handed to apply as a trash list."
     },
     {
       "id": "the-real-retroactive-run",
@@ -179,13 +205,37 @@
       "rationale": "the drift that nesting invites — a rule filing into a folder standing ahead of one filing into a sub-label of it does not fail, it splits the mailbox by arrival time. Pinned two-sided against a rule set carrying that exact pair, which must be refused, and the corrected set, which must pass — so the check cannot be satisfied by refusing nesting outright."
     },
     {
+      "id": "the-real-hygiene-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the audit silently ceasing to find what it exists to find — pinned against this mailbox's real label list and rule set BEFORE the hygiene pass (5 unmanaged folders, one transposed duplicate pair, 16 unclaimed threads) and AFTER it (100% coverage, clean, exit 0), both re-run and byte-compared. Catches the unmanaged/duplicate/unclaimed classification drifting, the coverage arithmetic changing, and the clean state ceasing to be reachable."
+    },
+    {
+      "id": "audit-does-not-call-filed-mail-unclaimed",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the defect the first live audit had: it reused `plan`, which answers \"is there work to do\" and says no for a thread already sitting in the folder its rule files into — the most claimed thread in the mailbox. That reported 47 of 48 threads as unclaimed, rendering a clean mailbox as a broken one. Pinned two-sided: the frozen audit must find the real orphans and must NOT find the correctly-filed mail."
+    },
+    {
+      "id": "the-near-duplicate-check-neither-misses-nor-cries-wolf",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a hygiene check that is decorative in either direction. Pinned two-sided against the real transposed pair, which must be caught, and against short and genuinely-different label names, which must not be — a check that reports false pairs stops being read, and then the real pair goes unnoticed too."
+    },
+    {
       "id": "corpus-floor",
       "kind": "corpus",
       "test": "scripts/tests/baseline.test.mjs",
       "corpus_glob": "evals/baseline/*",
       "min_corpus": 10,
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing \u2014 pinned against the frozen thread corpus, label list and rule set, with a declared minimum count."
+      "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing — pinned against the frozen thread corpus, label list and rule set, with a declared minimum count."
     }
   ]
 }

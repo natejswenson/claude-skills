@@ -8,6 +8,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach"
@@ -18,6 +19,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.1"
@@ -28,6 +30,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.0"
@@ -38,6 +41,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #3: Real Results. Real People. RocketReach."
@@ -48,6 +52,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.13.0"
@@ -58,6 +63,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.12.0"
@@ -68,6 +74,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #2: Stop Chasing, Start Connecting"
@@ -78,6 +85,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.2"
@@ -88,6 +96,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.2"
@@ -98,6 +107,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.1"
@@ -108,6 +118,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.1"
@@ -118,6 +129,7 @@
       "action": "trash",
       "label": null,
       "added": [],
+      "removed": [],
       "archived": false,
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.0"
@@ -130,6 +142,7 @@
       "added": [
         "Reciepts"
       ],
+      "removed": [],
       "archived": false,
       "from": "sender-55d189@mail.fidelity.com",
       "subject": "New statement available"
@@ -142,6 +155,7 @@
       "added": [
         "Job Search"
       ],
+      "removed": [],
       "archived": false,
       "from": "person5@org-b-f922.example",
       "subject": "(personal thread)"
@@ -154,6 +168,7 @@
       "added": [
         "Job Search"
       ],
+      "removed": [],
       "archived": false,
       "from": "person5@org-b-f922.example",
       "subject": "(personal thread)"
@@ -166,6 +181,7 @@
       "added": [
         "Reciepts"
       ],
+      "removed": [],
       "archived": false,
       "from": "sender-55d189@mail.fidelity.com",
       "subject": "New Fidelity Government Cash Reserves shareholder report available"
@@ -178,6 +194,7 @@
       "added": [
         "School"
       ],
+      "removed": [],
       "archived": true,
       "from": "sender-1417f5@onlinejmc.com",
       "subject": "New Bus Rider Registration"
@@ -190,6 +207,7 @@
       "added": [
         "Banking"
       ],
+      "removed": [],
       "archived": true,
       "from": "alerts@notify.wellsfargo.com",
       "subject": "Insufficient funds notice/Extra Day Grace Period"
@@ -202,6 +220,7 @@
       "added": [
         "Banking"
       ],
+      "removed": [],
       "archived": true,
       "from": "alerts@notify.wellsfargo.com",
       "subject": "Your balance is at or below zero"
@@ -214,6 +233,7 @@
       "added": [
         "Job Search"
       ],
+      "removed": [],
       "archived": false,
       "from": "person5@org-b-f922.example",
       "subject": "(personal thread)"
@@ -226,6 +246,7 @@
       "added": [
         "Reciepts"
       ],
+      "removed": [],
       "archived": false,
       "from": "sender-55d189@mail.fidelity.com",
       "subject": "Action Requested: Consent to Electronic Delivery"
@@ -238,6 +259,7 @@
       "added": [
         "Job Search"
       ],
+      "removed": [],
       "archived": false,
       "from": "person5@org-b-f922.example",
       "subject": "(personal thread)"
@@ -250,6 +272,7 @@
       "added": [
         "Job Search"
       ],
+      "removed": [],
       "archived": false,
       "from": "person5@org-b-f922.example",
       "subject": "(personal thread)"
@@ -262,6 +285,7 @@
       "added": [
         "School"
       ],
+      "removed": [],
       "archived": true,
       "from": "sender-1417f5@onlinejmc.com",
       "subject": "2026-27 Activities Registration"

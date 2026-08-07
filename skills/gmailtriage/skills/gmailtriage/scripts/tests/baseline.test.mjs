@@ -224,3 +224,79 @@ test('subdivide never names a cluster after the vendor that hosts it', () => {
   assert.equal(cands.sortCandidates.length, 0, 'a cluster with no name reached the ready-to-add list');
   assert.ok(cands.unhoused.length >= 4);
 });
+
+// ── hygiene, pinned against the real label cleanup ──────────────────────────
+
+const readB = (f) => readFileSync(join(BASELINE, f), 'utf8');
+const summary = (text) => {
+  // the last row of the closing summary table: labels, managed, unmanaged,
+  // duplicates, unclaimed, coverage
+  const rows = text.trim().split('\n').filter((l) => l.startsWith('|'));
+  const cells = rows[rows.length - 1].split('|').map((c) => c.trim()).filter(Boolean);
+  return { labels: +cells[0], managed: +cells[1], unmanaged: +cells[2], duplicates: +cells[3], unclaimed: +cells[4], coverage: cells[5] };
+};
+
+test('the frozen hygiene corpus has something to find', () => {
+  // Anti-vacuity. An audit golden over a mailbox with nothing wrong proves the
+  // command runs, not that it looks — and the "after" half is exactly that
+  // mailbox, so the "before" half has to carry the findings.
+  const before = summary(readB('audit-before.txt'));
+  assert.ok(before.labels >= 15, `only ${before.labels} labels in the corpus`);
+  assert.ok(before.unmanaged >= 4, `only ${before.unmanaged} unmanaged folders — nothing to find`);
+  assert.ok(before.duplicates >= 2, 'the transposed duplicate pair is gone from the corpus');
+  assert.ok(before.unclaimed >= 10, `only ${before.unclaimed} unclaimed threads`);
+  assert.equal(before.coverage, '74%');
+
+  // Both remedies must be represented, or the classification is half-tested.
+  assert.match(readB('audit-before.txt'), /UNMANAGED — holds mail/);
+  assert.match(readB('audit-before.txt'), /UNMANAGED — and empty/);
+  assert.match(readB('audit-before.txt'), /SAME AS/);
+});
+
+test('a cleaned-up label system audits clean, and that state is reachable', () => {
+  // The other half of two-sided. Without it the audit could satisfy every
+  // assertion above by reporting findings unconditionally, and a user could
+  // never get to zero however much they fixed.
+  const after = summary(readB('audit-after.txt'));
+  assert.deepEqual(
+    { unmanaged: after.unmanaged, duplicates: after.duplicates, unclaimed: after.unclaimed, coverage: after.coverage },
+    { unmanaged: 0, duplicates: 0, unclaimed: 0, coverage: '100%' },
+  );
+  assert.match(readB('audit-after.txt'), /every folder has a rule, no folder is spelled two ways, and no mail is unclaimed/);
+  // and it must EXIT ZERO, or the gate can never be satisfied
+  sh('node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json', SKILL);
+  // while the before state must still exit non-zero
+  assert.throws(
+    () => sh('node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json', SKILL),
+    'a mailbox with 5 unmanaged folders and a duplicate pair audited clean',
+  );
+});
+
+test('audit does not call correctly-filed mail unclaimed', () => {
+  // The defect the first live audit had: it reused `plan`, which answers "is
+  // there work to do" and says no for a thread already in the folder its rule
+  // files into — the most claimed thread in the mailbox. That reported 47 of
+  // 48 threads unclaimed, rendering a clean mailbox as a broken one.
+  const after = JSON.parse(readFileSync(join(BASELINE, 'mailbox-after.json'), 'utf8'));
+  const filed = after.filter((t) => (t.labels ?? []).some((l) => !/^(INBOX|SENT|UNREAD|IMPORTANT|DRAFT)$/.test(l)));
+  assert.ok(filed.length >= 25, `only ${filed.length} filed threads — this test would prove little`);
+  // every one of them is in the corpus the clean audit reported 0 unclaimed over
+  assert.equal(summary(readB('audit-after.txt')).unclaimed, 0);
+});
+
+test('a merge labels before it unlabels, and records a fold that moved nothing', () => {
+  const out = readB('merge.txt');
+  const iLabel = out.indexOf('LABEL "');
+  const iUnlabel = out.indexOf('remove "');
+  const iDelete = out.indexOf('delete the "');
+  assert.ok(iUnlabel > 0 && iDelete > iUnlabel, 'the delete must come after the unlabel');
+  if (iLabel >= 0) assert.ok(iLabel < iUnlabel, 'the target label must go on before the source comes off');
+  assert.match(out, /Removing the old label first leaves the mail in neither folder/);
+
+  // The real case moved no mail — its one thread already carried the target —
+  // and it must STILL be recorded, or the deleted folder cannot come back.
+  const receipt = JSON.parse(readFileSync(join(BASELINE, 'merge-receipt.json'), 'utf8'));
+  assert.ok(receipt.entries.length >= 1, 'a merge that moved no mail recorded nothing, so it cannot be undone');
+  assert.equal(receipt.entries[0].action, 'unlabel');
+  assert.ok(receipt.entries[0].removed.length >= 1);
+});

@@ -1,0 +1,53 @@
+| Label                  | Threads | Status                 | Filed into by                                                   |
+|------------------------|---------|------------------------|-----------------------------------------------------------------|
+| Folder 90f6            | 0       | managed                | sort-384bba                                                     |
+| Recruiting             | 13      | managed                | sort-817cca, sort-fcc9d6, sort-ac3376, sort-00a4d3, sort-6220a7 |
+| Folder 85f8            | 4       | managed                | sort-61bdcb                                                     |
+| Folder fec8            | 2       | managed                | sort-08c346                                                     |
+| Banking                | 2       | managed                | sort-6e8484                                                     |
+| School                 | 0       | managed                | sort-91bc04                                                     |
+| Recruiting/Folder b62d | 4       | managed                | sort-817cca, sort-fcc9d6                                        |
+| Recruiting/Folder c9d2 | 7       | managed                | sort-ac3376                                                     |
+| Recruiting/Folder 65b4 | 1       | managed                | sort-00a4d3                                                     |
+| Recruiting/Folder b40c | 1       | managed                | sort-6220a7                                                     |
+| Folder c97e            | 4       | UNMANAGED — holds mail | —                                                               |
+| Receipts               | 2       | SAME AS Reciepts       | sort-3e5607, sort-2edd93                                        |
+| Reciepts               | 1       | SAME AS Receipts       | —                                                               |
+| Folder c74b            | 1       | managed                | sort-d8c5b1                                                     |
+| Folder f4b8            | 6       | UNMANAGED — holds mail | —                                                               |
+| Folder fd1b            | 2       | managed                | sort-d2214f                                                     |
+| Financial Advisor      | 5       | managed                | sort-3bdcd2                                                     |
+| Folder 5b08            | 0       | UNMANAGED — and empty  | —                                                               |
+| Folder ee21            | 0       | UNMANAGED — and empty  | —                                                               |
+
+one folder, spelled two ways. Mail is split across them and nothing in Gmail says so —
+fold them together with `merge --from <wrong> --to <right>`, then delete the empty one.
+
+2 folder(s) hold mail no rule files into. They stay sorted exactly as long as
+you keep sorting them by hand — write a rule, or the next run will not maintain them.
+
+2 folder(s) are empty and unmanaged — folders someone made once and never used.
+Deleting an empty label loses nothing; there is no mail in it to lose.
+
+MAIL NO RULE CLAIMS
+
+| Sender                       | Threads | In inbox | Goes to          | Example subject   |
+|------------------------------|---------|----------|------------------|-------------------|
+| person14@org-j-6a7f.example  | 4       | no       | — needs a name — | (personal thread) |
+| person17@org-m-3eaf.example  | 3       | no       | — needs a name — | (personal thread) |
+| person15@org-k-b4a1.example  | 2       | no       | — needs a name — | (personal thread) |
+| no-reply@accounts.google.com | 1       | yes      | — needs a name — | Security alert    |
+| person16@org-l-7e52.example  | 1       | no       | — needs a name — | (personal thread) |
+| person2@org-b-ae1f.example   | 1       | yes      | — needs a name — | (personal thread) |
+| person3@org-c-61a8.example   | 1       | no       | — needs a name — | (personal thread) |
+| person4@org-d-42e6.example   | 1       | no       | — needs a name — | (personal thread) |
+| person6@org-f-5a4e.example   | 1       | no       | — needs a name — | (personal thread) |
+
+folders it could nest under, rather than becoming another top-level one:
+  Folder 90f6 · Recruiting · Folder 85f8 · Folder fec8 · Banking · School · Folder c97e · Receipts · Reciepts · Folder c74b · Folder f4b8 · Folder fd1b · Financial Advisor · Folder 5b08 · Folder ee21
+
+| Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
+|--------|---------|-----------|---------------------|----------------|----------|
+| 19     | 14      | 5         | 2                   | 15             | 74%      |
+
+this label system needs attention — see above. Nothing has moved.

@@ -29,6 +29,17 @@
 #     <recruiting-threads-after.json> filed-after.json   # after it
 #   node evals/baseline/redact.mjs --labels <real-list_labels.json> filed-labels.json
 #
+#   # the hygiene corpus — the mailbox BEFORE the label cleanup and AFTER it.
+#   # `--rules-in/--rules-out` MUST run in the same invocation as the threads:
+#   # the rule set names the same senders and folders, and redacting it in a
+#   # separate process gives it different pseudonyms, so no rule matches
+#   # anything and the audit reports zero coverage as if it were a real finding.
+#   node evals/baseline/redact.mjs --labels-from <real-list_labels.json> \
+#     --rules-in <rules-before.json> --rules-out mailbox-before-rules.json \
+#     <threads-before.json> mailbox-before.json
+#   node evals/baseline/redact.mjs --labels <real-list_labels.json> mailbox-before-labels.json
+#   (and the same three for the -after side)
+#
 # NOTHING in this corpus may name an organisation the mailbox owner deals with.
 # `redact.mjs` pseudonymises sender domains and applicant-tracking subject lines
 # for that reason; what the code reasons about is that seven threads share a
@@ -45,7 +56,7 @@ trap 'rm -rf "$OUT"' EXIT
 
 # `--at` is pinned: apply stamps the receipt with the current time otherwise,
 # and a golden that embeds "now" fails on every run but the one that wrote it.
-CMD='node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" > $OUT/retro-converged.txt'
+CMD='node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" > $OUT/retro-converged.txt && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json > $OUT/audit-before.txt || true && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json > $OUT/audit-after.txt && node scripts/gmailtriage.js merge --from Reciepts --to Receipts --threads evals/baseline/mailbox-before.json --labels evals/baseline/mailbox-before-labels.json --receipt $OUT/merge-receipt.json --at 2026-08-07T12:00:00Z > $OUT/merge.txt'
 
 eval "${CMD//\$OUT/$OUT}"
 
