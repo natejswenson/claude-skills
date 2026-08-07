@@ -41,6 +41,19 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   top-level folder. That is the difference between a system that grows and one
   that sprawls.
 
+### Security
+
+- **The baseline corpus is now invented, not a redacted mailbox.** Redaction was
+  the wrong tool: with every sender pseudonymised, the public repo still showed
+  the *shape* of a person's life — which bank, which health system, which school
+  district, which employer they had applied to. The thing worth hiding was never
+  the addresses. `evals/baseline/make-corpus.mjs` generates the whole fixture
+  set; every domain sits under a reserved TLD that can never be registered, and
+  `scripts/tests/no-real-data.test.mjs` fails the build if a real domain or
+  organisation appears, or if a generated fixture is hand-edited.
+- **`redact.mjs` is deleted.** Its only purpose was to make real mail
+  committable, and keeping it invites exactly that.
+
 ### Fixed
 
 - **`audit` no longer reports correctly-filed mail as unclaimed.** The first live

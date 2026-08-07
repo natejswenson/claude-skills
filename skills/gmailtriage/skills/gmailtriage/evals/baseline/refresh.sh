@@ -1,49 +1,31 @@
 #!/usr/bin/env bash
 #
-# Re-freeze the baseline from the frozen corpus.
+# Re-freeze the baseline.
 #
 #   bash evals/baseline/refresh.sh
 #
-# This is the `update_command` every entry in `skill-invariants.json` names, and
-# it exists because that field pointed at a file that was never written — so the
-# one-command refresh the house rules require was a dead string from 0.1.0 until
-# 0.2.0. If you are here because an assertion printed this path, you are in the
-# right place.
+# This is the `update_command` every entry in `skill-invariants.json` names.
 #
-# It regenerates ONLY the derived artifacts (propose/labels/plan/apply output,
-# and the subdivide/retroactive pair) from the committed corpus. It does not
-# touch `threads.json`, `labels.json`, `rules.json`, `filed*.json` or
-# `rules-recruiting.json` — those come from a real mailbox, and refreshing them
-# means running the skill against one and passing the result through
-# `redact.mjs`:
+# It regenerates the derived artifacts (propose/subdivide/labels/plan/apply/
+# audit/merge output) from the committed corpus, and the corpus itself comes
+# from `make-corpus.mjs`.
 #
-#   node evals/baseline/redact.mjs           <real-threads.json>    threads.json
-#   node evals/baseline/redact.mjs --labels  <real-list_labels.json> labels.json
+# ─────────────────────────────────────────────────────────────────────────────
+# THE CORPUS IS INVENTED. NEVER REGENERATE IT FROM A REAL MAILBOX.
 #
-#   # the sub-label corpus — `--labels-from` is REQUIRED here, or each thread
-#   # keeps real label ids the redacted label list has renamed, and the corpus
-#   # describes a mailbox where nothing resolves while still looking complete
-#   node evals/baseline/redact.mjs --labels-from <real-list_labels.json> \
-#     <recruiting-threads.json>       filed.json         # before the run
-#   node evals/baseline/redact.mjs --labels-from <real-list_labels.json> \
-#     <recruiting-threads-after.json> filed-after.json   # after it
-#   node evals/baseline/redact.mjs --labels <real-list_labels.json> filed-labels.json
+# It used to be a redacted copy of one, and redaction was the wrong tool: with
+# every sender pseudonymised, a public repo still showed the SHAPE of a
+# person's life — which bank, which health system, which school district, which
+# employer they had applied to. The thing worth hiding was never the addresses.
 #
-#   # the hygiene corpus — the mailbox BEFORE the label cleanup and AFTER it.
-#   # `--rules-in/--rules-out` MUST run in the same invocation as the threads:
-#   # the rule set names the same senders and folders, and redacting it in a
-#   # separate process gives it different pseudonyms, so no rule matches
-#   # anything and the audit reports zero coverage as if it were a real finding.
-#   node evals/baseline/redact.mjs --labels-from <real-list_labels.json> \
-#     --rules-in <rules-before.json> --rules-out mailbox-before-rules.json \
-#     <threads-before.json> mailbox-before.json
-#   node evals/baseline/redact.mjs --labels <real-list_labels.json> mailbox-before-labels.json
-#   (and the same three for the -after side)
+# So there is no longer a redactor to point at a mailbox. To change what the
+# corpus contains, edit `make-corpus.mjs`; `scripts/tests/no-real-data.test.mjs`
+# fails the build if a domain outside the reserved TLDs ever appears.
 #
-# NOTHING in this corpus may name an organisation the mailbox owner deals with.
-# `redact.mjs` pseudonymises sender domains and applicant-tracking subject lines
-# for that reason; what the code reasons about is that seven threads share a
-# domain, never which domain.
+# Working against your own mail is still fine — keep those files outside the
+# repo (`~/.gmailtriage/` is gitignored by living outside it) and never copy
+# them in.
+# ─────────────────────────────────────────────────────────────────────────────
 #
 # ALWAYS read the diff before committing a refresh. A golden that changed
 # because the code changed is a finding; a golden refreshed without looking is
@@ -51,6 +33,9 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
+
+# The corpus first: everything below is derived from it.
+node evals/baseline/make-corpus.mjs
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 

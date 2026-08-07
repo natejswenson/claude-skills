@@ -1,230 +1,210 @@
 [
   {
-    "id": "thr-b35ff9b7d9",
-    "from": "person1@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-06T19:06:27Z",
+    "id": "thr-1a2b5b3c",
+    "from": "recruiter0@globex.example",
+    "subject": "Interview loop with Globex — stage 1",
+    "date": "2026-08-01T15:00:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder c9d2"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-51d4751762",
-    "from": "person2@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-06T14:55:37Z",
+    "id": "thr-1a2b7a2b",
+    "from": "recruiter1@globex.example",
+    "subject": "Interview loop with Globex — stage 2",
+    "date": "2026-08-02T15:01:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_ffd6a053"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder b62d"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-d9b1bea50d",
-    "from": "person3@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-04T22:46:28Z",
+    "id": "thr-1a2b991a",
+    "from": "recruiter2@globex.example",
+    "subject": "Interview loop with Globex — stage 3",
+    "date": "2026-08-03T15:02:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder c9d2"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-e8320500fa",
-    "from": "person4@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-04T19:48:26Z",
+    "id": "thr-1a2bb809",
+    "from": "recruiter3@globex.example",
+    "subject": "Interview loop with Globex — stage 4",
+    "date": "2026-08-04T15:03:00Z",
     "labelIds": [
       "Label_10",
-      "Label_1b6cce3c"
-    ],
-    "labels": [
-      "Recruiting",
-      "Recruiting/Folder c9d2"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-e1a1fce992",
-    "from": "person3@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-31T18:08:57Z",
+    "id": "thr-1a2bd6f8",
+    "from": "recruiter4@globex.example",
+    "subject": "Interview loop with Globex — stage 5",
+    "date": "2026-08-05T15:04:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder c9d2"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-29647d4d14",
-    "from": "person2@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T20:27:55Z",
+    "id": "thr-1a2bf5e7",
+    "from": "recruiter5@globex.example",
+    "subject": "Interview loop with Globex — stage 6",
+    "date": "2026-08-06T15:05:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_ffd6a053"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder b62d"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-8e7f9dea85",
-    "from": "person3@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T18:24:10Z",
+    "id": "thr-1a2c14d6",
+    "from": "recruiter6@globex.example",
+    "subject": "Interview loop with Globex — stage 7",
+    "date": "2026-08-01T15:06:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
-    ],
-    "labels": [
-      "IMPORTANT",
-      "Recruiting",
-      "Recruiting/Folder c9d2"
+      "Label_15"
     ],
     "category": null,
-    "hasUnsubscribe": false
+    "hasUnsubscribe": false,
+    "labels": [
+      "Recruiting",
+      "Recruiting/Globex"
+    ]
   },
   {
-    "id": "thr-99c9daac4c",
-    "from": "person2@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T00:47:39Z",
+    "id": "thr-1a2c33c5",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2300",
+    "date": "2026-07-24T12:00:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_ffd6a053"
+      "Label_16"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
-      "IMPORTANT",
       "Recruiting",
-      "Recruiting/Folder b62d"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Initech"
+    ]
   },
   {
-    "id": "thr-7910ca33f8",
-    "from": "person2@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-28T13:14:25Z",
+    "id": "thr-1a2c52b4",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2301",
+    "date": "2026-07-25T12:00:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_ffd6a053"
+      "Label_16"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
-      "IMPORTANT",
       "Recruiting",
-      "Recruiting/Folder b62d"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Initech"
+    ]
   },
   {
-    "id": "thr-9a3a556b97",
-    "from": "person5@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-27T22:54:03Z",
+    "id": "thr-1a2c71a3",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2302",
+    "date": "2026-07-26T12:00:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
+      "Label_16"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
-      "IMPORTANT",
       "Recruiting",
-      "Recruiting/Folder c9d2"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Initech"
+    ]
   },
   {
-    "id": "thr-c41c8f0efe",
-    "from": "person5@org-a-13a7.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-27T19:13:09Z",
+    "id": "thr-1a2c9092",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2303",
+    "date": "2026-07-27T12:00:00Z",
     "labelIds": [
-      "IMPORTANT",
       "Label_10",
-      "Label_1b6cce3c"
+      "Label_16"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
-      "IMPORTANT",
       "Recruiting",
-      "Recruiting/Folder c9d2"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Initech"
+    ]
   },
   {
-    "id": "thr-7152e11e92",
-    "from": "no-reply@ashbyhq.com",
-    "subject": "Thanks for applying to Organisation A",
-    "date": "2026-07-24T00:31:14Z",
+    "id": "thr-1a2caf81",
+    "from": "no-reply@greenhouse.example",
+    "subject": "Thanks for applying to Umbrella Corp!",
+    "date": "2026-07-24T00:31:00Z",
     "labelIds": [
       "Label_10",
-      "Label_45069360"
+      "Label_17"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
       "Recruiting",
-      "Recruiting/Folder 65b4"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Umbrella"
+    ]
   },
   {
-    "id": "thr-4427e5aad6",
-    "from": "noreply@candidates.workablemail.com",
-    "subject": "Thanks for applying to Organisation B",
-    "date": "2026-07-22T14:12:27Z",
+    "id": "thr-1a2cce70",
+    "from": "noreply@candidates.workable.example",
+    "subject": "Thanks for applying to Soylent Industries",
+    "date": "2026-07-22T14:12:00Z",
     "labelIds": [
       "Label_10",
-      "Label_3c68e212"
+      "Label_18"
     ],
+    "category": "updates",
+    "hasUnsubscribe": true,
     "labels": [
       "Recruiting",
-      "Recruiting/Folder b40c"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
+      "Recruiting/Soylent"
+    ]
   }
 ]

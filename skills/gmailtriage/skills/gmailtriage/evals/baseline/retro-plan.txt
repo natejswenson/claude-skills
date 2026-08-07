@@ -1,33 +1,33 @@
-| Rule id           | Action | Applies                             | Leaves inbox | Threads |
-|-------------------|--------|-------------------------------------|--------------|---------|
-| sort-recruiting-a | label  | Recruiting + Recruiting/Folder c9d2 | 0 of 7       | 7       |
-| sort-recruiting-b | label  | Recruiting + Recruiting/Folder b62d | 0 of 4       | 4       |
-| sort-recruiting-c | label  | Recruiting + Recruiting/Folder 65b4 | 0 of 1       | 1       |
-| sort-recruiting-d | label  | Recruiting + Recruiting/Folder b40c | 0 of 1       | 1       |
+| Rule id       | Action | Applies                          | Leaves inbox | Threads |
+|---------------|--------|----------------------------------|--------------|---------|
+| sort-globex   | label  | Recruiting + Recruiting/Globex   | 0 of 7       | 7       |
+| sort-initech  | label  | Recruiting + Recruiting/Initech  | 0 of 4       | 4       |
+| sort-umbrella | label  | Recruiting + Recruiting/Umbrella | 0 of 1       | 1       |
+| sort-soylent  | label  | Recruiting + Recruiting/Soylent  | 0 of 1       | 1       |
 
-| Rule id           | Goes to              | From                           | Subject                               |
-|-------------------|----------------------|--------------------------------|---------------------------------------|
-| sort-recruiting-a | Recruiting/Folder c… | person1@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-b | Recruiting/Folder b… | person2@org-b-f922.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person3@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person4@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person3@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-b | Recruiting/Folder b… | person2@org-b-f922.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person3@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-b | Recruiting/Folder b… | person2@org-b-f922.example     | (personal thread)                     |
-| sort-recruiting-b | Recruiting/Folder b… | person2@org-b-f922.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person5@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-a | Recruiting/Folder c… | person5@org-a-13a7.example     | (personal thread)                     |
-| sort-recruiting-c | Recruiting/Folder 6… | no-reply@ashbyhq.com           | Thanks for applying to Organisation A |
-| sort-recruiting-d | Recruiting/Folder b… | noreply@candidates.workablema… | Thanks for applying to Organisation B |
+| Rule id       | Goes to             | From                           | Subject                                  |
+|---------------|---------------------|--------------------------------|------------------------------------------|
+| sort-globex   | Recruiting/Globex   | recruiter0@globex.example      | Interview loop with Globex — stage 1     |
+| sort-globex   | Recruiting/Globex   | recruiter1@globex.example      | Interview loop with Globex — stage 2     |
+| sort-globex   | Recruiting/Globex   | recruiter2@globex.example      | Interview loop with Globex — stage 3     |
+| sort-globex   | Recruiting/Globex   | recruiter3@globex.example      | Interview loop with Globex — stage 4     |
+| sort-globex   | Recruiting/Globex   | recruiter4@globex.example      | Interview loop with Globex — stage 5     |
+| sort-globex   | Recruiting/Globex   | recruiter5@globex.example      | Interview loop with Globex — stage 6     |
+| sort-globex   | Recruiting/Globex   | recruiter6@globex.example      | Interview loop with Globex — stage 7     |
+| sort-initech  | Recruiting/Initech  | careers@recruiting.initech.ex… | Principal Engineer opening at Initech —… |
+| sort-initech  | Recruiting/Initech  | careers@recruiting.initech.ex… | Principal Engineer opening at Initech —… |
+| sort-initech  | Recruiting/Initech  | careers@recruiting.initech.ex… | Principal Engineer opening at Initech —… |
+| sort-initech  | Recruiting/Initech  | careers@recruiting.initech.ex… | Principal Engineer opening at Initech —… |
+| sort-umbrella | Recruiting/Umbrella | no-reply@greenhouse.example    | Thanks for applying to Umbrella Corp!    |
+| sort-soylent  | Recruiting/Soylent  | noreply@candidates.workable.e… | Thanks for applying to Soylent Industri… |
 
-| Folder                 | Threads | New to the thread |
-|------------------------|---------|-------------------|
-| Recruiting             | 13      | 0                 |
-| Recruiting/Folder c9d2 | 7       | 7                 |
-| Recruiting/Folder b62d | 4       | 4                 |
-| Recruiting/Folder 65b4 | 1       | 1                 |
-| Recruiting/Folder b40c | 1       | 1                 |
+| Folder              | Threads | New to the thread |
+|---------------------|---------|-------------------|
+| Recruiting          | 13      | 0                 |
+| Recruiting/Globex   | 7       | 7                 |
+| Recruiting/Initech  | 4       | 4                 |
+| Recruiting/Umbrella | 1       | 1                 |
+| Recruiting/Soylent  | 1       | 1                 |
 reconcile these against your real labels with `labels` before applying.
 
 | Scope            | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |

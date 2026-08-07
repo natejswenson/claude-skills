@@ -2,42 +2,42 @@
   "version": 1,
   "rules": [
     {
-      "id": "sort-recruiting-a",
+      "id": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "match": {
-        "from": "@org-a-13a7.example"
+        "from": "@globex.example"
       },
-      "note": "the whole domain, because one organisation writes from several people (7 in the folder)"
+      "note": "one employer writing from several people, so the whole domain"
     },
     {
-      "id": "sort-recruiting-b",
+      "id": "sort-initech",
       "action": "label",
-      "label": "Recruiting/Folder b62d",
+      "label": "Recruiting/Initech",
       "match": {
-        "from": "@org-b-f922.example"
+        "from": "careers@recruiting.initech.example"
       },
-      "note": "the whole domain, because one organisation writes from several people (4 in the folder)"
+      "note": "applications and outcomes from one employer"
     },
     {
-      "id": "sort-recruiting-c",
+      "id": "sort-umbrella",
       "action": "label",
-      "label": "Recruiting/Folder 65b4",
+      "label": "Recruiting/Umbrella",
       "match": {
-        "from": "@ashbyhq.com",
-        "subjectContains": "Organisation A"
+        "from": "@greenhouse.example",
+        "subjectContains": "Umbrella"
       },
-      "note": "filed via an applicant tracking vendor — the sender names the vendor, so the subject is what names the organisation (1 in the folder)"
+      "note": "the vendor hosts many employers, so the subject is what names this one"
     },
     {
-      "id": "sort-recruiting-d",
+      "id": "sort-soylent",
       "action": "label",
-      "label": "Recruiting/Folder b40c",
+      "label": "Recruiting/Soylent",
       "match": {
-        "from": "@candidates.workablemail.com",
-        "subjectContains": "Organisation B"
+        "from": "@candidates.workable.example",
+        "subjectContains": "Soylent"
       },
-      "note": "filed via an applicant tracking vendor — the sender names the vendor, so the subject is what names the organisation (1 in the folder)"
+      "note": "the vendor hosts many employers, so the subject is what names this one"
     }
   ]
 }

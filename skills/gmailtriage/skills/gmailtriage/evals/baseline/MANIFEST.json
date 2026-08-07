@@ -5,63 +5,63 @@
   "artifacts": [
     {
       "path": "apply.txt",
-      "bytes": 1780,
-      "sha256": "9dad78fdd17dc212700fbbf8639e53f34b797ee50885b7490b6ce2d202abf47f"
+      "bytes": 5161,
+      "sha256": "ea0f225e466d6e35393a10866b32d732689affe8611c52cf3e66ab04556d0a36"
     },
     {
       "path": "audit-after.txt",
-      "bytes": 3038,
-      "sha256": "f3c5a676c4dfac1024d670290d005bde731cb6144bc1f2989404e5257ba806c9"
+      "bytes": 2748,
+      "sha256": "ae1b2af19081898af991c647d9c1c9cf9d2d9e1c444b25b97f11936ef28b1b82"
     },
     {
       "path": "audit-before.txt",
-      "bytes": 4893,
-      "sha256": "fc7a6cd2ee6445f7d70320a35eb636d46a32c38131178039e2983ee4a24b5801"
+      "bytes": 4817,
+      "sha256": "3f87637d907e3d7fe5233d11bb4ec0ba7e4c774d3cff028510c4f4b0757d6e38"
     },
     {
       "path": "candidates.json",
-      "bytes": 8459,
-      "sha256": "3f550d7c33e7800e341bb3eab9038ecf60ec34a3997fbdb13c0da445f8f7bc79"
+      "bytes": 12687,
+      "sha256": "47989ae5e8d6191e8e64120556ea580866032ad350ee1c3617803124fae4384d"
     },
     {
       "path": "labels.txt",
-      "bytes": 801,
-      "sha256": "e4dce195743258f5a82d82e15b4bb2a2dbb420272499695762f7e545dbd69913"
+      "bytes": 3287,
+      "sha256": "f388aea15c5f8ed7b098d9e205cd29781dbd34287bceccf7bfdce435c723ee46"
     },
     {
       "path": "merge-receipt.json",
-      "bytes": 389,
-      "sha256": "a12cde6835c4e9d28928b5496a8d92aa57ac115e1908e2d885b9e8a76fe26211"
+      "bytes": 739,
+      "sha256": "b666fdcff4748d8a157aeab2e01ec0839096714ffe6bcf5a0ef064c66e1d0efc"
     },
     {
       "path": "merge.txt",
-      "bytes": 613,
-      "sha256": "928eb72c1af246931d388f12d95cfc5118af10b87b55d90edf33205de8bdfe92"
+      "bytes": 624,
+      "sha256": "589e14c0ef7eacbb62684a076b948a3f778b14f5a97e73b799bbbf3f4eb550f7"
     },
     {
       "path": "plan.json",
-      "bytes": 9864,
-      "sha256": "553120e334dc4f494c912f93612fd020320afba2ad52bff14dc3405675686caa"
+      "bytes": 29966,
+      "sha256": "1509b61b4f9c373d4e823c74491ea6cdd617448a3d0703ca611420c209d71958"
     },
     {
       "path": "plan.txt",
-      "bytes": 2651,
-      "sha256": "49e01a70df4f2cb80ae414e524aa7c9ed96347a47f425a2f40e50c867220088f"
+      "bytes": 5403,
+      "sha256": "48575722501932afa536e77f27ce94f4c74e7c9def84cfd5f8de2dd8dacc7eb7"
     },
     {
       "path": "propose.txt",
-      "bytes": 5086,
-      "sha256": "15e21d4e75e6f29a2720fe51175d9bde9550e0fdc2d1b8bebe654f20792c47db"
+      "bytes": 5699,
+      "sha256": "28db52052b115ac13215e45130eae89ca2e2a1c48d534385cde22d8f996c1121"
     },
     {
       "path": "receipt.json",
-      "bytes": 7701,
-      "sha256": "93f396383d6cf133f4179c52b08c44b856e239d0852dc6e368cb467c03c5b2f7"
+      "bytes": 21458,
+      "sha256": "d70b4629842b08f8bde358a197514481b32cc3d47e44c8edc3ab3031eadc2c7a"
     },
     {
       "path": "retro-apply.txt",
-      "bytes": 1289,
-      "sha256": "511b88f9014b59b517d24a5bd79ffed4aa750a9b2573bf7d3f333f9eca9cf0ee"
+      "bytes": 1205,
+      "sha256": "6f92870c4956b7edf64bcfdcccbc13e09fa2eaf37e8f5e6097e9b6ec91e68588"
     },
     {
       "path": "retro-converged.txt",
@@ -70,33 +70,33 @@
     },
     {
       "path": "retro-labels.txt",
-      "bytes": 1351,
-      "sha256": "012550836c60ae5630d1b34d372c7ad0f23f19e78d310b4f9b9f7aea61e47dd7"
+      "bytes": 1148,
+      "sha256": "a29b4fc6e8e6611a5182a989a50a44e75867a3ec19272d08d9a7adbabbd9e93f"
     },
     {
       "path": "retro-plan.json",
-      "bytes": 6743,
-      "sha256": "03e8cffc36354ee8f86720ac50ae03e22f0032b0315c6bceecdfbccac4dd74b1"
+      "bytes": 6700,
+      "sha256": "081eadecd7486b1e9838b39dd3d5b2d237c11ef229405c73d0c1e311869d800d"
     },
     {
       "path": "retro-plan.txt",
-      "bytes": 3237,
-      "sha256": "960c6eca690517ee1b399f95c5e9955fbaa99eb29ab356a90befc92afdc0ce86"
+      "bytes": 3158,
+      "sha256": "a6b93042482af03189416590caecf5bfad74d24224123bf7aa8b6943a076117f"
     },
     {
       "path": "retro-receipt.json",
-      "bytes": 4506,
-      "sha256": "f1b3a2b7d8bcba1421bd14303eeecf54990b4b8275c4ccb70c626953ebaec986"
+      "bytes": 4608,
+      "sha256": "afee7b8bb4ffacba4f82a7febc2c1831c1198da3215f10a790e6e24278b3e901"
     },
     {
       "path": "subdivide-candidates.json",
-      "bytes": 1959,
-      "sha256": "f9c4e2000b69f51d4b3f490b67076bc287c41298fedd9b6c7a0794824aa2781f"
+      "bytes": 1704,
+      "sha256": "05c4f913e0570abd36f4bb85c94b7b465e7d34b77239a26998cafa3d21530cb4"
     },
     {
       "path": "subdivide.txt",
-      "bytes": 2163,
-      "sha256": "bb032cb822e755310ffc15df5ccc0153ca2445015b510dcfadbb308ba53a4ff7"
+      "bytes": 2209,
+      "sha256": "9da65d17f96aff4017266840f4ddaeecc11b49069af8804074e2d19d8afc6398"
     }
   ]
 }

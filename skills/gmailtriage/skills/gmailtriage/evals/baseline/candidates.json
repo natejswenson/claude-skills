@@ -1,71 +1,124 @@
 {
   "candidates": [
     {
-      "id": "support-npmjs-com",
+      "id": "support-packages-example",
       "action": "trash",
       "match": {
-        "from": "support@npmjs.com",
+        "from": "support@packages.example",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from support@npmjs.com — 9 in the sample, e.g. \"Successfully published @natjswenson/press@0.6.1\""
+      "note": "bulk mail from support@packages.example — 9 in the sample, e.g. \"Package published: build 1\""
     },
     {
-      "id": "person5-org-b-f922-example",
+      "id": "outreach-leadgen-example",
       "action": "trash",
       "match": {
-        "from": "person5@org-b-f922.example",
+        "from": "outreach@leadgen.example",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from person5@org-b-f922.example — 5 in the sample, e.g. \"(personal thread)\""
+      "note": "bulk mail from outreach@leadgen.example — 4 in the sample, e.g. \"Quick question, #1\""
     },
     {
-      "id": "success-e-rocketreach-co",
+      "id": "secure-esignature-example",
       "action": "trash",
       "match": {
-        "from": "success@e.rocketreach.co",
+        "from": "secure@esignature.example",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from success@e.rocketreach.co — 3 in the sample, e.g. \"Success Tips #4: Save Time & Boost Outreach with RocketReach\""
+      "note": "bulk mail from secure@esignature.example — 4 in the sample, e.g. \"Signing complete: document 1\""
     },
     {
-      "id": "sender-036144-message-fedex-com",
+      "id": "deals-shopfront-example",
       "action": "trash",
       "match": {
-        "from": "sender-036144@message.fedex.com",
+        "from": "deals@shopfront.example",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from sender-036144@message.fedex.com — 2 in the sample, e.g. \"FedEx Values Your Feedback\""
+      "note": "bulk mail from deals@shopfront.example — 3 in the sample, e.g. \"20% off this week only\""
     },
     {
-      "id": "sender-1417f5-onlinejmc-com",
+      "id": "news-readinglist-example",
       "action": "trash",
       "match": {
-        "from": "sender-1417f5@onlinejmc.com",
+        "from": "news@readinglist.example",
         "hasUnsubscribe": true
       },
-      "note": "bulk mail from sender-1417f5@onlinejmc.com — 2 in the sample, e.g. \"New Bus Rider Registration\""
+      "note": "bulk mail from news@readinglist.example — 3 in the sample, e.g. \"Your weekly picks, issue 1\""
     }
   ],
-  "sortCandidates": [],
+  "sortCandidates": [
+    {
+      "id": "sort-careers-recruiting-initech-example",
+      "action": "label",
+      "label": "Recruiting",
+      "match": {
+        "from": "careers@recruiting.initech.example"
+      },
+      "note": "file mail from careers@recruiting.initech.example — 4 in the sample, e.g. \"Principal Engineer opening at Initech — req 2300\""
+    },
+    {
+      "id": "sort-edocuments-statements-northbank-exa",
+      "action": "label",
+      "label": "Statements",
+      "match": {
+        "from": "edocuments@statements.northbank.example"
+      },
+      "note": "file mail from edocuments@statements.northbank.example — 4 in the sample, e.g. \"New statement available (1)\" — tagged in place, never archived: this sender also delivers codes or receipts",
+      "keepInInbox": true
+    }
+  ],
   "unhoused": [
     {
-      "id": "sort-sender-55d189-mail-fidelity-com",
-      "from": "sender-55d189@mail.fidelity.com",
+      "id": "sort-invoices-billingplatform-example",
+      "from": "invoices@billingplatform.example",
       "count": 3,
       "bulkCount": 3,
-      "sample": "New statement available",
+      "sample": "Invoice 1250 from Roofing Co",
       "keepInInbox": true,
+      "destination": null,
+      "why": "cluster contains a login code, receipt or verification you cannot lose",
+      "unhoused": true
+    },
+    {
+      "id": "sort-alerts-notify-southbank-example",
+      "from": "alerts@notify.southbank.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "Insufficient funds notice",
+      "keepInInbox": false,
       "destination": null,
       "why": "sender looks financial, medical, educational, governmental or recruiting",
       "unhoused": true
     },
     {
-      "id": "sort-alerts-notify-wellsfargo-com",
-      "from": "alerts@notify.wellsfargo.com",
+      "id": "sort-centralschools-parentvendor-example",
+      "from": "centralschools@parentvendor.example",
       "count": 2,
       "bulkCount": 2,
-      "sample": "Insufficient funds notice/Extra Day Grace Period",
+      "sample": "Bus registration reminder 1",
       "keepInInbox": false,
+      "destination": null,
+      "why": "sender looks financial, medical, educational, governmental or recruiting",
+      "unhoused": true
+    },
+    {
+      "id": "sort-claims-insurepay-example",
+      "from": "claims@insurepay.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "A digital payment was issued for your claim",
+      "keepInInbox": false,
+      "destination": null,
+      "why": "sender looks financial, medical, educational, governmental or recruiting",
+      "unhoused": true
+    },
+    {
+      "id": "sort-mychart-valleyhealth-example",
+      "from": "mychart@valleyhealth.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "New message from your clinic",
+      "keepInInbox": true,
       "destination": null,
       "why": "sender looks financial, medical, educational, governmental or recruiting",
       "unhoused": true
@@ -73,194 +126,254 @@
   ],
   "withheld": [
     {
-      "id": "person4-org-a-2678-example",
-      "from": "person4@org-a-2678.example",
-      "count": 3,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
+      "id": "careers-recruiting-initech-example",
+      "from": "careers@recruiting.initech.example",
+      "count": 4,
+      "bulkCount": 4,
+      "sample": "Principal Engineer opening at Initech — req 2300",
       "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
-      "id": "person7-org-a-2678-example",
-      "from": "person7@org-a-2678.example",
-      "count": 3,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "sender-55d189-mail-fidelity-com",
-      "from": "sender-55d189@mail.fidelity.com",
-      "count": 3,
-      "bulkCount": 3,
-      "sample": "New statement available",
+      "id": "edocuments-statements-northbank-example",
+      "from": "edocuments@statements.northbank.example",
+      "count": 4,
+      "bulkCount": 4,
+      "sample": "New statement available (1)",
       "sensitive": true,
       "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
-      "id": "alerts-notify-wellsfargo-com",
-      "from": "alerts@notify.wellsfargo.com",
-      "count": 2,
-      "bulkCount": 2,
-      "sample": "Insufficient funds notice/Extra Day Grace Period",
-      "sensitive": false,
-      "kind": "protected-sender",
-      "why": "sender looks financial, medical, educational, governmental or recruiting"
-    },
-    {
-      "id": "person1-org-a-2678-example",
-      "from": "person1@org-a-2678.example",
-      "count": 2,
+      "id": "advisor0-wealthpartners-example",
+      "from": "advisor0@wealthpartners.example",
+      "count": 3,
       "bulkCount": 0,
-      "sample": "(personal thread)",
+      "sample": "Re: your annual review (1)",
       "sensitive": false,
       "kind": "no-bulk-marker",
       "why": "no bulk-mail marker — may be a person, not a sender"
     },
     {
-      "id": "person10-org-a-2678-example",
-      "from": "person10@org-a-2678.example",
-      "count": 2,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person2-org-a-2678-example",
-      "from": "person2@org-a-2678.example",
-      "count": 2,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person3-org-a-2678-example",
-      "from": "person3@org-a-2678.example",
-      "count": 2,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "mychartmessage-sanfordhealth-org",
-      "from": "mychartmessage@sanfordhealth.org",
-      "count": 1,
-      "bulkCount": 1,
-      "sample": "New Message",
-      "sensitive": false,
-      "kind": "protected-sender",
-      "why": "sender looks financial, medical, educational, governmental or recruiting"
-    },
-    {
-      "id": "no-reply-ashbyhq-com",
-      "from": "no-reply@ashbyhq.com",
-      "count": 1,
-      "bulkCount": 1,
-      "sample": "Thanks for applying to Organisation A",
-      "sensitive": false,
-      "kind": "protected-sender",
-      "why": "sender looks financial, medical, educational, governmental or recruiting"
-    },
-    {
-      "id": "no-reply-mail-goodreads-com",
-      "from": "no-reply@mail.goodreads.com",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "New Books to Read in August",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "noreply-candidates-workablemail-com",
-      "from": "noreply@candidates.workablemail.com",
-      "count": 1,
-      "bulkCount": 1,
-      "sample": "Thanks for applying to Organisation B",
-      "sensitive": false,
-      "kind": "protected-sender",
-      "why": "sender looks financial, medical, educational, governmental or recruiting"
-    },
-    {
-      "id": "noreply-tractive-com",
-      "from": "noreply@tractive.com",
-      "count": 1,
-      "bulkCount": 1,
-      "sample": "Confirm your email address",
+      "id": "invoices-billingplatform-example",
+      "from": "invoices@billingplatform.example",
+      "count": 3,
+      "bulkCount": 3,
+      "sample": "Invoice 1250 from Roofing Co",
       "sensitive": true,
       "kind": "protected-subject",
       "why": "cluster contains a login code, receipt or verification you cannot lose"
     },
     {
-      "id": "paymentmessage-sanfordhealth-org",
-      "from": "paymentmessage@sanfordhealth.org",
-      "count": 1,
-      "bulkCount": 1,
-      "sample": "You have a new statement",
+      "id": "advisor1-wealthpartners-example",
+      "from": "advisor1@wealthpartners.example",
+      "count": 2,
+      "bulkCount": 0,
+      "sample": "Re: your annual review (2)",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "agent-realty-example",
+      "from": "agent@realty.example",
+      "count": 2,
+      "bulkCount": 0,
+      "sample": "Off boarding",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "alerts-notify-southbank-example",
+      "from": "alerts@notify.southbank.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "Insufficient funds notice",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "centralschools-parentvendor-example",
+      "from": "centralschools@parentvendor.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "Bus registration reminder 1",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "claims-insurepay-example",
+      "from": "claims@insurepay.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "A digital payment was issued for your claim",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "me-mailprovider-example",
+      "from": "me@mailprovider.example",
+      "count": 2,
+      "bulkCount": 0,
+      "sample": "Morning brief — Wednesday",
+      "sensitive": false,
+      "kind": "no-bulk-marker",
+      "why": "no bulk-mail marker — may be a person, not a sender"
+    },
+    {
+      "id": "mychart-valleyhealth-example",
+      "from": "mychart@valleyhealth.example",
+      "count": 2,
+      "bulkCount": 2,
+      "sample": "New message from your clinic",
       "sensitive": true,
       "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
     },
     {
-      "id": "person11-org-a-2678-example",
-      "from": "person11@org-a-2678.example",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person6-org-a-2678-example",
-      "from": "person6@org-a-2678.example",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person8-org-a-2678-example",
-      "from": "person8@org-a-2678.example",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "person9-org-a-2678-example",
-      "from": "person9@org-a-2678.example",
-      "count": 1,
-      "bulkCount": 0,
-      "sample": "(personal thread)",
-      "sensitive": false,
-      "kind": "no-bulk-marker",
-      "why": "no bulk-mail marker — may be a person, not a sender"
-    },
-    {
-      "id": "sender-a382ce-shareholderdocs-fidelity-c",
-      "from": "sender-a382ce@shareholderdocs.fidelity.com",
+      "id": "billing-cloudvendor-example",
+      "from": "billing@cloudvendor.example",
       "count": 1,
       "bulkCount": 1,
-      "sample": "INSPIRE ETFS Important Information",
+      "sample": "Your receipt from Cloud Vendor #2563",
+      "sensitive": true,
+      "kind": "protected-subject",
+      "why": "cluster contains a login code, receipt or verification you cannot lose"
+    },
+    {
+      "id": "correspondence-insurer-example",
+      "from": "correspondence@insurer.example",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Insurance claim 01006543",
       "sensitive": false,
       "kind": "protected-sender",
       "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "no-reply-accounts-mailprovider-example",
+      "from": "no-reply@accounts.mailprovider.example",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Security alert: new sign-in",
+      "sensitive": true,
+      "kind": "protected-subject",
+      "why": "cluster contains a login code, receipt or verification you cannot lose"
+    },
+    {
+      "id": "no-reply-greenhouse-example",
+      "from": "no-reply@greenhouse.example",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Thanks for applying to Umbrella Corp!",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "noreply-candidates-workable-example",
+      "from": "noreply@candidates.workable.example",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Thanks for applying to Soylent Industries",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "records-statearchive-gov",
+      "from": "records@statearchive.gov",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Your records request",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter0-globex-example",
+      "from": "recruiter0@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 1",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter1-globex-example",
+      "from": "recruiter1@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 2",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter2-globex-example",
+      "from": "recruiter2@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 3",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter3-globex-example",
+      "from": "recruiter3@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 4",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter4-globex-example",
+      "from": "recruiter4@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 5",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter5-globex-example",
+      "from": "recruiter5@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 6",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "recruiter6-globex-example",
+      "from": "recruiter6@globex.example",
+      "count": 1,
+      "bulkCount": 0,
+      "sample": "Interview loop with Globex — stage 7",
+      "sensitive": false,
+      "kind": "protected-sender",
+      "why": "sender looks financial, medical, educational, governmental or recruiting"
+    },
+    {
+      "id": "website-modelhub-example",
+      "from": "website@modelhub.example",
+      "count": 1,
+      "bulkCount": 1,
+      "sample": "Click this link to confirm your email address",
+      "sensitive": true,
+      "kind": "protected-subject",
+      "why": "cluster contains a login code, receipt or verification you cannot lose"
     }
   ]
 }

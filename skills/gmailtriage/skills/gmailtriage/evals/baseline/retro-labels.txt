@@ -1,13 +1,13 @@
-| Destination            | Status | Named by                        | Label id       | Used by                                                                    |
-|------------------------|--------|---------------------------------|----------------|----------------------------------------------------------------------------|
-| Recruiting             | exists | implied — parent of a sub-label | Label_10       | sort-recruiting-a, sort-recruiting-b, sort-recruiting-c, sort-recruiting-d |
-| Recruiting/Folder c9d2 | exists | a rule                          | Label_1b6cce3c | sort-recruiting-a                                                          |
-| Recruiting/Folder b62d | exists | a rule                          | Label_ffd6a053 | sort-recruiting-b                                                          |
-| Recruiting/Folder 65b4 | exists | a rule                          | Label_45069360 | sort-recruiting-c                                                          |
-| Recruiting/Folder b40c | exists | a rule                          | Label_3c68e212 | sort-recruiting-d                                                          |
+| Destination         | Status | Named by                        | Label id | Used by                                                |
+|---------------------|--------|---------------------------------|----------|--------------------------------------------------------|
+| Recruiting          | exists | implied — parent of a sub-label | Label_10 | sort-globex, sort-initech, sort-umbrella, sort-soylent |
+| Recruiting/Globex   | exists | a rule                          | Label_15 | sort-globex                                            |
+| Recruiting/Initech  | exists | a rule                          | Label_16 | sort-initech                                           |
+| Recruiting/Umbrella | exists | a rule                          | Label_17 | sort-umbrella                                          |
+| Recruiting/Soylent  | exists | a rule                          | Label_18 | sort-soylent                                           |
 
 | Destinations | Your labels | To create |
 |--------------|-------------|-----------|
-| 5            | 22          | 0         |
+| 5            | 20          | 0         |
 
 every folder these rules need already exists. Safe to plan and apply.

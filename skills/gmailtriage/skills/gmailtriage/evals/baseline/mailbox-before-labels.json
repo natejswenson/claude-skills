@@ -8,7 +8,7 @@
     {
       "labelId": "SENT",
       "name": "SENT",
-      "threadsTotal": 8
+      "threadsTotal": 6
     },
     {
       "labelId": "INBOX",
@@ -18,12 +18,12 @@
     {
       "labelId": "IMPORTANT",
       "name": "IMPORTANT",
-      "threadsTotal": 20
+      "threadsTotal": 18
     },
     {
       "labelId": "TRASH",
       "name": "TRASH",
-      "threadsTotal": 949
+      "threadsTotal": 120
     },
     {
       "labelId": "DRAFT",
@@ -33,7 +33,7 @@
     {
       "labelId": "SPAM",
       "name": "SPAM",
-      "threadsTotal": 18
+      "threadsTotal": 9
     },
     {
       "labelId": "STARRED",
@@ -43,12 +43,7 @@
     {
       "labelId": "UNREAD",
       "name": "UNREAD",
-      "threadsTotal": 13
-    },
-    {
-      "labelId": "Label_1017d5cf",
-      "name": "Folder 90f6",
-      "threadsTotal": 0
+      "threadsTotal": 11
     },
     {
       "labelId": "Label_10",
@@ -56,13 +51,33 @@
       "threadsTotal": 13
     },
     {
-      "labelId": "Label_dba52d56",
-      "name": "Folder 85f8",
+      "labelId": "Label_15",
+      "name": "Recruiting/Globex",
+      "threadsTotal": 7
+    },
+    {
+      "labelId": "Label_16",
+      "name": "Recruiting/Initech",
       "threadsTotal": 4
     },
     {
-      "labelId": "Label_08279009",
-      "name": "Folder fec8",
+      "labelId": "Label_17",
+      "name": "Recruiting/Umbrella",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_18",
+      "name": "Recruiting/Soylent",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_11",
+      "name": "Statements",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_12",
+      "name": "Medical",
       "threadsTotal": 2
     },
     {
@@ -73,71 +88,56 @@
     {
       "labelId": "Label_14",
       "name": "School",
-      "threadsTotal": 0
+      "threadsTotal": 2
     },
     {
-      "labelId": "Label_ffd6a053",
-      "name": "Recruiting/Folder b62d",
-      "threadsTotal": 4
-    },
-    {
-      "labelId": "Label_1b6cce3c",
-      "name": "Recruiting/Folder c9d2",
-      "threadsTotal": 7
-    },
-    {
-      "labelId": "Label_45069360",
-      "name": "Recruiting/Folder 65b4",
-      "threadsTotal": 1
-    },
-    {
-      "labelId": "Label_3c68e212",
-      "name": "Recruiting/Folder b40c",
-      "threadsTotal": 1
-    },
-    {
-      "labelId": "Label_03c9d3f1",
-      "name": "Folder c97e",
-      "threadsTotal": 4
-    },
-    {
-      "labelId": "Label_3342700677964876718",
+      "labelId": "Label_30",
       "name": "Receipts",
       "threadsTotal": 2
     },
     {
-      "labelId": "Label_3953032868769717139",
+      "labelId": "Label_31",
       "name": "Reciepts",
-      "threadsTotal": 1
-    },
-    {
-      "labelId": "Label_9f27ecec",
-      "name": "Folder c74b",
-      "threadsTotal": 1
-    },
-    {
-      "labelId": "Label_8405f32c",
-      "name": "Folder f4b8",
-      "threadsTotal": 6
-    },
-    {
-      "labelId": "Label_ff6442c3",
-      "name": "Folder fd1b",
       "threadsTotal": 2
     },
     {
-      "labelId": "Label_824223884357394311",
+      "labelId": "Label_40",
+      "name": "Old Roof Job",
+      "threadsTotal": 6
+    },
+    {
+      "labelId": "Label_23",
+      "name": "Security",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_5",
+      "name": "Briefings",
+      "threadsTotal": 1
+    },
+    {
+      "labelId": "Label_41",
       "name": "Financial Advisor",
       "threadsTotal": 5
     },
     {
-      "labelId": "Label_ebe791a4",
-      "name": "Folder 5b08",
+      "labelId": "Label_42",
+      "name": "Realty",
+      "threadsTotal": 2
+    },
+    {
+      "labelId": "Label_43",
+      "name": "Paperwork",
+      "threadsTotal": 4
+    },
+    {
+      "labelId": "Label_44",
+      "name": "Scratch",
       "threadsTotal": 0
     },
     {
-      "labelId": "Label_73f5917c",
-      "name": "Folder ee21",
+      "labelId": "Label_45",
+      "name": "Reading List",
       "threadsTotal": 0
     }
   ]

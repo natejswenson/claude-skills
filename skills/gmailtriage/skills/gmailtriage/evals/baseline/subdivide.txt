@@ -1,26 +1,26 @@
 SPLIT "Recruiting" — 13 thread(s), clustered by sender domain
 
-| Rule id                                 | Sender domain                | Threads | Sub-label        | Folder | Named by                               |
-|-----------------------------------------|------------------------------|---------|------------------|--------|----------------------------------------|
-| sort-recruiting-org-a-13a7-example      | @org-a-13a7.example          | 7       | — needs a name — | NEW    | the sender                             |
-| sort-recruiting-org-b-f922-example      | @org-b-f922.example          | 4       | — needs a name — | NEW    | the sender                             |
-| sort-recruiting-ashbyhq-com             | @ashbyhq.com                 | 1       | — needs a name — | NEW    | the SUBJECT — ashbyhq hosts many orgs  |
-| sort-recruiting-candidates-workablemail | @candidates.workablemail.com | 1       | — needs a name — | NEW    | the SUBJECT — workable hosts many orgs |
+| Rule id                                  | Sender domain                | Threads | Sub-label          | Folder | Named by                                 |
+|------------------------------------------|------------------------------|---------|--------------------|--------|------------------------------------------|
+| sort-recruiting-globex-example           | @globex.example              | 7       | Recruiting/Globex  | exists | the sender                               |
+| sort-recruiting-recruiting-initech-examp | @recruiting.initech.example  | 4       | Recruiting/Initech | exists | the sender                               |
+| sort-recruiting-candidates-workable-exam | @candidates.workable.example | 1       | — needs a name —   | NEW    | the SUBJECT — workable hosts many orgs   |
+| sort-recruiting-greenhouse-example       | @greenhouse.example          | 1       | — needs a name —   | NEW    | the SUBJECT — greenhouse hosts many orgs |
 
-| Hosted sender                | Vendor   | Distinct subjects in the folder       |
-|------------------------------|----------|---------------------------------------|
-| @ashbyhq.com                 | ashbyhq  | Thanks for applying to Organisation A |
-| @candidates.workablemail.com | workable | Thanks for applying to Organisation B |
+| Hosted sender                | Vendor     | Distinct subjects in the folder           |
+|------------------------------|------------|-------------------------------------------|
+| @candidates.workable.example | workable   | Thanks for applying to Soylent Industries |
+| @greenhouse.example          | greenhouse | Thanks for applying to Umbrella Corp!     |
 
 2 sender(s) send on behalf of other organisations. Naming a sub-label after
 the vendor files every one of them into the same folder — the organisation is in the
 subject, and each of these needs a `subjectContains` as well as a name.
 
-4 cluster(s) have no sub-label yet. Naming one is your call, not mine —
+2 cluster(s) have no sub-label yet. Naming one is your call, not mine —
 a folder name is a decision about how you think, and nothing in the mail says it.
 
 | Folder     | Threads | Clusters | Already have a sub-label | Need a name | Vendor-hosted | Below threshold |
 |------------|---------|----------|--------------------------|-------------|---------------|-----------------|
-| Recruiting | 13      | 4        | 0                        | 4           | 2             | 0               |
+| Recruiting | 13      | 4        | 2                        | 2           | 2             | 0               |
 
 nothing has moved — these are candidates. Accept the ones you want with `rules --add`.

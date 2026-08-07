@@ -3,173 +3,173 @@
   "count": 13,
   "entries": [
     {
-      "threadId": "thr-b35ff9b7d9",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2b5b3c",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person1@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "recruiter0@globex.example",
+      "subject": "Interview loop with Globex — stage 1"
     },
     {
-      "threadId": "thr-51d4751762",
-      "ruleId": "sort-recruiting-b",
+      "threadId": "thr-1a2b7a2b",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder b62d",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder b62d"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person2@org-b-f922.example",
-      "subject": "(personal thread)"
+      "from": "recruiter1@globex.example",
+      "subject": "Interview loop with Globex — stage 2"
     },
     {
-      "threadId": "thr-d9b1bea50d",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2b991a",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person3@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "recruiter2@globex.example",
+      "subject": "Interview loop with Globex — stage 3"
     },
     {
-      "threadId": "thr-e8320500fa",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2bb809",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person4@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "recruiter3@globex.example",
+      "subject": "Interview loop with Globex — stage 4"
     },
     {
-      "threadId": "thr-e1a1fce992",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2bd6f8",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person3@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "recruiter4@globex.example",
+      "subject": "Interview loop with Globex — stage 5"
     },
     {
-      "threadId": "thr-29647d4d14",
-      "ruleId": "sort-recruiting-b",
+      "threadId": "thr-1a2bf5e7",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder b62d",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder b62d"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person2@org-b-f922.example",
-      "subject": "(personal thread)"
+      "from": "recruiter5@globex.example",
+      "subject": "Interview loop with Globex — stage 6"
     },
     {
-      "threadId": "thr-8e7f9dea85",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2c14d6",
+      "ruleId": "sort-globex",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Globex",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Globex"
       ],
       "removed": [],
       "archived": false,
-      "from": "person3@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "recruiter6@globex.example",
+      "subject": "Interview loop with Globex — stage 7"
     },
     {
-      "threadId": "thr-99c9daac4c",
-      "ruleId": "sort-recruiting-b",
+      "threadId": "thr-1a2c33c5",
+      "ruleId": "sort-initech",
       "action": "label",
-      "label": "Recruiting/Folder b62d",
+      "label": "Recruiting/Initech",
       "added": [
-        "Recruiting/Folder b62d"
+        "Recruiting/Initech"
       ],
       "removed": [],
       "archived": false,
-      "from": "person2@org-b-f922.example",
-      "subject": "(personal thread)"
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2300"
     },
     {
-      "threadId": "thr-7910ca33f8",
-      "ruleId": "sort-recruiting-b",
+      "threadId": "thr-1a2c52b4",
+      "ruleId": "sort-initech",
       "action": "label",
-      "label": "Recruiting/Folder b62d",
+      "label": "Recruiting/Initech",
       "added": [
-        "Recruiting/Folder b62d"
+        "Recruiting/Initech"
       ],
       "removed": [],
       "archived": false,
-      "from": "person2@org-b-f922.example",
-      "subject": "(personal thread)"
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2301"
     },
     {
-      "threadId": "thr-9a3a556b97",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2c71a3",
+      "ruleId": "sort-initech",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Initech",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Initech"
       ],
       "removed": [],
       "archived": false,
-      "from": "person5@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2302"
     },
     {
-      "threadId": "thr-c41c8f0efe",
-      "ruleId": "sort-recruiting-a",
+      "threadId": "thr-1a2c9092",
+      "ruleId": "sort-initech",
       "action": "label",
-      "label": "Recruiting/Folder c9d2",
+      "label": "Recruiting/Initech",
       "added": [
-        "Recruiting/Folder c9d2"
+        "Recruiting/Initech"
       ],
       "removed": [],
       "archived": false,
-      "from": "person5@org-a-13a7.example",
-      "subject": "(personal thread)"
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2303"
     },
     {
-      "threadId": "thr-7152e11e92",
-      "ruleId": "sort-recruiting-c",
+      "threadId": "thr-1a2caf81",
+      "ruleId": "sort-umbrella",
       "action": "label",
-      "label": "Recruiting/Folder 65b4",
+      "label": "Recruiting/Umbrella",
       "added": [
-        "Recruiting/Folder 65b4"
+        "Recruiting/Umbrella"
       ],
       "removed": [],
       "archived": false,
-      "from": "no-reply@ashbyhq.com",
-      "subject": "Thanks for applying to Organisation A"
+      "from": "no-reply@greenhouse.example",
+      "subject": "Thanks for applying to Umbrella Corp!"
     },
     {
-      "threadId": "thr-4427e5aad6",
-      "ruleId": "sort-recruiting-d",
+      "threadId": "thr-1a2cce70",
+      "ruleId": "sort-soylent",
       "action": "label",
-      "label": "Recruiting/Folder b40c",
+      "label": "Recruiting/Soylent",
       "added": [
-        "Recruiting/Folder b40c"
+        "Recruiting/Soylent"
       ],
       "removed": [],
       "archived": false,
-      "from": "noreply@candidates.workablemail.com",
-      "subject": "Thanks for applying to Organisation B"
+      "from": "noreply@candidates.workable.example",
+      "subject": "Thanks for applying to Soylent Industries"
     }
   ]
 }

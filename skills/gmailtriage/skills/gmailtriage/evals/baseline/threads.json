@@ -1,719 +1,708 @@
 [
   {
-    "id": "thr-fc4f229b67",
-    "from": "person1@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-04T22:46:28Z",
+    "id": "thr-1a2b5b3c",
+    "from": "recruiter0@globex.example",
+    "subject": "Interview loop with Globex — stage 1",
+    "date": "2026-08-01T15:00:00Z",
     "labelIds": [
-      "IMPORTANT",
-      "INBOX"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-64b5e5eb3f",
-    "from": "person2@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-04T19:48:26Z",
+    "id": "thr-1a2b7a2b",
+    "from": "recruiter1@globex.example",
+    "subject": "Interview loop with Globex — stage 2",
+    "date": "2026-08-02T15:01:00Z",
     "labelIds": [
-      "INBOX"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-3ec10b1b2d",
-    "from": "marketing@e.rocketreach.co",
-    "subject": "ATTN Nate: Extra 30% OFF already reduced pricing for a limited time",
-    "date": "2026-08-04T16:21:42Z",
+    "id": "thr-1a2b991a",
+    "from": "recruiter2@globex.example",
+    "subject": "Interview loop with Globex — stage 3",
+    "date": "2026-08-03T15:02:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-29331d6364",
-    "from": "sender-036144@message.fedex.com",
-    "subject": "FedEx Values Your Feedback",
-    "date": "2026-08-04T14:30:26Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-e61c04a0ee",
-    "from": "person1@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-04T14:13:35Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-5732c05f18",
-    "from": "sender-55d189@mail.fidelity.com",
-    "subject": "New statement available",
-    "date": "2026-08-03T19:19:43Z",
+    "id": "thr-1a2bb809",
+    "from": "recruiter3@globex.example",
+    "subject": "Interview loop with Globex — stage 4",
+    "date": "2026-08-04T15:03:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-8958e0a796",
-    "from": "person2@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-03T19:11:52Z",
-    "labelIds": [
-      "INBOX"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-57becaad05",
-    "from": "person3@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-08-03T15:14:22Z",
+    "id": "thr-1a2bd6f8",
+    "from": "recruiter4@globex.example",
+    "subject": "Interview loop with Globex — stage 5",
+    "date": "2026-08-05T15:04:00Z",
     "labelIds": [
-      "INBOX"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9f2be351fa",
-    "from": "success@e.rocketreach.co",
-    "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach",
-    "date": "2026-08-03T04:07:33Z",
+    "id": "thr-1a2bf5e7",
+    "from": "recruiter5@globex.example",
+    "subject": "Interview loop with Globex — stage 6",
+    "date": "2026-08-06T15:05:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-007ef08c2a",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/press@0.6.1",
-    "date": "2026-08-01T03:39:07Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-283182e420",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/press@0.6.0",
-    "date": "2026-08-01T03:34:30Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-11349c6f3a",
-    "from": "person4@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-31T18:08:57Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9a7a08c394",
-    "from": "success@e.rocketreach.co",
-    "subject": "Success Tips #3: Real Results. Real People. RocketReach.",
-    "date": "2026-07-31T12:33:45Z",
+    "id": "thr-1a2c14d6",
+    "from": "recruiter6@globex.example",
+    "subject": "Interview loop with Globex — stage 7",
+    "date": "2026-08-01T15:06:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-e03f205d86",
-    "from": "person5@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T20:27:55Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-5b756d5a76",
-    "from": "support@api.bible",
-    "subject": "Upgrade to Pro - more Bibles, insights, and flexibility",
-    "date": "2026-07-30T19:56:34Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-54380bfb93",
-    "from": "person5@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T19:44:48Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT"
+      "Label_10",
+      "Label_15"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-e08d476f3b",
-    "from": "person6@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T19:30:20Z",
+    "id": "thr-1a2c33c5",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2300",
+    "date": "2026-07-24T12:00:00Z",
     "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-4acfbd679c",
-    "from": "mychartmessage@sanfordhealth.org",
-    "subject": "New Message",
-    "date": "2026-07-30T19:24:10Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_16"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-aca33773e8",
-    "from": "sender-55d189@mail.fidelity.com",
-    "subject": "New Fidelity Government Cash Reserves shareholder report available",
-    "date": "2026-07-30T18:04:02Z",
+    "id": "thr-1a2c52b4",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2301",
+    "date": "2026-07-25T12:00:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_16"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-c89d76ec14",
-    "from": "noreply@tractive.com",
-    "subject": "Confirm your email address",
-    "date": "2026-07-30T17:24:31Z",
+    "id": "thr-1a2c71a3",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2302",
+    "date": "2026-07-26T12:00:00Z",
     "labelIds": [
-      "INBOX",
-      "IMPORTANT",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_16"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-1c5614afc0",
-    "from": "sender-1417f5@onlinejmc.com",
-    "subject": "New Bus Rider Registration",
-    "date": "2026-07-30T16:04:09Z",
+    "id": "thr-1a2c9092",
+    "from": "careers@recruiting.initech.example",
+    "subject": "Principal Engineer opening at Initech — req 2303",
+    "date": "2026-07-27T12:00:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_16"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-1a33198d6a",
-    "from": "noreply@github.com",
-    "subject": "[GitHub] A fine-grained personal access token has been added",
-    "date": "2026-07-30T14:57:23Z",
+    "id": "thr-1a2caf81",
+    "from": "no-reply@greenhouse.example",
+    "subject": "Thanks for applying to Umbrella Corp!",
+    "date": "2026-07-24T00:31:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_17"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-338d216d79",
-    "from": "person7@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-30T14:08:41Z",
+    "id": "thr-1a2cce70",
+    "from": "noreply@candidates.workable.example",
+    "subject": "Thanks for applying to Soylent Industries",
+    "date": "2026-07-22T14:12:00Z",
     "labelIds": [
-      "INBOX",
-      "IMPORTANT"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-f300528a69",
-    "from": "sender-a382ce@shareholderdocs.fidelity.com",
-    "subject": "INSPIRE ETFS Important Information",
-    "date": "2026-07-30T08:20:42Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_10",
+      "Label_18"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-c7b6f80887",
-    "from": "noreply@glassdoor.com",
-    "subject": "Glassdoor is now part of Indeed",
-    "date": "2026-07-30T00:25:54Z",
+    "id": "thr-1a2ced5f",
+    "from": "edocuments@statements.northbank.example",
+    "subject": "New statement available (1)",
+    "date": "2026-07-22T09:00:00Z",
     "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_11"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-e18145a473",
-    "from": "person4@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T18:24:10Z",
+    "id": "thr-1a2d0c4e",
+    "from": "edocuments@statements.northbank.example",
+    "subject": "New statement available (2)",
+    "date": "2026-07-23T09:00:00Z",
     "labelIds": [
-      "INBOX",
-      "IMPORTANT"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-1aca32d193",
-    "from": "alerts@notify.wellsfargo.com",
-    "subject": "Insufficient funds notice/Extra Day Grace Period",
-    "date": "2026-07-29T17:45:29Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_11"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-89b47921f1",
-    "from": "person7@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T16:56:49Z",
+    "id": "thr-1a2d2b3d",
+    "from": "edocuments@statements.northbank.example",
+    "subject": "New statement available (3)",
+    "date": "2026-07-24T09:00:00Z",
     "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-809978afb6",
-    "from": "person7@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T16:56:23Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-6f0b77787d",
-    "from": "person8@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T14:37:15Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-9621a8f46d",
-    "from": "no-reply@mail.goodreads.com",
-    "subject": "New Books to Read in August",
-    "date": "2026-07-29T13:12:52Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-19352340f2",
-    "from": "authorservices@packtpub.com",
-    "subject": "Published Report Email",
-    "date": "2026-07-29T12:57:14Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-ef2fa2e5c1",
-    "from": "alerts@notify.wellsfargo.com",
-    "subject": "Your balance is at or below zero",
-    "date": "2026-07-29T12:38:51Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_11"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-a5838f3d85",
-    "from": "person9@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T10:05:06Z",
+    "id": "thr-1a2d4a2c",
+    "from": "edocuments@statements.northbank.example",
+    "subject": "New statement available (4)",
+    "date": "2026-07-25T09:00:00Z",
     "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-311c9294fb",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/devlog@0.13.0",
-    "date": "2026-07-29T02:36:41Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
+      "Label_11"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-4c0e04344c",
-    "from": "person5@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-29T00:47:39Z",
+    "id": "thr-1a2d691b",
+    "from": "mychart@valleyhealth.example",
+    "subject": "New message from your clinic",
+    "date": "2026-07-23T18:00:00Z",
     "labelIds": [
-      "INBOX",
-      "IMPORTANT",
-      "CATEGORY_UPDATES"
+      "Label_12"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-a527354dd7",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/devlog@0.12.0",
-    "date": "2026-07-28T21:27:51Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-176d52dbbb",
-    "from": "success@e.rocketreach.co",
-    "subject": "Success Tips #2: Stop Chasing, Start Connecting",
-    "date": "2026-07-28T20:51:38Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-add972b026",
-    "from": "sender-55d189@mail.fidelity.com",
-    "subject": "Action Requested: Consent to Electronic Delivery",
-    "date": "2026-07-28T20:33:58Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-b5b569ba22",
-    "from": "workspace-noreply@google.com",
-    "subject": "You now have promotional access to AI features",
-    "date": "2026-07-28T18:30:50Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-32b948afc7",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/devlog@0.11.2",
-    "date": "2026-07-28T18:25:00Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-4035bba3f7",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/shipflow@0.3.2",
-    "date": "2026-07-28T18:24:17Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-c70f942110",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/devlog@0.11.1",
-    "date": "2026-07-28T18:17:21Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-f2a6a71611",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/shipflow@0.3.1",
-    "date": "2026-07-28T18:16:33Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-040d0bab95",
-    "from": "support@npmjs.com",
-    "subject": "Successfully published @natjswenson/shipflow@0.3.0",
-    "date": "2026-07-28T17:52:07Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-2e22b03af3",
-    "from": "sender-036144@message.fedex.com",
-    "subject": "FedEx Values Your Feedback",
-    "date": "2026-07-28T14:29:58Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_PROMOTIONS"
-    ],
-    "category": "promotions",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-2677fb7c40",
-    "from": "person5@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-28T13:14:25Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-dc8d89ed04",
-    "from": "person5@org-b-f922.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-28T13:11:54Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-9374e99e0f",
-    "from": "person10@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-27T22:54:03Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-712bd84372",
-    "from": "person10@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-27T19:13:09Z",
-    "labelIds": [
-      "INBOX",
-      "IMPORTANT"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-37e53032f4",
-    "from": "sender-cacb13@typefully.com",
-    "subject": "Welcome to your new social media workspace",
-    "date": "2026-07-27T13:55:09Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-69a83ce1c6",
-    "from": "notifications@typefully.com",
-    "subject": "New API key created for your account",
-    "date": "2026-07-27T13:53:45Z",
-    "labelIds": [
-      "INBOX",
-      "CATEGORY_UPDATES"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-19b58ea1dc",
-    "from": "no-reply@ashbyhq.com",
-    "subject": "Thanks for applying to Organisation A",
-    "date": "2026-07-24T00:31:14Z",
-    "labelIds": [
-      "INBOX"
-    ],
-    "category": "updates",
-    "hasUnsubscribe": true
-  },
-  {
-    "id": "thr-034121c4ef",
-    "from": "paymentmessage@sanfordhealth.org",
+    "id": "thr-1a2d880a",
+    "from": "mychart@valleyhealth.example",
     "subject": "You have a new statement",
-    "date": "2026-07-23T13:32:05Z",
+    "date": "2026-07-24T18:00:00Z",
     "labelIds": [
-      "UNREAD",
-      "INBOX"
+      "Label_12"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-9304679b32",
-    "from": "noreply@candidates.workablemail.com",
-    "subject": "Thanks for applying to Organisation B",
-    "date": "2026-07-22T14:12:27Z",
+    "id": "thr-1a2da6f9",
+    "from": "alerts@notify.southbank.example",
+    "subject": "Insufficient funds notice",
+    "date": "2026-07-29T10:00:00Z",
     "labelIds": [
-      "INBOX"
+      "Label_13"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-fb34ccf679",
-    "from": "person4@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-21T19:13:46Z",
+    "id": "thr-1a2dc5e8",
+    "from": "alerts@notify.southbank.example",
+    "subject": "Your balance is at or below zero",
+    "date": "2026-07-29T11:00:00Z",
     "labelIds": [
-      "INBOX"
-    ],
-    "category": null,
-    "hasUnsubscribe": false
-  },
-  {
-    "id": "thr-718963833b",
-    "from": "sender-1417f5@onlinejmc.com",
-    "subject": "2026-27 Activities Registration",
-    "date": "2026-07-21T18:39:40Z",
-    "labelIds": [
-      "UNREAD",
-      "INBOX"
+      "Label_13"
     ],
     "category": "updates",
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-ce7315e2fc",
-    "from": "person3@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-15T17:58:08Z",
+    "id": "thr-1a2de4d7",
+    "from": "centralschools@parentvendor.example",
+    "subject": "Bus registration reminder 1",
+    "date": "2026-07-15T08:00:00Z",
     "labelIds": [
-      "IMPORTANT",
-      "Label_8171544980942827259",
-      "INBOX"
+      "Label_14"
     ],
-    "labels": [
-      "Folder 86fa"
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e03c6",
+    "from": "centralschools@parentvendor.example",
+    "subject": "Bus registration reminder 2",
+    "date": "2026-07-16T08:00:00Z",
+    "labelIds": [
+      "Label_14"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e22b5",
+    "from": "records@statearchive.gov",
+    "subject": "Your records request",
+    "date": "2026-06-01T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e41a4",
+    "from": "support@packages.example",
+    "subject": "Package published: build 1",
+    "date": "2026-07-01T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e6093",
+    "from": "support@packages.example",
+    "subject": "Package published: build 2",
+    "date": "2026-07-02T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e7f82",
+    "from": "support@packages.example",
+    "subject": "Package published: build 3",
+    "date": "2026-07-03T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2e9e71",
+    "from": "support@packages.example",
+    "subject": "Package published: build 4",
+    "date": "2026-07-04T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2ebd60",
+    "from": "support@packages.example",
+    "subject": "Package published: build 5",
+    "date": "2026-07-05T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2edc4f",
+    "from": "support@packages.example",
+    "subject": "Package published: build 6",
+    "date": "2026-07-06T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2efb3e",
+    "from": "support@packages.example",
+    "subject": "Package published: build 7",
+    "date": "2026-07-07T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2f1a2d",
+    "from": "support@packages.example",
+    "subject": "Package published: build 8",
+    "date": "2026-07-08T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2f391c",
+    "from": "support@packages.example",
+    "subject": "Package published: build 9",
+    "date": "2026-07-09T10:00:00Z",
+    "labelIds": [],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2f580b",
+    "from": "outreach@leadgen.example",
+    "subject": "Quick question, #1",
+    "date": "2026-06-10T11:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2f76fa",
+    "from": "outreach@leadgen.example",
+    "subject": "Quick question, #2",
+    "date": "2026-06-11T11:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2f95e9",
+    "from": "outreach@leadgen.example",
+    "subject": "Quick question, #3",
+    "date": "2026-06-12T11:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2fb4d8",
+    "from": "outreach@leadgen.example",
+    "subject": "Quick question, #4",
+    "date": "2026-06-13T11:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2fd3c7",
+    "from": "deals@shopfront.example",
+    "subject": "20% off this week only",
+    "date": "2026-05-01T12:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a2ff2b6",
+    "from": "deals@shopfront.example",
+    "subject": "25% off this week only",
+    "date": "2026-05-02T12:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a3011a5",
+    "from": "deals@shopfront.example",
+    "subject": "30% off this week only",
+    "date": "2026-05-03T12:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a303094",
+    "from": "news@readinglist.example",
+    "subject": "Your weekly picks, issue 1",
+    "date": "2026-04-01T13:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a304f83",
+    "from": "news@readinglist.example",
+    "subject": "Your weekly picks, issue 2",
+    "date": "2026-04-02T13:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a306e72",
+    "from": "news@readinglist.example",
+    "subject": "Your weekly picks, issue 3",
+    "date": "2026-04-03T13:00:00Z",
+    "labelIds": [],
+    "category": "promotions",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a308d61",
+    "from": "no-reply@accounts.mailprovider.example",
+    "subject": "Security alert: new sign-in",
+    "date": "2026-08-07T15:40:00Z",
+    "labelIds": [
+      "Label_23"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a30ac50",
+    "from": "website@modelhub.example",
+    "subject": "Click this link to confirm your email address",
+    "date": "2026-08-06T19:20:00Z",
+    "labelIds": [
+      "Label_23"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a30cb3f",
+    "from": "billing@cloudvendor.example",
+    "subject": "Your receipt from Cloud Vendor #2563",
+    "date": "2026-07-11T14:21:00Z",
+    "labelIds": [
+      "Label_30",
+      "Label_20"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a30ea2e",
+    "from": "donotreply@bookstore.example",
+    "subject": "Thanks, your order is complete",
+    "date": "2026-08-06T01:35:00Z",
+    "labelIds": [
+      "Label_30",
+      "Label_19"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a31091d",
+    "from": "advisor0@wealthpartners.example",
+    "subject": "Re: your annual review (1)",
+    "date": "2026-07-21T16:00:00Z",
+    "labelIds": [
+      "Label_41"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-a756874659",
-    "from": "person11@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-15T13:36:59Z",
+    "id": "thr-1a31280c",
+    "from": "advisor1@wealthpartners.example",
+    "subject": "Re: your annual review (2)",
+    "date": "2026-07-22T16:00:00Z",
     "labelIds": [
-      "IMPORTANT",
-      "SENT",
-      "INBOX"
+      "Label_41"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-54b1511dd0",
-    "from": "person12@org-a-2678.example",
-    "subject": "(personal thread)",
-    "date": "2026-07-11T14:21:28Z",
+    "id": "thr-1a3146fb",
+    "from": "advisor0@wealthpartners.example",
+    "subject": "Re: your annual review (3)",
+    "date": "2026-07-23T16:00:00Z",
     "labelIds": [
-      "Label_3953032868769717139",
-      "INBOX"
+      "Label_41"
     ],
-    "labels": [
-      "Reciepts"
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a3165ea",
+    "from": "advisor1@wealthpartners.example",
+    "subject": "Re: your annual review (4)",
+    "date": "2026-07-24T16:00:00Z",
+    "labelIds": [
+      "Label_41"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a3184d9",
+    "from": "advisor0@wealthpartners.example",
+    "subject": "Re: your annual review (5)",
+    "date": "2026-07-25T16:00:00Z",
+    "labelIds": [
+      "Label_41"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a31a3c8",
+    "from": "agent@realty.example",
+    "subject": "Off boarding",
+    "date": "2026-08-03T02:00:00Z",
+    "labelIds": [
+      "Label_42"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a31c2b7",
+    "from": "agent@realty.example",
+    "subject": "Re: paperwork",
+    "date": "2026-08-04T02:00:00Z",
+    "labelIds": [
+      "Label_42"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a31e1a6",
+    "from": "me@mailprovider.example",
+    "subject": "Morning brief — Wednesday",
+    "date": "2026-07-15T13:36:00Z",
+    "labelIds": [
+      "Label_5"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a320095",
+    "from": "me@mailprovider.example",
+    "subject": "Evening brief — Friday",
+    "date": "2026-08-07T16:10:00Z",
+    "labelIds": [
+      "INBOX",
+      "SENT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a321f84",
+    "from": "invoices@billingplatform.example",
+    "subject": "Invoice 1250 from Roofing Co",
+    "date": "2025-02-12T22:00:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_21"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a323e73",
+    "from": "invoices@billingplatform.example",
+    "subject": "Invoice 1251 from Roofing Co",
+    "date": "2025-02-13T22:00:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_21"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a325d62",
+    "from": "invoices@billingplatform.example",
+    "subject": "Invoice 1252 from Roofing Co",
+    "date": "2025-02-14T22:00:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_21"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a327c51",
+    "from": "claims@insurepay.example",
+    "subject": "A digital payment was issued for your claim",
+    "date": "2025-02-14T23:00:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_22"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a329b40",
+    "from": "claims@insurepay.example",
+    "subject": "Payment confirmation",
+    "date": "2025-02-15T23:00:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_22"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a32ba2f",
+    "from": "correspondence@insurer.example",
+    "subject": "Insurance claim 01006543",
+    "date": "2025-02-14T21:14:00Z",
+    "labelIds": [
+      "Label_40",
+      "Label_22"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a32d91e",
+    "from": "secure@esignature.example",
+    "subject": "Signing complete: document 1",
+    "date": "2026-05-05T01:00:00Z",
+    "labelIds": [
+      "Label_43"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a32f80d",
+    "from": "secure@esignature.example",
+    "subject": "Signing complete: document 2",
+    "date": "2026-05-06T01:00:00Z",
+    "labelIds": [
+      "Label_43"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a3316fc",
+    "from": "secure@esignature.example",
+    "subject": "Signing complete: document 3",
+    "date": "2026-05-07T01:00:00Z",
+    "labelIds": [
+      "Label_43"
+    ],
+    "category": "updates",
+    "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a3335eb",
+    "from": "secure@esignature.example",
+    "subject": "Signing complete: document 4",
+    "date": "2026-05-08T01:00:00Z",
+    "labelIds": [
+      "Label_43"
     ],
     "category": "updates",
     "hasUnsubscribe": true

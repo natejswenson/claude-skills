@@ -138,7 +138,7 @@
       }
     ]
   },
-  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "_baseline_comment": "Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake. The corpus is INVENTED, not a redacted mailbox — this skill's fixtures would otherwise be somebody's private mail, and pseudonymising the senders still leaves the shape of a person's life in a public repo. Every domain sits under a reserved TLD and scripts/tests/no-real-data.test.mjs fails the build if that stops being true. What the goldens pin is the SHAPE of a real run — cluster sizes, which senders trip which guard, a folder that wants splitting, a folder spelled two ways, mail no rule claims — reproduced by evals/baseline/make-corpus.mjs.",
   "baseline": [
     {
       "id": "the-real-run",
@@ -146,7 +146,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan — pinned against a real triage run over a frozen, redacted corpus of this account's own threads — propose, rules and plan re-run and byte-compared."
+      "rationale": "the rule compiler or the planner silently changing which threads a rule takes, while still emitting a complete-looking plan — pinned against a frozen synthetic corpus shaped after a real triage run — propose, rules and plan re-run and byte-compared."
     },
     {
       "id": "apply-refuses-a-thread-the-plan-did-not-name",
@@ -186,7 +186,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the sub-label half silently ceasing to work — pinned against a real retroactive run over this account's own Recruiting folder: subdivide clustering it, and plan re-evaluating the rules against `label:Recruiting` rather than the inbox, both re-run and byte-compared. Catches a cluster losing its home, a vendor-hosted sender being auto-named after its vendor, the parent label dropping out of a sub-label's path, and the retroactive plan reporting archives it would never perform."
+      "rationale": "the sub-label half silently ceasing to work — pinned against a synthetic retroactive run shaped after a real one over a Recruiting folder: subdivide clustering it, and plan re-evaluating the rules against `label:Recruiting` rather than the inbox, both re-run and byte-compared. Catches a cluster losing its home, a vendor-hosted sender being auto-named after its vendor, the parent label dropping out of a sub-label's path, and the retroactive plan reporting archives it would never perform."
     },
     {
       "id": "a-retroactive-run-converges",
@@ -210,7 +210,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the audit silently ceasing to find what it exists to find — pinned against this mailbox's real label list and rule set BEFORE the hygiene pass (5 unmanaged folders, one transposed duplicate pair, 16 unclaimed threads) and AFTER it (100% coverage, clean, exit 0), both re-run and byte-compared. Catches the unmanaged/duplicate/unclaimed classification drifting, the coverage arithmetic changing, and the clean state ceasing to be reachable."
+      "rationale": "the audit silently ceasing to find what it exists to find — pinned against a synthetic label list and rule set shaped after a real mailbox BEFORE the hygiene pass (5 unmanaged folders, one transposed duplicate pair, 16 unclaimed threads) and AFTER it (100% coverage, clean, exit 0), both re-run and byte-compared. Catches the unmanaged/duplicate/unclaimed classification drifting, the coverage arithmetic changing, and the clean state ceasing to be reachable."
     },
     {
       "id": "audit-does-not-call-filed-mail-unclaimed",
@@ -236,6 +236,14 @@
       "min_corpus": 10,
       "update_command": "bash evals/baseline/refresh.sh",
       "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing — pinned against the frozen thread corpus, label list and rule set, with a declared minimum count."
+    },
+    {
+      "id": "the-corpus-is-invented-and-stays-that-way",
+      "kind": "trap",
+      "test": "scripts/tests/no-real-data.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/make-corpus.mjs",
+      "rationale": "real mail getting back into a public repo. Every corpus file is checked for a sender domain outside the reserved TLDs and for any organisation this mailbox actually deals with, and the generated fixtures are re-run and byte-compared so a hand-edited one fails — hand-editing is how a real address gets pasted in. Lives in its own file because `skillfactory freeze` rewrites baseline.test.mjs, and this is the guard that must survive a refresh."
     }
   ]
 }
