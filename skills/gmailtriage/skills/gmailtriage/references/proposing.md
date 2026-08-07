@@ -66,3 +66,48 @@ That is the honest answer. Naming a folder is a decision about how you already
 think, and nothing in the mail says whether your word is "Shopping" or "Retail".
 A script that guesses files a school district into a folder named after its mail
 vendor. See `sorting.md`.
+
+## Subdividing: the same question, asked of a folder instead of an inbox
+
+`propose` reads an inbox and asks what wants filing. `subdivide` reads a folder
+that already has mail in it and asks whether it is still one category.
+
+The clustering differs in three ways, each for a reason:
+
+- **By sender domain, not by full address.** One employer writes from five
+  people. `propose` clusters by address because a trash rule for
+  `marketing@retailer.com` should not silently cover `support@retailer.com`;
+  a sub-label for an organisation should cover everyone there.
+- **Matched only against sub-labels of that one parent**, and a little less
+  strictly than `propose` matches the whole label list. `matchDestination` is
+  exact-on-a-segment because a near match across every folder you own is a coin
+  flip between `Health Insurance` and `Healthcare`. Inside one parent the
+  candidate set is a handful of names the user made deliberately, all about the
+  same subject — and being too strict has its own cost: `@northwindco.example` fails
+  an exact match against `Recruiting/Northwind`, so a folder that already exists
+  comes back as "needs a name" and a second one gets created beside it. Prefix
+  containment, floored at four characters, in either direction.
+- **No bulk marker is required, and no threshold applies by default.** Mail in
+  a folder is already mail the user chose to keep. There is nothing left to
+  withhold it from.
+
+### The senders that name a vendor rather than an organisation
+
+Some senders host mail for whoever bought them — applicant tracking systems,
+signing services, invoicing platforms. `no-reply@ashbyhq.com` carries one employer in
+one thread and a different employer in the next.
+
+Those clusters are returned **unhoused no matter what**, even when a sub-label
+exists whose name would match the vendor's domain, and their distinct subjects
+come back with them because that is where the organisation's name is. Building a
+rule from one without a `subjectContains` is refused outright.
+
+The list of vendor hosts is not a guard, it is an admission: for these senders
+the address cannot answer the question, and reading the subject is judgment.
+
+### When the answer is "leave it alone"
+
+Most folders hold one organisation, and `subdivide` says so rather than
+proposing a split. A sub-label that holds everything its parent holds has
+organised nothing — it has given one pile two names, and the user now has to
+undo it.

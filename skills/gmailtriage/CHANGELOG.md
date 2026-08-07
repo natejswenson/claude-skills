@@ -5,6 +5,75 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-07
+
+### Added
+
+- **Sub-labels — splitting a folder that has grown into several things.**
+  A new `subdivide` command reads the mail already in one folder, clusters it by
+  sender domain, and returns the sub-labels that folder wants. A `Recruiting`
+  folder holding four employers answers "is this job-hunt mail" and nothing more
+  useful; nothing in the skill could previously ask whether a folder was still
+  one category. It says so plainly when a folder *is* still one thing, because a
+  sub-label holding everything its parent holds gives one pile two names.
+- **A retroactive pass over mail already filed.** Every compiled query was
+  hardcoded `in:inbox`, so new rules could only ever see new mail and the mail
+  already in the folder — the mail you actually want sorted — was unreachable.
+  `plan --scope 'label:Recruiting'` evaluates the same rules against a different
+  slice of the mailbox. The pass is purely additive: nothing is unlabelled,
+  nothing is trashed, and "would leave the inbox" is 0 because those threads
+  already left it.
+- **`plan --labels`**, resolving each thread's opaque `labelIds` into the names
+  rules are written in. Without it the already-filed check can never fire on
+  real fetched data, so every run re-proposes what the last one filed and a
+  retroactive pass never converges.
+- **A rule that can never fire is now reported** in the `rules` table, naming
+  the earlier rule that takes everything it would.
+
+### Changed
+
+- **A nested destination applies its whole path.** Filing into
+  `Recruiting/Globex` puts both `Recruiting` and `Recruiting/Globex` on the
+  thread. Gmail's nesting is cosmetic — a thread carrying only the child does
+  not appear under the parent — so without this, mail filed before a folder was
+  split carries the parent and mail filed after it does not, and the parent view
+  quietly stops being the whole category.
+- **`labels` reconciles implied parents too**, and distinguishes a folder a rule
+  names from one its nesting implies. Checking only the leaf would let the first
+  `apply` create the parent implicitly, which is the one thing that command
+  exists to prevent.
+- **The receipt records the labels a run actually added**, not the rule's
+  destination. Undoing a pass that added a sub-label to mail already sitting in
+  the parent now gives back the parent instead of stripping it.
+- **`plan` no longer claims it will archive mail that already left the inbox.**
+  The per-rule "leaves inbox" column is now a per-thread count.
+
+### Fixed
+
+- **A rule filing into a folder standing in front of one filing into a
+  sub-label of it is refused.** That pair does not fail cleanly, it *drifts*:
+  fresh mail hits the parent rule first and never reaches the sub-rule, while
+  mail already carrying the parent skips it and does. Which folder a thread ends
+  up in depended on nothing but when it arrived, and nothing reported it.
+- **`subdivide` never names a sub-label after the sender when that sender hosts
+  mail for other organisations.** An applicant tracking system, a signing
+  service and an invoicing platform send for whoever bought them, so the address
+  names the vendor and the subject names the organisation. Naming a folder after
+  the domain files every organisation into one — the same failure as filing a
+  school district under its mail vendor, committed by the split meant to fix it.
+  Those clusters come back unhoused with their distinct subjects attached, and a
+  rule cannot be built for one without a `subjectContains`.
+- **`apply` no longer reports threads as "staying in the inbox by rule" when
+  they were never in the inbox.** A retroactive pass said that about all 13.
+- **The baseline corpus no longer names an organisation the mailbox owner deals
+  with.** `redact.mjs` pseudonymises sender domains and applicant-tracking
+  subject lines; one employer domain was on the keep-list and should not have
+  been. It also redacts nested label names per segment, so `Parent/Child`
+  survives redaction as nesting rather than collapsing to one opaque name, and
+  `--labels-from` resolves thread label ids through the same redaction as the
+  label list — without it the two halves of a corpus describe different
+  mailboxes while still looking complete.
+
 ## [0.2.0] - 2026-08-05
 
 ### Added

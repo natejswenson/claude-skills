@@ -6,7 +6,7 @@
  * model behaving well: which threads a rule takes, whether a thread was
  * authorised, and what was actually moved.
  */
-import { matches, toGmailQuery, normaliseLabel, archives } from './rules.mjs';
+import { matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE } from './rules.mjs';
 
 // ── proposing ───────────────────────────────────────────────────────────────
 
@@ -271,13 +271,228 @@ export const candidateToSortRule = (c, destination = c.destination) => {
   return rule;
 };
 
+// ── subdividing ─────────────────────────────────────────────────────────────
+
+/**
+ * Match a cluster against the sub-labels a parent folder ALREADY has.
+ *
+ * Deliberately looser than `matchDestination`, and only here. That function is
+ * exact-on-a-whole-segment because it searches the entire label list, where a
+ * near match is a coin flip between `Health Insurance` and `Healthcare`. This
+ * one searches only the children the user deliberately created under one
+ * parent — a handful of names, all about the same subject — so the risk profile
+ * is different, and being too strict has its own cost: `@globex.example` fails
+ * an exact match against `Recruiting/Globex` (the token is `globex`, the
+ * segment flattens to `onecall`), so a folder the user already made comes back
+ * as "needs a name" and a second one is created beside it. That is the exact
+ * failure the strictness was meant to prevent.
+ *
+ * So: prefix containment in either direction, floored at 4 characters on the
+ * shorter side. `onecall` ⊂ `globex` matches; `uhg` against
+ * `unitedhealthgroup` does not, and should not — nothing in that address says
+ * Initech, and naming it is the user's call.
+ */
+export function matchChildLabel(address, children = []) {
+  const tokens = addressTokens(address);
+  if (tokens.length === 0) return null;
+  for (const raw of children) {
+    const name = typeof raw === 'string' ? raw : raw?.name ?? raw?.label;
+    if (!name) continue;
+    const segs = normaliseLabel(name).split('/');
+    const leaf = segs[segs.length - 1].replace(/[^a-z0-9]+/g, '');
+    if (leaf.length < 4) continue;
+    for (const t of tokens) {
+      if (t.length < 4) continue;
+      if (t === leaf || t.startsWith(leaf) || leaf.startsWith(t)) return name;
+    }
+  }
+  return null;
+}
+
+/**
+ * Sender domains that host mail for someone else.
+ *
+ * These are the reason `subdivide` cannot name a sub-label on its own. An
+ * applicant tracking system sends on behalf of whichever employer bought it, so
+ * `no-reply@ashbyhq.com` carries Obvious and Panorama and forty other companies
+ * behind one address. Naming a folder after the domain files every employer
+ * into `Recruiting/Ashbyhq` — the same failure as filing a school district
+ * under `Parentvendor`, and the same failure the folder split was supposed to fix.
+ *
+ * The list is not a guard, it is an admission: for these senders the entity is
+ * in the SUBJECT, and reading it is judgment. A cluster matching one comes back
+ * unhoused with its distinct subjects attached, whatever else is true of it.
+ */
+export const VENDOR_HOSTS = [
+  'ashbyhq', 'greenhouse', 'lever', 'workable', 'smartrecruiters', 'myworkday',
+  'workday', 'icims', 'jobvite', 'breezy', 'taleo', 'successfactors',
+  'authentisign', 'docusign', 'hellosign', 'intuit', 'quickbooks',
+  'sendgrid', 'mailchimp', 'hubspot', 'salesforce',
+];
+
+export const vendorHostOf = (address) => {
+  const d = domainOf(address) ?? '';
+  return VENDOR_HOSTS.find((v) => d.includes(v)) ?? null;
+};
+
+/**
+ * Split a folder that has grown into several things.
+ *
+ * `propose` asks "what does this inbox want filed"; this asks the question a
+ * folder starts raising once it has mail in it — "is this still one category?"
+ * A `Recruiting` folder holding four employers answers "is this job-hunt mail"
+ * and nothing more useful, and the mailbox cannot say which employer without
+ * reading every thread.
+ *
+ * Clusters by sender domain rather than by full address, because one employer
+ * writes from five people. Matches each cluster against the sub-labels the
+ * parent already has, and names nothing it cannot find — same contract as
+ * `matchDestination`, for the same reason.
+ */
+export function subdivide(threads, { parent, labels = [], minCount = 1 } = {}) {
+  if (!parent || String(parent).trim() === '') {
+    throw new Error('subdivide: name the folder to split with --parent');
+  }
+  const parentName = String(parent).trim();
+  const parentKey = normaliseLabel(parentName);
+
+  // Only the sub-labels of THIS parent are candidate homes. Matching against
+  // the whole label list would file a OneCall cluster into an unrelated
+  // top-level folder that happens to share a word.
+  const children = [];
+  for (const raw of labels) {
+    const name = typeof raw === 'string' ? raw : raw?.name ?? raw?.label;
+    if (!name) continue;
+    if (normaliseLabel(name).startsWith(`${parentKey}/`)) children.push(name);
+  }
+
+  const byDomain = new Map();
+  for (const t of threads) {
+    const addr = addressOf(t.from);
+    const domain = domainOf(t.from);
+    if (!addr || !domain) continue;
+    if (!byDomain.has(domain)) byDomain.set(domain, []);
+    byDomain.get(domain).push({ ...t, _addr: addr });
+  }
+
+  const clusters = [];
+  const below = [];
+  for (const [domain, group] of byDomain) {
+    const subjects = [...new Set(group.map((t) => String(t.subject ?? '').trim()).filter(Boolean))];
+    const vendor = vendorHostOf(group[0]._addr);
+    const row = {
+      id: `sort-${parentKey.replace(/[^a-z0-9]+/g, '-')}-${domain.replace(/[^a-z0-9]+/g, '-')}`
+        .replace(/-+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, ''),
+      from: `@${domain}`,
+      domain,
+      count: group.length,
+      senders: [...new Set(group.map((t) => t._addr))],
+      sample: group[0].subject ?? '',
+      subjects,
+      vendorHost: vendor,
+      // A vendor-hosted cluster is never housed automatically, even when a
+      // sub-label happens to share a word with the vendor's domain.
+      destination: vendor ? null : matchChildLabel(`@${domain}`, children),
+      // Filing already-filed mail must not archive it a second time; and the
+      // parent stays on the thread, so a sub-label is purely additive.
+      keepInInbox: false,
+    };
+    if (group.length < minCount) { below.push({ ...row, why: `only ${group.length} in the folder (threshold ${minCount})` }); continue; }
+    clusters.push(row);
+  }
+
+  for (const c of clusters) c.unhoused = c.destination === null;
+  clusters.sort((a, b) => b.count - a.count || a.from.localeCompare(b.from));
+  below.sort((a, b) => b.count - a.count || a.from.localeCompare(b.from));
+
+  const reason = clusters.length > 0 ? null
+    : below.length > 0
+      ? { kind: 'below-threshold',
+          text: `nothing in "${parentName}" reached the threshold of ${minCount}. Re-run with a lower \`--min-count\` to see the near misses.` }
+      : threads.length === 0
+        ? { kind: 'empty-folder',
+            text: `"${parentName}" has no mail in the sample — fetch it with \`label:${parentName}\` first, or the folder really is empty.` }
+        : { kind: 'no-senders',
+            text: 'no thread in the sample carries a parseable sender, so there is nothing to cluster by.' };
+
+  // One entity is not a split. Saying so is the point: a folder whose mail all
+  // comes from one place does not want sub-labels, and inventing them produces
+  // folders holding one sender each that the user then has to unpick.
+  const single = clusters.length === 1 ? clusters[0] : null;
+
+  return {
+    parent: parentName,
+    clusters,
+    below,
+    reason,
+    single,
+    knownChildren: children,
+    unhoused: clusters.filter((c) => c.unhoused).length,
+    vendorHosted: clusters.filter((c) => c.vendorHost).length,
+    sampled: threads.length,
+  };
+}
+
+/**
+ * A subdivide cluster turned into a real rule. Same contract as
+ * `candidateToSortRule`: the destination is required and never invented.
+ *
+ * A vendor-hosted cluster additionally requires a subject matcher, because the
+ * sender identifies the vendor and not the entity the folder is named after.
+ * Filing every Ashby thread into one employer's folder is worse than not
+ * splitting at all — it is mail filed under a name that is actively wrong.
+ */
+export const clusterToSubRule = (c, destination = c.destination, subjectContains = null) => {
+  if (!destination) {
+    throw new Error(`subdivide cluster ${c.from} has no destination — name the sub-label before turning it into a rule`);
+  }
+  if (c.vendorHost && !subjectContains) {
+    throw new Error(
+      `subdivide cluster ${c.from} is hosted by ${c.vendorHost}, which sends for many organisations — ` +
+      'a sender-only rule would file all of them into one folder. Give it a subjectContains naming the organisation.',
+    );
+  }
+  const match = { from: c.from };
+  if (subjectContains) match.subjectContains = subjectContains;
+  return {
+    id: c.id,
+    action: 'label',
+    label: destination,
+    match,
+    note: `file mail from ${c.from} — ${c.count} already in ${destination.split('/')[0]}, e.g. "${String(c.sample).slice(0, 60)}"`
+      + (c.vendorHost ? ` — ${c.vendorHost} hosts many organisations, so the subject is what names this one` : ''),
+  };
+};
+
 // ── planning ────────────────────────────────────────────────────────────────
 
 /**
  * Exactly which threads each rule takes. `keep` wins over everything: a thread
  * a keep rule claims is never trashed, whatever else matched it.
  */
-export function plan(threads, ruleDoc, { now = new Date() } = {}) {
+/**
+ * Which labels in a rule's destination path the thread does not already carry.
+ *
+ * Falls back to the whole path when the fetch supplied no resolved label names
+ * — the skill cannot claim a thread already has a label it was never told
+ * about, and re-applying one is idempotent in Gmail.
+ */
+const newLabelsFor = (rule, thread) => {
+  const path = labelPath(rule.label);
+  if (!Array.isArray(thread.labels) || thread.labels.length === 0) return path;
+  const have = new Set(thread.labels.map((l) => normaliseLabel(l)));
+  return path.filter((l) => !have.has(normaliseLabel(l)));
+};
+
+/** Is this thread currently in the inbox, as far as the fetch could tell? */
+const inInbox = (t) => {
+  const ids = [...(t.labelIds ?? []), ...(t.labels ?? [])].map((l) => String(l).toUpperCase());
+  // A fetch that supplied no labels at all cannot say otherwise, and the
+  // historical scope of this skill is the inbox — so absence means "yes".
+  return ids.length === 0 ? true : ids.includes('INBOX');
+};
+
+export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE } = {}) {
   const rules = ruleDoc.rules ?? [];
   const keeps = rules.filter((r) => r.action === 'keep');
   const actors = rules.filter((r) => r.action !== 'keep');
@@ -297,7 +512,29 @@ export function plan(threads, ruleDoc, { now = new Date() } = {}) {
         // file to know where a thread goes, and so the plan on disk is a
         // complete description of what will happen to the mailbox.
         label: r.action === 'label' ? r.label : null,
-        archive: archives(r),
+        // Every label the destination implies, outermost first — the parent
+        // stays on the thread, so a sub-label adds to the path rather than
+        // replacing it.
+        labels: r.action === 'label' ? labelPath(r.label) : [],
+        // …and of those, the ones this run would actually put on the thread.
+        // The distinction is the whole of `undo`: a retroactive pass that adds
+        // `Recruiting/Globex` to mail already carrying `Recruiting` must not
+        // strip `Recruiting` when it is reversed. Only computable when the
+        // fetch resolved label names; without them the two are the same list,
+        // which is what this skill did before nesting existed.
+        adds: r.action === 'label' ? newLabelsFor(r, t) : [],
+        // A rule that archives cannot archive a thread that is already out of
+        // the inbox. Reporting otherwise inflates the one number the user
+        // actually reads — "would leave the inbox" — on exactly the run where
+        // it should be zero: a retroactive pass over mail already filed.
+        archive: archives(r) && inInbox(t),
+        // What the RULE wanted, separately from what this thread allows. The
+        // two reasons a thread is not archived are not interchangeable: one is
+        // a rule saying "tag it in place", the other is a thread that already
+        // left the inbox, and reporting the second as the first tells a
+        // retroactive run that 13 threads are staying in an inbox none of them
+        // were in.
+        wouldArchive: archives(r),
       });
       if (!claims.has(t.id)) claims.set(t.id, []);
       claims.get(t.id).push(r.id);
@@ -313,13 +550,15 @@ export function plan(threads, ruleDoc, { now = new Date() } = {}) {
 
   return {
     scanned: threads.length,
+    scope,
     taken,
     spared,
     overlaps,
-    // Every distinct folder this plan would file into, so the destinations can
-    // be reconciled against the real mailbox before a single thread moves.
-    destinations: [...new Set(taken.filter((t) => t.action === 'label').map((t) => t.label))],
-    queries: rules.map((r) => ({ ruleId: r.id, query: toGmailQuery(r), action: r.action, label: r.label ?? null })),
+    // Every distinct folder this plan would file into — including the parents
+    // a nested destination implies — so the destinations can be reconciled
+    // against the real mailbox before a single thread moves.
+    destinations: [...new Set(taken.filter((t) => t.action === 'label').flatMap((t) => t.labels ?? [t.label]))],
+    queries: rules.map((r) => ({ ruleId: r.id, query: toGmailQuery(r, { scope }), action: r.action, label: r.label ?? null })),
   };
 }
 
@@ -379,6 +618,11 @@ export const buildReceipt = (entries, { at }) => ({
     ruleId: e.ruleId,
     action: e.action ?? 'trash',
     label: e.label ?? null,
+    // Exactly the labels this run PUT on the thread, which is not the same as
+    // the labels the thread ends up with. Filing into `Recruiting/Globex`
+    // mail that already sat in `Recruiting` adds one label, and an undo that
+    // removed both would take away a label the user filed by hand.
+    added: e.action === 'label' ? (e.adds ?? (e.label ? [e.label] : [])) : [],
     archived: e.action === 'label' ? e.archive === true : false,
     from: e.from,
     subject: e.subject,
@@ -388,6 +632,10 @@ export const buildReceipt = (entries, { at }) => ({
 /**
  * What `undo` must actually reverse, grouped by the operation that reverses it.
  * An entry with no `action` is a 0.1.0 receipt and is read as trash.
+ *
+ * Grouped by the labels the run ADDED, not by the rule's destination — a
+ * receipt written before nesting existed carries no `added`, and falls back to
+ * its single `label`, so an old receipt still undoes.
  */
 export function undoPlan(receipt) {
   const entries = receipt.entries ?? [];
@@ -395,8 +643,13 @@ export function undoPlan(receipt) {
   const labelled = entries.filter((e) => e.action === 'label');
   const byLabel = new Map();
   for (const e of labelled) {
-    if (!byLabel.has(e.label)) byLabel.set(e.label, []);
-    byLabel.get(e.label).push(e);
+    const added = Array.isArray(e.added) && e.added.length ? e.added : (e.label ? [e.label] : []);
+    // Innermost first: removing a parent while a child of it is still on the
+    // thread leaves the thread filed under a folder Gmail will keep showing.
+    for (const label of [...added].reverse()) {
+      if (!byLabel.has(label)) byLabel.set(label, []);
+      byLabel.get(label).push(e);
+    }
   }
   return {
     untrash,
