@@ -1,0 +1,291 @@
+{
+  "name": "shipreport",
+  "sources": [
+    "skills/shipreport/skills/shipreport/SKILL.md",
+    "skills/shipreport/skills/shipreport/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-3f03859f",
+      "tag": "inv",
+      "text": "A generic icon is a failure",
+      "severity": "high",
+      "rationale": "The card scenes are the reason the sheet is worth looking at. The moment a run reaches for a stock glyph the report becomes a list with decoration, and nothing in code can tell the difference between a lazy drawing and a considered one.",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 215
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 219
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 226
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 210
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 234
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 207
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 224
+      }
+    },
+    {
+      "id": "rule-2139cc85",
+      "tag": "rule",
+      "text": "Every claim in the report carries a receipt — a commit SHA, pull request number, release tag or session event id that resolves against the local corpus — and a ranked item whose receipt does not resolve is dropped from the report, never softened into vague prose.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 21
+      }
+    },
+    {
+      "id": "skill-019f6ab2",
+      "tag": "skill",
+      "text": "fix the draft, never the checker.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 127
+      }
+    },
+    {
+      "id": "skill-19dea7cf",
+      "tag": "skill",
+      "text": "never ask about anything in it",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 51
+      }
+    },
+    {
+      "id": "skill-1bcb7c4a",
+      "tag": "skill",
+      "text": "Do not write numbers.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 116
+      }
+    },
+    {
+      "id": "skill-35024145",
+      "tag": "skill",
+      "text": "Never fix a refusal by weakening the gate.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 164
+      }
+    },
+    {
+      "id": "skill-48c53f43",
+      "tag": "skill",
+      "text": "Never hand-write a brand value.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 166
+      }
+    },
+    {
+      "id": "skill-681a48dc",
+      "tag": "skill",
+      "text": "Never write the sentence first and then hunt for a receipt to attach.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 90
+      }
+    },
+    {
+      "id": "skill-7c068c00",
+      "tag": "skill",
+      "text": "Never count activity as achievement.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 161
+      }
+    },
+    {
+      "id": "skill-80c2a070",
+      "tag": "skill",
+      "text": "Do not re-explain the redaction counts",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 65
+      }
+    },
+    {
+      "id": "skill-82797ddc",
+      "tag": "skill",
+      "text": "Never let a card wear a generic icon.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 170
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 159
+      }
+    },
+    {
+      "id": "skill-94111a97",
+      "tag": "skill",
+      "text": "Never pass `--no-open` in an interactive session",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 137
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 14
+      }
+    },
+    {
+      "id": "skill-e1abd78c",
+      "tag": "skill",
+      "text": "The line is guidance, not a filter.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipreport/skills/shipreport/SKILL.md",
+        "line": 117
+      }
+    }
+  ]
+}

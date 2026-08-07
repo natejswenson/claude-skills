@@ -1,17 +1,65 @@
 {
-  "branches": { "main": "main", "dev": "dev" },
+  "branches": {
+    "main": "main",
+    "dev": "dev"
+  },
   "featureBranchPrefix": "feature/",
-  "requiredChecks": ["ci / devlog", "ci / ghostwriter", "ci / github-stats", "ci / resume"],
-  "mergeMethod": { "featureToDevMethod": "squash", "devToMainMethod": "merge" },
+  "requiredChecks": [
+    "ci / devlog",
+    "ci / ghostwriter",
+    "ci / github-stats",
+    "ci / resume"
+  ],
+  "mergeMethod": {
+    "featureToDevMethod": "squash",
+    "devToMainMethod": "merge"
+  },
   "protectionOwner": "external",
   "release": {
     "enabled": true,
     "mode": "manual-gate",
     "tool": "release-please",
     "layout": "manifest",
-    "releaseCredential": "SHIPFLOW_AUTOMERGE_PAT"
+    "releaseCredential": "SHIPFLOW_AUTOMERGE_PAT",
+    "componentLayout": {
+      "versionFiles": [
+        "skills/{name}/skills/{name}/package.json",
+        "skills/{name}/skills/{name}/SKILL.md",
+        "skills/{name}/.claude-plugin/plugin.json"
+      ],
+      "changelog": "skills/{name}/CHANGELOG.md",
+      "tagPattern": "{name}-v{version}",
+      "paths": [
+        "skills/{name}"
+      ],
+      "workflowFile": "{name}.yml"
+    },
+    "components": [
+      "city-report",
+      "devlog",
+      "eval",
+      "ghfactory",
+      "ghostwriter",
+      "ghostwriter-x",
+      "github-stats",
+      "gmailtriage",
+      "issueflow",
+      "pluginsync",
+      "press",
+      "release",
+      "resume",
+      "shipflow",
+      "shipreport",
+      "skillfactory"
+    ]
   },
-  "branchCleanup": { "deleteOnMerge": true, "protectedBranches": ["dev", "main"] },
+  "branchCleanup": {
+    "deleteOnMerge": true,
+    "protectedBranches": [
+      "dev",
+      "main"
+    ]
+  },
   "enforceAdmins": false,
   "renderedTemplateHashes": {
     ".github/workflows/dev-to-main-automerge.yml": "cc7f3f2efe68758a96735e5ac489513689e3b6eb295ff129c6904595eeeaac23"

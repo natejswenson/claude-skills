@@ -1,0 +1,12 @@
+| #   | Issue                                                | Labels        | Comments | Updated    | Detail |
+|-----|------------------------------------------------------|---------------|----------|------------|--------|
+| 133 | MCP audit: tool descriptions promise behavior the h… | documentation | 1        | 2026-07-22 | some   |
+| 132 | update_user_note / delete_user_note can silently hi… | bug           | 0        | 2026-07-22 | some   |
+| 27  | Run the container in the user's local timezone (kil… | —             | 0        | 2026-06-19 | full   |
+
+| Repo                       | Base branch | Feature prefix | Merge  | Policy from                         |
+|----------------------------|-------------|----------------|--------|-------------------------------------|
+| natejswenson/local-fitness | main        | feature/       | squash | defaults (no .github/shipflow.json) |
+
+Detail is how much the issue text specifies, not how much work it is — a thin issue
+under a broad title is the one most likely to come back from design as several work items.

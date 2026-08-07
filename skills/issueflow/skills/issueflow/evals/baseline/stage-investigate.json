@@ -1,0 +1,22 @@
+{
+  "id": "investigate",
+  "title": "Investigate",
+  "model": "opus",
+  "agent": "general-purpose",
+  "artifact": "investigate.md",
+  "requires": [
+    "Root cause",
+    "Evidence",
+    "Unknowns"
+  ],
+  "asks": [
+    "Reproduce or locate the behaviour the issue describes. Name the files and",
+    "functions responsible, with `path:line` references a reader can click.",
+    "State the root cause in one sentence.",
+    "State explicitly whether the issue as written asks for the right fix, and",
+    "if it does not, say what the reporter probably wants instead.",
+    "List what you could NOT determine. An unknown named is worth more than a",
+    "guess presented as a finding."
+  ],
+  "forbids": "Do not change a single file. This stage reads and reports; an investigation that edited the codebase has destroyed the evidence it was sent to gather."
+}

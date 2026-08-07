@@ -1,0 +1,21 @@
+{
+  "id": "implement",
+  "title": "Implement",
+  "model": "sonnet",
+  "agent": "general-purpose",
+  "artifact": "implement.md",
+  "requires": [
+    "Changed",
+    "Deviations"
+  ],
+  "asks": [
+    "Make the change described in the approved design, and nothing else.",
+    "Match the surrounding code: its naming, its comment density, its idiom.",
+    "Commit on the branch named in the brief. Stage explicit paths — never",
+    "`git add -A` or `git add .`; another session may hold uncommitted work in",
+    "this tree.",
+    "Report what you changed as a table of `file | what changed`, and name",
+    "anything in the design you did NOT do, with the reason."
+  ],
+  "forbids": "Do not go beyond the approved design. A better idea found mid-implementation goes back to the design gate; it does not get built because it was noticed."
+}

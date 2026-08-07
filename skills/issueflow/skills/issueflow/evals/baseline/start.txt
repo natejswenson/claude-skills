@@ -1,0 +1,18 @@
+| Issue                          | Branch            | Base |
+|--------------------------------|-------------------|------|
+| natejswenson/local-fitness#133 | feature/issue-133 | main |
+
+| Title                                                    | Labels        | Comments | Detail |
+|----------------------------------------------------------|---------------|----------|--------|
+| MCP audit: tool descriptions promise behavior the handl… | documentation | 1        | some   |
+
+Run: <RUN>
+
+| Step           | Model  | State   | Took | Gate    |
+|----------------|--------|---------|------|---------|
+| investigate    | opus   | pending | —    | open    |
+| design         | opus   | pending | —    | blocked |
+| root/implement | sonnet | pending | —    | blocked |
+| root/test      | sonnet | pending | —    | blocked |
+
+Next: `issueflow brief --stage investigate` (opus)

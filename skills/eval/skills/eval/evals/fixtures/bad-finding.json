@@ -1,0 +1,10 @@
+[
+  {
+    "id": "f-uncitable",
+    "probe": "invented-by-hand",
+    "clauseId": "rule-000000ff",
+    "eventId": "e999999",
+    "severity": "critical",
+    "detail": "a finding that sounds plausible and cites nothing that exists"
+  }
+]

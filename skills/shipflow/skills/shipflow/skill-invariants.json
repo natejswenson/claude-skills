@@ -82,12 +82,37 @@
       "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest."
     },
     {
+      "id": "collateral-must-be-named-before-cutting",
+      "pattern": "[Nn]ever run `release-cut` without naming that list to the user first",
+      "rationale": "A dev -> main promotion is atomic and carries ALL of dev, so cutting a release for one named component also releases every other component sitting bumped-but-untagged on dev. That is the worst failure this flow has — the user asked for one thing and got several, with tags and npm publishes that cannot be un-cut. The collateral list must be spoken aloud before the irreversible step, not merely present in JSON the agent may skim past."
+    },
+    {
+      "id": "tag-read-back-is-the-only-proof",
+      "pattern": "A dispatched workflow, a merged PR and a green check are \\*\\*not\\*\\* a release",
+      "rationale": "Every intermediate signal in the release path can succeed while the tag is never cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml deliberately no-ops when a tag already exists. The only evidence a release happened is the tag fetched back from origin, which is why release-cut polls for it and why the agent must not report success from anything else."
+    },
+    {
+      "id": "zero-major-bump-cap-is-the-users-call",
+      "pattern": "going to 1\\.0\\.0 is a\\s+release decision, never a commit message",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0 — an API-stability promise no commit message is entitled to make on the maintainer's behalf. suggestBump caps it at minor and reports capped: true so the promotion is offered, never taken."
+    },
+    {
+      "id": "prepare-isolated-from-unrelated-work",
+      "pattern": "throwaway git worktree",
+      "rationale": "A real repo's working tree routinely holds unrelated uncommitted work from parallel sessions — this monorepo's did, including an entire untracked skill, while this feature was written. Branching and staging under that tree is how someone else's in-flight work gets swept into a release commit. The isolated worktree makes that structurally impossible rather than relying on careful pathspecs."
+    },
+    {
       "id": "ambiguous-pattern-no-silent-pick",
       "pattern": "present all 3 (templates|patterns).{0,60}ask the user to choose",
       "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
+    },
+    {
+      "id": "untagged-bump-is-not-permission-to-cut",
+      "pattern": "is not, by itself, permission to cut",
+      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate."
     }
   ],
-  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "rename-default-branch"],
+  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "release-status", "release-prepare", "release-cut", "rename-default-branch"],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / shipflow` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
   "baseline": [
     {
@@ -100,6 +125,14 @@
       ],
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "This monorepo dogfoods shipflow on itself, so .github/shipflow.json and the workflow rendered from it are a genuine input/output pair from a real `apply` run, and that config's renderedTemplateHashes is the receipt shipflow wrote at the time. The baseline re-runs config -> params -> render and asserts byte equality against the frozen golden, that the golden's sha256 still equals the recorded receipt, and that the frozen golden still equals the repo's live committed workflow (so the fixture cannot quietly go stale). Byte-exactness is correct here and nowhere else in the baseline suite: for a workflow file, one changed character is a behavior change to the repo's merge automation. The paired negative assertions (quote injection rejected, missing param throws, merge method actually reaches the output) stop the golden from passing while the validators rot -- the missing-param one found a real bug on its first run: a present-but-undefined param rendered the literal string 'undefined' into `branches: [...]`, installing a workflow that could never fire."
+    },
+    {
+      "id": "dev-ahead-fast-path-refused",
+      "kind": "trap",
+      "test": "tests/release.test.mjs",
+      "fixtures": [],
+      "update_command": "these are regression tests built inline against a real temp git repo (makeThreeWayRepo / makeUnpromotedRepo) — nothing to refresh",
+      "rationale": "#173: release-cut's fast path used to act on `state` alone, so when main carried an untagged bump AND dev independently carried something higher, it silently tagged the OLDER version (main's) while reporting success -- hit for real during `/release eval` on 2026-08-03. Pinned against the exact reported shape (lastTag < main < dev) plus its D2 sibling (the same ambiguity on a component's never-released first bump, which a fix scoped only to the `cmpSemver > 0` branch would leave exposed). The known-bad half: cut() must refuse before any dispatch is ever reachable, naming both versions; --version must be a confirmation validated against what is actually on the named branch, never a bare bypass; and the dev-ahead-of-main blocker must stay two-sided -- absent in `clean` and in `bump-on-dev-unpromoted` (where devAhead is normal, expected shape, not an ambiguity), or a blocker that is always on for those states stops being read."
     }
   ]
 }

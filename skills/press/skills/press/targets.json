@@ -442,79 +442,83 @@
       }
     },
     {
+      "id": "root-readme",
+      "repo": "claude-skills",
+      "path": "README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {
+        "document_kind": "skill marketplace"
+      },
+      "init": {
+        "insertAfter": "^# claude-skills$"
+      }
+    },
+    {
       "id": "city-report-readme",
       "repo": "claude-skills",
       "path": "skills/city-report/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The report's colour and type tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# city-report$"
       }
     },
     {
       "id": "resume-readme",
       "repo": "claude-skills",
       "path": "skills/resume/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The r\u00e9sum\u00e9 themes' colour and type tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# resume$"
       }
     },
     {
       "id": "ghostwriter-readme",
       "repo": "claude-skills",
       "path": "skills/ghostwriter/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The card system's colour, type and terminal tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# ghostwriter$"
       }
     },
     {
       "id": "ghostwriter-x-readme",
       "repo": "claude-skills",
       "path": "skills/ghostwriter-x/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The card system's colour, type and terminal tokens"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# ghostwriter-x$"
       }
     },
     {
       "id": "devlog-readme",
       "repo": "claude-skills",
       "path": "skills/devlog/README.md",
-      "region": "version",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The cover-image palette"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# "
+        "insertAfter": "^# devlog$"
       }
     },
     {
-      "id": "forge-agent-ui",
+      "id": "ghfactory-agent-ui",
       "repo": "claude-skills",
-      "path": "skills/forge/skills/forge/SKILL.md",
+      "path": "skills/ghfactory/skills/ghfactory/SKILL.md",
       "region": "agent-ui",
       "syntax": "md",
       "emitter": "markdown-block",
@@ -523,23 +527,21 @@
       }
     },
     {
-      "id": "forge-readme",
+      "id": "ghfactory-readme",
       "repo": "claude-skills",
-      "path": "skills/forge/README.md",
-      "region": "version",
+      "path": "skills/ghfactory/README.md",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
-      "params": {
-        "what": "The workflow masthead"
-      },
+      "emitter": "readme-masthead",
+      "params": {},
       "init": {
-        "insertAfter": "^# forge "
+        "insertAfter": "^# ghfactory$"
       }
     },
     {
-      "id": "smith-agent-ui",
+      "id": "skillfactory-agent-ui",
       "repo": "claude-skills",
-      "path": "skills/smith/skills/smith/SKILL.md",
+      "path": "skills/skillfactory/skills/skillfactory/SKILL.md",
       "region": "agent-ui",
       "syntax": "md",
       "emitter": "markdown-block",
@@ -548,17 +550,245 @@
       }
     },
     {
-      "id": "smith-readme",
+      "id": "skillfactory-readme",
       "repo": "claude-skills",
-      "path": "skills/smith/README.md",
-      "region": "version",
+      "path": "skills/skillfactory/README.md",
+      "region": "masthead",
       "syntax": "md",
-      "emitter": "version-badge",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# skillfactory$"
+      }
+    },
+    {
+      "id": "github-stats-readme",
+      "repo": "claude-skills",
+      "path": "skills/github-stats/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# github-stats$"
+      }
+    },
+    {
+      "id": "press-readme",
+      "repo": "claude-skills",
+      "path": "skills/press/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# press$"
+      }
+    },
+    {
+      "id": "shipflow-readme",
+      "repo": "claude-skills",
+      "path": "skills/shipflow/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# shipflow$"
+      }
+    },
+    {
+      "id": "eval-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/eval/skills/eval/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
       "params": {
-        "what": "The brand regions"
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "eval-readme",
+      "repo": "claude-skills",
+      "path": "skills/eval/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# eval$"
+      }
+    },
+    {
+      "id": "release-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/release/skills/release/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "release-readme",
+      "repo": "claude-skills",
+      "path": "skills/release/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# release$"
+      }
+    },
+    {
+      "id": "pluginsync-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/pluginsync/skills/pluginsync/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "pluginsync-readme",
+      "repo": "claude-skills",
+      "path": "skills/pluginsync/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# pluginsync$"
+      }
+    },
+    {
+      "id": "issueflow-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/issueflow/skills/issueflow/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "issueflow-readme",
+      "repo": "claude-skills",
+      "path": "skills/issueflow/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# issueflow$"
+      }
+    },
+    {
+      "id": "shipreport-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/shipreport/skills/shipreport/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "shipreport-readme",
+      "repo": "claude-skills",
+      "path": "skills/shipreport/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# shipreport$"
+      }
+    },
+    {
+      "id": "shipreport-theme",
+      "repo": "claude-skills",
+      "path": "skills/shipreport/skills/shipreport/assets/report.css",
+      "region": "tokens",
+      "syntax": "css",
+      "emitter": "css-vars",
+      "params": {
+        "selector": ":root",
+        "align": true,
+        "comments": false,
+        "vars": [
+          {
+            "token": "paper"
+          },
+          {
+            "token": "paper_surface"
+          },
+          {
+            "token": "ink_faint"
+          },
+          {
+            "token": "paper_elevated"
+          },
+          {
+            "token": "ink"
+          },
+          {
+            "token": "ink_mid"
+          },
+          {
+            "token": "dim"
+          },
+          {
+            "token": "accent",
+            "name": "sig"
+          },
+          {
+            "token": "display_stack",
+            "name": "font"
+          },
+          {
+            "token": "serif_stack",
+            "name": "serif"
+          },
+          {
+            "token": "mono_stack",
+            "name": "mono"
+          }
+        ]
       },
       "init": {
-        "insertAfter": "^# smith "
+        "replaceFrom": "^:root \\{$",
+        "replaceTo": "^\\}$"
+      }
+    },
+    {
+      "id": "gmailtriage-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "gmailtriage-readme",
+      "repo": "claude-skills",
+      "path": "skills/gmailtriage/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# gmailtriage$"
       }
     }
   ],

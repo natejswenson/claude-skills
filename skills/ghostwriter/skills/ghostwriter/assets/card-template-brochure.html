@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="diagram.css" />
+</head>
+<!--
+  BROCHURE — a PRESS composition for a SHIPPED release of one of your own skills.
+  Not a launch announcement and not an explainer: the product page.
+
+  THE SHAPE: masthead across the top · a slender vertical PLATE down the left
+  third carrying an illustration composed for THIS release · the reading column
+  beside it · the two install steps full width · colophon. Body components in
+  the column are stock Press vocabulary (.facts, .pull) — read
+  assets/card-language.md before composing.
+
+  ── THE PLATE ────────────────────────────────────────────────────────────────
+  The plate is the reason to make a brochure rather than a list. Compose ONE
+  original line-art scene for this release, the same way a devlog cover is
+  composed — editorial ink line work in the spirit of a technical schematic, not
+  an icon and not a stock shape.
+
+  Before drawing, name the MECHANISM, not the topic. Not "a release tool" but
+  "two versions and a selector that picked the lower one". Not "a summariser"
+  but "a claim, and the receipt that has to resolve before it prints". Then draw
+  that, tall: viewBox "0 0 300 900", key points on a 10-unit grid, ink reaching
+  most of the height. A short mark floating in a tall empty plate reads as a
+  placeholder.
+
+  THE THREE PAINTS (never a raw hex — these bind to the brand tokens):
+    stroke="currentColor"  ink line work, the default; vary stroke-width 2-9
+    class="ink-fill"       a solid ink block, for a masthead or a heavy bar
+    class="knock"          paper knocked OUT of a solid block
+    class="sig-fill"       THE accent mark — AT MOST ONE per plate
+
+  Spend the accent on the single thing the drawing is about: the seal that says
+  it resolved, the one rung that was chosen, the link that was missing. A second
+  accent mark, or an accent used for mere decoration, breaks the card — the h1
+  .sig pivot is already the loud moment and the stamp is the identity mark.
+
+  Two brochures must never carry the same scene. If your instinct is a generic
+  box-and-arrow, go back and find the mechanism.
+
+  ── THE PROOF FIGURE ─────────────────────────────────────────────────────────
+  The third fact is the one slot no script can fill, so it is the one that goes
+  stale. COUNT IT FROM THE ARTIFACT — the manifests, the test run, the tags —
+  never quote it from a README, a design doc or a CHANGELOG note. Those record
+  what was true when they were written.
+
+  This has already gone wrong once: a devlog brochure claimed 61 published
+  guides because CLAUDE.md said 61. Counting the site's manifests gave 121. The
+  version, date and install steps on that card were all correct, because they
+  were read from the release; the only wrong number was the one a human typed.
+
+  If you cannot count it today, use a figure you can (tests in the suite, tags
+  cut, files under a path) or drop the third fact. A brochure with two honest
+  facts beats one with three where a reader cannot tell which is stale.
+
+  ── EVIDENCE ─────────────────────────────────────────────────────────────────
+    python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
+  reads the version, tag, publish date, BOTH install steps and the skill's own
+  one rule off the RELEASED artifact. Never type a version or an install command
+  by hand. `installSteps` has two entries and the card shows both: `/plugin
+  install` does nothing until the marketplace has been added, so a card showing
+  only the second line advertises a command that does not work. A skill with no
+  published release has no brochure to make yet.
+
+  Render portrait 4:5 (the default --size 1200x1500):
+    render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
+
+  CONTENT BUDGET (hard limits; the render lint enforces the measurable ones):
+    eyebrow <=24 chars, one line    h1 <=2 lines (~11 chars/line beside the
+    plate; add class "compact" for ~16)   stand <=4 lines (~34ch measure)
+    EXACTLY 3 .fact — .fval <=11 chars beside the plate · .flabel/.fcap one line
+    .pull .q <=3 lines              EXACTLY 2 .cmdbar, <=52 chars each, one line
+    colophon .out <=52 chars        plate svg viewBox "0 0 300 900"
+    plate: <=1 .sig-fill · id="plate-example" must be gone
+
+  The composition is marked with data-card="brochure" rather than a class: the
+  layout rules key off the attribute, and a class with no rule in diagram.css is
+  a typo waiting to happen (the template tests enforce that).
+
+  CLASS LEGEND: .plate = the vertical illustration · .col = the reading column ·
+  h1 .sig = the ONE signature-colored pivot · .stand = serif standfirst ·
+  .facts/.fact = the spec strip (.flabel .fval .fcap) · .pull > .q = the thesis ·
+  .install > .cmdbar = the two install steps · .colophon = outcome line.
+-->
+<body>
+  <div id="canvas" class="card press" data-card="brochure">
+
+    <div class="mast">
+      <div class="stamp"></div>
+      <div class="eyebrow">Eyebrow Label · <span class="no">No. 001</span></div>
+      <div class="footer brand"></div>
+    </div>
+
+    <!-- EXAMPLE ONLY — replace this whole svg with a scene composed for THIS
+         release. The render lint FAILS while id="plate-example" survives, so a
+         brochure cannot ship the demo drawing. It shows the three paints. -->
+    <div class="plate">
+      <svg id="plate-example" viewBox="0 0 300 900" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect class="ink-fill" x="66" y="104" width="168" height="56" stroke="none"/>
+        <line class="knock" x1="80" y1="124" x2="194" y2="124" stroke-width="7"/>
+        <line class="knock" x1="80" y1="142" x2="160" y2="142" stroke-width="5"/>
+        <line x1="66" y1="200" x2="234" y2="200" stroke-width="2" stroke-dasharray="5 7"/>
+        <line x1="66" y1="300" x2="234" y2="300" stroke-width="5"/>
+        <line x1="66" y1="400" x2="200" y2="400" stroke-width="5"/>
+        <line x1="66" y1="500" x2="234" y2="500" stroke-width="5"/>
+        <line x1="66" y1="600" x2="180" y2="600" stroke-width="5"/>
+        <line x1="66" y1="668" x2="234" y2="668" stroke-width="9"/>
+        <rect class="sig-fill" x="88" y="716" width="112" height="96" stroke="none"/>
+        <polyline class="knock" points="110,764 132,786 178,736" stroke-width="9"/>
+      </svg>
+    </div>
+
+    <div class="col">
+      <h1>One headline <span class="sig">pivot.</span></h1>
+
+      <p class="stand">Two or three serif sentences on what this is for, with the
+        <strong>key claim bolded</strong>.</p>
+
+      <!-- identity: every value read from the release, never typed -->
+      <div class="facts">
+        <div class="fact">
+          <span class="flabel">Version</span>
+          <span class="fval">v0.0.0</span>
+          <span class="fcap">what this release is</span>
+        </div>
+        <div class="fact">
+          <span class="flabel">Shipped</span>
+          <span class="fval">2026-01-01</span>
+          <span class="fcap">how it was proven</span>
+        </div>
+        <div class="fact">
+          <span class="flabel">Label</span>
+          <span class="fval">0</span>
+          <span class="fcap">one real proof figure</span>
+        </div>
+      </div>
+
+      <!-- the thesis: what it refuses to do, quoted rather than paraphrased -->
+      <div class="pull">
+        <div class="qrule"></div>
+        <div class="q">The one rule, quoted from the skill rather than softened
+          into something easier to promise.</div>
+      </div>
+    </div>
+
+    <!-- both steps: /plugin install does nothing until the marketplace is added -->
+    <div class="install">
+      <span class="step-no">01</span>
+      <code class="cmdbar">the --actual first command</code>
+      <span class="step-no">02</span>
+      <code class="cmdbar">the --actual second command</code>
+    </div>
+
+    <div class="colophon">
+      <span>The outcome</span>
+      <span class="out">what the reader gets, in one serif line</span>
+    </div>
+  </div>
+</body>
+</html>

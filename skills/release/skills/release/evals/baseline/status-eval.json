@@ -1,0 +1,41 @@
+{
+  "component": {
+    "name": "eval",
+    "versionFiles": [
+      "skills/eval/skills/eval/package.json",
+      "skills/eval/skills/eval/SKILL.md",
+      "skills/eval/.claude-plugin/plugin.json"
+    ],
+    "changelog": "skills/eval/CHANGELOG.md",
+    "workflowFile": "eval.yml",
+    "paths": [
+      "skills/eval"
+    ],
+    "inferredLayout": false
+  },
+  "state": "clean",
+  "versionOnMain": "0.2.0",
+  "versionOnDev": "0.2.0",
+  "versionSources": [
+    {
+      "file": "skills/eval/skills/eval/package.json",
+      "version": "0.2.0"
+    },
+    {
+      "file": "skills/eval/skills/eval/SKILL.md",
+      "version": "0.2.0"
+    },
+    {
+      "file": "skills/eval/.claude-plugin/plugin.json",
+      "version": "0.2.0"
+    }
+  ],
+  "lastTag": "eval-v0.2.0",
+  "commits": [],
+  "suggestedBump": null,
+  "suggestedBumpReason": "no commits touch this component since its last tag",
+  "suggestedBumpCapped": false,
+  "nextVersion": null,
+  "collateral": [],
+  "blockers": []
+}

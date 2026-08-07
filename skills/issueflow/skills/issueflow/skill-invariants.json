@@ -1,0 +1,172 @@
+{
+  "comment": "What must not silently disappear from issueflow. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "No stage runs on anything but its predecessor's artifact, ap",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "the-model-is-not-a-suggestion",
+      "pattern": "Never dispatch a stage on a model other than the one",
+      "rationale": "The per-stage model is the whole reason this is four subagents rather than one loop: investigation and design get the strongest model because a wrong answer there is cheapest to produce and most expensive to find. An orchestrator that quietly runs everything on one model has kept the ceremony and thrown away the design."
+    },
+    {
+      "id": "every-gate-checkpoints",
+      "pattern": "Every state change is checkpointed",
+      "rationale": "The run's whole record — four subagents' worth of investigation, design, implementation and proof — lives outside the target repo and outside git. Until 0.2.0 none of it reached GitHub before `ship`, which on the measured run never ran: 23 minutes of opus and sonnet output existed only as untracked files under $HOME and one unpushed commit. A gated pipeline that cannot survive losing the machine is a pipeline whose gates were the only thing it delivered."
+    },
+    {
+      "id": "reconcile-before-advancing",
+      "pattern": "Never advance over drift you have not shown the user",
+      "rationale": "A run holds a model of the world it built at `start` and never checks again. On the measured run the change was pushed, merged, promoted and the issue closed while the run sat at a gate — and it then approved that stage, briefed the next one and dispatched a subagent against a branch whose pull request had already merged. Asking before advancing is the difference between a stale run and a wrong one."
+    },
+    {
+      "id": "the-orchestrator-does-no-stage-work",
+      "pattern": "Never do a stage's work yourself",
+      "rationale": "Collapsing a stage into the orchestrator's own context destroys the isolation that makes each stage's artifact reviewable on its own, and produces an approval gate over work the approver has already been told the conclusion of."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "read the open issues and the repo's branch and pull request policy",
+        "command": "node scripts/issueflow.js board"
+      },
+      {
+        "step": "fetch the chosen issue and its comments to disk and open the stage state machine",
+        "command": "node scripts/issueflow.js start"
+      },
+      {
+        "step": "render each stage's dispatch prompt, model and subagent type from the approved artifacts",
+        "command": "node scripts/issueflow.js brief"
+      },
+      {
+        "step": "enforce the gate \u2014 record an artifact, record the approval, advance only then",
+        "command": "node scripts/issueflow.js accept"
+      },
+      {
+        "step": "expand an approved design's work items into stacked child lanes",
+        "command": "node scripts/issueflow.js split"
+      },
+      {
+        "step": "report the state of an interrupted run so it resumes without guessing",
+        "command": "node scripts/issueflow.js status"
+      },
+      {
+        "step": "list every run on this machine, so a run can be found without remembering its directory",
+        "command": "node scripts/issueflow.js runs"
+      },
+      {
+        "step": "push the branch and open the pull request under the repo's own policy",
+        "command": "node scripts/issueflow.js ship"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "what the issue actually asks for, and what its root cause is",
+        "why": "an issue is a person's description of a symptom; nothing on disk says which code causes it or whether the reporter asked for the right fix"
+      },
+      {
+        "step": "the design \u2014 the approach chosen, and the approaches rejected",
+        "why": "trade-offs between working designs are judgment; a file records the code that exists, never the one that should"
+      },
+      {
+        "step": "whether this issue is one change or several, and where the seams fall",
+        "why": "size signals suggest a split, they never locate it \u2014 only reading the design tells you which parts can land and be reviewed alone"
+      },
+      {
+        "step": "the implementation itself, written to match the surrounding code",
+        "why": "matching a codebase's idiom, naming and comment density is imitation, which no rule set encodes"
+      },
+      {
+        "step": "whether the tests actually prove the issue is fixed",
+        "why": "a green suite proves the tests passed, not that they tested the reported behaviour \u2014 only reading the issue against the assertions answers that"
+      },
+      {
+        "step": "whether an artifact is good enough to approve",
+        "why": "this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill against natejswenson/local-fitness#133 \u2014 its real open issue list, its real issue payload, and the investigation and design a real opus subagent produced from the briefs this skill rendered. Offline and $0 by construction: the frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/inputs/repo.json",
+        "evals/inputs/issues.json",
+        "evals/inputs/issue-133.json",
+        "evals/inputs/artifacts/investigate.md",
+        "evals/inputs/artifacts/design.md",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/board.txt",
+        "evals/baseline/brief-investigate.md",
+        "evals/baseline/brief-design.md",
+        "evals/baseline/brief-implement.md",
+        "evals/baseline/checkpoint-comment.md"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and \u2014 the expensive one \u2014 a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Since 0.2.0 it also pins the sticky issue comment, which is the ONLY artifact of a run that leaves the machine: a comment that lost the board, lost an approved artifact, or grew a local path is a run that cannot be recovered or a home directory published to a public issue, and nothing else in the repo would notice. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
+    },
+    {
+      "id": "unapproved-stage-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/inputs/artifacts/design.md",
+        "evals/inputs/artifacts/investigate.md"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose design artifact is real and complete on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero \u2014 plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
+    },
+    {
+      "id": "dependency-graph-pair",
+      "kind": "trap",
+      "test": "scripts/tests/gate.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/gate.test.mjs\"",
+      "rationale": "0.2.0 replaced the gate's flat prefix scan with a real dependency graph, which LOOSENS it \u2014 so it needs a two-sided pair, not a single assertion. One half proves a stacked lane still cannot be implemented before the lane it branches off (the loosening opened no hole); the other proves a lane CAN be implemented while the lane below it is still being tested (the concurrency is real rather than decorative). Either half alone passes over a graph that is wrong in the other direction, which is exactly how a parallelism feature ends up shipping as a comment. A third case asserts a hole two levels down is still named rather than hidden behind the step above it."
+    },
+    {
+      "id": "offline-means-offline",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
+      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network \u2014 spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 \u2014 and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+    },
+    {
+      "id": "worktree-isolation",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
+      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the test stage's revert-and-rerun proof is only safe for the same reason \u2014 before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo \u2014 the first offline eval run of this feature left a stray `feature/issue-133` branch in claude-skills itself."
+    },
+    {
+      "id": "stage-contract-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/stage-*.json",
+      "min_corpus": 4,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "Every shipped stage frozen with its full contract \u2014 model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 4 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer than four files must go red rather than report the remainder as clean."
+    }
+  ]
+}

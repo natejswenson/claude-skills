@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.14.1
+version: 0.15.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -454,6 +454,18 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     illustrative; the labeled figures must be accurate.
   - `assets/card-template-date.html` — **date type** (a launch / deprecation / event): a realistic
     ADMIT-ONE ticket as the centerpiece; the headline names the event, the date is the hero.
+  - `assets/card-template-brochure.html` — **brochure (a Press composition)**: the product page
+    for a shipped release of one of YOUR skills. Masthead → headline → standfirst → `.facts`
+    (version, ship date, one proof figure) → `.pull` carrying what the skill **refuses** to do in
+    its own words → **both** install steps → colophon, with a slender vertical `.plate` down the
+    left third holding an illustration composed for *that* release (ink only — the h1 `.sig` is the
+    card's one signature moment). **Start from the scaffold, never by hand:**
+    `python3 scripts/release_facts.py <skill> --scaffold images/<slug>.html` writes the card with
+    every *factual* slot already filled from the released artifact — version, ship date, both
+    install steps, the one rule quoted — and leaves the judgment slots marked `TODO`. Compose the
+    plate, the headline, the standfirst and the proof figure; the render lint **fails** while the
+    example plate (`id="plate-example"`) survives, so a demo drawing cannot ship. Keep the refusal: a brochure that only lists
+    features is an advert.
   - `assets/card-template-stem.html` — **STEM type** (education / outreach): the warm one — a
     SMALL toy-block S·T·E·M accent over a real topic graphic (the build / experiment / result).
     Reach for it when the tone is kid-energy / inspirational.
@@ -485,6 +497,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
   | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
   | `date` | — | date-sub ≤40 chars | |
+  | `brochure` (press) | exactly 3 facts | `.fval` ≤11 beside the plate · `.pull .q` ≤3 lines · **2** `.cmdbar` ≤52 each · `.stand` ≤4 lines · plate `viewBox="0 0 300 900"` | needs one `.pull .q`, one `.plate svg`, and BOTH install steps; facts come from `release_facts.py`, never typed |
   | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
 
   Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)

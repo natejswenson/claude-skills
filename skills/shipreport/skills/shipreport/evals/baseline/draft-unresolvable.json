@@ -1,0 +1,26 @@
+{
+  "title": "Shipped",
+  "window": {
+    "since": "2026-07-28T00:00:00Z",
+    "until": "2026-08-04T00:00:00Z"
+  },
+  "headline": "A week spent making the tools <em>prove</em> what they claim, rather than report it.",
+  "standfirst": [
+    "The largest single piece of work was a ground-up rewrite of the r\u00e9sum\u00e9 generator. The most consequential were three separate fixes to tools that had been quietly reporting success they had not earned.",
+    "The through-line was verification. A release tool that could tag the wrong version. A publisher that called a page live before it was reachable. An issue-to-pull-request flow that ran for nearly an hour and never touched the tracker at all. Each was found by running the thing and measuring it, not by reviewing it."
+  ],
+  "sections": [
+    {
+      "title": "Shipped",
+      "items": [
+        {
+          "title": "A claim with no artifact behind it",
+          "text": "This sentence reads exactly like the true ones above it.",
+          "receipts": [
+            "commit:natejswenson/claude-skills@deadbee"
+          ]
+        }
+      ]
+    }
+  ]
+}

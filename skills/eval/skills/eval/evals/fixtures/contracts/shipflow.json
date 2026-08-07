@@ -1,0 +1,489 @@
+{
+  "name": "shipflow",
+  "sources": [
+    "skills/shipflow/skills/shipflow/SKILL.md",
+    "skills/shipflow/skills/shipflow/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-0017bc2f",
+      "tag": "inv",
+      "text": "is mandatory for a real \\(non-dry-run\\) apply",
+      "severity": "high",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-003): --expect-state-hash was optional, so a real apply could silently proceed with zero TOCTOU/drift protection if the caller simply omitted it. Now a hard CLI refusal unless the named --skip-hash-check escape hatch is passed explicitly.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-4b9d1950",
+      "tag": "inv",
+      "text": "even when detected values already look correct",
+      "severity": "high",
+      "rationale": "First live end-to-end run (2026-07-14, against natejswenson/1.00s) showed an orchestrating agent can silently skip the confirmation turn when detected values look right. This line makes the interview checkpoint explicit and unskippable, not just implied by 'confirm with the user.'",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5b363f3a",
+      "tag": "inv",
+      "text": "refuses any `--force` without an accompanying reason",
+      "severity": "high",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-002): --force had zero code-level friction beyond the flag itself, so a confused or prompt-injected agent could force through an unprotected merge or a tampered template with no audit trail. --force now requires --force-reason, echoed back in the apply result.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-6a7e051a",
+      "tag": "inv",
+      "text": "A dispatched workflow, a merged PR and a green check are not a release",
+      "severity": "high",
+      "rationale": "Every intermediate signal in the release path can succeed while the tag is never cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml deliberately no-ops when a tag already exists. The only evidence a release happened is the tag fetched back from origin, which is why release-cut polls for it and why the agent must not report success from anything else.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-6d13a2d8",
+      "tag": "inv",
+      "text": "[Nn]ever silently pass `--force`",
+      "severity": "high",
+      "rationale": "A hand-edited template file must always be surfaced and explicitly confirmed per entry, never auto-overridden.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-78b25bed",
+      "tag": "inv",
+      "text": "never assume a config field is pre-sanitized",
+      "severity": "high",
+      "rationale": "Found by a Siege security audit (2026-07-15): renderTemplate did pure string substitution with zero escaping, so a repo-write-level (not admin-level) edit to .github/shipflow.json's branch names or release.releaseCredential could break out of the rendered YAML's quoting and make the auto-merge job's if: condition unconditionally true, or inject arbitrary new workflow steps — a privilege escalation via the credential the rendered workflow runs with.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-7d9aca83",
+      "tag": "inv",
+      "text": "present all 3 (templates|patterns).{0,60}ask the user to choose",
+      "severity": "high",
+      "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt).",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-85d1f2a6",
+      "tag": "inv",
+      "text": "going to 1\\.0\\.0 is a\\s+release decision, never a commit message",
+      "severity": "high",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0 — an API-stability promise no commit message is entitled to make on the maintainer's behalf. suggestBump caps it at minor and reports capped: true so the promotion is offered, never taken.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-9031a7a4",
+      "tag": "inv",
+      "text": "refuses to run.{0,40}against a config with `release\\.mode: \"auto\"`",
+      "severity": "high",
+      "rationale": "Auto mode is unimplemented in this version; it must fail loudly, never silently no-op, so a user's config request isn't silently ignored.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a112a6a0",
+      "tag": "inv",
+      "text": "[Nn]ever run `release-cut` without naming that list to the user first",
+      "severity": "high",
+      "rationale": "A dev -> main promotion is atomic and carries ALL of dev, so cutting a release for one named component also releases every other component sitting bumped-but-untagged on dev. That is the worst failure this flow has — the user asked for one thing and got several, with tags and npm publishes that cannot be un-cut. The collateral list must be spoken aloud before the irreversible step, not merely present in JSON the agent may skim past.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-a17d790c",
+      "tag": "inv",
+      "text": "throwaway git worktree",
+      "severity": "high",
+      "rationale": "A real repo's working tree routinely holds unrelated uncommitted work from parallel sessions — this monorepo's did, including an entire untracked skill, while this feature was written. Branching and staging under that tree is how someone else's in-flight work gets swept into a release commit. The isolated worktree makes that structurally impossible rather than relying on careful pathspecs.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-ad62ab6f",
+      "tag": "inv",
+      "text": "re-run the plan step, don't retry the same `--expect-state-hash`",
+      "severity": "high",
+      "rationale": "A TOCTOU abort means state drifted — retrying the same stale hash would just abort again or, worse, apply against stale assumptions if the guard were bypassed.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-b90d7533",
+      "tag": "inv",
+      "text": "always with the explicit\\s+`@latest` tag, never bare",
+      "severity": "high",
+      "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-bf8fcab0",
+      "tag": "inv",
+      "text": "[Nn]ever silently overwrite an existing workflow file",
+      "severity": "high",
+      "rationale": "Agent-driven CI scaffolding (added after 1.00s had no pull_request-triggered CI at all) must never clobber a workflow file that's already there — same confirm-before-write discipline as every other mutation in this skill, applied to a step the CLI itself never touches.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-c1c793bf",
+      "tag": "inv",
+      "text": "refuses to wire up auto-merge with zero required checks",
+      "severity": "high",
+      "rationale": "The fail-open guard: an empty requiredChecks list must never silently enable an unprotected auto-merge.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-d340a3e7",
+      "tag": "inv",
+      "text": "is not, by itself, permission to cut",
+      "severity": "high",
+      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-e7745397",
+      "tag": "inv",
+      "text": "Do NOT silently pick either value",
+      "severity": "high",
+      "rationale": "The round-2 false-positive fix: ambiguous branch protection must be explicitly disambiguated with the user, never silently defaulted, or protection ends up un-audited and un-managed by anyone.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-edf663a7",
+      "tag": "inv",
+      "text": "argv-style.{0,60}no shell",
+      "severity": "high",
+      "rationale": "Command-injection defense: every gh/git invocation must stay argv-style, never a shell string built from user input.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-f4e5c128",
+      "tag": "inv",
+      "text": "[Nn]ever write shipflow's config anywhere other than `\\.github/shipflow\\.json`",
+      "severity": "high",
+      "rationale": "A committed, repo-specific policy file must live in the target repo's own tree at a fixed, predictable path — never inside the shipped skill package, never at an arbitrary location.",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-0495515b",
+      "tag": "skill",
+      "text": "always with the explicit `@latest` tag, never bare `@natjswenson/shipflow`.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "skill-087434fa",
+      "tag": "skill",
+      "text": "Read the state. Never guess it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 157
+      }
+    },
+    {
+      "id": "skill-12c2da68",
+      "tag": "skill",
+      "text": "Never run `release-cut` without naming that list to the user first.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 181
+      }
+    },
+    {
+      "id": "skill-15e1327e",
+      "tag": "skill",
+      "text": "This skill never mutates repo state directly.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 22
+      }
+    },
+    {
+      "id": "skill-2bb0f744",
+      "tag": "skill",
+      "text": "This whole section is a mandatory interactive interview, not a narrate-and-proceed pass.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 39
+      }
+    },
+    {
+      "id": "skill-379b5d01",
+      "tag": "skill",
+      "text": "Wait for explicit confirmation before proceeding.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 105
+      }
+    },
+    {
+      "id": "skill-47871168",
+      "tag": "skill",
+      "text": "Resolve `workflowPattern` before anything else",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 47
+      }
+    },
+    {
+      "id": "skill-55aad15a",
+      "tag": "skill",
+      "text": "Resolve a default-branch mismatch, if any.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 56
+      }
+    },
+    {
+      "id": "skill-58d4a7cf",
+      "tag": "skill",
+      "text": "An empty `requiredChecks` list is a fail-open state, not a valid steady state",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 64
+      }
+    },
+    {
+      "id": "skill-5cceb0f1",
+      "tag": "skill",
+      "text": "a required check that never passes blocks every future merge",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 87
+      }
+    },
+    {
+      "id": "skill-63ef9a71",
+      "tag": "skill",
+      "text": "Resolve `protectionOwner`:",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 92
+      }
+    },
+    {
+      "id": "skill-742aa791",
+      "tag": "skill",
+      "text": "Show the user `collateral`, `blockers` and the proposed version, and wait.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 176
+      }
+    },
+    {
+      "id": "skill-7b5c5b18",
+      "tag": "skill",
+      "text": "Report the tag, and only the tag.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 226
+      }
+    },
+    {
+      "id": "skill-7b994e11",
+      "tag": "skill",
+      "text": "never triggers this or any other workflow",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 97
+      }
+    },
+    {
+      "id": "skill-8635f358",
+      "tag": "skill",
+      "text": "Report the result.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 118
+      }
+    },
+    {
+      "id": "skill-91b0d91d",
+      "tag": "skill",
+      "text": "Never silently overwrite an existing workflow file.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 82
+      }
+    },
+    {
+      "id": "skill-9ca90f5d",
+      "tag": "skill",
+      "text": "Resolve `release.releaseCredential` — never default it to `GITHUB_TOKEN`.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 97
+      }
+    },
+    {
+      "id": "skill-b968cfc7",
+      "tag": "skill",
+      "text": "`renderTemplate` validates every substituted value before writing YAML, and this must never be weakened.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 259
+      }
+    },
+    {
+      "id": "skill-be267905",
+      "tag": "skill",
+      "text": "Check pending releases",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 34
+      }
+    },
+    {
+      "id": "skill-be5fd0c0",
+      "tag": "skill",
+      "text": "Confirm branch names and required checks with the user.",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 64
+      }
+    },
+    {
+      "id": "skill-ee4b1901",
+      "tag": "skill",
+      "text": "branch protection exists but no settings-as-code artifact was found",
+      "severity": "high",
+      "source": {
+        "file": "skills/shipflow/skills/shipflow/SKILL.md",
+        "line": 95
+      }
+    }
+  ]
+}

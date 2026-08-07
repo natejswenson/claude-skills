@@ -1,0 +1,310 @@
+{
+  "name": "resume",
+  "sources": [
+    "skills/resume/skills/resume/SKILL.md",
+    "skills/resume/skills/resume/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-01e6a067",
+      "tag": "inv",
+      "text": "still failing\\s\\n?\\safter 3 attempts, stop",
+      "severity": "high",
+      "rationale": "Without a bound, a rule the agent cannot reconcile with the source material turns into a silent retry loop that either burns the session or ends in the agent quietly weakening the resume until the validator passes. The bound forces the conflict to surface to the user.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-0b1a4bd2",
+      "tag": "inv",
+      "text": "Recommend `ats-plain` whenever the user says they are applying",
+      "severity": "high",
+      "rationale": "The default press theme puts section headings in a left gutter, which a column-detecting PDF parser reads as a separate column and separates from their sections. That is measured, not theoretical. Collapsing seven templates to one structure removed the old ATS-safe/presentation labelling, so this line is now the ONLY place a run surfaces the trade-off — without it the agent cheerfully sends a gutter-layout resume into a job board.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-55d0b011",
+      "tag": "inv",
+      "text": "Never tailor from\\s\\n?\\sa stored résumé without telling the user which one you used",
+      "severity": "high",
+      "rationale": "Once the résumé is stored and a run needs only a job URL, the user stops seeing which career history is being used. A résumé six months out of date produces a confidently wrong application, and that run is indistinguishable from a correct one — same output, same PDF, no error. Stating the stored date every run is the only signal that surfaces staleness before it reaches an employer.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5fd78c99",
+      "tag": "inv",
+      "text": "you must\\s\\n?\\sconfirm with the user before passing it",
+      "severity": "high",
+      "rationale": "Replacing the stored résumé is destructive and it is the user's data, not the agent's: the stored copy may be the only plain-text version they have. profile.mjs enforces --force at the CLI boundary and keeps a .bak, but nothing stops an agent from passing --force reflexively to clear an error — this prose is what makes the confirmation a rule rather than a speed bump.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-9678f2b7",
+      "tag": "inv",
+      "text": "prompt-injection-fixtures",
+      "severity": "high",
+      "rationale": "Job descriptions are attacker-controlled text pasted straight into the context. The skill has a tested adversarial-input history (docs/security/prompt-injection-fixtures/); dropping the pointer to it removes the only in-skill signal that JD text must be treated as data.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-9d1e2686",
+      "tag": "inv",
+      "text": "don't silently fall back to a\\s\\n?\\sdefault theme",
+      "severity": "high",
+      "rationale": "A silent fallback means the user asks for one look, gets another, and has no way to tell — the PDF renders fine and looks deliberate. resolveTheme() throws on an unknown theme NAME for the same reason; this is the prose half of that contract.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-adf798d6",
+      "tag": "inv",
+      "text": "never the `\\.pdf`/`\\.docx` path itself",
+      "severity": "high",
+      "rationale": "validate.mjs's source-truth checks (scope qualifiers, invented numbers) compare the tailored JSON against the ORIGINAL text. Handed a .pdf/.docx path it reads binary as 'text', so every source-truth check fails spuriously on a perfectly clean tailoring — and the natural response to a spurious failure is to stop trusting the validator. Since 2.0.0 the source is stored once and reused, so storing binary content would persist that failure across EVERY future run rather than one; profile.mjs rejects it at the door, and this prose is why.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-b8f6ef31",
+      "tag": "inv",
+      "text": "never re-tailor, never\\s\\n?\\sre-validate",
+      "severity": "high",
+      "rationale": "Re-tailoring on a style switch would re-run the LLM and produce different resume CONTENT for what the user asked to be a cosmetic change — the content they already approved would silently drift under them.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-c06cd774",
+      "tag": "inv",
+      "text": "Never\\s\\n?\\sinvent facts",
+      "severity": "high",
+      "rationale": "This is the one rule whose violation actively harms the user: a resume that claims experience the candidate does not have is something they carry into an interview. Nothing in validate.mjs can detect a plausible fabricated bullet, so this prose is the entire defense.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-c1a2c963",
+      "tag": "inv",
+      "text": "This step is not\\s\\n?\\soptional — always run it after showing the preview",
+      "severity": "high",
+      "rationale": "Both themes are now rendered in the same call, so the hand-off costs nothing — but it is the ONLY moment the press-vs-ats-plain trade-off reaches the user, and the moment most likely to be skipped as 'the user didn't ask'. Skipping it means a gutter-layout resume goes into an ATS and nobody finds out until the application vanishes.",
+      "source": {
+        "file": "skills/resume/skills/resume/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-11e9d365",
+      "tag": "skill",
+      "text": "Say so, with its date",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 80
+      }
+    },
+    {
+      "id": "skill-13f05150",
+      "tag": "skill",
+      "text": "One script call, not a pipeline.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 36
+      }
+    },
+    {
+      "id": "skill-17541df1",
+      "tag": "skill",
+      "text": "Store the extracted TEXT, never the `.pdf`/`.docx` path itself.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 154
+      }
+    },
+    {
+      "id": "skill-1e28c2bf",
+      "tag": "skill",
+      "text": "Ask for this only when Step 1 reported no stored résumé",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 94
+      }
+    },
+    {
+      "id": "skill-783a6ddf",
+      "tag": "skill",
+      "text": "Never print file contents into the conversation.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 31
+      }
+    },
+    {
+      "id": "skill-7d891ea0",
+      "tag": "skill",
+      "text": "Do not print it.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 119
+      }
+    },
+    {
+      "id": "skill-8bf50b79",
+      "tag": "skill",
+      "text": "This step is not optional — always run it after showing the preview",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 207
+      }
+    },
+    {
+      "id": "skill-932da062",
+      "tag": "skill",
+      "text": "Keep the machinery invisible.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 28
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "skill-c24d0465",
+      "tag": "skill",
+      "text": "Show, don't describe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 51
+      }
+    },
+    {
+      "id": "skill-dd1d4e78",
+      "tag": "skill",
+      "text": "Never invent facts.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 162
+      }
+    },
+    {
+      "id": "skill-eac68a76",
+      "tag": "skill",
+      "text": "you must confirm with the user before passing it",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 246
+      }
+    },
+    {
+      "id": "skill-ecb3387c",
+      "tag": "skill",
+      "text": "Report in tables, with these columns.",
+      "severity": "high",
+      "source": {
+        "file": "skills/resume/skills/resume/SKILL.md",
+        "line": 40
+      }
+    }
+  ]
+}

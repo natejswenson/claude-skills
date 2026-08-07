@@ -1,0 +1,39 @@
+{
+  "$comment": "Fixture house — the press registry a scaffold run has to append its two brand targets to.",
+  "targets": [
+    {
+      "id": "press-readme",
+      "repo": "claude-skills",
+      "path": "skills/press/README.md",
+      "region": "version",
+      "syntax": "md",
+      "emitter": "version-badge",
+      "params": {
+        "what": "The brand"
+      }
+    },
+    {
+      "id": "repocount-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/repocount/skills/repocount/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "repocount-readme",
+      "repo": "claude-skills",
+      "path": "skills/repocount/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# repocount$"
+      }
+    }
+  ]
+}

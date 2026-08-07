@@ -32,6 +32,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
       - run: python tools/lint_marketplace.py
       # Every skill must declare a baseline eval set whose test the runner
       # actually discovers and whose fixtures/corpus really exist. Lives here
@@ -40,3 +43,11 @@ jobs:
       # check would let a PR adding a new skill pass green without it ever
       # being evaluated. See CLAUDE.md's "Baseline eval sets" section.
       - run: python tools/lint_baseline.py
+      # Every skill must satisfy the house tier: wired into every registry, and
+      # carrying a README in the house style. Here rather than in a per-skill
+      # caller for the same reason as the two lints above -- a README edited in
+      # SOME OTHER skill's PR would never be graded by a path-filtered check,
+      # which is exactly how a house style rots one pull request at a time.
+      # `verify --all` exits non-zero on any house-tier failure and shells out
+      # to nothing, so this stays offline and sub-second.
+      - run: node skills/skillfactory/skills/skillfactory/scripts/skillfactory.js verify --all --repo .

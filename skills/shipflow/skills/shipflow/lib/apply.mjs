@@ -198,8 +198,15 @@ export function clearReleasePendingLabel(ownerRepo, prNumber) {
   return r.ok ? { ok: true } : { ok: false, error: r.stderr };
 }
 
+// `--repo` is not optional here even though `gh` would infer it: the CLI is
+// invoked with `--repo <path>` pointing at an arbitrary target repo, which is
+// routinely NOT the process's cwd. Without it, `gh` resolves the repo from
+// whatever directory the agent happened to be in and dispatches a release in
+// the wrong repository — silently, since a successful dispatch elsewhere still
+// exits 0. ownerRepo was already threaded in for exactly this and was being
+// ignored.
 export function dispatchReleaseWorkflow(ownerRepo, skillWorkflowFile, ref) {
-  const r = spawnArgs('gh', ['workflow', 'run', skillWorkflowFile, '--ref', ref]);
+  const r = spawnArgs('gh', ['workflow', 'run', skillWorkflowFile, '--ref', ref, '--repo', ownerRepo]);
   return r.status === 0 ? { ok: true } : { ok: false, error: r.stderr };
 }
 

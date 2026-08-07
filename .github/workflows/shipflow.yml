@@ -7,7 +7,9 @@ name: shipflow
 # - `feature/**` is in the PR base list so each layer of a stacked PR gets its own
 #   `ci / shipflow` run. Without it a stacked layer (whose base is the branch below
 #   it, not dev) would get NO checks at all. Keep it when editing this trigger.
-# - push trigger IS path-filtered, so the release job only attempts on relevant merges.
+# - push trigger IS path-filtered and now runs ONLY `ci`. It cuts nothing: the
+#   release job is workflow_dispatch-only, because /release is the single
+#   release path and dispatches it deliberately (see the release job below).
 on:
   push:
     branches: [main]
@@ -66,9 +68,13 @@ jobs:
 
   release:
     needs: ci
-    # Real push to main (when re-coupled via a PAT) OR a deliberate manual dispatch on main.
-    # The bot GITHUB_TOKEN auto-merge doesn't trigger push events, so workflow_dispatch is the on-demand release path.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    # workflow_dispatch ONLY. A push to main must never cut a tag: the /release
+    # skill is the single release path, and it dispatches this workflow itself
+    # after the promotion lands. A dev -> main merge DOES fire push events
+    # (confirmed 2026-08-02: shipflow-v0.4.0 was tagged and published to npm by
+    # a promotion merging, with no dispatch), so gating on the event is what
+    # actually stops it -- the push trigger above still runs `ci`, nothing more.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/_release.yml
     with:
       skill: shipflow

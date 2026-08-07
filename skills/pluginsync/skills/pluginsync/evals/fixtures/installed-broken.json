@@ -1,0 +1,8 @@
+[
+  {
+    "id": "intact@claude-skills",
+    "version": "1.0.0",
+    "scope": "user",
+    "enabled": true
+  }
+]

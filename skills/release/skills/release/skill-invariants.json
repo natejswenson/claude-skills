@@ -1,0 +1,128 @@
+{
+  "comment": "What must not silently disappear from release. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "A release is done only when the tag is read back from the re",
+      "rationale": "The one rule. Every intermediate signal in this path can succeed while no tag is cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml no-ops on an existing tag so a 'successful' retry can correct nothing. Lose this line and the skill starts reporting releases that did not happen."
+    },
+    {
+      "id": "collateral-named-before-cutting",
+      "pattern": "[Nn]ever run `cut` without naming the `collateral` list to the user first",
+      "rationale": "A dev -> main promotion is a single merge of all of dev and cannot be made selective, so every other bumped-but-untagged component has its bump moved to main alongside the one being released. Until 2026-08-02 that also RELEASED them — the release jobs ran on push, so a merge tagged and npm-published everything within seconds, irreversibly. They are now workflow_dispatch-only and cut dispatches exactly one component, so the blast radius is gone; the disclosure stays because the user should still know what their promotion moves and which components are now one dispatch from a release nobody asked for."
+    },
+    {
+      "id": "draft-is-raw-material-not-the-entry",
+      "pattern": "It is raw material, not the entry",
+      "rationale": "changelog-draft emits grouped commit subjects, which say what was typed rather than what changed for a reader or what breaks. Shipping the draft verbatim produces release notes that look complete and inform nobody. The prose is the model's job; deleting this line is how it silently stops being done."
+    },
+    {
+      "id": "zero-major-cap-is-offered-never-taken",
+      "pattern": "API-stability promise, and no commit message is entitled to make it",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0. shipflow caps it at minor and reports capped: true; this line is what makes the agent surface the cap rather than quietly accept it."
+    },
+    {
+      "id": "done-false-is-not-an-error",
+      "pattern": "will usually return `done: false`, and that is not an error",
+      "rationale": "cut is bounded and resumable because the full path outlasts a single call. Without this line an agent reads the first `done: false` as a failure and either reports the release as broken or starts working around it by hand with gh — abandoning every guard that makes the flow safe."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "[Nn]ever ask about anything in that table",
+      "rationale": "The whole preflight table is fact: the version on main, the last tag, the unreleased commit count, the blockers. Asking the user to confirm any of it is the UX failure that makes a skill feel like a form, and it is the reason this skill can get to a decision in two questions."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "no-second-implementation-of-releasing",
+      "pattern": "it never reimplements a single thing shipflow does",
+      "rationale": "Every mutating step belongs to shipflow; this skill resolves the binary, gates its version, and shapes its output. The moment release.js grows its own version reading or PR opening, the two drift and a user gets different behaviour depending on which one they invoked — the exact failure shipflow's own SKILL.md warns about for CI scaffolding."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "read every component's release state, blockers and collateral",
+        "command": "node scripts/release.js preflight"
+      },
+      {
+        "step": "group the commits since the last tag into changelog sections",
+        "command": "node scripts/release.js changelog-draft"
+      },
+      {
+        "step": "write the version into every version file and splice the CHANGELOG",
+        "command": "node scripts/release.js prepare"
+      },
+      {
+        "step": "drive the branch to a tag and read the tag back from the remote",
+        "command": "node scripts/release.js cut"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "which bump this release actually is",
+        "why": "commit types are a suggestion, not a decision — only a person knows whether a refactor broke someone, and whether an 0.x component is ready to claim 1.0.0"
+      },
+      {
+        "step": "what the CHANGELOG entry says",
+        "why": "grouped commit subjects are raw material; a release note explains why a change was made and what breaks, which no commit message reliably records"
+      },
+      {
+        "step": "whether the collateral releases are acceptable",
+        "why": "a promotion is atomic, so releasing one component releases every other bumped one — only the user can say whether shipping those today is fine"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against real runs of this skill against this repo, never synthetic fixtures. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake. What is frozen is the INPUT (real release-status output) and the rendered draft; what tracks live state is asserted with floors instead, so a release does not make the fixtures stale.",
+  "baseline": [
+    {
+      "id": "real-release-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/changelog-draft-ghostwriter.md",
+        "evals/baseline/changelog-draft-press.md"
+      ],
+      "update_command": "node evals/baseline/update.mjs && node scripts/release.js changelog-draft --from evals/baseline --out evals/baseline",
+      "rationale": "The frozen run, pinned by MANIFEST.json: the recorded command is re-run into a fresh temp directory and byte-compared, so the eval fails when BEHAVIOUR changes rather than merely when someone edits a fixture. Byte-exactness is correct here and not elsewhere in this set — the rendered draft IS the artifact the author edits, so one dropped bullet is a lost change. The command is offline by construction (it re-renders from frozen release-status output rather than calling shipflow), which is what keeps a CI gate from costing money or flaking."
+    },
+    {
+      "id": "frozen-inputs-still-span-the-shapes",
+      "kind": "golden",
+      "test": "scripts/tests/release-eval.test.mjs",
+      "fixtures": [
+        "evals/baseline/status-ghostwriter.json",
+        "evals/baseline/status-press.json",
+        "evals/baseline/status-eval.json"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "The real `release-status` outputs the golden renders from, plus the assertion that they still span the three shapes the grouper behaves differently on: many commits across 3+ types, exactly one, and exactly zero. (Not the state machine too, despite what this rationale used to claim — all three fixtures are `state: \"clean\"`, and no test here asserts any `state` value; shipflow's own `tests/release.test.mjs` is what pins the state machine, including the `devAhead` / `dev-ahead-of-main` shapes from issue #173.) Without this, a refresh that collapsed every fixture to 'no commits' would leave the byte-comparison above passing over nothing — the fixture set would still exist and would still check anything."
+    },
+    {
+      "id": "clean-component-is-refused",
+      "kind": "trap",
+      "test": "scripts/tests/release-eval.test.mjs",
+      "fixtures": [
+        "evals/baseline/status-eval.json"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "The known-bad half, without which the goldens above would keep passing while the checker rotted. Three refusals are asserted directly: changelog-draft on a component with nothing to release exits non-zero rather than emitting an empty entry; cut without --expect-status-hash exits non-zero rather than proceeding to an irreversible tag; and the grouper places a commit of an unknown or non-conventional type in Uncategorised rather than dropping it — a drop produces a plausible, complete-looking entry, which is the failure nobody would ever notice."
+    },
+    {
+      "id": "declared-components-resolve",
+      "kind": "corpus",
+      "test": "scripts/tests/release-eval.test.mjs",
+      "corpus_glob": "../../../../skills/*/CHANGELOG.md",
+      "min_corpus": 12,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "Every skill in the monorepo, asserted with a floor rather than equality. Two ways this skill can go quietly blind: the component resolver matching nothing and reporting every component healthy over an empty set, and a newly-shipped skill never being added to release.components so preflight reports on 12 of 13 while looking complete. Both are asserted — every declared component must resolve to a real CHANGELOG, a real version file and a real caller workflow, and every directory under skills/ must be declared."
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "comment": "What must not silently disappear from pluginsync. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "A plugin is not refreshed until the new version is read back",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "resolve every marketplace's install location and each plugin's available version from plugin.json on disk",
+        "command": "node scripts/pluginsync.js check --no-fetch"
+      },
+      {
+        "step": "diff installed against available and classify each row",
+        "command": "node scripts/pluginsync.js check"
+      },
+      {
+        "step": "install/update each drifted plugin and read the resulting version back off disk",
+        "command": "node scripts/pluginsync.js apply"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide whether an orphan or disabled plugin is deliberate or rot",
+        "why": "nothing on disk records intent — a disabled project-scoped plugin is normal, a disabled user-scoped one is usually a forgotten experiment"
+      },
+      {
+        "step": "decide what to do about a plugin shadowed by a personal copy in ~/.claude/skills",
+        "why": "the shadowing directory sometimes holds user data alongside the stale SKILL.md, so deleting the directory and deleting the shadow are different actions with different consequences"
+      },
+      {
+        "step": "explain a stalled row",
+        "why": "the CLI exits 0 either way, so why a version did not move is a diagnosis, not a field"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-run-report",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a column, an action classification or the restart footer silently changing shape — the report is the entire product, so one changed character is changed behaviour — pinned against a real check run against this machine's actual plugin state on 2026-08-01, frozen as fixtures and re-run byte-for-byte."
+    },
+    {
+      "id": "unreadable-source-is-an-error-row",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a resolver that swallows the failure and omits the plugin, which would read as 'everything is up to date' — the exact silent-success failure the one rule exists to prevent — pinned against a fixture marketplace whose entry points at a source directory with no .claude-plugin/plugin.json."
+    },
+    {
+      "id": "every-shipped-plugin-resolves",
+      "kind": "corpus",
+      "test": "scripts/tests/resolve.test.mjs",
+      "corpus_glob": "../../../*/.claude-plugin/plugin.json",
+      "min_corpus": 11,
+      "update_command": "node evals/fixtures/update.mjs && node scripts/pluginsync.js check --no-fetch --home evals/fixtures/home --installed-json evals/fixtures/installed.json --out <dir>, then skillfactory freeze",
+      "rationale": "a resolver that matches nothing and reports a clean, empty table — a glob that finds zero plugins must go red, not green — pinned against every plugin entry in this repo's own .claude-plugin/marketplace.json, resolved to a real version."
+    }
+  ]
+}

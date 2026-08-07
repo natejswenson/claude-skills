@@ -313,6 +313,57 @@ function versionBadge(tokens, params, ctx) {
 }
 
 // --------------------------------------------------------------------------
+// readme-masthead
+// --------------------------------------------------------------------------
+
+/**
+ * The masthead a README wears.
+ *
+ * Same job as `gha-header`, different medium: `.mast` translated into the only
+ * affordances markdown has — bold, a middot-separated line, and a rule. Stamp,
+ * brand line, document kind, issue (the press version) and byline, then the
+ * heavy rule that always sits under a masthead.
+ *
+ * Three deliberate deviations from `components.md`, each forced by the medium:
+ *
+ * - **It sits under the H1, not above it.** Every other PRESS medium opens on
+ *   the masthead and puts the headline below. A GitHub repo page must open on
+ *   its own name, so here the H1 *is* the headline and the eyebrow follows it.
+ * - **The byline is not right-aligned.** Markdown has no alignment short of
+ *   raw HTML, and a table wrapper to fake it would put a box around the
+ *   masthead — a worse violation (laws §2) than an unaligned byline.
+ * - **No mono face.** Backticks are markdown's only monospace, and GitHub
+ *   renders a code span as a filled, rounded chip. Tracked caps survive as
+ *   caps; the chrome does not, so the eyebrow is plain bold text.
+ *
+ * It carries the press version and nothing else that could go stale. The
+ * "do not edit" instruction lives in the region marker, where the only person
+ * who needs it is already looking; repeating it as prose would put three lines
+ * of throat-clearing above every README's first real sentence.
+ */
+function readmeMasthead(tokens, params, ctx) {
+  const version = ctx.version ?? '0.0.0';
+  const stamp = params.stamp ?? tokens.identity.stamp;
+  const name = params.brand_line ?? tokens.identity.name;
+  const byline = params.byline ?? tokens.identity.byline;
+  const kind = String(params.document_kind ?? 'Claude Code skill').toUpperCase();
+  if (!name) throw new EmitError('readme-masthead needs identity.name in tokens.json or params.brand_line');
+
+  const eyebrow = [
+    `**${stamp}**`,
+    String(name).toUpperCase(),
+    kind,
+    `PRESS v${version}`,
+    byline,
+  ].join(' · ');
+
+  // The blank line before the rule is load-bearing: `text` immediately followed
+  // by `---` is a setext H2 in every markdown flavour, so without it the whole
+  // eyebrow silently renders as a heading instead of a masthead over a rule.
+  return `${eyebrow}\n\n---`;
+}
+
+// --------------------------------------------------------------------------
 // gha-header
 // --------------------------------------------------------------------------
 
@@ -397,6 +448,7 @@ export const EMITTERS = {
   'python-theme': pythonTheme,
   'python-consts': pythonConsts,
   'version-badge': versionBadge,
+  'readme-masthead': readmeMasthead,
   'gha-header': ghaHeader,
   'css-vars': cssVars,
   'md-palette': mdPalette,

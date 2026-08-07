@@ -1,0 +1,23 @@
+{
+  "id": "test",
+  "title": "Test",
+  "model": "sonnet",
+  "agent": "general-purpose",
+  "artifact": "test.md",
+  "requires": [
+    "Command",
+    "Two-sided",
+    "Result"
+  ],
+  "asks": [
+    "Write the test the design named as its proof, in the place this repo already",
+    "keeps its tests.",
+    "Prove the test is two-sided: show it FAILING against the unfixed behaviour",
+    "(revert, stub, or assert the old value) before showing it pass. A test that",
+    "was never seen red proves the suite runs, not that the issue is fixed.",
+    "Run the suite. Save the real, unedited command output to the evidence file",
+    "named in the brief.",
+    "Report the command you ran and its exit code."
+  ],
+  "forbids": "Never report a pass you did not watch happen. If the suite could not run, say so and stop — an unrun suite reported as green is the failure this whole skill is built to prevent."
+}

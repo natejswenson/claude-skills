@@ -364,6 +364,32 @@ LINT_JS = r"""
   if (cls.includes('flow'))
     budget(count('.fnode'), 'stages in flow', 3, 5,
       'flow takes 3–5 stages; collapse stages or switch to a carousel');
+  if ((canvas.dataset.card || '') === 'brochure') {
+    budget(count('.fact'), 'facts in brochure', 3, 3,
+      'brochure takes exactly 3 facts — version, ship date, and one proof figure');
+    // A brochure without its refusal is an advert. The pull quote is the claim.
+    if (count('.pull .q') !== 1)
+      push('FAIL', 'count-budget',
+        'brochure needs exactly one refusal (.pull .q) — found ' + count('.pull .q'));
+    // BOTH install steps. `/plugin install` does nothing until the marketplace
+    // has been added, so one command bar advertises something that does not work.
+    if (count('.install .cmdbar') !== 2)
+      push('FAIL', 'count-budget',
+        'brochure shows BOTH install steps — found ' + count('.install .cmdbar') +
+        ' .cmdbar in .install (marketplace add, then plugin install)');
+    // The demo drawing must never ship: a brochure whose plate is the example
+    // is a brochure nobody composed.
+    if (canvas.querySelector('#plate-example'))
+      push('FAIL', 'placeholder', 'the plate is still the template example ' +
+        '(id="plate-example") — compose a scene for THIS release');
+    if (count('.plate .sig-fill') > 1)
+      push('FAIL', 'count-budget', count('.plate .sig-fill') +
+        ' accent marks in the plate — at most one; the h1 .sig is the loud moment');
+    if (count('.plate svg') !== 1)
+      push('FAIL', 'count-budget',
+        'brochure needs exactly one plate illustration — found ' + count('.plate svg'));
+  }
+
   if (cls.includes('code')) {
     const n = count('.line');
     if (n > 13)
@@ -387,8 +413,14 @@ LINT_JS = r"""
   // 6. chip-wrap WARN — a .cmd that wraps past one line.
   for (const el of canvas.querySelectorAll('.cmd')) {
     if (!visible(el)) continue;
-    const fs = parseFloat(getComputedStyle(el).fontSize);
-    if (el.getBoundingClientRect().height > 1.7 * fs * 1.3)
+    // Measure the CONTENT box, not the border box: comparing the padded height
+    // against a line height flags any generously-padded chip as wrapped even
+    // when it sits on one line.
+    const cs = getComputedStyle(el);
+    const fs = parseFloat(cs.fontSize);
+    const lh = parseFloat(cs.lineHeight) || fs * 1.3;
+    const inner = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (inner > 1.7 * lh)
       push('WARN', 'chip-wrap', '.cmd wraps to two+ lines: "' + txt(el) +
         '" — a one-line command reads best');
   }

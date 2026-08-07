@@ -1,0 +1,26 @@
+{
+  "id": "design",
+  "title": "Design",
+  "model": "opus",
+  "agent": "general-purpose",
+  "artifact": "design.md",
+  "requires": [
+    "Approach",
+    "Rejected",
+    "Files",
+    "Proof"
+  ],
+  "asks": [
+    "Propose the change. Name the approach chosen AND at least one approach",
+    "rejected, with the reason — a design with no rejected alternative is a",
+    "first idea wearing a design doc.",
+    "List every file that will be touched and what happens to it.",
+    "State how the change will be proven: the specific behaviour a test must",
+    "assert, phrased so a reader can tell it maps to the issue.",
+    "Decide whether this is ONE change or SEVERAL. If several, list the work",
+    "items in landing order under a `## Work items` heading, one per line as",
+    "`- <slug>: <what lands in this layer>`. Each item must be reviewable and",
+    "mergeable ALONE. If one change, say so and write no work items."
+  ],
+  "forbids": "Do not write the implementation. A design doc containing the finished diff is a change nobody got to approve before it existed."
+}

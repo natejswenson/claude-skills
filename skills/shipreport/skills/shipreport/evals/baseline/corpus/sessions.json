@@ -1,0 +1,3129 @@
+{
+  "session:01fea177-cd51-4936-8b0a-15cac7d7fc90": {
+    "id": "session:01fea177-cd51-4936-8b0a-15cac7d7fc90",
+    "kind": "session",
+    "receipt": "session:01fea177-cd51-4936-8b0a-15cac7d7fc90",
+    "sessionId": "01fea177-cd51-4936-8b0a-15cac7d7fc90",
+    "at": "2026-08-03T18:19:46.004Z",
+    "start": "2026-08-03T18:19:39.313Z",
+    "end": "2026-08-03T18:19:46.004Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:03eace67-2763-4b6a-a01a-24f3f53af7d8": {
+    "id": "session:03eace67-2763-4b6a-a01a-24f3f53af7d8",
+    "kind": "session",
+    "receipt": "session:03eace67-2763-4b6a-a01a-24f3f53af7d8",
+    "sessionId": "03eace67-2763-4b6a-a01a-24f3f53af7d8",
+    "at": "2026-08-03T18:16:53.562Z",
+    "start": "2026-08-03T18:16:47.156Z",
+    "end": "2026-08-03T18:16:53.562Z",
+    "project": "local-fitness",
+    "title": "Treadmill run on target for easy day",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:05ffc353-486e-412a-a5ed-295c8abdf411": {
+    "id": "session:05ffc353-486e-412a-a5ed-295c8abdf411",
+    "kind": "session",
+    "receipt": "session:05ffc353-486e-412a-a5ed-295c8abdf411",
+    "sessionId": "05ffc353-486e-412a-a5ed-295c8abdf411",
+    "at": "2026-08-03T13:40:03.912Z",
+    "start": "2026-08-03T02:59:22.318Z",
+    "end": "2026-08-03T13:40:03.912Z",
+    "project": "local-fitness",
+    "title": "Create fitness report card for run",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "ToolSearch": 2,
+      "mcp__fitness__query_workouts": 1,
+      "mcp__fitness__workout_report_card": 1,
+      "Bash": 54,
+      "Read": 8,
+      "WebSearch": 4,
+      "WebFetch": 11,
+      "Write": 12,
+      "Edit": 12
+    },
+    "userTurns": 112,
+    "assistantTurns": 182,
+    "edits": 24,
+    "uuids": []
+  },
+  "session:086d13ce-77a5-40aa-9cee-d6b83449fb0f": {
+    "id": "session:086d13ce-77a5-40aa-9cee-d6b83449fb0f",
+    "kind": "session",
+    "receipt": "session:086d13ce-77a5-40aa-9cee-d6b83449fb0f",
+    "sessionId": "086d13ce-77a5-40aa-9cee-d6b83449fb0f",
+    "at": "2026-07-31T01:17:32.467Z",
+    "start": "2026-07-31T00:42:38.722Z",
+    "end": "2026-07-31T01:17:32.467Z",
+    "project": "ghostwriter-x",
+    "title": "Pick a different topic",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "ghostwriter-x:ghostwriter-x"
+    ],
+    "tools": {
+      "Bash": 43,
+      "AskUserQuestion": 6,
+      "ToolSearch": 1,
+      "WebFetch": 2,
+      "WebSearch": 1,
+      "Write": 2,
+      "Read": 1
+    },
+    "userTurns": 61,
+    "assistantTurns": 119,
+    "edits": 2,
+    "uuids": []
+  },
+  "session:08e3cb86-8ec0-4f91-a03e-bd8177bf3b54": {
+    "id": "session:08e3cb86-8ec0-4f91-a03e-bd8177bf3b54",
+    "kind": "session",
+    "receipt": "session:08e3cb86-8ec0-4f91-a03e-bd8177bf3b54",
+    "sessionId": "08e3cb86-8ec0-4f91-a03e-bd8177bf3b54",
+    "at": "2026-08-03T11:58:17.356Z",
+    "start": "2026-08-03T11:42:22.034Z",
+    "end": "2026-08-03T11:58:17.356Z",
+    "project": "local-fitness",
+    "title": "Easy 5mi today, body charging back up",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:0d8481da-704d-4462-a392-44e3202963d9": {
+    "id": "session:0d8481da-704d-4462-a392-44e3202963d9",
+    "kind": "session",
+    "receipt": "session:0d8481da-704d-4462-a392-44e3202963d9",
+    "sessionId": "0d8481da-704d-4462-a392-44e3202963d9",
+    "at": "2026-08-03T18:20:36.799Z",
+    "start": "2026-08-03T18:20:27.197Z",
+    "end": "2026-08-03T18:20:36.799Z",
+    "project": "local-fitness",
+    "title": "Treadmill walk session slightly below target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:101f1995-a5d1-4929-b0de-6353efeda88a": {
+    "id": "session:101f1995-a5d1-4929-b0de-6353efeda88a",
+    "kind": "session",
+    "receipt": "session:101f1995-a5d1-4929-b0de-6353efeda88a",
+    "sessionId": "101f1995-a5d1-4929-b0de-6353efeda88a",
+    "at": "2026-08-03T01:32:12.621Z",
+    "start": "2026-08-02T20:35:09.020Z",
+    "end": "2026-08-03T01:32:12.621Z",
+    "project": "claude-skills",
+    "title": "Grade today's run with data",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "eval:eval"
+    ],
+    "tools": {
+      "ToolSearch": 1,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__workout_report_card": 2,
+      "Skill": 1,
+      "Bash": 55,
+      "Read": 11,
+      "Edit": 9,
+      "Write": 1
+    },
+    "userTurns": 90,
+    "assistantTurns": 141,
+    "edits": 10,
+    "uuids": []
+  },
+  "session:11b586c2-3717-4454-b91c-cbed07cfe589": {
+    "id": "session:11b586c2-3717-4454-b91c-cbed07cfe589",
+    "kind": "session",
+    "receipt": "session:11b586c2-3717-4454-b91c-cbed07cfe589",
+    "sessionId": "11b586c2-3717-4454-b91c-cbed07cfe589",
+    "at": "2026-07-28T12:37:49.881Z",
+    "start": "2026-07-28T12:37:46.057Z",
+    "end": "2026-07-28T12:37:49.881Z",
+    "project": "local-fitness",
+    "title": "Analyze running fatigue and grade trends",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:145f12ba-fb2c-405c-903c-374156ee1998": {
+    "id": "session:145f12ba-fb2c-405c-903c-374156ee1998",
+    "kind": "session",
+    "receipt": "session:145f12ba-fb2c-405c-903c-374156ee1998",
+    "sessionId": "145f12ba-fb2c-405c-903c-374156ee1998",
+    "at": "2026-07-31T12:57:37.741Z",
+    "start": "2026-07-31T12:38:07.042Z",
+    "end": "2026-07-31T12:57:37.741Z",
+    "project": "local-fitness",
+    "title": "Missed shakeout, long run prescription locked in",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:149e11bc-84cc-41ac-accc-1cab51e61b0c": {
+    "id": "session:149e11bc-84cc-41ac-accc-1cab51e61b0c",
+    "kind": "session",
+    "receipt": "session:149e11bc-84cc-41ac-accc-1cab51e61b0c",
+    "sessionId": "149e11bc-84cc-41ac-accc-1cab51e61b0c",
+    "at": "2026-07-28T19:39:31.448Z",
+    "start": "2026-07-28T19:39:28.227Z",
+    "end": "2026-07-28T19:39:31.448Z",
+    "project": "local-fitness",
+    "title": "Analyze tempo run miss and training pattern",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:14e16ef2-5985-44ff-95bd-9ac0559cb986": {
+    "id": "session:14e16ef2-5985-44ff-95bd-9ac0559cb986",
+    "kind": "session",
+    "receipt": "session:14e16ef2-5985-44ff-95bd-9ac0559cb986",
+    "sessionId": "14e16ef2-5985-44ff-95bd-9ac0559cb986",
+    "at": "2026-08-02T19:56:20.116Z",
+    "start": "2026-08-02T19:54:45.614Z",
+    "end": "2026-08-02T19:56:20.116Z",
+    "project": "pluginsync",
+    "title": "Reload the Claude skills plugin",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 7
+    },
+    "userTurns": 13,
+    "assistantTurns": 15,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:19e6bd1f-2a1c-4514-a2b6-ec9f529c5847": {
+    "id": "session:19e6bd1f-2a1c-4514-a2b6-ec9f529c5847",
+    "kind": "session",
+    "receipt": "session:19e6bd1f-2a1c-4514-a2b6-ec9f529c5847",
+    "sessionId": "19e6bd1f-2a1c-4514-a2b6-ec9f529c5847",
+    "at": "2026-08-01T17:35:41.253Z",
+    "start": "2026-08-01T15:39:16.921Z",
+    "end": "2026-08-01T17:35:41.253Z",
+    "project": "ghostwriter",
+    "title": "Base directory for this skill: ~/localrepo/claude-skills/skills/ghostwri",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "ghostwriter:ghostwriter"
+    ],
+    "tools": {
+      "Bash": 29,
+      "Read": 6,
+      "ToolSearch": 1,
+      "WebFetch": 4,
+      "Write": 6,
+      "Edit": 5,
+      "AskUserQuestion": 7
+    },
+    "userTurns": 70,
+    "assistantTurns": 110,
+    "edits": 11,
+    "uuids": []
+  },
+  "session:1a681993-cadf-4f49-819c-431b45895197": {
+    "id": "session:1a681993-cadf-4f49-819c-431b45895197",
+    "kind": "session",
+    "receipt": "session:1a681993-cadf-4f49-819c-431b45895197",
+    "sessionId": "1a681993-cadf-4f49-819c-431b45895197",
+    "at": "2026-08-01T15:30:47.250Z",
+    "start": "2026-08-01T00:28:03.999Z",
+    "end": "2026-08-01T15:30:47.250Z",
+    "project": "claude-skills",
+    "title": "press-brand-consolidation",
+    "branches": [
+      "dev",
+      "feature/press-brand-skill",
+      "feature/press-font-profiles",
+      "feature/press-pin-tracking",
+      "feature/press-profile-repo",
+      "feature/press-propagate",
+      "feature/press-readme-and-both-branches",
+      "feature/press-seed-readmes",
+      "feature/press-site-tokens",
+      "feature/stacked-prs-ci",
+      "feature/stacked-prs-docs",
+      "fix/press-emit-consumers-0.7.2",
+      "fix/press-propagate-trigger",
+      "fix/propagate-git-auth",
+      "fix/propagate-integration-branch",
+      "fix/propagate-supersede"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 433,
+      "Read": 13,
+      "ToolSearch": 2,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 3,
+      "Write": 40,
+      "ExitPlanMode": 1,
+      "TaskCreate": 7,
+      "TaskUpdate": 10,
+      "Edit": 60,
+      "Agent": 6
+    },
+    "userTurns": 600,
+    "assistantTurns": 1008,
+    "edits": 100,
+    "uuids": []
+  },
+  "session:1b5228f9-de2f-48d9-9d3d-d15d72e7cae8": {
+    "id": "session:1b5228f9-de2f-48d9-9d3d-d15d72e7cae8",
+    "kind": "session",
+    "receipt": "session:1b5228f9-de2f-48d9-9d3d-d15d72e7cae8",
+    "sessionId": "1b5228f9-de2f-48d9-9d3d-d15d72e7cae8",
+    "at": "2026-08-03T18:21:05.483Z",
+    "start": "2026-08-03T18:20:58.949Z",
+    "end": "2026-08-03T18:21:05.483Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session analysis 2026-07-21",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:1e43af9f-c706-4d67-a28b-20c1cfef92bb": {
+    "id": "session:1e43af9f-c706-4d67-a28b-20c1cfef92bb",
+    "kind": "session",
+    "receipt": "session:1e43af9f-c706-4d67-a28b-20c1cfef92bb",
+    "sessionId": "1e43af9f-c706-4d67-a28b-20c1cfef92bb",
+    "at": "2026-07-29T11:50:59.498Z",
+    "start": "2026-07-29T11:50:59.483Z",
+    "end": "2026-07-29T11:50:59.498Z",
+    "project": "local-fitness",
+    "title": "Execute tempo, mind the fatigue debt",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 0,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:2017788e-c868-45f5-8487-3ed355f3f99f": {
+    "id": "session:2017788e-c868-45f5-8487-3ed355f3f99f",
+    "kind": "session",
+    "receipt": "session:2017788e-c868-45f5-8487-3ed355f3f99f",
+    "sessionId": "2017788e-c868-45f5-8487-3ed355f3f99f",
+    "at": "2026-07-31T12:22:44.463Z",
+    "start": "2026-07-31T11:33:41.503Z",
+    "end": "2026-07-31T12:22:44.463Z",
+    "project": "local-fitness",
+    "title": "Long run day \u2014 eight miles at easy-steady",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:20387f9b-e383-49b6-9c27-c2d2e717276a": {
+    "id": "session:20387f9b-e383-49b6-9c27-c2d2e717276a",
+    "kind": "session",
+    "receipt": "session:20387f9b-e383-49b6-9c27-c2d2e717276a",
+    "sessionId": "20387f9b-e383-49b6-9c27-c2d2e717276a",
+    "at": "2026-07-31T01:18:20.348Z",
+    "start": "2026-07-29T15:47:22.964Z",
+    "end": "2026-07-31T01:18:20.348Z",
+    "project": "natejswenson.io",
+    "title": "update-resume-pdf-astro",
+    "branches": [
+      "dev",
+      "feature/resume-refresh"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 56,
+      "Read": 9,
+      "AskUserQuestion": 2,
+      "ToolSearch": 1,
+      "EnterPlanMode": 1,
+      "Write": 6,
+      "ExitPlanMode": 1,
+      "Edit": 9
+    },
+    "userTurns": 94,
+    "assistantTurns": 148,
+    "edits": 15,
+    "uuids": []
+  },
+  "session:21577d78-8ca2-432e-92f0-5f2536f67e42": {
+    "id": "session:21577d78-8ca2-432e-92f0-5f2536f67e42",
+    "kind": "session",
+    "receipt": "session:21577d78-8ca2-432e-92f0-5f2536f67e42",
+    "sessionId": "21577d78-8ca2-432e-92f0-5f2536f67e42",
+    "at": "2026-08-03T18:26:13.108Z",
+    "start": "2026-08-03T18:26:10.295Z",
+    "end": "2026-08-03T18:26:13.108Z",
+    "project": "local-fitness",
+    "title": "Track HR discipline and workout consistency",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:217c0850-c7e5-4f88-83eb-8b5960ee9047": {
+    "id": "session:217c0850-c7e5-4f88-83eb-8b5960ee9047",
+    "kind": "session",
+    "receipt": "session:217c0850-c7e5-4f88-83eb-8b5960ee9047",
+    "sessionId": "217c0850-c7e5-4f88-83eb-8b5960ee9047",
+    "at": "2026-07-31T00:42:14.989Z",
+    "start": "2026-07-31T00:42:14.988Z",
+    "end": "2026-07-31T00:42:14.989Z",
+    "project": "claude-skills",
+    "title": "session in claude-skills",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 3,
+    "assistantTurns": 0,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:21bfb35c-7b6c-448e-b56f-098ae1d5f08e": {
+    "id": "session:21bfb35c-7b6c-448e-b56f-098ae1d5f08e",
+    "kind": "session",
+    "receipt": "session:21bfb35c-7b6c-448e-b56f-098ae1d5f08e",
+    "sessionId": "21bfb35c-7b6c-448e-b56f-098ae1d5f08e",
+    "at": "2026-07-30T12:43:31.671Z",
+    "start": "2026-07-29T15:52:34.382Z",
+    "end": "2026-07-30T12:43:31.671Z",
+    "project": "claude-skills",
+    "title": "report-card-rubric-split",
+    "branches": [
+      "dev",
+      "feature/resume-theme-engine"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "ToolSearch": 8,
+      "mcp__fitness__get_today_status": 1,
+      "mcp__fitness__training_load_status": 1,
+      "mcp__fitness__get_training_plan_status": 1,
+      "mcp__fitness__get_training_plan_progress": 1,
+      "mcp__fitness__update_plan_workout": 1,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__query_workouts": 1,
+      "mcp__fitness__workout_report_card": 1,
+      "Bash": 198,
+      "mcp__fitness__run_sql": 8,
+      "AskUserQuestion": 1,
+      "EnterPlanMode": 1,
+      "Read": 22,
+      "Write": 16,
+      "ExitPlanMode": 1,
+      "TaskCreate": 7,
+      "TaskUpdate": 11,
+      "Edit": 88,
+      "Monitor": 3,
+      "Skill": 1,
+      "WebSearch": 5,
+      "WebFetch": 6
+    },
+    "userTurns": 407,
+    "assistantTurns": 675,
+    "edits": 104,
+    "uuids": []
+  },
+  "session:22116012-c358-412f-aa6d-e5c518ecc41b": {
+    "id": "session:22116012-c358-412f-aa6d-e5c518ecc41b",
+    "kind": "session",
+    "receipt": "session:22116012-c358-412f-aa6d-e5c518ecc41b",
+    "sessionId": "22116012-c358-412f-aa6d-e5c518ecc41b",
+    "at": "2026-08-03T01:34:15.470Z",
+    "start": "2026-08-02T19:56:33.712Z",
+    "end": "2026-08-03T01:34:15.470Z",
+    "project": "claude-skills",
+    "title": "Fix the package lock",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "release:release"
+    ],
+    "tools": {
+      "Bash": 147,
+      "AskUserQuestion": 3,
+      "Read": 18,
+      "ToolSearch": 1,
+      "Edit": 25
+    },
+    "userTurns": 201,
+    "assistantTurns": 394,
+    "edits": 25,
+    "uuids": []
+  },
+  "session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b": {
+    "id": "session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b",
+    "kind": "session",
+    "receipt": "session:25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b",
+    "sessionId": "25b6b1a1-390e-4fb7-a23b-5cc715b0bf1b",
+    "at": "2026-07-29T01:07:39.028Z",
+    "start": "2026-07-28T15:23:55.126Z",
+    "end": "2026-07-29T01:07:39.028Z",
+    "project": "claude-skills",
+    "title": "baseline-eval-sets-skills",
+    "branches": [
+      "dev",
+      "feature/baseline-eval-sets",
+      "feature/npm-package-docs",
+      "feature/press-cover-variety",
+      "feature/shipflow-0.3.0-release",
+      "main"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "Bash": 374,
+      "ToolSearch": 3,
+      "EnterPlanMode": 1,
+      "Write": 29,
+      "AskUserQuestion": 3,
+      "Edit": 34,
+      "ExitPlanMode": 1,
+      "TaskCreate": 9,
+      "TaskUpdate": 18,
+      "Read": 13,
+      "WebSearch": 8,
+      "WebFetch": 7
+    },
+    "userTurns": 517,
+    "assistantTurns": 925,
+    "edits": 63,
+    "uuids": [
+      "672a5682-75aa-4998-9cde-5db667cf5bb6",
+      "738603a5-5b0f-4dd4-b473-f6d1b60976cd"
+    ]
+  },
+  "session:27c7e28d-9343-4f0b-8dd4-f13842b8e956": {
+    "id": "session:27c7e28d-9343-4f0b-8dd4-f13842b8e956",
+    "kind": "session",
+    "receipt": "session:27c7e28d-9343-4f0b-8dd4-f13842b8e956",
+    "sessionId": "27c7e28d-9343-4f0b-8dd4-f13842b8e956",
+    "at": "2026-08-02T02:29:16.836Z",
+    "start": "2026-08-02T00:32:08.329Z",
+    "end": "2026-08-02T02:29:16.836Z",
+    "project": "claude-skills",
+    "title": "Create security validation workflow for PRs",
+    "branches": [
+      "dev",
+      "feature/security-workflow",
+      "feature/smith"
+    ],
+    "skills": [
+      "forge:forge"
+    ],
+    "tools": {
+      "Bash": 70,
+      "AskUserQuestion": 4,
+      "Read": 14,
+      "Write": 1,
+      "Edit": 6,
+      "ToolSearch": 2,
+      "mcp__fitness__get_training_plan_progress": 1,
+      "mcp__fitness__training_load_status": 1
+    },
+    "userTurns": 109,
+    "assistantTurns": 201,
+    "edits": 7,
+    "uuids": []
+  },
+  "session:27db4198-9a25-418e-87c8-462bb593b186": {
+    "id": "session:27db4198-9a25-418e-87c8-462bb593b186",
+    "kind": "session",
+    "receipt": "session:27db4198-9a25-418e-87c8-462bb593b186",
+    "sessionId": "27db4198-9a25-418e-87c8-462bb593b186",
+    "at": "2026-08-02T00:32:00.635Z",
+    "start": "2026-08-02T00:31:00.801Z",
+    "end": "2026-08-02T00:32:00.635Z",
+    "project": "claude-skills",
+    "title": "Install Forge and update plugins locally",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 7
+    },
+    "userTurns": 11,
+    "assistantTurns": 13,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:281813c9-c3db-429a-b795-f2c340b42e91": {
+    "id": "session:281813c9-c3db-429a-b795-f2c340b42e91",
+    "kind": "session",
+    "receipt": "session:281813c9-c3db-429a-b795-f2c340b42e91",
+    "sessionId": "281813c9-c3db-429a-b795-f2c340b42e91",
+    "at": "2026-08-03T01:34:11.408Z",
+    "start": "2026-08-02T20:13:03.330Z",
+    "end": "2026-08-03T01:34:11.408Z",
+    "project": "claude-skills",
+    "title": "Update devlog with new Claude skills",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "devlog:devlog",
+      "release:release"
+    ],
+    "tools": {
+      "Bash": 136,
+      "AskUserQuestion": 4,
+      "Skill": 1,
+      "Read": 14,
+      "ToolSearch": 2,
+      "WebFetch": 24,
+      "WebSearch": 2,
+      "Write": 29,
+      "Edit": 15
+    },
+    "userTurns": 239,
+    "assistantTurns": 402,
+    "edits": 44,
+    "uuids": []
+  },
+  "session:2a5ff34e-4be6-4c99-85a4-521198a6608c": {
+    "id": "session:2a5ff34e-4be6-4c99-85a4-521198a6608c",
+    "kind": "session",
+    "receipt": "session:2a5ff34e-4be6-4c99-85a4-521198a6608c",
+    "sessionId": "2a5ff34e-4be6-4c99-85a4-521198a6608c",
+    "at": "2026-08-03T12:56:34.701Z",
+    "start": "2026-08-03T12:53:05.716Z",
+    "end": "2026-08-03T12:56:34.701Z",
+    "project": "ghostwriter",
+    "title": "Research release digest for LinkedIn ghostwriting",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 2,
+      "Read": 2,
+      "ToolSearch": 1,
+      "WebSearch": 13,
+      "WebFetch": 3,
+      "Write": 1
+    },
+    "userTurns": 23,
+    "assistantTurns": 38,
+    "edits": 1,
+    "uuids": []
+  },
+  "session:2ba4bd7e-444e-4271-a235-11d23a5d08c8": {
+    "id": "session:2ba4bd7e-444e-4271-a235-11d23a5d08c8",
+    "kind": "session",
+    "receipt": "session:2ba4bd7e-444e-4271-a235-11d23a5d08c8",
+    "sessionId": "2ba4bd7e-444e-4271-a235-11d23a5d08c8",
+    "at": "2026-07-30T11:44:01.140Z",
+    "start": "2026-07-30T11:43:30.769Z",
+    "end": "2026-07-30T11:44:01.140Z",
+    "project": "local-fitness",
+    "title": "Easy shakeout 3 miles\u2014tempo debt settled",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:2cd6f20f-467b-429b-b6be-85c1d30f24ac": {
+    "id": "session:2cd6f20f-467b-429b-b6be-85c1d30f24ac",
+    "kind": "session",
+    "receipt": "session:2cd6f20f-467b-429b-b6be-85c1d30f24ac",
+    "sessionId": "2cd6f20f-467b-429b-b6be-85c1d30f24ac",
+    "at": "2026-08-03T18:17:57.121Z",
+    "start": "2026-08-03T18:17:50.268Z",
+    "end": "2026-08-03T18:17:57.121Z",
+    "project": "local-fitness",
+    "title": "Treadmill long run on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:2e422420-a548-40fb-9ade-431b1ed83e23": {
+    "id": "session:2e422420-a548-40fb-9ade-431b1ed83e23",
+    "kind": "session",
+    "receipt": "session:2e422420-a548-40fb-9ade-431b1ed83e23",
+    "sessionId": "2e422420-a548-40fb-9ade-431b1ed83e23",
+    "at": "2026-08-03T18:26:07.395Z",
+    "start": "2026-08-03T18:26:00.371Z",
+    "end": "2026-08-03T18:26:07.395Z",
+    "project": "local-fitness",
+    "title": "Treadmill run on target for easy day",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:319b0c64-35f4-4513-9b3b-4bcbf1a38174": {
+    "id": "session:319b0c64-35f4-4513-9b3b-4bcbf1a38174",
+    "kind": "session",
+    "receipt": "session:319b0c64-35f4-4513-9b3b-4bcbf1a38174",
+    "sessionId": "319b0c64-35f4-4513-9b3b-4bcbf1a38174",
+    "at": "2026-08-01T00:30:04.496Z",
+    "start": "2026-07-31T13:05:04.996Z",
+    "end": "2026-08-01T00:30:04.496Z",
+    "project": "budget",
+    "title": "online-spend-itemize",
+    "branches": [
+      "dev",
+      "feature/pets-category",
+      "feature/walmart-connector"
+    ],
+    "skills": [
+      "devlog:devlog",
+      "security-review"
+    ],
+    "tools": {
+      "Bash": 276,
+      "ToolSearch": 5,
+      "Read": 51,
+      "mcp__claude_ai_Gmail__search_threads": 3,
+      "WebSearch": 12,
+      "EnterPlanMode": 2,
+      "AskUserQuestion": 3,
+      "Write": 22,
+      "ExitPlanMode": 2,
+      "Edit": 109,
+      "mcp__budget__walmart_coverage": 1,
+      "mcp__budget__walmart_breakdown": 1,
+      "mcp__budget__list_categories": 1,
+      "Skill": 1,
+      "Agent": 2,
+      "mcp__budget__add_custom_category": 1
+    },
+    "userTurns": 516,
+    "assistantTurns": 860,
+    "edits": 131,
+    "uuids": []
+  },
+  "session:36a35071-e75a-45e2-9621-3ee6c4319e59": {
+    "id": "session:36a35071-e75a-45e2-9621-3ee6c4319e59",
+    "kind": "session",
+    "receipt": "session:36a35071-e75a-45e2-9621-3ee6c4319e59",
+    "sessionId": "36a35071-e75a-45e2-9621-3ee6c4319e59",
+    "at": "2026-08-03T18:18:05.695Z",
+    "start": "2026-08-03T18:18:00.410Z",
+    "end": "2026-08-03T18:18:05.695Z",
+    "project": "local-fitness",
+    "title": "Treadmill run overshot easy day heart rate targets",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:390b5e8f-e358-47bc-8da3-aa2281be43eb": {
+    "id": "session:390b5e8f-e358-47bc-8da3-aa2281be43eb",
+    "kind": "session",
+    "receipt": "session:390b5e8f-e358-47bc-8da3-aa2281be43eb",
+    "sessionId": "390b5e8f-e358-47bc-8da3-aa2281be43eb",
+    "at": "2026-08-03T18:19:12.394Z",
+    "start": "2026-08-03T18:19:06.486Z",
+    "end": "2026-08-03T18:19:12.394Z",
+    "project": "local-fitness",
+    "title": "Clay County easy run exceeded HR cap",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:391a3b98-bf1b-419c-b4d4-bf220da57b42": {
+    "id": "session:391a3b98-bf1b-419c-b4d4-bf220da57b42",
+    "kind": "session",
+    "receipt": "session:391a3b98-bf1b-419c-b4d4-bf220da57b42",
+    "sessionId": "391a3b98-bf1b-419c-b4d4-bf220da57b42",
+    "at": "2026-08-02T12:37:03.488Z",
+    "start": "2026-08-02T11:43:20.359Z",
+    "end": "2026-08-02T12:37:03.488Z",
+    "project": "local-fitness",
+    "title": "Easy 5mi after two rest days, steps on fire",
+    "branches": [
+      "main"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:3f2fa4e5-d382-49c1-98f1-7df7e72a4ca5": {
+    "id": "session:3f2fa4e5-d382-49c1-98f1-7df7e72a4ca5",
+    "kind": "session",
+    "receipt": "session:3f2fa4e5-d382-49c1-98f1-7df7e72a4ca5",
+    "sessionId": "3f2fa4e5-d382-49c1-98f1-7df7e72a4ca5",
+    "at": "2026-07-28T12:37:42.757Z",
+    "start": "2026-07-28T12:36:52.400Z",
+    "end": "2026-07-28T12:37:42.757Z",
+    "project": "local-fitness",
+    "title": "Tempo run today\u2014manage the fatigue carefully",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:4097749c-dbe9-4941-ba4f-22956d7f057c": {
+    "id": "session:4097749c-dbe9-4941-ba4f-22956d7f057c",
+    "kind": "session",
+    "receipt": "session:4097749c-dbe9-4941-ba4f-22956d7f057c",
+    "sessionId": "4097749c-dbe9-4941-ba4f-22956d7f057c",
+    "at": "2026-08-03T19:16:16.316Z",
+    "start": "2026-08-03T19:16:16.315Z",
+    "end": "2026-08-03T19:16:16.316Z",
+    "project": "local-fitness",
+    "title": "session in local-fitness",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 3,
+    "assistantTurns": 0,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:449d2ffb-58ec-4c43-a13e-5aeefc5405c4": {
+    "id": "session:449d2ffb-58ec-4c43-a13e-5aeefc5405c4",
+    "kind": "session",
+    "receipt": "session:449d2ffb-58ec-4c43-a13e-5aeefc5405c4",
+    "sessionId": "449d2ffb-58ec-4c43-a13e-5aeefc5405c4",
+    "at": "2026-07-28T02:31:08.016Z",
+    "start": "2026-07-28T02:04:14.636Z",
+    "end": "2026-07-28T02:31:08.016Z",
+    "project": "localrepo",
+    "title": "Review repos for cleanup and removal",
+    "branches": [
+      "HEAD"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 20
+    },
+    "userTurns": 23,
+    "assistantTurns": 46,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:4956e2f9-4924-4dce-9ea5-17a31ce37d24": {
+    "id": "session:4956e2f9-4924-4dce-9ea5-17a31ce37d24",
+    "kind": "session",
+    "receipt": "session:4956e2f9-4924-4dce-9ea5-17a31ce37d24",
+    "sessionId": "4956e2f9-4924-4dce-9ea5-17a31ce37d24",
+    "at": "2026-08-01T13:27:41.053Z",
+    "start": "2026-08-01T13:26:30.750Z",
+    "end": "2026-08-01T13:27:41.053Z",
+    "project": "local-fitness",
+    "title": "Easy 4mi today, then protect the build",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:4c2593d2-ebe4-4367-9c03-826566cf19a4": {
+    "id": "session:4c2593d2-ebe4-4367-9c03-826566cf19a4",
+    "kind": "session",
+    "receipt": "session:4c2593d2-ebe4-4367-9c03-826566cf19a4",
+    "sessionId": "4c2593d2-ebe4-4367-9c03-826566cf19a4",
+    "at": "2026-08-02T04:38:17.591Z",
+    "start": "2026-08-02T03:43:57.971Z",
+    "end": "2026-08-02T04:38:17.591Z",
+    "project": "claude-skills",
+    "title": "ns-refresh-marketplace",
+    "branches": [
+      "dev",
+      "feature/ns-refresh",
+      "feature/rename-skills-functional"
+    ],
+    "skills": [
+      "smith:smith"
+    ],
+    "tools": {
+      "Bash": 94,
+      "AskUserQuestion": 5,
+      "ToolSearch": 1,
+      "EnterPlanMode": 1,
+      "Write": 12,
+      "ExitPlanMode": 1,
+      "TaskCreate": 1,
+      "Skill": 1,
+      "Read": 16,
+      "Edit": 23
+    },
+    "userTurns": 162,
+    "assistantTurns": 276,
+    "edits": 35,
+    "uuids": []
+  },
+  "session:4d19edb5-d607-4337-8b5e-c3ab693c6496": {
+    "id": "session:4d19edb5-d607-4337-8b5e-c3ab693c6496",
+    "kind": "session",
+    "receipt": "session:4d19edb5-d607-4337-8b5e-c3ab693c6496",
+    "sessionId": "4d19edb5-d607-4337-8b5e-c3ab693c6496",
+    "at": "2026-07-30T03:17:37.208Z",
+    "start": "2026-07-30T03:17:30.126Z",
+    "end": "2026-07-30T03:17:37.208Z",
+    "project": "local-fitness",
+    "title": "Easy treadmill run hits target metrics",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:519c74e2-1936-4612-9eb3-a14452717dec": {
+    "id": "session:519c74e2-1936-4612-9eb3-a14452717dec",
+    "kind": "session",
+    "receipt": "session:519c74e2-1936-4612-9eb3-a14452717dec",
+    "sessionId": "519c74e2-1936-4612-9eb3-a14452717dec",
+    "at": "2026-08-03T19:16:06.918Z",
+    "start": "2026-08-03T13:42:27.471Z",
+    "end": "2026-08-03T19:16:06.918Z",
+    "project": "local-fitness",
+    "title": "Improve fitness coach MCP and local-fitness skills",
+    "branches": [
+      "HEAD",
+      "chore/remove-devlog-and-duplication",
+      "dev",
+      "docs/security-policy",
+      "feature/auth-path-poisoning",
+      "feature/batch-plan-edit",
+      "feature/correctness-cleanups",
+      "feature/persona-plan-orientation",
+      "feature/surface-pending-draft",
+      "perf/warm-cards-and-ladder-hint",
+      "test/sharpen-error-assertions"
+    ],
+    "skills": [
+      "devlog:devlog",
+      "release:release"
+    ],
+    "tools": {
+      "Bash": 359,
+      "Agent": 5,
+      "ToolSearch": 4,
+      "Read": 11,
+      "SendMessage": 9,
+      "AskUserQuestion": 3,
+      "Edit": 76,
+      "Write": 16,
+      "Monitor": 16,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__workout_report_card": 2,
+      "mcp__fitness__get_today_status": 1,
+      "WebFetch": 7,
+      "WebSearch": 3
+    },
+    "userTurns": 567,
+    "assistantTurns": 1042,
+    "edits": 92,
+    "uuids": []
+  },
+  "session:5445fc33-19de-4a17-8ee1-08b597ab2098": {
+    "id": "session:5445fc33-19de-4a17-8ee1-08b597ab2098",
+    "kind": "session",
+    "receipt": "session:5445fc33-19de-4a17-8ee1-08b597ab2098",
+    "sessionId": "5445fc33-19de-4a17-8ee1-08b597ab2098",
+    "at": "2026-08-03T18:20:03.922Z",
+    "start": "2026-08-03T18:19:57.234Z",
+    "end": "2026-08-03T18:20:03.922Z",
+    "project": "local-fitness",
+    "title": "Tempo run with pacing breakdown",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:570d8c44-b17a-484f-bdc6-b2c1cf85d92f": {
+    "id": "session:570d8c44-b17a-484f-bdc6-b2c1cf85d92f",
+    "kind": "session",
+    "receipt": "session:570d8c44-b17a-484f-bdc6-b2c1cf85d92f",
+    "sessionId": "570d8c44-b17a-484f-bdc6-b2c1cf85d92f",
+    "at": "2026-08-02T03:42:14.414Z",
+    "start": "2026-08-02T02:34:12.744Z",
+    "end": "2026-08-02T03:42:14.414Z",
+    "project": "claude-skills",
+    "title": "Create skill evaluation generation tool with dogfooding",
+    "branches": [
+      "dev",
+      "feature/assay"
+    ],
+    "skills": [
+      "smith:smith"
+    ],
+    "tools": {
+      "Skill": 1,
+      "Bash": 119,
+      "AskUserQuestion": 3,
+      "Read": 30,
+      "Write": 21,
+      "ToolSearch": 1,
+      "TaskCreate": 6,
+      "TaskUpdate": 9,
+      "Edit": 38
+    },
+    "userTurns": 244,
+    "assistantTurns": 426,
+    "edits": 59,
+    "uuids": []
+  },
+  "session:59991318-8bce-4489-9ad0-df91fa4c8cf5": {
+    "id": "session:59991318-8bce-4489-9ad0-df91fa4c8cf5",
+    "kind": "session",
+    "receipt": "session:59991318-8bce-4489-9ad0-df91fa4c8cf5",
+    "sessionId": "59991318-8bce-4489-9ad0-df91fa4c8cf5",
+    "at": "2026-08-02T00:31:18.763Z",
+    "start": "2026-08-01T15:10:55.453Z",
+    "end": "2026-08-02T00:31:18.763Z",
+    "project": "claude-skills",
+    "title": "Create lesson entries with quality assessment",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "Bash": 123,
+      "AskUserQuestion": 1,
+      "Read": 13,
+      "ToolSearch": 2,
+      "WebSearch": 13,
+      "WebFetch": 23,
+      "Write": 36,
+      "Edit": 20,
+      "TaskCreate": 6,
+      "TaskUpdate": 12
+    },
+    "userTurns": 256,
+    "assistantTurns": 431,
+    "edits": 56,
+    "uuids": []
+  },
+  "session:63e4079e-ae63-463f-b8a1-73c7152af870": {
+    "id": "session:63e4079e-ae63-463f-b8a1-73c7152af870",
+    "kind": "session",
+    "receipt": "session:63e4079e-ae63-463f-b8a1-73c7152af870",
+    "sessionId": "63e4079e-ae63-463f-b8a1-73c7152af870",
+    "at": "2026-08-03T18:19:54.579Z",
+    "start": "2026-08-03T18:19:48.718Z",
+    "end": "2026-08-03T18:19:54.579Z",
+    "project": "local-fitness",
+    "title": "Treadmill easy run on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:64633561-6aa4-440e-bcd3-a8d27837d29d": {
+    "id": "session:64633561-6aa4-440e-bcd3-a8d27837d29d",
+    "kind": "session",
+    "receipt": "session:64633561-6aa4-440e-bcd3-a8d27837d29d",
+    "sessionId": "64633561-6aa4-440e-bcd3-a8d27837d29d",
+    "at": "2026-08-02T04:38:22.519Z",
+    "start": "2026-08-02T03:51:58.791Z",
+    "end": "2026-08-02T04:38:22.519Z",
+    "project": "claude-skills",
+    "title": "rename-skills-plain-names",
+    "branches": [
+      "dev",
+      "feature/ns-refresh",
+      "feature/rename-skills-functional"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 175,
+      "ToolSearch": 2,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 3,
+      "Write": 4,
+      "ExitPlanMode": 1,
+      "TaskCreate": 6,
+      "TaskUpdate": 10,
+      "Read": 5,
+      "Edit": 20
+    },
+    "userTurns": 236,
+    "assistantTurns": 353,
+    "edits": 24,
+    "uuids": []
+  },
+  "session:66a300da-ae64-4d4d-9507-d83944ba2d08": {
+    "id": "session:66a300da-ae64-4d4d-9507-d83944ba2d08",
+    "kind": "session",
+    "receipt": "session:66a300da-ae64-4d4d-9507-d83944ba2d08",
+    "sessionId": "66a300da-ae64-4d4d-9507-d83944ba2d08",
+    "at": "2026-07-28T01:05:25.022Z",
+    "start": "2026-07-28T01:05:19.258Z",
+    "end": "2026-07-28T01:05:25.022Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session analysis and metrics review",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:6700f12f-b473-4242-ac53-472753de1cd6": {
+    "id": "session:6700f12f-b473-4242-ac53-472753de1cd6",
+    "kind": "session",
+    "receipt": "session:6700f12f-b473-4242-ac53-472753de1cd6",
+    "sessionId": "6700f12f-b473-4242-ac53-472753de1cd6",
+    "at": "2026-08-03T13:51:52.802Z",
+    "start": "2026-08-03T13:51:42.211Z",
+    "end": "2026-08-03T13:51:52.802Z",
+    "project": "local-fitness",
+    "title": "Treadmill run misclassified as walk, high HR",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:69834988-be44-4845-9c01-eda716f9d06a": {
+    "id": "session:69834988-be44-4845-9c01-eda716f9d06a",
+    "kind": "session",
+    "receipt": "session:69834988-be44-4845-9c01-eda716f9d06a",
+    "sessionId": "69834988-be44-4845-9c01-eda716f9d06a",
+    "at": "2026-07-29T12:39:31.511Z",
+    "start": "2026-07-29T12:39:28.307Z",
+    "end": "2026-07-29T12:39:31.511Z",
+    "project": "local-fitness",
+    "title": "Analyze training load collapse and HR pattern drift",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:6e973fac-f93d-417a-b9d7-a80b688ebfcd": {
+    "id": "session:6e973fac-f93d-417a-b9d7-a80b688ebfcd",
+    "kind": "session",
+    "receipt": "session:6e973fac-f93d-417a-b9d7-a80b688ebfcd",
+    "sessionId": "6e973fac-f93d-417a-b9d7-a80b688ebfcd",
+    "at": "2026-07-28T15:21:30.009Z",
+    "start": "2026-07-28T13:00:23.590Z",
+    "end": "2026-07-28T15:21:30.009Z",
+    "project": "claude-skills",
+    "title": "city-report-data-usa",
+    "branches": [
+      "dev",
+      "feature/city-report",
+      "main"
+    ],
+    "skills": [
+      "city-report",
+      "dataviz"
+    ],
+    "tools": {
+      "ToolSearch": 3,
+      "Bash": 199,
+      "WebFetch": 1,
+      "Read": 15,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 2,
+      "Write": 30,
+      "ExitPlanMode": 1,
+      "TaskCreate": 7,
+      "TaskUpdate": 12,
+      "Edit": 121,
+      "Skill": 1,
+      "Monitor": 6
+    },
+    "userTurns": 446,
+    "assistantTurns": 681,
+    "edits": 151,
+    "uuids": [
+      "4982f548-a91a-4c98-b014-5e0aef484793",
+      "aa96c38d-caaf-46cb-b7a5-68c627b39f01"
+    ]
+  },
+  "session:6eedabc1-6348-4b00-9519-9ebb3488f6a5": {
+    "id": "session:6eedabc1-6348-4b00-9519-9ebb3488f6a5",
+    "kind": "session",
+    "receipt": "session:6eedabc1-6348-4b00-9519-9ebb3488f6a5",
+    "sessionId": "6eedabc1-6348-4b00-9519-9ebb3488f6a5",
+    "at": "2026-08-03T18:18:43.724Z",
+    "start": "2026-08-03T18:18:37.527Z",
+    "end": "2026-08-03T18:18:43.724Z",
+    "project": "local-fitness",
+    "title": "Clay County running pace control review",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:71fdf191-382e-4c29-8f43-9c6628a41206": {
+    "id": "session:71fdf191-382e-4c29-8f43-9c6628a41206",
+    "kind": "session",
+    "receipt": "session:71fdf191-382e-4c29-8f43-9c6628a41206",
+    "sessionId": "71fdf191-382e-4c29-8f43-9c6628a41206",
+    "at": "2026-08-02T20:12:19.937Z",
+    "start": "2026-08-02T20:12:19.936Z",
+    "end": "2026-08-02T20:12:19.937Z",
+    "project": "claude-skills",
+    "title": "session in claude-skills",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 3,
+    "assistantTurns": 0,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:73891072-818d-4c2b-84e5-780e9cdd1435": {
+    "id": "session:73891072-818d-4c2b-84e5-780e9cdd1435",
+    "kind": "session",
+    "receipt": "session:73891072-818d-4c2b-84e5-780e9cdd1435",
+    "sessionId": "73891072-818d-4c2b-84e5-780e9cdd1435",
+    "at": "2026-07-31T12:58:38.429Z",
+    "start": "2026-07-31T12:58:35.856Z",
+    "end": "2026-07-31T12:58:38.429Z",
+    "project": "local-fitness",
+    "title": "Training load collapse and recovery pattern",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:75122ab6-e73a-49eb-9014-bfe83a321c41": {
+    "id": "session:75122ab6-e73a-49eb-9014-bfe83a321c41",
+    "kind": "session",
+    "receipt": "session:75122ab6-e73a-49eb-9014-bfe83a321c41",
+    "sessionId": "75122ab6-e73a-49eb-9014-bfe83a321c41",
+    "at": "2026-07-31T17:48:38.864Z",
+    "start": "2026-07-31T16:46:34.510Z",
+    "end": "2026-07-31T17:48:38.864Z",
+    "project": "budget",
+    "title": "Base directory for this skill: ~/localrepo/claude-skills/skills/ghostwri",
+    "branches": [
+      "feature/walmart-connector"
+    ],
+    "skills": [
+      "ghostwriter:ghostwriter"
+    ],
+    "tools": {
+      "Bash": 22,
+      "AskUserQuestion": 5,
+      "ToolSearch": 1,
+      "WebFetch": 6,
+      "WebSearch": 2,
+      "Read": 16,
+      "Write": 4,
+      "Edit": 4
+    },
+    "userTurns": 77,
+    "assistantTurns": 102,
+    "edits": 8,
+    "uuids": []
+  },
+  "session:77574e66-8092-4fb7-a59d-7bcee4a88ac6": {
+    "id": "session:77574e66-8092-4fb7-a59d-7bcee4a88ac6",
+    "kind": "session",
+    "receipt": "session:77574e66-8092-4fb7-a59d-7bcee4a88ac6",
+    "sessionId": "77574e66-8092-4fb7-a59d-7bcee4a88ac6",
+    "at": "2026-08-03T12:33:49.880Z",
+    "start": "2026-08-03T12:32:47.637Z",
+    "end": "2026-08-03T12:33:49.880Z",
+    "project": "local-fitness",
+    "title": "Easy 5mi today\u2014body battery rising, 46 days to race",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:796e5323-fb16-4c7d-bbe9-d8146f7ef14c": {
+    "id": "session:796e5323-fb16-4c7d-bbe9-d8146f7ef14c",
+    "kind": "session",
+    "receipt": "session:796e5323-fb16-4c7d-bbe9-d8146f7ef14c",
+    "sessionId": "796e5323-fb16-4c7d-bbe9-d8146f7ef14c",
+    "at": "2026-07-28T19:39:24.992Z",
+    "start": "2026-07-28T19:39:18.323Z",
+    "end": "2026-07-28T19:39:24.992Z",
+    "project": "local-fitness",
+    "title": "Analyze treadmill tempo run performance",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:7b08f5cb-13ca-4953-b0d0-f3df9f11588d": {
+    "id": "session:7b08f5cb-13ca-4953-b0d0-f3df9f11588d",
+    "kind": "session",
+    "receipt": "session:7b08f5cb-13ca-4953-b0d0-f3df9f11588d",
+    "sessionId": "7b08f5cb-13ca-4953-b0d0-f3df9f11588d",
+    "at": "2026-08-03T18:21:25.744Z",
+    "start": "2026-08-03T18:21:17.805Z",
+    "end": "2026-08-03T18:21:25.744Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session review and recovery analysis",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:7c6fc4ee-cd6d-40f2-b1ac-b6b0e237d241": {
+    "id": "session:7c6fc4ee-cd6d-40f2-b1ac-b6b0e237d241",
+    "kind": "session",
+    "receipt": "session:7c6fc4ee-cd6d-40f2-b1ac-b6b0e237d241",
+    "sessionId": "7c6fc4ee-cd6d-40f2-b1ac-b6b0e237d241",
+    "at": "2026-08-02T19:54:18.027Z",
+    "start": "2026-08-02T18:13:13.834Z",
+    "end": "2026-08-02T19:54:18.027Z",
+    "project": "claude-skills",
+    "title": "automated-release-workflow",
+    "branches": [
+      "dev",
+      "feature/release-skill",
+      "feature/shipflow-release-engine",
+      "fix/release-baseline-tagless"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 195,
+      "Read": 21,
+      "ToolSearch": 3,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 4,
+      "Write": 15,
+      "ExitPlanMode": 1,
+      "TaskCreate": 8,
+      "Edit": 67,
+      "TaskUpdate": 12,
+      "Monitor": 3
+    },
+    "userTurns": 350,
+    "assistantTurns": 557,
+    "edits": 82,
+    "uuids": []
+  },
+  "session:8066f4ce-dff0-418a-9bf4-6880bc8d7d11": {
+    "id": "session:8066f4ce-dff0-418a-9bf4-6880bc8d7d11",
+    "kind": "session",
+    "receipt": "session:8066f4ce-dff0-418a-9bf4-6880bc8d7d11",
+    "sessionId": "8066f4ce-dff0-418a-9bf4-6880bc8d7d11",
+    "at": "2026-08-03T18:17:19.351Z",
+    "start": "2026-08-03T18:17:13.112Z",
+    "end": "2026-08-03T18:17:19.351Z",
+    "project": "local-fitness",
+    "title": "Treadmill tempo run pacing and continuity review",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:8158ce36-a2cf-4125-b8ef-ab1b25fd0310": {
+    "id": "session:8158ce36-a2cf-4125-b8ef-ab1b25fd0310",
+    "kind": "session",
+    "receipt": "session:8158ce36-a2cf-4125-b8ef-ab1b25fd0310",
+    "sessionId": "8158ce36-a2cf-4125-b8ef-ab1b25fd0310",
+    "at": "2026-08-03T01:34:38.307Z",
+    "start": "2026-08-02T20:47:40.151Z",
+    "end": "2026-08-03T01:34:38.307Z",
+    "project": "claude-skills",
+    "title": "Session portability",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "eval:eval",
+      "firecrawl-scrape",
+      "firecrawl-search",
+      "ghostwriter:ghostwriter"
+    ],
+    "tools": {
+      "Bash": 59,
+      "Skill": 2,
+      "ToolSearch": 2,
+      "WebFetch": 10,
+      "WebSearch": 1,
+      "AskUserQuestion": 6,
+      "Write": 6,
+      "Edit": 11,
+      "Read": 9,
+      "Monitor": 1
+    },
+    "userTurns": 126,
+    "assistantTurns": 194,
+    "edits": 17,
+    "uuids": []
+  },
+  "session:834376d6-13cd-4460-8bd5-91210eaf9945": {
+    "id": "session:834376d6-13cd-4460-8bd5-91210eaf9945",
+    "kind": "session",
+    "receipt": "session:834376d6-13cd-4460-8bd5-91210eaf9945",
+    "sessionId": "834376d6-13cd-4460-8bd5-91210eaf9945",
+    "at": "2026-07-28T01:26:48.226Z",
+    "start": "2026-07-26T19:14:52.519Z",
+    "end": "2026-07-28T01:26:48.226Z",
+    "project": "local-fitness",
+    "title": "local-fitness-improvement-pass",
+    "branches": [
+      "dev",
+      "feature/accuracy-grading-and-signals",
+      "feature/live-session-polish",
+      "feature/maintainability-lint-docs",
+      "feature/speed-connects-and-caches",
+      "feature/ux-inputs-and-errors"
+    ],
+    "skills": [
+      "devlog"
+    ],
+    "tools": {
+      "ToolSearch": 4,
+      "EnterPlanMode": 1,
+      "Agent": 15,
+      "Read": 23,
+      "Write": 11,
+      "ExitPlanMode": 1,
+      "Bash": 311,
+      "TaskCreate": 4,
+      "TaskUpdate": 8,
+      "SendMessage": 5,
+      "Edit": 65,
+      "WebFetch": 6,
+      "WebSearch": 1
+    },
+    "userTurns": 501,
+    "assistantTurns": 825,
+    "edits": 76,
+    "uuids": []
+  },
+  "session:8464c118-de35-400d-9c05-72f2781bb36f": {
+    "id": "session:8464c118-de35-400d-9c05-72f2781bb36f",
+    "kind": "session",
+    "receipt": "session:8464c118-de35-400d-9c05-72f2781bb36f",
+    "sessionId": "8464c118-de35-400d-9c05-72f2781bb36f",
+    "at": "2026-07-29T16:08:53.406Z",
+    "start": "2026-07-29T16:07:52.865Z",
+    "end": "2026-07-29T16:08:53.406Z",
+    "project": "T",
+    "title": "Evaluate Morgan Reyes for Calm Business AE role",
+    "branches": [
+      "HEAD"
+    ],
+    "skills": [],
+    "tools": {
+      "StructuredOutput": 1
+    },
+    "userTurns": 4,
+    "assistantTurns": 4,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:86393fef-ec24-46a3-80fd-5c795deb8562": {
+    "id": "session:86393fef-ec24-46a3-80fd-5c795deb8562",
+    "kind": "session",
+    "receipt": "session:86393fef-ec24-46a3-80fd-5c795deb8562",
+    "sessionId": "86393fef-ec24-46a3-80fd-5c795deb8562",
+    "at": "2026-08-02T12:38:31.855Z",
+    "start": "2026-08-02T12:38:29.260Z",
+    "end": "2026-08-02T12:38:31.855Z",
+    "project": "local-fitness",
+    "title": "Rebuild consistency after missed sessions",
+    "branches": [
+      "main"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:89172617-33fc-41d7-bef7-b9c5b4ea560a": {
+    "id": "session:89172617-33fc-41d7-bef7-b9c5b4ea560a",
+    "kind": "session",
+    "receipt": "session:89172617-33fc-41d7-bef7-b9c5b4ea560a",
+    "sessionId": "89172617-33fc-41d7-bef7-b9c5b4ea560a",
+    "at": "2026-07-30T11:44:07.024Z",
+    "start": "2026-07-30T11:44:03.995Z",
+    "end": "2026-07-30T11:44:07.024Z",
+    "project": "local-fitness",
+    "title": "Analyze training collapse pattern and recovery",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:8a2ecba0-85f5-4568-a163-31ef83b69c88": {
+    "id": "session:8a2ecba0-85f5-4568-a163-31ef83b69c88",
+    "kind": "session",
+    "receipt": "session:8a2ecba0-85f5-4568-a163-31ef83b69c88",
+    "sessionId": "8a2ecba0-85f5-4568-a163-31ef83b69c88",
+    "at": "2026-07-28T12:36:28.685Z",
+    "start": "2026-07-28T11:37:42.369Z",
+    "end": "2026-07-28T12:36:28.685Z",
+    "project": "local-fitness",
+    "title": "Tempo day ahead\u2014stay disciplined with fatigue",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:8a790ce7-af63-4357-b644-138cfbe37ddd": {
+    "id": "session:8a790ce7-af63-4357-b644-138cfbe37ddd",
+    "kind": "session",
+    "receipt": "session:8a790ce7-af63-4357-b644-138cfbe37ddd",
+    "sessionId": "8a790ce7-af63-4357-b644-138cfbe37ddd",
+    "at": "2026-08-03T01:35:29.466Z",
+    "start": "2026-08-03T01:34:51.275Z",
+    "end": "2026-08-03T01:35:29.466Z",
+    "project": "claude-skills",
+    "title": "Review last reportcard score",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "ToolSearch": 1,
+      "mcp__fitness__list_report_cards": 1,
+      "mcp__fitness__get_report_card": 1
+    },
+    "userTurns": 7,
+    "assistantTurns": 7,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:9016949e-893d-4b24-b3b5-1d19e5b3d50f": {
+    "id": "session:9016949e-893d-4b24-b3b5-1d19e5b3d50f",
+    "kind": "session",
+    "receipt": "session:9016949e-893d-4b24-b3b5-1d19e5b3d50f",
+    "sessionId": "9016949e-893d-4b24-b3b5-1d19e5b3d50f",
+    "at": "2026-07-31T01:07:26.523Z",
+    "start": "2026-07-30T20:04:17.458Z",
+    "end": "2026-07-31T01:07:26.523Z",
+    "project": "budget",
+    "title": "walmart-connector-itemization",
+    "branches": [
+      "dev",
+      "feature/walmart-connector"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 164,
+      "Read": 20,
+      "ToolSearch": 2,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 4,
+      "Write": 36,
+      "ExitPlanMode": 1,
+      "TaskCreate": 5,
+      "TaskUpdate": 8,
+      "Edit": 64
+    },
+    "userTurns": 324,
+    "assistantTurns": 524,
+    "edits": 100,
+    "uuids": []
+  },
+  "session:9045419a-d953-4b7d-9da8-683d195de721": {
+    "id": "session:9045419a-d953-4b7d-9da8-683d195de721",
+    "kind": "session",
+    "receipt": "session:9045419a-d953-4b7d-9da8-683d195de721",
+    "sessionId": "9045419a-d953-4b7d-9da8-683d195de721",
+    "at": "2026-08-03T18:21:34.914Z",
+    "start": "2026-08-03T18:21:28.849Z",
+    "end": "2026-08-03T18:21:34.914Z",
+    "project": "local-fitness",
+    "title": "Clay County Running pace was too fast",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:941a4c10-1d23-4802-81d4-1104d44a78af": {
+    "id": "session:941a4c10-1d23-4802-81d4-1104d44a78af",
+    "kind": "session",
+    "receipt": "session:941a4c10-1d23-4802-81d4-1104d44a78af",
+    "sessionId": "941a4c10-1d23-4802-81d4-1104d44a78af",
+    "at": "2026-08-02T18:10:00.720Z",
+    "start": "2026-08-02T04:04:06.592Z",
+    "end": "2026-08-02T18:10:00.720Z",
+    "project": "claude-skills",
+    "title": "Base directory for this skill: ~/localrepo/claude-skills/skills/devlog/s",
+    "branches": [
+      "dev",
+      "feature/ns-refresh",
+      "feature/rename-skills-functional"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "Bash": 83,
+      "Read": 20,
+      "ToolSearch": 2,
+      "WebFetch": 27,
+      "WebSearch": 2,
+      "Write": 21,
+      "Edit": 5
+    },
+    "userTurns": 170,
+    "assistantTurns": 255,
+    "edits": 26,
+    "uuids": []
+  },
+  "session:981cf8db-2704-4d9a-8b33-d310a0bca318": {
+    "id": "session:981cf8db-2704-4d9a-8b33-d310a0bca318",
+    "kind": "session",
+    "receipt": "session:981cf8db-2704-4d9a-8b33-d310a0bca318",
+    "sessionId": "981cf8db-2704-4d9a-8b33-d310a0bca318",
+    "at": "2026-08-03T18:20:24.428Z",
+    "start": "2026-08-03T18:20:17.030Z",
+    "end": "2026-08-03T18:20:24.428Z",
+    "project": "local-fitness",
+    "title": "Review treadmill run pacing and heart rate control",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:992f7bd5-37a4-4eb8-8c97-28b2cdb154b4": {
+    "id": "session:992f7bd5-37a4-4eb8-8c97-28b2cdb154b4",
+    "kind": "session",
+    "receipt": "session:992f7bd5-37a4-4eb8-8c97-28b2cdb154b4",
+    "sessionId": "992f7bd5-37a4-4eb8-8c97-28b2cdb154b4",
+    "at": "2026-07-30T03:18:12.876Z",
+    "start": "2026-07-30T03:18:09.513Z",
+    "end": "2026-07-30T03:18:12.876Z",
+    "project": "local-fitness",
+    "title": "Review graded treadmill run and training compliance",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:9ab35358-1518-43bd-8b78-e70d1172153a": {
+    "id": "session:9ab35358-1518-43bd-8b78-e70d1172153a",
+    "kind": "session",
+    "receipt": "session:9ab35358-1518-43bd-8b78-e70d1172153a",
+    "sessionId": "9ab35358-1518-43bd-8b78-e70d1172153a",
+    "at": "2026-08-01T00:12:15.339Z",
+    "start": "2026-07-31T17:49:01.352Z",
+    "end": "2026-08-01T00:12:15.339Z",
+    "project": "budget",
+    "title": "Pull latest data and generate 8 mile run report",
+    "branches": [
+      "dev",
+      "feature/walmart-connector"
+    ],
+    "skills": [],
+    "tools": {
+      "ToolSearch": 1,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__query_workouts": 1,
+      "mcp__fitness__workout_report_card": 1
+    },
+    "userTurns": 8,
+    "assistantTurns": 8,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:9ba9eab8-5a79-4fc7-9b0e-82b5dab7e55c": {
+    "id": "session:9ba9eab8-5a79-4fc7-9b0e-82b5dab7e55c",
+    "kind": "session",
+    "receipt": "session:9ba9eab8-5a79-4fc7-9b0e-82b5dab7e55c",
+    "sessionId": "9ba9eab8-5a79-4fc7-9b0e-82b5dab7e55c",
+    "at": "2026-08-01T15:10:03.800Z",
+    "start": "2026-08-01T00:34:45.118Z",
+    "end": "2026-08-01T15:10:03.800Z",
+    "project": "claude-skills",
+    "title": "adopt-github-stacked-prs",
+    "branches": [
+      "dev",
+      "feature/press-brand-skill",
+      "feature/stacked-prs-ci",
+      "feature/stacked-prs-docs"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 45,
+      "ToolSearch": 2,
+      "WebFetch": 3,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 1,
+      "Write": 2,
+      "ExitPlanMode": 1,
+      "Edit": 6,
+      "Read": 3
+    },
+    "userTurns": 70,
+    "assistantTurns": 132,
+    "edits": 8,
+    "uuids": []
+  },
+  "session:9d55bb85-0753-4088-a421-c392f498ba6e": {
+    "id": "session:9d55bb85-0753-4088-a421-c392f498ba6e",
+    "kind": "session",
+    "receipt": "session:9d55bb85-0753-4088-a421-c392f498ba6e",
+    "sessionId": "9d55bb85-0753-4088-a421-c392f498ba6e",
+    "at": "2026-08-03T18:17:37.184Z",
+    "start": "2026-08-03T18:17:30.671Z",
+    "end": "2026-08-03T18:17:37.184Z",
+    "project": "local-fitness",
+    "title": "Review easy run\u2014pace and heart rate off target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:9e99d317-c83c-47b5-9462-a7125a1a2631": {
+    "id": "session:9e99d317-c83c-47b5-9462-a7125a1a2631",
+    "kind": "session",
+    "receipt": "session:9e99d317-c83c-47b5-9462-a7125a1a2631",
+    "sessionId": "9e99d317-c83c-47b5-9462-a7125a1a2631",
+    "at": "2026-08-03T18:17:09.943Z",
+    "start": "2026-08-03T18:16:56.443Z",
+    "end": "2026-08-03T18:17:09.943Z",
+    "project": "local-fitness",
+    "title": "Treadmill easy run on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:a197f4d5-976a-49ac-8aab-54869084c88a": {
+    "id": "session:a197f4d5-976a-49ac-8aab-54869084c88a",
+    "kind": "session",
+    "receipt": "session:a197f4d5-976a-49ac-8aab-54869084c88a",
+    "sessionId": "a197f4d5-976a-49ac-8aab-54869084c88a",
+    "at": "2026-08-02T20:35:36.091Z",
+    "start": "2026-08-02T20:35:24.674Z",
+    "end": "2026-08-02T20:35:36.091Z",
+    "project": "local-fitness",
+    "title": "Treadmill run exceeded heart rate target",
+    "branches": [
+      "main"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:a30b8a4d-9f40-41c8-908a-b0cbe9879a98": {
+    "id": "session:a30b8a4d-9f40-41c8-908a-b0cbe9879a98",
+    "kind": "session",
+    "receipt": "session:a30b8a4d-9f40-41c8-908a-b0cbe9879a98",
+    "sessionId": "a30b8a4d-9f40-41c8-908a-b0cbe9879a98",
+    "at": "2026-08-03T18:20:24.567Z",
+    "start": "2026-08-03T13:16:45.571Z",
+    "end": "2026-08-03T18:20:24.567Z",
+    "project": "claude-skills",
+    "title": "fix-eval-false-assertions",
+    "branches": [
+      "dev",
+      "feature/eval-accuracy-fixes"
+    ],
+    "skills": [
+      "pluginsync:pluginsync",
+      "release:release"
+    ],
+    "tools": {
+      "Bash": 104,
+      "Read": 13,
+      "Agent": 5,
+      "ToolSearch": 3,
+      "SendMessage": 3,
+      "Write": 4,
+      "Edit": 19,
+      "AskUserQuestion": 4,
+      "EnterPlanMode": 1,
+      "ExitPlanMode": 1,
+      "TaskCreate": 6,
+      "TaskUpdate": 9,
+      "Skill": 2
+    },
+    "userTurns": 193,
+    "assistantTurns": 360,
+    "edits": 23,
+    "uuids": []
+  },
+  "session:a429b329-c42c-48fa-a594-bd9a70e53305": {
+    "id": "session:a429b329-c42c-48fa-a594-bd9a70e53305",
+    "kind": "session",
+    "receipt": "session:a429b329-c42c-48fa-a594-bd9a70e53305",
+    "sessionId": "a429b329-c42c-48fa-a594-bd9a70e53305",
+    "at": "2026-08-03T02:59:09.674Z",
+    "start": "2026-08-03T01:39:10.906Z",
+    "end": "2026-08-03T02:59:09.674Z",
+    "project": "local-fitness",
+    "title": "Debug workout report card HR grading issue",
+    "branches": [
+      "HEAD",
+      "dev",
+      "feature/hr-cap-grading-fix",
+      "feature/report-card-calibration-evals",
+      "feature/report-card-grading-ux-cache",
+      "feature/report-card-read-cache",
+      "feature/report-card-ux",
+      "fix/assert-side-effects"
+    ],
+    "skills": [
+      "release:release"
+    ],
+    "tools": {
+      "ToolSearch": 4,
+      "Bash": 80,
+      "mcp__fitness__list_report_cards": 1,
+      "mcp__fitness__get_report_card": 1,
+      "Read": 8,
+      "Agent": 4,
+      "SendMessage": 14,
+      "AskUserQuestion": 1,
+      "Edit": 3,
+      "mcp__fitness__workout_report_card": 1,
+      "Skill": 1
+    },
+    "userTurns": 146,
+    "assistantTurns": 270,
+    "edits": 3,
+    "uuids": []
+  },
+  "session:a594b4d1-4f10-4567-9a28-81b5c0fc24fe": {
+    "id": "session:a594b4d1-4f10-4567-9a28-81b5c0fc24fe",
+    "kind": "session",
+    "receipt": "session:a594b4d1-4f10-4567-9a28-81b5c0fc24fe",
+    "sessionId": "a594b4d1-4f10-4567-9a28-81b5c0fc24fe",
+    "at": "2026-08-02T02:31:41.448Z",
+    "start": "2026-08-02T00:43:33.238Z",
+    "end": "2026-08-02T02:31:41.448Z",
+    "project": "claude-skills",
+    "title": "smith-skill-automation",
+    "branches": [
+      "dev",
+      "feature/automerge-permissions",
+      "feature/security-workflow",
+      "feature/skill-smith",
+      "feature/smith"
+    ],
+    "skills": [],
+    "tools": {
+      "ToolSearch": 1,
+      "Bash": 154,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 3,
+      "Write": 30,
+      "ExitPlanMode": 1,
+      "Edit": 27,
+      "Read": 5
+    },
+    "userTurns": 232,
+    "assistantTurns": 362,
+    "edits": 57,
+    "uuids": []
+  },
+  "session:a6707485-13a3-42b7-9e95-9a82b7278d90": {
+    "id": "session:a6707485-13a3-42b7-9e95-9a82b7278d90",
+    "kind": "session",
+    "receipt": "session:a6707485-13a3-42b7-9e95-9a82b7278d90",
+    "sessionId": "a6707485-13a3-42b7-9e95-9a82b7278d90",
+    "at": "2026-07-30T20:02:10.632Z",
+    "start": "2026-07-30T00:09:40.307Z",
+    "end": "2026-07-30T20:02:10.632Z",
+    "project": "claude-skills",
+    "title": "backfill-amazon-connector-history",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "shipflow:shipflow"
+    ],
+    "tools": {
+      "Bash": 506,
+      "Read": 37,
+      "ToolSearch": 3,
+      "EnterPlanMode": 4,
+      "AskUserQuestion": 10,
+      "Write": 30,
+      "ExitPlanMode": 4,
+      "Edit": 117,
+      "WebSearch": 1,
+      "WebFetch": 2,
+      "Skill": 1
+    },
+    "userTurns": 775,
+    "assistantTurns": 1357,
+    "edits": 147,
+    "uuids": [
+      "9758c4bb-cbe4-4784-8724-5c681a2fdd6c",
+      "c3229363-40ee-4b71-9947-7f432b850ed2"
+    ]
+  },
+  "session:a748e4f2-40fb-4d1e-9142-cec69acb5471": {
+    "id": "session:a748e4f2-40fb-4d1e-9142-cec69acb5471",
+    "kind": "session",
+    "receipt": "session:a748e4f2-40fb-4d1e-9142-cec69acb5471",
+    "sessionId": "a748e4f2-40fb-4d1e-9142-cec69acb5471",
+    "at": "2026-07-29T11:50:35.674Z",
+    "start": "2026-07-29T11:32:17.953Z",
+    "end": "2026-07-29T11:50:35.674Z",
+    "project": "local-fitness",
+    "title": "Execute tempo day\u2014then respect the fatigue signal",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:a75853ea-d9ea-4cb5-bf28-0a277caf0496": {
+    "id": "session:a75853ea-d9ea-4cb5-bf28-0a277caf0496",
+    "kind": "session",
+    "receipt": "session:a75853ea-d9ea-4cb5-bf28-0a277caf0496",
+    "sessionId": "a75853ea-d9ea-4cb5-bf28-0a277caf0496",
+    "at": "2026-07-29T16:07:51.627Z",
+    "start": "2026-07-29T16:06:54.183Z",
+    "end": "2026-07-29T16:07:51.627Z",
+    "project": "T",
+    "title": "Analyze Jordan Park resume against 2U job posting",
+    "branches": [
+      "HEAD"
+    ],
+    "skills": [],
+    "tools": {
+      "StructuredOutput": 2
+    },
+    "userTurns": 4,
+    "assistantTurns": 4,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:a86f6afc-d212-4413-92c5-b9c48ac0c52d": {
+    "id": "session:a86f6afc-d212-4413-92c5-b9c48ac0c52d",
+    "kind": "session",
+    "receipt": "session:a86f6afc-d212-4413-92c5-b9c48ac0c52d",
+    "sessionId": "a86f6afc-d212-4413-92c5-b9c48ac0c52d",
+    "at": "2026-08-03T18:18:54.074Z",
+    "start": "2026-08-03T18:18:46.450Z",
+    "end": "2026-08-03T18:18:54.074Z",
+    "project": "local-fitness",
+    "title": "Treadmill run ended as walk on 7/18",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:a8b3d235-e36f-402a-9656-286204332e95": {
+    "id": "session:a8b3d235-e36f-402a-9656-286204332e95",
+    "kind": "session",
+    "receipt": "session:a8b3d235-e36f-402a-9656-286204332e95",
+    "sessionId": "a8b3d235-e36f-402a-9656-286204332e95",
+    "at": "2026-07-30T00:09:02.420Z",
+    "start": "2026-07-29T14:56:13.721Z",
+    "end": "2026-07-30T00:09:02.420Z",
+    "project": "claude-skills",
+    "title": "resume-agent-ui-cleanup",
+    "branches": [
+      "dev",
+      "feature/resume-theme-engine"
+    ],
+    "skills": [
+      "devlog:devlog",
+      "firecrawl-scrape"
+    ],
+    "tools": {
+      "Read": 46,
+      "Bash": 246,
+      "Write": 43,
+      "Edit": 19,
+      "ToolSearch": 3,
+      "EnterPlanMode": 2,
+      "Agent": 4,
+      "AskUserQuestion": 1,
+      "ExitPlanMode": 2,
+      "WebFetch": 10,
+      "Skill": 1,
+      "WebSearch": 5
+    },
+    "userTurns": 424,
+    "assistantTurns": 749,
+    "edits": 62,
+    "uuids": []
+  },
+  "session:aa61abb2-2d15-4ad8-aec8-e2537ada5ec7": {
+    "id": "session:aa61abb2-2d15-4ad8-aec8-e2537ada5ec7",
+    "kind": "session",
+    "receipt": "session:aa61abb2-2d15-4ad8-aec8-e2537ada5ec7",
+    "sessionId": "aa61abb2-2d15-4ad8-aec8-e2537ada5ec7",
+    "at": "2026-07-30T12:56:15.528Z",
+    "start": "2026-07-30T12:53:05.629Z",
+    "end": "2026-07-30T12:56:15.528Z",
+    "project": "ghostwriter",
+    "title": "Research release radar digest for LinkedIn",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 2,
+      "Read": 2,
+      "Skill": 2,
+      "ToolSearch": 1,
+      "WebSearch": 11,
+      "WebFetch": 1,
+      "Write": 1
+    },
+    "userTurns": 21,
+    "assistantTurns": 34,
+    "edits": 1,
+    "uuids": []
+  },
+  "session:ab9a9011-21b2-4a89-b542-96514c496d3c": {
+    "id": "session:ab9a9011-21b2-4a89-b542-96514c496d3c",
+    "kind": "session",
+    "receipt": "session:ab9a9011-21b2-4a89-b542-96514c496d3c",
+    "sessionId": "ab9a9011-21b2-4a89-b542-96514c496d3c",
+    "at": "2026-08-03T18:20:47.110Z",
+    "start": "2026-08-03T18:20:39.244Z",
+    "end": "2026-08-03T18:20:47.110Z",
+    "project": "local-fitness",
+    "title": "Treadmill long run on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:ac62cdfb-503a-48e2-b376-66b980562356": {
+    "id": "session:ac62cdfb-503a-48e2-b376-66b980562356",
+    "kind": "session",
+    "receipt": "session:ac62cdfb-503a-48e2-b376-66b980562356",
+    "sessionId": "ac62cdfb-503a-48e2-b376-66b980562356",
+    "at": "2026-08-03T18:17:27.968Z",
+    "start": "2026-08-03T18:17:21.874Z",
+    "end": "2026-08-03T18:17:27.968Z",
+    "project": "local-fitness",
+    "title": "Treadmill run HR control during easy session",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:b00f736a-a650-47b4-b90c-ae6e6d4f8753": {
+    "id": "session:b00f736a-a650-47b4-b90c-ae6e6d4f8753",
+    "kind": "session",
+    "receipt": "session:b00f736a-a650-47b4-b90c-ae6e6d4f8753",
+    "sessionId": "b00f736a-a650-47b4-b90c-ae6e6d4f8753",
+    "at": "2026-08-01T13:26:07.907Z",
+    "start": "2026-08-01T11:59:36.428Z",
+    "end": "2026-08-01T13:26:07.907Z",
+    "project": "local-fitness",
+    "title": "Easy 4mi, then protect the build",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:b5a07b88-94ae-4ce5-a809-951b1268326b": {
+    "id": "session:b5a07b88-94ae-4ce5-a809-951b1268326b",
+    "kind": "session",
+    "receipt": "session:b5a07b88-94ae-4ce5-a809-951b1268326b",
+    "sessionId": "b5a07b88-94ae-4ce5-a809-951b1268326b",
+    "at": "2026-07-30T00:54:18.848Z",
+    "start": "2026-07-30T00:54:14.347Z",
+    "end": "2026-07-30T00:54:18.848Z",
+    "project": "local-fitness",
+    "title": "Analyze easy run execution and load gaps",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:b819ccdb-7a62-42e3-8594-ed250eaac763": {
+    "id": "session:b819ccdb-7a62-42e3-8594-ed250eaac763",
+    "kind": "session",
+    "receipt": "session:b819ccdb-7a62-42e3-8594-ed250eaac763",
+    "sessionId": "b819ccdb-7a62-42e3-8594-ed250eaac763",
+    "at": "2026-08-03T18:18:25.158Z",
+    "start": "2026-08-03T18:18:18.797Z",
+    "end": "2026-08-03T18:18:25.158Z",
+    "project": "local-fitness",
+    "title": "Treadmill walking session pace analysis",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:ba636891-398b-49fa-b6b5-ce008a3c1511": {
+    "id": "session:ba636891-398b-49fa-b6b5-ce008a3c1511",
+    "kind": "session",
+    "receipt": "session:ba636891-398b-49fa-b6b5-ce008a3c1511",
+    "sessionId": "ba636891-398b-49fa-b6b5-ce008a3c1511",
+    "at": "2026-08-03T12:33:55.603Z",
+    "start": "2026-08-03T12:33:52.684Z",
+    "end": "2026-08-03T12:33:55.603Z",
+    "project": "local-fitness",
+    "title": "Monitor HR discipline and recovery patterns",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:baa44f36-f30f-4557-8495-ee4b2fa77c90": {
+    "id": "session:baa44f36-f30f-4557-8495-ee4b2fa77c90",
+    "kind": "session",
+    "receipt": "session:baa44f36-f30f-4557-8495-ee4b2fa77c90",
+    "sessionId": "baa44f36-f30f-4557-8495-ee4b2fa77c90",
+    "at": "2026-08-03T18:17:46.811Z",
+    "start": "2026-08-03T18:17:39.758Z",
+    "end": "2026-08-03T18:17:46.811Z",
+    "project": "local-fitness",
+    "title": "Treadmill walk session slightly off target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:bbaf89d0-3b4f-4642-be07-61efb100977a": {
+    "id": "session:bbaf89d0-3b4f-4642-be07-61efb100977a",
+    "kind": "session",
+    "receipt": "session:bbaf89d0-3b4f-4642-be07-61efb100977a",
+    "sessionId": "bbaf89d0-3b4f-4642-be07-61efb100977a",
+    "at": "2026-08-03T18:21:15.295Z",
+    "start": "2026-08-03T18:21:08.148Z",
+    "end": "2026-08-03T18:21:15.295Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session analysis 2026-07-21",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:bf2a15c9-0599-4399-9315-96a4dad52df2": {
+    "id": "session:bf2a15c9-0599-4399-9315-96a4dad52df2",
+    "kind": "session",
+    "receipt": "session:bf2a15c9-0599-4399-9315-96a4dad52df2",
+    "sessionId": "bf2a15c9-0599-4399-9315-96a4dad52df2",
+    "at": "2026-07-29T12:39:25.146Z",
+    "start": "2026-07-29T12:38:37.084Z",
+    "end": "2026-07-29T12:39:25.146Z",
+    "project": "local-fitness",
+    "title": "Execute today's easy 5 miles\u2014you've earned the base, now protect it",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:bfecc5a3-4e7b-4dc1-bf01-b680e88d2bd5": {
+    "id": "session:bfecc5a3-4e7b-4dc1-bf01-b680e88d2bd5",
+    "kind": "session",
+    "receipt": "session:bfecc5a3-4e7b-4dc1-bf01-b680e88d2bd5",
+    "sessionId": "bfecc5a3-4e7b-4dc1-bf01-b680e88d2bd5",
+    "at": "2026-08-01T13:27:46.378Z",
+    "start": "2026-08-01T13:27:43.127Z",
+    "end": "2026-08-01T13:27:46.378Z",
+    "project": "local-fitness",
+    "title": "Analyze July training patterns and recovery needs",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:c1586363-a52d-4377-8458-3f0f2027546c": {
+    "id": "session:c1586363-a52d-4377-8458-3f0f2027546c",
+    "kind": "session",
+    "receipt": "session:c1586363-a52d-4377-8458-3f0f2027546c",
+    "sessionId": "c1586363-a52d-4377-8458-3f0f2027546c",
+    "at": "2026-08-03T18:19:03.817Z",
+    "start": "2026-08-03T18:18:57.199Z",
+    "end": "2026-08-03T18:19:03.817Z",
+    "project": "local-fitness",
+    "title": "Analyze treadmill run with elevated heart rate",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:c3083733-4d7e-47ab-8843-22a3e327fa8a": {
+    "id": "session:c3083733-4d7e-47ab-8843-22a3e327fa8a",
+    "kind": "session",
+    "receipt": "session:c3083733-4d7e-47ab-8843-22a3e327fa8a",
+    "sessionId": "c3083733-4d7e-47ab-8843-22a3e327fa8a",
+    "at": "2026-08-03T01:34:07.058Z",
+    "start": "2026-08-03T01:32:23.314Z",
+    "end": "2026-08-03T01:34:07.058Z",
+    "project": "claude-skills",
+    "title": "Grade last run",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "eval:eval"
+    ],
+    "tools": {
+      "Skill": 1,
+      "Bash": 3,
+      "AskUserQuestion": 1
+    },
+    "userTurns": 11,
+    "assistantTurns": 12,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:c596ab69-7897-4b11-89b9-982e7a33044a": {
+    "id": "session:c596ab69-7897-4b11-89b9-982e7a33044a",
+    "kind": "session",
+    "receipt": "session:c596ab69-7897-4b11-89b9-982e7a33044a",
+    "sessionId": "c596ab69-7897-4b11-89b9-982e7a33044a",
+    "at": "2026-08-02T03:40:53.458Z",
+    "start": "2026-08-02T02:46:00.513Z",
+    "end": "2026-08-02T03:40:53.458Z",
+    "project": "claude-skills",
+    "title": "readme-house-style",
+    "branches": [
+      "dev",
+      "feature/assay"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 145,
+      "Read": 30,
+      "ToolSearch": 2,
+      "EnterPlanMode": 1,
+      "AskUserQuestion": 1,
+      "Write": 17,
+      "ExitPlanMode": 1,
+      "TaskCreate": 5,
+      "TaskUpdate": 10,
+      "Edit": 33
+    },
+    "userTurns": 252,
+    "assistantTurns": 375,
+    "edits": 50,
+    "uuids": []
+  },
+  "session:c74c6eeb-6e4e-418a-bf06-5b2f4bc0237a": {
+    "id": "session:c74c6eeb-6e4e-418a-bf06-5b2f4bc0237a",
+    "kind": "session",
+    "receipt": "session:c74c6eeb-6e4e-418a-bf06-5b2f4bc0237a",
+    "sessionId": "c74c6eeb-6e4e-418a-bf06-5b2f4bc0237a",
+    "at": "2026-08-03T18:20:56.128Z",
+    "start": "2026-08-03T18:20:49.749Z",
+    "end": "2026-08-03T18:20:56.128Z",
+    "project": "local-fitness",
+    "title": "Treadmill run exceeded easy zone heart rate",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:d14d5b24-e6bd-48ed-87df-92761124b349": {
+    "id": "session:d14d5b24-e6bd-48ed-87df-92761124b349",
+    "kind": "session",
+    "receipt": "session:d14d5b24-e6bd-48ed-87df-92761124b349",
+    "sessionId": "d14d5b24-e6bd-48ed-87df-92761124b349",
+    "at": "2026-08-03T02:59:40.178Z",
+    "start": "2026-08-03T02:59:33.741Z",
+    "end": "2026-08-03T02:59:40.178Z",
+    "project": "local-fitness",
+    "title": "Treadmill run on target for easy day",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:d1c72558-ba62-4ff0-8a14-a19faec24013": {
+    "id": "session:d1c72558-ba62-4ff0-8a14-a19faec24013",
+    "kind": "session",
+    "receipt": "session:d1c72558-ba62-4ff0-8a14-a19faec24013",
+    "sessionId": "d1c72558-ba62-4ff0-8a14-a19faec24013",
+    "at": "2026-07-29T01:14:56.098Z",
+    "start": "2026-07-29T01:09:43.737Z",
+    "end": "2026-07-29T01:14:56.098Z",
+    "project": "claude-skills",
+    "title": "Remove duplicate skills from Claude plugin",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 19,
+      "Write": 1,
+      "Read": 1,
+      "Edit": 1
+    },
+    "userTurns": 30,
+    "assistantTurns": 46,
+    "edits": 2,
+    "uuids": []
+  },
+  "session:d2deb6d7-6f0c-4f21-aea5-04be34b1a00a": {
+    "id": "session:d2deb6d7-6f0c-4f21-aea5-04be34b1a00a",
+    "kind": "session",
+    "receipt": "session:d2deb6d7-6f0c-4f21-aea5-04be34b1a00a",
+    "sessionId": "d2deb6d7-6f0c-4f21-aea5-04be34b1a00a",
+    "at": "2026-08-03T18:18:15.761Z",
+    "start": "2026-08-03T18:18:08.925Z",
+    "end": "2026-08-03T18:18:15.761Z",
+    "project": "local-fitness",
+    "title": "Treadmill interval run analysis and feedback",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:d4e97bd9-c537-4a18-8162-dbdd609f9e0a": {
+    "id": "session:d4e97bd9-c537-4a18-8162-dbdd609f9e0a",
+    "kind": "session",
+    "receipt": "session:d4e97bd9-c537-4a18-8162-dbdd609f9e0a",
+    "sessionId": "d4e97bd9-c537-4a18-8162-dbdd609f9e0a",
+    "at": "2026-08-02T00:30:19.013Z",
+    "start": "2026-08-01T17:39:39.502Z",
+    "end": "2026-08-02T00:30:19.013Z",
+    "project": "claude-skills",
+    "title": "Create branded GitHub Actions workflow skill",
+    "branches": [
+      "dev",
+      "feature/pin-repo-workflows",
+      "feature/press-propagate-classification",
+      "feature/press-yaml-gha-header"
+    ],
+    "skills": [],
+    "tools": {
+      "Bash": 206,
+      "Agent": 6,
+      "AskUserQuestion": 3,
+      "Read": 14,
+      "ToolSearch": 1,
+      "SendMessage": 8,
+      "Write": 22,
+      "Edit": 41
+    },
+    "userTurns": 328,
+    "assistantTurns": 578,
+    "edits": 63,
+    "uuids": []
+  },
+  "session:d5b8b31c-4f4c-45db-96bd-31a269009f71": {
+    "id": "session:d5b8b31c-4f4c-45db-96bd-31a269009f71",
+    "kind": "session",
+    "receipt": "session:d5b8b31c-4f4c-45db-96bd-31a269009f71",
+    "sessionId": "d5b8b31c-4f4c-45db-96bd-31a269009f71",
+    "at": "2026-08-03T12:32:25.382Z",
+    "start": "2026-08-03T11:58:40.662Z",
+    "end": "2026-08-03T12:32:25.382Z",
+    "project": "local-fitness",
+    "title": "Easy 5mi holds the line, 25k steps crush, fitness holding steady",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:d7202468-7986-4235-8427-3df2e1451efb": {
+    "id": "session:d7202468-7986-4235-8427-3df2e1451efb",
+    "kind": "session",
+    "receipt": "session:d7202468-7986-4235-8427-3df2e1451efb",
+    "sessionId": "d7202468-7986-4235-8427-3df2e1451efb",
+    "at": "2026-07-29T14:34:20.725Z",
+    "start": "2026-07-29T01:15:10.573Z",
+    "end": "2026-07-29T14:34:20.725Z",
+    "project": "claude-skills",
+    "title": "Prepare release and add city-report skill",
+    "branches": [
+      "dev",
+      "feature/devlog-publish-verify"
+    ],
+    "skills": [
+      "city-report:city-report",
+      "devlog:devlog",
+      "ghostwriter-x:ghostwriter-x"
+    ],
+    "tools": {
+      "Bash": 171,
+      "AskUserQuestion": 4,
+      "Write": 13,
+      "Edit": 39,
+      "ToolSearch": 1,
+      "WebFetch": 15,
+      "WebSearch": 4,
+      "Read": 15,
+      "Skill": 1
+    },
+    "userTurns": 280,
+    "assistantTurns": 459,
+    "edits": 52,
+    "uuids": []
+  },
+  "session:d97265f5-dea1-4fdd-a11c-d0e12a5aeee1": {
+    "id": "session:d97265f5-dea1-4fdd-a11c-d0e12a5aeee1",
+    "kind": "session",
+    "receipt": "session:d97265f5-dea1-4fdd-a11c-d0e12a5aeee1",
+    "sessionId": "d97265f5-dea1-4fdd-a11c-d0e12a5aeee1",
+    "at": "2026-08-02T20:52:49.528Z",
+    "start": "2026-08-02T20:52:43.550Z",
+    "end": "2026-08-02T20:52:49.528Z",
+    "project": "local-fitness",
+    "title": "Treadmill run: HR control on easy day",
+    "branches": [
+      "feature/hr-cap-row-states-graded-axis"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:e0edfddc-a3ec-4c53-b731-dd59b7ac3bb6": {
+    "id": "session:e0edfddc-a3ec-4c53-b731-dd59b7ac3bb6",
+    "kind": "session",
+    "receipt": "session:e0edfddc-a3ec-4c53-b731-dd59b7ac3bb6",
+    "sessionId": "e0edfddc-a3ec-4c53-b731-dd59b7ac3bb6",
+    "at": "2026-07-31T13:04:17.490Z",
+    "start": "2026-07-31T01:19:58.780Z",
+    "end": "2026-07-31T13:04:17.490Z",
+    "project": "local-fitness",
+    "title": "Plan tomorrow's running distance",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "ToolSearch": 1,
+      "mcp__fitness__get_training_plan_progress": 1
+    },
+    "userTurns": 6,
+    "assistantTurns": 4,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:e1c77d3f-4e8b-40d1-97e1-d91b5076f666": {
+    "id": "session:e1c77d3f-4e8b-40d1-97e1-d91b5076f666",
+    "kind": "session",
+    "receipt": "session:e1c77d3f-4e8b-40d1-97e1-d91b5076f666",
+    "sessionId": "e1c77d3f-4e8b-40d1-97e1-d91b5076f666",
+    "at": "2026-08-03T13:16:09.405Z",
+    "start": "2026-08-03T12:58:52.104Z",
+    "end": "2026-08-03T13:16:09.405Z",
+    "project": "local-fitness",
+    "title": "Check today's run schedule",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {
+      "ToolSearch": 1,
+      "mcp__fitness__get_training_plan_progress": 1,
+      "mcp__fitness__get_today_status": 1
+    },
+    "userTurns": 8,
+    "assistantTurns": 9,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:e44d25ba-b346-48ba-9e57-f414b5202ec2": {
+    "id": "session:e44d25ba-b346-48ba-9e57-f414b5202ec2",
+    "kind": "session",
+    "receipt": "session:e44d25ba-b346-48ba-9e57-f414b5202ec2",
+    "sessionId": "e44d25ba-b346-48ba-9e57-f414b5202ec2",
+    "at": "2026-08-03T18:21:44.993Z",
+    "start": "2026-08-03T18:21:38.006Z",
+    "end": "2026-08-03T18:21:44.993Z",
+    "project": "local-fitness",
+    "title": "Treadmill run missed pace target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:e8c20cdb-243d-4e02-bcd1-dc331da9245e": {
+    "id": "session:e8c20cdb-243d-4e02-bcd1-dc331da9245e",
+    "kind": "session",
+    "receipt": "session:e8c20cdb-243d-4e02-bcd1-dc331da9245e",
+    "sessionId": "e8c20cdb-243d-4e02-bcd1-dc331da9245e",
+    "at": "2026-07-30T20:02:19.954Z",
+    "start": "2026-07-30T20:02:19.953Z",
+    "end": "2026-07-30T20:02:19.954Z",
+    "project": "claude-skills",
+    "title": "session in claude-skills",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 3,
+    "assistantTurns": 0,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:eb68bc64-bb60-4420-bc25-92061d99a45c": {
+    "id": "session:eb68bc64-bb60-4420-bc25-92061d99a45c",
+    "kind": "session",
+    "receipt": "session:eb68bc64-bb60-4420-bc25-92061d99a45c",
+    "sessionId": "eb68bc64-bb60-4420-bc25-92061d99a45c",
+    "at": "2026-07-31T12:58:33.341Z",
+    "start": "2026-07-31T12:58:00.570Z",
+    "end": "2026-07-31T12:58:33.341Z",
+    "project": "local-fitness",
+    "title": "Long run day \u2014 nail the 8mi, steps locked in",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:ed574478-daad-4c43-984f-9f7745548c1d": {
+    "id": "session:ed574478-daad-4c43-984f-9f7745548c1d",
+    "kind": "session",
+    "receipt": "session:ed574478-daad-4c43-984f-9f7745548c1d",
+    "sessionId": "ed574478-daad-4c43-984f-9f7745548c1d",
+    "at": "2026-08-03T12:58:22.507Z",
+    "start": "2026-08-03T01:52:04.484Z",
+    "end": "2026-08-03T12:58:22.507Z",
+    "project": "claude-skills",
+    "title": "Build multi-agent GitHub issue resolver skill",
+    "branches": [
+      "dev",
+      "feature/issueflow",
+      "feature/skillfactory-release-wiring"
+    ],
+    "skills": [
+      "release:release",
+      "skillfactory:skillfactory"
+    ],
+    "tools": {
+      "Skill": 2,
+      "Bash": 124,
+      "Read": 20,
+      "ToolSearch": 2,
+      "WebSearch": 2,
+      "WebFetch": 1,
+      "AskUserQuestion": 4,
+      "Write": 20,
+      "Edit": 44,
+      "Agent": 4
+    },
+    "userTurns": 235,
+    "assistantTurns": 376,
+    "edits": 64,
+    "uuids": []
+  },
+  "session:ee1a074e-be3c-40c2-b02f-f8550026e40c": {
+    "id": "session:ee1a074e-be3c-40c2-b02f-f8550026e40c",
+    "kind": "session",
+    "receipt": "session:ee1a074e-be3c-40c2-b02f-f8550026e40c",
+    "sessionId": "ee1a074e-be3c-40c2-b02f-f8550026e40c",
+    "at": "2026-07-31T01:19:30.192Z",
+    "start": "2026-07-27T14:20:31.094Z",
+    "end": "2026-07-31T01:19:30.192Z",
+    "project": "claude-skills",
+    "title": "Create 280 character version with image",
+    "branches": [
+      "dev"
+    ],
+    "skills": [
+      "devlog:devlog",
+      "ghostwriter-x:ghostwriter-x",
+      "ghostwriter:ghostwriter"
+    ],
+    "tools": {
+      "Bash": 142,
+      "AskUserQuestion": 14,
+      "Read": 29,
+      "Write": 15,
+      "ToolSearch": 4,
+      "WebFetch": 10,
+      "Edit": 12,
+      "WebSearch": 5,
+      "Skill": 2,
+      "Monitor": 2,
+      "mcp__fitness__get_training_plan_status": 1,
+      "mcp__fitness__get_today_status": 1
+    },
+    "userTurns": 265,
+    "assistantTurns": 452,
+    "edits": 27,
+    "uuids": []
+  },
+  "session:f060747a-59d7-49e0-aed8-744038e964f0": {
+    "id": "session:f060747a-59d7-49e0-aed8-744038e964f0",
+    "kind": "session",
+    "receipt": "session:f060747a-59d7-49e0-aed8-744038e964f0",
+    "sessionId": "f060747a-59d7-49e0-aed8-744038e964f0",
+    "at": "2026-08-02T21:16:10.836Z",
+    "start": "2026-08-02T21:16:03.938Z",
+    "end": "2026-08-02T21:16:10.836Z",
+    "project": "local-fitness",
+    "title": "Treadmill run exceeded heart rate cap",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:f1688dbe-0e01-4aa0-84c4-815ce1580ff4": {
+    "id": "session:f1688dbe-0e01-4aa0-84c4-815ce1580ff4",
+    "kind": "session",
+    "receipt": "session:f1688dbe-0e01-4aa0-84c4-815ce1580ff4",
+    "sessionId": "f1688dbe-0e01-4aa0-84c4-815ce1580ff4",
+    "at": "2026-07-30T00:54:11.013Z",
+    "start": "2026-07-30T00:54:04.698Z",
+    "end": "2026-07-30T00:54:11.013Z",
+    "project": "local-fitness",
+    "title": "Treadmill run missed training load target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:f17bfd07-95e0-47fd-9877-6f241a19b4c1": {
+    "id": "session:f17bfd07-95e0-47fd-9877-6f241a19b4c1",
+    "kind": "session",
+    "receipt": "session:f17bfd07-95e0-47fd-9877-6f241a19b4c1",
+    "sessionId": "f17bfd07-95e0-47fd-9877-6f241a19b4c1",
+    "at": "2026-08-01T11:59:13.116Z",
+    "start": "2026-08-01T11:42:26.122Z",
+    "end": "2026-08-01T11:59:13.116Z",
+    "project": "local-fitness",
+    "title": "Recovery 4mi easy before race push",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:f3240c77-0522-4568-a0ce-1b1fef294d6a": {
+    "id": "session:f3240c77-0522-4568-a0ce-1b1fef294d6a",
+    "kind": "session",
+    "receipt": "session:f3240c77-0522-4568-a0ce-1b1fef294d6a",
+    "sessionId": "f3240c77-0522-4568-a0ce-1b1fef294d6a",
+    "at": "2026-07-31T17:49:23.982Z",
+    "start": "2026-07-31T17:49:16.778Z",
+    "end": "2026-07-31T17:49:23.982Z",
+    "project": "local-fitness",
+    "title": "Treadmill long run on target",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:f3e91b53-32a6-4133-847b-2b5bf9519fda": {
+    "id": "session:f3e91b53-32a6-4133-847b-2b5bf9519fda",
+    "kind": "session",
+    "receipt": "session:f3e91b53-32a6-4133-847b-2b5bf9519fda",
+    "sessionId": "f3e91b53-32a6-4133-847b-2b5bf9519fda",
+    "at": "2026-08-03T18:20:14.492Z",
+    "start": "2026-08-03T18:20:06.690Z",
+    "end": "2026-08-03T18:20:14.492Z",
+    "project": "local-fitness",
+    "title": "Treadmill running session analysis on 2026-07-27",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:f7759140-c249-4bdd-873b-457369295e47": {
+    "id": "session:f7759140-c249-4bdd-873b-457369295e47",
+    "kind": "session",
+    "receipt": "session:f7759140-c249-4bdd-873b-457369295e47",
+    "sessionId": "f7759140-c249-4bdd-873b-457369295e47",
+    "at": "2026-07-28T01:05:31.164Z",
+    "start": "2026-07-28T01:05:27.327Z",
+    "end": "2026-07-28T01:05:31.164Z",
+    "project": "local-fitness",
+    "title": "Analyze treadmill running recovery pattern",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:faec52a7-3eb7-4489-ad42-f088cfac3f1d": {
+    "id": "session:faec52a7-3eb7-4489-ad42-f088cfac3f1d",
+    "kind": "session",
+    "receipt": "session:faec52a7-3eb7-4489-ad42-f088cfac3f1d",
+    "sessionId": "faec52a7-3eb7-4489-ad42-f088cfac3f1d",
+    "at": "2026-08-02T21:15:33.082Z",
+    "start": "2026-08-02T21:15:26.788Z",
+    "end": "2026-08-02T21:15:33.082Z",
+    "project": "local-fitness",
+    "title": "Treadmill run: heart rate control breakdown",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:fb864d2a-3ff2-41c3-8fcd-0812aa27e8a4": {
+    "id": "session:fb864d2a-3ff2-41c3-8fcd-0812aa27e8a4",
+    "kind": "session",
+    "receipt": "session:fb864d2a-3ff2-41c3-8fcd-0812aa27e8a4",
+    "sessionId": "fb864d2a-3ff2-41c3-8fcd-0812aa27e8a4",
+    "at": "2026-07-29T15:46:04.054Z",
+    "start": "2026-07-28T01:27:16.475Z",
+    "end": "2026-07-29T15:46:04.054Z",
+    "project": "ghostwriter",
+    "title": "Improve skill across UX, quality, speed, and metrics",
+    "branches": [
+      "dev",
+      "feature/city-report",
+      "feature/ghostwriter-x-improvement-pass",
+      "feature/resume-theme-engine",
+      "feature/shipflow-0.3.0-release"
+    ],
+    "skills": [
+      "ghostwriter-x:ghostwriter-x",
+      "ghostwriter:ghostwriter"
+    ],
+    "tools": {
+      "Bash": 222,
+      "AskUserQuestion": 20,
+      "ToolSearch": 5,
+      "WebSearch": 7,
+      "WebFetch": 11,
+      "Write": 21,
+      "Edit": 76,
+      "Read": 41,
+      "Agent": 4,
+      "SendMessage": 5,
+      "mcp__typefully__typefully_list_social_set_analytics_posts": 1,
+      "mcp__typefully__typefully_get_social_set_analytics_followers": 1,
+      "mcp__fitness__get_training_plan_status": 1,
+      "mcp__fitness__get_today_status": 1,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__workout_report_card": 1
+    },
+    "userTurns": 449,
+    "assistantTurns": 802,
+    "edits": 97,
+    "uuids": []
+  },
+  "session:fc2756da-3e72-4bf7-962a-009cc91dc2e6": {
+    "id": "session:fc2756da-3e72-4bf7-962a-009cc91dc2e6",
+    "kind": "session",
+    "receipt": "session:fc2756da-3e72-4bf7-962a-009cc91dc2e6",
+    "sessionId": "fc2756da-3e72-4bf7-962a-009cc91dc2e6",
+    "at": "2026-08-03T18:18:34.498Z",
+    "start": "2026-08-03T18:18:27.725Z",
+    "end": "2026-08-03T18:18:34.498Z",
+    "project": "local-fitness",
+    "title": "Analyze treadmill run overload on July 20",
+    "branches": [
+      "dev"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:fcc5321b-d8dd-4444-83be-03b24409e544": {
+    "id": "session:fcc5321b-d8dd-4444-83be-03b24409e544",
+    "kind": "session",
+    "receipt": "session:fcc5321b-d8dd-4444-83be-03b24409e544",
+    "sessionId": "fcc5321b-d8dd-4444-83be-03b24409e544",
+    "at": "2026-07-28T01:56:06.379Z",
+    "start": "2026-07-27T17:34:22.784Z",
+    "end": "2026-07-28T01:56:06.379Z",
+    "project": "local-fitness",
+    "title": "Improve local fitness with UX, accuracy, persona, and speed",
+    "branches": [
+      "dev",
+      "feature/accuracy-persona-ux-speed-audit",
+      "feature/document-container-tz",
+      "fix/stale-repair-comment"
+    ],
+    "skills": [
+      "devlog:devlog"
+    ],
+    "tools": {
+      "Bash": 203,
+      "Agent": 12,
+      "ToolSearch": 5,
+      "Read": 13,
+      "TaskCreate": 12,
+      "TaskUpdate": 9,
+      "TaskList": 1,
+      "SendMessage": 12,
+      "Edit": 20,
+      "mcp__fitness__sync_garmin_data": 1,
+      "mcp__fitness__query_workouts": 1,
+      "mcp__fitness__workout_report_card": 1,
+      "mcp__fitness__get_training_plan_progress": 1,
+      "WebSearch": 3,
+      "WebFetch": 6,
+      "Write": 6
+    },
+    "userTurns": 355,
+    "assistantTurns": 669,
+    "edits": 26,
+    "uuids": []
+  },
+  "session:fdb3c19d-1020-4bee-a60b-7955ab4166d3": {
+    "id": "session:fdb3c19d-1020-4bee-a60b-7955ab4166d3",
+    "kind": "session",
+    "receipt": "session:fdb3c19d-1020-4bee-a60b-7955ab4166d3",
+    "sessionId": "fdb3c19d-1020-4bee-a60b-7955ab4166d3",
+    "at": "2026-08-02T12:38:26.731Z",
+    "start": "2026-08-02T12:37:26.869Z",
+    "end": "2026-08-02T12:38:26.731Z",
+    "project": "local-fitness",
+    "title": "Recovery run today, body battery still rebuilding",
+    "branches": [
+      "main"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 2,
+    "edits": 0,
+    "uuids": []
+  },
+  "session:ff81e0fd-305d-42a7-a875-dcabaa88db81": {
+    "id": "session:ff81e0fd-305d-42a7-a875-dcabaa88db81",
+    "kind": "session",
+    "receipt": "session:ff81e0fd-305d-42a7-a875-dcabaa88db81",
+    "sessionId": "ff81e0fd-305d-42a7-a875-dcabaa88db81",
+    "at": "2026-08-02T20:35:41.758Z",
+    "start": "2026-08-02T20:35:39.194Z",
+    "end": "2026-08-02T20:35:41.758Z",
+    "project": "local-fitness",
+    "title": "Monitor HR ceiling drift on easy runs",
+    "branches": [
+      "main"
+    ],
+    "skills": [],
+    "tools": {},
+    "userTurns": 1,
+    "assistantTurns": 1,
+    "edits": 0,
+    "uuids": []
+  }
+}
