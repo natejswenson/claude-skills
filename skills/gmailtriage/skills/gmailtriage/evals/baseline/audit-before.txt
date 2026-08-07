@@ -1,0 +1,52 @@
+| Label               | Threads | Status                 | Filed into by                                          |
+|---------------------|---------|------------------------|--------------------------------------------------------|
+| Recruiting          | 13      | managed                | sort-globex, sort-initech, sort-umbrella, sort-soylent |
+| Recruiting/Globex   | 7       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Initech  | 4       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Umbrella | 1       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Soylent  | 1       | UNMANAGED — holds mail | —                                                      |
+| Statements          | 4       | managed                | sort-statements                                        |
+| Medical             | 2       | managed                | sort-medical                                           |
+| Banking             | 2       | managed                | sort-banking                                           |
+| School              | 2       | managed                | sort-school                                            |
+| Receipts            | 2       | SAME AS Reciepts       | sort-receipts                                          |
+| Reciepts            | 2       | SAME AS Receipts       | —                                                      |
+| Old Roof Job        | 6       | UNMANAGED — holds mail | —                                                      |
+| Security            | 2       | managed                | sort-security                                          |
+| Briefings           | 1       | managed                | sort-briefings                                         |
+| Financial Advisor   | 5       | managed                | sort-advisor                                           |
+| Realty              | 2       | managed                | sort-realty                                            |
+| Paperwork           | 4       | UNMANAGED — holds mail | —                                                      |
+| Scratch             | 0       | UNMANAGED — and empty  | —                                                      |
+| Reading List        | 0       | UNMANAGED — and empty  | —                                                      |
+
+one folder, spelled two ways. Mail is split across them and nothing in Gmail says so —
+fold them together with `merge --from <wrong> --to <right>`, then delete the empty one.
+
+6 folder(s) hold mail no rule files into. They stay sorted exactly as long as
+you keep sorting them by hand — write a rule, or the next run will not maintain them.
+
+2 folder(s) are empty and unmanaged — folders someone made once and never used.
+Deleting an empty label loses nothing; there is no mail in it to lose.
+
+MAIL NO RULE CLAIMS
+
+| Sender                           | Threads | In inbox | Goes to          | Example subject                          |
+|----------------------------------|---------|----------|------------------|------------------------------------------|
+| secure@esignature.example        | 4       | no       | — needs a name — | Signing complete: document 1             |
+| invoices@billingplatform.example | 3       | no       | — needs a name — | Invoice 1250 from Roofing Co             |
+| claims@insurepay.example         | 2       | no       | — needs a name — | A digital payment was issued for your c… |
+| billing@cloudvendor.example      | 1       | no       | — needs a name — | Your receipt from Cloud Vendor #2563     |
+| correspondence@insurer.example   | 1       | no       | — needs a name — | Insurance claim 01006543                 |
+| me@mailprovider.example          | 1       | yes      | — needs a name — | Evening brief — Friday                   |
+| records@statearchive.gov         | 1       | yes      | — needs a name — | Your records request                     |
+| website@modelhub.example         | 1       | no       | — needs a name — | Click this link to confirm your email a… |
+
+folders it could nest under, rather than becoming another top-level one:
+  Recruiting · Statements · Medical · Banking · School · Receipts · Reciepts · Old Roof Job · Security · Briefings · Financial Advisor · Realty · Paperwork · Scratch · Reading List
+
+| Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
+|--------|---------|-----------|---------------------|----------------|----------|
+| 19     | 10      | 9         | 2                   | 14             | 53%      |
+
+this label system needs attention — see above. Nothing has moved.

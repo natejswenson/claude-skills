@@ -1,0 +1,32 @@
+| Label                 | Threads | Status  | Filed into by                                             |
+|-----------------------|---------|---------|-----------------------------------------------------------|
+| Recruiting            | 13      | managed | sort-globex, sort-initech, sort-umbrella, sort-soylent    |
+| Recruiting/Globex     | 7       | managed | sort-globex                                               |
+| Recruiting/Initech    | 4       | managed | sort-initech                                              |
+| Recruiting/Umbrella   | 1       | managed | sort-umbrella                                             |
+| Recruiting/Soylent    | 1       | managed | sort-soylent                                              |
+| Statements            | 4       | managed | sort-statements                                           |
+| Medical               | 2       | managed | sort-medical                                              |
+| Banking               | 2       | managed | sort-banking                                              |
+| School                | 2       | managed | sort-school                                               |
+| Receipts              | 2       | managed | sort-receipts-books, sort-receipts-cloud                  |
+| Receipts/Bookstore    | 1       | managed | sort-receipts-books                                       |
+| Receipts/Cloud Vendor | 1       | managed | sort-receipts-cloud                                       |
+| Home Claim            | 6       | managed | sort-claim-work, sort-claim-insurepay, sort-claim-insurer |
+| Home Claim/Contractor | 3       | managed | sort-claim-work                                           |
+| Home Claim/Insurance  | 3       | managed | sort-claim-insurepay, sort-claim-insurer                  |
+| Security              | 2       | managed | sort-security, sort-modelhub                              |
+| Briefings             | 1       | managed | sort-briefings                                            |
+| Financial Advisor     | 5       | managed | sort-advisor                                              |
+| Realty                | 2       | managed | sort-realty                                               |
+| Paperwork             | 4       | managed | sort-paperwork, sort-gov                                  |
+
+MAIL NO RULE CLAIMS
+
+nothing — every thread in the sample is claimed by a rule.
+
+| Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
+|--------|---------|-----------|---------------------|----------------|----------|
+| 20     | 20      | 0         | 0                   | 0              | 100%     |
+
+every folder has a rule, no folder is spelled two ways, and no mail is unclaimed.

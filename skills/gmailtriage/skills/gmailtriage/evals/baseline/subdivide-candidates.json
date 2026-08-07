@@ -1,0 +1,59 @@
+{
+  "parent": "Recruiting",
+  "sortCandidates": [
+    {
+      "id": "sort-recruiting-globex-example",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "match": {
+        "from": "@globex.example"
+      },
+      "note": "file mail from @globex.example — 7 already in Recruiting, e.g. \"Interview loop with Globex — stage 1\""
+    },
+    {
+      "id": "sort-recruiting-recruiting-initech-examp",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "match": {
+        "from": "@recruiting.initech.example"
+      },
+      "note": "file mail from @recruiting.initech.example — 4 already in Recruiting, e.g. \"Principal Engineer opening at Initech — req 2300\""
+    }
+  ],
+  "unhoused": [
+    {
+      "id": "sort-recruiting-candidates-workable-exam",
+      "from": "@candidates.workable.example",
+      "domain": "candidates.workable.example",
+      "count": 1,
+      "senders": [
+        "noreply@candidates.workable.example"
+      ],
+      "sample": "Thanks for applying to Soylent Industries",
+      "subjects": [
+        "Thanks for applying to Soylent Industries"
+      ],
+      "vendorHost": "workable",
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    },
+    {
+      "id": "sort-recruiting-greenhouse-example",
+      "from": "@greenhouse.example",
+      "domain": "greenhouse.example",
+      "count": 1,
+      "senders": [
+        "no-reply@greenhouse.example"
+      ],
+      "sample": "Thanks for applying to Umbrella Corp!",
+      "subjects": [
+        "Thanks for applying to Umbrella Corp!"
+      ],
+      "vendorHost": "greenhouse",
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    }
+  ]
+}
