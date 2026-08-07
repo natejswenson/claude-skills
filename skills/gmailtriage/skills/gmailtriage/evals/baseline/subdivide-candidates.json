@@ -1,0 +1,77 @@
+{
+  "parent": "Recruiting",
+  "sortCandidates": [],
+  "unhoused": [
+    {
+      "id": "sort-recruiting-org-a-13a7-example",
+      "from": "@org-a-13a7.example",
+      "domain": "org-a-13a7.example",
+      "count": 7,
+      "senders": [
+        "person1@org-a-13a7.example",
+        "person3@org-a-13a7.example",
+        "person4@org-a-13a7.example",
+        "person5@org-a-13a7.example"
+      ],
+      "sample": "(personal thread)",
+      "subjects": [
+        "(personal thread)"
+      ],
+      "vendorHost": null,
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    },
+    {
+      "id": "sort-recruiting-org-b-f922-example",
+      "from": "@org-b-f922.example",
+      "domain": "org-b-f922.example",
+      "count": 4,
+      "senders": [
+        "person2@org-b-f922.example"
+      ],
+      "sample": "(personal thread)",
+      "subjects": [
+        "(personal thread)"
+      ],
+      "vendorHost": null,
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    },
+    {
+      "id": "sort-recruiting-ashbyhq-com",
+      "from": "@ashbyhq.com",
+      "domain": "ashbyhq.com",
+      "count": 1,
+      "senders": [
+        "no-reply@ashbyhq.com"
+      ],
+      "sample": "Thanks for applying to Organisation A",
+      "subjects": [
+        "Thanks for applying to Organisation A"
+      ],
+      "vendorHost": "ashbyhq",
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    },
+    {
+      "id": "sort-recruiting-candidates-workablemail",
+      "from": "@candidates.workablemail.com",
+      "domain": "candidates.workablemail.com",
+      "count": 1,
+      "senders": [
+        "noreply@candidates.workablemail.com"
+      ],
+      "sample": "Thanks for applying to Organisation B",
+      "subjects": [
+        "Thanks for applying to Organisation B"
+      ],
+      "vendorHost": "workable",
+      "destination": null,
+      "keepInInbox": false,
+      "unhoused": true
+    }
+  ]
+}

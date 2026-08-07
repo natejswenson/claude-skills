@@ -1,0 +1,33 @@
+| Rule id           | Action | Destination            | Authorised threads |
+|-------------------|--------|------------------------|--------------------|
+| sort-recruiting-a | file   | Recruiting/Folder c9d2 | 7                  |
+| sort-recruiting-b | file   | Recruiting/Folder b62d | 4                  |
+| sort-recruiting-c | file   | Recruiting/Folder 65b4 | 1                  |
+| sort-recruiting-d | file   | Recruiting/Folder b40c | 1                  |
+
+| Authorised | To trash | To file | Labels to add | To archive | Refused |
+|------------|----------|---------|---------------|------------|---------|
+| 13         | 0        | 13      | 13            | 0          | 0       |
+
+LABEL "Recruiting/Folder c9d2" onto exactly these thread ids and nothing else:
+thr-b35ff9b7d9
+thr-d9b1bea50d
+thr-e8320500fa
+thr-e1a1fce992
+thr-8e7f9dea85
+thr-9a3a556b97
+thr-c41c8f0efe
+
+LABEL "Recruiting/Folder b62d" onto exactly these thread ids and nothing else:
+thr-51d4751762
+thr-29647d4d14
+thr-99c9daac4c
+thr-7910ca33f8
+
+LABEL "Recruiting/Folder 65b4" onto exactly these thread ids and nothing else:
+thr-7152e11e92
+
+LABEL "Recruiting/Folder b40c" onto exactly these thread ids and nothing else:
+thr-4427e5aad6
+
+13 filed thread(s) had already left the inbox — this run only adds labels to them.

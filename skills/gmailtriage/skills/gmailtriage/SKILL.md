@@ -2,7 +2,7 @@
 name: gmailtriage
 description: Sort and clean a Gmail inbox under rules the user wrote — filing mail into their own labels and out of the inbox, and moving junk to the trash. On a first run it walks the user through building that rule set from their own senders and their own existing folders, instead of shipping generic defaults. Use when the user says "clean my inbox", "gmailtriage", "triage my email", "sort my gmail", "file my email into folders", "auto-label my mail", "set up my email rules", "delete my junk mail", "unsubscribe and clean up", "why is my inbox full", or wants mail automatically filed, labelled or cleared out of Gmail without doing it by hand.
 user_invocable: true
-version: 0.2.0
+version: 0.3.0
 ---
 
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
@@ -27,6 +27,7 @@ step whose command does not exist fails `skillfactory verify`.
 |---|---|
 | report whether this mailbox has any rules yet, and the single next thing to do | `node scripts/gmailtriage.js setup` |
 | cluster a real inbox sample into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has | `node scripts/gmailtriage.js propose` |
+| cluster a folder that already has mail in it by sender, match each cluster against the sub-labels that folder already has, and say when it is still one thing | `node scripts/gmailtriage.js subdivide` |
 | validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns | `node scripts/gmailtriage.js rules` |
 | reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists | `node scripts/gmailtriage.js labels` |
 | evaluate the stored rules against the inbox and enumerate exactly which threads each would take, where each goes, and which leave the inbox, without touching any of them | `node scripts/gmailtriage.js plan` |
@@ -37,6 +38,8 @@ step whose command does not exist fails `skillfactory verify`.
 |---|---|
 | decide which proposed rules are actually safe to accept, and which cluster is a newsletter the user genuinely reads | a sender sending fifty near-identical bulk messages looks the same whether it is a retailer the user ignores or the school district they need; only the user knows which |
 | **name a folder for a cluster that has no existing home** | a folder name is a decision about how the user already thinks — whether their word is "Shopping" or "Retail", whether the bank goes under "Finance" or its own name — and nothing in the mail says it. A script that guesses files a school district under its mail vendor |
+| **name the organisation behind a sender that hosts mail for many of them** | an applicant tracking system, a signing service and an invoicing platform all send on behalf of whoever bought them, so the address names the vendor and the subject names the organisation. `no-reply@ashbyhq.com` is one employer in one thread and a different one in the next, and only reading the subject says which |
+| decide whether a folder is several things or still one | four employers in `Recruiting` want splitting; four notices from one bank in `Statements` do not, and a sub-label holding everything its parent holds is worse than no sub-label. The counts look identical either way |
 | word each rule so a reader six months later can tell what it was meant to catch | a Gmail query is precise and unreadable, and a rule nobody can interpret is a rule nobody will dare to edit |
 | judge when a plan looks wrong and should be questioned rather than applied | a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which |
 
@@ -107,6 +110,46 @@ say why, and let them change it. Never file into a name they have not seen.
 **Never argue with a withheld sender.** If the user wants it, they write the
 rule; the guard constrains what the skill proposes, never what they may decide.
 
+### 2b. Subdivide — when a folder has grown into several things
+
+A folder is worth splitting once it holds more than one organisation. `Recruiting`
+holding four employers answers "is this job-hunt mail" and nothing more useful,
+and no amount of scrolling makes it answer "what is happening with one of them".
+
+```
+search_threads  label:<Folder>   pageSize 50   → filed.json
+```
+
+```bash
+node scripts/gmailtriage.js subdivide --threads filed.json --labels labels.json --parent "<Folder>"
+```
+
+**If it says the folder is still one thing, stop and say so.** A sub-label that
+holds everything its parent holds is worse than no sub-label — the user now has
+two names for one pile. Most folders are one thing; that is a result, not a
+failure to find something.
+
+**A vendor-hosted cluster can never be named from its sender, and the run must
+not try.** An applicant tracking system, a signing service and an invoicing
+platform send for whoever bought them, so the address names the vendor.
+`subdivide` flags those and prints the distinct subjects, because that is where
+the organisation's name actually is. Each one needs a `subjectContains` as well
+as a name — a sender-only rule files every employer into one folder, which is
+the same failure as filing a school district under its mail vendor, committed by
+the thing that was supposed to fix it.
+
+**Filing into a sub-label applies the parent too.** `Recruiting/Northwind` puts
+both `Recruiting` and `Recruiting/Northwind` on the thread, so the parent view
+stays the whole category and the sub-label narrows it. Say that when you show
+the rules; a user who thinks their mail left `Recruiting` will go looking for it.
+
+**Change the broad rule's destination — never add a sub-rule beside it.** A rule
+filing into `Recruiting` standing in front of one filing into
+`Recruiting/Contoso` does not fail, it *drifts*: fresh mail hits the
+parent rule first, while mail already carrying `Recruiting` skips it and reaches
+the sub-rule. `rules` refuses that pair outright, and the message says what to
+change.
+
 ### 3. Accept rules
 
 ```bash
@@ -133,7 +176,7 @@ describing a mailbox that no longer exists.
 ### 4. Plan — always, every run
 
 ```bash
-node scripts/gmailtriage.js plan --threads threads.json --out plan.json
+node scripts/gmailtriage.js plan --threads threads.json --labels labels.json --out plan.json
 ```
 
 Report the per-rule counts, the per-folder counts, and a preview. **Say how many
@@ -141,6 +184,31 @@ threads would leave the inbox** — that is the number the user actually cares
 about. **If a rule suddenly takes many times its usual volume, say so and stop**
 — that is either a sender gone rogue or a rule that drifted, and nothing in the
 count says which.
+
+**Always pass `--labels`.** `search_threads` returns opaque label ids
+(`Label_10`) and rules are written in words (`Recruiting`), so without the map
+the planner cannot tell it has already filed a thread. Every run then re-proposes
+everything the last one filed, and a second run never converges.
+
+### 4b. The retroactive pass — applying new rules to mail already filed
+
+New sub-label rules only ever see new mail. The mail already sitting in the
+folder is what the user actually wants sorted, and it is out of the inbox, so
+the default scope cannot reach it:
+
+```bash
+node scripts/gmailtriage.js plan --threads filed.json --labels labels.json \
+  --scope 'label:<Folder>' --out plan.json
+```
+
+`--scope` replaces `in:inbox` in every compiled query — the same rules, a
+different slice of the mailbox. Two things to say out loud about this run:
+**"would leave the inbox" will be 0**, because these threads already left it;
+and **nothing is unlabelled**, because the parent stays. It is purely additive,
+which is why it is safe to run over mail the user has already organised by hand.
+
+Then re-run the same command afterwards. **It must take zero threads the second
+time.** If it does not, the labels did not resolve and the run has not converged.
 
 ### 5. Apply, then perform exactly what it authorised
 
@@ -180,6 +248,7 @@ filed thread is one label away from where it was. Offer `undo`; do not bury it.
 |---|---|
 | `gmailtriage setup` | state, rule count, rule file — plus a first-run walkthrough when nothing is configured |
 | `gmailtriage propose` | read a slice of the user's real inbox and the labels they already have, cluster the mail by sender, and return two tables — bulk mail worth trashing, and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name. So a first run starts from the user's own mail and own folders rather than from generic defaults. Proposes only; writes no rule and moves nothing. |
+| `gmailtriage subdivide` | read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needing a name, and each sender that hosts mail for many organisations flagged as needing a subject matcher too, with its distinct subjects printed. Says plainly when a folder is still one thing and should be left alone. Proposes only; writes no rule and moves nothing. |
 | `gmailtriage rules` | read, validate and write the rule file, returning a table of rule id, action, destination, whether the thread leaves the inbox, and the Gmail query it compiles to — so a rule that would silently match everything, match nothing, or file into a label Gmail owns is visible before it ever runs. |
 | `gmailtriage labels` | reconcile every folder the rules file into against the mailbox's real label list, returning a table of destination, whether it exists, and which rules use it — and exit non-zero naming exactly what must be created, so a run never fails halfway with some mail moved and some not. |
 | `gmailtriage plan` | evaluate every rule against the inbox and return the exact set of threads each rule would take, where each one goes, and how many leave the inbox, as tables of rule, destination and count plus any thread matched by more than one rule. Reads only; moves nothing. |
@@ -203,6 +272,25 @@ filed thread is one label away from where it was. Offer `undo`; do not bury it.
 - **Never invent a folder name silently.** An unhoused cluster is shown to the
   user and named with them. Filing mail into a word they have never used is how
   they stop being able to find it.
+- **Never name a sub-label after the sender when the sender hosts mail for
+  other organisations.** An applicant tracking system, a signing service, an
+  invoicing platform: the address names the vendor and the subject names the
+  organisation. `Recruiting/Ashbyhq` files every employer into one folder — the
+  same failure as filing a school district under its mail vendor, committed by
+  the split that was supposed to fix it. Those rules carry a `subjectContains`,
+  and the name comes from reading the subject.
+- **Never split a folder that is still one thing.** Four employers in
+  `Recruiting` want sub-labels; four notices from one bank in `Statements` do
+  not. A sub-label holding everything its parent holds has not organised
+  anything — it has given one pile two names.
+- **Never let a broad rule stand in front of a rule filing into a sub-label of
+  its own destination.** That pair does not fail, it drifts: fresh mail takes
+  the parent and mail already filed takes the child, and which one a thread gets
+  depends only on when it arrived. Change the broad rule's destination.
+- **Never say a thread left its parent folder.** Filing into `Recruiting/One
+  Call` applies `Recruiting` as well. The parent view is still the whole
+  category; the sub-label narrows it. A user who thinks their mail moved out
+  will go looking for it.
 - **Never propose a *trash* rule for a withheld sender.** Financial, medical,
   governmental, educational and recruiting senders, and any cluster carrying a
   login code, receipt or verification, stay withheld from trashing. They may
@@ -226,7 +314,7 @@ filed thread is one label away from where it was. Offer `undo`; do not bury it.
 
 | Path | Is |
 |---|---|
-| `scripts/gmailtriage.js` | the CLI: `setup`, `propose`, `rules`, `labels`, `plan`, `apply`, `undo` |
+| `scripts/gmailtriage.js` | the CLI: `setup`, `propose`, `subdivide`, `rules`, `labels`, `plan`, `apply`, `undo` |
 | `references/rules.md` | the rule format, what each field means, and the checks a rule must survive before it can move anything |
 | `references/sorting.md` | what a "folder" actually is in Gmail, how a move is performed and reversed, and why the destination is the user's word and not the skill's |
 | `references/safety.md` | why nothing here is permanent deletion, what the receipt records, and how an unwanted run is undone |

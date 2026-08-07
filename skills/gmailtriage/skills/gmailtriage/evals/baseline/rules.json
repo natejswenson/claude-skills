@@ -20,14 +20,14 @@
       "note": "bulk mail from success@e.rocketreach.co — 3 in the sample, e.g. \"Success Tips #4: Save Time & Boost Outreach with RocketReach\""
     },
     {
-      "id": "sort-careers-recruiting-uhg-com",
+      "id": "sort-recruiting-org-b",
       "action": "label",
       "label": "Job Search",
       "keepInInbox": true,
       "match": {
-        "from": "careers@recruiting.uhg.com"
+        "from": "person5@org-b-f922.example"
       },
-      "note": "file mail from careers@recruiting.uhg.com — 5 in the sample — tagged in place, never archived: this sender also delivers codes or receipts"
+      "note": "file mail from person5@org-b-f922.example — 5 in the sample — tagged in place, never archived: this sender also delivers codes or receipts"
     },
     {
       "id": "sort-alerts-notify-wellsfargo-com",

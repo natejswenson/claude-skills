@@ -1,0 +1,162 @@
+{
+  "at": "2026-08-07T12:00:00Z",
+  "count": 13,
+  "entries": [
+    {
+      "threadId": "thr-b35ff9b7d9",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person1@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-51d4751762",
+      "ruleId": "sort-recruiting-b",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "added": [
+        "Recruiting/Folder b62d"
+      ],
+      "archived": false,
+      "from": "person2@org-b-f922.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-d9b1bea50d",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person3@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-e8320500fa",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person4@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-e1a1fce992",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person3@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-29647d4d14",
+      "ruleId": "sort-recruiting-b",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "added": [
+        "Recruiting/Folder b62d"
+      ],
+      "archived": false,
+      "from": "person2@org-b-f922.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-8e7f9dea85",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person3@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-99c9daac4c",
+      "ruleId": "sort-recruiting-b",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "added": [
+        "Recruiting/Folder b62d"
+      ],
+      "archived": false,
+      "from": "person2@org-b-f922.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-7910ca33f8",
+      "ruleId": "sort-recruiting-b",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "added": [
+        "Recruiting/Folder b62d"
+      ],
+      "archived": false,
+      "from": "person2@org-b-f922.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-9a3a556b97",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person5@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-c41c8f0efe",
+      "ruleId": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "added": [
+        "Recruiting/Folder c9d2"
+      ],
+      "archived": false,
+      "from": "person5@org-a-13a7.example",
+      "subject": "(personal thread)"
+    },
+    {
+      "threadId": "thr-7152e11e92",
+      "ruleId": "sort-recruiting-c",
+      "action": "label",
+      "label": "Recruiting/Folder 65b4",
+      "added": [
+        "Recruiting/Folder 65b4"
+      ],
+      "archived": false,
+      "from": "no-reply@ashbyhq.com",
+      "subject": "Thanks for applying to Organisation A"
+    },
+    {
+      "threadId": "thr-4427e5aad6",
+      "ruleId": "sort-recruiting-d",
+      "action": "label",
+      "label": "Recruiting/Folder b40c",
+      "added": [
+        "Recruiting/Folder b40c"
+      ],
+      "archived": false,
+      "from": "noreply@candidates.workablemail.com",
+      "subject": "Thanks for applying to Organisation B"
+    }
+  ]
+}

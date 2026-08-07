@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "sort-recruiting-a",
+      "action": "label",
+      "label": "Recruiting/Folder c9d2",
+      "match": {
+        "from": "@org-a-13a7.example"
+      },
+      "note": "the whole domain, because one organisation writes from several people (7 in the folder)"
+    },
+    {
+      "id": "sort-recruiting-b",
+      "action": "label",
+      "label": "Recruiting/Folder b62d",
+      "match": {
+        "from": "@org-b-f922.example"
+      },
+      "note": "the whole domain, because one organisation writes from several people (4 in the folder)"
+    },
+    {
+      "id": "sort-recruiting-c",
+      "action": "label",
+      "label": "Recruiting/Folder 65b4",
+      "match": {
+        "from": "@ashbyhq.com",
+        "subjectContains": "Organisation A"
+      },
+      "note": "filed via an applicant tracking vendor — the sender names the vendor, so the subject is what names the organisation (1 in the folder)"
+    },
+    {
+      "id": "sort-recruiting-d",
+      "action": "label",
+      "label": "Recruiting/Folder b40c",
+      "match": {
+        "from": "@candidates.workablemail.com",
+        "subjectContains": "Organisation B"
+      },
+      "note": "filed via an applicant tracking vendor — the sender names the vendor, so the subject is what names the organisation (1 in the folder)"
+    }
+  ]
+}

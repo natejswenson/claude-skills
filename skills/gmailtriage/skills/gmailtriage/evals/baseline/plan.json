@@ -1,221 +1,342 @@
 {
   "scanned": 60,
+  "scope": "in:inbox",
   "taken": [
     {
       "ruleId": "sort-existing-folder",
       "action": "label",
-      "threadId": "thr-5b3a2a4424",
-      "from": "sender-d32881@mail.fidelity.com",
+      "threadId": "thr-5732c05f18",
+      "from": "sender-55d189@mail.fidelity.com",
       "subject": "New statement available",
       "label": "Reciepts",
-      "archive": false
+      "labels": [
+        "Reciepts"
+      ],
+      "adds": [
+        "Reciepts"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "success-e-rocketreach-co",
       "action": "trash",
-      "threadId": "thr-677b9018d3",
+      "threadId": "thr-9f2be351fa",
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-80adbc8db2",
+      "threadId": "thr-007ef08c2a",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.1",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-9d344bc4d0",
+      "threadId": "thr-283182e420",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/press@0.6.0",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "success-e-rocketreach-co",
       "action": "trash",
-      "threadId": "thr-3b002806e0",
+      "threadId": "thr-9a7a08c394",
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #3: Real Results. Real People. RocketReach.",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
+      "ruleId": "sort-recruiting-org-b",
       "action": "label",
-      "threadId": "thr-29647d4d14",
-      "from": "careers@recruiting.uhg.com",
-      "subject": "Invitation to Self-identify for 2365825 - Principal Software Engineer",
+      "threadId": "thr-e03f205d86",
+      "from": "person5@org-b-f922.example",
+      "subject": "(personal thread)",
       "label": "Job Search",
-      "archive": false
+      "labels": [
+        "Job Search"
+      ],
+      "adds": [
+        "Job Search"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
+      "ruleId": "sort-recruiting-org-b",
       "action": "label",
-      "threadId": "thr-61bda61d79",
-      "from": "careers@recruiting.uhg.com",
-      "subject": "Multifactor authentication access code",
+      "threadId": "thr-54380bfb93",
+      "from": "person5@org-b-f922.example",
+      "subject": "(personal thread)",
       "label": "Job Search",
-      "archive": false
+      "labels": [
+        "Job Search"
+      ],
+      "adds": [
+        "Job Search"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "sort-existing-folder",
       "action": "label",
-      "threadId": "thr-152d987378",
-      "from": "sender-d32881@mail.fidelity.com",
+      "threadId": "thr-aca33773e8",
+      "from": "sender-55d189@mail.fidelity.com",
       "subject": "New Fidelity Government Cash Reserves shareholder report available",
       "label": "Reciepts",
-      "archive": false
+      "labels": [
+        "Reciepts"
+      ],
+      "adds": [
+        "Reciepts"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "sort-onlinejmc-com",
       "action": "label",
-      "threadId": "thr-ff1df25c76",
-      "from": "sender-c21113@onlinejmc.com",
+      "threadId": "thr-1c5614afc0",
+      "from": "sender-1417f5@onlinejmc.com",
       "subject": "New Bus Rider Registration",
       "label": "School",
-      "archive": true
+      "labels": [
+        "School"
+      ],
+      "adds": [
+        "School"
+      ],
+      "archive": true,
+      "wouldArchive": true
     },
     {
       "ruleId": "sort-alerts-notify-wellsfargo-com",
       "action": "label",
-      "threadId": "thr-2e4b8a02e8",
+      "threadId": "thr-1aca32d193",
       "from": "alerts@notify.wellsfargo.com",
       "subject": "Insufficient funds notice/Extra Day Grace Period",
       "label": "Banking",
-      "archive": true
+      "labels": [
+        "Banking"
+      ],
+      "adds": [
+        "Banking"
+      ],
+      "archive": true,
+      "wouldArchive": true
     },
     {
       "ruleId": "sort-alerts-notify-wellsfargo-com",
       "action": "label",
-      "threadId": "thr-b9fe0e33af",
+      "threadId": "thr-ef2fa2e5c1",
       "from": "alerts@notify.wellsfargo.com",
       "subject": "Your balance is at or below zero",
       "label": "Banking",
-      "archive": true
+      "labels": [
+        "Banking"
+      ],
+      "adds": [
+        "Banking"
+      ],
+      "archive": true,
+      "wouldArchive": true
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-2dcd0dd6d1",
+      "threadId": "thr-311c9294fb",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.13.0",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
+      "ruleId": "sort-recruiting-org-b",
       "action": "label",
-      "threadId": "thr-99c9daac4c",
-      "from": "careers@recruiting.uhg.com",
-      "subject": "Principal Software Engineer Opening at UnitedHealth Group",
+      "threadId": "thr-4c0e04344c",
+      "from": "person5@org-b-f922.example",
+      "subject": "(personal thread)",
       "label": "Job Search",
-      "archive": false
+      "labels": [
+        "Job Search"
+      ],
+      "adds": [
+        "Job Search"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-86be8278b9",
+      "threadId": "thr-a527354dd7",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.12.0",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "success-e-rocketreach-co",
       "action": "trash",
-      "threadId": "thr-9fba2ce8bc",
+      "threadId": "thr-176d52dbbb",
       "from": "success@e.rocketreach.co",
       "subject": "Success Tips #2: Stop Chasing, Start Connecting",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "sort-existing-folder",
       "action": "label",
-      "threadId": "thr-ff4652becd",
-      "from": "sender-d32881@mail.fidelity.com",
+      "threadId": "thr-add972b026",
+      "from": "sender-55d189@mail.fidelity.com",
       "subject": "Action Requested: Consent to Electronic Delivery",
       "label": "Reciepts",
-      "archive": false
+      "labels": [
+        "Reciepts"
+      ],
+      "adds": [
+        "Reciepts"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-451b37d0fa",
+      "threadId": "thr-32b948afc7",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.2",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-2f849a008c",
+      "threadId": "thr-4035bba3f7",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.2",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-11697368dc",
+      "threadId": "thr-c70f942110",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/devlog@0.11.1",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-b4b54f4021",
+      "threadId": "thr-f2a6a71611",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.1",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "support-npmjs-com",
       "action": "trash",
-      "threadId": "thr-4bf9fd6084",
+      "threadId": "thr-040d0bab95",
       "from": "support@npmjs.com",
       "subject": "Successfully published @natjswenson/shipflow@0.3.0",
       "label": null,
-      "archive": false
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
+      "ruleId": "sort-recruiting-org-b",
       "action": "label",
-      "threadId": "thr-7910ca33f8",
-      "from": "careers@recruiting.uhg.com",
-      "subject": "Principal Engineer - Remote-2373361 Opening at UnitedHealth Group",
+      "threadId": "thr-2677fb7c40",
+      "from": "person5@org-b-f922.example",
+      "subject": "(personal thread)",
       "label": "Job Search",
-      "archive": false
+      "labels": [
+        "Job Search"
+      ],
+      "adds": [
+        "Job Search"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
+      "ruleId": "sort-recruiting-org-b",
       "action": "label",
-      "threadId": "thr-9b3700be74",
-      "from": "careers@recruiting.uhg.com",
-      "subject": "Multifactor authentication access code",
+      "threadId": "thr-dc8d89ed04",
+      "from": "person5@org-b-f922.example",
+      "subject": "(personal thread)",
       "label": "Job Search",
-      "archive": false
+      "labels": [
+        "Job Search"
+      ],
+      "adds": [
+        "Job Search"
+      ],
+      "archive": false,
+      "wouldArchive": false
     },
     {
       "ruleId": "sort-onlinejmc-com",
       "action": "label",
-      "threadId": "thr-1867188229",
-      "from": "sender-c21113@onlinejmc.com",
+      "threadId": "thr-718963833b",
+      "from": "sender-1417f5@onlinejmc.com",
       "subject": "2026-27 Activities Registration",
       "label": "School",
-      "archive": true
+      "labels": [
+        "School"
+      ],
+      "adds": [
+        "School"
+      ],
+      "archive": true,
+      "wouldArchive": true
     }
   ],
   "spared": [],
@@ -240,8 +361,8 @@
       "label": null
     },
     {
-      "ruleId": "sort-careers-recruiting-uhg-com",
-      "query": "from:careers@recruiting.uhg.com in:inbox -label:\"Job Search\"",
+      "ruleId": "sort-recruiting-org-b",
+      "query": "from:person5@org-b-f922.example in:inbox -label:\"Job Search\"",
       "action": "label",
       "label": "Job Search"
     },

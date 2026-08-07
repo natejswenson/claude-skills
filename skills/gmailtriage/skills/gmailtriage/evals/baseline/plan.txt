@@ -1,35 +1,35 @@
-| Rule id                           | Action | Destination | Leaves inbox | Threads |
-|-----------------------------------|--------|-------------|--------------|---------|
-| sort-existing-folder              | label  | Reciepts    | no           | 3       |
-| success-e-rocketreach-co          | trash  | —           | —            | 3       |
-| support-npmjs-com                 | trash  | —           | —            | 9       |
-| sort-careers-recruiting-uhg-com   | label  | Job Search  | no           | 5       |
-| sort-onlinejmc-com                | label  | School      | yes          | 2       |
-| sort-alerts-notify-wellsfargo-com | label  | Banking     | yes          | 2       |
+| Rule id                           | Action | Applies    | Leaves inbox | Threads |
+|-----------------------------------|--------|------------|--------------|---------|
+| sort-existing-folder              | label  | Reciepts   | 0 of 3       | 3       |
+| success-e-rocketreach-co          | trash  | —          | —            | 3       |
+| support-npmjs-com                 | trash  | —          | —            | 9       |
+| sort-recruiting-org-b             | label  | Job Search | 0 of 5       | 5       |
+| sort-onlinejmc-com                | label  | School     | 2 of 2       | 2       |
+| sort-alerts-notify-wellsfargo-com | label  | Banking    | 2 of 2       | 2       |
 
-| Rule id                         | Goes to    | From                           | Subject                                  |
-|---------------------------------|------------|--------------------------------|------------------------------------------|
-| sort-existing-folder            | Reciepts   | sender-d32881@mail.fidelity.c… | New statement available                  |
-| success-e-rocketreach-co        | trash      | success@e.rocketreach.co       | Success Tips #4: Save Time & Boost Outr… |
-| support-npmjs-com               | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
-| support-npmjs-com               | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
-| success-e-rocketreach-co        | trash      | success@e.rocketreach.co       | Success Tips #3: Real Results. Real Peo… |
-| sort-careers-recruiting-uhg-com | Job Search | careers@recruiting.uhg.com     | Invitation to Self-identify for 2365825… |
-| sort-careers-recruiting-uhg-com | Job Search | careers@recruiting.uhg.com     | Multifactor authentication access code   |
-| sort-existing-folder            | Reciepts   | sender-d32881@mail.fidelity.c… | New Fidelity Government Cash Reserves s… |
+| Rule id                  | Goes to    | From                           | Subject                                  |
+|--------------------------|------------|--------------------------------|------------------------------------------|
+| sort-existing-folder     | Reciepts   | sender-55d189@mail.fidelity.c… | New statement available                  |
+| success-e-rocketreach-co | trash      | success@e.rocketreach.co       | Success Tips #4: Save Time & Boost Outr… |
+| support-npmjs-com        | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
+| support-npmjs-com        | trash      | support@npmjs.com              | Successfully published @natjswenson/pre… |
+| success-e-rocketreach-co | trash      | success@e.rocketreach.co       | Success Tips #3: Real Results. Real Peo… |
+| sort-recruiting-org-b    | Job Search | person5@org-b-f922.example     | (personal thread)                        |
+| sort-recruiting-org-b    | Job Search | person5@org-b-f922.example     | (personal thread)                        |
+| sort-existing-folder     | Reciepts   | sender-55d189@mail.fidelity.c… | New Fidelity Government Cash Reserves s… |
 
 16 more not shown — `--preview N` to widen.
 
-| Folder     | Threads |
-|------------|---------|
-| Reciepts   | 3       |
-| Job Search | 5       |
-| School     | 2       |
-| Banking    | 2       |
+| Folder     | Threads | New to the thread |
+|------------|---------|-------------------|
+| Reciepts   | 3       | 3                 |
+| Job Search | 5       | 5                 |
+| School     | 2       | 2                 |
+| Banking    | 2       | 2                 |
 reconcile these against your real labels with `labels` before applying.
 
-| Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
-|---------|-------------|------------|-----------------------|---------------------|----------|
-| 60      | 12          | 12         | 4                     | 0                   | 0        |
+| Scope    | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
+|----------|---------|-------------|------------|-----------------------|---------------------|----------|
+| in:inbox | 60      | 12          | 12         | 4                     | 0                   | 0        |
 
 nothing has moved — this is what the rules would do.

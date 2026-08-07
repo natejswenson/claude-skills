@@ -1,9 +1,9 @@
-| Destination | Status | Label id                  | Used by                           |
-|-------------|--------|---------------------------|-----------------------------------|
-| Job Search  | exists | Label_6                   | sort-careers-recruiting-uhg-com   |
-| Banking     | exists | Label_8                   | sort-alerts-notify-wellsfargo-com |
-| School      | exists | Label_9                   | sort-onlinejmc-com                |
-| Reciepts    | exists | Label_3953032868769717139 | sort-existing-folder              |
+| Destination | Status | Named by | Label id                  | Used by                           |
+|-------------|--------|----------|---------------------------|-----------------------------------|
+| Job Search  | exists | a rule   | Label_6                   | sort-recruiting-org-b             |
+| Banking     | exists | a rule   | Label_8                   | sort-alerts-notify-wellsfargo-com |
+| School      | exists | a rule   | Label_9                   | sort-onlinejmc-com                |
+| Reciepts    | exists | a rule   | Label_3953032868769717139 | sort-existing-folder              |
 
 | Destinations | Your labels | To create |
 |--------------|-------------|-----------|

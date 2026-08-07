@@ -1,7 +1,7 @@
 [
   {
-    "id": "thr-d9b1bea50d",
-    "from": "person1@example.invalid",
+    "id": "thr-fc4f229b67",
+    "from": "person1@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-08-04T22:46:28Z",
     "labelIds": [
@@ -12,8 +12,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-e8320500fa",
-    "from": "person2@example.invalid",
+    "id": "thr-64b5e5eb3f",
+    "from": "person2@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-08-04T19:48:26Z",
     "labelIds": [
@@ -23,7 +23,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9d367cec76",
+    "id": "thr-3ec10b1b2d",
     "from": "marketing@e.rocketreach.co",
     "subject": "ATTN Nate: Extra 30% OFF already reduced pricing for a limited time",
     "date": "2026-08-04T16:21:42Z",
@@ -35,8 +35,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-ab67598efa",
-    "from": "sender-3ee497@message.fedex.com",
+    "id": "thr-29331d6364",
+    "from": "sender-036144@message.fedex.com",
     "subject": "FedEx Values Your Feedback",
     "date": "2026-08-04T14:30:26Z",
     "labelIds": [
@@ -47,8 +47,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-e530d99eca",
-    "from": "person1@example.invalid",
+    "id": "thr-e61c04a0ee",
+    "from": "person1@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-08-04T14:13:35Z",
     "labelIds": [
@@ -59,8 +59,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-5b3a2a4424",
-    "from": "sender-d32881@mail.fidelity.com",
+    "id": "thr-5732c05f18",
+    "from": "sender-55d189@mail.fidelity.com",
     "subject": "New statement available",
     "date": "2026-08-03T19:19:43Z",
     "labelIds": [
@@ -71,8 +71,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-2f61834f62",
-    "from": "person2@example.invalid",
+    "id": "thr-8958e0a796",
+    "from": "person2@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-08-03T19:11:52Z",
     "labelIds": [
@@ -82,8 +82,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-01acf22073",
-    "from": "person3@example.invalid",
+    "id": "thr-57becaad05",
+    "from": "person3@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-08-03T15:14:22Z",
     "labelIds": [
@@ -93,7 +93,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-677b9018d3",
+    "id": "thr-9f2be351fa",
     "from": "success@e.rocketreach.co",
     "subject": "Success Tips #4: Save Time & Boost Outreach with RocketReach",
     "date": "2026-08-03T04:07:33Z",
@@ -105,7 +105,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-80adbc8db2",
+    "id": "thr-007ef08c2a",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/press@0.6.1",
     "date": "2026-08-01T03:39:07Z",
@@ -117,7 +117,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-9d344bc4d0",
+    "id": "thr-283182e420",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/press@0.6.0",
     "date": "2026-08-01T03:34:30Z",
@@ -129,8 +129,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-e1a1fce992",
-    "from": "person4@example.invalid",
+    "id": "thr-11349c6f3a",
+    "from": "person4@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-31T18:08:57Z",
     "labelIds": [
@@ -141,7 +141,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-3b002806e0",
+    "id": "thr-9a7a08c394",
     "from": "success@e.rocketreach.co",
     "subject": "Success Tips #3: Real Results. Real People. RocketReach.",
     "date": "2026-07-31T12:33:45Z",
@@ -153,9 +153,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-29647d4d14",
-    "from": "careers@recruiting.uhg.com",
-    "subject": "Invitation to Self-identify for 2365825 - Principal Software Engineer",
+    "id": "thr-e03f205d86",
+    "from": "person5@org-b-f922.example",
+    "subject": "(personal thread)",
     "date": "2026-07-30T20:27:55Z",
     "labelIds": [
       "INBOX",
@@ -166,7 +166,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-d18b458ee3",
+    "id": "thr-5b756d5a76",
     "from": "support@api.bible",
     "subject": "Upgrade to Pro - more Bibles, insights, and flexibility",
     "date": "2026-07-30T19:56:34Z",
@@ -178,9 +178,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-61bda61d79",
-    "from": "careers@recruiting.uhg.com",
-    "subject": "Multifactor authentication access code",
+    "id": "thr-54380bfb93",
+    "from": "person5@org-b-f922.example",
+    "subject": "(personal thread)",
     "date": "2026-07-30T19:44:48Z",
     "labelIds": [
       "INBOX",
@@ -190,8 +190,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-86462bfe42",
-    "from": "person5@example.invalid",
+    "id": "thr-e08d476f3b",
+    "from": "person6@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-30T19:30:20Z",
     "labelIds": [
@@ -201,7 +201,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-1c2594af74",
+    "id": "thr-4acfbd679c",
     "from": "mychartmessage@sanfordhealth.org",
     "subject": "New Message",
     "date": "2026-07-30T19:24:10Z",
@@ -213,8 +213,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-152d987378",
-    "from": "sender-d32881@mail.fidelity.com",
+    "id": "thr-aca33773e8",
+    "from": "sender-55d189@mail.fidelity.com",
     "subject": "New Fidelity Government Cash Reserves shareholder report available",
     "date": "2026-07-30T18:04:02Z",
     "labelIds": [
@@ -225,7 +225,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-6f9a7a0790",
+    "id": "thr-c89d76ec14",
     "from": "noreply@tractive.com",
     "subject": "Confirm your email address",
     "date": "2026-07-30T17:24:31Z",
@@ -238,8 +238,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-ff1df25c76",
-    "from": "sender-c21113@onlinejmc.com",
+    "id": "thr-1c5614afc0",
+    "from": "sender-1417f5@onlinejmc.com",
     "subject": "New Bus Rider Registration",
     "date": "2026-07-30T16:04:09Z",
     "labelIds": [
@@ -250,7 +250,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-507405b786",
+    "id": "thr-1a33198d6a",
     "from": "noreply@github.com",
     "subject": "[GitHub] A fine-grained personal access token has been added",
     "date": "2026-07-30T14:57:23Z",
@@ -262,8 +262,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-adb8bc06c8",
-    "from": "person6@example.invalid",
+    "id": "thr-338d216d79",
+    "from": "person7@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-30T14:08:41Z",
     "labelIds": [
@@ -274,8 +274,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-e46c42b80d",
-    "from": "sender-3832e9@shareholderdocs.fidelity.com",
+    "id": "thr-f300528a69",
+    "from": "sender-a382ce@shareholderdocs.fidelity.com",
     "subject": "INSPIRE ETFS Important Information",
     "date": "2026-07-30T08:20:42Z",
     "labelIds": [
@@ -286,7 +286,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-340b59b694",
+    "id": "thr-c7b6f80887",
     "from": "noreply@glassdoor.com",
     "subject": "Glassdoor is now part of Indeed",
     "date": "2026-07-30T00:25:54Z",
@@ -298,8 +298,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-8e7f9dea85",
-    "from": "person4@example.invalid",
+    "id": "thr-e18145a473",
+    "from": "person4@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-29T18:24:10Z",
     "labelIds": [
@@ -310,7 +310,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-2e4b8a02e8",
+    "id": "thr-1aca32d193",
     "from": "alerts@notify.wellsfargo.com",
     "subject": "Insufficient funds notice/Extra Day Grace Period",
     "date": "2026-07-29T17:45:29Z",
@@ -322,8 +322,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-dbca33c96a",
-    "from": "person6@example.invalid",
+    "id": "thr-89b47921f1",
+    "from": "person7@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-29T16:56:49Z",
     "labelIds": [
@@ -333,8 +333,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-941a36f07c",
-    "from": "person6@example.invalid",
+    "id": "thr-809978afb6",
+    "from": "person7@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-29T16:56:23Z",
     "labelIds": [
@@ -344,8 +344,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9ea9d94a05",
-    "from": "person7@example.invalid",
+    "id": "thr-6f0b77787d",
+    "from": "person8@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-29T14:37:15Z",
     "labelIds": [
@@ -355,7 +355,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-332f034e89",
+    "id": "thr-9621a8f46d",
     "from": "no-reply@mail.goodreads.com",
     "subject": "New Books to Read in August",
     "date": "2026-07-29T13:12:52Z",
@@ -366,7 +366,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-c2cadb2a75",
+    "id": "thr-19352340f2",
     "from": "authorservices@packtpub.com",
     "subject": "Published Report Email",
     "date": "2026-07-29T12:57:14Z",
@@ -378,7 +378,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-b9fe0e33af",
+    "id": "thr-ef2fa2e5c1",
     "from": "alerts@notify.wellsfargo.com",
     "subject": "Your balance is at or below zero",
     "date": "2026-07-29T12:38:51Z",
@@ -390,8 +390,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-6c6b3e8e75",
-    "from": "person8@example.invalid",
+    "id": "thr-a5838f3d85",
+    "from": "person9@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-29T10:05:06Z",
     "labelIds": [
@@ -401,7 +401,7 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-2dcd0dd6d1",
+    "id": "thr-311c9294fb",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/devlog@0.13.0",
     "date": "2026-07-29T02:36:41Z",
@@ -413,9 +413,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-99c9daac4c",
-    "from": "careers@recruiting.uhg.com",
-    "subject": "Principal Software Engineer Opening at UnitedHealth Group",
+    "id": "thr-4c0e04344c",
+    "from": "person5@org-b-f922.example",
+    "subject": "(personal thread)",
     "date": "2026-07-29T00:47:39Z",
     "labelIds": [
       "INBOX",
@@ -426,7 +426,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-86be8278b9",
+    "id": "thr-a527354dd7",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/devlog@0.12.0",
     "date": "2026-07-28T21:27:51Z",
@@ -438,7 +438,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-9fba2ce8bc",
+    "id": "thr-176d52dbbb",
     "from": "success@e.rocketreach.co",
     "subject": "Success Tips #2: Stop Chasing, Start Connecting",
     "date": "2026-07-28T20:51:38Z",
@@ -450,8 +450,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-ff4652becd",
-    "from": "sender-d32881@mail.fidelity.com",
+    "id": "thr-add972b026",
+    "from": "sender-55d189@mail.fidelity.com",
     "subject": "Action Requested: Consent to Electronic Delivery",
     "date": "2026-07-28T20:33:58Z",
     "labelIds": [
@@ -462,7 +462,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-a7f4f224fb",
+    "id": "thr-b5b569ba22",
     "from": "workspace-noreply@google.com",
     "subject": "You now have promotional access to AI features",
     "date": "2026-07-28T18:30:50Z",
@@ -474,7 +474,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-451b37d0fa",
+    "id": "thr-32b948afc7",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/devlog@0.11.2",
     "date": "2026-07-28T18:25:00Z",
@@ -486,7 +486,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-2f849a008c",
+    "id": "thr-4035bba3f7",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/shipflow@0.3.2",
     "date": "2026-07-28T18:24:17Z",
@@ -498,7 +498,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-11697368dc",
+    "id": "thr-c70f942110",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/devlog@0.11.1",
     "date": "2026-07-28T18:17:21Z",
@@ -510,7 +510,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-b4b54f4021",
+    "id": "thr-f2a6a71611",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/shipflow@0.3.1",
     "date": "2026-07-28T18:16:33Z",
@@ -522,7 +522,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-4bf9fd6084",
+    "id": "thr-040d0bab95",
     "from": "support@npmjs.com",
     "subject": "Successfully published @natjswenson/shipflow@0.3.0",
     "date": "2026-07-28T17:52:07Z",
@@ -534,8 +534,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-2638d4cbca",
-    "from": "sender-3ee497@message.fedex.com",
+    "id": "thr-2e22b03af3",
+    "from": "sender-036144@message.fedex.com",
     "subject": "FedEx Values Your Feedback",
     "date": "2026-07-28T14:29:58Z",
     "labelIds": [
@@ -546,9 +546,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-7910ca33f8",
-    "from": "careers@recruiting.uhg.com",
-    "subject": "Principal Engineer - Remote-2373361 Opening at UnitedHealth Group",
+    "id": "thr-2677fb7c40",
+    "from": "person5@org-b-f922.example",
+    "subject": "(personal thread)",
     "date": "2026-07-28T13:14:25Z",
     "labelIds": [
       "INBOX",
@@ -559,9 +559,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-9b3700be74",
-    "from": "careers@recruiting.uhg.com",
-    "subject": "Multifactor authentication access code",
+    "id": "thr-dc8d89ed04",
+    "from": "person5@org-b-f922.example",
+    "subject": "(personal thread)",
     "date": "2026-07-28T13:11:54Z",
     "labelIds": [
       "INBOX"
@@ -570,8 +570,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9a3a556b97",
-    "from": "person9@example.invalid",
+    "id": "thr-9374e99e0f",
+    "from": "person10@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-27T22:54:03Z",
     "labelIds": [
@@ -582,8 +582,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-c41c8f0efe",
-    "from": "person9@example.invalid",
+    "id": "thr-712bd84372",
+    "from": "person10@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-27T19:13:09Z",
     "labelIds": [
@@ -594,8 +594,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-79cff0b7cc",
-    "from": "sender-819c52@typefully.com",
+    "id": "thr-37e53032f4",
+    "from": "sender-cacb13@typefully.com",
     "subject": "Welcome to your new social media workspace",
     "date": "2026-07-27T13:55:09Z",
     "labelIds": [
@@ -606,7 +606,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-c12d85b844",
+    "id": "thr-69a83ce1c6",
     "from": "notifications@typefully.com",
     "subject": "New API key created for your account",
     "date": "2026-07-27T13:53:45Z",
@@ -618,9 +618,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-7152e11e92",
+    "id": "thr-19b58ea1dc",
     "from": "no-reply@ashbyhq.com",
-    "subject": "Nate - Thanks for applying to Obvious!",
+    "subject": "Thanks for applying to Organisation A",
     "date": "2026-07-24T00:31:14Z",
     "labelIds": [
       "INBOX"
@@ -629,7 +629,7 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-cc626500d1",
+    "id": "thr-034121c4ef",
     "from": "paymentmessage@sanfordhealth.org",
     "subject": "You have a new statement",
     "date": "2026-07-23T13:32:05Z",
@@ -641,9 +641,9 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-4427e5aad6",
+    "id": "thr-9304679b32",
     "from": "noreply@candidates.workablemail.com",
-    "subject": "Thanks for applying to Panorama Education",
+    "subject": "Thanks for applying to Organisation B",
     "date": "2026-07-22T14:12:27Z",
     "labelIds": [
       "INBOX"
@@ -652,8 +652,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-db4b63a0cc",
-    "from": "person4@example.invalid",
+    "id": "thr-fb34ccf679",
+    "from": "person4@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-21T19:13:46Z",
     "labelIds": [
@@ -663,8 +663,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-1867188229",
-    "from": "sender-c21113@onlinejmc.com",
+    "id": "thr-718963833b",
+    "from": "sender-1417f5@onlinejmc.com",
     "subject": "2026-27 Activities Registration",
     "date": "2026-07-21T18:39:40Z",
     "labelIds": [
@@ -675,8 +675,8 @@
     "hasUnsubscribe": true
   },
   {
-    "id": "thr-43e6c1129c",
-    "from": "person3@example.invalid",
+    "id": "thr-ce7315e2fc",
+    "from": "person3@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-15T17:58:08Z",
     "labelIds": [
@@ -685,14 +685,14 @@
       "INBOX"
     ],
     "labels": [
-      "Folder fd1b"
+      "Folder 86fa"
     ],
     "category": null,
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-531a9985a7",
-    "from": "person11@example.invalid",
+    "id": "thr-a756874659",
+    "from": "person11@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-15T13:36:59Z",
     "labelIds": [
@@ -704,8 +704,8 @@
     "hasUnsubscribe": false
   },
   {
-    "id": "thr-9950d40187",
-    "from": "person12@example.invalid",
+    "id": "thr-54b1511dd0",
+    "from": "person12@org-a-2678.example",
     "subject": "(personal thread)",
     "date": "2026-07-11T14:21:28Z",
     "labelIds": [

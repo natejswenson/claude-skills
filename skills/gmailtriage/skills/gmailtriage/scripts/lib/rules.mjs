@@ -49,6 +49,35 @@ export const normaliseLabel = (name) =>
     .map((seg) => seg.trim().replace(/\s+/g, ' ').toLowerCase())
     .join('/');
 
+/**
+ * Every label a destination implies, outermost first.
+ *
+ *   `Recruiting/One Call` → ['Recruiting', 'Recruiting/One Call']
+ *
+ * Filing into a sub-label applies the WHOLE path, and that is what keeps a
+ * nested mailbox coherent over time. Gmail's nesting is cosmetic — a thread
+ * carrying only `Recruiting/One Call` does not appear under `Recruiting` — so
+ * without this, mail filed before a folder was split carries the parent and
+ * mail filed after it carries only the child, and the parent view quietly
+ * stops being the whole category.
+ *
+ * The cost is one extra idempotent `label_thread` call per thread. The
+ * alternative is a folder whose contents depend on when the rule was written.
+ */
+export const labelPath = (name) => {
+  const segs = String(name ?? '').split('/');
+  const out = [];
+  for (let i = 0; i < segs.length; i += 1) out.push(segs.slice(0, i + 1).join('/'));
+  return out.filter((s) => s.trim() !== '');
+};
+
+/** Is `parent` a strict ancestor of `child`? `Recruiting` of `Recruiting/UHG`. */
+export const isAncestorLabel = (parent, child) => {
+  const p = normaliseLabel(parent);
+  const c = normaliseLabel(child);
+  return p !== '' && c !== p && c.startsWith(`${p}/`);
+};
+
 /** Every matcher a rule may declare. Anything else is a typo, not a feature. */
 export const FIELDS = [
   'from',            // substring or @domain
@@ -182,7 +211,78 @@ export function validateRule(rule, where = 'rule') {
  */
 export const archives = (rule) => rule.action === 'label' && rule.keepInInbox !== true;
 
-export function validateRuleSet(doc) {
+const str = (v) => String(v ?? '').trim().toLowerCase();
+
+/**
+ * Does `a` take every thread `b` would? Answered from the matchers alone.
+ *
+ * `plan` gives a thread to the FIRST rule that matches it, so a rule preceded
+ * by one that subsumes it can never fire. Detecting that needs an
+ * implication test, not an equality test: `{from: "uhg.com"}` subsumes
+ * `{from: "careers@recruiting.uhg.com", subjectContains: "code"}` because
+ * `matches` uses substring containment, so anything the narrow rule accepts
+ * the broad one accepted first.
+ *
+ * Deliberately conservative — it must never claim subsumption that is not
+ * there, because the caller refuses rule sets on the strength of it. Every
+ * field `a` constrains must be constrained at least as tightly by `b`;
+ * anything unrecognised means "no".
+ */
+export function subsumes(a, b) {
+  const A = a?.match ?? {};
+  const B = b?.match ?? {};
+  for (const f of ['from', 'list', 'subjectContains']) {
+    if (A[f] === undefined) continue;
+    // `matches` does `haystack.includes(needle)`, so a's needle must be inside
+    // b's for every thread b accepts to have already satisfied a.
+    if (B[f] === undefined || !str(B[f]).includes(str(A[f]))) return false;
+  }
+  if (A.category !== undefined && B.category !== A.category) return false;
+  // Only `true` constrains anything — `matches` ignores a falsy value.
+  if (A.hasUnsubscribe === true && B.hasUnsubscribe !== true) return false;
+  if (A.olderThanDays !== undefined) {
+    if (!Number.isInteger(B.olderThanDays) || B.olderThanDays < A.olderThanDays) return false;
+  }
+  return true;
+}
+
+/**
+ * Rules that can never fire, because an earlier rule takes everything they
+ * would.
+ *
+ * Split in two, because the two cases have different costs. A broad trash rule
+ * standing in front of a narrow one leaves dead weight in the file and nothing
+ * else — worth reporting, not worth refusing, and refusing it would break rule
+ * sets that already work.
+ *
+ * A rule filing into `Recruiting` standing in front of one filing into
+ * `Recruiting/UHG` is different, and it is the reason this function exists.
+ * That pair does not fail cleanly, it DRIFTS: fresh mail hits the parent rule
+ * first and never reaches the sub-rule, while mail already carrying
+ * `Recruiting` skips the parent rule (see the already-filed short-circuit in
+ * `matches`) and does reach it. Same rule set, two different outcomes decided
+ * by when the mail arrived, and no table anywhere says so. That is refused.
+ */
+export function shadowedRules(rules = []) {
+  const fatal = [];
+  const dead = [];
+  for (let i = 0; i < rules.length; i += 1) {
+    for (let j = i + 1; j < rules.length; j += 1) {
+      const a = rules[i];
+      const b = rules[j];
+      // `keep` is evaluated ahead of everything regardless of file order, so a
+      // keep rule shadows by existing, not by position.
+      if (a.action !== 'keep' && b.action === 'keep') continue;
+      if (!subsumes(a, b)) continue;
+      const nested = a.action === 'label' && b.action === 'label' && isAncestorLabel(a.label, b.label);
+      (nested ? fatal : dead).push({ shadowedBy: a.id, ruleId: b.id, parent: a.label ?? null, child: b.label ?? null });
+      break; // one explanation per rule is enough; the first is the one that wins
+    }
+  }
+  return { fatal, dead };
+}
+
+export function validateRuleSet(doc, { scope } = {}) {
   if (!isObj(doc) || !Array.isArray(doc.rules)) {
     throw new RuleProblem('rule file: expected an object with a "rules" array');
   }
@@ -192,7 +292,23 @@ export function validateRuleSet(doc) {
     const summary = validateRule(r, `rules[${i}]`);
     if (seen.has(r.id)) throw new RuleProblem(`rule "${r.id}": duplicate id — two rules with one id makes attribution ambiguous`);
     seen.add(r.id);
-    rows.push({ ...summary, query: toGmailQuery(r), note: r.note });
+    rows.push({ ...summary, query: toGmailQuery(r, { scope }), note: r.note, applies: labelPath(r.label ?? '') });
+  }
+
+  const { fatal, dead } = shadowedRules(doc.rules);
+  if (fatal.length) {
+    const f = fatal[0];
+    throw new RuleProblem(
+      `rule "${f.ruleId}": files into "${f.child}", but rule "${f.shadowedBy}" files the same mail into its parent "${f.parent}" first — ` +
+      'so fresh mail would get the parent and mail already carrying it would get the sub-label, and which one a thread ends up with ' +
+      `depends only on when it arrived. Change "${f.shadowedBy}" to file into "${f.child}" too, or narrow its match so the two no ` +
+      `longer overlap. (Moving "${f.ruleId}" ahead of it also stops the drift — a sub-label applies its parent as well — but leaves ` +
+      `"${f.shadowedBy}" unable to ever fire.)`,
+    );
+  }
+  for (const d of dead) {
+    const row = rows.find((r) => r.id === d.ruleId);
+    if (row) row.shadowedBy = d.shadowedBy;
   }
   return rows;
 }
@@ -211,11 +327,20 @@ export function destinationsOf(doc) {
   const out = new Map();
   for (const r of doc.rules ?? []) {
     if (r.action !== 'label' || !r.label) continue;
-    const key = normaliseLabel(r.label);
-    if (!out.has(key)) out.set(key, { name: r.label, key, ruleIds: [], variants: new Set() });
-    const d = out.get(key);
-    d.ruleIds.push(r.id);
-    if (r.label !== d.name) d.variants.add(r.label);
+    // Ancestors are destinations too. A rule filing into `Recruiting/One Call`
+    // applies `Recruiting` as well (see `labelPath`), so a reconcile that only
+    // checked the leaf would pass while the parent did not exist — and then
+    // create it implicitly on the first apply, which is the one thing this
+    // command exists to stop.
+    for (const name of labelPath(r.label)) {
+      const key = normaliseLabel(name);
+      if (!out.has(key)) out.set(key, { name, key, ruleIds: [], variants: new Set(), implied: name !== r.label });
+      const d = out.get(key);
+      if (!d.ruleIds.includes(r.id)) d.ruleIds.push(r.id);
+      if (name !== d.name) d.variants.add(name);
+      // Named outright by any rule beats implied by another's path.
+      if (name === r.label) d.implied = false;
+    }
   }
   return [...out.values()].map((d) => ({ ...d, variants: [...d.variants] }));
 }
@@ -251,12 +376,22 @@ export function reconcileDestinations(doc, existing) {
 
 const quote = (s) => (/\s/.test(s) ? `"${s}"` : s);
 
+/** The default slice of the mailbox a rule is evaluated against. */
+export const DEFAULT_SCOPE = 'in:inbox';
+
 /**
  * The Gmail query a rule compiles to. This is what the agent hands to
  * `search_threads`, and printing it is the point: a user who cannot see the
  * query cannot tell an over-broad rule from a precise one.
+ *
+ * `scope` used to be the literal `in:inbox`, which made every rule in this
+ * skill unable to see mail it had already filed. A retroactive pass — split an
+ * existing folder into sub-labels and apply the new rules to what is already
+ * in it — is exactly a run whose scope is `label:Recruiting`, and it was not
+ * expressible at all. It is a parameter for that reason and no other; a run
+ * that does not name one is still an inbox run.
  */
-export function toGmailQuery(rule) {
+export function toGmailQuery(rule, { scope = DEFAULT_SCOPE } = {}) {
   const m = rule.match ?? {};
   const parts = [];
   if (m.from) parts.push(`from:${quote(m.from)}`);
@@ -267,7 +402,7 @@ export function toGmailQuery(rule) {
   // Bulk mail only: Gmail has no header: operator, so this is the closest
   // structural proxy and it is documented as such in references/rules.md.
   if (m.hasUnsubscribe) parts.push('category:promotions OR category:updates');
-  parts.push('in:inbox');
+  if (String(scope ?? '').trim() !== '') parts.push(String(scope).trim());
   // A sort rule has nothing left to do to a thread already filed there. Saying
   // so in the query keeps the plan's counts meaningful: without it a
   // `keepInInbox` rule reports the same twelve threads every run forever, and
