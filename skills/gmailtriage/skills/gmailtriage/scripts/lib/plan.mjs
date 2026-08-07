@@ -6,7 +6,10 @@
  * model behaving well: which threads a rule takes, whether a thread was
  * authorised, and what was actually moved.
  */
-import { matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE } from './rules.mjs';
+import {
+  matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE,
+  isNearDuplicateLabel, SYSTEM_LABELS,
+} from './rules.mjs';
 
 // ── proposing ───────────────────────────────────────────────────────────────
 
@@ -464,6 +467,176 @@ export const clusterToSubRule = (c, destination = c.destination, subjectContains
   };
 };
 
+// ── auditing: is this label system still coherent? ───────────────────────────
+
+/**
+ * Every label a rule set files into, as a set of normalised names — including
+ * the parents a nested destination implies.
+ */
+const managedLabels = (ruleDoc) => {
+  const out = new Set();
+  for (const r of ruleDoc?.rules ?? []) {
+    if (r.action !== 'label' || !r.label) continue;
+    for (const p of labelPath(r.label)) out.add(normaliseLabel(p));
+  }
+  return out;
+};
+
+/**
+ * Audit the label system, which rots in two independent ways.
+ *
+ * A skill that only ever looks at what its own rules already match cannot see
+ * either of them. A folder no rule files into stays sorted exactly as long as
+ * the user keeps sorting it by hand; two spellings of one folder split the mail
+ * in half and nothing says so. Both are invisible to `plan`, because `plan`
+ * only ever asks "what do my rules take" — never "is what I have coherent".
+ *
+ * `threads` is optional. Without it the mail half is skipped and the label half
+ * still answers; a run that only has a label list should still get a report
+ * rather than an error.
+ */
+export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
+  const managed = managedLabels(ruleDoc);
+
+  const named = [];
+  for (const raw of labels) {
+    const name = typeof raw === 'string' ? raw : raw?.name ?? raw?.label;
+    if (!name) continue;
+    const upper = name.toUpperCase();
+    // Gmail's own labels are not the user's folders and can never be managed —
+    // counting them as unmanaged would report a permanent, unfixable finding.
+    if (SYSTEM_LABELS.includes(upper) || upper.startsWith('CATEGORY_')) continue;
+    named.push({
+      name,
+      threads: typeof raw === 'object' ? (raw.threadsTotal ?? raw.threads ?? null) : null,
+      ruleIds: (ruleDoc.rules ?? [])
+        .filter((r) => r.action === 'label' && r.label && labelPath(r.label).some((p) => normaliseLabel(p) === normaliseLabel(name)))
+        .map((r) => r.id),
+    });
+  }
+
+  for (const l of named) {
+    l.managed = managed.has(normaliseLabel(l.name));
+    l.nearDuplicateOf = named.filter((o) => o !== l && isNearDuplicateLabel(l.name, o.name)).map((o) => o.name);
+    // An empty folder no rule files into is scaffolding someone made once —
+    // distinguished from an unmanaged folder holding real mail, because the
+    // remedies are opposite: delete the first, write a rule for the second.
+    //
+    // Tri-state on purpose. A label list without `threadsTotal` — a
+    // hand-written one, or an older fetch — cannot say which, and reporting
+    // "holds mail" from a missing field would tell the user to write rules for
+    // folders that are empty. Not knowing is a third answer, and it is said out
+    // loud rather than guessed.
+    l.empty = l.threads === null ? null : l.threads === 0;
+  }
+
+  const unmanaged = named.filter((l) => !l.managed);
+  const duplicates = named.filter((l) => l.nearDuplicateOf.length);
+
+  // ── the mail half ─────────────────────────────────────────────────────────
+  let unclaimed = null;
+  if (Array.isArray(threads)) {
+    // NOT `plan`. `plan` asks "is there work to do", and answers no for a
+    // thread already sitting in the folder its rule files into — which is the
+    // most claimed thread in the mailbox, not an unclaimed one. `ignoreFiled`
+    // asks the question this command actually has: does any rule claim it?
+    const rules = ruleDoc?.rules ?? [];
+    const rest = threads.filter((t) => !rules.some((r) => matches(r, t, new Date(), { ignoreFiled: true })));
+
+    const byAddr = new Map();
+    for (const t of rest) {
+      const addr = addressOf(t.from);
+      if (!addr) continue;
+      if (!byAddr.has(addr)) byAddr.set(addr, []);
+      byAddr.get(addr).push(t);
+    }
+    const clusters = [...byAddr.entries()].map(([addr, group]) => ({
+      from: addr,
+      count: group.length,
+      sample: group[0].subject ?? '',
+      // An existing label whose name the sender matches. Same exact-segment
+      // contract as `matchDestination`: a near match across every folder the
+      // user owns is a coin flip, and a folder chosen by coin flip is worse
+      // than none.
+      destination: matchDestination(addr, named.map((l) => l.name)),
+      vendorHost: vendorHostOf(addr),
+      inInbox: group.some((t) => inInbox(t)),
+    })).sort((a, b) => b.count - a.count || a.from.localeCompare(b.from));
+    for (const c of clusters) c.unhoused = c.destination === null;
+
+    unclaimed = {
+      threads: rest.length,
+      scanned: threads.length,
+      clusters,
+      // The parents a new cluster could nest under, printed beside the
+      // unhoused ones so a new employer's mail is proposed as
+      // `Recruiting/<name>` rather than as another top-level folder. This is
+      // the difference between a label system that grows and one that sprawls.
+      parents: named.filter((l) => !l.name.includes('/')).map((l) => l.name),
+    };
+  }
+
+  return {
+    labels: named,
+    managed: named.filter((l) => l.managed).length,
+    unmanaged,
+    duplicates,
+    unclaimed,
+    // The one number worth watching. A system at 100% is one where every folder
+    // stays sorted without the user touching it.
+    coverage: named.length ? Math.round((named.filter((l) => l.managed).length / named.length) * 100) : 100,
+    clean: unmanaged.length === 0 && duplicates.length === 0 && (unclaimed?.threads ?? 0) === 0,
+  };
+}
+
+/**
+ * Fold one label into another, as an ordered list of operations.
+ *
+ * Order is the whole of it: the target label goes on BEFORE the source comes
+ * off. Reversed, every thread spends the gap between two API calls in neither
+ * folder — and if the run dies in that gap, the mail is in neither folder
+ * permanently, with a receipt describing a mailbox that no longer exists.
+ *
+ * A merge that moves no mail is still a merge. `Reciepts` held one thread that
+ * already carried `Receipts`, so the whole operation was "remove the label,
+ * delete the folder" — and it still has to be recorded, or it cannot be undone.
+ */
+export function mergeLabels(threads, { from, to }) {
+  if (!from || !to) throw new Error('merge: name both --from and --to');
+  const src = normaliseLabel(from);
+  const dst = normaliseLabel(to);
+  if (src === dst) throw new Error(`merge: "${from}" and "${to}" are the same label`);
+  if (labelPath(to).some((p) => normaliseLabel(p) === src)) {
+    throw new Error(`merge: "${from}" is a parent of "${to}" — merging a folder into its own child would leave the child holding mail its parent no longer names`);
+  }
+
+  const carrying = (threads ?? []).filter((t) => (t.labels ?? []).some((l) => normaliseLabel(l) === src));
+  const needsTarget = carrying.filter((t) => !(t.labels ?? []).some((l) => normaliseLabel(l) === dst));
+
+  return {
+    from, to,
+    // apply `to` first, then remove `from` — never the other way round
+    label: needsTarget.map((t) => ({ threadId: t.id, from: t.from, subject: t.subject })),
+    unlabel: carrying.map((t) => ({ threadId: t.id, from: t.from, subject: t.subject })),
+    alreadyThere: carrying.length - needsTarget.length,
+    total: carrying.length,
+  };
+}
+
+/** A merge turned into receipt entries, so `undo` can put the label back. */
+export const mergeReceiptEntries = (m) => m.unlabel.map((e) => ({
+  threadId: e.threadId,
+  ruleId: `merge:${m.from}→${m.to}`,
+  action: 'unlabel',
+  label: m.from,
+  // What the merge ADDED, so undo removes only that and restores `from`.
+  added: m.label.some((x) => x.threadId === e.threadId) ? [m.to] : [],
+  removed: [m.from],
+  archived: false,
+  from: e.from,
+  subject: e.subject,
+}));
+
 // ── planning ────────────────────────────────────────────────────────────────
 
 /**
@@ -622,7 +795,11 @@ export const buildReceipt = (entries, { at }) => ({
     // the labels the thread ends up with. Filing into `Recruiting/Globex`
     // mail that already sat in `Recruiting` adds one label, and an undo that
     // removed both would take away a label the user filed by hand.
-    added: e.action === 'label' ? (e.adds ?? (e.label ? [e.label] : [])) : [],
+    added: e.action === 'label' ? (e.adds ?? (e.label ? [e.label] : [])) : (e.added ?? []),
+    // Labels this run took OFF the thread, which only a merge does. Recorded
+    // for the same reason `added` is: an undo has to know what to put back, and
+    // "the rule's destination" does not answer that.
+    removed: e.removed ?? [],
     archived: e.action === 'label' ? e.archive === true : false,
     from: e.from,
     subject: e.subject,
@@ -641,9 +818,15 @@ export function undoPlan(receipt) {
   const entries = receipt.entries ?? [];
   const untrash = entries.filter((e) => (e.action ?? 'trash') === 'trash');
   const labelled = entries.filter((e) => e.action === 'label');
+  const merged = entries.filter((e) => e.action === 'unlabel');
+
   const byLabel = new Map();
-  for (const e of labelled) {
-    const added = Array.isArray(e.added) && e.added.length ? e.added : (e.label ? [e.label] : []);
+  // Both kinds of entry can have ADDED a label, and both must have it taken
+  // back off — a merge adds the target folder to every thread that lacked it.
+  for (const e of [...labelled, ...merged]) {
+    const added = Array.isArray(e.added) && e.added.length
+      ? e.added
+      : (e.action === 'label' && e.label ? [e.label] : []);
     // Innermost first: removing a parent while a child of it is still on the
     // thread leaves the thread filed under a folder Gmail will keep showing.
     for (const label of [...added].reverse()) {
@@ -651,9 +834,22 @@ export function undoPlan(receipt) {
       byLabel.get(label).push(e);
     }
   }
+
+  // Labels a merge took OFF. Reversing that is putting them back — and the
+  // folder itself may have been deleted, so `undo` has to say so rather than
+  // emit a `label_thread` call against a label id that no longer exists.
+  const byRestore = new Map();
+  for (const e of merged) {
+    for (const label of e.removed ?? (e.label ? [e.label] : [])) {
+      if (!byRestore.has(label)) byRestore.set(label, []);
+      byRestore.get(label).push(e);
+    }
+  }
+
   return {
     untrash,
     unlabel: [...byLabel].map(([label, es]) => ({ label, entries: es })),
+    relabel: [...byRestore].map(([label, es]) => ({ label, entries: es })),
     reinbox: labelled.filter((e) => e.archived === true),
     total: entries.length,
   };

@@ -147,28 +147,9 @@ test('the sub-label corpus is big enough, and structurally intact', () => {
   assert.ok(labels.some((l) => l.name.startsWith('Recruiting/')), 'the sub-labels lost their parent');
 });
 
-test('no organisation the mailbox owner deals with is named in the corpus', () => {
-  // The corpus ships in a public repo. Pseudonymisation is not a nicety here:
-  // a sender domain that is a company someone is interviewing with publishes
-  // their job search permanently and indexed, and no assertion needs it.
-  const files = ['filed.json', 'filed-after.json', 'filed-labels.json', 'rules-recruiting.json',
-    'subdivide.txt', 'retro-plan.txt', 'retro-apply.txt', 'threads.json', 'rules.json'];
-  for (const f of files) {
-    const text = readFileSync(join(BASELINE, f), 'utf8');
-    for (const t of ['@example.invalid']) {
-      assert.ok(!text.includes(t), `${f} still carries the pre-0.3.0 placeholder ${t}`);
-    }
-    // every non-vendor sender address must be a pseudonym
-    for (const m of text.matchAll(/[a-z0-9._%+-]+@([a-z0-9.-]+\.[a-z]{2,})/gi)) {
-      // A table cell truncated with "…" yields a half-domain that no allow-list
-      // can match. The full string is asserted wherever it appears untruncated.
-      if (text[m.index + m[0].length] === '…') continue;
-      const domain = m[1].toLowerCase();
-      const allowed = /(\.example|example\.com|ashbyhq\.com|workablemail\.com|parentvendor\.com|fidelity\.com|wellsfargo\.com|valleyhealth\.org|npmjs\.com|leadgen\.co|fedex\.com|github\.com|glassdoor\.com|goodreads\.com|packtpub\.com|typefully\.com|google\.com|api\.bible|tractive\.com|anthropic\.com|hydrawise\.com|imdb\.com|x\.com|shop\.example)$/;
-      assert.ok(allowed.test(domain), `${f} names an unpseudonymised sender domain: ${domain}`);
-    }
-  }
-});
+// The "nothing real is in the corpus" guard used to live here. It now lives in
+// scripts/tests/no-real-data.test.mjs — its own file, because `skillfactory
+// freeze` rewrites this one, and that is the guard that must survive a refresh.
 
 test('a retroactive pass converges — the second run takes nothing', () => {
   // Two-sided, and the two sides are the whole point. The same rules over the
@@ -221,6 +202,93 @@ test('subdivide never names a cluster after the vendor that hosts it', () => {
   assert.match(out, /Vendor-hosted \|/);
   // and the candidates file must carry them as unhoused, never as ready rules
   const cands = JSON.parse(readFileSync(join(BASELINE, 'subdivide-candidates.json'), 'utf8'));
-  assert.equal(cands.sortCandidates.length, 0, 'a cluster with no name reached the ready-to-add list');
-  assert.ok(cands.unhoused.length >= 4);
+  // Clusters whose sub-label already exists DO become ready rules — that is the
+  // command working. The vendor-hosted ones must never be among them, however
+  // tempting their domain looks.
+  assert.ok(cands.sortCandidates.length >= 1, 'no cluster was housed at all — the child matcher has stopped matching');
+  for (const r of cands.sortCandidates) {
+    assert.ok(!/greenhouse|workable|lever|ashby/.test(r.match.from),
+      `a vendor-hosted cluster reached the ready-to-add list: ${r.match.from}`);
+  }
+  assert.ok(cands.unhoused.length >= 2, 'the vendor-hosted clusters stopped being held back');
+});
+
+// ── hygiene, pinned against the real label cleanup ──────────────────────────
+
+const readB = (f) => readFileSync(join(BASELINE, f), 'utf8');
+const summary = (text) => {
+  // the last row of the closing summary table: labels, managed, unmanaged,
+  // duplicates, unclaimed, coverage
+  const rows = text.trim().split('\n').filter((l) => l.startsWith('|'));
+  const cells = rows[rows.length - 1].split('|').map((c) => c.trim()).filter(Boolean);
+  return { labels: +cells[0], managed: +cells[1], unmanaged: +cells[2], duplicates: +cells[3], unclaimed: +cells[4], coverage: cells[5] };
+};
+
+test('the frozen hygiene corpus has something to find', () => {
+  // Anti-vacuity. An audit golden over a mailbox with nothing wrong proves the
+  // command runs, not that it looks — and the "after" half is exactly that
+  // mailbox, so the "before" half has to carry the findings.
+  const before = summary(readB('audit-before.txt'));
+  assert.ok(before.labels >= 15, `only ${before.labels} labels in the corpus`);
+  assert.ok(before.unmanaged >= 4, `only ${before.unmanaged} unmanaged folders — nothing to find`);
+  assert.ok(before.duplicates >= 2, 'the transposed duplicate pair is gone from the corpus');
+  assert.ok(before.unclaimed >= 10, `only ${before.unclaimed} unclaimed threads`);
+  // A floor, not the literal — the corpus is generated, and pinning the exact
+  // percentage would make every generator tweak look like a regression. What
+  // must hold is that the "before" state is meaningfully incomplete.
+  assert.ok(Number(before.coverage.replace('%', '')) <= 80,
+    `coverage is already ${before.coverage} before the cleanup — the corpus has nothing to fix`);
+
+  // Both remedies must be represented, or the classification is half-tested.
+  assert.match(readB('audit-before.txt'), /UNMANAGED — holds mail/);
+  assert.match(readB('audit-before.txt'), /UNMANAGED — and empty/);
+  assert.match(readB('audit-before.txt'), /SAME AS/);
+});
+
+test('a cleaned-up label system audits clean, and that state is reachable', () => {
+  // The other half of two-sided. Without it the audit could satisfy every
+  // assertion above by reporting findings unconditionally, and a user could
+  // never get to zero however much they fixed.
+  const after = summary(readB('audit-after.txt'));
+  assert.deepEqual(
+    { unmanaged: after.unmanaged, duplicates: after.duplicates, unclaimed: after.unclaimed, coverage: after.coverage },
+    { unmanaged: 0, duplicates: 0, unclaimed: 0, coverage: '100%' },
+  );
+  assert.match(readB('audit-after.txt'), /every folder has a rule, no folder is spelled two ways, and no mail is unclaimed/);
+  // and it must EXIT ZERO, or the gate can never be satisfied
+  sh('node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json', SKILL);
+  // while the before state must still exit non-zero
+  assert.throws(
+    () => sh('node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json', SKILL),
+    'a mailbox with 5 unmanaged folders and a duplicate pair audited clean',
+  );
+});
+
+test('audit does not call correctly-filed mail unclaimed', () => {
+  // The defect the first live audit had: it reused `plan`, which answers "is
+  // there work to do" and says no for a thread already in the folder its rule
+  // files into — the most claimed thread in the mailbox. That reported 47 of
+  // 48 threads unclaimed, rendering a clean mailbox as a broken one.
+  const after = JSON.parse(readFileSync(join(BASELINE, 'mailbox-after.json'), 'utf8'));
+  const filed = after.filter((t) => (t.labels ?? []).some((l) => !/^(INBOX|SENT|UNREAD|IMPORTANT|DRAFT)$/.test(l)));
+  assert.ok(filed.length >= 25, `only ${filed.length} filed threads — this test would prove little`);
+  // every one of them is in the corpus the clean audit reported 0 unclaimed over
+  assert.equal(summary(readB('audit-after.txt')).unclaimed, 0);
+});
+
+test('a merge labels before it unlabels, and records a fold that moved nothing', () => {
+  const out = readB('merge.txt');
+  const iLabel = out.indexOf('LABEL "');
+  const iUnlabel = out.indexOf('remove "');
+  const iDelete = out.indexOf('delete the "');
+  assert.ok(iUnlabel > 0 && iDelete > iUnlabel, 'the delete must come after the unlabel');
+  if (iLabel >= 0) assert.ok(iLabel < iUnlabel, 'the target label must go on before the source comes off');
+  assert.match(out, /Removing the old label first leaves the mail in neither folder/);
+
+  // The real case moved no mail — its one thread already carried the target —
+  // and it must STILL be recorded, or the deleted folder cannot come back.
+  const receipt = JSON.parse(readFileSync(join(BASELINE, 'merge-receipt.json'), 'utf8'));
+  assert.ok(receipt.entries.length >= 1, 'a merge that moved no mail recorded nothing, so it cannot be undone');
+  assert.equal(receipt.entries[0].action, 'unlabel');
+  assert.ok(receipt.entries[0].removed.length >= 1);
 });

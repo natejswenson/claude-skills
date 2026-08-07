@@ -5,6 +5,76 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-07
+
+### Added
+
+- **`audit` — is this label system still coherent?** Every other command here
+  asks *"what do my rules take"*. Nothing asked whether what the mailbox *has*
+  still makes sense, so a label system rots invisibly while every command
+  reports success. `audit` reports the folders no rule manages (split into ones
+  holding mail, which want a rule, and empty scaffolding, which wants deleting),
+  the pairs of labels that are one folder spelled two ways, and the mail no rule
+  claims — with a coverage percentage, exiting non-zero while anything is
+  outstanding. Run it every time.
+- **Near-duplicate label detection.** `Receipts` and `Reciepts` both existed in
+  a real mailbox for months with mail split across them. Case-folding never saw
+  it, and *plain* edit distance scores a transposition at 2 and misses it — so
+  the check is **Damerau**-Levenshtein distance ≤ 1, which treats an adjacent
+  swap as one edit, floored at 5 characters so it cannot cry wolf on short names.
+- **`merge` — fold one folder into another**, in the only safe order: apply the
+  target label, *then* remove the source, *then* delete the source folder.
+  Reversed, every thread spends the gap between two API calls in neither folder.
+- **`unlabel` as a receipt action**, so a merge is reversible. A merge that moves
+  no mail is still recorded — the folder it deleted still has to come back.
+- **`references/hygiene.md`** — what makes a label system maintainable rather
+  than merely present, and why coverage is the number to watch.
+
+### Changed
+
+- **A run notices what is new.** The fetch now includes `has:nouserlabels`, and
+  `propose` is no longer described as a first-run-only step. Uncategorised mail
+  does not accumulate in the inbox — an archived thread no rule ever claimed sits
+  outside it forever, invisible to every other command in the skill.
+- **`audit` offers existing folders to nest a new sender under**, so a new
+  employer's mail is proposed as `Recruiting/<name>` rather than as another
+  top-level folder. That is the difference between a system that grows and one
+  that sprawls.
+
+### Security
+
+- **The baseline corpus is now invented, not a redacted mailbox.** Redaction was
+  the wrong tool: with every sender pseudonymised, the public repo still showed
+  the *shape* of a person's life — which bank, which health system, which school
+  district, which employer they had applied to. The thing worth hiding was never
+  the addresses. `evals/baseline/make-corpus.mjs` generates the whole fixture
+  set; every domain sits under a reserved TLD that can never be registered, and
+  `scripts/tests/no-real-data.test.mjs` fails the build if a real domain or
+  organisation appears, or if a generated fixture is hand-edited.
+- **`redact.mjs` is deleted.** Its only purpose was to make real mail
+  committable, and keeping it invites exactly that.
+
+### Fixed
+
+- **`audit` no longer reports correctly-filed mail as unclaimed.** The first live
+  run said 47 of 48 threads had no rule behind them, because it reused `plan` —
+  which answers "is there work to do" and says no for a thread already sitting in
+  the folder its rule files into, the most claimed thread in the mailbox. Those
+  are two different questions, and `matches` now takes an `ignoreFiled` option to
+  ask the second one.
+- **`audit` says "count unknown" rather than guessing a folder holds mail.** A
+  label list without `threadsTotal` cannot tell scaffolding from orphaned mail,
+  and the two want opposite remedies.
+- **The redactor no longer produces a corpus that describes two different
+  mailboxes.** It now carries `threadsTotal` through (without it every frozen
+  label audited as "count unknown", so the classification the golden exists to
+  pin was never exercised), and redacts a rule set *in the same process* as the
+  threads via `--rules-in`/`--rules-out` — separate invocations give the same
+  sender different pseudonyms, so no rule matches anything and the audit reports
+  zero coverage as though it were a real finding. Rule **ids and notes** are
+  redacted too: both name organisations freely, and the audit golden prints rule
+  ids in its own output.
+
 ## [0.3.0] - 2026-08-07
 
 ### Added

@@ -71,6 +71,73 @@ export const labelPath = (name) => {
   return out.filter((s) => s.trim() !== '');
 };
 
+/**
+ * Damerau-Levenshtein, capped — the cap is what keeps this from being a fuzzy
+ * matcher. One edit apart is a typo; two is usually two different words.
+ *
+ * **Damerau**, not plain Levenshtein, and that is the whole reason the check
+ * works. `Receipts` → `Reciepts` is an adjacent transposition, which plain edit
+ * distance scores at 2 (one substitution each way) and a ≤ 1 threshold
+ * therefore misses — and a transposition is the commonest way a folder name
+ * gets typed wrong. The `d[i-2][j-2] + 1` case below is what scores it 1.
+ */
+function editDistance(a, b, cap = 2) {
+  if (Math.abs(a.length - b.length) > cap) return cap + 1;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j += 1) d[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + c);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1); // transposition
+      }
+    }
+  }
+  return d[a.length][b.length];
+}
+
+/** Below this, two labels being one edit apart says nothing. `NPM` vs `PNM`. */
+export const MIN_NEAR_DUPLICATE_LENGTH = 5;
+
+/**
+ * Are these two labels the same folder, spelled two ways?
+ *
+ * `normaliseLabel` already collapses case and spacing, which catches
+ * `Receipts`/`receipts`. It does not catch `Receipts`/`Reciepts` — a
+ * transposition — and that pair is real: this mailbox carried both for months,
+ * with mail split across them and no table anywhere saying so.
+ *
+ * One test, not two. An earlier version paired the edit distance with a
+ * sorted-letter (anagram) check "to catch transpositions"; a mutation run
+ * showed removing that check broke nothing, because the distance below is
+ * **Damerau** and already scores an adjacent transposition at 1. The anagram
+ * test only ever added multi-character scrambles, which are not a way anyone
+ * mistypes a folder name — so it was two mechanisms claiming one job, and the
+ * comment explaining it was wrong.
+ *
+ * Floored at MIN_NEAR_DUPLICATE_LENGTH: at three characters almost everything
+ * is one edit from everything, and a hygiene check that cries wolf stops being
+ * read.
+ *
+ * Compares the LEAF only, so `Finance/Receipts` and `Work/Reciepts` are still
+ * flagged — the typo is in the segment, not the path.
+ */
+export function isNearDuplicateLabel(a, b) {
+  if (normaliseLabel(a) === normaliseLabel(b)) return false; // the same label, not a near one
+  const leaf = (n) => normaliseLabel(n).split('/').pop().replace(/[^a-z0-9]+/g, '');
+  const x = leaf(a);
+  const y = leaf(b);
+  if (x.length < MIN_NEAR_DUPLICATE_LENGTH || y.length < MIN_NEAR_DUPLICATE_LENGTH) return false;
+  // Same word under different parents. `Finance/Receipts` and `Work/Receipts`
+  // are two deliberate folders, not one folder misspelled — flagging them would
+  // tell the user to merge things they meant to keep apart.
+  if (x === y) return false;
+  // one edit apart: a substitution, a dropped or added character, or — because
+  // this is Damerau — an adjacent transposition
+  return editDistance(x, y) <= 1;
+}
+
 /** Is `parent` a strict ancestor of `child`? `Recruiting` of `Recruiting/Initech`. */
 export const isAncestorLabel = (parent, child) => {
   const p = normaliseLabel(parent);
@@ -411,8 +478,18 @@ export function toGmailQuery(rule, { scope = DEFAULT_SCOPE } = {}) {
   return parts.join(' ');
 }
 
-/** Does one already-fetched thread satisfy a rule? */
-export function matches(rule, thread, now = new Date()) {
+/**
+ * Does one already-fetched thread satisfy a rule?
+ *
+ * `ignoreFiled` turns off the already-filed short-circuit below, and the two
+ * modes answer genuinely different questions. `plan` wants "is there work to do
+ * on this thread" — a thread sitting in the folder a rule files into needs
+ * nothing. `audit` wants "does any rule claim this thread at all", and there
+ * the same thread is the most claimed thread in the mailbox. Conflating them
+ * made the audit report every correctly-filed thread as unclaimed: 47 of 48,
+ * which reads as a broken mailbox rather than a clean one.
+ */
+export function matches(rule, thread, now = new Date(), { ignoreFiled = false } = {}) {
   const m = rule.match ?? {};
   const from = String(thread.from ?? '').toLowerCase();
   const subject = String(thread.subject ?? '').toLowerCase();
@@ -430,7 +507,7 @@ export function matches(rule, thread, now = new Date()) {
   // `thread.labels` — the resolved names — and simply does not fire when the
   // fetch did not supply them. Re-labelling is idempotent in Gmail, so the cost
   // of not knowing is a redundant call, never a wrong outcome.
-  if (rule.action === 'label' && Array.isArray(thread.labels)) {
+  if (!ignoreFiled && rule.action === 'label' && Array.isArray(thread.labels)) {
     const want = normaliseLabel(rule.label);
     if (thread.labels.some((l) => normaliseLabel(l) === want)) return false;
   }

@@ -90,6 +90,11 @@ Two rules that disagree on the spelling are reported by `labels` as one
 destination with variants, and the first spelling is the one that would be
 created — so the disagreement is visible rather than silently resolved.
 
+That covers two *rules* disagreeing. Two *folders* that are one folder spelled
+two ways — `Receipts` and `Reciepts`, a transposition that case-folding cannot
+see — is a different problem, found by `audit` and fixed by `merge`. See
+`hygiene.md`.
+
 ## The folder name is the user's word, not the skill's
 
 `propose` matches a sender cluster against the labels the mailbox already has,
