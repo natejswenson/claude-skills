@@ -468,6 +468,12 @@ correctly on the very first `dev → main` PR that introduces it, as long as it 
     looks (`tests/test_*.py` for pytest skills, `tests/**/*.test.mjs` or `scripts/**/*.test.mjs`
     for node skills); no CI wiring is needed beyond that. Pin it against a **real past run** of the
     skill, not a synthetic fixture — that is the whole point.
+
+    **Private data requires synthetic fixtures.** Generate fictional mail, labels and rules
+    without importing personal mailbox data. Cover the required behavior with reserved example
+    domains and reviewed synthetic cases; do not reproduce personal rules, private narratives or
+    observed mailbox counts. Keep a fixture boundary check such as
+    `skills/gmailtriage/skills/gmailtriage/scripts/tests/no-real-data.test.mjs`.
 11. **Write `README.md` in the house style and splice its masthead** (see The README house style,
     above). `skillfactory scaffold` writes a conforming README; `press emit --init --target <skill>-readme`
     adds the brand region, which the scaffolded README deliberately lacks until then. `ci /
