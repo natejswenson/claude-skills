@@ -1,0 +1,276 @@
+{
+  "skills": [
+    {
+      "name": "city-report",
+      "version": "0.4.0",
+      "stack": "python",
+      "cardHash": "ca8360c2edcee369",
+      "facts": 55,
+      "sections": {
+        "setup": 1,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 8,
+        "troubleshooting": 14
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "devlog",
+      "version": "0.13.0",
+      "stack": "node",
+      "cardHash": "7dc298bf9c202152",
+      "facts": 61,
+      "sections": {
+        "setup": 12,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 1,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "eval",
+      "version": "0.3.0",
+      "stack": "node",
+      "cardHash": "e25af634b098ecd2",
+      "facts": 64,
+      "sections": {
+        "setup": 4,
+        "usage": 12,
+        "commands": 16,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "ghfactory",
+      "version": "0.2.0",
+      "stack": "node",
+      "cardHash": "36d347c810ec02af",
+      "facts": 49,
+      "sections": {
+        "setup": 3,
+        "usage": 12,
+        "commands": 9,
+        "architecture": 9,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "ghostwriter",
+      "version": "0.15.0",
+      "stack": "python",
+      "cardHash": "3e40096e09d50ce3",
+      "facts": 48,
+      "sections": {
+        "setup": 4,
+        "usage": 12,
+        "commands": 4,
+        "architecture": 12,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "ghostwriter-x",
+      "version": "0.2.1",
+      "stack": "python",
+      "cardHash": "5713acc927e07467",
+      "facts": 47,
+      "sections": {
+        "setup": 3,
+        "usage": 12,
+        "commands": 4,
+        "architecture": 12,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "github-stats",
+      "version": "0.1.1",
+      "stack": "python",
+      "cardHash": "38f6c364065af8bc",
+      "facts": 26,
+      "sections": {
+        "setup": 5,
+        "usage": 12,
+        "commands": 2,
+        "architecture": 1,
+        "troubleshooting": 6
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "gmailtriage",
+      "version": "0.4.0",
+      "stack": "node",
+      "cardHash": "ed7d0da42c9d8a36",
+      "facts": 66,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "issueflow",
+      "version": "0.2.0",
+      "stack": "node",
+      "cardHash": "99364c487c02224d",
+      "facts": 72,
+      "sections": {
+        "setup": 8,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "pluginsync",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "48cf385bbb1758ca",
+      "facts": 50,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 11,
+        "architecture": 12,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "press",
+      "version": "0.9.0",
+      "stack": "node",
+      "cardHash": "f3b68e94ce1a89ed",
+      "facts": 54,
+      "sections": {
+        "setup": 3,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 6,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "release",
+      "version": "0.2.0",
+      "stack": "node",
+      "cardHash": "bdf380da5b733afa",
+      "facts": 56,
+      "sections": {
+        "setup": 8,
+        "usage": 12,
+        "commands": 9,
+        "architecture": 11,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "resume",
+      "version": "2.0.0",
+      "stack": "node",
+      "cardHash": "eea4efc715d27d73",
+      "facts": 51,
+      "sections": {
+        "setup": 12,
+        "usage": 12,
+        "commands": 10,
+        "architecture": 4,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "shipflow",
+      "version": "0.6.0",
+      "stack": "node",
+      "cardHash": "06bcc76166887a97",
+      "facts": 68,
+      "sections": {
+        "setup": 9,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 11,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "shipreport",
+      "version": "0.2.0",
+      "stack": "node",
+      "cardHash": "bb8481129636deed",
+      "facts": 64,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 18,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "skillfactory",
+      "version": "0.4.0",
+      "stack": "node",
+      "cardHash": "71ce3d3962efc3e5",
+      "facts": 60,
+      "sections": {
+        "setup": 4,
+        "usage": 12,
+        "commands": 12,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "skillhelp",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "ce655968f6f04eb0",
+      "facts": 53,
+      "sections": {
+        "setup": 3,
+        "usage": 12,
+        "commands": 13,
+        "architecture": 12,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    }
+  ]
+}

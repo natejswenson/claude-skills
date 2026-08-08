@@ -50,7 +50,8 @@
       "resume",
       "shipflow",
       "shipreport",
-      "skillfactory"
+      "skillfactory",
+      "skillhelp"
     ]
   },
   "branchCleanup": {
