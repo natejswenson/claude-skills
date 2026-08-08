@@ -1,0 +1,81 @@
+{
+  "_comment": "Load-bearing guardrails for city-report. Most of this skill's correctness lives in SKILL.md prose, not code: the shared Tier-1 scorer (tools/score_skill.py) is skill-agnostic and would not notice a deleted accuracy rule. tests/test_skill_contract.py asserts each pattern below still matches, so a silent deletion fails CI instead of shipping green. Every rationale cites the real run or documented trap that motivated the rule.",
+  "prose": [
+    {
+      "id": "no-adhoc-queries",
+      "file": "SKILL.md",
+      "pattern": "Do \\*\\*not\\*\\* write ad-hoc Data USA queries",
+      "rationale": "The Data USA API returns HTTP 200 with zero rows for a retired cube and silently SUMS a measure across every dimension not drilled down on, so a wrong query returns a plausible number rather than an error. Asking the household-income cube for Minneapolis without drilling the bucket dimension returns 165438 — which reads like a median income and is actually a household count. Pinned manifest queries are the only defense; this prose is the whole rule."
+    },
+    {
+      "id": "manifest-is-the-only-source",
+      "file": "SKILL.md",
+      "pattern": "add a manifest entry and let the guard test check it\\s*—?\\s*never bypass it",
+      "rationale": "The escape hatch that would undo the pinned-query design is a one-off fetch 'just for this metric'. Deleting this sentence re-opens exactly the failure mode api-gotchas.md documents."
+    },
+    {
+      "id": "never-invent-a-metric",
+      "file": "SKILL.md",
+      "pattern": "Never invent a metric",
+      "rationale": "Users ask for crime, school ratings, weather and cost-of-living indexes, none of which Data USA publishes at city level. Without this rule the honest answer ('Data USA doesn't publish that') degrades into a plausible estimate presented as census data."
+    },
+    {
+      "id": "always-state-vintage",
+      "file": "SKILL.md",
+      "pattern": "Always state the vintage",
+      "rationale": "These are ACS 5-year estimates, not current-year figures. A number quoted without its vintage is a different (and wrong) claim than the data supports."
+    },
+    {
+      "id": "wide-margin-not-fact",
+      "file": "SKILL.md",
+      "pattern": "Never quote a wide-margin figure as fact",
+      "rationale": "For towns under a few thousand people, margins of error routinely exceed 30% and can reach ±375%, where the estimate carries no information at all. The magnitude-reading guidance (±40 soft, ±171 overlaps zero) is prose-only — no code enforces it."
+    },
+    {
+      "id": "counts-not-benchmarked",
+      "file": "SKILL.md",
+      "pattern": "Counts are not benchmarked against the state",
+      "rationale": "A city is part of its state, so benchmarking a count against the state is a category error that produces a meaningless comparison. Rates and medians carry state/national comparisons; counts carry growth-since-2013 instead."
+    },
+    {
+      "id": "no-cd-into-skill-dir",
+      "file": "SKILL.md",
+      "pattern": "Do not `cd` into the skill",
+      "rationale": "report.py writes to ./reports relative to the working directory. A cd into the skill directory buries the user's report inside the plugin install where they will not find it."
+    },
+    {
+      "id": "query-is-offline",
+      "file": "SKILL.md",
+      "pattern": "`query\\.py` never touches the network",
+      "rationale": "The load-once/answer-from-cache split is the skill's core UX claim ('answer questions about it instantly'). If query.py started fetching, every answer would pay full API latency and the skill's promise would quietly break."
+    },
+    {
+      "id": "report-opens-in-browser",
+      "file": "SKILL.md",
+      "pattern": "Never pass `--no-open` in an interactive session",
+      "rationale": "The user must see the report open on their own screen rather than being told it was written. Matches the same rule learned for ghostwriter card rendering."
+    }
+  ],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / city-report` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "cached-bundle-renders-whole",
+      "kind": "golden",
+      "test": "tests/test_baseline_report.py",
+      "fixtures": [
+        "evals/baseline/bundles/bundle-hawley-mn.json",
+        "evals/baseline/bundles/bundle-mapleton-nd.json"
+      ],
+      "corpus_glob": "evals/baseline/bundles/bundle-*.json",
+      "min_corpus": 2,
+      "update_command": "python3 scripts/load.py \"<City, ST>\" then copy $TMPDIR/city-report/bundle-<slug>.json into evals/baseline/bundles/",
+      "rationale": "Genuine artifacts from local runs on 2026-07-28, unedited. Both are small places on purpose: small places fall out of the `_1` cubes that cover only 675 places, so a manifest regression shows up there first while a big city still renders fine. The replay asserts every manifest section renders, every headline metric reaches the page, the printed figures match the frozen source data (a renderer reading the wrong year or the state benchmark instead of the place value still produces a complete, plausible page), and that no literal None/nan/undefined leaks into the rendered text. tests/test_live.py covers the same ground against the real API but needs network, so it is opt-in and cannot gate a release."
+    },
+    {
+      "id": "dead-cube-marked-unavailable",
+      "kind": "trap",
+      "test": "tests/test_baseline_report.py",
+      "rationale": "The nastiest documented Data USA trap: a retired cube returns HTTP 200 with zero rows rather than an error. build_metric must mark that `available: False` with a reason so the report says 'not published for this place' instead of publishing a blank or partial figure as real data. The frozen bundles cannot exercise this (all 22 of their metrics have data), so these drive build_metric directly, and a third assertion proves `available` actually depends on the payload — otherwise the trap test would keep passing after someone hardcoded it True."
+    }
+  ]
+}

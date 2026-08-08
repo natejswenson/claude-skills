@@ -1,0 +1,108 @@
+{
+  "comment": "What must not silently disappear from skillhelp. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never answer ungrounded: every fact this skill emits carries",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "extract the five sections and their file:line sources from every skill's own files, refusing secret-shaped lines",
+        "command": "node scripts/skillhelp.js build"
+      },
+      {
+        "step": "prove no card would change, no skill is uncovered, and no fact has lost its source",
+        "command": "node scripts/skillhelp.js check"
+      },
+      {
+        "step": "route a question to grounded facts, or emit the not-documented block naming what was searched",
+        "command": "node scripts/skillhelp.js ask"
+      },
+      {
+        "step": "list every skill with its version and trigger phrases",
+        "command": "node scripts/skillhelp.js list"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "disambiguating which skill the user means when the question names none, or names several",
+        "why": "a question like \"how do I cut a release\" spans release, shipflow and skillfactory, and only intent decides which one is being asked about"
+      },
+      {
+        "step": "writing the answer prose from the retrieved facts, in the right order and at the right length",
+        "why": "a card is a set of grounded facts, not an answer; which three of eleven facts matter, and whether the user wants a command or an explanation, is judgment"
+      },
+      {
+        "step": "judging whether a retrieval that scored above the floor actually answers the question asked",
+        "why": "the retrieval command can prove a fact exists and came from a real line, but not that it is responsive; a near-miss relayed as an answer is the ungrounded failure wearing a citation"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "build-golden",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/fixtures/snapshot",
+        "evals/baseline"
+      ],
+      "update_command": "node evals/fixtures/update-snapshot.mjs, then skillfactory freeze --skill skillhelp --from <build output> --command \"node scripts/skillhelp.js build --repo evals/fixtures/snapshot --skill-dir $OUT\" --trap-command \"node evals/trap.mjs\"",
+      "rationale": "an extractor silently dropping a section so a card still looks complete while answering nothing; a fact losing its file:line source, which is what makes every answer built on it ungrounded \u2014 pinned against a frozen snapshot of real source files from this repo's shipped skills, copied in at freeze time and rebuilt on every test run, byte-compared card for card \u2014 a real run over real files whose input is pinned, so the golden moves only when the extractor moves and not when any of sixteen skills is edited."
+    },
+    {
+      "id": "ask-routing-golden",
+      "kind": "golden",
+      "test": "scripts/tests/guards.test.mjs",
+      "fixtures": [
+        "evals/fixtures/snapshot"
+      ],
+      "update_command": "node scripts/skillhelp.js build",
+      "rationale": "routing degrading until every question returns the same handful of skills, or returns nothing while still exiting zero \u2014 a retriever that matches nothing looks identical to a question with no answer; and the not-documented block decaying into an empty result the caller renders as confidence \u2014 pinned against a frozen set of real questions actually asked of this repo's skills, resolved against the same pinned snapshot and byte-compared, including two questions whose correct result is the not-documented block."
+    },
+    {
+      "id": "drift-trap",
+      "kind": "trap",
+      "test": "scripts/tests/guards.test.mjs",
+      "fixtures": [
+        "evals/trap.mjs"
+      ],
+      "update_command": "node evals/trap.mjs  # must exit non-zero",
+      "rationale": "the drift gate weakening until a stale card answers with full confidence, and equally the gate becoming so noisy it reddens on edits that change no answer \u2014 the two-sided half of build-golden, which alone would go green the day check stopped checking \u2014 pinned against a snapshot skill mutated in a way that changes its card, a snapshot skill mutated only in a comment that changes no card, and a skill present with no card at all."
+    },
+    {
+      "id": "coverage-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/guards.test.mjs",
+      "corpus_glob": "index/*.md",
+      "min_corpus": 12,
+      "update_command": "node scripts/skillhelp.js build",
+      "rationale": "the skill resolver matching nothing and reporting a fully-covered, fully-fresh index over zero skills \u2014 pinned against every skill shipped in this repo as a live corpus, with an anti-vacuity floor of 12 while exact coverage is check's job, so a removed skill is not a false failure."
+    },
+    {
+      "id": "ungrounded-trap",
+      "kind": "trap",
+      "test": "scripts/tests/guards.test.mjs",
+      "fixtures": [],
+      "update_command": "node scripts/skillhelp.js build",
+      "rationale": "the grounding requirement decaying into decoration \u2014 a sourceless fact reaching a card instead of being dropped \u2014 and the extractor lifting a credential out of a skill's scripts into a committed, published index \u2014 pinned against a card fact stripped of its source, and a snapshot skill whose files contain a secret-shaped line."
+    }
+  ]
+}

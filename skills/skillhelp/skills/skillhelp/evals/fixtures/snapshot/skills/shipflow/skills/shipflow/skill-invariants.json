@@ -1,0 +1,138 @@
+{
+  "comment": "Prose guardrails in SKILL.md that must survive edits. Each pattern is a case-insensitive regex tested against the full SKILL.md text by tests/skill_contract.test.mjs. If you intentionally change one, update it here in the same commit and say why in the PR.",
+  "prose": [
+    {
+      "id": "never-mutates-directly",
+      "pattern": "never mutates repo state directly",
+      "rationale": "The deterministic/nondeterministic split is load-bearing: the agent decides, the CLI does. Losing this line reopens ad-hoc direct gh/git calls from the agent."
+    },
+    {
+      "id": "always-confirm-before-apply",
+      "pattern": "Wait for explicit confirmation before proceeding",
+      "rationale": "A plan must be shown and confirmed before any real apply — this is the safety property the whole design rests on."
+    },
+    {
+      "id": "ambiguous-protection-owner-prompt",
+      "pattern": "Do NOT silently pick either value",
+      "rationale": "The round-2 false-positive fix: ambiguous branch protection must be explicitly disambiguated with the user, never silently defaulted, or protection ends up un-audited and un-managed by anyone."
+    },
+    {
+      "id": "empty-required-checks-refusal",
+      "pattern": "refuses to wire up auto-merge with zero required checks",
+      "rationale": "The fail-open guard: an empty requiredChecks list must never silently enable an unprotected auto-merge."
+    },
+    {
+      "id": "hand-edit-never-silent-force",
+      "pattern": "[Nn]ever silently pass `--force`",
+      "rationale": "A hand-edited template file must always be surfaced and explicitly confirmed per entry, never auto-overridden."
+    },
+    {
+      "id": "toctou-reredetect",
+      "pattern": "re-run the plan step, don't retry the same `--expect-state-hash`",
+      "rationale": "A TOCTOU abort means state drifted — retrying the same stale hash would just abort again or, worse, apply against stale assumptions if the guard were bypassed."
+    },
+    {
+      "id": "auto-mode-refuses",
+      "pattern": "refuses to run.{0,40}against a config with `release\\.mode: \"auto\"`",
+      "rationale": "Auto mode is unimplemented in this version; it must fail loudly, never silently no-op, so a user's config request isn't silently ignored."
+    },
+    {
+      "id": "argv-style-no-shell",
+      "pattern": "argv-style.{0,60}no shell",
+      "rationale": "Command-injection defense: every gh/git invocation must stay argv-style, never a shell string built from user input."
+    },
+    {
+      "id": "config-path-fixed",
+      "pattern": "[Nn]ever write shipflow's config anywhere other than `\\.github/shipflow\\.json`",
+      "rationale": "A committed, repo-specific policy file must live in the target repo's own tree at a fixed, predictable path — never inside the shipped skill package, never at an arbitrary location."
+    },
+    {
+      "id": "first-run-interview-mandatory",
+      "pattern": "even when detected values already look correct",
+      "rationale": "First live end-to-end run (2026-07-14, against natejswenson/1.00s) showed an orchestrating agent can silently skip the confirmation turn when detected values look right. This line makes the interview checkpoint explicit and unskippable, not just implied by 'confirm with the user.'"
+    },
+    {
+      "id": "ci-scaffold-never-overwrites",
+      "pattern": "[Nn]ever silently overwrite an existing workflow file",
+      "rationale": "Agent-driven CI scaffolding (added after 1.00s had no pull_request-triggered CI at all) must never clobber a workflow file that's already there — same confirm-before-write discipline as every other mutation in this skill, applied to a step the CLI itself never touches."
+    },
+    {
+      "id": "release-credential-never-github-token",
+      "pattern": "never default it to `GITHUB_TOKEN`",
+      "rationale": "Found by dogfooding on claude-skills itself (2026-07-15): a PR auto-merged under secrets.GITHUB_TOKEN completes attributed to github-actions[bot], and GitHub's loop-prevention rule means that bot-attributed merge's pull_request:closed event never triggers label-release-pending — the entire manual-gate release-ask flow silently never has anything to find unless releaseCredential names a real PAT."
+    },
+    {
+      "id": "render-template-validates-substitutions",
+      "pattern": "never assume a config field is pre-sanitized",
+      "rationale": "Found by a Siege security audit (2026-07-15): renderTemplate did pure string substitution with zero escaping, so a repo-write-level (not admin-level) edit to .github/shipflow.json's branch names or release.releaseCredential could break out of the rendered YAML's quoting and make the auto-merge job's if: condition unconditionally true, or inject arbitrary new workflow steps — a privilege escalation via the credential the rendered workflow runs with."
+    },
+    {
+      "id": "expect-state-hash-mandatory",
+      "pattern": "is mandatory for a real \\(non-dry-run\\) apply",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-003): --expect-state-hash was optional, so a real apply could silently proceed with zero TOCTOU/drift protection if the caller simply omitted it. Now a hard CLI refusal unless the named --skip-hash-check escape hatch is passed explicitly."
+    },
+    {
+      "id": "force-requires-reason",
+      "pattern": "refuses any `--force` without an accompanying reason",
+      "rationale": "Found by a Siege security audit (2026-07-15, SIEGE-2026-07-15-002): --force had zero code-level friction beyond the flag itself, so a confused or prompt-injected agent could force through an unprotected merge or a tampered template with no audit trail. --force now requires --force-reason, echoed back in the apply result."
+    },
+    {
+      "id": "npx-must-pin-latest",
+      "pattern": "always with the explicit\\s+`@latest` tag, never bare",
+      "rationale": "Self-discovered 2026-07-15 during PAT-wiring dogfood on claude-skills itself: a bare `npx -y @natjswenson/shipflow <command>` silently resolved a stale global install (0.2.0) instead of fetching the current version from the registry, with no warning — meaning every fix through 0.2.5 (including the Critical template-injection fix) was silently skipped. Every CLI invocation in this file must pin @latest."
+    },
+    {
+      "id": "collateral-must-be-named-before-cutting",
+      "pattern": "[Nn]ever run `release-cut` without naming that list to the user first",
+      "rationale": "A dev -> main promotion is atomic and carries ALL of dev, so cutting a release for one named component also releases every other component sitting bumped-but-untagged on dev. That is the worst failure this flow has — the user asked for one thing and got several, with tags and npm publishes that cannot be un-cut. The collateral list must be spoken aloud before the irreversible step, not merely present in JSON the agent may skim past."
+    },
+    {
+      "id": "tag-read-back-is-the-only-proof",
+      "pattern": "A dispatched workflow, a merged PR and a green check are \\*\\*not\\*\\* a release",
+      "rationale": "Every intermediate signal in the release path can succeed while the tag is never cut — a dispatch exits 0 for a run that later fails, a promotion can merge while the release job errors, and _release.yml deliberately no-ops when a tag already exists. The only evidence a release happened is the tag fetched back from origin, which is why release-cut polls for it and why the agent must not report success from anything else."
+    },
+    {
+      "id": "zero-major-bump-cap-is-the-users-call",
+      "pattern": "going to 1\\.0\\.0 is a\\s+release decision, never a commit message",
+      "rationale": "Conventional-commit tooling maps a breaking change to a major bump, which for an 0.x component means silently declaring 1.0.0 — an API-stability promise no commit message is entitled to make on the maintainer's behalf. suggestBump caps it at minor and reports capped: true so the promotion is offered, never taken."
+    },
+    {
+      "id": "prepare-isolated-from-unrelated-work",
+      "pattern": "throwaway git worktree",
+      "rationale": "A real repo's working tree routinely holds unrelated uncommitted work from parallel sessions — this monorepo's did, including an entire untracked skill, while this feature was written. Branching and staging under that tree is how someone else's in-flight work gets swept into a release commit. The isolated worktree makes that structurally impossible rather than relying on careful pathspecs."
+    },
+    {
+      "id": "ambiguous-pattern-no-silent-pick",
+      "pattern": "present all 3 (templates|patterns).{0,60}ask the user to choose",
+      "rationale": "Ambiguous/greenfield autodetection must never silently pick a workflow pattern — mirrors the existing protectionOwner disambiguation precedent (ambiguous-protection-owner-prompt)."
+    },
+    {
+      "id": "untagged-bump-is-not-permission-to-cut",
+      "pattern": "is not, by itself, permission to cut",
+      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate."
+    }
+  ],
+  "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "release-status", "release-prepare", "release-cut", "rename-default-branch"],
+  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / shipflow` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
+  "baseline": [
+    {
+      "id": "dogfood-rendered-workflow-golden",
+      "kind": "golden",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/dogfood-shipflow.json",
+        "evals/baseline/dogfood-dev-to-main-automerge.yml"
+      ],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "This monorepo dogfoods shipflow on itself, so .github/shipflow.json and the workflow rendered from it are a genuine input/output pair from a real `apply` run, and that config's renderedTemplateHashes is the receipt shipflow wrote at the time. The baseline re-runs config -> params -> render and asserts byte equality against the frozen golden, that the golden's sha256 still equals the recorded receipt, and that the frozen golden still equals the repo's live committed workflow (so the fixture cannot quietly go stale). Byte-exactness is correct here and nowhere else in the baseline suite: for a workflow file, one changed character is a behavior change to the repo's merge automation. The paired negative assertions (quote injection rejected, missing param throws, merge method actually reaches the output) stop the golden from passing while the validators rot -- the missing-param one found a real bug on its first run: a present-but-undefined param rendered the literal string 'undefined' into `branches: [...]`, installing a workflow that could never fire."
+    },
+    {
+      "id": "dev-ahead-fast-path-refused",
+      "kind": "trap",
+      "test": "tests/release.test.mjs",
+      "fixtures": [],
+      "update_command": "these are regression tests built inline against a real temp git repo (makeThreeWayRepo / makeUnpromotedRepo) — nothing to refresh",
+      "rationale": "#173: release-cut's fast path used to act on `state` alone, so when main carried an untagged bump AND dev independently carried something higher, it silently tagged the OLDER version (main's) while reporting success -- hit for real during `/release eval` on 2026-08-03. Pinned against the exact reported shape (lastTag < main < dev) plus its D2 sibling (the same ambiguity on a component's never-released first bump, which a fix scoped only to the `cmpSemver > 0` branch would leave exposed). The known-bad half: cut() must refuse before any dispatch is ever reachable, naming both versions; --version must be a confirmation validated against what is actually on the named branch, never a bare bypass; and the dev-ahead-of-main blocker must stay two-sided -- absent in `clean` and in `bump-on-dev-unpromoted` (where devAhead is normal, expected shape, not an ambiguity), or a blocker that is always on for those states stops being read."
+    }
+  ]
+}

@@ -32,6 +32,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`issueflow`](skills/issueflow) | ![issueflow](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issueflow-v*&label=&sort=semver&color=blue) | `/issueflow` | Node | Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins. |
 | [`shipreport`](skills/shipreport) | ![shipreport](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=shipreport-v*&label=&sort=semver&color=blue) | `/shipreport` | Node | Turns a stretch of real commits, pull requests and Claude Code sessions into a short executive summary a stakeholder can read — and refuses to print a line it cannot back with a receipt. |
 | [`gmailtriage`](skills/gmailtriage) | ![gmailtriage](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=gmailtriage-v*&label=&sort=semver&color=blue) | `/gmailtriage` | Node | Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk. |
+| [`skillhelp`](skills/skillhelp) | ![skillhelp](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=skillhelp-v*&label=&sort=semver&color=blue) | `/skillhelp` | Node | Answers any question about any skill in this repo — setup, usage, commands, architecture, troubleshooting — from an index built out of the skills' own files, and says so plainly when the answer is not in there. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -57,6 +58,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install issueflow@claude-skills
 /plugin install shipreport@claude-skills
 /plugin install gmailtriage@claude-skills
+/plugin install skillhelp@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -83,6 +85,7 @@ ln -sfn "$PWD/skills/pluginsync/skills/pluginsync" ~/.claude/skills/pluginsync
 ln -sfn "$PWD/skills/issueflow/skills/issueflow" ~/.claude/skills/issueflow
 ln -sfn "$PWD/skills/shipreport/skills/shipreport" ~/.claude/skills/shipreport
 ln -sfn "$PWD/skills/gmailtriage/skills/gmailtriage" ~/.claude/skills/gmailtriage
+ln -sfn "$PWD/skills/skillhelp/skills/skillhelp" ~/.claude/skills/skillhelp
 ```
 </details>
 
