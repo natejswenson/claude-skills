@@ -1,0 +1,460 @@
+#!/usr/bin/env node
+import { readFileSync, realpathSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+
+import { detectRepoState, classifyProtectionOwner, resolveOwnerRepo } from '../lib/detect.mjs';
+import { computePlan } from '../lib/plan.mjs';
+import {
+  applyPlan,
+  listPendingReleasePromotions,
+  confirmPromotionMerged,
+  clearReleasePendingLabel,
+  dispatchReleaseWorkflow,
+  renameDefaultBranch,
+} from '../lib/apply.mjs';
+import { readFileCapped } from '../lib/gh.mjs';
+import { resolvePattern, scoreAll } from '../lib/pattern-registry.mjs';
+import { readStatus, prepare, cut, listComponentNames } from '../lib/release.mjs';
+
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+function buildTemplateSources(config) {
+  const pattern = resolvePattern(config);
+  const sources = {};
+  for (const entry of pattern.templates(config)) {
+    sources[entry.id] = readFileSync(entry.templateSourcePath, 'utf8');
+  }
+  return sources;
+}
+
+function readPackageVersion() {
+  const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
+  return pkg.version;
+}
+
+function readConfig(path) {
+  // .github/shipflow.json lives in whatever repo --repo points at — a
+  // repo-write-editable file, not admin-only — so cap its size before
+  // parsing (see lib/gh.mjs's readFileCapped for why).
+  return JSON.parse(readFileCapped(path));
+}
+
+function defaultConfigPath(repoPath) {
+  return join(repoPath, '.github', 'shipflow.json');
+}
+
+function printJson(obj) {
+  console.log(JSON.stringify(obj, null, 2));
+}
+
+function fail(message) {
+  console.error(JSON.stringify({ error: message }));
+  process.exit(1);
+}
+
+// --- commands ---------------------------------------------------------------
+
+function cmdDetect(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      main: { type: 'string', default: 'main' },
+      dev: { type: 'string', default: 'dev' },
+      'release-credential': { type: 'string' },
+    },
+  });
+  if (!values.repo) return fail('detect: --repo is required');
+
+  const repoState = detectRepoState(values.repo, {
+    branches: { main: values.main, dev: values.dev },
+    releaseCredentialName: values['release-credential'] ?? null,
+  });
+  const protectionOwner = classifyProtectionOwner(repoState);
+  const rankedPatterns = scoreAll(repoState);
+  printJson({ ...repoState, protectionOwnerClassification: protectionOwner, rankedPatterns });
+}
+
+function cmdPlan(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+    },
+  });
+  if (!values.repo) return fail('plan: --repo is required');
+
+  const configPath = values.config ?? defaultConfigPath(values.repo);
+  let config;
+  try {
+    config = readConfig(configPath);
+  } catch (e) {
+    return fail(`plan: could not read config at ${configPath}: ${e.message}`);
+  }
+
+  const repoState = detectRepoState(values.repo, {
+    branches: config.branches,
+    releaseCredentialName: config.release?.releaseCredential ?? null,
+  });
+  const templateSources = buildTemplateSources(config);
+  let plan;
+  try {
+    plan = computePlan(repoState, config, templateSources);
+  } catch (e) {
+    return fail(`plan: ${e.message}`);
+  }
+  printJson({ plan, stateHash: repoState.stateHash });
+}
+
+function cmdApply(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+      'dry-run': { type: 'boolean', default: false },
+      'expect-state-hash': { type: 'string' },
+      'skip-hash-check': { type: 'boolean', default: false },
+      force: { type: 'string', multiple: true, default: [] },
+      'force-reason': { type: 'string' },
+    },
+  });
+  if (!values.repo) return fail('apply: --repo is required');
+  if (values.force.length > 0 && !values['force-reason']) {
+    return fail(
+      'apply: --force was passed without --force-reason — every force override must carry a short, explicit human-readable justification (surfaced back in the apply result for auditability)'
+    );
+  }
+  // --expect-state-hash is the TOCTOU guard: without it, a real apply
+  // proceeds against whatever live state happens to exist at call time,
+  // with no confirmation that a human/agent actually reviewed that exact
+  // state via `plan` first. Omitting it silently used to just skip the
+  // check — now it's a hard refusal unless the caller explicitly opts out
+  // via --skip-hash-check (a named, greppable escape hatch, not a default).
+  // Found via a Siege security audit (2026-07-15, SIEGE-2026-07-15-003).
+  if (!values['dry-run'] && !values['expect-state-hash'] && !values['skip-hash-check']) {
+    return fail(
+      'apply: --expect-state-hash is required for a real apply — pass the stateHash a prior `plan` call returned, or --skip-hash-check to explicitly bypass the drift guard (not recommended)'
+    );
+  }
+
+  const configPath = values.config ?? defaultConfigPath(values.repo);
+  let config;
+  try {
+    config = readConfig(configPath);
+  } catch (e) {
+    return fail(`apply: could not read config at ${configPath}: ${e.message}`);
+  }
+
+  if (config.release?.mode === 'auto') {
+    return fail(
+      'apply: release.mode "auto" is accepted in config but not yet implemented in this version of shipflow — see CHANGELOG.md (Phase B, not yet shipped). Set release.mode to "manual-gate" or wait for a future release.'
+    );
+  }
+
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  const repoState = detectRepoState(values.repo, {
+    branches: config.branches,
+    releaseCredentialName: config.release?.releaseCredential ?? null,
+  });
+  const templateSources = buildTemplateSources(config);
+  let plan;
+  try {
+    plan = computePlan(repoState, config, templateSources);
+  } catch (e) {
+    return fail(`apply: ${e.message}`);
+  }
+
+  // The CLI-level TOCTOU gate: compare the freshly-detected state against
+  // what the user confirmed at plan time (--expect-state-hash, captured
+  // from an earlier `shipflow plan` call). applyPlan's own internal check
+  // (currentStateHash vs plan.sourceStateHash) is always trivially satisfied
+  // here since both are computed from the same fresh detect — this
+  // CLI-level comparison against the user-confirmed hash is the meaningful
+  // gate against drift between plan-confirmation and apply-start.
+  if (!values['dry-run'] && values['expect-state-hash'] && values['expect-state-hash'] !== repoState.stateHash) {
+    return printJson({
+      applied: [],
+      skipped: [],
+      errors: [{ id: 'toctou', message: 'repo state changed since the plan was confirmed — re-run to get an updated plan' }],
+      renderedTemplateHashes: {},
+    });
+  }
+
+  const result = applyPlan(plan, {
+    dryRun: values['dry-run'],
+    currentStateHash: repoState.stateHash,
+    force: values.force,
+    forceReason: values['force-reason'] ?? null,
+    ownerRepo,
+    repoPath: values.repo,
+    config,
+  });
+  printJson(result);
+}
+
+function cmdReleases(args) {
+  const { values } = parseArgs({ args, options: { repo: { type: 'string' }, config: { type: 'string' } } });
+  if (!values.repo) return fail('releases: --repo is required');
+  const configPath = values.config ?? defaultConfigPath(values.repo);
+  const config = readConfig(configPath);
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('releases: could not resolve owner/repo from git remote');
+
+  const result = listPendingReleasePromotions(ownerRepo, config.branches.main);
+  if (!result.ok) return fail(`releases: ${result.error}`);
+
+  const withMergeCheck = result.promotions.map((p) => ({
+    ...p,
+    ...confirmPromotionMerged(ownerRepo, p.number),
+  }));
+  printJson({ promotions: withMergeCheck });
+}
+
+function cmdReleaseDispatch(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      pr: { type: 'string' },
+      'workflow-file': { type: 'string', multiple: true },
+      ref: { type: 'string' },
+    },
+  });
+  if (!values.repo || !values.pr || !values['workflow-file'] || !values.ref) {
+    return fail('release-dispatch: --repo, --pr, --workflow-file (repeatable), and --ref are required');
+  }
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('release-dispatch: could not resolve owner/repo from git remote');
+
+  const merged = confirmPromotionMerged(ownerRepo, values.pr);
+  if (!merged.ok || !merged.merged) {
+    return fail(`release-dispatch: PR #${values.pr} is not confirmed MERGED — refusing to dispatch`);
+  }
+
+  const results = values['workflow-file'].map((wf) => ({ workflowFile: wf, ...dispatchReleaseWorkflow(ownerRepo, wf, values.ref) }));
+  const allOk = results.every((r) => r.ok);
+  if (!allOk) {
+    printJson({ dispatched: results, labelCleared: false, note: 'not all dispatches succeeded — label left in place, will resurface next run' });
+    return;
+  }
+  const cleared = clearReleasePendingLabel(ownerRepo, values.pr);
+  printJson({ dispatched: results, labelCleared: cleared.ok, labelClearError: cleared.ok ? null : cleared.error });
+}
+
+// --- component releases -----------------------------------------------------
+// Shared resolution for the three release-* commands. `--component` is optional
+// when the repo has exactly one component (the inferred single-component case),
+// because in a repo with one thing to release, naming it is ceremony.
+function resolveReleaseArgs(values, commandName) {
+  if (!values.repo) return { error: `${commandName}: --repo is required` };
+  const configPath = values.config ?? defaultConfigPath(values.repo);
+  let config;
+  try {
+    config = readConfig(configPath);
+  } catch (e) {
+    return { error: `${commandName}: could not read config at ${configPath}: ${e.message}` };
+  }
+  const names = listComponentNames(config, values.repo);
+  let name = values.component;
+  if (!name) {
+    if (names.length !== 1) {
+      return { error: `${commandName}: --component is required (this repo declares ${names.length}: ${names.join(', ')})` };
+    }
+    name = names[0];
+  } else if (!names.includes(name)) {
+    return { error: `${commandName}: "${name}" is not a declared component. This repo has: ${names.join(', ')}` };
+  }
+  return { config, name };
+}
+
+function cmdReleaseStatus(args) {
+  const { values } = parseArgs({
+    args,
+    options: { repo: { type: 'string' }, config: { type: 'string' }, component: { type: 'string' } },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-status');
+  if (resolved.error) return fail(resolved.error);
+  try {
+    printJson(readStatus(values.repo, resolved.config, resolved.name));
+  } catch (e) {
+    return fail(`release-status: ${e.message}`);
+  }
+}
+
+function cmdReleasePrepare(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+      component: { type: 'string' },
+      version: { type: 'string' },
+      'notes-file': { type: 'string' },
+      date: { type: 'string' },
+    },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-prepare');
+  if (resolved.error) return fail(resolved.error);
+  if (!values.version || !values['notes-file']) {
+    return fail('release-prepare: --version and --notes-file are both required');
+  }
+  let notes;
+  try {
+    notes = readFileCapped(values['notes-file']);
+  } catch (e) {
+    return fail(`release-prepare: could not read --notes-file: ${e.message}`);
+  }
+  if (notes.trim().length === 0) {
+    // An empty CHANGELOG entry is how a release ships with notes that say
+    // nothing. _release.yml falls back to a bare "<skill> v<version>" title,
+    // which looks deliberate and is not.
+    return fail('release-prepare: --notes-file is empty — a release with no notes is not a release');
+  }
+  try {
+    const result = prepare(values.repo, resolved.config, resolved.name, values.version, notes, {
+      date: values.date,
+      featureBranchPrefix: resolved.config.featureBranchPrefix,
+    });
+    if (!result.ok) return fail(`release-prepare: ${result.error}`);
+    printJson(result);
+  } catch (e) {
+    return fail(`release-prepare: ${e.message}`);
+  }
+}
+
+function cmdReleaseCut(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      config: { type: 'string' },
+      component: { type: 'string' },
+      'expect-status-hash': { type: 'string' },
+      'skip-hash-check': { type: 'boolean', default: false },
+      wait: { type: 'string' },
+      version: { type: 'string' },
+    },
+  });
+  const resolved = resolveReleaseArgs(values, 'release-cut');
+  if (resolved.error) return fail(resolved.error);
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('release-cut: could not resolve owner/repo from git remote');
+  try {
+    const result = cut(values.repo, resolved.config, resolved.name, {
+      waitSeconds: values.wait ? Number(values.wait) : 240,
+      expectStatusHash: values['expect-status-hash'] ?? null,
+      skipHashCheck: values['skip-hash-check'],
+      ownerRepo,
+      version: values.version ?? null,
+    });
+    if (!result.ok) return fail(`release-cut: ${result.error}${result.currentStatusHash ? ` (current statusHash: ${result.currentStatusHash})` : ''}`);
+    printJson(result);
+  } catch (e) {
+    return fail(`release-cut: ${e.message}`);
+  }
+}
+
+function cmdRenameDefaultBranch(args) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      repo: { type: 'string' },
+      branch: { type: 'string' },
+      to: { type: 'string' },
+    },
+  });
+  if (!values.repo || !values.branch || !values.to) {
+    return fail('rename-default-branch: --repo, --branch, and --to are all required');
+  }
+  const ownerRepo = resolveOwnerRepo(values.repo);
+  if (!ownerRepo) return fail('rename-default-branch: could not resolve owner/repo from git remote');
+
+  const result = renameDefaultBranch(ownerRepo, values.branch, values.to);
+  printJson(result);
+}
+
+function printHelp() {
+  console.log(`shipflow ${readPackageVersion()}
+
+Usage: shipflow <command> [options]
+
+Commands:
+  detect --repo <path> [--main <name>] [--dev <name>] [--release-credential <name>]
+  plan --repo <path> [--config <path>]
+  apply --repo <path> [--config <path>] [--dry-run] [--expect-state-hash <hash> | --skip-hash-check] [--force <id>]... [--force-reason <text>]
+  releases --repo <path> [--config <path>]
+  release-dispatch --repo <path> --pr <number> --workflow-file <file>... --ref <ref>
+  release-status --repo <path> [--component <name>]
+  release-prepare --repo <path> [--component <name>] --version <x.y.z> --notes-file <path> [--date <YYYY-MM-DD>]
+  release-cut --repo <path> [--component <name>] (--expect-status-hash <hash> | --skip-hash-check) [--wait <seconds>] [--version <x.y.z>]
+  rename-default-branch --repo <path> --branch <current-name> --to <new-name>
+
+Every command prints JSON to stdout.`);
+}
+
+// ─── dispatch ────────────────────────────────────────────────────────────────
+// Only run the CLI dispatch when this file is executed directly, not when it
+// is imported (e.g. by the test suite). Both sides are realpath'd: under
+// npm/npx, argv[1] is the node_modules/.bin/shipflow SYMLINK while
+// import.meta.url is the resolved file — a naive === never matches and
+// every npx invocation becomes a silent no-op (this exact bug bit devlog —
+// see this repo's CHANGELOG/commit e69b6ba).
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+
+if (isMain) {
+  const arg = process.argv[2];
+  const rest = process.argv.slice(3);
+  switch (arg) {
+    case 'detect':
+      cmdDetect(rest);
+      break;
+    case 'plan':
+      cmdPlan(rest);
+      break;
+    case 'apply':
+      cmdApply(rest);
+      break;
+    case 'releases':
+      cmdReleases(rest);
+      break;
+    case 'release-dispatch':
+      cmdReleaseDispatch(rest);
+      break;
+    case 'release-status':
+      cmdReleaseStatus(rest);
+      break;
+    case 'release-prepare':
+      cmdReleasePrepare(rest);
+      break;
+    case 'release-cut':
+      cmdReleaseCut(rest);
+      break;
+    case 'rename-default-branch':
+      cmdRenameDefaultBranch(rest);
+      break;
+    case '-v':
+    case '--version':
+      console.log(readPackageVersion());
+      break;
+    case undefined:
+    case '-h':
+    case '--help':
+      printHelp();
+      break;
+    default:
+      console.error(`Unknown command: ${arg}`);
+      printHelp();
+      process.exit(1);
+  }
+}

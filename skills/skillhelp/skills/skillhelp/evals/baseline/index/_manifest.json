@@ -1,0 +1,100 @@
+{
+  "skills": [
+    {
+      "name": "city-report",
+      "version": "0.4.0",
+      "stack": "python",
+      "cardHash": "ca8360c2edcee369",
+      "facts": 55,
+      "sections": {
+        "setup": 1,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 8,
+        "troubleshooting": 14
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "ghostwriter",
+      "version": "0.15.0",
+      "stack": "python",
+      "cardHash": "eed231c990dceffa",
+      "facts": 46,
+      "sections": {
+        "setup": 4,
+        "usage": 12,
+        "commands": 4,
+        "architecture": 10,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "gmailtriage",
+      "version": "0.4.0",
+      "stack": "node",
+      "cardHash": "ed7d0da42c9d8a36",
+      "facts": 66,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "press",
+      "version": "0.9.0",
+      "stack": "node",
+      "cardHash": "f3b68e94ce1a89ed",
+      "facts": 54,
+      "sections": {
+        "setup": 3,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 6,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "shipflow",
+      "version": "0.6.0",
+      "stack": "node",
+      "cardHash": "06bcc76166887a97",
+      "facts": 68,
+      "sections": {
+        "setup": 9,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 11,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "skillhelp",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "bde0a0db8e661b61",
+      "facts": 52,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 13,
+        "architecture": 12,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    }
+  ]
+}
