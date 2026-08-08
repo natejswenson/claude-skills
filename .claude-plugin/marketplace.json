@@ -68,6 +68,10 @@
     {
       "name": "gmailtriage",
       "source": "./skills/gmailtriage"
+    },
+    {
+      "name": "skillhelp",
+      "source": "./skills/skillhelp"
     }
   ]
 }

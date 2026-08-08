@@ -39,6 +39,8 @@
     "shipreport-readme",
     "shipreport-theme",
     "gmailtriage-agent-ui",
-    "gmailtriage-readme"
+    "gmailtriage-readme",
+    "skillhelp-agent-ui",
+    "skillhelp-readme"
   ]
 }

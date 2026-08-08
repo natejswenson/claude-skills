@@ -1,0 +1,529 @@
+# Changelog
+
+All notable changes to `@natjswenson/shipflow` are documented here.
+
+## 0.6.0 (2026-08-03) — the ambiguous fast path is refused, not guessed
+
+### Fixed
+
+- **`release-cut`'s fast path could silently tag the OLDER version.** When a
+  component's `main` carried an untagged bump *and* `dev` independently carried
+  something higher — `lastTag < main < dev` — `readStatus` collapsed both facts
+  into the single `untagged-bump-on-main` state, and `cut()`'s fast path acted
+  on that state alone, dispatching a release for whatever sat on `main` while
+  the version actually being released sat, unread, on `dev`. Hit for real
+  during `/release eval` on 2026-08-03: `main` was at 0.2.1, `dev` at 0.3.0 —
+  `cut` would have tagged `eval-v0.2.1` and reported success. Caught only by
+  reading `release.mjs` before running the irreversible step.
+
+  `readStatus` now reports a `devAhead` fact (`{ version, aheadOfMain: true }`)
+  independently of `state` — including on a component's never-released first
+  bump, the sibling case a fix scoped only to the existing `state` branch would
+  have missed — plus a `dev-ahead-of-main` blocker, scoped to exactly the state
+  where the fast path is armed. A new pure `resolveReleaseTarget(status,
+  requestedVersion)` is the single place the release target is now decided;
+  `cut()` calls it once, before any network call, and refuses outright when
+  the target is ambiguous, naming both versions. There is no longer a code
+  path on which the tag `cut` waits for can disagree with the version it
+  decided to release.
+
+  The refusal is escapable, deliberately not inescapable: `release-cut` gains
+  `--version <x.y.z>`, a *confirmation* rather than a bypass — it is only ever
+  accepted when it names a version already present on `main` or `dev` in that
+  status, so there is no value of it that releases a version which isn't
+  actually on the branch being dispatched.
+
+## 0.5.0 (2026-08-02) — the merge stops cutting tags; the dispatch is the release
+
+### Changed
+
+- **`release-cut` now dispatches the component's release workflow itself, after
+  the promotion lands.** Previously it merged the promotion and then *waited*
+  for a tag that a `push`-triggered job happened to cut. That made a merge the
+  real release trigger, which meant any promotion released everything bumped on
+  `dev` — whether or not anyone asked, and irreversibly for skills that publish
+  to npm.
+
+  Paired with every caller's `release` job becoming `workflow_dispatch`-only,
+  this makes the dispatch the **single point at which a tag is ever created**.
+  A `dev → main` merge now moves a version bump to `main` and stops there; the
+  component simply becomes `untagged-bump-on-main` until someone releases it on
+  purpose.
+
+  The two halves are load-bearing together. Removing the `push` gate without
+  this dispatch leaves `release-cut` waiting forever for a tag nobody cuts;
+  adding the dispatch without removing the gate double-releases.
+
+- **`collateral` means something smaller and safer now.** It still lists every
+  other component whose bump the same promotion moves to `main` — that is
+  unavoidable, a promotion is atomic — but those components are no longer
+  *released* by it. The disclosure stays because the user should know what their
+  promotion moves, and which components are now one dispatch from a release
+  nobody asked for.
+
+### Fixed
+
+- **`release-status` returned a wrong commit list in a shallow clone, silently.**
+  `git log <tag>..<ref>` excludes everything reachable from `<tag>`, and that
+  exclusion needs full ancestry. In a grafted history it under-applies, so the
+  range returns commits that shipped long ago — without erroring, and therefore
+  with a `suggestedBump` derived from fiction.
+
+  Observed on this repo the day 0.4.0 shipped: a depth-1 checkout of `main`
+  reported **1 unreleased commit** for a component a full clone correctly
+  reported as **0**, which would have proposed a patch release for nothing.
+  `actions/checkout` is depth-1 by default, so any CI job calling `release-status`
+  hit this.
+
+  A shallow repository is now a **blocker**, not a note — every number derived
+  from the commit range is untrustworthy, so the honest answer is to refuse and
+  say `git fetch --unshallow`, rather than to report a plausible wrong one.
+
+## 0.4.0 (2026-08-02) — release one named thing, and prove the tag exists
+
+### Added
+
+- **Component releases: `release-status`, `release-prepare`, `release-cut`.**
+  A *component* is one independently-versioned thing in a repo — a skill in a
+  monorepo, or the repo itself. `release.componentLayout` says where its
+  version files, changelog, tag and release workflow live, with `{name}` as the
+  only substitution token, and `release.components` lists the names. A repo
+  with neither gets a single component inferred from its root, so a one-project
+  repo needs no config at all and `--component` may be omitted.
+
+  This closes the half of releasing that was never automated. The mechanical
+  end already worked — `_release.yml` is version-driven and idempotent, every
+  caller has `workflow_dispatch`, `release-dispatch` exists. Everything
+  *upstream* of the dispatch was manual, and that is where the friction and the
+  mistakes lived.
+
+- **`release-status` reads state instead of guessing it.** The version on main
+  and on dev (read via `git show`, so the user's working tree is never touched
+  or checked out), the last tag, every commit since that tag that touched this
+  component's paths, a suggested bump with its reason, and a `statusHash` that
+  `release-cut` requires back — the same TOCTOU discipline `apply` already has.
+
+- **`collateral`: every other component the same promotion would release.** A
+  `dev → main` promotion is atomic and carries all of dev, so cutting a release
+  for one component also releases anything else sitting bumped-but-untagged
+  there. The SKILL.md rule is that this list is named to the user before the
+  irreversible step, never merely present in JSON an agent might skim past.
+
+- **`release-cut` is resumable, bounded, and proves the tag.** The full path —
+  feature PR, checks, merge, promotion, auto-merge, release run, tag — takes
+  longer than one call should block for, so each call advances as far as it can
+  and returns the stage it is parked at. Every stage is derived from live remote
+  state, never from a record of a previous call, so a resumed run and a fresh
+  one are the same code path. It reports `done: true` only after reading the tag
+  back from origin: a dispatched workflow, a merged PR and a green check are all
+  still "not done."
+
+- **Version files can be `package.json`, `SKILL.md` frontmatter, `pyproject.toml`
+  or a top-level `project.yml`.** A component model that only reads
+  `package.json` is not generic, it is a node model — the first two non-node
+  repos this was pointed at were a Python project and an Xcode project. TOML and
+  YAML are matched at column zero only: both formats nest, and an indented
+  `version` is a dependency pin, not the project's own version. Releasing the
+  wrong number is worse than reporting none.
+
+### Fixed
+
+- **`spliceChangelog` built a regex out of the version string and escaped only
+  the dots**, leaving `\`, `*`, `+`, `(` and `[` live all the way into
+  `new RegExp`. `prepare` rejects a non-semver version before reaching it, so
+  this was not exploitable through the CLI — but the function is exported and
+  independently callable, and a guard that lives in the caller is not a guard.
+  It now matches with plain string operations, which is also exactly what
+  `_release.yml`'s `awk` does (`/^## / && index($0, ver)`), so the duplicate
+  check and the release-time extractor answer the same question the same way.
+  Found by CodeQL (`js/incomplete-sanitization`, high) on PR #158.
+
+- **`dispatchReleaseWorkflow` ignored the `ownerRepo` it was given.** It shelled
+  out to `gh workflow run` with no `--repo`, so `gh` inferred the repository
+  from the process's working directory — which is routinely *not* the repo
+  `--repo <path>` points at. A dispatch into the wrong repository still exits 0,
+  so this failed silently in exactly the setup the flag exists for.
+
+### Notes
+
+- A breaking change on a component still in 0.x is capped at a **minor** bump,
+  and reported as capped rather than applied silently. Declaring 1.0.0 is an
+  API-stability promise, and no commit message is entitled to make it on the
+  maintainer's behalf.
+- `release-prepare` does its work in a throwaway `git worktree`, so unrelated
+  uncommitted work in the user's tree cannot be swept into a release commit.
+  Real trees have parallel work in them; this monorepo's had an entire untracked
+  skill in it while this feature was written.
+- No template changed, so no rendered workflow and no `renderedTemplateHashes`
+  entry moves in this release.
+
+## 0.3.3 (2026-08-01) — least-privilege permissions in every rendered workflow
+
+- **Every rendered workflow granted its permissions at the workflow level, so
+  every job in the file got them whether it needed them or not.** zizmor flags
+  this as `excessive-permissions` (High), and it was failing this repo's own
+  `security / workflows` gate on `dev-to-main-automerge.yml`. All six templates
+  now deny by default (`permissions: {}`) and grant per job.
+
+  A workflow-level grant is not just untidy — it silently extends to jobs added
+  later that were never reviewed for it. Scoping is the fix; waiving the rule
+  would have kept the finding *and* the exposure.
+
+- **`contents: write` is dropped from the auto-merge workflows entirely, not
+  moved.** `gh pr merge --auto` only *enables* native auto-merge, which is a
+  pull-requests operation; GitHub performs the merge itself afterwards under its
+  own automation rather than this token. Those workflows now grant
+  `pull-requests: write` to the two jobs that call `gh`, and nothing else.
+
+  Where `release.releaseCredential` names a real PAT (the supported setup), the
+  workflow token's permissions never applied to those steps in the first place.
+  These grants are what matters for a repo that left the credential defaulted to
+  `GITHUB_TOKEN`.
+
+### Fixed
+
+- **The gitflow merge-back workflows could not open their own fallback PR.**
+  `release-merge-back` and `hotfix-merge-back` granted only `contents: write`,
+  but their "on any failure, open a PR for manual resolution" step calls
+  `gh pr create` — which needs `pull-requests: write`. Under a defaulted
+  `GITHUB_TOKEN` that step would have failed exactly when it was needed most:
+  after a merge conflict, with nothing else left to surface it. Found while
+  scoping the permissions above, not by a report.
+
+## 0.3.2 (2026-07-28) — attempted npm-page fix; did NOT work
+
+- **Attempted and failed: making npmjs.com render the README.** 0.3.1 put
+  README.md, LICENSE and CHANGELOG.md into the tarball (verified by downloading
+  the published artifact), which fixed what `npm install` delivers. This release
+  additionally staged those files into the package directory before
+  `npm publish` was invoked, on the theory that npm populates the registry
+  manifest's `readme` field from disk at that point. **It did not work.** After
+  publishing, `npm view <pkg> readme` still returns the literal string
+  `ERROR: No README data found!` for both packages.
+  That field appears to be sticky: it was set once by an early release that had
+  no README, and republishing with one present does not overwrite it. Since
+  npmjs.com only falls back to reading the tarball when the field is *absent*
+  (compare `zod`, which renders fine with none at all), the stale error string
+  keeps winning.
+  The ineffective staging step was reverted in the release workflow; the
+  `prepack` hook stays, because the tarball fix is real and verified. **The npm
+  web page for both packages is still blank** — an open issue, likely needing
+  npm support to clear the cached field.
+  Code unchanged in both skills.
+
+## 0.3.1 (2026-07-28) — publish the README, LICENSE and CHANGELOG to npm
+
+- **Fixed: the npm package shipped with no README, LICENSE or CHANGELOG.**
+  `package.json`'s `files` listed all three, but they live at the plugin root
+  (beside `.claude-plugin/`), one level above the package directory — and npm only
+  includes files from inside the package directory, so the entries silently matched
+  nothing. Every release through 0.3.0 published a tarball without them, and
+  `npm view @natjswenson/shipflow readme` returned *"No README data found"*, leaving
+  the npm page blank for anyone evaluating the CLI. A `prepack` script now stages the
+  three files into the package directory before the tarball is built, and `postpack`
+  removes them again so the working tree stays clean; they are gitignored at that
+  path so a interrupted pack cannot leave committable strays. Code unchanged.
+
+## 0.3.0 (2026-07-28) — multi-pattern workflow templates; `undefined` param fix
+
+Minor, not patch: this release carries the multi-pattern feature work that had been
+sitting unreleased on `main` since 0.2.6, plus one bug fix found by the new baseline
+eval. Existing `dev-main-promotion` repos are unaffected — see the compatibility note
+below.
+
+- **Fixed: a missing config field rendered the literal string `"undefined"` into the
+  workflow.** `renderTemplate` tested param presence with `key in params`, which is
+  true for a key whose value is `undefined`, so `String(undefined)` flowed through as
+  a real value and passed the safety regexes. A config with no `branches.main`
+  rendered `name: auto-merge dev to undefined` and `branches: [undefined]` — a
+  syntactically valid workflow that installs cleanly and can never fire, with no
+  error at `apply` time. Present-but-`undefined` and `null` now count as missing and
+  raise the same "missing param(s)" error as an absent key. Found by
+  `tests/baseline.test.mjs` on its first run.
+
+Generalizes shipflow from one hardcoded branching pattern to a registry of three
+selectable patterns, with deterministic autodetection. Backward compatible: a repo's
+existing `.github/shipflow.json` with no `workflowPattern` field keeps resolving to
+`dev-main-promotion` with identical behavior — confirmed against this repo's own live
+config (a `noops`-only plan, byte-identical to before this change).
+
+- **Added: `github-flow` pattern** — a single long-lived `main`; every PR merges (and
+  auto-merges) directly to it, no separate promotion branch. New
+  `main-automerge.yml.tmpl` template.
+- **Added: `gitflow` pattern** — `develop` + `main` + transient `release/*`/`hotfix/*`
+  branches, for software maintaining multiple released versions concurrently. New
+  `release-automerge.yml.tmpl`/`hotfix-automerge.yml.tmpl` templates (prefix-matched
+  `head.ref` guards) and `hotfix-merge-back.yml.tmpl`/`release-merge-back.yml.tmpl`
+  (GitFlow's defining dual-merge-back semantic: a hotfix/release merges into both
+  `main` and `develop`; a merge-back conflict or push failure opens a PR for manual
+  resolution instead of force-pushing or silently dropping the merge).
+- **Added: deterministic autodetection.** `shipflow detect` now returns a
+  `rankedPatterns` array (every pattern's score + evidence). Classification is
+  `confident` (top score `>= 0.7` and a `> 0.3` gap over second place), `greenfield`
+  (top score `< 0.4`), or `ambiguous` (the residual case) — the first-run interview
+  confirms a confident detection's evidence with the user rather than silently
+  applying it, and presents all 3 patterns for an explicit choice otherwise.
+- **Added: `workflowPattern` + `patternConfig` config fields.** `patternConfig.gitflow`
+  holds `releaseBranchPrefix`/`hotfixBranchPrefix` (default `release/`/`hotfix/`).
+  `branches.dev` remains the sole source of truth for gitflow's develop-branch name —
+  no separate `developBranch` field.
+- **Architecture:** new `lib/pattern-registry.mjs` (`listPatterns`/`resolvePattern`/
+  `scoreAll`) and one `lib/patterns/<id>/index.mjs` module per pattern. `detect.mjs`,
+  `plan.mjs`, and `apply.mjs` are now thin dispatchers over whatever the registry
+  returns, instead of hardcoding `dev-main-promotion`'s logic inline — adding a 4th
+  pattern in the future needs no changes to any of the three.
+- Existing single-pattern behavior (branch protection, auto-merge, branch cleanup,
+  release tagging) is unchanged for repos already on `dev-main-promotion`.
+
+## 0.2.6 (2026-07-15) — pin `@latest` on every invocation; docs pass
+
+Self-discovered during the PAT-wiring dogfood step that immediately followed
+0.2.5's release — not a Siege audit finding, but adjacent to the same
+class of risk the audit was meant to close.
+
+- **Fixed: silent global-install shadowing.** `npx -y @natjswenson/shipflow
+  <command>` (no version/tag) can resolve an already-installed copy on
+  `PATH` — e.g. a stale `npm install -g @natjswenson/shipflow` left over
+  from manual testing — instead of fetching the current version from the
+  registry, with **no warning that this happened**. Confirmed concretely on
+  `claude-skills` itself: a bare invocation silently ran a stale global
+  0.2.0 install, missing every fix through 0.2.5, including the Critical
+  template-injection fix (0.2.3). `npx -y @natjswenson/shipflow@latest
+  <command>` correctly resolved 0.2.5. This meant a repo could run
+  `shipflow` believing it was getting current, audited behavior while
+  silently getting pre-audit, vulnerable behavior instead.
+- **Fix: every invocation in `SKILL.md` now pins `@latest`.** New
+  regression tests (`tests/skill_contract.test.mjs`) assert every `npx`
+  invocation of shipflow in `SKILL.md` is pinned, and fail if a future edit
+  reintroduces a bare invocation. New skill-invariant entry
+  (`npx-must-pin-latest`).
+- **Docs pass**, per user request before this release: root `README.md`
+  gained a `shipflow` row in the skills table, marketplace/manual-install
+  instructions, and a rewritten Branch & release flow section describing
+  the actual shipflow-managed automation this repo runs (replacing stale
+  prose describing the pre-dogfood bespoke flow); `skills/shipflow/README.md`
+  gained current usage instructions (with the `@latest` pin and its
+  rationale), an updated Status section reflecting 0.2.5's live validation
+  and completed security audit, and a pointer to remove a shadowing global
+  install if one exists (`npm uninstall -g @natjswenson/shipflow`).
+- No code changes to `lib/`/`bin/` in this release — SKILL.md, tests,
+  README, and version metadata only.
+
+## 0.2.5 (2026-07-15) — mandatory TOCTOU guard, forced-override auditability, subprocess timeouts, YAML-validity CI check
+
+The four remaining findings from the same Siege audit as 0.2.3/0.2.4, all
+presented to the user for a fix-vs-accept decision and fixed on explicit
+go-ahead.
+
+- **High, fixed (SIEGE-2026-07-15-002):** `--force allow-no-checks` /
+  `--force <template-id>` had zero code-level friction beyond the flag
+  itself — "get explicit user confirmation before forcing" lived entirely in
+  SKILL.md prose, not in the CLI. `apply` now refuses any `--force` unless
+  accompanied by `--force-reason "<text>"`; the reason is echoed back on
+  each forced entry in the apply result (`{ forced: true, forceReason }`)
+  for auditability. This doesn't stop a determined bypass, but it raises
+  the bar from a single flag to an explicit, logged justification.
+- **Medium, fixed (SIEGE-2026-07-15-003):** `--expect-state-hash` (the
+  documented TOCTOU guard) was optional — omitting it silently proceeded
+  with zero drift protection. A real (non-dry-run) `apply` now hard-refuses
+  without it, unless the caller explicitly passes the new, named
+  `--skip-hash-check` escape hatch.
+- **Medium, fixed (SIEGE-2026-07-15-004):** no subprocess timeout was set
+  anywhere in `gh.mjs`'s `spawnSync` calls — a hung/rate-limited `gh api` or
+  stuck `git` call could hang the whole process indefinitely. All
+  `spawnArgs` calls now default to a 30s timeout, with the resulting
+  `ETIMEDOUT` surfaced in the returned `stderr`.
+- **Low, fixed (SIEGE-2026-07-15-005):** no test rendered the template and
+  validated the output as syntactically valid YAML — the exact bug class
+  that bit 0.2.1/0.2.2 (a silently-broken generated workflow) was caught
+  only by live production testing, not the unit suite. New
+  `tests/template-validity.test.mjs` parses the rendered workflow with the
+  `yaml` package (dev-only dependency, not shipped to consumers) across a
+  range of legal inputs.
+- New CLI integration test file (`tests/cli-apply-guards.test.mjs`) spawns
+  the real `bin/shipflow.js` to exercise both new refusals end-to-end.
+- This closes out the Siege security audit run before rolling shipflow out
+  to repos beyond `claude-skills` — zero Critical/High findings remain open.
+
+## 0.2.4 (2026-07-15) — REST-path encoding, resolveOwnerRepo hardening, file-size cap
+
+Three more findings from the same Siege audit as 0.2.3, surfaced by an
+independently-dispatched Boundary Attacker pass that (eventually) returned
+its report and cross-confirmed the 0.2.3 fix while adding new findings:
+
+- **Medium, fixed:** `fetchBranchProtection` and `checkSecretPresent`
+  interpolated `branch`/`secretName` unencoded into `gh api` REST path
+  segments — inconsistent with `checkLabelExists`, which already used
+  `encodeURIComponent` for the same class of input. Both now encode.
+- **Low, fixed:** `resolveOwnerRepo`'s regex capture (`[\w.-]+`) admitted
+  all-dots segments (`.`, `..`) since `.` is in the character class with no
+  further constraint — a crafted remote like `github.com/../claude-skills`
+  could yield an `ownerRepo` that normalizes away the intended
+  `repos/<owner>/<repo>` prefix once interpolated downstream. Now rejects
+  any owner/repo segment matching `^\.+$`.
+- **Medium, fixed:** no file shipflow reads from a target repo
+  (`.github/shipflow.json`, candidate settings-as-code artifacts, workflow
+  YAML, the rendered template) had a size guard — all of these are
+  repo-write-controlled, not admin-only, so a maliciously huge or
+  pathologically nested file could exhaust memory on an unbounded
+  `readFileSync`/`JSON.parse`. New `readFileCapped` helper in `gh.mjs`
+  (1 MB cap) used at every such read site.
+- 8 new regression tests.
+
+## 0.2.3 (2026-07-15) — Critical: unescaped template substitution allowed workflow injection
+
+Found by a Siege security audit run before rolling shipflow out to other
+repos, immediately after 0.2.1/0.2.2 landed the previous two fixes.
+
+- **Critical, fixed:** `render.mjs`'s `renderTemplate` did pure string
+  substitution with zero escaping. `config.branches.dev`/`main` and
+  `config.release.releaseCredential` — all sourced from
+  `.github/shipflow.json`, a file anyone with repo **write** access can
+  edit, not just the admin who ran shipflow's setup — were substituted
+  directly into single-quoted YAML string comparisons and a
+  `${{ secrets.X }}` GitHub Actions expression with no validation.
+  Concretely: a `branches.dev` value of `dev' || 'x'=='x` rendered the
+  auto-merge job's `if:` condition to `... == 'dev' || 'x'=='x'` —
+  unconditionally true, enabling auto-merge on **any** pull request into
+  `main`, not just genuine `dev`-branch promotions. A `releaseCredential`
+  value containing a newline could inject arbitrary new YAML keys/steps
+  into the committed, then-executed workflow file. Both are a privilege
+  escalation: a repo-write-level actor reaching an admin-scoped mutation
+  through the credential the rendered workflow runs with.
+- **Fix:** `renderTemplate` now validates each substituted value against a
+  per-token safety rule before rendering — `DEV_BRANCH`/`MAIN_BRANCH` reject
+  any single quote or newline; `RELEASE_CREDENTIAL_SECRET` must match
+  GitHub's own secret-naming rule (`^[A-Za-z_][A-Za-z0-9_]*$`). A rejected
+  value throws rather than silently rendering unsafe YAML.
+- **Also fixed:** `bin/shipflow.js`'s `cmdPlan`/`cmdApply` never wrapped
+  `computePlan` in a try/catch, so this (and the pre-existing "missing
+  param") error would have crashed with a raw stack trace instead of the
+  clean `{"error": ...}` JSON contract every other failure mode uses —
+  breaking the "every command prints JSON to stdout" guarantee agents rely
+  on to parse output.
+- New regression tests assert the exploit renders are rejected, and that
+  ordinary branch/secret names still render normally.
+
+## 0.2.2 (2026-07-15) — `label-release-pending` never fires under `GITHUB_TOKEN`
+
+Found by the same dogfood run as 0.2.1, one merge later — a second, more
+serious bug than the missing `--repo`: the manual-gate release-ask flow's
+whole premise (a durable label survives the async gap between auto-merge
+enabling and completing) silently didn't work at all.
+
+- **Root cause: GitHub's loop-prevention rule.** A PR auto-merged via `gh pr
+  merge --auto` run under the default `secrets.GITHUB_TOKEN` completes
+  (later, once checks pass) attributed to the `github-actions[bot]`
+  identity. A `pull_request: closed` event from that bot-attributed merge
+  does **not** trigger this or any other workflow's `on: pull_request`
+  handlers. Confirmed empirically, not just from docs: an otherwise-identical
+  promotion PR merged by a real, PAT-authenticated actor fired the
+  closed-event trigger within 2 seconds; one completed by
+  `GITHUB_TOKEN`-enabled auto-merge fired **no run at all**, even after
+  100+ seconds of polling. This means `label-release-pending` never ran for
+  any normally-auto-merged promotion — only for a promotion a human merged
+  by hand — which is the opposite of the common case the feature exists for.
+- **Fix: both `gh` calls now use `config.release.releaseCredential`** instead
+  of a hardcoded `secrets.GITHUB_TOKEN`. Wired a new `RELEASE_CREDENTIAL_SECRET`
+  template token through `render.mjs` and `plan.mjs`'s
+  `computeTemplatePlanEntry` (previously `releaseCredential` was read by
+  `detect.mjs` only to check whether a named secret *existed* — it was never
+  actually substituted into the rendered workflow).
+- **First-run setup (SKILL.md) now has an explicit step** requiring the user
+  to create a real PAT/App-installation-token secret and record its name in
+  `release.releaseCredential` — defaulting to `GITHUB_TOKEN` is called out as
+  a silent-failure trap, not a safe default. `config.example.json`'s
+  placeholder changed from `"GITHUB_TOKEN"` to `"SHIPFLOW_AUTOMERGE_PAT"` so
+  copying the example doesn't propagate the trap.
+- New regression test asserts both `GH_TOKEN` lines use the configured
+  secret name and never fall back to a hardcoded `GITHUB_TOKEN`.
+
+## 0.2.1 (2026-07-14) — rendered workflow was missing `--repo`
+
+Found by dogfooding shipflow on its own home repo (`claude-skills`) — the
+very first live promotion PR after switching over would have silently
+broken auto-merge and release labeling.
+
+- **Fix: both `gh` calls in the rendered `dev-to-main-automerge.yml` now pass
+  `--repo "${{ github.repository }}"` explicitly.** Neither the `auto-merge`
+  job's `gh pr merge` nor the `label-release-pending` job's `gh pr edit` had
+  it, and the workflow has no `actions/checkout` step for `gh` to infer the
+  repo from — every run failed with `fatal: not a git repository (or any of
+  the parent directories): .git`. This masked itself in the first dogfood
+  migration only because the hand-built workflow it was replacing (which did
+  pass `--repo`) happened to still be present on `main` and fired on the same
+  transitional PR.
+- **New regression tests** (`tests/render.test.mjs`) read the actual
+  `.tmpl` file's rendered output and assert `--repo` is present on both `gh`
+  invocations — no prior test read the template's real command lines, only a
+  synthetic placeholder string, so this shipped with zero coverage of the
+  actual `gh` calls.
+
+## 0.2.0 (2026-07-14) — first live-repo fixes
+
+Fixes found by running shipflow end-to-end against a real repo
+(`natejswenson/1.00s`) for the first time, beyond the read-only smoke test
+against `claude-skills` itself:
+
+- **First-run setup is now an explicit, unskippable interview.** SKILL.md's
+  setup steps must present detected branch names, `requiredChecks`, and the
+  resolved `protectionOwner` and wait for confirmation before writing
+  `.github/shipflow.json` — even when the detected values already look
+  correct. Previously nothing stopped an orchestrating agent from silently
+  narrating findings and proceeding straight to the config write.
+- **Default-branch mismatch detection.** `detect` now reports the repo's
+  actual GitHub default branch (`repoSettings.defaultBranch`). First-run
+  setup surfaces a mismatch against the assumed `main` name and asks the
+  user to either map shipflow's `main` role onto the existing default branch
+  name, or rename the repo's default branch via the new
+  `rename-default-branch` command.
+- **New `rename-default-branch` command**, wrapping GitHub's native
+  branch-rename endpoint (which retargets the default-branch pointer and
+  open PRs automatically when the renamed branch is the current default).
+- **Honest classification of the tier-gated ruleset failure.** Creating the
+  deletion-protection ruleset 403s on private repos without GitHub
+  Pro/Team/Enterprise (rulesets are free for public repos only). This now
+  surfaces as a `skipped` entry with a clear reason instead of an `errors`
+  entry — it's an expected environment limitation, not a shipflow bug. No
+  fallback to classic branch protection was added (declined — out of scope
+  for this fix).
+- **`requiredChecks` candidates are now filtered to actually PR-triggered
+  jobs.** `detect`'s `workflows.jobNames` previously listed every job name
+  from every workflow file regardless of its `on:` trigger — a
+  `schedule`/`workflow_dispatch`-only job (like `1.00s`'s `weekly-archive.yml`)
+  could be picked as a required check that would never run on a PR and
+  would block every future merge forever. Now only jobs from
+  `pull_request`/`pull_request_target`-triggered workflows are offered as
+  candidates.
+- **Agent-driven CI scaffolding when no PR check exists.** Rather than
+  teaching shipflow's deterministic CLI about every language/build-tool
+  ecosystem, first-run setup now has the orchestrating agent investigate the
+  repo and draft a starter `pull_request`-triggered build+test workflow when
+  the (now-accurate) required-checks candidate list is empty, with the same
+  confirm-before-write discipline as every other step — never a silent
+  overwrite, always shown to the user first.
+
+## 0.1.0 (2026-07-14) — Phase A: manual-gate core
+
+Initial release. Implements the fully-specified, reference-repo-validated slice
+of the [shipflow design](../../docs/plans/2026-07-14-shipflow-skill-design.md):
+
+- Long-lived `dev`/`main` branches with configurable names.
+- `dev → main` promotion PRs that auto-merge once configured required checks pass.
+- Automatic branch cleanup (`delete_branch_on_merge` + a deletion ruleset) for
+  every branch except `dev`/`main` — zero custom mutation logic, a native
+  GitHub setting.
+- `protectionOwner` detection: defers to an existing settings-as-code
+  mechanism (e.g. `repo-settings.sh`, Terraform) rather than installing a
+  competing ruleset, with an explicit user prompt when protection exists
+  with no artifact behind it.
+- `release.mode: "manual-gate"` — the deliberate, ask-before-tagging release
+  flow (a durable `release-pending` label survives the async gap between a
+  promotion merging and the next interactive `shipflow` run).
+
+`release.mode: "auto"` (release-please-driven automatic tagging) is accepted
+in the config schema but **not yet implemented** — `apply.mjs` refuses to run
+against an `"auto"` config with a clear "not yet implemented" error rather
+than silently no-oping. Tracked as Phase B; needs a live GitHub sandbox to
+build and verify the two-hop `RELEASE_PAT` credential wiring and the
+release-please byte-equality pre-flight safely.

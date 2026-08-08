@@ -1,0 +1,42 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/skillhelp.js build --repo evals/fixtures/snapshot --skill-dir $OUT",
+  "artifacts": [
+    {
+      "path": "index/_manifest.json",
+      "bytes": 2130,
+      "sha256": "d6f41503c9855d50ca1f37afd4b189593cd89a19e0ef6dd6c87757b70c8a310e"
+    },
+    {
+      "path": "index/city-report.md",
+      "bytes": 9905,
+      "sha256": "ca8360c2edcee3690685f53e119c8fdba47f9876ed23471eecadf16306bc018b"
+    },
+    {
+      "path": "index/ghostwriter.md",
+      "bytes": 8717,
+      "sha256": "eed231c990dceffa038ab0d05632561c98ece4a2154416fa665641c49a6b7d96"
+    },
+    {
+      "path": "index/gmailtriage.md",
+      "bytes": 15063,
+      "sha256": "ed7d0da42c9d8a36fd4d0d6d64069fb58ce2ad92481251bdc0d7446878cce05a"
+    },
+    {
+      "path": "index/press.md",
+      "bytes": 8821,
+      "sha256": "f3b68e94ce1a89ed5d4d5ea97181e29a716205a8032bab19cf9241f6c4a5b2f7"
+    },
+    {
+      "path": "index/shipflow.md",
+      "bytes": 11987,
+      "sha256": "06bcc76166887a9715b01fabe1f2d9c331d31011aaa43b3e0d47c7cc466403c8"
+    },
+    {
+      "path": "index/skillhelp.md",
+      "bytes": 10505,
+      "sha256": "bde0a0db8e661b61f43f537560398c7a9473858eead5bd84b38e4e84d46506ba"
+    }
+  ]
+}
