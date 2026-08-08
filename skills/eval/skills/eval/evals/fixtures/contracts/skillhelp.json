@@ -1,0 +1,162 @@
+{
+  "name": "skillhelp",
+  "sources": [
+    "skills/skillhelp/skills/skillhelp/SKILL.md",
+    "skills/skillhelp/skills/skillhelp/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-594a0c05",
+      "tag": "inv",
+      "text": "Never claim a result you did not observe",
+      "severity": "high",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing.",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8a9e39e7",
+      "tag": "inv",
+      "text": "never ask about anything in it",
+      "severity": "high",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form.",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-66855208",
+      "tag": "press",
+      "text": "The user should see a short status line and a table, not a scroll of raw command output. Concretely: -",
+      "severity": "medium",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 132
+      }
+    },
+    {
+      "id": "press-78e776cc",
+      "tag": "press",
+      "text": "Anything that takes more than a couple of seconds gets one short lowercase line as it starts (`fetching the posting…`, `rendering press + ats-plain…`) so the user sees progress rather than dead air. One line each, not a table.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 154
+      }
+    },
+    {
+      "id": "press-a3abd3e2",
+      "tag": "press",
+      "text": "Not a fetched page, not a source file, not a script's own source. Scripts hand each other *paths*; when you need a file's text in context, use the `Read` tool rather than `cat`, `sed`, `head`, or a `--show` flag. Anything the user already has open somewhere is a wall of text in chat. -",
+      "severity": "medium",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 135
+      }
+    },
+    {
+      "id": "press-e0366838",
+      "tag": "press",
+      "text": "Ad-hoc prose summaries are why runs read inconsistently. Every stage that produces more than one fact reports a table with a fixed column set, declared in this skill's own steps below. Omit noise: don't list unchanged fields, don't repeat inputs back, don't show paths the user can't act on. -",
+      "severity": "medium",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 144
+      }
+    },
+    {
+      "id": "rule-7478599a",
+      "tag": "rule",
+      "text": "Never answer ungrounded: every fact this skill emits carries the file and line it was read from, a fact that loses its source is dropped rather than shown, and a question the cards cannot ground is answered by the retrieval command's own not-documented block — naming which skills and sections were searched — never by prose written to fill the gap.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "skill-1ffe9e26",
+      "tag": "skill",
+      "text": "Say what you verified and what you did not. -",
+      "severity": "high",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 100
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/skillhelp/skills/skillhelp/SKILL.md",
+        "line": 13
+      }
+    }
+  ]
+}

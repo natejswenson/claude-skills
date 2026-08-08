@@ -1,0 +1,29 @@
+{
+  "name": "snapshot",
+  "plugins": [
+    {
+      "name": "city-report",
+      "source": "./skills/city-report"
+    },
+    {
+      "name": "ghostwriter",
+      "source": "./skills/ghostwriter"
+    },
+    {
+      "name": "gmailtriage",
+      "source": "./skills/gmailtriage"
+    },
+    {
+      "name": "press",
+      "source": "./skills/press"
+    },
+    {
+      "name": "shipflow",
+      "source": "./skills/shipflow"
+    },
+    {
+      "name": "skillhelp",
+      "source": "./skills/skillhelp"
+    }
+  ]
+}

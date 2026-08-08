@@ -1,0 +1,10 @@
+{
+  "name": "skillhelp",
+  "version": "0.1.0",
+  "description": "Answers any question about any skill in this repo — setup, usage, commands, architecture, troubleshooting — from an index built out of the skills' own files, and says so plainly when the answer is not in there.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/skillhelp",
+  "license": "MIT"
+}
