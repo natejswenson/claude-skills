@@ -1,0 +1,5 @@
+{
+  "$comment": "An explicitly empty rule set, so the frozen first-run `propose` can never read whoever-ran-refresh.sh's own ~/.gmailtriage/rules.json. `propose` defaults to that path (like `audit` does), which is right for a user and wrong for a hermetic baseline. A first run genuinely has no rules; this file says so out loud instead of relying on a file being absent.",
+  "version": 1,
+  "rules": []
+}

@@ -849,3 +849,104 @@ test('a merge refuses the cases that would lose mail', () => {
   // parent no longer names
   assert.throws(() => mergeLabels([], { from: 'Recruiting', to: 'Recruiting/Acme' }), /parent of/);
 });
+
+// ── the guard the second real run added ─────────────────────────────────────
+//
+// `propose` clustered senders with no knowledge of the rule set, so it
+// re-proposed rules for mail the user had already ruled on. The noise was the
+// mild half: on a live mailbox it proposed TRASHING a sender whose mail an
+// existing SORT rule was filing, because clustering only ever saw an address
+// and a bulk marker. `audit` had the correct test three functions away.
+
+const signing = (i) => ({
+  id: `s${i}`,
+  from: 'secure@esign.example',
+  subject: 'Document ready for signature',
+  date: '2026-08-01T00:00:00Z',
+  hasUnsubscribe: true,
+});
+const sellingRule = {
+  id: 'sort-selling-home',
+  action: 'label',
+  label: 'Selling_Home',
+  match: { from: '@esign.example' },
+  note: 'real-estate signing documents',
+};
+
+test('a sender an existing SORT rule files is never proposed for trashing', () => {
+  const threads = [signing(1), signing(2), signing(3), signing(4)];
+
+  const blind = propose(threads, { minCount: 3 });
+  assert.equal(blind.candidates.length, 1, 'precondition: without rules it IS a trash candidate');
+  assert.equal(blind.candidates[0].from, 'secure@esign.example');
+
+  const aware = propose(threads, { minCount: 3, rules: [sellingRule] });
+  assert.deepEqual(aware.candidates, [], 'a rule already files this sender — trashing it would destroy the filed mail');
+  assert.deepEqual(aware.sortable, []);
+  assert.deepEqual(aware.withheld, []);
+  assert.deepEqual(aware.below, []);
+});
+
+test('an already-claimed sender is reported, not silently dropped', () => {
+  const r = propose([signing(1), signing(2), signing(3)], { minCount: 3, rules: [sellingRule] });
+  assert.equal(r.claimedThreads, 3);
+  assert.deepEqual(r.claimed.map((c) => c.from), ['secure@esign.example']);
+  assert.deepEqual(r.claimed[0].ruleIds, ['sort-selling-home']);
+  // `sampled` still reports what was read, not what survived the filter.
+  assert.equal(r.sampled, 3);
+});
+
+test('claimed is judged with ignoreFiled — a thread sitting in its own folder is the MOST claimed', () => {
+  // The exact case that fooled `plan`-style matching: already labelled, so a
+  // naive match returns false and the sender reads as unclaimed.
+  const filed = { ...signing(1), labels: ['Selling_Home'] };
+  assert.equal(matches(sellingRule, filed), false, 'precondition: plain matches() says no');
+  const r = propose([filed, { ...signing(2), labels: ['Selling_Home'] }, signing(3)],
+    { minCount: 3, rules: [sellingRule] });
+  assert.equal(r.claimedThreads, 3);
+  assert.deepEqual(r.candidates, []);
+});
+
+test('a sender only PARTLY claimed is still excluded, so a trash rule cannot land in front of a sort rule', () => {
+  // The subject matcher claims one thread; the leftovers would otherwise
+  // cluster into a trash rule for a sender the user has already decided about.
+  const scoped = { ...sellingRule, match: { from: '@esign.example', subjectContains: 'signature' } };
+  const threads = [signing(1), { ...signing(2), subject: 'Reminder' },
+    { ...signing(3), subject: 'Reminder' }, { ...signing(4), subject: 'Reminder' }];
+  const r = propose(threads, { minCount: 3, rules: [scoped] });
+  assert.deepEqual(r.candidates, [], 'one matched thread proves the user has ruled on this sender');
+  assert.equal(r.claimedThreads, 1);
+});
+
+test('a fully-covered sample says so, instead of "no bulk mail — widen the fetch"', () => {
+  const r = propose([signing(1), signing(2), signing(3)], { minCount: 3, rules: [sellingRule] });
+  assert.equal(r.reason.kind, 'all-claimed');
+  assert.match(r.reason.text, /already claimed/);
+  assert.doesNotMatch(r.reason.text, /widen the fetch/);
+  assert.equal(r.sortReason.kind, 'all-claimed');
+});
+
+test('an unclaimed sender still comes through beside a claimed one', () => {
+  // The real gap this run found: a rule matching `@sanfordhealth.org` cannot
+  // reach the `billing.sanfordhealth.org` subdomain, so that sender is genuinely
+  // unclaimed and must survive the filter.
+  const bill = (i) => ({
+    id: `b${i}`, from: 'billing@billing.clinic.example',
+    subject: 'Your bill is ready', date: '2026-08-01T00:00:00Z', hasUnsubscribe: true,
+  });
+  const clinicRule = {
+    id: 'sort-clinic', action: 'label', label: 'Medical',
+    match: { from: '@clinic.example' }, note: 'clinic mail',
+  };
+  const r = propose([signing(1), signing(2), signing(3), bill(1), bill(2), bill(3)],
+    { minCount: 3, rules: [sellingRule, clinicRule] });
+  assert.deepEqual(r.claimed.map((c) => c.from), ['secure@esign.example']);
+  assert.deepEqual(r.sortable.map((s) => s.from), ['billing@billing.clinic.example'],
+    'the subdomain the @-anchored rule cannot reach is a real, unclaimed gap');
+});
+
+test('with no rules at all, propose behaves exactly as it did before', () => {
+  const threads = [signing(1), signing(2), signing(3)];
+  assert.deepEqual(propose(threads, { minCount: 3 }).candidates,
+    propose(threads, { minCount: 3, rules: [] }).candidates);
+});

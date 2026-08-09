@@ -2,7 +2,7 @@
 name: gmailtriage
 description: Sort and clean a Gmail inbox under rules the user wrote — filing mail into their own labels and out of the inbox, and moving junk to the trash. On a first run it walks the user through building that rule set from their own senders and their own existing folders, instead of shipping generic defaults. Use when the user says "clean my inbox", "gmailtriage", "triage my email", "sort my gmail", "file my email into folders", "auto-label my mail", "set up my email rules", "delete my junk mail", "unsubscribe and clean up", "why is my inbox full", or wants mail automatically filed, labelled or cleared out of Gmail without doing it by hand.
 user_invocable: true
-version: 0.4.0
+version: 0.5.0
 ---
 
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
@@ -28,7 +28,7 @@ step whose command does not exist fails `skillfactory verify`.
 | report whether this mailbox has any rules yet, and the single next thing to do | `node scripts/gmailtriage.js setup` |
 | report whether the label system is still coherent — which folders no rule manages, which are two spellings of one folder, and which mail no rule claims — and exit non-zero if any of it is outstanding | `node scripts/gmailtriage.js audit` |
 | fold one folder into another, applying the target before removing the source, and record it so the fold can be undone | `node scripts/gmailtriage.js merge` |
-| cluster a real inbox sample into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has | `node scripts/gmailtriage.js propose` |
+| drop every sender an existing rule already claims, then cluster what is left into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has | `node scripts/gmailtriage.js propose` |
 | cluster a folder that already has mail in it by sender, match each cluster against the sub-labels that folder already has, and say when it is still one thing | `node scripts/gmailtriage.js subdivide` |
 | validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns | `node scripts/gmailtriage.js rules` |
 | reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists | `node scripts/gmailtriage.js labels` |
@@ -129,6 +129,14 @@ distinction is the difference between a system that grows and one that sprawls.
 ```bash
 node scripts/gmailtriage.js propose --threads threads.json --labels labels.json --out candidates.json
 ```
+
+It reads the rule file too (`--rules`, defaulting to the same path `audit` uses) and
+**drops every sender an existing rule already claims** before it clusters anything.
+Read the `Already claimed` table out loud rather than skipping it — a shrinking
+candidate list with no stated cause reads as mail having gone missing. **Never
+hand-write a rule for a sender listed there**: the user has already decided about
+it, and a trash rule standing in front of their sort rule is how filed mail gets
+binned.
 
 It prints **two** candidate tables, and they are not the same question:
 
@@ -287,7 +295,7 @@ filed thread is one label away from where it was. Offer `undo`; do not bury it.
 | Command | Returns |
 |---|---|
 | `gmailtriage setup` | state, rule count, rule file — plus a first-run walkthrough when nothing is configured |
-| `gmailtriage propose` | read a slice of the user's real inbox and the labels they already have, cluster the mail by sender, and return two tables — bulk mail worth trashing, and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name. So a first run starts from the user's own mail and own folders rather than from generic defaults. Proposes only; writes no rule and moves nothing. |
+| `gmailtriage propose` | read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is left — returning two tables, bulk mail worth trashing and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name, plus the senders it excluded and which rule claims each. So a first run starts from the user's own mail and own folders rather than generic defaults, and a later run can never re-propose or contradict a rule they already wrote. Proposes only; writes no rule and moves nothing. |
 | `gmailtriage audit` | read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holding mail and empty scaffolding), every pair of labels that are one folder spelled two ways, and every thread no rule claims, each matched to a folder that already exists or flagged as needing a name. Returns a coverage percentage and exits non-zero while anything is outstanding, so a system that is quietly rotting cannot read as clean. Reads only; moves nothing. |
 | `gmailtriage merge` | fold one folder into another, returning the operations in the only safe order — apply the target label first, remove the source second, delete the source folder last — plus a receipt so the fold can be reversed. A merge that moves no mail is still recorded, because the folder it deleted still has to come back. |
 | `gmailtriage subdivide` | read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needing a name, and each sender that hosts mail for many organisations flagged as needing a subject matcher too, with its distinct subjects printed. Says plainly when a folder is still one thing and should be left alone. Proposes only; writes no rule and moves nothing. |
@@ -345,6 +353,12 @@ filed thread is one label away from where it was. Offer `undo`; do not bury it.
   Call` applies `Recruiting` as well. The parent view is still the whole
   category; the sub-label narrows it. A user who thinks their mail moved out
   will go looking for it.
+- **Never propose a rule for a sender an existing rule already claims.** `propose`
+  now excludes them, but the rule is on you as well: if a candidate names a sender
+  that appears in the `Already claimed` table, or that you can see in the rule list,
+  do not write a rule for it by hand. The user has already decided about that sender,
+  and the dangerous case is not the duplicate — it is a *trash* rule standing in
+  front of their *sort* rule, which bins mail they deliberately kept.
 - **Never propose a *trash* rule for a withheld sender.** Financial, medical,
   governmental, educational and recruiting senders, and any cluster carrying a
   login code, receipt or verification, stay withheld from trashing. They may
