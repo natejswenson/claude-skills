@@ -198,8 +198,22 @@ const resolveThreadLabels = (threads, index) => threads.map((t) => {
 async function cmdPropose(args) {
   const threads = readJson(args.threads ?? '', 'propose: --threads <file.json> of fetched threads');
   const labels = readLabels(args.labels);
-  const r = propose(threads, { minCount: Number(args.minCount ?? 3), labels });
-  const { candidates, sortable, withheld, below, reason, sortReason, unhoused, sampled } = r;
+  // The rule file is read here for the same reason `audit` reads it: a sender
+  // an existing rule already claims must never come back as a candidate. A
+  // missing rule file is a first run, which is exactly when there is nothing
+  // to exclude — so it degrades to the old behaviour rather than failing.
+  const ruleFile = resolve(args.rules ?? defaultRules());
+  const ruleDoc = existsSync(ruleFile) ? readJson(ruleFile, 'propose: rule file') : { rules: [] };
+  const rules = ruleDoc.rules ?? [];
+  const r = propose(threads, { minCount: Number(args.minCount ?? 3), labels, rules });
+  const { candidates, sortable, withheld, below, reason, sortReason, unhoused, sampled,
+    claimed, claimedThreads } = r;
+
+  if (claimed.length) {
+    console.log(table(['Already claimed', 'Threads', 'By rule'],
+      claimed.slice(0, Number(args.showClaimed ?? 8)).map((c) => [c.from, c.count, c.ruleIds.join(', ')])));
+    console.log(`${claimedThreads} of ${sampled} thread(s) are already claimed by ${claimed.length} sender(s) your rules cover — excluded from everything below, so a rule you already wrote is never re-proposed or contradicted.\n`);
+  }
 
   console.log('TRASH — bulk mail a rule would move to the trash\n');
   if (candidates.length) {
@@ -241,8 +255,8 @@ async function cmdPropose(args) {
   }
 
   console.log('');
-  console.log(table(['Sampled', 'Your labels', 'Trash', 'Sort', 'Need a new folder', 'Withheld', 'Below threshold'],
-    [[sampled, labels.length, candidates.length, sortable.length, unhoused, withheld.length, below.length]]));
+  console.log(table(['Sampled', 'Already claimed', 'Your labels', 'Trash', 'Sort', 'Need a new folder', 'Withheld', 'Below threshold'],
+    [[sampled, claimedThreads, labels.length, candidates.length, sortable.length, unhoused, withheld.length, below.length]]));
   console.log('\nnothing has moved — these are candidates. Accept the ones you want with `rules --add`.');
 
   if (args.out) {
@@ -809,7 +823,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage setup     [--file <rules.json>]
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
-  gmailtriage propose   --threads <f.json> [--labels <f.json>] [--min-count N] [--out <f.json>]
+  gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>]

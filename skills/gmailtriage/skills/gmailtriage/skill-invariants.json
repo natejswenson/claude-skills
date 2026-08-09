@@ -58,6 +58,11 @@
       "id": "guards-constrain-proposals-not-users",
       "pattern": "the guard is on what the skill suggests",
       "rationale": "The withheld list is about what the skill proposes, never about what the user may decide. Losing the distinction turns a helpful default into a tool that argues with its owner."
+    },
+    {
+      "id": "propose-never-contradicts-a-rule-the-user-wrote",
+      "pattern": "Never propose a rule for a sender an existing rule already claims",
+      "rationale": "`propose` clustered on senders with no knowledge of the rule set, so it re-proposed rules for mail the user had already ruled on. The noise was the mild half: on a live mailbox it proposed TRASHING a sender whose mail an existing SORT rule was filing, which would have binned real-estate signing documents the user had deliberately kept. Same defect class as `audit-does-not-call-filed-mail-unclaimed`, and the same remedy — `matches(..., { ignoreFiled: true })`, because a thread already sitting in the folder its rule files into is the MOST claimed thread in the mailbox, not an unclaimed one. Claimed at SENDER granularity: a rule claiming only some of a sender's mail still proves the user has decided about that sender, and the leftovers are exactly what would otherwise cluster into a trash rule sitting in front of their sort rule."
     }
   ],
   "split": {
@@ -211,6 +216,14 @@
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
       "rationale": "the audit silently ceasing to find what it exists to find — pinned against a synthetic label list and rule set shaped after a real mailbox BEFORE the hygiene pass (5 unmanaged folders, one transposed duplicate pair, 16 unclaimed threads) and AFTER it (100% coverage, clean, exit 0), both re-run and byte-compared. Catches the unmanaged/duplicate/unclaimed classification drifting, the coverage arithmetic changing, and the clean state ceasing to be reachable."
+    },
+    {
+      "id": "propose-excludes-a-sender-a-rule-already-claims",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the defect the second live run had: `propose` never read the rule file, so it re-proposed rules for mail already covered — including a TRASH candidate for a sender an existing SORT rule was filing. Pinned two-sided by two frozen runs over the SAME corpus: `propose.txt` uses rules-none.json (a genuine first run, everything proposed) and `propose-covered.txt` uses rules.json (every sender claimed, nothing proposed, the exclusion reported by name). The pair is what proves the filter fires on coverage and not on the corpus. `rules-none.json` is explicit rather than absent on purpose — `propose` defaults to ~/.gmailtriage/rules.json, so an implicit first run would read whoever ran refresh.sh."
     },
     {
       "id": "audit-does-not-call-filed-mail-unclaimed",

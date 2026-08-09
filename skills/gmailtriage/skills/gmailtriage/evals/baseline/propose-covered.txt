@@ -1,0 +1,37 @@
+| Already claimed                         | Threads | By rule              |
+|-----------------------------------------|---------|----------------------|
+| support@packages.example                | 9       | trash-packages       |
+| careers@recruiting.initech.example      | 4       | sort-initech         |
+| edocuments@statements.northbank.example | 4       | sort-statements      |
+| outreach@leadgen.example                | 4       | trash-leadgen        |
+| secure@esignature.example               | 4       | sort-paperwork       |
+| advisor0@wealthpartners.example         | 3       | sort-advisor         |
+| deals@shopfront.example                 | 3       | trash-shopfront      |
+| invoices@billingplatform.example        | 3       | sort-claim-work      |
+| news@readinglist.example                | 3       | trash-readinglist    |
+| advisor1@wealthpartners.example         | 2       | sort-advisor         |
+| agent@realty.example                    | 2       | sort-realty          |
+| alerts@notify.southbank.example         | 2       | sort-banking         |
+| centralschools@parentvendor.example     | 2       | sort-school          |
+| claims@insurepay.example                | 2       | sort-claim-insurepay |
+| me@mailprovider.example                 | 2       | sort-briefings       |
+| mychart@valleyhealth.example            | 2       | sort-medical         |
+| billing@cloudvendor.example             | 1       | sort-receipts-cloud  |
+| correspondence@insurer.example          | 1       | sort-claim-insurer   |
+| donotreply@bookstore.example            | 1       | sort-receipts-books  |
+| no-reply@accounts.mailprovider.example  | 1       | sort-security        |
+66 of 66 thread(s) are already claimed by 31 sender(s) your rules cover — excluded from everything below, so a rule you already wrote is never re-proposed or contradicted.
+
+TRASH — bulk mail a rule would move to the trash
+
+No trash candidates — every sender in the sample is already claimed by one of your 24 rules. Nothing new has arrived — that is what a covered mailbox looks like.
+
+SORT — mail worth keeping, filed out of the inbox
+
+No sort candidates — every sender in the sample is already filed by one of your 24 rules. There is nothing left over to file.
+
+| Sampled | Already claimed | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
+|---------|-----------------|-------------|-------|------|-------------------|----------|-----------------|
+| 66      | 66              | 20          | 0     | 0    | 0                 | 0        | 0               |
+
+nothing has moved — these are candidates. Accept the ones you want with `rules --add`.
