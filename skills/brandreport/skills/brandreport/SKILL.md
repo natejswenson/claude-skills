@@ -43,7 +43,10 @@ step whose command does not exist fails `skillfactory verify`.
 ### 1. Start the run
 
 `brandreport init --subject "<name>"` — the run directory, the snapshot
-corpus, the findings file, the report path. One table back.
+corpus, the findings file, the report path. One table back. Runs live in
+`~/.claude/brandreport/<slug>` by default; a run is fetched personal data
+and never belongs in version control, so inside a repo point `--out` at a
+gitignored directory (`brandreport-runs/<slug>` in this repo).
 
 ### 2. Discover — search rounds, then the sweep
 
