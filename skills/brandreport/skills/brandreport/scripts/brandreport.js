@@ -8,7 +8,7 @@
  * judgment; this binary's job is provenance, the attribution gate, and the
  * offline render. Nothing here ever touches the network.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync, rmSync } from 'node:fs';
 import { resolve, join, extname, basename } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -97,7 +97,20 @@ async function cmdAdd(args) {
   const corroboration = status === 'confirmed' ? need(args, 'corroboration') : '';
   const why = status === 'unconfirmed' ? need(args, 'why') : '';
   const existing = loadSnapshots(snapshotsDir);
-  const id = `s${existing.length + 1}`;
+  // A re-run refreshes what it already found instead of filing duplicates:
+  // --id s2 replaces that snapshot in place (new content, new provenance,
+  // same citation key, so findings.json keeps resolving).
+  let id;
+  if (args.id) {
+    id = String(args.id);
+    const prior = existing.find((s) => s.id === id);
+    if (!prior) throw new Error(`--id ${id}: no such snapshot to refresh — omit --id to file a new one`);
+    if (prior.status !== status) throw new Error(`--id ${id}: refusing to flip status ${prior.status} → ${status} in a refresh — that is a new identity judgment, file it as a new snapshot`);
+    rmSync(join(snapshotsDir, prior.file));
+  } else {
+    let n = existing.length;
+    do { n += 1; id = `s${n}`; } while (existing.some((s) => s.id === id));
+  }
   const ext = extname(file) || '.txt';
   const meta = {
     id,
@@ -278,7 +291,7 @@ const USAGE = `brandreport v${VERSION} — Give it just a name; it blind-searche
   brandreport add    --run <dir> --file <path> --url <url> --kind <profile|site|post|mention|search>
                      --status confirmed --corroboration "<how it was tied>"
                      --status unconfirmed --why "<why it could not be tied>"
-                     [--platform <name>] [--title <t>] [--fetched-at <iso>]
+                     [--platform <name>] [--title <t>] [--fetched-at <iso>] [--id sN  # refresh in place]
   brandreport status --run <dir>
   brandreport gate   --run <dir>
   brandreport report --run <dir> [--out <file>]

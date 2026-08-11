@@ -1,0 +1,11 @@
+{
+  "id": "s11",
+  "url": "https://www.amazon.com/stores/author/B0B135VGS7",
+  "kind": "mention",
+  "platform": "amazon.com",
+  "title": "Amazon author page (existence-only)",
+  "status": "confirmed",
+  "corroboration": "Amazon's author page for the book already tied to the subject (s5); the SERP title names the subject and the store lists that book",
+  "fetchedAt": "2026-08-11T17:45:30.686Z",
+  "file": "s11.md"
+}

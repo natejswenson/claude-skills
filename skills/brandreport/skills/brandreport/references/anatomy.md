@@ -30,6 +30,11 @@ by hand:
 | `fetchedAt` | ISO timestamp of the fetch; the report is dated by the newest of these, never by the clock |
 | `file` | the content file next to this sidecar |
 
+A re-run refreshes rather than duplicates: `add --id s2` replaces that
+snapshot's content and provenance in place, keeping the citation key so
+`findings.json` keeps resolving. A refresh may never flip `status` — deciding
+a hit's identity differently is a new judgment, filed as a new snapshot.
+
 ## findings.json
 
 ```json
