@@ -27,6 +27,7 @@ by hand:
 | `status` | `confirmed` (tied to the person) or `unconfirmed` (same name, no tie) |
 | `corroboration` | confirmed only — the recorded signal that tied it: a cross-link, a shared handle, a bio match. **Required**; `add` refuses a confirmed artifact without one |
 | `why` | unconfirmed only — why it could not be tied. Equally required: unconfirmed findings are listed, never silently dropped |
+| `existenceOnly` | present and `true` when the account is proven to exist but its content cannot be read logged-out — the artifact records the probe, claims nothing about content, and the report marks the row |
 | `fetchedAt` | ISO timestamp of the fetch; the report is dated by the newest of these, never by the clock |
 | `file` | the content file next to this sidecar |
 

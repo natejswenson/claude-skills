@@ -27,6 +27,10 @@
         "command": "node scripts/brandreport.js init"
       },
       {
+        "step": "emit the per-platform handle-sweep checklist",
+        "command": "node scripts/brandreport.js sweep"
+      },
+      {
         "step": "file each fetched artifact with provenance and identity status",
         "command": "node scripts/brandreport.js add"
       },
