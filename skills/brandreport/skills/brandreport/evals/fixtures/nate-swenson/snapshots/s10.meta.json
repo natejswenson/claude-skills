@@ -5,7 +5,7 @@
   "platform": "x.com",
   "title": "X account (@NatejSwenson)",
   "status": "confirmed",
-  "corroboration": "handle equals the anchor handle, and the subject's authenticated Typefully social set names this exact username and display name",
-  "fetchedAt": "2026-08-11T17:31:16.354Z",
+  "corroboration": "the anchor's GitHub profile lists this exact handle in its twitter_username field — a stranger-visible cross-link; ownership further confirmed by the subject's authenticated Typefully social set",
+  "fetchedAt": "2026-08-11T17:45:30.662Z",
   "file": "s10.md"
 }
