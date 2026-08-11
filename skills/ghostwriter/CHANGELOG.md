@@ -4,6 +4,27 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-08-11
+
+### Changed
+
+- **Warm, personable, human is now the default register, enforced at draft time.**
+  The pre-show self-check gains a positive **register check** alongside the ban
+  checks: the post must open on the situation or the human reason (not a
+  statistic), name the real thing in plain words, and narrate first-person as
+  something that happened to the user. A draft that avoids every banned tic but
+  reads like an incident report now fails the self-check and gets rewritten
+  before the user sees it. Motivated by repeated real feedback ("every one of
+  the posts sounds so vague and matter of factly, we need the posts to be more
+  warm and human") that kept landing as one more voice note competing with
+  twenty sections of bans instead of changing the architecture.
+- **Engagement craft's "Sound human" rule now defines what human *is*,** not
+  just what it isn't — avoiding AI tells only gets a draft to neutral.
+- **`voice/voice-notes.example.md` ships a real "Register — warm and human by
+  default" section** (with the warmth-outranks-maximal-tightness precedence
+  rule), so fresh setups start from a warm default instead of a placeholder
+  tone slot.
+
 ## [0.15.0] - 2026-08-04
 
 ### Added
