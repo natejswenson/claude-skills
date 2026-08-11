@@ -1,0 +1,104 @@
+{
+  "subject": "Nate Swenson",
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Senior DevOps Engineer at Goodleap, based in Minnesota; on GitHub since 2016.",
+      "sources": [
+        "s2"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Runs natejswenson.com, a build-in-public dev log documenting shipped features across roughly seventeen projects \u2014 including the tradeoffs and failures, not just the wins.",
+      "sources": [
+        "s1"
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Maintains 15 public GitHub repositories under natejswenson; the recently pushed work is concentrated on Claude Code skills and AI-agent tooling (claude-skills, local-fitness, budget, devlog).",
+      "sources": [
+        "s2",
+        "s3"
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Publishes open-source npm packages under the @natjswenson scope \u2014 press, shipflow, devlog \u2014 each wired back to the GitHub account.",
+      "sources": [
+        "s4"
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Co-authored The DevOps Career Handbook (Packt, 2022) with John Knight \u2014 234 pages on building a DevOps career, drawing on 12 years in Fortune 100 insurance and finance.",
+      "sources": [
+        "s5",
+        "s11"
+      ]
+    },
+    {
+      "id": "c6",
+      "text": "Holds the natejswenson slug on LinkedIn \u2014 'Cloud and DevOps Professional | AWS Solutions Architect | Terraform and Container Expert' \u2014 where the public posts promote The DevOps Career Handbook.",
+      "sources": [
+        "s9"
+      ]
+    },
+    {
+      "id": "c7",
+      "text": "Holds @NatejSwenson on X, now linked from the GitHub profile's own twitter_username field \u2014 discoverable in one hop from the anchor, though the account's content stays unreadable to a logged-out visitor.",
+      "sources": [
+        "s10"
+      ]
+    }
+  ],
+  "read": {
+    "themes": [
+      {
+        "name": "Builds in public, failures included",
+        "text": "The site is not a portfolio, it is a dev log: versioned release posts that document what shipped and what went wrong. Combined with the public repos, the brand's core claim is receipts over r\u00e9sum\u00e9.",
+        "sources": [
+          "s1",
+          "s3"
+        ]
+      },
+      {
+        "name": "One identity, threaded end to end",
+        "text": "The name, the domain, the GitHub handle, the npm scope, the LinkedIn slug and the X handle all interlink: site to GitHub, GitHub blog field back to site, npm packages back to the repos, and one handle carried across every platform. A stranger can verify the whole presence in three clicks, which is rarer than it sounds.",
+        "sources": [
+          "s1",
+          "s2",
+          "s4",
+          "s9",
+          "s10"
+        ]
+      },
+      {
+        "name": "DevOps in print, AI agents in practice",
+        "text": "The 2022 book fixes the public identity as a DevOps career author; the 2026 activity is almost entirely AI-agent tooling. The brand is mid-pivot, and the dev log is where the two eras visibly connect.",
+        "sources": [
+          "s5",
+          "s3",
+          "s1"
+        ]
+      }
+    ],
+    "gaps": [
+      "The X account is now linked from the GitHub profile, but X still blocks logged-out reading \u2014 a stranger can find it and follow it, yet sees none of what it says.",
+      "The npm scope drops a letter (natjswenson, no 'e') \u2014 a searcher who finds the packages first can reasonably doubt they belong to the same person.",
+      "The LinkedIn profile blocks logged-out reading; it is findable only through the posts that carry its slug, so most of what lives there is invisible to exactly the stranger this report simulates."
+    ],
+    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm, LinkedIn and a published book all corroborate each other, one handle threading through every platform. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edge is reach \u2014 X and most of LinkedIn are findable but unreadable to a logged-out visitor \u2014 not substance."
+  },
+  "unconfirmed": [
+    {
+      "note": "The bare-name search surfaces a cluster of same-name people with real public profiles; none could be tied to the subject by any recorded signal, so they are listed here and cited nowhere. (In this frozen corpus the strangers are invented, shape-preserving stand-ins \u2014 real third parties never reach the repo.)",
+      "sources": [
+        "s6",
+        "s7",
+        "s8"
+      ]
+    }
+  ]
+}

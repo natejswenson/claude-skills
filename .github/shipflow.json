@@ -35,6 +35,7 @@
       "workflowFile": "{name}.yml"
     },
     "components": [
+      "brandreport",
       "city-report",
       "devlog",
       "eval",

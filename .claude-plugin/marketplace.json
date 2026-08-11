@@ -72,6 +72,10 @@
     {
       "name": "skillhelp",
       "source": "./skills/skillhelp"
+    },
+    {
+      "name": "brandreport",
+      "source": "./skills/brandreport"
     }
   ]
 }
