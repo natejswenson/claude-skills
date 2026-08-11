@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.15.0
+version: 0.16.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -259,6 +259,12 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    - **The ending** — the #1 AI tell, flagged more than anything else. The post stops on the
      last real point. No inverted-parallel closer, no clever-symmetry aphorism, no reflexive
      "what's your…?" CTA.
+   - **The register — warm, personable, human (voice-notes → Register).** This is a positive
+     check, not a ban: the post opens on the situation or the human reason (not a statistic),
+     names the real thing in plain words instead of a category, narrates first-person as
+     something that happened to the user, and reads like them talking to a peer. A draft that
+     merely avoids every banned tic but sounds like an incident report FAILS this check —
+     rewrite the clinical sentences in the words the user would say out loud.
    - **Nothing fabricated** — no invented details, motivations, or timeline drama the user
      didn't actually live.
    - **Length** — default 50–120 words (see Engagement craft).
@@ -573,8 +579,12 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
   is needed, leave it out and tell the user to drop it in the **first comment**.
 - **Earn the ending on substance.** A line worth re-sharing, or a genuine question only when it
   truly is the strongest ending — never a reflexive "Thoughts? 👇" (voice-notes forbids it).
-- **Sound human.** No "In today's fast-paced world", no "game-changer", no "delve", no
-  manufactured humility. If it reads like AI, rewrite it. Match the profile's "Never do" list.
+- **Sound human — warmth is a positive property, not the absence of tells.** No "In today's
+  fast-paced world", no "game-changer", no "delve", no manufactured humility; but avoiding
+  those only gets a draft to neutral. Human means: open on the situation or the human reason,
+  name the real thing in plain words, first-person narration, mild self-deprecation where it's
+  true, everyday words over clinical ones (see voice-notes → Register). If it reads like AI
+  *or* like an incident report, rewrite it. Match the profile's "Never do" list.
 - **Length: default 50–120 words** — the voice-notes default wins over algorithm.md's longer
   ~900–1,500-char "sweet spot," which applies only when the post genuinely needs the room (e.g.
   a multi-step how-to) and never as padding. Hard cap 3000 chars (the script enforces it).

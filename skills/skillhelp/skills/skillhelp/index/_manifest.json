@@ -66,9 +66,9 @@
     },
     {
       "name": "ghostwriter",
-      "version": "0.15.0",
+      "version": "0.16.0",
       "stack": "python",
-      "cardHash": "3e40096e09d50ce3",
+      "cardHash": "3b6a440d27c8d7ac",
       "facts": 48,
       "sections": {
         "setup": 4,
@@ -114,9 +114,9 @@
     },
     {
       "name": "gmailtriage",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "stack": "node",
-      "cardHash": "ed7d0da42c9d8a36",
+      "cardHash": "8001dd7bfaa5475c",
       "facts": 66,
       "sections": {
         "setup": 2,
