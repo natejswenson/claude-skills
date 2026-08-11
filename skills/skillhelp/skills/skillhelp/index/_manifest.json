@@ -4,7 +4,7 @@
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "dd2dc6182f2076db",
+      "cardHash": "fca35b70d8ddadf1",
       "facts": 48,
       "sections": {
         "setup": 2,
