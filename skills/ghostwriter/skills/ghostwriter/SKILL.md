@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.16.0
+version: 0.16.1
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -284,9 +284,14 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
    Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
-   takes typed edit instructions directly) / **Scrap** — and wait for the answer. The Publish tap
-   immediately after seeing the exact full text is the explicit approval; an edited draft is
-   re-shown and re-asked the same way. Do not publish unprompted.
+   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The complete,
+   final post text rides INSIDE the approval dialog: put it (verbatim, no fold marker, no
+   metadata line) in the `preview` of the Publish option**, so the user reads the exact text at
+   the moment of decision. Never rely on the draft being visible in chat above the dialog — the
+   dialog takes focus over scrollback, and a real session (2026-08-11) reached the approval
+   question twice without the user ever having seen the whole post. The Publish tap on a dialog
+   that carries the full text is the explicit approval; an edited draft is re-shown and re-asked
+   the same way. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has

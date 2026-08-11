@@ -4,6 +4,16 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-08-11
+
+### Fixed
+
+- **The full post text now rides inside the approval dialog itself** (as the
+  Publish option's `preview`), instead of only being printed in chat above it.
+  A real session hit the gap twice in one sitting: the dialog takes focus over
+  scrollback, so the user was asked to approve a post they had never actually
+  seen in full.
+
 ## [0.16.0] - 2026-08-11
 
 ### Changed
