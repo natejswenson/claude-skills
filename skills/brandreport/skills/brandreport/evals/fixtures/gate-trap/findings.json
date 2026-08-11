@@ -1,0 +1,9 @@
+{
+  "subject": "Trap Subject",
+  "claims": [
+    { "id": "c1", "text": "Cites a snapshot that does not exist.", "sources": ["s99"] },
+    { "id": "c2", "text": "Attributes an unconfirmed snapshot.", "sources": ["s1"] }
+  ],
+  "read": { "themes": [], "gaps": [], "summary": "" },
+  "unconfirmed": [ { "note": "listed", "sources": ["s1"] } ]
+}

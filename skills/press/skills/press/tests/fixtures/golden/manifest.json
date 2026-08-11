@@ -41,6 +41,9 @@
     "gmailtriage-agent-ui",
     "gmailtriage-readme",
     "skillhelp-agent-ui",
-    "skillhelp-readme"
+    "skillhelp-readme",
+    "brandreport-agent-ui",
+    "brandreport-readme",
+    "brandreport-theme"
   ]
 }
