@@ -1,0 +1,11 @@
+{
+  "id": "s1",
+  "url": "https://social.example/in/trap-subject",
+  "kind": "mention",
+  "platform": "social.example",
+  "title": "same-name stranger",
+  "status": "unconfirmed",
+  "why": "no tie",
+  "fetchedAt": "2026-08-11T17:00:00.000Z",
+  "file": "s1.md"
+}

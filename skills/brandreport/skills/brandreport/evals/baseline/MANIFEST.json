@@ -1,0 +1,12 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/brandreport.js report --run evals/fixtures/nate-swenson --out $OUT/report.html",
+  "artifacts": [
+    {
+      "path": "report.html",
+      "bytes": 11656,
+      "sha256": "df76858c388dfdf190d415f9c5c468fcf77ca3ccfef2ac4090bc9987e515aea4"
+    }
+  ]
+}

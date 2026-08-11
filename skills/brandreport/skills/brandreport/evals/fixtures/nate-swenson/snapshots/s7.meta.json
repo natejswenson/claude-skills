@@ -1,0 +1,11 @@
+{
+  "id": "s7",
+  "url": "https://district.schools.example/news/new-principal",
+  "kind": "mention",
+  "platform": "district.schools.example",
+  "title": "Nate Swenson, high-school principal",
+  "status": "unconfirmed",
+  "why": "education career, no shared handle or cross-link; sharing a state is not specific enough to exclude strangers",
+  "fetchedAt": "2026-08-11T17:00:00.000Z",
+  "file": "s7.md"
+}

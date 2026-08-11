@@ -1,0 +1,11 @@
+{
+  "id": "s5",
+  "url": "https://books.google.com/books/about/The_DevOps_Career_Handbook.html?id=kmtvEAAAQBAJ",
+  "kind": "mention",
+  "platform": "books.google.com",
+  "title": "The DevOps Career Handbook (Packt, 2022)",
+  "status": "confirmed",
+  "corroboration": "author bio matches the anchor's field and sector (DevOps, Fortune 100 finance/insurance) and the anchor site titles itself 'DevOps Engineer, Agile Coach & Author'",
+  "fetchedAt": "2026-08-11T17:19:11.887Z",
+  "file": "s5.md"
+}

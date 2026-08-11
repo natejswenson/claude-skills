@@ -1,0 +1,87 @@
+{
+  "subject": "Nate Swenson",
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Senior DevOps Engineer at Goodleap, based in Minnesota; on GitHub since 2016.",
+      "sources": [
+        "s2"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "Runs natejswenson.com, a build-in-public dev log documenting shipped features across roughly seventeen projects \u2014 including the tradeoffs and failures, not just the wins.",
+      "sources": [
+        "s1"
+      ]
+    },
+    {
+      "id": "c3",
+      "text": "Maintains 15 public GitHub repositories under natejswenson; the recently pushed work is concentrated on Claude Code skills and AI-agent tooling (claude-skills, local-fitness, budget, devlog).",
+      "sources": [
+        "s2",
+        "s3"
+      ]
+    },
+    {
+      "id": "c4",
+      "text": "Publishes open-source npm packages under the @natjswenson scope \u2014 press, shipflow, devlog \u2014 each wired back to the GitHub account.",
+      "sources": [
+        "s4"
+      ]
+    },
+    {
+      "id": "c5",
+      "text": "Co-authored The DevOps Career Handbook (Packt, 2022) with John Knight \u2014 234 pages on building a DevOps career, drawing on 12 years in Fortune 100 insurance and finance.",
+      "sources": [
+        "s5"
+      ]
+    }
+  ],
+  "read": {
+    "themes": [
+      {
+        "name": "Builds in public, failures included",
+        "text": "The site is not a portfolio, it is a dev log: versioned release posts that document what shipped and what went wrong. Combined with the public repos, the brand's core claim is receipts over r\u00e9sum\u00e9.",
+        "sources": [
+          "s1",
+          "s3"
+        ]
+      },
+      {
+        "name": "One identity, threaded end to end",
+        "text": "The name, the domain, the GitHub handle and the npm scope all interlink: site to GitHub, GitHub blog field back to site, npm packages back to the repos. A stranger can verify the whole presence in three clicks, which is rarer than it sounds.",
+        "sources": [
+          "s1",
+          "s2",
+          "s4"
+        ]
+      },
+      {
+        "name": "DevOps in print, AI agents in practice",
+        "text": "The 2022 book fixes the public identity as a DevOps career author; the 2026 activity is almost entirely AI-agent tooling. The brand is mid-pivot, and the dev log is where the two eras visibly connect.",
+        "sources": [
+          "s5",
+          "s3",
+          "s1"
+        ]
+      }
+    ],
+    "gaps": [
+      "No discoverable X/Twitter presence, and the GitHub profile lists no handle \u2014 the writing lives only on the site and LinkedIn.",
+      "The npm scope drops a letter (natjswenson, no 'e') \u2014 a searcher who finds the packages first can reasonably doubt they belong to the same person.",
+      "The professional-network profile cannot be read logged-out, so whatever lives there is invisible to exactly the stranger this report simulates \u2014 and the bare-name slug there belongs to someone else."
+    ],
+    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm and a published book all corroborate each other. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edges are reach rather than substance."
+  },
+  "unconfirmed": [
+    {
+      "note": "The bare-name search surfaces a cluster of same-name people with real public profiles; none could be tied to the subject by any recorded signal, so they are listed here and cited nowhere. (In this frozen corpus the strangers are invented, shape-preserving stand-ins \u2014 real third parties never reach the repo.)",
+      "sources": [
+        "s6",
+        "s7",
+        "s8"
+      ]
+    }
+  ]
+}
