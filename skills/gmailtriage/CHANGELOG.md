@@ -5,6 +5,57 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-08
+
+### Fixed
+
+- **`propose` no longer proposes rules for mail your rules already cover — and
+  the dangerous case was not the duplicate.** It clustered senders with no
+  knowledge of the rule set at all: `propose(threads, { minCount, labels })`
+  took no rules and read no rule file. On a live mailbox it proposed **trashing**
+  `secure@authentisign.com` while an existing *sort* rule was quietly filing
+  that sender's real-estate signing documents into `Selling_Home`. Accepting
+  that candidate would have binned mail the user had deliberately kept, and the
+  summary table would have looked entirely correct doing it. `propose` now reads
+  the rule file (`--rules`, defaulting to the same path `audit` uses) and drops
+  every claimed sender before clustering.
+
+  This is the same defect class as the one `audit` had in 0.4.0, with the same
+  remedy sitting three functions away: `matches(..., { ignoreFiled: true })`,
+  because a thread already sitting in the folder its rule files into is the
+  *most* claimed thread in the mailbox, not an unclaimed one.
+
+  Claimed is judged at **sender** granularity, not per thread. A rule that
+  matches only some of a sender's mail still proves the user has decided about
+  that sender, and the leftover threads are exactly what would otherwise cluster
+  into a trash rule standing in front of their sort rule.
+
+### Added
+
+- **Exclusions are reported, never silently dropped.** `propose` prints an
+  `Already claimed` table naming each excluded sender, its thread count and the
+  rule that claims it, plus an `Already claimed` column in the summary. A
+  shrinking candidate table with no stated cause reads as mail having gone
+  missing.
+- **A fully-covered sample now says so.** Previously a sample where every sender
+  was already claimed fell through to *"no bulk mail in the sample at all. Widen
+  the fetch"* — sending the user to re-fetch a mailbox that was working exactly
+  as intended. Both `reason` and `sortReason` gained an `all-claimed` kind that
+  outranks it.
+- **A second frozen baseline run, `propose-covered.txt`**, over the same corpus
+  as `propose.txt` but with the corpus rule set. The pair is what proves the
+  filter fires on coverage rather than on the fixture: one run proposes
+  everything, the other proposes nothing and names why.
+
+### Changed
+
+- **The frozen first-run `propose` now passes `--rules evals/baseline/rules-none.json`
+  explicitly.** `propose` defaults to `~/.gmailtriage/rules.json`, which is right
+  for a user and wrong for a hermetic baseline — without this the frozen run
+  would read the personal rule file of whoever ran `refresh.sh`. A first run
+  genuinely has no rules; the fixture says so out loud instead of relying on a
+  file being absent.
+
 ## [0.4.0] - 2026-08-07
 
 ### Added

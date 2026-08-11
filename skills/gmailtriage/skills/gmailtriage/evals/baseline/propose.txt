@@ -47,8 +47,8 @@ a folder name is a decision about how you think, and nothing in the mail says it
 | recruiter2@globex.example               | 1         | sender looks financial, medical, educational, governmental or recruiting |
 withheld from TRASHING, not from sorting — 7 of these 25 appear in the sort table above.
 
-| Sampled | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
-|---------|-------------|-------|------|-------------------|----------|-----------------|
-| 66      | 20          | 5     | 7    | 5                 | 25       | 1               |
+| Sampled | Already claimed | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
+|---------|-----------------|-------------|-------|------|-------------------|----------|-----------------|
+| 66      | 0               | 20          | 5     | 7    | 5                 | 25       | 1               |
 
 nothing has moved — these are candidates. Accept the ones you want with `rules --add`.

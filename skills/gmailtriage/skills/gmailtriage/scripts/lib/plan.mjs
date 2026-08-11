@@ -124,11 +124,42 @@ export function matchDestination(address, labels = []) {
  * Cluster a real inbox sample into candidate rules. Counts come from the
  * sample, so they are evidence of bulk, not a promise about the mailbox.
  */
-export function propose(threads, { minCount = 3, labels = [] } = {}) {
+export function propose(threads, { minCount = 3, labels = [], rules = [] } = {}) {
+  // ── senders an existing rule already has an opinion about ─────────────────
+  //
+  // Same test `audit` uses, and for the same reason: `ignoreFiled: true`,
+  // because a thread already sitting in the folder its rule files into is the
+  // MOST claimed thread in the mailbox, not an unclaimed one. Without this,
+  // `propose` re-proposes a rule for mail the user already ruled on — and the
+  // dangerous half is not the noise. A sender whose mail a SORT rule files can
+  // come back as a TRASH candidate, because clustering only ever saw an address
+  // and a bulk marker. Observed on a real mailbox: `secure@authentisign.com`
+  // was proposed for trashing while `sort-selling-home` was quietly filing the
+  // user's real-estate signing documents from that exact address.
+  //
+  // Claimed at SENDER granularity, not per thread. A rule that claims some of a
+  // sender's mail still proves the user has decided about that sender, and the
+  // leftover threads are exactly what would otherwise cluster into a trash rule
+  // sitting in front of their sort rule.
+  const claimedBy = new Map();
+  for (const t of threads) {
+    const addr = addressOf(t.from);
+    if (!addr) continue;
+    const rule = (rules ?? []).find((r) => matches(r, t, new Date(), { ignoreFiled: true }));
+    if (!rule) continue;
+    if (!claimedBy.has(addr)) claimedBy.set(addr, { from: addr, count: 0, ruleIds: new Set() });
+    const c = claimedBy.get(addr);
+    c.count += 1;
+    c.ruleIds.add(rule.id);
+  }
+
   const byAddr = new Map();
   for (const t of threads) {
     const addr = addressOf(t.from);
     if (!addr) continue;
+    // Excluded here rather than filtered out of `threads` up front, so
+    // `sampled` still reports what was actually read.
+    if (claimedBy.has(addr)) continue;
     if (!byAddr.has(addr)) byAddr.set(addr, []);
     byAddr.get(addr).push(t);
   }
@@ -200,6 +231,9 @@ export function propose(threads, { minCount = 3, labels = [] } = {}) {
   withheld.sort(bySize);
   below.sort(bySize);
   sortable.sort(bySize);
+  const claimed = [...claimedBy.values()]
+    .map((c) => ({ ...c, ruleIds: [...c.ruleIds].sort() }))
+    .sort(bySize);
 
   // An empty candidate list is a result, not a failure — but only if it says
   // which of the three reasons produced it. A bare empty table reads as "the
@@ -211,8 +245,15 @@ export function propose(threads, { minCount = 3, labels = [] } = {}) {
       : withheld.length > 0
         ? { kind: 'all-withheld',
             text: `every sender in the sample was withheld from trashing by a guard. That is the safe answer, not a broken one${sortable.length ? ` — and ${sortable.length} of them can still be filed, below` : ' — read the withheld table and write a rule by hand for anything you disagree with'}.` }
-        : { kind: 'nothing-bulk',
-            text: 'no bulk mail in the sample at all. Widen the fetch, or this inbox is already clean.' };
+        // Must outrank 'nothing-bulk'. A sample your rules already cover in
+        // full is the healthy steady state of this skill, and reporting it as
+        // "no bulk mail at all — widen the fetch" sends the user to re-fetch a
+        // mailbox that is working exactly as intended.
+        : claimed.length > 0
+          ? { kind: 'all-claimed',
+              text: `every sender in the sample is already claimed by one of your ${rules.length} rules. Nothing new has arrived — that is what a covered mailbox looks like.` }
+          : { kind: 'nothing-bulk',
+              text: 'no bulk mail in the sample at all. Widen the fetch, or this inbox is already clean.' };
 
   // An empty sort table is a result too, and it says which of three things
   // produced it — same contract as `reason`, for the same reason: a bare empty
@@ -224,14 +265,20 @@ export function propose(threads, { minCount = 3, labels = [] } = {}) {
       : withheld.length > 0
         ? { kind: 'only-people',
             text: 'every withheld sender looks like a person rather than a sender, and this skill never files a person\'s mail out of your inbox. Write that rule by hand if you want it.' }
-        : { kind: 'nothing-to-file',
-            text: 'nothing in the sample was withheld from trashing, so there is nothing left over to file.' };
+        : claimed.length > 0
+          ? { kind: 'all-claimed',
+              text: `every sender in the sample is already filed by one of your ${rules.length} rules. There is nothing left over to file.` }
+          : { kind: 'nothing-to-file',
+              text: 'nothing in the sample was withheld from trashing, so there is nothing left over to file.' };
 
   const unhoused = sortable.filter((s) => s.unhoused).length;
 
   return {
     candidates, withheld, below, reason, sampled: threads.length,
     sortable, sortReason, unhoused,
+    // Reported, never silently dropped. A shrinking candidate table with no
+    // stated cause reads as mail having gone missing.
+    claimed, claimedThreads: claimed.reduce((n, c) => n + c.count, 0),
     knownLabels: (labels ?? []).length,
   };
 }
