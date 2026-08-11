@@ -20,6 +20,15 @@ below are good starting points for anyone; replace or extend them with your own.
   should do") over autobiographical ("here's what I'm doing").
 - **Get to the point fast.** Lead with the thesis; cut any runway before it.
 
+## Register — warm and human by default
+- **Sound like yourself talking to a peer, not like a report.** Open on the situation
+  or the human reason the thing exists, not a statistic. Name the real thing in plain
+  words instead of a category. Narrate in first person as something that happened to
+  you. Everyday words over clinical ones; mild self-deprecation is fine when it's true.
+- **Warmth outranks maximal tightness.** Spending 30–60 extra words to sound human is
+  allowed; padding is not. A draft that avoids every banned tic but reads like an
+  incident report still fails.
+
 ## Tone
 - <Set your tone — e.g. positive and supportive; argue the idea, never trash a
   person, team, or tool.>
