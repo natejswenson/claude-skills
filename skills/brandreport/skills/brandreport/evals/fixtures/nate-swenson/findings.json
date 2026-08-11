@@ -36,6 +36,20 @@
       "sources": [
         "s5"
       ]
+    },
+    {
+      "id": "c6",
+      "text": "Holds the natejswenson slug on LinkedIn \u2014 'Cloud and DevOps Professional | AWS Solutions Architect | Terraform and Container Expert' \u2014 where the public posts promote The DevOps Career Handbook.",
+      "sources": [
+        "s9"
+      ]
+    },
+    {
+      "id": "c7",
+      "text": "Holds @NatejSwenson on X, though the account is invisible to a logged-out searcher \u2014 its existence is provable only out of band.",
+      "sources": [
+        "s10"
+      ]
     }
   ],
   "read": {
@@ -50,11 +64,13 @@
       },
       {
         "name": "One identity, threaded end to end",
-        "text": "The name, the domain, the GitHub handle and the npm scope all interlink: site to GitHub, GitHub blog field back to site, npm packages back to the repos. A stranger can verify the whole presence in three clicks, which is rarer than it sounds.",
+        "text": "The name, the domain, the GitHub handle, the npm scope, the LinkedIn slug and the X handle all interlink: site to GitHub, GitHub blog field back to site, npm packages back to the repos, and one handle carried across every platform. A stranger can verify the whole presence in three clicks, which is rarer than it sounds.",
         "sources": [
           "s1",
           "s2",
-          "s4"
+          "s4",
+          "s9",
+          "s10"
         ]
       },
       {
@@ -68,11 +84,11 @@
       }
     ],
     "gaps": [
-      "No discoverable X/Twitter presence, and the GitHub profile lists no handle \u2014 the writing lives only on the site and LinkedIn.",
+      "The X account exists but is effectively undiscoverable: search never surfaces it, the GitHub profile lists no handle, and X blocks logged-out reading \u2014 to a stranger it may as well not exist.",
       "The npm scope drops a letter (natjswenson, no 'e') \u2014 a searcher who finds the packages first can reasonably doubt they belong to the same person.",
-      "The professional-network profile cannot be read logged-out, so whatever lives there is invisible to exactly the stranger this report simulates \u2014 and the bare-name slug there belongs to someone else."
+      "The LinkedIn profile blocks logged-out reading; it is findable only through the posts that carry its slug, so most of what lives there is invisible to exactly the stranger this report simulates."
     ],
-    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm and a published book all corroborate each other. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edges are reach rather than substance."
+    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm, LinkedIn and a published book all corroborate each other, one handle threading through every platform. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edge is reach \u2014 the X account and most of LinkedIn are invisible to a logged-out searcher \u2014 not substance."
   },
   "unconfirmed": [
     {

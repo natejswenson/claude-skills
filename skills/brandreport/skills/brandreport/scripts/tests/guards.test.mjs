@@ -20,10 +20,10 @@ const metas = readdirSync(FIXTURES, { recursive: true })
   }));
 
 test('the fixture corpus is not vacuous', () => {
-  // Anti-vacuity floor: the real run filed 8 snapshots and the trap 1. A
+  // Anti-vacuity floor: the real run filed 10 snapshots and the trap 1. A
   // refresh that collapses this corpus would pass every scan below over
   // nothing and call it clean.
-  assert.ok(metas.length >= 9, `fixture corpus shrank to ${metas.length} sidecars — the guards below are scanning almost nothing`);
+  assert.ok(metas.length >= 11, `fixture corpus shrank to ${metas.length} sidecars — the guards below are scanning almost nothing`);
 });
 
 test('no real stranger reaches the frozen corpus', () => {

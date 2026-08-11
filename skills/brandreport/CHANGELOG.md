@@ -10,3 +10,4 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - First release. Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report.
+- The handle sweep (`references/discovery.md`): every handle the anchor uses is probed by URL on each major platform, mandatory before discovery may stop. The first dogfood run missed the subject's own LinkedIn and X accounts by relying on search alone — walled platforms are indexed badly, and an account whose existence is proven but whose content is unreadable is now recorded as an existence-only snapshot instead of reported absent.
