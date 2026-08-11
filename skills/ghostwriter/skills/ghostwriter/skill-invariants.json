@@ -74,6 +74,12 @@
       "rationale": "Session-start round trips are the UX tax paid every single run: the 0.14.0 pass merged the outcome check-in and the idea menu into ONE AskUserQuestion dialog. This rule is prose-only; deleting it regresses to two sequential question dialogs before any work starts."
     },
     {
+      "id": "full-text-in-approval-dialog",
+      "file": "SKILL.md",
+      "pattern": "complete,?\\s*final\\s+(post\\s+)?text\\s+(goes|rides)\\s+in(side)?\\s+the\\s+approval\\s+dialog",
+      "rationale": "A real session (2026-08-11) asked for publish approval twice on a post the user had never seen in full: the dialog takes focus over chat scrollback, so text printed above it is not shown. Approval is only meaningful against the exact full text, and this rule lives only in prose; deleting it regresses to approving unseen posts."
+    },
+    {
       "id": "fold-marked-draft-show",
       "file": "SKILL.md",
       "pattern": "fold ~210 chars",

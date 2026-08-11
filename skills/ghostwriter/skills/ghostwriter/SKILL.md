@@ -639,6 +639,9 @@ for that exact draft.
 
 - **Never publish without explicit approval** of the specific text. Editing the draft → re-show
   → re-confirm.
+- **The user must be able to read the ENTIRE post at the moment of approval.** The complete,
+  final text goes in the approval dialog itself (the Publish option's `preview`), every time —
+  first show and every re-show. Text printed in chat above the dialog does not count as shown.
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
   way. Don't echo the access token or client secret in chat.
 - **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
