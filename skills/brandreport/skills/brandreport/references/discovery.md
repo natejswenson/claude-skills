@@ -22,12 +22,12 @@ presence is found — people link themselves together far more than strangers do
 
 Take every handle the anchor uses anywhere — the domain, the GitHub login,
 the npm scope, any slug a bio or package points at — and probe it on each
-major platform **by URL**, whether or not search ever surfaced it:
+major platform **by URL**, whether or not search ever surfaced it. The
+checklist is code, not prose, so it lands in the transcript and coverage is
+auditable:
 
 ```
-x.com/<handle>          linkedin.com/in/<handle>     github.com/<handle>
-npmjs.com/~<handle>     medium.com/@<handle>         youtube.com/@<handle>
-reddit.com/user/<handle> instagram.com/<handle>
+brandreport sweep --handle <handle>[,<handle2>]
 ```
 
 Search engines index walled platforms badly: the first real run of this skill
@@ -47,10 +47,10 @@ For a platform that blocks logged-out reading, work outward:
   empty body has not confirmed absence any more than presence
 
 A walled account whose existence is proven gets an **existence-only
-snapshot**: the artifact records how it was probed and what tied it, claims
-nothing about content, and the report's gaps say the content is invisible to
-a logged-out stranger. Only an account no probe can even prove exists is
-reported as absent.
+snapshot** (`add --existence-only`): the artifact records how it was probed
+and what tied it, claims nothing about content, and the report marks the row
+and says in its gaps that the content is invisible to a logged-out stranger.
+Only an account no probe can even prove exists is reported as absent.
 
 ## Corroboration — the judgment the gate audits
 
@@ -76,6 +76,31 @@ whatever the search engine happened to index. After that: stop widening when
 a full round produces no new confirmed artifact and no new
 lead — not when the corpus "feels" complete. Then file what the last round
 left unconfirmed, write `findings.json`, and run `gate` before `report`.
+
+## Re-running on a subject already run
+
+A re-run is a refresh, not a second discovery from scratch:
+
+1. **Re-fetch the anchors first** — profiles change, and a changed anchor
+   changes what downstream corroborations can say. The second real run of
+   this skill upgraded the X account from out-of-band proof to a
+   stranger-visible cross-link solely because the GitHub profile had gained
+   a `twitter_username` field.
+2. **Refresh in place** — `add --id sN` replaces content and provenance under
+   the same citation key, so `findings.json` keeps resolving. A refresh never
+   flips confirmed/unconfirmed; re-deciding identity is a new snapshot.
+3. **Re-run the sweep** — platforms the subject joined since, or newly
+   cross-linked, are exactly what a stale report misses.
+
+## When the subject is in the room
+
+The subject running this skill on themselves is the strongest corroboration
+source there is — a direct answer beats any inferred signal, and it is
+recorded like any other (`--corroboration "confirmed by the subject
+directly"`). The subject may also direct that an artifact be left out
+entirely **before it is filed**: honour it, say so in the conversation, and
+file nothing. Once something is filed, exclusion happens only through the
+report's residue section — the corpus never forgets silently.
 
 ## What never happens
 

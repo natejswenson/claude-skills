@@ -88,6 +88,34 @@ test('the gate is two-sided: dangling and unconfirmed citations both fail, and r
   assert.ok(!existsSync(join(dir, 'report.html')), 'report must not render over a dirty gate');
 });
 
+test('sweep emits a probe row per platform per handle and needs no run', () => {
+  const one = run(['sweep', '--handle', 'somebody']);
+  assert.equal(one.code, 0);
+  for (const platform of ['x.com', 'linkedin.com', 'github.com', 'instagram.com']) {
+    assert.ok(one.out.includes(platform), `sweep lost its ${platform} row`);
+  }
+  assert.match(one.out, /x\.com\/somebody/);
+  assert.match(one.out, /200 with an empty body proves nothing/);
+  const two = run(['sweep', '--handle', 'somebody,somebody-else']);
+  assert.match(two.out, /linkedin\.com\/in\/somebody-else/);
+  assert.equal(run(['sweep']).code, 1, 'sweep without --handle must refuse');
+});
+
+test('an existence-only snapshot is marked in status and in the report', () => {
+  const { dir, artifact } = makeRun();
+  assert.equal(run(['add', '--run', dir, '--file', artifact, '--url', 'https://example.com/me', '--kind', 'profile',
+    '--status', 'confirmed', '--corroboration', 'anchor cross-link', '--existence-only', '--fetched-at', '2026-08-11T00:00:00Z']).code, 0);
+  assert.match(run(['status', '--run', dir]).out, /profile \(existence-only\)/);
+  writeFileSync(join(dir, 'findings.json'), JSON.stringify({
+    subject: 'Test Subject',
+    claims: [{ id: 'c1', text: 'The account exists.', sources: ['s1'] }],
+    read: { themes: [], gaps: [], summary: '' },
+    unconfirmed: [],
+  }, null, 2));
+  assert.equal(run(['report', '--run', dir]).code, 0);
+  assert.match(readFileSync(join(dir, 'report.html'), 'utf8'), /existence-only/);
+});
+
 test('add --id refreshes a snapshot in place and never flips its status', () => {
   const { dir, artifact, base } = makeRun();
   assert.equal(run(['add', '--run', dir, '--file', artifact, '--url', 'https://example.com/me', '--kind', 'profile',
