@@ -1,0 +1,11 @@
+{
+  "id": "s6",
+  "url": "https://research.university.example/people/nate-swenson",
+  "kind": "mention",
+  "platform": "research.university.example",
+  "title": "Nate Swenson, research scientist",
+  "status": "unconfirmed",
+  "why": "different field entirely (marine biology), no link to any anchor artifact, different institutions",
+  "fetchedAt": "2026-08-11T17:00:00.000Z",
+  "file": "s6.md"
+}

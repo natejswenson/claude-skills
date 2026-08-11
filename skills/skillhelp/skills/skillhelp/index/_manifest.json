@@ -1,6 +1,22 @@
 {
   "skills": [
     {
+      "name": "brandreport",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "fca35b70d8ddadf1",
+      "facts": 48,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 12,
+        "architecture": 14,
+        "troubleshooting": 8
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "city-report",
       "version": "0.4.0",
       "stack": "python",

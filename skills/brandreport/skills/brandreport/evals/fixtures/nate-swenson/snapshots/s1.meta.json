@@ -1,0 +1,11 @@
+{
+  "id": "s1",
+  "url": "https://natejswenson.com/",
+  "kind": "site",
+  "platform": "natejswenson.com",
+  "title": "Personal site + dev log",
+  "status": "confirmed",
+  "corroboration": "surfaced by the bare-name search; links to github.com/natejswenson, whose profile blog field points back to this exact domain — a two-way cross-link",
+  "fetchedAt": "2026-08-11T17:19:11.785Z",
+  "file": "s1.md"
+}

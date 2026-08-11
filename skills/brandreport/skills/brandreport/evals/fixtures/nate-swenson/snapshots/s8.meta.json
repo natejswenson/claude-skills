@@ -1,0 +1,11 @@
+{
+  "id": "s8",
+  "url": "https://social.example/in/nate-swenson",
+  "kind": "profile",
+  "platform": "social.example",
+  "title": "Nate Swenson, QA engineer",
+  "status": "unconfirmed",
+  "why": "adjacent field (software) but a different specialty; the platform blocks logged-out fetching, and nothing in the anchor's artifacts links to this slug",
+  "fetchedAt": "2026-08-11T17:00:00.000Z",
+  "file": "s8.md"
+}

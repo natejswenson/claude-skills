@@ -19,6 +19,13 @@ onetap-out/
 # city-report writes ./reports relative to wherever it is run, so a run from the
 # repo root lands here. Generated output, never committed.
 reports/
+# brandreport runs default to ~/.claude/brandreport/<slug>; a run pointed into
+# the repo with --out belongs here. A run corpus is fetched personal data and a
+# rendered report — never committed (the skill's eval fixtures are the one
+# deliberate, sanitised exception, and they live under skills/brandreport/).
+brandreport-runs/
+# firecrawl's documented default output dir for scraped pages
+.firecrawl/
 
 # Git worktrees
 .worktrees/

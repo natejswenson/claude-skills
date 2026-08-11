@@ -1,0 +1,10 @@
+{
+  "name": "brandreport",
+  "version": "0.1.0",
+  "description": "Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/brandreport",
+  "license": "MIT"
+}
