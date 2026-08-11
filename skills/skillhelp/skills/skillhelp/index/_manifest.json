@@ -4,13 +4,13 @@
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "a42d5929bd6b3595",
-      "facts": 46,
+      "cardHash": "dd2dc6182f2076db",
+      "facts": 48,
       "sections": {
         "setup": 2,
         "usage": 12,
-        "commands": 11,
-        "architecture": 13,
+        "commands": 12,
+        "architecture": 14,
         "troubleshooting": 8
       },
       "emptySections": [],

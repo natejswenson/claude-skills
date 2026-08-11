@@ -29,12 +29,13 @@
 
 ## Commands
 
-- Command — Returns `skills/brandreport/skills/brandreport/SKILL.md:66`
-- brandreport init — creates a run directory for a subject name and returns its layout as a table — snapshot dir, findings file, report path `skills/brandreport/skills/brandreport/SKILL.md:68`
-- brandreport add — files one fetched artifact into the snapshot with provenance — URL, fetched-at, kind, identity status (confirmed/unconfirmed) and the corroboration note — and returns the updated co… `skills/brandreport/skills/brandreport/SKILL.md:69`
-- brandreport status — tables the whole corpus: every snapshot with its source, kind, identity status and corroboration, plus counts of confirmed vs unconfirmed `skills/brandreport/skills/brandreport/SKILL.md:70`
-- brandreport gate — enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item… `skills/brandreport/skills/brandreport/SKILL.md:71`
-- brandreport report — renders findings + snapshot into the press-styled HTML brand report, fully offline — refuses to render if gate fails `skills/brandreport/skills/brandreport/SKILL.md:72`
+- Command — Returns `skills/brandreport/skills/brandreport/SKILL.md:93`
+- brandreport init — creates a run directory for a subject name and returns its layout as a table — snapshot dir, findings file, report path `skills/brandreport/skills/brandreport/SKILL.md:95`
+- brandreport sweep — prints the per-platform probe checklist for one or more handles, with the walled-platform workaround for each — run before discovery may stop `skills/brandreport/skills/brandreport/SKILL.md:96`
+- brandreport add — files one fetched artifact into the snapshot with provenance — URL, fetched-at, kind, identity status (confirmed/unconfirmed) and the corroboration note — and returns the updated co… `skills/brandreport/skills/brandreport/SKILL.md:97`
+- brandreport status — tables the whole corpus: every snapshot with its source, kind, identity status and corroboration, plus counts of confirmed vs unconfirmed `skills/brandreport/skills/brandreport/SKILL.md:98`
+- brandreport gate — enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item… `skills/brandreport/skills/brandreport/SKILL.md:99`
+- brandreport report — renders findings + snapshot into the press-styled HTML brand report, fully offline — refuses to render if gate fails `skills/brandreport/skills/brandreport/SKILL.md:100`
 - npm run audit — npm audit --audit-level=moderate `skills/brandreport/skills/brandreport/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/brandreport/skills/brandreport/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/brandreport/skills/brandreport/package.json:39`
@@ -43,27 +44,28 @@
 
 ## Architecture
 
-- scripts/brandreport.js — the CLI: init, add, status, gate, report `skills/brandreport/skills/brandreport/SKILL.md:86`
-- references/anatomy.md — the run layout: snapshot dir with provenance sidecars, findings.json, and the report — and what each field means `skills/brandreport/skills/brandreport/SKILL.md:87`
-- references/discovery.md — how the blind search rounds work: seed queries from the bare name, widening rules, when to stop, and how corroboration is judged and recorded `skills/brandreport/skills/brandreport/SKILL.md:88`
-- references/report.md — the report's fixed sections — who was found where, the confirmed presence, the unconfirmed same-name residue, and the brand read `skills/brandreport/skills/brandreport/SKILL.md:89`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/brandreport/skills/brandreport/SKILL.md:93`
+- scripts/brandreport.js — the CLI: init, add, status, gate, report `skills/brandreport/skills/brandreport/SKILL.md:114`
+- references/anatomy.md — the run layout: snapshot dir with provenance sidecars, findings.json, and the report — and what each field means `skills/brandreport/skills/brandreport/SKILL.md:115`
+- references/discovery.md — how the blind search rounds work: seed queries from the bare name, widening rules, when to stop, and how corroboration is judged and recorded `skills/brandreport/skills/brandreport/SKILL.md:116`
+- references/report.md — the report's fixed sections — who was found where, the confirmed presence, the unconfirmed same-name residue, and the brand read `skills/brandreport/skills/brandreport/SKILL.md:117`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/brandreport/skills/brandreport/SKILL.md:121`
 - Deterministic: create the run layout for a subject — node scripts/brandreport.js init `skills/brandreport/skills/brandreport/skill-invariants.json:26`
-- Deterministic: file each fetched artifact with provenance and identity status — node scripts/brandreport.js add `skills/brandreport/skills/brandreport/skill-invariants.json:30`
-- Deterministic: table the corpus and its confirmed/unconfirmed split — node scripts/brandreport.js status `skills/brandreport/skills/brandreport/skill-invariants.json:34`
-- Deterministic: enforce the attribution gate before anything renders — node scripts/brandreport.js gate `skills/brandreport/skills/brandreport/skill-invariants.json:38`
-- Deterministic: render the press-styled HTML report offline from the snapshot — node scripts/brandreport.js report `skills/brandreport/skills/brandreport/skill-invariants.json:42`
-- Model judgment: the blind discovery itself — which searches to run, which hits to follow, when coverage is enough — no file records where a person exists online; the search plan is invented per subje… `skills/brandreport/skills/brandreport/skill-invariants.json:48`
-- Model judgment: identity corroboration — deciding a hit is the same person — cross-links, shared handles and bio overlap are read and weighed, not pattern-matched; the gate only checks the decision w… `skills/brandreport/skills/brandreport/skill-invariants.json:52`
-- Model judgment: the brand analysis — themes, consistency across platforms, gaps, how a stranger would read this person — judgment about impression and coherence that no snapshot states `skills/brandreport/skills/brandreport/skill-invariants.json:56`
+- Deterministic: emit the per-platform handle-sweep checklist — node scripts/brandreport.js sweep `skills/brandreport/skills/brandreport/skill-invariants.json:30`
+- Deterministic: file each fetched artifact with provenance and identity status — node scripts/brandreport.js add `skills/brandreport/skills/brandreport/skill-invariants.json:34`
+- Deterministic: table the corpus and its confirmed/unconfirmed split — node scripts/brandreport.js status `skills/brandreport/skills/brandreport/skill-invariants.json:38`
+- Deterministic: enforce the attribution gate before anything renders — node scripts/brandreport.js gate `skills/brandreport/skills/brandreport/skill-invariants.json:42`
+- Deterministic: render the press-styled HTML report offline from the snapshot — node scripts/brandreport.js report `skills/brandreport/skills/brandreport/skill-invariants.json:46`
+- Model judgment: the blind discovery itself — which searches to run, which hits to follow, when coverage is enough — no file records where a person exists online; the search plan is invented per subje… `skills/brandreport/skills/brandreport/skill-invariants.json:52`
+- Model judgment: identity corroboration — deciding a hit is the same person — cross-links, shared handles and bio overlap are read and weighed, not pattern-matched; the gate only checks the decision w… `skills/brandreport/skills/brandreport/skill-invariants.json:56`
+- Model judgment: the brand analysis — themes, consistency across platforms, gaps, how a stranger would read this person — judgment about impression and coherence that no snapshot states `skills/brandreport/skills/brandreport/skill-invariants.json:60`
 
 ## Troubleshooting
 
 - Never attribute unverified content: nothing reaches the repo — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extr… `skills/brandreport/skills/brandreport/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/brandreport/skills/brandreport/skill-invariants.json:14`
 - never ask about anything in it — Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like… `skills/brandreport/skills/brandreport/skill-invariants.json:19`
-- **Never attribute unverified content: nothing reaches the report unless it is tied to the actual person by a recorded corroborating signal (cross-links, shared handles, bio matches) — same-name findi… `skills/brandreport/skills/brandreport/SKILL.md:76`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/brandreport/skills/brandreport/SKILL.md:77`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/brandreport/skills/brandreport/SKILL.md:77`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/brandreport/skills/brandreport/SKILL.md:106`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/brandreport/skills/brandreport/SKILL.md:122`
+- **Never attribute unverified content: nothing reaches the report unless it is tied to the actual person by a recorded corroborating signal (cross-links, shared handles, bio matches) — same-name findi… `skills/brandreport/skills/brandreport/SKILL.md:104`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/brandreport/skills/brandreport/SKILL.md:105`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/brandreport/skills/brandreport/SKILL.md:105`
+- **Never print file contents into the conversation.** Not a fetched page, not a `skills/brandreport/skills/brandreport/SKILL.md:134`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/brandreport/skills/brandreport/SKILL.md:150`

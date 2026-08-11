@@ -26,6 +26,7 @@ step whose command does not exist fails `skillfactory verify`.
 | Deterministic — the machine decides | Command |
 |---|---|
 | create the run layout for a subject | `node scripts/brandreport.js init` |
+| emit the per-platform handle-sweep checklist | `node scripts/brandreport.js sweep` |
 | file each fetched artifact with provenance and identity status | `node scripts/brandreport.js add` |
 | table the corpus and its confirmed/unconfirmed split | `node scripts/brandreport.js status` |
 | enforce the attribution gate before anything renders | `node scripts/brandreport.js gate` |
@@ -39,33 +40,60 @@ step whose command does not exist fails `skillfactory verify`.
 
 ## The flow
 
-### 1. Detect — never ask what you can read
+### 1. Start the run
 
-Run the detection command first and read its table. **Never ask about anything
-in it.** A confirmation is not a question.
+`brandreport init --subject "<name>"` — the run directory, the snapshot
+corpus, the findings file, the report path. One table back.
 
-### 2. Ask at most two questions, one at a time
+### 2. Discover — search rounds, then the sweep
 
-Opinionated, with a one-line reason. Zero questions is correct when the request
-already answered them.
+The discovery itself is judgment; `references/discovery.md` is its shape:
+seed from the bare name, anchor on the first artifact the person plainly
+controls, widen from everything it links. Then the mandatory part:
 
-### 3. Do the work
+`brandreport sweep --handle <every handle the anchor uses>` prints the
+per-platform probe checklist. **Probe every row before discovery may stop** —
+search indexes walled platforms badly, and the first real run of this skill
+missed the subject's own LinkedIn and X by trusting search alone. An account
+proven to exist but unreadable logged-out files with `--existence-only`;
+an HTTP 200 with an empty body proves nothing either way.
 
-- `brandreport init` — creates a run directory for a subject name and returns its layout as a table — snapshot dir, findings file, report path
-- `brandreport add` — files one fetched artifact into the snapshot with provenance — URL, fetched-at, kind, identity status (confirmed/unconfirmed) and the corroboration note — and returns the updated corpus row
-- `brandreport status` — tables the whole corpus: every snapshot with its source, kind, identity status and corroboration, plus counts of confirmed vs unconfirmed
-- `brandreport gate` — enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item is cited by a confirmed-section claim
-- `brandreport report` — renders findings + snapshot into the press-styled HTML brand report, fully offline — refuses to render if gate fails
+File every artifact as it is fetched — `brandreport add` with a one-sentence
+`--corroboration` for confirmed, `--why` for unconfirmed. The corpus and the
+sweep table already answer most questions — **never ask about anything in
+it.** Ask only when identity is genuinely ambiguous after probing (a
+same-handle account whose display name matches no anchor), at most two
+questions, one at a time. The subject may direct that such an artifact be
+left out entirely *before it is filed* — honour it and say so in the
+conversation; once filed, exclusion happens only through the report's
+residue section, never by deletion.
 
-### 4. Report
+### 3. Judge — write findings.json
 
-One table with a fixed column set, then one sentence, then stop.
+Claims, themes, gaps, summary — the contract is `references/anatomy.md`.
+Every claim and theme cites snapshot ids; gaps assert absence and cite
+nothing.
+
+### 4. Gate, then render, then show
+
+`brandreport gate`, then `brandreport report`. Open the rendered report on
+the user's own screen and put a screenshot in the transcript — a report the
+user has not seen is not a result.
+
+### 5. Re-runs refresh, never duplicate
+
+Re-fetch the anchor artifacts first — profiles change, and a changed anchor
+changes what downstream corroborations can say (`add --id sN` replaces a
+snapshot in place, same citation key). Then re-run the sweep: platforms the
+subject joined since, or newly cross-linked, are exactly what a stale report
+misses.
 
 ## Commands
 
 | Command | Returns |
 |---|---|
 | `brandreport init` | creates a run directory for a subject name and returns its layout as a table — snapshot dir, findings file, report path |
+| `brandreport sweep` | prints the per-platform probe checklist for one or more handles, with the walled-platform workaround for each — run before discovery may stop |
 | `brandreport add` | files one fetched artifact into the snapshot with provenance — URL, fetched-at, kind, identity status (confirmed/unconfirmed) and the corroboration note — and returns the updated corpus row |
 | `brandreport status` | tables the whole corpus: every snapshot with its source, kind, identity status and corroboration, plus counts of confirmed vs unconfirmed |
 | `brandreport gate` | enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item is cited by a confirmed-section claim |

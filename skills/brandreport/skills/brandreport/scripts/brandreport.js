@@ -120,6 +120,10 @@ async function cmdAdd(args) {
     title: args.title ? String(args.title) : basename(file),
     status,
     ...(status === 'confirmed' ? { corroboration } : { why }),
+    // Existence-only: the account is proven to exist but its content cannot
+    // be read logged-out, so the artifact records the probe, claims nothing
+    // about content, and the report marks it as such.
+    ...(args.existenceOnly ? { existenceOnly: true } : {}),
     fetchedAt: args.fetchedAt ? String(args.fetchedAt) : new Date().toISOString(),
     file: `${id}${ext}`,
   };
@@ -135,9 +139,33 @@ async function cmdStatus(args) {
   const snaps = loadSnapshots(snapshotsDir);
   if (snaps.length === 0) { console.log('corpus is empty — nothing filed yet'); return; }
   console.log(table(['Id', 'Platform', 'Kind', 'Status', 'Tied by / why not'],
-    snaps.map((s) => [s.id, s.platform, s.kind, s.status, (s.corroboration || s.why || '').slice(0, 60)])));
+    snaps.map((s) => [s.id, s.platform, s.existenceOnly ? `${s.kind} (existence-only)` : s.kind, s.status, (s.corroboration || s.why || '').slice(0, 60)])));
   const confirmed = snaps.filter((s) => s.status === 'confirmed').length;
   console.log(`\n${confirmed} confirmed, ${snaps.length - confirmed} unconfirmed, ${snaps.length} total`);
+}
+
+// The handle sweep's checklist. The list lives in code, not prose, so the
+// sweep table lands in every run's transcript and coverage is auditable —
+// the first real run missed the subject's own LinkedIn and X by leaving
+// this to what search happened to return.
+const SWEEP_PLATFORMS = [
+  ['github.com', 'https://github.com/<h>', 'open'],
+  ['x.com', 'https://x.com/<h>', 'walled — profile 402s logged-out; existence via anchor cross-links or the subject’s own authenticated tools'],
+  ['linkedin.com', 'https://www.linkedin.com/in/<h>', 'walled — search the public-post shape linkedin.com/posts/<h>_ instead'],
+  ['npmjs.com', 'https://www.npmjs.com/~<h>', 'open — the registry search (maintainer:<h>) gives cross-linkable package metadata'],
+  ['medium.com', 'https://medium.com/@<h>', 'blocks probes (403) — search the handle instead'],
+  ['dev.to', 'https://dev.to/<h>', 'open — a 404 is a real absence'],
+  ['youtube.com', 'https://www.youtube.com/@<h>', 'open — a 404 is a real absence'],
+  ['reddit.com', 'https://www.reddit.com/user/<h>/', 'blocks probes (403) — search the handle instead'],
+  ['instagram.com', 'https://www.instagram.com/<h>/', 'walled — og:title in the raw HTML names the display name'],
+  ['stackoverflow.com', 'https://stackoverflow.com/users/<h>', 'open — a 404 is a real absence'],
+];
+
+async function cmdSweep(args) {
+  const handles = String(need(args, 'handle')).split(',').map((h) => h.trim()).filter(Boolean);
+  const rows = handles.flatMap((h) => SWEEP_PLATFORMS.map(([p, url, note]) => [p, url.replaceAll('<h>', h), note]));
+  console.log(table(['Platform', 'Probe', 'How'], rows));
+  console.log('\nprobe every row before discovery may stop — an HTTP 200 with an empty body proves nothing, and a walled account whose existence is proven files as --existence-only, never as absent');
 }
 
 // The one rule as code. Returns [violations], each [check, where, problem].
@@ -217,7 +245,7 @@ async function cmdReport(args) {
   const asOf = snaps.map((s) => s.fetchedAt).sort().at(-1)?.slice(0, 10) ?? '';
   const initials = ctx.subject.subject.split(/\s+/).map((w) => w[0]?.toUpperCase() ?? '').join('').slice(0, 3);
 
-  const coverageRows = confirmed.map((s) => `<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.platform)}</td><td>${esc(s.kind)}</td><td><a href="${esc(s.url)}">${esc(s.title)}</a></td><td class="mono">${esc(s.fetchedAt.slice(0, 10))}</td></tr>`).join('\n');
+  const coverageRows = confirmed.map((s) => `<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.platform)}</td><td>${esc(s.kind)}${s.existenceOnly ? ' <span class="cite">existence-only</span>' : ''}</td><td><a href="${esc(s.url)}">${esc(s.title)}</a></td><td class="mono">${esc(s.fetchedAt.slice(0, 10))}</td></tr>`).join('\n');
   const claimItems = (findings.claims ?? []).map((c) => `<li>${esc(c.text)} ${cites(c.sources)}</li>`).join('\n');
   const themeBlocks = (findings.read?.themes ?? []).map((t) => `<div class="theme"><h3>${esc(t.name)} ${cites(t.sources)}</h3><p>${esc(t.text)}</p></div>`).join('\n');
   const gapItems = (findings.read?.gaps ?? []).map((g) => `<li class="serif">${esc(g)}</li>`).join('\n');
@@ -288,10 +316,12 @@ ${residueBlocks || '<p class="serif">Nothing found under this name failed the id
 const USAGE = `brandreport v${VERSION} — Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report.
 
   brandreport init   --subject <name> [--out <dir>]
+  brandreport sweep  --handle <h[,h2]>   # the per-platform probe checklist; run it before discovery may stop
   brandreport add    --run <dir> --file <path> --url <url> --kind <profile|site|post|mention|search>
                      --status confirmed --corroboration "<how it was tied>"
                      --status unconfirmed --why "<why it could not be tied>"
-                     [--platform <name>] [--title <t>] [--fetched-at <iso>] [--id sN  # refresh in place]
+                     [--platform <name>] [--title <t>] [--fetched-at <iso>]
+                     [--id sN  # refresh in place] [--existence-only  # proven to exist, content unreadable]
   brandreport status --run <dir>
   brandreport gate   --run <dir>
   brandreport report --run <dir> [--out <file>]
@@ -304,6 +334,7 @@ async function main() {
   try {
     switch (cmd) {
       case 'init': return await cmdInit(args);
+      case 'sweep': return await cmdSweep(args);
       case 'add': return await cmdAdd(args);
       case 'status': return await cmdStatus(args);
       case 'gate': return await cmdGate(args);

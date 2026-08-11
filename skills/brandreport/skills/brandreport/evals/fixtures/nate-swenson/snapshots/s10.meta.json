@@ -6,6 +6,7 @@
   "title": "X account (@NatejSwenson)",
   "status": "confirmed",
   "corroboration": "the anchor's GitHub profile lists this exact handle in its twitter_username field — a stranger-visible cross-link; ownership further confirmed by the subject's authenticated Typefully social set",
-  "fetchedAt": "2026-08-11T17:45:30.662Z",
+  "existenceOnly": true,
+  "fetchedAt": "2026-08-11T17:56:55.743Z",
   "file": "s10.md"
 }
