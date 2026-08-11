@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Publish option's `preview`), instead of only being printed in chat above it.
   A real session hit the gap twice in one sitting: the dialog takes focus over
   scrollback, so the user was asked to approve a post they had never actually
-  seen in full.
+  seen in full. The rule is now also a Guardrail and a declared prose invariant
+  (`full-text-in-approval-dialog`), so CI fails any change that deletes it.
 
 ## [0.16.0] - 2026-08-11
 
