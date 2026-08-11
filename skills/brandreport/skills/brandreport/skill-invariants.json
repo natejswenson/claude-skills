@@ -89,7 +89,7 @@
       "kind": "trap",
       "test": "scripts/tests/guards.test.mjs",
       "corpus_glob": "evals/fixtures/*/snapshots/*.meta.json",
-      "min_corpus": 11,
+      "min_corpus": 12,
       "update_command": "invent replacements in evals/fixtures/*/snapshots — never copy a real same-name person in, even pseudonymised",
       "rationale": "a corpus refresh leaking a real same-name person's data into a public repo — every unconfirmed snapshot must live on a reserved .example domain and reference no real host, which catches a leaked identity without committing a blocklist of real identities."
     }

@@ -88,6 +88,32 @@ test('the gate is two-sided: dangling and unconfirmed citations both fail, and r
   assert.ok(!existsSync(join(dir, 'report.html')), 'report must not render over a dirty gate');
 });
 
+test('add --id refreshes a snapshot in place and never flips its status', () => {
+  const { dir, artifact, base } = makeRun();
+  assert.equal(run(['add', '--run', dir, '--file', artifact, '--url', 'https://example.com/me', '--kind', 'profile',
+    '--status', 'confirmed', '--corroboration', 'original tie']).code, 0);
+  const updated = join(base, 'updated.md');
+  writeFileSync(updated, '# the profile, re-fetched with new fields\n');
+  const refresh = run(['add', '--run', dir, '--id', 's1', '--file', updated, '--url', 'https://example.com/me', '--kind', 'profile',
+    '--status', 'confirmed', '--corroboration', 'stronger tie after the profile update']);
+  assert.equal(refresh.code, 0);
+  const metas = readFileSync(join(dir, 'snapshots', 's1.meta.json'), 'utf8');
+  assert.match(metas, /stronger tie/);
+  assert.match(readFileSync(join(dir, 'snapshots', 's1.md'), 'utf8'), /re-fetched/);
+  const next = run(['add', '--run', dir, '--file', artifact, '--url', 'https://example.com/two', '--kind', 'mention',
+    '--status', 'unconfirmed', '--why', 'no tie']);
+  assert.equal(next.code, 0);
+  assert.match(next.out, /\bs2\b/, 'a refresh must not advance the id counter');
+  const flip = run(['add', '--run', dir, '--id', 's2', '--file', artifact, '--url', 'https://example.com/two', '--kind', 'mention',
+    '--status', 'confirmed', '--corroboration', 'suddenly sure']);
+  assert.equal(flip.code, 1);
+  assert.match(flip.out, /refusing to flip status/);
+  const ghost = run(['add', '--run', dir, '--id', 's99', '--file', artifact, '--url', 'https://example.com/x', '--kind', 'mention',
+    '--status', 'unconfirmed', '--why', 'n/a']);
+  assert.equal(ghost.code, 1);
+  assert.match(ghost.out, /no such snapshot to refresh/);
+});
+
 test('an unconfirmed snapshot missing from the residue section fails the gate', () => {
   const { dir, artifact } = makeRun();
   assert.equal(run(['add', '--run', dir, '--file', artifact, '--url', 'https://example.com/other', '--kind', 'mention',

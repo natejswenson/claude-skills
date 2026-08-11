@@ -34,7 +34,8 @@
       "id": "c5",
       "text": "Co-authored The DevOps Career Handbook (Packt, 2022) with John Knight \u2014 234 pages on building a DevOps career, drawing on 12 years in Fortune 100 insurance and finance.",
       "sources": [
-        "s5"
+        "s5",
+        "s11"
       ]
     },
     {
@@ -46,7 +47,7 @@
     },
     {
       "id": "c7",
-      "text": "Holds @NatejSwenson on X, though the account is invisible to a logged-out searcher \u2014 its existence is provable only out of band.",
+      "text": "Holds @NatejSwenson on X, now linked from the GitHub profile's own twitter_username field \u2014 discoverable in one hop from the anchor, though the account's content stays unreadable to a logged-out visitor.",
       "sources": [
         "s10"
       ]
@@ -84,11 +85,11 @@
       }
     ],
     "gaps": [
-      "The X account exists but is effectively undiscoverable: search never surfaces it, the GitHub profile lists no handle, and X blocks logged-out reading \u2014 to a stranger it may as well not exist.",
+      "The X account is now linked from the GitHub profile, but X still blocks logged-out reading \u2014 a stranger can find it and follow it, yet sees none of what it says.",
       "The npm scope drops a letter (natjswenson, no 'e') \u2014 a searcher who finds the packages first can reasonably doubt they belong to the same person.",
       "The LinkedIn profile blocks logged-out reading; it is findable only through the posts that carry its slug, so most of what lives there is invisible to exactly the stranger this report simulates."
     ],
-    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm, LinkedIn and a published book all corroborate each other, one handle threading through every platform. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edge is reach \u2014 the X account and most of LinkedIn are invisible to a logged-out searcher \u2014 not substance."
+    "summary": "A stranger searching this name meets several other Nate Swensons before the real one \u2014 a scientist, a principal, another software person \u2014 but the developer identity, once found, is unusually verifiable: site, GitHub, npm, LinkedIn and a published book all corroborate each other, one handle threading through every platform. The brand says: DevOps engineer who wrote the book on the career, now building AI-agent tooling in the open, documenting the failures on the way. The weak edge is reach \u2014 X and most of LinkedIn are findable but unreadable to a logged-out visitor \u2014 not substance."
   },
   "unconfirmed": [
     {
