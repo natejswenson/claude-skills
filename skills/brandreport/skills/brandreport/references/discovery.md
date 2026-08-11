@@ -18,6 +18,40 @@ is a lead: handles reused elsewhere, a site in a bio, a company page. Search
 each handle and each linked domain by name. This is where most of the real
 presence is found — people link themselves together far more than strangers do.
 
+## Round 3 — the handle sweep. Mandatory, not optional
+
+Take every handle the anchor uses anywhere — the domain, the GitHub login,
+the npm scope, any slug a bio or package points at — and probe it on each
+major platform **by URL**, whether or not search ever surfaced it:
+
+```
+x.com/<handle>          linkedin.com/in/<handle>     github.com/<handle>
+npmjs.com/~<handle>     medium.com/@<handle>         youtube.com/@<handle>
+reddit.com/user/<handle> instagram.com/<handle>
+```
+
+Search engines index walled platforms badly: the first real run of this skill
+missed both `linkedin.com/in/natejswenson` and `x.com/natejswenson` — the
+subject's own accounts, under the anchor handle itself — because it relied on
+what search returned and never swept the handle. The LinkedIn slug was even
+sitting in a round-1 result URL (`linkedin.com/posts/<handle>_…`) unread.
+
+For a platform that blocks logged-out reading, work outward:
+
+- search the slug's public-post URL shapes (`linkedin.com/posts/<handle>_`) —
+  post titles and blurbs are indexed even when the profile is not
+- if the subject is the user running this skill, their own authenticated
+  session tools (an X scheduler, a connected MCP) can prove ownership —
+  record that as the corroboration, honestly out-of-band
+- treat empty success as nothing: an endpoint answering HTTP 200 with an
+  empty body has not confirmed absence any more than presence
+
+A walled account whose existence is proven gets an **existence-only
+snapshot**: the artifact records how it was probed and what tied it, claims
+nothing about content, and the report's gaps say the content is invisible to
+a logged-out stranger. Only an account no probe can even prove exists is
+reported as absent.
+
 ## Corroboration — the judgment the gate audits
 
 A hit is **confirmed** only by a signal you can write down in one sentence:
@@ -36,7 +70,10 @@ who are not the subject.
 
 ## When to stop
 
-Stop widening when a full round produces no new confirmed artifact and no new
+Never before the handle sweep has run — a corpus with no row for each swept
+platform (found, existence-only, or ruled absent) is not coverage, it is
+whatever the search engine happened to index. After that: stop widening when
+a full round produces no new confirmed artifact and no new
 lead — not when the corpus "feels" complete. Then file what the last round
 left unconfirmed, write `findings.json`, and run `gate` before `report`.
 
