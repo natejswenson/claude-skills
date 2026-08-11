@@ -1,0 +1,38 @@
+{
+  "total": 3,
+  "packages": [
+    {
+      "name": "@natjswenson/press",
+      "version": "0.9.0",
+      "description": "One brand system \u2014 tokens, laws, run presentation and voice core \u2014 generated into every consumer with a CI drift gate",
+      "links": {
+        "homepage": "https://github.com/natejswenson/claude-skills",
+        "repository": "git+https://github.com/natejswenson/claude-skills.git",
+        "bugs": "https://github.com/natejswenson/claude-skills/issues",
+        "npm": "https://www.npmjs.com/package/@natjswenson/press"
+      }
+    },
+    {
+      "name": "@natjswenson/shipflow",
+      "version": "0.6.0",
+      "description": "Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo",
+      "links": {
+        "homepage": "https://github.com/natejswenson/shipflow",
+        "repository": "git+https://github.com/natejswenson/shipflow.git",
+        "bugs": "https://github.com/natejswenson/shipflow/issues",
+        "npm": "https://www.npmjs.com/package/@natjswenson/shipflow"
+      }
+    },
+    {
+      "name": "@natjswenson/devlog",
+      "version": "0.13.0",
+      "description": "Release dev log generator \u2014 Claude Code skill + preview app for publishing version-release dev logs, written in your voice, to your site",
+      "links": {
+        "homepage": "https://github.com/natejswenson/devlog",
+        "repository": "git+https://github.com/natejswenson/devlog.git",
+        "bugs": "https://github.com/natejswenson/devlog/issues",
+        "npm": "https://www.npmjs.com/package/@natjswenson/devlog"
+      }
+    }
+  ]
+}

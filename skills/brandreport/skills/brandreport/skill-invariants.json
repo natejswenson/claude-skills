@@ -1,0 +1,97 @@
+{
+  "comment": "What must not silently disappear from brandreport. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never attribute unverified content: nothing reaches the repo",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "create the run layout for a subject",
+        "command": "node scripts/brandreport.js init"
+      },
+      {
+        "step": "file each fetched artifact with provenance and identity status",
+        "command": "node scripts/brandreport.js add"
+      },
+      {
+        "step": "table the corpus and its confirmed/unconfirmed split",
+        "command": "node scripts/brandreport.js status"
+      },
+      {
+        "step": "enforce the attribution gate before anything renders",
+        "command": "node scripts/brandreport.js gate"
+      },
+      {
+        "step": "render the press-styled HTML report offline from the snapshot",
+        "command": "node scripts/brandreport.js report"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "the blind discovery itself — which searches to run, which hits to follow, when coverage is enough",
+        "why": "no file records where a person exists online; the search plan is invented per subject and adapts to what each round surfaces"
+      },
+      {
+        "step": "identity corroboration — deciding a hit is the same person",
+        "why": "cross-links, shared handles and bio overlap are read and weighed, not pattern-matched; the gate only checks the decision was recorded, the model makes it"
+      },
+      {
+        "step": "the brand analysis — themes, consistency across platforms, gaps, how a stranger would read this person",
+        "why": "judgment about impression and coherence that no snapshot states"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "the-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/report.html",
+        "evals/fixtures/nate-swenson/findings.json",
+        "evals/fixtures/nate-swenson/subject.json"
+      ],
+      "update_command": "node scripts/brandreport.js report --run evals/fixtures/nate-swenson --out <dir>/report.html && skillfactory freeze --skill brandreport --from <dir> --command 'node scripts/brandreport.js report --run evals/fixtures/nate-swenson --out $OUT/report.html' --trap-command 'node scripts/brandreport.js gate --run evals/fixtures/gate-trap'",
+      "rationale": "the report silently dropping a section or a source while still looking complete; the renderer drifting; provenance ceasing to thread from claim to snapshot — pinned against a real run on the maintainer's own name, frozen — the subject's own public artifacts kept, every same-name stranger replaced by an invented one reproducing the shape (gmailtriage precedent), then gate + report re-run over the frozen snapshot and byte-compared."
+    },
+    {
+      "id": "gate-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/fixtures/gate-trap/findings.json",
+        "evals/fixtures/gate-trap/subject.json"
+      ],
+      "update_command": "edit evals/fixtures/gate-trap by hand — its only defects must stay a dangling citation and an unconfirmed item cited as confirmed",
+      "rationale": "the attribution gate weakening until unverified content reaches the report — the one rule ceasing to be enforced by code — pinned against a findings file whose only defect is one claim citing a snapshot that does not exist, and a variant where an unconfirmed item is cited as confirmed."
+    },
+    {
+      "id": "no-real-strangers",
+      "kind": "trap",
+      "test": "scripts/tests/guards.test.mjs",
+      "corpus_glob": "evals/fixtures/*/snapshots/*.meta.json",
+      "min_corpus": 9,
+      "update_command": "invent replacements in evals/fixtures/*/snapshots — never copy a real same-name person in, even pseudonymised",
+      "rationale": "a corpus refresh leaking a real same-name person's data into a public repo — every unconfirmed snapshot must live on a reserved .example domain and reference no real host, which catches a leaked identity without committing a blocklist of real identities."
+    }
+  ]
+}

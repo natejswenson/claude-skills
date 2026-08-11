@@ -1,0 +1,42 @@
+{
+  "name": "@natjswenson/brandreport",
+  "version": "0.1.0",
+  "description": "Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/claude-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natejswenson/claude-skills/issues"
+  },
+  "keywords": [
+    "brandreport",
+    "claude-code",
+    "claude-skill"
+  ],
+  "type": "module",
+  "bin": {
+    "brandreport": "scripts/brandreport.js"
+  },
+  "files": [
+    "scripts/",
+    "references/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
+    "postpack": "rm -f README.md LICENSE CHANGELOG.md"
+  }
+}
