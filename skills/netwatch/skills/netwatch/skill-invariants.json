@@ -23,6 +23,11 @@
       "id": "empty-capture-is-not-all-clear",
       "pattern": "An empty capture is never reported as .all clear",
       "rationale": "A snapshot taken while nothing was talking, or a capture command that silently failed, must read as 'I saw nothing', not as a clean bill of health. The code refuses zero flows, but the prose is what stops a run from narrating the refusal away."
+    },
+    {
+      "id": "zero-match-warning-is-not-a-success",
+      "pattern": "A zero-match warning is never narrated into a success",
+      "rationale": "`accept --snapshot` exits 0 on a new entry that matches nothing, by design — pre-seeding a range that is not live yet is legitimate. Exit 0 plus a warning is only as strong as the rule that stops the agent talking past it; without this line the warning is printed but never relayed, which is the same silent-dead-entry failure the check exists to catch, one layer up."
     }
   ],
   "split": {
@@ -40,7 +45,7 @@
         "command": "node scripts/netwatch.js baseline"
       },
       {
-        "step": "fold chosen unrecognized flows into the baseline, reversibly",
+        "step": "fold chosen unrecognized flows into the baseline, reversibly, and report whether each new entry actually matches anything in the snapshot",
         "command": "node scripts/netwatch.js accept"
       }
     ],
@@ -80,6 +85,14 @@
       "fixtures": [],
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "the grounding gate weakening until a run reports over zero flows and calls it clean, and the one rule ceasing to be code so the model's hunch can reach the report — pinned against an empty capture, and a report asked to attach a 'dangerous' verdict to an unrecognized flow — both of which must exit non-zero."
+    },
+    {
+      "id": "accept-zero-match-warning",
+      "kind": "unit",
+      "test": "scripts/tests/accept.test.mjs",
+      "fixtures": ["evals/baseline/capture.txt"],
+      "update_command": "n/a — asserted directly against the frozen capture already pinned by real-snapshot-report; no separate artifact to refresh",
+      "rationale": "a new baseline entry that matches nothing failing to warn, exactly the issue this test is named for — an IPv6 prefix, a mistyped octet, a wrong --process, all read as accepted with nothing pointing at the dead entry. Two-sided: a zero-match entry must warn and print 0, a matching entry must not, and the no-snapshot case must read 'not checked' rather than a fabricated number. Includes the issue's own end-to-end scenario against the real frozen capture."
     }
   ]
 }

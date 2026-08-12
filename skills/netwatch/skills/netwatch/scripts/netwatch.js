@@ -459,10 +459,30 @@ async function cmdAccept(args) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(next, null, 2));
 
-  console.log(table(['Added to baseline', 'Process', 'Port', 'Why'], added.map((e) => [e.host, e.process || '*', e.port ?? '*', e.note])));
+  // With a snapshot in hand, count how many of its flows each just-added
+  // entry actually matches. A new entry matching zero is almost always a
+  // pattern mistake — the same anti-vacuity doctrine `baseline` already
+  // applies to the whole file, applied per entry, at the moment it is
+  // written. Exit stays 0 either way: pre-seeding a range that is not live
+  // in this snapshot is legitimate, so this is a warning, never a refusal.
+  const matchCounts = args.snapshot
+    ? (() => { const { flows } = requireSnapshot(args); return added.map((e) => flows.filter((f) => matchFlow(f, [e])).length); })()
+    : null;
+
+  console.log(table(['Added to baseline', 'Process', 'Port', 'Matches now', 'Why'],
+    added.map((e, i) => [e.host, e.process || '*', e.port ?? '*', matchCounts ? matchCounts[i] : 'not checked', e.note])));
   console.log('');
   console.log(table(['Entries now', 'Receipt'], [[next.length, receiptPath]]));
   console.log('\nreversible — restore the "before" list from the receipt to undo this.');
+
+  if (matchCounts) {
+    const zero = added.filter((_, i) => matchCounts[i] === 0);
+    if (zero.length > 0) {
+      console.log(`\nzero-match warning: ${zero.map((e) => `"${e.host}"`).join(', ')} matched zero flows in this snapshot — the flow(s) you meant to cover will still read unrecognized. If that is not what you intended, restore the "before" list from ${receiptPath} to undo it.`);
+    }
+  } else {
+    console.log('\ncoverage not checked — pass --snapshot <capture> to see whether each new entry actually matches anything in this run.');
+  }
 }
 
 const USAGE = `netwatch v${VERSION} — who your computer is actually talking to on the network right now.
@@ -471,7 +491,8 @@ const USAGE = `netwatch v${VERSION} — who your computer is actually talking to
   netwatch baseline --baseline <file> [--snapshot <capture>]  show the baseline; with a snapshot, its coverage
   netwatch report   --snapshot <capture> --baseline <file>    classify every flow known-vs-unrecognized
   netwatch render   --snapshot <capture> --baseline <file> --out <html> [--captured-at <when>]
-  netwatch accept   --baseline <file> --host <h> --note <why> [--process <p>] [--port <n>]
+  netwatch accept   --baseline <file> --host <h> --note <why> [--process <p>] [--port <n>] [--snapshot <capture>]
+                    with --snapshot, warns if a just-added entry matches zero flows
 
 A flow is only ever "known" (you accepted it) or "unrecognized". netwatch never calls one dangerous.
 `;

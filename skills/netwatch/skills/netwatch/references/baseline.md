@@ -61,6 +61,25 @@ A one-sided baseline is the classic rot: the day someone lets a match-everything
 entry through, the report goes all-green over a mailbox nobody is actually
 watching. That refusal is the anti-vacuity floor, in code.
 
+## `accept --snapshot` — does the new entry actually cover anything?
+
+`accept` writes whatever host or prefix you give it — that is what makes it
+fast to use. Pass `--snapshot <capture>` and it also checks the entry against
+that capture: a **Matches now** column reports how many of the snapshot's
+flows the just-added entry actually matches.
+
+A count of **zero** prints a named warning. It is not refused — a baseline
+entry for a range that is not live in this particular snapshot is a legitimate
+thing to pre-seed — but a brand-new entry matching nothing is, in practice,
+almost always a typo or the wrong pattern shape: a prefix missing its trailing
+dot or colon, a `--process` spelled differently than the capture recorded it,
+a `--port` that no flow actually uses. The flow you meant to cover keeps
+reading `unrecognized` either way, and nothing else would tell you that.
+
+Without `--snapshot`, the column reads `not checked` — netwatch has no way to
+know whether the entry matches anything, and says so, rather than staying
+silent about it the way a missing check normally would.
+
 ## Why a flow is only ever "unrecognized", never "dangerous"
 
 The baseline says what you have *vouched for*. Its opposite is **not vouched
