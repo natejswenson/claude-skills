@@ -162,6 +162,13 @@ test('stage-contract-corpus: every shipped stage is frozen with its full contrac
   }
 });
 
+test('stage-contract-corpus: the test brief says which evidence formats the gate can read (#215)', () => {
+  const snapshot = JSON.parse(frozen('stage-test.json'));
+  const asks = snapshot.asks.join(' ');
+  assert.match(asks, /pass\/fail summary/, `the frozen test-stage asks say nothing about the evidence contract — run \`${REFRESH}\``);
+  assert.match(asks, /exit code/, `the frozen test-stage asks say nothing about the evidence contract — run \`${REFRESH}\``);
+});
+
 test('stage-contract-corpus: the models are the ones the skill promises', () => {
   const byId = Object.fromEntries(STAGES.map((s) => [s.id, s.model]));
   assert.deepEqual(byId, { investigate: 'opus', design: 'opus', implement: 'sonnet', test: 'sonnet' });
