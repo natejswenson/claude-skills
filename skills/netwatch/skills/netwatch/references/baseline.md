@@ -24,13 +24,25 @@ An array of entries (or `{ "entries": [...] }`). Each entry:
 ## How `host` matches
 
 Because captures are numeric (`lsof -n`), `host` is usually an IP or an IP
-prefix. Three forms:
+prefix. Matching is case-insensitive throughout. Six forms:
 
-- **exact** — `142.250.72.14` matches only that address.
+- **exact** — `142.250.72.14` matches only that address. `fe80:13::aa35:70b7:7318:8427`
+  matches only that address too, in any case.
 - **CIDR** — `216.24.56.0/22` matches every address in that block, the same shape
   the report names networks in, so you can accept a whole provider range at once.
+  IPv6 CIDR works the same way: `fe80::/10` matches every link-local address,
+  `fe80:13::/64` narrows it to one scope. CIDR arithmetic, not text — it matches
+  every spelling of the same address (`fe80:13::/64` and `fe80:0013::/64` are
+  identical prefixes), and a host of one address family never matches a base of
+  the other.
 - **trailing-dot prefix** — `17.253.` matches `17.253.72.14`, `17.253.4.9`, … —
   a looser way to accept a range without counting bits.
+- **trailing-colon prefix** — `fe80:` matches every address starting with that
+  hextet: shorthand for `fe80::/16`. `fe80:13:` is shorthand for `fe80:13::/32` —
+  each additional complete hextet before the trailing colon narrows the prefix
+  by 16 bits, the IPv6 counterpart to trailing-dot. Write it exactly as you'd
+  say it: `fe80:` names only the `fe80` hextet, not the wider `fe80::/10`
+  link-local range — write the CIDR form if you mean the whole range.
 - **leading-dot suffix** — `.1e100.net` matches `mia07s24.1e100.net` — useful if
   you captured resolved names rather than numeric ones.
 
@@ -40,7 +52,9 @@ prefix. Three forms:
 
 - **no `host`** — an entry with nothing to match is an entry that matches
   *everything*, which turns every flow `known` and defeats the point.
-- **`host` of `*`, `.`, `*.`, `**`** — the same failure written explicitly.
+- **`host` of `*`, `.`, `*.`, `**`, `:`, `::`** — the same failure written
+  explicitly. `:` and `::` both desugar to a `/0` prefix, matching every IPv6
+  address there is.
 - a `port` that is neither a number nor `*`.
 
 A one-sided baseline is the classic rot: the day someone lets a match-everything
