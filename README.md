@@ -34,6 +34,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`gmailtriage`](skills/gmailtriage) | ![gmailtriage](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=gmailtriage-v*&label=&sort=semver&color=blue) | `/gmailtriage` | Node | Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk. |
 | [`skillhelp`](skills/skillhelp) | ![skillhelp](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=skillhelp-v*&label=&sort=semver&color=blue) | `/skillhelp` | Node | Answers any question about any skill in this repo — setup, usage, commands, architecture, troubleshooting — from an index built out of the skills' own files, and says so plainly when the answer is not in there. |
 | [`brandreport`](skills/brandreport) | ![brandreport](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=brandreport-v*&label=&sort=semver&color=blue) | `/brandreport` | Node | Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report. |
+| [`netwatch`](skills/netwatch) | ![netwatch](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=netwatch-v*&label=&sort=semver&color=blue) | `/netwatch` | Node | Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -61,6 +62,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install gmailtriage@claude-skills
 /plugin install skillhelp@claude-skills
 /plugin install brandreport@claude-skills
+/plugin install netwatch@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -89,6 +91,7 @@ ln -sfn "$PWD/skills/shipreport/skills/shipreport" ~/.claude/skills/shipreport
 ln -sfn "$PWD/skills/gmailtriage/skills/gmailtriage" ~/.claude/skills/gmailtriage
 ln -sfn "$PWD/skills/skillhelp/skills/skillhelp" ~/.claude/skills/skillhelp
 ln -sfn "$PWD/skills/brandreport/skills/brandreport" ~/.claude/skills/brandreport
+ln -sfn "$PWD/skills/netwatch/skills/netwatch" ~/.claude/skills/netwatch
 ```
 </details>
 

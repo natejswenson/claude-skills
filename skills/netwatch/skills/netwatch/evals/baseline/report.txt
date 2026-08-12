@@ -1,0 +1,32 @@
+| Flows | Known | Unrecognized | Destinations | Processes |
+|-------|-------|--------------|--------------|-----------|
+| 8     | 3     | 5            | 5            | 5         |
+
+UNRECOGNIZED — not in your baseline (which is not the same as dangerous)
+
+| Process           | Destination                  | Network              | Port | Sockets |
+|-------------------|------------------------------|----------------------|------|---------|
+| claude            | 216.24.57.7                  | Render               | 443  | 2       |
+| claude            | 34.149.66.165                | unknown network      | 443  | 1       |
+| Code Helper       | 150.171.110.195              | unknown network      | 443  | 1       |
+| identityservicesd | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN) | 1024 | 1       |
+| identityservicesd | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN) | 1025 | 2       |
+
+KNOWN — you have vouched for these
+
+| Process       | Destination   | Network   | Known as               |
+|---------------|---------------|-----------|------------------------|
+| claude        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| Claude        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| Claude Helper | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+
+BY PROCESS — how much each moved
+| Process           | Flows | Destinations | Unrecognized | Bytes in | Bytes out |
+|-------------------|-------|--------------|--------------|----------|-----------|
+| claude            | 3     | 3            | 2            | 443.9 KB | 19.3 MB   |
+| identityservicesd | 2     | 1            | 2            | 8.3 KB   | 13.4 KB   |
+| Code Helper       | 1     | 1            | 1            | 10.5 KB  | 2.8 KB    |
+| Claude            | 1     | 1            | 0            | 3.7 KB   | 22.9 KB   |
+| Claude Helper     | 1     | 1            | 0            | 33.0 KB  | 27.0 KB   |
+
+5 of 8 flow(s) are unrecognized — decide which are worth a look, then `accept` the ones that are fine. Run `render` for a shareable report.
