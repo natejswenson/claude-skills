@@ -23,10 +23,14 @@
 const RUNNERS = [
   {
     id: 'node --test',
-    // `# pass 12` / `# fail 0`, emitted by node's TAP reporter.
+    // `# pass 12` / `# fail 0` (TAP reporter), or `ℹ pass 12` / `ℹ fail 0`
+    // (spec reporter, the default on Node ≥25 — even piped). One alternation
+    // per counter, not a second entry: the last match by position must win
+    // regardless of which form wrote it, or an evidence file whose red half
+    // is spec and whose green half is TAP reports the red run.
     match: (text) => {
-      const pass = [...text.matchAll(/^#\s*pass\s+(\d+)\s*$/gm)].at(-1);
-      const fail = [...text.matchAll(/^#\s*fail\s+(\d+)\s*$/gm)].at(-1);
+      const pass = [...text.matchAll(/^(?:#|ℹ)\s*pass\s+(\d+)\s*$/gm)].at(-1);
+      const fail = [...text.matchAll(/^(?:#|ℹ)\s*fail\s+(\d+)\s*$/gm)].at(-1);
       if (!pass && !fail) return null;
       return { passed: pass ? Number(pass[1]) : null, failed: fail ? Number(fail[1]) : null };
     },
@@ -88,6 +92,9 @@ const RUNNERS = [
   },
 ];
 
+/** Every runner id `parseEvidence` recognises, in match order. */
+export const RUNNER_IDS = RUNNERS.map((runner) => runner.id);
+
 /**
  * The last real result in an evidence file, or null when there is none.
  *
@@ -96,6 +103,12 @@ const RUNNERS = [
  * pass, and callers must not treat it as one.
  */
 export function parseEvidence(text) {
+  // Every runner colours its summary when stdout is a tty, and capturing
+  // through a pty (`script`, `unbuffer`, some CI wrappers) is exactly how a
+  // stage produces coloured output. Stripping once here fixes every entry;
+  // guarding each regex individually fixes one instance and leaves the rest
+  // silently broken on coloured input.
+  text = text.replace(/\x1b\[[0-9;]*m/g, '');
   for (const runner of RUNNERS) {
     const hit = runner.match(text);
     if (!hit) continue;

@@ -15,7 +15,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
-import { parseEvidence, summarize } from './evidence.mjs';
+import { parseEvidence, summarize, RUNNER_IDS } from './evidence.mjs';
 
 export const SCHEMA = 2;
 export class RunError extends Error {}
@@ -298,8 +298,8 @@ export function accept(dir, run, step, { evidence = null, now = () => new Date()
     const result = parseEvidence(readFileSync(proof, 'utf8'));
     if (!result) {
       throw new RunError(
-        `cannot accept ${step.key}: ${proof} holds no runner result — no pass/fail summary and no exit code, ` +
-          'so nothing in it says a suite ran at all',
+        `cannot accept ${step.key}: ${proof} holds no summary in a format I can parse. ` +
+          `I read: ${RUNNER_IDS.join(', ')}.`,
       );
     }
     step.stage.evidence = proof;

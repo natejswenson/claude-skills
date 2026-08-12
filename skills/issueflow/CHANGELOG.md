@@ -5,6 +5,36 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-12
+
+Fixed from a real run — `natejswenson/claude-skills#212` — where both test
+stages wrote real, complete runner output and the accept gate refused both:
+*"holds no runner result — no pass/fail summary and no exit code, so nothing
+in it says a suite ran at all"*, over a file that said, in plain English, that
+31 tests passed.
+
+### Fixed
+
+- **The accept gate now reads `node --test`'s `spec` reporter** (`ℹ pass N` /
+  `ℹ fail N`), which is the default on Node ≥25 — even piped, so the old
+  workaround of capturing through a pipe no longer produces the TAP form the
+  gate already understood. 15 of the 19 skills in this repo run bare
+  `node --test` with no `--test-reporter` flag, so this was the most natural
+  capture of the repo's own most common test runner.
+- **SGR-coloured summaries now parse, for every runner, not just `node --test`.**
+  A capture made through a pty (`script`, `unbuffer`, some CI wrappers)
+  wraps each summary line in colour codes; the gate strips them once before
+  matching instead of teaching each runner's regex to tolerate them one at a
+  time.
+- **The refusal names what it actually could not find.** It used to claim
+  *"nothing in it says a suite ran at all"* over a file that plainly said a
+  suite ran; it now says which formats it can read, derived from the parser
+  itself so the message cannot drift from what the gate actually does.
+- **The test stage's brief now states the evidence contract up front**: save
+  the runner's own pass/fail summary lines, unedited, plus a line recording
+  the exit code — instead of a subagent discovering the requirement only after
+  a refusal.
+
 ## [0.2.0] - 2026-08-03
 
 Measured against a real run — `natejswenson/claude-skills#173`, 57m32s end to
