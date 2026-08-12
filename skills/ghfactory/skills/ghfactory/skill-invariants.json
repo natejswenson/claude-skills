@@ -94,6 +94,33 @@
       "rationale": "Real action.yml files at the SHAs this repo pins, not synthetic ones. Two-sided because each side fails differently: codeql-analyze's `wait-for-processing` is required-WITH-default and must NOT be reported missing — the false positive that made rung 0 red on every correct CodeQL workflow, and a rung nobody can get green is a rung people learn to ignore. paths-filter's `filters` is required with NO default and must still be reported, or the fix has quietly turned input checking off rather than corrected it."
     },
     {
+      "id": "block-scalar-with-keys",
+      "kind": "trap",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/inputs-block-scalar.yml"
+      ],
+      "update_command": "node bin/ghfactory.js verify evals/baseline/inputs-block-scalar.yml",
+      "rationale": "Frozen from the real workflow that surfaced the bug (fastapi/fastapi test.yml, 2026-08-11 battery): `filters: |` body lines look exactly like mapping keys, and `src:` was reported as an unknown paths-filter input. Two-sided on one fixture: block-scalar body lines must not be inputs AND a real key after the block must still be collected, or the fix has turned key collection off rather than corrected it."
+    },
+    {
+      "id": "dead-sha-pin-two-sided",
+      "kind": "trap",
+      "test": "tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/dead-sha.yml"
+      ],
+      "update_command": "node bin/ghfactory.js verify evals/baseline/dead-sha.yml",
+      "rationale": "A 40-hex ref was assumed to exist without a lookup, so a dead pin in the RECOMMENDED pin format reported '1/1 resolved', exit 0 — the exact dead-ref class rung 0 exists to catch, in its most common shape. resolveRef takes an injectable API so both sides run offline: a SHA the API rejects must throw, a SHA it confirms must still resolve as already-pinned. Also pins declaredMajor: an all-digit SHA parsed as 'v0' and reported a nonsense majors-behind count."
+    },
+    {
+      "id": "masthead-tamper-drift",
+      "kind": "trap",
+      "test": "tests/baseline.test.mjs",
+      "update_command": "node bin/ghfactory.js check <file>",
+      "rationale": "check's documented contract is 're-derives it and fails on drift', but it compared only the marker's recorded hash against today's expected hash — the receipt, never the goods — so hand-edited region content under an intact marker reported ok. Three-sided: intact passes, tampered body drifts, absent region is missing. Without this trap the drift gate is decorative for the one file class ghfactory itself generates."
+    },
+    {
       "id": "uses-corpus-floor",
       "kind": "corpus",
       "test": "tests/baseline.test.mjs",

@@ -91,7 +91,13 @@ export async function checkHeader(text, opts) {
   if (!found) return { status: 'missing' };
   const expected = await renderHeader(opts);
   const body = expected.split('\n').slice(1, -1).join('\n');
-  if (found.hash !== bodyHash(body)) return { status: 'drift', expected: body, actual: found.body };
+  // Two comparisons, both required. The marker's recorded hash against today's
+  // expected output catches a stale emitter; the ACTUAL body's hash catches a
+  // hand-edited region. Checking only the receipt — the original bug — reported
+  // "ok" on a region whose content had been tampered under an intact marker.
+  if (found.hash !== bodyHash(body) || bodyHash(found.body) !== bodyHash(body)) {
+    return { status: 'drift', expected: body, actual: found.body };
+  }
   const version = await pressVersion();
   if (found.version !== version) return { status: 'stale-version', was: found.version, now: version };
   return { status: 'ok' };
