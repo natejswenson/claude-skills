@@ -161,6 +161,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "netwatch",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "30f09c4d5a834e92",
+      "facts": 53,
+      "sections": {
+        "setup": 2,
+        "usage": 12,
+        "commands": 13,
+        "architecture": 13,
+        "troubleshooting": 13
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "pluginsync",
       "version": "0.1.0",
       "stack": "node",
