@@ -44,6 +44,8 @@
     "skillhelp-readme",
     "brandreport-agent-ui",
     "brandreport-readme",
-    "brandreport-theme"
+    "brandreport-theme",
+    "netwatch-agent-ui",
+    "netwatch-readme"
   ]
 }

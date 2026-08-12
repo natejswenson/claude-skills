@@ -1,0 +1,85 @@
+{
+  "comment": "What must not silently disappear from netwatch. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Every connection in the report is one the skill actually obs",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "reads-connections-not-payloads",
+      "pattern": "reads connections, not packet payloads",
+      "rationale": "The safety boundary that makes this skill runnable without sudo and without capturing anyone's data. Lose the line and a future author reaches for tcpdump, and the skill starts capturing credentials off a shared network — the exact thing the connection-snapshot design exists to avoid."
+    },
+    {
+      "id": "empty-capture-is-not-all-clear",
+      "pattern": "An empty capture is never reported as .all clear",
+      "rationale": "A snapshot taken while nothing was talking, or a capture command that silently failed, must read as 'I saw nothing', not as a clean bill of health. The code refuses zero flows, but the prose is what stops a run from narrating the refusal away."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "parse the captured snapshot into normalized flows, each grounded in its source line",
+        "command": "node scripts/netwatch.js flows"
+      },
+      {
+        "step": "classify each flow known-vs-unrecognized strictly against the baseline and roll up volumes by process and destination",
+        "command": "node scripts/netwatch.js report"
+      },
+      {
+        "step": "validate and store the baseline of known flows, and report snapshot coverage",
+        "command": "node scripts/netwatch.js baseline"
+      },
+      {
+        "step": "fold chosen unrecognized flows into the baseline, reversibly",
+        "command": "node scripts/netwatch.js accept"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "decide which unrecognized flows are worth investigating and which are ordinary background chatter",
+        "why": "an unrecognized connection to an Apple or CDN address looks identical to one to a stranger; only a person knows what this machine's normal is"
+      },
+      {
+        "step": "name what an unknown remote host probably is",
+        "why": "reverse DNS gives a hostname, not an owner; whether 17.253.x.x is 'Apple push' or a CDN edge is a reading of context nothing in the snapshot records"
+      },
+      {
+        "step": "decide whether a new destination or a volume spike is worth alarm",
+        "why": "a process suddenly moving ten times its usual bytes is either a backup running or something wrong, and the byte count alone does not say which"
+      },
+      {
+        "step": "word each accepted baseline entry so a reader six months later can tell why the flow was allowed",
+        "why": "a raw host:port pair is precise and unreadable, and a baseline nobody can interpret is one nobody will dare to prune"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-snapshot-report",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the parser dropping a connection while the report still looks complete; a flow losing the source line that grounds it; the classifier calling a flow known when no baseline entry covers it — pinned against a real snapshot captured on the maintainer's own Mac, with flows + report re-run over the frozen capture and the report byte-compared."
+    },
+    {
+      "id": "malformed-capture-and-hunch-verdict",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "the grounding gate weakening until a run reports over zero flows and calls it clean, and the one rule ceasing to be code so the model's hunch can reach the report — pinned against an empty capture, and a report asked to attach a 'dangerous' verdict to an unrecognized flow — both of which must exit non-zero."
+    }
+  ]
+}
