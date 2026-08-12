@@ -1,0 +1,301 @@
+===== lsof =====
+p682
+crapportd
+f10
+tIPv4
+PTCP
+n*:49362
+TST=LISTEN
+TQR=0
+TQS=0
+f11
+tIPv6
+PTCP
+n*:49362
+TST=LISTEN
+TQR=0
+TQS=0
+p688
+csharingd
+f9
+tIPv6
+PUDP
+n*:53313
+p690
+chomed
+f45
+tIPv6
+PUDP
+n*:62694
+f46
+tIPv4
+PUDP
+n*:62275
+p691
+cidentityservicesd
+f8
+tIPv4
+PUDP
+n*:*
+f15
+tIPv4
+PUDP
+n*:*
+f20
+tIPv4
+PUDP
+n*:*
+f29
+tIPv6
+PTCP
+n[fe80:13::803c:7365:57f:ea7c]:1024->[fe80:13::aa35:70b7:7318:8427]:1024
+TST=ESTABLISHED
+TQR=0
+TQS=0
+f34
+tIPv4
+PUDP
+n*:*
+f44
+tIPv4
+PUDP
+n*:*
+f46
+tIPv6
+PTCP
+n[fe80:13::803c:7365:57f:ea7c]:1032->[fe80:13::aa35:70b7:7318:8427]:1025
+TST=ESTABLISHED
+TQR=0
+TQS=0
+f47
+tIPv6
+PTCP
+n[fe80:13::803c:7365:57f:ea7c]:1032->[fe80:13::aa35:70b7:7318:8427]:1025
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p729
+cControlCenter
+f9
+tIPv4
+PTCP
+n*:7000
+TST=LISTEN
+TQR=0
+TQS=0
+f10
+tIPv6
+PTCP
+n*:7000
+TST=LISTEN
+TQR=0
+TQS=0
+f11
+tIPv4
+PTCP
+n*:5000
+TST=LISTEN
+TQR=0
+TQS=0
+f12
+tIPv6
+PTCP
+n*:5000
+TST=LISTEN
+TQR=0
+TQS=0
+p934
+collama
+f4
+tIPv4
+PTCP
+n127.0.0.1:11434
+TST=LISTEN
+TQR=0
+TQS=0
+p1966
+ccom.docker.backend
+f70
+tIPv6
+PTCP
+n*:8080
+TST=LISTEN
+TQR=0
+TQS=0
+f79
+tIPv4
+PICMP
+n*:*
+f81
+tIPv6
+PICMPV6
+n*:*
+f531
+tIPv6
+PTCP
+n*:443
+TST=LISTEN
+TQR=0
+TQS=0
+f532
+tIPv6
+PTCP
+n*:80
+TST=LISTEN
+TQR=0
+TQS=0
+p5713
+c2.1.227
+f12
+tIPv4
+PTCP
+n192.168.1.43:51462->216.24.57.7:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p18760
+creplicatord
+f9
+tIPv6
+PUDP
+n*:50454
+p49677
+c2.1.228
+f8
+tIPv4
+PTCP
+n192.168.1.43:51472->34.149.66.165:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+f12
+tIPv4
+PTCP
+n192.168.1.43:51464->216.24.57.7:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+f17
+tIPv4
+PTCP
+n192.168.1.43:51444->160.79.104.10:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+f37
+tIPv4
+PTCP
+n192.168.1.43:50834->160.79.104.10:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p50150
+cClaude
+f138
+tIPv4
+PTCP
+n192.168.1.43:51471->160.79.104.10:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p50159
+cClaude Helper
+f27
+tIPv4
+PTCP
+n192.168.1.43:51258->160.79.104.10:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p73642
+cCode Helper
+f24
+tIPv4
+PTCP
+n192.168.1.43:51470->150.171.110.195:443
+TST=ESTABLISHED
+TQR=0
+TQS=0
+p73682
+cCode Helper
+f33
+tIPv4
+PTCP
+n127.0.0.1:53096
+TST=LISTEN
+TQR=0
+TQS=0
+p75773
+cCode Helper (Plugin)
+f56
+tIPv4
+PTCP
+n127.0.0.1:31141
+TST=LISTEN
+TQR=0
+TQS=0
+p76065
+cCode Helper (Plugin)
+f20
+tIPv4
+PTCP
+n127.0.0.1:59957
+TST=LISTEN
+TQR=0
+TQS=0
+p89041
+cGitHub Desktop Helper (Renderer
+f29
+tIPv4
+PTCP
+n127.0.0.1:64367
+TST=LISTEN
+TQR=0
+TQS=0
+===== nettop =====
+,bytes_in,bytes_out,
+launchd.1,0,0,
+syslogd.436,0,889,
+apsd.442,8690230,8654822,
+airportd.493,0,0,
+mDNSResponder.567,36784108,45321821,
+rapportd.682,0,0,
+sharingd.688,0,0,
+homed.690,0,0,
+identityservice.691,8493,13704,
+ControlCenter.729,0,0,
+wifip2pd.769,0,0,
+ollama.934,0,0,
+dnsmasq.982,127022,430717,
+com.docker.back.1966,0,0,
+wifivelocityd.19358,0,0,
+GitHub Desktop .89041,0,0,
+netbiosd.26298,1956200,472345,
+Code Helper.73642,10734,2910,
+Code Helper.73682,0,0,
+Code Helper (Pl.75773,0,0,
+Code Helper (Pl.76065,0,0,
+Claude.50150,3783,23453,
+Claude Helper.50159,33802,27689,
+2.1.227.5713,3747,851,
+replicatord.18760,0,0,
+wifianalyticsd.21054,0,0,
+2.1.228.49677,454601,20209267,
+===== ps =====
+  682 /usr/libexec/rapportd
+  688 /usr/libexec/sharingd
+  690 /System/Library/PrivateFrameworks/HomeKitDaemon.framework/Support/homed
+  691 /System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/Contents/MacOS/identityservicesd
+  729 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  934 /opt/homebrew/opt/ollama/bin/ollama
+ 1966 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+18760 /System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord
+50150 /Applications/Claude.app/Contents/MacOS/Claude
+50159 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper
+73642 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper
+73682 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper
+75773 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+76065 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+89041 /Applications/GitHub Desktop.app/Contents/Frameworks/GitHub Desktop Helper (Renderer).app/Contents/MacOS/GitHub Desktop Helper (Renderer)
+ 5713 claude
+49677 claude

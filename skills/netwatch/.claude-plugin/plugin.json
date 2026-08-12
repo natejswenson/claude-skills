@@ -1,0 +1,10 @@
+{
+  "name": "netwatch",
+  "version": "0.1.0",
+  "description": "Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/netwatch",
+  "license": "MIT"
+}
