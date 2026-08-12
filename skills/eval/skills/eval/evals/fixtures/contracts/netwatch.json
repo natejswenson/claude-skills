@@ -1,0 +1,251 @@
+{
+  "name": "netwatch",
+  "sources": [
+    "skills/netwatch/skills/netwatch/SKILL.md",
+    "skills/netwatch/skills/netwatch/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-b75ed59f",
+      "tag": "inv",
+      "text": "An empty capture is never reported as .all clear",
+      "severity": "high",
+      "rationale": "A snapshot taken while nothing was talking, or a capture command that silently failed, must read as 'I saw nothing', not as a clean bill of health. The code refuses zero flows, but the prose is what stops a run from narrating the refusal away.",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 167
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 171
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 178
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 162
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 186
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 159
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 176
+      }
+    },
+    {
+      "id": "rule-f44bc29e",
+      "tag": "rule",
+      "text": "Every connection in the report is one the skill actually observed in the live snapshot, and no connection is called malicious or safe on the model's hunch — a flow is 'known' only when it matches a baseline the user built, and everything else is 'unrecognized', never 'dangerous'.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 19
+      }
+    },
+    {
+      "id": "skill-0d8a98f0",
+      "tag": "skill",
+      "text": "netwatch reads connections, not packet payloads",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 45
+      }
+    },
+    {
+      "id": "skill-1635d3a5",
+      "tag": "skill",
+      "text": "A flow is only ever `known` or `unrecognized`",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 79
+      }
+    },
+    {
+      "id": "skill-1d29cb29",
+      "tag": "skill",
+      "text": "netwatch reads connections, not packet payloads.",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 123
+      }
+    },
+    {
+      "id": "skill-1e4c5dae",
+      "tag": "skill",
+      "text": "An empty capture is never reported as \"all clear\".",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 128
+      }
+    },
+    {
+      "id": "skill-2922486a",
+      "tag": "skill",
+      "text": "An empty capture is never reported as \"all clear\"",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 66
+      }
+    },
+    {
+      "id": "skill-519f7ebe",
+      "tag": "skill",
+      "text": "Here the judgment begins, and it is yours, not the report's.",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 84
+      }
+    },
+    {
+      "id": "skill-6f1218ef",
+      "tag": "skill",
+      "text": "Never accept a flow the user did not choose.",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 132
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 121
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/netwatch/skills/netwatch/SKILL.md",
+        "line": 12
+      }
+    }
+  ]
+}
