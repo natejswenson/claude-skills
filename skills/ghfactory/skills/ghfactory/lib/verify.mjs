@@ -48,13 +48,20 @@ export function collectUses(text) {
       const ind = line.length - line.trimStart().length;
       if (ind <= indent) break;
       if (/^\s*with:\s*$/.test(line)) {
+        // A `with:` key is a DIRECT child of the mapping: exactly the indent of
+        // the first content line below `with:`. Anything deeper is a value —
+        // most importantly the body of a block scalar like `filters: |`, whose
+        // inner lines look exactly like keys (`src:`) and are not inputs.
+        let childIndent = null;
         for (let k = j + 1; k < lines.length; k += 1) {
           const w = lines[k];
           if (w.trim() === '' || w.trim().startsWith('#')) continue;
           const wi = w.length - w.trimStart().length;
           if (wi <= ind) break;
+          if (childIndent === null) childIndent = wi;
+          if (wi !== childIndent) continue;
           const key = /^\s*([A-Za-z0-9_-]+):/.exec(w);
-          if (key && wi === (lines[k].length - lines[k].trimStart().length)) withKeys.push(key[1]);
+          if (key) withKeys.push(key[1]);
         }
         break;
       }
@@ -150,8 +157,20 @@ export async function runZizmor(files) {
     if (err.code === 3) {
       return { ran: false, reason: 'zizmor collected zero inputs — it audited nothing' };
     }
-    return { ran: false, reason: (err.stderr || err.message).trim().split('\n')[0] };
+    return { ran: false, reason: zizmorFailureReason(err) };
   }
+}
+
+/**
+ * zizmor opens every run with an `INFO zizmor: 🌈 …` banner on stderr, so the
+ * first stderr line is the one line guaranteed to say nothing about the failure.
+ * Surface the first ERROR line; failing that, the last non-INFO line.
+ */
+export function zizmorFailureReason(err) {
+  const lines = (err.stderr || err.message).trim().split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !/^INFO\b/.test(l));
+  return lines.find((l) => /^ERROR\b/i.test(l)) ?? lines.at(-1) ?? err.message;
 }
 
 function parseZizmor(stdout) {

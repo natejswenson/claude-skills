@@ -172,3 +172,81 @@ test('verify refuses to run against zero files', async () => {
   const { verify, VerifyError } = await import('../lib/verify.mjs');
   await assert.rejects(() => verify([], []), VerifyError);
 });
+
+// --- regressions from the 2026-08-11 verification battery ------------------
+
+const blockScalar = readFileSync(join(BASE, 'inputs-block-scalar.yml'), 'utf8');
+const deadSha = readFileSync(join(BASE, 'dead-sha.yml'), 'utf8');
+
+/**
+ * Two-sided on one fixture: the block scalar's body lines (`src:` and friends)
+ * must NOT be inputs, while `filters` and `token` — a real key that comes AFTER
+ * the block — must both still be collected. Losing the second half means the
+ * fix turned key collection off at the first block scalar instead of skipping it.
+ */
+test('keys inside a block-scalar with: value are not inputs', () => {
+  const filter = collectUses(blockScalar).find((u) => u.uses.startsWith('dorny/paths-filter@'));
+  assert.deepEqual(
+    filter.withKeys,
+    ['filters', 'token'],
+    'block-scalar body lines leaked into the with: keys, or a key after the block was dropped',
+  );
+});
+
+/**
+ * The dead-SHA class, offline: resolveRef takes an injectable API precisely so
+ * this can run in CI without a network. Two-sided — a SHA the API rejects must
+ * throw ResolveError, and a SHA the API confirms must resolve as an
+ * already-pinned ref, or the fix has simply made every SHA pin fail.
+ */
+test('a dead 40-hex SHA pin is a bad ref, and a live one still resolves', async () => {
+  const { resolveRef, ResolveError } = await import('../lib/resolve.mjs');
+  const sha = collectUses(deadSha)[0].uses.split('@')[1];
+  await assert.rejects(
+    () => resolveRef('actions', 'checkout', sha, async () => { throw new Error('HTTP 422'); }),
+    ResolveError,
+    'a SHA the API cannot find must be a dead ref, never assumed real',
+  );
+  const live = await resolveRef('actions', 'checkout', sha, async () => ({ sha }));
+  assert.deepEqual(live, { sha, via: 'sha', already: true });
+});
+
+test('staleness never derives a version from a SHA-shaped ref', async () => {
+  const { declaredMajor } = await import('../lib/resolve.mjs');
+  const zeros = '0'.repeat(40);
+  assert.equal(declaredMajor(zeros, 'v5'), 5, 'the trailing comment is the declared version of a SHA pin');
+  assert.equal(declaredMajor(zeros, null), null, 'an uncommented SHA declares nothing — not v0');
+  assert.equal(declaredMajor('v6.1.0', null), 6, 'a tag ref still declares its own major');
+});
+
+/**
+ * zizmor opens every run with an INFO banner on stderr, so "first stderr line"
+ * was guaranteed to be the one line that said nothing: the skip reason shown to
+ * the user was `INFO zizmor: 🌈 zizmor v1.29.0`.
+ */
+test('the zizmor failure reason is never the version banner', async () => {
+  const { zizmorFailureReason } = await import('../lib/verify.mjs');
+  const err = {
+    stderr: 'INFO zizmor: 🌈 zizmor v1.29.0\nERROR failed to parse x.yml: invalid uses',
+    message: 'exit 2',
+  };
+  assert.equal(zizmorFailureReason(err), 'ERROR failed to parse x.yml: invalid uses');
+  const onlyBanner = { stderr: 'INFO zizmor: 🌈 zizmor v1.29.0', message: 'zizmor exited 2' };
+  assert.equal(zizmorFailureReason(onlyBanner), 'zizmor exited 2');
+});
+
+/**
+ * check's contract is "re-derives it and fails on drift". Before the fix it
+ * compared only the marker's RECORDED hash to today's expected hash — the
+ * receipt, never the goods — so a hand-edited body under an intact marker
+ * reported ok. Three-sided: intact passes, tampered drifts, absent is missing.
+ */
+test('check reports drift on a tampered region, ok on an intact one', async () => {
+  const { applyHeader, checkHeader } = await import('../lib/header.mjs');
+  const opts = { title: 'CI', purpose: 'tamper-me', generatorVersion: '0.1.0' };
+  const stamped = await applyHeader('name: t\non: push\n', opts);
+  assert.equal((await checkHeader(stamped, opts)).status, 'ok');
+  const tampered = stamped.replace('tamper-me', 'tampered!');
+  assert.equal((await checkHeader(tampered, opts)).status, 'drift');
+  assert.equal((await checkHeader('name: t\non: push\n', opts)).status, 'missing');
+});
