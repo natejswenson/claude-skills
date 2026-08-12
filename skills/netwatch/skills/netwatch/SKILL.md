@@ -2,7 +2,7 @@
 name: netwatch
 description: Analyze the network traffic on the machine you are on — take a live snapshot of every connection, group it by the process and the destination, and report who your computer is actually talking to. Use when the user says "netwatch", "analyze my network traffic", "what is my computer connecting to", "who is my mac talking to", "what's talking on my network", "show me my network connections", "is anything phoning home", "what process is using the network", "audit my outbound connections", or wants to know what is going across their wifi without capturing packet payloads. Reads live connection snapshots (nettop, lsof, netstat); it does not capture packets and never needs sudo.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 # /netwatch — Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch
@@ -29,7 +29,7 @@ step whose command does not exist fails `skillfactory verify`.
 | classify each flow known-vs-unrecognized strictly against the baseline and roll up volumes by process and destination | `node scripts/netwatch.js report` |
 | render the classified flows as a press-styled HTML report | `node scripts/netwatch.js render` |
 | validate and store the baseline of known flows, and report snapshot coverage | `node scripts/netwatch.js baseline` |
-| fold chosen unrecognized flows into the baseline, reversibly | `node scripts/netwatch.js accept` |
+| fold chosen unrecognized flows into the baseline, reversibly, and report whether each new entry actually matches anything in the snapshot | `node scripts/netwatch.js accept` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
@@ -112,12 +112,23 @@ a finding the report made.
 
 ```bash
 node scripts/netwatch.js accept --baseline ~/.netwatch/baseline.json \
+  --snapshot "$OUT/capture.txt" \
   --host 17.253. --note "Apple push / iCloud range" [--process <p>] [--port <n>]
 ```
 
 Fold the flows you have decided are fine into the baseline, each with a `--note`
 a reader will understand later. It writes a receipt so the change can be undone.
 Re-run `report` and the accepted flows now read `known`.
+
+Pass `--snapshot` (you already have `$OUT/capture.txt` in hand by this step) and
+`accept` adds a **Matches now** column, counting how many flows in that snapshot
+each just-added entry actually matches. A new entry matching **zero** is almost
+always a pattern mistake — a typo'd prefix, a wrong `--process`, a range that is
+not live right now — and `accept` prints a named warning saying so. **Exit stays
+0**: pre-seeding a baseline entry for a range that is not live in this snapshot
+is legitimate, so this is a warning, not a refusal. **A zero-match warning is
+never narrated into a success** — if `accept` warns, say so plainly instead of
+reporting the entry as accepted and moving on.
 
 ### 5. Report back
 
@@ -134,7 +145,7 @@ metadata.
 | `netwatch baseline` | read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline already covers |
 | `netwatch report` | classify every flow in the snapshot as known or unrecognized strictly against the baseline, name the network block each destination reaches, roll the flows up by process and by destination, and emit the report — with every reported flow traceable to a captured line and no flow ever labelled dangerous |
 | `netwatch render` | render the classified flows as a self-contained, press-styled HTML report — signal band, unrecognized-first, network owners and per-process byte bars — the same facts as `report`, made to share |
-| `netwatch accept` | fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed |
+| `netwatch accept` | fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed — and, with `--snapshot`, reporting how many flows each new entry actually matches, warning by name if that count is zero |
 
 ## Rules that are not negotiable
 
@@ -153,6 +164,10 @@ metadata.
 - **Never accept a flow the user did not choose.** `accept` writes to the
   baseline, and the baseline is what "known" means. Only the user decides what is
   fine; the model proposes, it does not accept on its own.
+- **A zero-match warning is never narrated into a success.** `accept --snapshot`
+  warns by name when a just-added entry matches nothing in the current
+  snapshot — exit stays 0, because pre-seeding a range that is not live yet is
+  legitimate, but a warning is a fact to relay, not a detail to skip past.
 
 <!-- press:agent-ui -->
 

@@ -78,16 +78,70 @@ const V4_PARSED = V4.map(([cidr, owner, category]) => {
   return { network: (baseInt & mask) >>> 0, mask, owner, category };
 });
 
+// Parse an IPv6 literal into eight 16-bit groups, or null if it isn't one.
+// `::` expands to as many zero groups as it needs to fill. A dotted
+// (IPv4-mapped, e.g. "::ffff:1.2.3.4") group is treated as unparseable rather
+// than coerced — the caller must get "no match", never a guess.
+function v6ToGroups(ip) {
+  if (typeof ip !== 'string' || ip.includes('.')) return null;
+  const sides = ip.split('::');
+  if (sides.length > 2) return null;
+  const side = (s) => {
+    if (s === '') return [];
+    const groups = [];
+    for (const p of s.split(':')) {
+      if (!/^[0-9a-fA-F]{1,4}$/.test(p)) return null;
+      groups.push(parseInt(p, 16));
+    }
+    return groups;
+  };
+  if (sides.length === 1) {
+    const groups = side(sides[0]);
+    return groups && groups.length === 8 ? groups : null;
+  }
+  const left = side(sides[0]);
+  const right = side(sides[1]);
+  if (left === null || right === null) return null;
+  const fill = 8 - left.length - right.length;
+  if (fill < 0) return null;
+  return [...left, ...new Array(fill).fill(0), ...right];
+}
+
+// Do the first `bits` bits of two 8-group IPv6 addresses agree?
+function v6PrefixEqual(a, b, bits) {
+  let remaining = bits;
+  for (let i = 0; i < 8 && remaining > 0; i += 1) {
+    const n = Math.min(16, remaining);
+    const mask = n === 16 ? 0xffff : (0xffff << (16 - n)) & 0xffff;
+    if ((a[i] & mask) !== (b[i] & mask)) return false;
+    remaining -= n;
+  }
+  return true;
+}
+
 /**
- * Is an IPv4 host inside a CIDR like "216.24.56.0/22"? Returns false for
- * anything it cannot parse (IPv6, malformed) — the caller falls back to its
- * other matching forms. This is what lets a baseline entry be written as a
- * CIDR, the same shape the report names networks in.
+ * Is a host inside a CIDR like "216.24.56.0/22" or "fe80::/10"? Dispatches on
+ * the family of the CIDR *base* — a base containing `:` takes the IPv6 path
+ * (128-bit, `::`-expanded, case-insensitive by construction since hex parsing
+ * is), otherwise the IPv4 path (32-bit, dotted), unchanged. A host of a
+ * different family than the base is always false, and anything unparseable
+ * returns false rather than throwing — the caller falls back to its other
+ * matching forms. This is what lets a baseline entry be written as a CIDR,
+ * the same shape the report names networks in.
  */
 export function ipInCidr(host, cidr) {
   if (typeof cidr !== 'string' || !cidr.includes('/')) return false;
   const [base, bitsRaw] = cidr.split('/');
   const bits = Number(bitsRaw);
+
+  if (base.includes(':')) {
+    if (!Number.isInteger(bits) || bits < 0 || bits > 128) return false;
+    const h = v6ToGroups(host);
+    const b = v6ToGroups(base);
+    if (h === null || b === null) return false;
+    return v6PrefixEqual(h, b, bits);
+  }
+
   if (!Number.isInteger(bits) || bits < 0 || bits > 32) return false;
   const h = v4ToInt(host);
   const b = v4ToInt(base);
