@@ -43,3 +43,25 @@ test('CIDR membership is computed, not string-matched', () => {
   assert.ok(!ipInCidr('fe80::1', '216.24.56.0/22'));       // IPv6 never matches a v4 CIDR
   assert.ok(!ipInCidr('216.24.57.7', 'not-a-cidr'));
 });
+
+test('IPv6 CIDR membership is 128-bit prefix arithmetic, not text', () => {
+  const rhost = 'fe80:13::aa35:70b7:7318:8427';
+  assert.ok(ipInCidr(rhost, 'fe80::/10'));
+  assert.ok(ipInCidr(rhost, 'fe80:13::/64'));
+  assert.ok(!ipInCidr(rhost, '2606:4700::/32'));
+  // Same address, spelled two different ways — prefix arithmetic doesn't care.
+  assert.ok(ipInCidr('fe80::1', 'fe80:0:0:0:0:0:0:1/128'));
+  // A v4 host never matches a v6 base, and vice versa.
+  assert.ok(!ipInCidr('17.253.72.14', 'fe80::/10'));
+  assert.ok(!ipInCidr(rhost, '160.79.104.0/23'));
+  // A v4 base still rejects bits > 32; a v6 base accepts up to 128.
+  assert.ok(!ipInCidr('17.253.72.14', '17.253.0.0/33'));
+  assert.ok(!ipInCidr(rhost, 'fe80::/129'));
+});
+
+test('malformed IPv6 input never half-matches', () => {
+  assert.ok(!ipInCidr('::ffff:1.2.3.4', 'fe80::/10'));   // IPv4-mapped — dotted, unparseable, not coerced
+  assert.ok(!ipInCidr('fe80:::1', 'fe80::/10'));          // triple colon
+  assert.ok(!ipInCidr('gggg::1', 'fe80::/10'));           // not hex
+  assert.ok(!ipInCidr('fe80::1', 'not-a-cidr'));
+});
