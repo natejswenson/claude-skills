@@ -66,9 +66,9 @@
     },
     {
       "name": "ghfactory",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "stack": "node",
-      "cardHash": "36d347c810ec02af",
+      "cardHash": "2e3ee8510afa6402",
       "facts": 49,
       "sections": {
         "setup": 3,

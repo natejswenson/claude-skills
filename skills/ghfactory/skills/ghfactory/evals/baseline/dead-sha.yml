@@ -1,0 +1,15 @@
+# Frozen from the 2026-08-11 battery run: a 40-hex ref that exists nowhere.
+# Before the fix, resolveRef assumed any SHA-shaped ref was real and reported
+# this workflow "1/1 resolved", exit 0 — a dead pin in the RECOMMENDED pin
+# format sailing through the one rung that exists to catch dead refs. The
+# all-digit SHA also parsed as "v0" and produced a nonsense "7 majors behind".
+name: dead sha
+on: push
+permissions: {}
+jobs:
+  z:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@0000000000000000000000000000000000000000 # v5
+        with:
+          persist-credentials: false

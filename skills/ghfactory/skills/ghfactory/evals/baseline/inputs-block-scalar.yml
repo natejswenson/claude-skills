@@ -1,0 +1,25 @@
+# Frozen from the real workflow that surfaced the bug: fastapi/fastapi's
+# test.yml (2026-08-11 battery run). `filters: |` is a block scalar whose body
+# lines look exactly like mapping keys — `src:` was reported as an unknown
+# input of dorny/paths-filter, a false positive on the first real-world repo a
+# new user is likely to point ghfactory at.
+name: block scalar inputs
+on: push
+permissions: {}
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        id: filter
+        with:
+          filters: |
+            src:
+              - .github/workflows/test.yml
+              - docs_src/**
+              - fastapi/**
+              - scripts/**
+          token: ""

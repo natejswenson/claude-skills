@@ -5,6 +5,33 @@ All notable changes to the **ghfactory** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-12
+
+Five fixes from a full verification battery: the existing suite, this repo's 24
+workflows (106 refs), six wild workflows from popular OSS repos, and an
+adversarial edge-case set. Every fix is pinned by a new two-sided baseline trap.
+
+### Fixed
+
+- **Rung 0 now verifies SHA pins exist.** A 40-hex ref was assumed real without
+  a lookup, so a dead SHA — the recommended pin format — reported "1/1
+  resolved", exit 0, and silently disabled input checking for that step.
+- **Block-scalar `with:` values no longer produce phantom inputs.** The
+  direct-child indent guard compared a line's indent to itself, so `filters: |`
+  body lines (`src:` …) were reported as unknown inputs of `dorny/paths-filter`
+  on fastapi's real workflow.
+- **Staleness never parses a SHA-shaped ref as a version.** An all-digit SHA
+  satisfied the bare tag pattern as "v0" and reported checkout "7 majors
+  behind"; the trailing `# v5` comment is now the only declared version a SHA
+  pin has.
+- **`check` hashes the actual region body.** It compared only the marker's
+  recorded hash against today's expected hash — the receipt, never the goods —
+  so a hand-edited masthead under an intact marker reported ok, contradicting
+  the documented "fails on drift" contract.
+- **zizmor's skip reason is the error, not the banner.** When zizmor aborted,
+  the reason surfaced was its first stderr line: `INFO zizmor: 🌈 zizmor
+  v1.29.0`.
+
 ## [0.2.0] - 2026-08-01
 
 ### Changed
