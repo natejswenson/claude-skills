@@ -46,6 +46,7 @@
     "brandreport-readme",
     "brandreport-theme",
     "netwatch-agent-ui",
-    "netwatch-readme"
+    "netwatch-readme",
+    "netwatch-theme"
   ]
 }

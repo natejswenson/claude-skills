@@ -12,15 +12,15 @@ const BASELINE = join(SKILL, 'evals', 'baseline');
 const manifest = JSON.parse(readFileSync(join(BASELINE, 'MANIFEST.json'), 'utf8'));
 
 // Pinned against a real run of netwatch. Refresh with:
-//   cp evals/baseline/capture.txt evals/baseline/baseline.json "<a fresh dir>"/ && node scripts/netwatch.js report --snapshot "$OUT/capture.txt" --baseline "$OUT/baseline.json" > "$OUT/report.txt"
-//   skillfactory freeze --skill netwatch --from <that dir> --command "cp evals/baseline/capture.txt evals/baseline/baseline.json \"$OUT\"/ && node scripts/netwatch.js report --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" > \"$OUT/report.txt\""
+//   cp evals/baseline/capture.txt evals/baseline/baseline.json "<a fresh dir>"/ && node scripts/netwatch.js report --snapshot "$OUT/capture.txt" --baseline "$OUT/baseline.json" > "$OUT/report.txt" && node scripts/netwatch.js render --snapshot "$OUT/capture.txt" --baseline "$OUT/baseline.json" --captured-at 2026-08-12 --out "$OUT/report.html"
+//   skillfactory freeze --skill netwatch --from <that dir> --command "cp evals/baseline/capture.txt evals/baseline/baseline.json \"$OUT\"/ && node scripts/netwatch.js report --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" > \"$OUT/report.txt\" && node scripts/netwatch.js render --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" --captured-at 2026-08-12 --out \"$OUT/report.html\""
 
 const sh = (cmd, cwd) => execFileSync('bash', ['-lc', cmd], { cwd, encoding: 'utf8' });
 
 test('the frozen run covers real artifacts', () => {
   // Anti-vacuity floor: a manifest over zero artifacts would let every
   // assertion below iterate nothing and still report green.
-  assert.ok(manifest.artifacts.length >= 3, 'the frozen run lost artifacts — refresh or explain');
+  assert.ok(manifest.artifacts.length >= 4, 'the frozen run lost artifacts — refresh or explain');
   for (const a of manifest.artifacts) {
     assert.ok(existsSync(join(BASELINE, a.path)), `frozen artifact missing: ${a.path}`);
   }

@@ -29,14 +29,16 @@
 
 ## Commands
 
-- Command — Returns `skills/netwatch/skills/netwatch/SKILL.md:111`
-- netwatch flows — parse a captured snapshot (the raw nettop/lsof/netstat text the agent saved) into a normalized, deduplicated flow table — process, pid, protocol, remote host, remote port, bytes in/o… `skills/netwatch/skills/netwatch/SKILL.md:113`
-- netwatch baseline — read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline… `skills/netwatch/skills/netwatch/SKILL.md:114`
-- netwatch report — classify every flow in the snapshot as known or unrecognized strictly against the baseline, roll the flows up by process and by destination, and emit the report — with every reporte… `skills/netwatch/skills/netwatch/SKILL.md:115`
-- netwatch accept — fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed `skills/netwatch/skills/netwatch/SKILL.md:116`
-- node scripts/netwatch.js flows --snapshot "$OUT/capture.txt" `skills/netwatch/skills/netwatch/SKILL.md:63`
-- node scripts/netwatch.js report --snapshot "$OUT/capture.txt" --baseline ~/.netwatch/baseline.json `skills/netwatch/skills/netwatch/SKILL.md:75`
-- node scripts/netwatch.js accept --baseline ~/.netwatch/baseline.json \ `skills/netwatch/skills/netwatch/SKILL.md:94`
+- Command — Returns `skills/netwatch/skills/netwatch/SKILL.md:131`
+- netwatch flows — parse a captured snapshot (the raw lsof/nettop/ps text the agent saved) into a normalized, deduplicated flow table — process, protocol, remote host, the network block it reaches, rem… `skills/netwatch/skills/netwatch/SKILL.md:133`
+- netwatch baseline — read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline… `skills/netwatch/skills/netwatch/SKILL.md:134`
+- netwatch report — classify every flow in the snapshot as known or unrecognized strictly against the baseline, name the network block each destination reaches, roll the flows up by process and by dest… `skills/netwatch/skills/netwatch/SKILL.md:135`
+- netwatch render — render the classified flows as a self-contained, press-styled HTML report — signal band, unrecognized-first, network owners and per-process byte bars — the same facts as report, mad… `skills/netwatch/skills/netwatch/SKILL.md:136`
+- netwatch accept — fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed `skills/netwatch/skills/netwatch/SKILL.md:137`
+- node scripts/netwatch.js flows --snapshot "$OUT/capture.txt" `skills/netwatch/skills/netwatch/SKILL.md:68`
+- node scripts/netwatch.js report --snapshot "$OUT/capture.txt" --baseline ~/.netwatch/baseline.json `skills/netwatch/skills/netwatch/SKILL.md:80`
+- node scripts/netwatch.js render --snapshot "$OUT/capture.txt" \ `skills/netwatch/skills/netwatch/SKILL.md:96`
+- node scripts/netwatch.js accept --baseline ~/.netwatch/baseline.json \ `skills/netwatch/skills/netwatch/SKILL.md:114`
 - npm run audit — npm audit --audit-level=moderate `skills/netwatch/skills/netwatch/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/netwatch/skills/netwatch/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/netwatch/skills/netwatch/package.json:39`
@@ -45,11 +47,13 @@
 
 ## Architecture
 
-- scripts/netwatch.js — the CLI: flows, baseline, report, accept `skills/netwatch/skills/netwatch/SKILL.md:142`
-- references/anatomy.md — the fixed shape of a netwatch report — the flow table, the known/unrecognized split, and the per-process and per-destination rollups `skills/netwatch/skills/netwatch/SKILL.md:143`
-- references/capture.md — how a live snapshot is taken agent-side (nettop, lsof -i, netstat), why the skill reads connections and not packet payloads, and why no command here needs sudo `skills/netwatch/skills/netwatch/SKILL.md:144`
-- references/baseline.md — the baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous' `skills/netwatch/skills/netwatch/SKILL.md:145`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/netwatch/skills/netwatch/SKILL.md:149`
+- scripts/netwatch.js — the CLI: flows, baseline, report, render, accept `skills/netwatch/skills/netwatch/SKILL.md:163`
+- scripts/lib/providers.mjs — the offline network-block → operator lookup (a factual allocation table, never a safety verdict) `skills/netwatch/skills/netwatch/SKILL.md:164`
+- assets/report.css — the report's stylesheet; its :root block is a press-generated token region `skills/netwatch/skills/netwatch/SKILL.md:165`
+- references/anatomy.md — the fixed shape of a netwatch report — the flow table, the network column, the known/unrecognized split, and the rollups `skills/netwatch/skills/netwatch/SKILL.md:166`
+- references/capture.md — how a live snapshot is taken agent-side (lsof, nettop, ps), why the skill reads connections and not packet payloads, and why no command here needs sudo `skills/netwatch/skills/netwatch/SKILL.md:167`
+- references/baseline.md — the baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous' `skills/netwatch/skills/netwatch/SKILL.md:168`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/netwatch/skills/netwatch/SKILL.md:172`
 - Deterministic: parse the captured snapshot into normalized flows, each grounded in its source line — node scripts/netwatch.js flows `skills/netwatch/skills/netwatch/skill-invariants.json:31`
 - Deterministic: classify each flow known-vs-unrecognized strictly against the baseline and roll up volumes by process and destination — node scripts/netwatch.js report `skills/netwatch/skills/netwatch/skill-invariants.json:35`
 - Deterministic: validate and store the baseline of known flows, and report snapshot coverage — node scripts/netwatch.js baseline `skills/netwatch/skills/netwatch/skill-invariants.json:39`
@@ -65,12 +69,12 @@
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/netwatch/skills/netwatch/skill-invariants.json:14`
 - reads connections, not packet payloads — The safety boundary that makes this skill runnable without sudo and without capturing anyone's data. Lose the line and a future author reaches for tcpdump, an… `skills/netwatch/skills/netwatch/skill-invariants.json:19`
 - An empty capture is never reported as .all clear — A snapshot taken while nothing was talking, or a capture command that silently failed, must read as 'I saw nothing', not as a clean bill of health.… `skills/netwatch/skills/netwatch/skill-invariants.json:24`
-- **Every connection in the report is one the skill actually observed in the live snapshot, and no connection is called malicious or safe on the model's hunch — a flow is 'known' only when it matches a… `skills/netwatch/skills/netwatch/SKILL.md:120`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/netwatch/skills/netwatch/SKILL.md:121`
-- **netwatch reads connections, not packet payloads.** It looks at who your machine is talking to and which process is doing it — never the contents of a request — which is why it needs no sudo and can… `skills/netwatch/skills/netwatch/SKILL.md:123`
-- **An empty capture is never reported as "all clear".** Zero connections means the snapshot caught nothing — nothing was talking, or the capture failed — not that the machine is clean. flows refuses i… `skills/netwatch/skills/netwatch/SKILL.md:128`
-- **Never accept a flow the user did not choose.** accept writes to the baseline, and the baseline is what "known" means. Only the user decides what is fine; the model proposes, it does not accept on i… `skills/netwatch/skills/netwatch/SKILL.md:132`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/netwatch/skills/netwatch/SKILL.md:121`
-- **Never accept a flow the user did not choose.** accept writes to the `skills/netwatch/skills/netwatch/SKILL.md:132`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/netwatch/skills/netwatch/SKILL.md:162`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:178`
+- **Every connection in the report is one the skill actually observed in the live snapshot, and no connection is called malicious or safe on the model's hunch — a flow is 'known' only when it matches a… `skills/netwatch/skills/netwatch/SKILL.md:141`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/netwatch/skills/netwatch/SKILL.md:142`
+- **netwatch reads connections, not packet payloads.** It looks at who your machine is talking to and which process is doing it — never the contents of a request — which is why it needs no sudo and can… `skills/netwatch/skills/netwatch/SKILL.md:144`
+- **An empty capture is never reported as "all clear".** Zero connections means the snapshot caught nothing — nothing was talking, or the capture failed — not that the machine is clean. flows refuses i… `skills/netwatch/skills/netwatch/SKILL.md:149`
+- **Never accept a flow the user did not choose.** accept writes to the baseline, and the baseline is what "known" means. Only the user decides what is fine; the model proposes, it does not accept on i… `skills/netwatch/skills/netwatch/SKILL.md:153`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/netwatch/skills/netwatch/SKILL.md:142`
+- **Never accept a flow the user did not choose.** accept writes to the `skills/netwatch/skills/netwatch/SKILL.md:153`
+- **Never print file contents into the conversation.** Not a fetched page, not a `skills/netwatch/skills/netwatch/SKILL.md:185`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:201`

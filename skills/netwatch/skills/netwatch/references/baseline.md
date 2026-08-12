@@ -27,8 +27,10 @@ Because captures are numeric (`lsof -n`), `host` is usually an IP or an IP
 prefix. Three forms:
 
 - **exact** — `142.250.72.14` matches only that address.
+- **CIDR** — `216.24.56.0/22` matches every address in that block, the same shape
+  the report names networks in, so you can accept a whole provider range at once.
 - **trailing-dot prefix** — `17.253.` matches `17.253.72.14`, `17.253.4.9`, … —
-  the natural way to accept a provider's address range.
+  a looser way to accept a range without counting bits.
 - **leading-dot suffix** — `.1e100.net` matches `mia07s24.1e100.net` — useful if
   you captured resolved names rather than numeric ones.
 

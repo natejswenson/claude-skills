@@ -1,11 +1,4 @@
 [
-  {
-    "host": "160.79.104.10",
-    "note": "Anthropic API (Claude)"
-  },
-  {
-    "host": "fe80:13::aa35:70b7:7318:8427",
-    "note": "Apple identity services, IPv6 link-local on the LAN",
-    "process": "identityservicesd"
-  }
+  { "host": "160.79.104.0/23", "note": "Anthropic API (Claude)" },
+  { "host": "17.", "note": "Apple services" }
 ]

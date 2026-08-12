@@ -9,10 +9,10 @@ One row per distinct connection, collapsed across identical sockets:
 
 | Column | Is |
 |---|---|
-| Process | the command that owns the socket (`lsof` `c` field) |
-| PID | its process id |
+| Process | the command that owns the socket — from `ps` when captured, else `lsof`'s command field |
 | Proto | `TCP` / `UDP` |
 | Destination | the remote host — numeric, because the capture is `lsof -n` |
+| Network | the block that host belongs to (`Apple`, `Render`, `Link-local`, …) from an offline allocation lookup, or `unknown network` |
 | Port | the remote port |
 | State | TCP state (`ESTABLISHED`, …) when the capture recorded it |
 | Sockets | how many identical sockets collapsed into this row |
@@ -35,6 +35,17 @@ There is deliberately **no severity or verdict column.** The status is binary �
 refuses a `--verdict`/`--severity` flag rather than grow one. What an
 unrecognized flow *means* is the reader's judgment, stated in prose, never a
 column the report fills in.
+
+## `render` — the same facts, as a report to share
+
+`render` emits a single self-contained HTML file styled by press: a masthead, a
+**signal band** (Flows / Known / Unrecognized / Destinations, the unrecognized
+count in the one loud accent), then unrecognized-first, then known, then a
+per-process rollup whose byte-out figures are drawn as proportional bars. It
+carries the same numbers as `report` and the same colophon restating the one
+rule. It embeds no wall-clock time — the date comes from `--captured-at` — so a
+re-render of a frozen capture is byte-identical, which is what lets the golden
+pin it.
 
 ## `accept` — the reversible edit
 

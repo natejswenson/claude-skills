@@ -21,6 +21,17 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   "dangerous" verdict — `report` refuses a `--verdict`/`--severity` flag, which
   is the one rule enforced as code.
 - `baseline` validates and reports coverage of your known-flows file; `accept`
-  folds chosen flows into it with a note, reversibly via a receipt.
+  folds chosen flows into it with a note, reversibly via a receipt. Baseline
+  hosts accept an exact address, a **CIDR** (`216.24.56.0/22`), a trailing-dot
+  prefix, or a leading-dot suffix.
+- **Readable output.** Each destination is named by the network block it reaches
+  (`Apple`, `Google`, `Render`, `Link-local`, …) via an offline allocation lookup
+  — a fact about the address, never a verdict. Process names come from `ps` so
+  they read as `claude`, not `lsof`'s raw internal string. Byte counts render as
+  `19.3 MB`, not raw bytes.
+- **`render`** emits a self-contained, press-styled HTML report: a signal band,
+  unrecognized-first, network owners, and per-process byte bars. It embeds no
+  wall-clock time, so a re-render of a frozen capture is byte-identical.
 - Frozen baseline eval: a real snapshot from the maintainer's own Mac, with the
-  report re-run and byte-compared, plus a trap that must exit non-zero.
+  report and the HTML re-run and byte-compared, plus a trap that must exit
+  non-zero.

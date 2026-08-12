@@ -1,22 +1,27 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
   "label": "the-real-run",
-  "command": "cp evals/baseline/capture.txt evals/baseline/baseline.json \"$OUT\"/ && node scripts/netwatch.js report --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" > \"$OUT/report.txt\"",
+  "command": "cp evals/baseline/capture.txt evals/baseline/baseline.json \"$OUT\"/ && node scripts/netwatch.js report --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" > \"$OUT/report.txt\" && node scripts/netwatch.js render --snapshot \"$OUT/capture.txt\" --baseline \"$OUT/baseline.json\" --captured-at 2026-08-12 --out \"$OUT/report.html\"",
   "artifacts": [
     {
       "path": "baseline.json",
-      "bytes": 232,
-      "sha256": "27fc79800fa802a79a55d0c6615e7c2dccbef9b21474d3cbc9a775e1b680ed96"
+      "bytes": 117,
+      "sha256": "3ea54fe9d2badbd66e4aaa250a2274c1a08f5a02e0507c9985b403747b3a21dd"
     },
     {
       "path": "capture.txt",
-      "bytes": 3160,
-      "sha256": "67c519a98c011c954b4542a06b8c8839634a205f9a35d9be150962888f166d65"
+      "bytes": 4307,
+      "sha256": "7c41fdb2e33eadfde89ad38ba3f71634a876becab35ad9fee4a7b995f17dfa6c"
+    },
+    {
+      "path": "report.html",
+      "bytes": 12292,
+      "sha256": "9f889460f23665f6b7737a34d1068ae48b693d58c42f3631f2ea1875d1ef17f6"
     },
     {
       "path": "report.txt",
-      "bytes": 3565,
-      "sha256": "95ae03dae6de66ba8eef39a1cb4ef62f5b6719e01437b9a33faf2b840f29e54f"
+      "bytes": 2062,
+      "sha256": "f2fa3a2c1bef2ecfd5107357ca124358df1b1fa583c96124784a2595e99dfe04"
     }
   ]
 }

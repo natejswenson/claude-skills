@@ -164,13 +164,13 @@
       "name": "netwatch",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "30f09c4d5a834e92",
-      "facts": 53,
+      "cardHash": "0e9bea06aec45101",
+      "facts": 57,
       "sections": {
         "setup": 2,
         "usage": 12,
-        "commands": 13,
-        "architecture": 13,
+        "commands": 15,
+        "architecture": 15,
         "troubleshooting": 13
       },
       "emptySections": [],

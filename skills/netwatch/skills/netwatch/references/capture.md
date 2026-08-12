@@ -9,10 +9,12 @@ step you run, and the script reads what it wrote.
 
 ```bash
 { echo '===== lsof ====='; lsof -nP -i -FcnPptT;
-  echo '===== nettop ====='; nettop -P -L 1 -x -J bytes_in,bytes_out; } > "$OUT/capture.txt"
+  echo '===== nettop ====='; nettop -P -L 1 -x -J bytes_in,bytes_out;
+  echo '===== ps ====='; ps -axo pid=,comm=; } > "$OUT/capture.txt"
 ```
 
-Two labelled sections in one file. Only the `lsof` section is load-bearing.
+Three labelled sections in one file. Only the `lsof` section is load-bearing;
+`nettop` and `ps` are both optional enrichments.
 
 ## Why these tools, and why no sudo
 
@@ -28,6 +30,18 @@ Two labelled sections in one file. Only the `lsof` section is load-bearing.
   it only fills the **Bytes in / Bytes out** columns of the per-process rollup.
   If it is missing, unreadable, or empty, the report shows `—` and loses nothing
   else.
+- **`ps -axo pid=,comm=`** maps each pid to a clean process name. It is optional
+  too: `lsof`'s own command field is used when `ps` is absent, but that field can
+  be an odd internal string (it reported Claude as `2.1.228` once), so `ps` is
+  what makes the process column readable. The names are joined by pid, so a
+  process that exited between the two reads simply keeps its `lsof` name.
+
+The **network** each destination reaches — `Apple`, `Google`, `Render`,
+`Link-local (the LAN)` — is not captured; it is an **offline** lookup against a
+built-in table of well-known allocations (`scripts/lib/providers.mjs`), the same
+answer `whois` gives for a netblock's owner. It is a fact about the *address*,
+never a claim about the *traffic*, and it never changes a flow's known/unrecognized
+status. Everything the table does not know is honestly `unknown network`.
 
 ## What it deliberately does not do
 

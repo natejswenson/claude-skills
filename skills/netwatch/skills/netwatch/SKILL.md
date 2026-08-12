@@ -25,8 +25,9 @@ step whose command does not exist fails `skillfactory verify`.
 
 | Deterministic — the machine decides | Command |
 |---|---|
-| parse the captured snapshot into normalized flows, each grounded in its source line | `node scripts/netwatch.js flows` |
+| parse the captured snapshot into normalized flows, each grounded in its source line, and name the network block each reaches (offline allocation lookup) | `node scripts/netwatch.js flows` |
 | classify each flow known-vs-unrecognized strictly against the baseline and roll up volumes by process and destination | `node scripts/netwatch.js report` |
+| render the classified flows as a press-styled HTML report | `node scripts/netwatch.js render` |
 | validate and store the baseline of known flows, and report snapshot coverage | `node scripts/netwatch.js baseline` |
 | fold chosen unrecognized flows into the baseline, reversibly | `node scripts/netwatch.js accept` |
 
@@ -49,13 +50,17 @@ file (see `references/capture.md`):
 
 ```bash
 { echo '===== lsof ====='; lsof -nP -i -FcnPptT;
-  echo '===== nettop ====='; nettop -P -L 1 -x -J bytes_in,bytes_out; } > "$OUT/capture.txt"
+  echo '===== nettop ====='; nettop -P -L 1 -x -J bytes_in,bytes_out;
+  echo '===== ps ====='; ps -axo pid=,comm=; } > "$OUT/capture.txt"
 ```
 
 `lsof` is the load-bearing section — who is connected to whom, per process.
 `nettop` is optional and only adds per-process byte totals; if it is missing or
-empty, the report simply shows `—` for bytes. One short narration line while it
-runs, then move on. Never paste the raw capture into the conversation.
+empty, the report simply shows `—` for bytes. `ps` is optional too and only
+gives each process a clean name — without it `lsof`'s raw command string is used,
+which can be an odd internal name (`lsof` reported Claude as `2.1.228` once). One
+short narration line while it runs, then move on. Never paste the raw capture
+into the conversation.
 
 ### 2. Flows — turn the capture into grounded connections
 
@@ -75,11 +80,26 @@ while something is using the network.
 node scripts/netwatch.js report --snapshot "$OUT/capture.txt" --baseline ~/.netwatch/baseline.json
 ```
 
-It classifies each flow against the baseline and rolls up by process and by
-destination. **A flow is only ever `known` or `unrecognized`** — there is no
+It leads with the signal, then the unrecognized flows, then the known ones, then
+a per-process rollup. Each flow names the **network** it reaches — `Anthropic`,
+`Render`, `Google`, `Link-local (the LAN)` — from an **offline allocation
+lookup**, the same thing `whois` would say a netblock is registered to. That is a
+*fact about the address*, never a claim about the traffic, and it never changes a
+flow's status. **A flow is only ever `known` or `unrecognized`** — there is no
 "dangerous" column, and `report` refuses a `--verdict`/`--severity` flag outright.
 On a first run there is no baseline, so everything reads `unrecognized`; that is
 the starting point, not an alarm.
+
+### 3b. Render — a shareable report
+
+```bash
+node scripts/netwatch.js render --snapshot "$OUT/capture.txt" \
+  --baseline ~/.netwatch/baseline.json --captured-at "$(date +%Y-%m-%d)" --out "$OUT/report.html"
+```
+
+A press-styled HTML sheet: the signal band, unrecognized-first, network owners,
+and per-process byte bars. Same data as `report`, made to share and skim. `Read`
+the rendered file so the user sees it; do not describe it in prose.
 
 **Here the judgment begins, and it is yours, not the report's.** Read the
 unrecognized flows and say, in plain words, which look like ordinary background
@@ -110,9 +130,10 @@ metadata.
 
 | Command | Returns |
 |---|---|
-| `netwatch flows` | parse a captured snapshot (the raw nettop/lsof/netstat text the agent saved) into a normalized, deduplicated flow table — process, pid, protocol, remote host, remote port, bytes in/out — each flow carrying the source line it came from, and refuse an empty or malformed capture |
+| `netwatch flows` | parse a captured snapshot (the raw lsof/nettop/ps text the agent saved) into a normalized, deduplicated flow table — process, protocol, remote host, the network block it reaches, remote port, state, sockets — each flow carrying the source line it came from, and refuse an empty or malformed capture |
 | `netwatch baseline` | read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline already covers |
-| `netwatch report` | classify every flow in the snapshot as known or unrecognized strictly against the baseline, roll the flows up by process and by destination, and emit the report — with every reported flow traceable to a captured line and no flow ever labelled dangerous |
+| `netwatch report` | classify every flow in the snapshot as known or unrecognized strictly against the baseline, name the network block each destination reaches, roll the flows up by process and by destination, and emit the report — with every reported flow traceable to a captured line and no flow ever labelled dangerous |
+| `netwatch render` | render the classified flows as a self-contained, press-styled HTML report — signal band, unrecognized-first, network owners and per-process byte bars — the same facts as `report`, made to share |
 | `netwatch accept` | fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed |
 
 ## Rules that are not negotiable
@@ -139,9 +160,11 @@ metadata.
 
 | Path | Is |
 |---|---|
-| `scripts/netwatch.js` | the CLI: `flows`, `baseline`, `report`, `accept` |
-| `references/anatomy.md` | the fixed shape of a netwatch report — the flow table, the known/unrecognized split, and the per-process and per-destination rollups |
-| `references/capture.md` | how a live snapshot is taken agent-side (nettop, lsof -i, netstat), why the skill reads connections and not packet payloads, and why no command here needs sudo |
+| `scripts/netwatch.js` | the CLI: `flows`, `baseline`, `report`, `render`, `accept` |
+| `scripts/lib/providers.mjs` | the offline network-block → operator lookup (a factual allocation table, never a safety verdict) |
+| `assets/report.css` | the report's stylesheet; its `:root` block is a press-generated token region |
+| `references/anatomy.md` | the fixed shape of a netwatch report — the flow table, the network column, the known/unrecognized split, and the rollups |
+| `references/capture.md` | how a live snapshot is taken agent-side (lsof, nettop, ps), why the skill reads connections and not packet payloads, and why no command here needs sudo |
 | `references/baseline.md` | the baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous' |
 
 ## Maintainer reference — not part of a user run

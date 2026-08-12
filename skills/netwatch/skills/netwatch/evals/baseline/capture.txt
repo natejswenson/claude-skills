@@ -149,7 +149,7 @@ c2.1.227
 f12
 tIPv4
 PTCP
-n192.168.1.43:51112->216.24.57.7:443
+n192.168.1.43:51462->216.24.57.7:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
@@ -164,28 +164,21 @@ c2.1.228
 f8
 tIPv4
 PTCP
-n192.168.1.43:51105->34.149.66.165:443
-TST=ESTABLISHED
-TQR=0
-TQS=0
-f10
-tIPv4
-PTCP
-n192.168.1.43:51115->216.24.57.15:443
+n192.168.1.43:51472->34.149.66.165:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
 f12
 tIPv4
 PTCP
-n192.168.1.43:51117->216.24.57.15:443
+n192.168.1.43:51464->216.24.57.7:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
-f15
+f17
 tIPv4
 PTCP
-n192.168.1.43:51071->160.79.104.10:443
+n192.168.1.43:51444->160.79.104.10:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
@@ -201,32 +194,25 @@ cClaude
 f138
 tIPv4
 PTCP
-n192.168.1.43:51076->160.79.104.10:443
+n192.168.1.43:51471->160.79.104.10:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
 p50159
 cClaude Helper
-f26
+f27
 tIPv4
 PTCP
-n192.168.1.43:50996->160.79.104.10:443
+n192.168.1.43:51258->160.79.104.10:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
 p73642
 cCode Helper
-f19
-tIPv4
-PTCP
-n192.168.1.43:51114->150.171.109.183:443
-TST=ESTABLISHED
-TQR=0
-TQS=0
 f24
 tIPv4
 PTCP
-n192.168.1.43:51119->150.171.110.195:443
+n192.168.1.43:51470->150.171.110.195:443
 TST=ESTABLISHED
 TQR=0
 TQS=0
@@ -269,10 +255,10 @@ TQS=0
 ===== nettop =====
 ,bytes_in,bytes_out,
 launchd.1,0,0,
-syslogd.436,0,636,
-apsd.442,8645102,8628499,
+syslogd.436,0,889,
+apsd.442,8690230,8654822,
 airportd.493,0,0,
-mDNSResponder.567,36771284,45309809,
+mDNSResponder.567,36784108,45321821,
 rapportd.682,0,0,
 sharingd.688,0,0,
 homed.690,0,0,
@@ -284,14 +270,32 @@ dnsmasq.982,127022,430717,
 com.docker.back.1966,0,0,
 wifivelocityd.19358,0,0,
 GitHub Desktop .89041,0,0,
-netbiosd.26298,1955800,471377,
-Code Helper.73642,96266,5719,
+netbiosd.26298,1956200,472345,
+Code Helper.73642,10734,2910,
 Code Helper.73682,0,0,
 Code Helper (Pl.75773,0,0,
 Code Helper (Pl.76065,0,0,
-Claude.50150,5437,25341,
-Claude Helper.50159,45847,20224,
+Claude.50150,3783,23453,
+Claude Helper.50159,33802,27689,
 2.1.227.5713,3747,851,
 replicatord.18760,0,0,
 wifianalyticsd.21054,0,0,
-2.1.228.49677,539212,16948113,
+2.1.228.49677,454601,20209267,
+===== ps =====
+  682 /usr/libexec/rapportd
+  688 /usr/libexec/sharingd
+  690 /System/Library/PrivateFrameworks/HomeKitDaemon.framework/Support/homed
+  691 /System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/Contents/MacOS/identityservicesd
+  729 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  934 /opt/homebrew/opt/ollama/bin/ollama
+ 1966 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+18760 /System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord
+50150 /Applications/Claude.app/Contents/MacOS/Claude
+50159 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper
+73642 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper
+73682 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper.app/Contents/MacOS/Code Helper
+75773 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+76065 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)
+89041 /Applications/GitHub Desktop.app/Contents/Frameworks/GitHub Desktop Helper (Renderer).app/Contents/MacOS/GitHub Desktop Helper (Renderer)
+ 5713 claude
+49677 claude
