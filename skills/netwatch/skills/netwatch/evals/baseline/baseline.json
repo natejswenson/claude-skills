@@ -1,0 +1,4 @@
+[
+  { "host": "160.79.104.0/23", "note": "Anthropic API (Claude)" },
+  { "host": "17.", "note": "Apple services" }
+]

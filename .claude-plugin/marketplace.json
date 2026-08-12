@@ -76,6 +76,10 @@
     {
       "name": "brandreport",
       "source": "./skills/brandreport"
+    },
+    {
+      "name": "netwatch",
+      "source": "./skills/netwatch"
     }
   ]
 }
