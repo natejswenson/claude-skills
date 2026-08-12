@@ -59,14 +59,24 @@ async function gh(path) {
  * happens to be lightweight and needs none, which is exactly how this gets
  * missed and a wrong SHA gets pinned.
  */
-export async function resolveRef(owner, repo, ref) {
-  if (SHA40.test(ref)) return { sha: ref, via: 'sha', already: true };
+export async function resolveRef(owner, repo, ref, api = gh) {
+  // A 40-hex ref is NOT assumed to exist. A typo'd or force-pushed-away SHA is
+  // exactly the dead-ref class rung 0 exists to catch, and it is the recommended
+  // pin format — the one format that must never be waved through unverified.
+  if (SHA40.test(ref)) {
+    try {
+      await api(`repos/${owner}/${repo}/commits/${ref}`);
+      return { sha: ref, via: 'sha', already: true };
+    } catch {
+      throw new ResolveError(`pinned SHA "${ref}" does not exist in ${owner}/${repo}`);
+    }
+  }
 
   for (const [kind, path] of [['tag', 'tags'], ['branch', 'heads']]) {
     try {
-      const r = await gh(`repos/${owner}/${repo}/git/ref/${path}/${ref}`);
+      const r = await api(`repos/${owner}/${repo}/git/ref/${path}/${ref}`);
       if (r.object?.type === 'tag') {
-        const deref = await gh(`repos/${owner}/${repo}/git/tags/${r.object.sha}`);
+        const deref = await api(`repos/${owner}/${repo}/git/tags/${r.object.sha}`);
         return { sha: deref.object.sha, via: `annotated ${kind}`, already: false };
       }
       return { sha: r.object.sha, via: kind, already: false };
@@ -75,7 +85,7 @@ export async function resolveRef(owner, repo, ref) {
     }
   }
   try {
-    const c = await gh(`repos/${owner}/${repo}/commits/${ref}`);
+    const c = await api(`repos/${owner}/${repo}/commits/${ref}`);
     return { sha: c.sha, via: 'commit', already: false };
   } catch {
     throw new ResolveError(`ref "${ref}" does not exist in ${owner}/${repo}`);
@@ -104,6 +114,19 @@ export async function latestRelease(owner, repo) {
 function major(tag) {
   const m = /^v?(\d+)\./.exec(tag ?? '') ?? /^v?(\d+)$/.exec(tag ?? '');
   return m ? Number(m[1]) : null;
+}
+
+/**
+ * The version a `uses:` DECLARES, for the staleness comparison.
+ *
+ * A SHA pin carries no readable version, so its `# v7` trailing comment is the
+ * only thing that can be compared against the latest release. The ref itself is
+ * a version only when it is not SHA-shaped: an all-digit SHA satisfies the bare
+ * `v?(\d+)$` tag pattern, parsed as "v0", and reported a nonsense majors-behind
+ * count until this guard existed.
+ */
+export function declaredMajor(ref, comment) {
+  return SHA40.test(ref) ? major(comment) : (major(ref) ?? major(comment));
 }
 
 /** Does the repo exist at all? Distinguishes a dead ref from a hallucinated action. */
@@ -212,10 +235,7 @@ export async function inspectUses(uses, withKeys = null, comment = null) {
     actionInputs(owner, repo, subdir, resolved.sha),
     latestRelease(owner, repo),
   ]);
-  // A SHA pin carries no readable version, so its `# v7` trailing comment is the
-  // only thing that can be compared against the latest release. Without this, the
-  // recommended pin format would be the one format staleness cannot be seen in.
-  const declared = major(ref) ?? major(comment);
+  const declared = declaredMajor(ref, comment);
   const behind = major(latest) !== null && declared !== null && major(latest) > declared
     ? major(latest) - declared
     : 0;
