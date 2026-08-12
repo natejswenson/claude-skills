@@ -11,8 +11,9 @@
  * prose — to ever attach a "dangerous" verdict. The agent's job is the
  * conversation and the judgment; this binary's job is facts.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { lookupProvider, ipInCidr } from './lib/providers.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -174,7 +175,7 @@ export function validateBaselineEntry(e, i) {
   if (typeof e !== 'object' || e === null) return `entry ${i}: not an object`;
   const host = e.host;
   if (typeof host !== 'string' || host.trim() === '') return `entry ${i}: names no host — an entry that matches everything is refused`;
-  if (host === '*' || host === '.' || host === '*.' || host === '**') return `entry ${i}: host "${host}" matches everything — refused`;
+  if (host === '*' || host === '.' || host === '*.' || host === '**' || host === ':' || host === '::') return `entry ${i}: host "${host}" matches everything — refused`;
   if (/\/0+\s*$/.test(host)) return `entry ${i}: CIDR "${host}" is a /0 and matches everything — refused`;
   if (e.process !== undefined && typeof e.process !== 'string') return `entry ${i}: process must be a string`;
   if (e.port !== undefined && e.port !== '*' && !/^\d+$/.test(String(e.port))) return `entry ${i}: port "${e.port}" is not a number or *`;
@@ -196,10 +197,22 @@ export function loadBaseline(path) {
 }
 
 export function hostMatches(rhost, pattern) {
-  if (pattern === rhost) return true;
-  if (pattern.includes('/')) return ipInCidr(rhost, pattern);
-  if (pattern.startsWith('.')) return rhost === pattern.slice(1) || rhost.endsWith(pattern);
-  if (pattern.endsWith('.')) return rhost.startsWith(pattern);
+  const r = String(rhost).toLowerCase();
+  const p = String(pattern).toLowerCase();
+  if (p === r) return true;
+  if (p.includes('/')) return ipInCidr(r, p);
+  if (p.startsWith('.')) return r === p.slice(1) || r.endsWith(p);
+  if (p.endsWith('.')) return r.startsWith(p);
+  // Trailing colon: N complete hextets name a /(16*N) IPv6 prefix, the same
+  // symmetry as trailing-dot for IPv4 (N complete octets -> /(8*N)). Desugars
+  // to CIDR rather than a string startsWith, because IPv6 text is not
+  // canonical — "fe80::" would `startsWith` fail against an address whose
+  // scope id sits between, even though it is the same /16.
+  if (p.endsWith(':')) {
+    const groups = p.replace(/:+$/, '').split(':').filter(Boolean);
+    if (groups.length === 0) return false; // bare ":" / "::" — refused at validation, never matches here either
+    return ipInCidr(r, `${groups.join(':')}::/${groups.length * 16}`);
+  }
   return false;
 }
 
@@ -484,4 +497,17 @@ async function main() {
   }
 }
 
-main();
+// Only run when executed directly, never when imported by the test suite.
+// Both sides are realpath'd: under npm/npx argv[1] is a symlink while
+// import.meta.url is the resolved file, so a naive === makes every invocation
+// a silent no-op.
+const isMain = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
+
+if (isMain) main();
