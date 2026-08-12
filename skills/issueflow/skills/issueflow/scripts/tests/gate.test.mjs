@@ -18,7 +18,7 @@ import {
   accept, artifactPath, blockers, board, createRun, evidencePath, findStep, loadRun,
   nextStep, readySteps, saveRun, skip, split, workItemsFromDesign,
 } from '../lib/run.mjs';
-import { parseEvidence, summarize } from '../lib/evidence.mjs';
+import { parseEvidence, summarize, RUNNER_IDS } from '../lib/evidence.mjs';
 import { shipBlockers } from '../lib/ship.mjs';
 
 const ISSUE = { number: 3, title: 'Rotate leaked credentials', url: 'https://example.invalid/3', body: 'x' };
@@ -132,7 +132,20 @@ test('the gate refuses evidence that holds no runner result at all', () => {
   accept(dir, run, writeGood(dir, run, 'implement'));
   const step = writeGood(dir, run, 'test');
   writeFileSync(evidencePath(dir, step), 'ok\n');
-  assert.throws(() => accept(dir, run, step), /holds no runner result/);
+  assert.throws(() => accept(dir, run, step), /format I can parse/);
+  cleanup();
+});
+
+test('the refusal names every runner id it can read, not a hand-written list', () => {
+  const { dir, run, cleanup } = freshRun();
+  for (const id of SHARED_STAGES) accept(dir, run, writeGood(dir, run, id));
+  accept(dir, run, writeGood(dir, run, 'implement'));
+  const step = writeGood(dir, run, 'test');
+  writeFileSync(evidencePath(dir, step), 'ok\n');
+  assert.throws(() => accept(dir, run, step), (err) => {
+    for (const id of RUNNER_IDS) assert.ok(err.message.includes(id), `refusal is missing "${id}"`);
+    return true;
+  });
   cleanup();
 });
 
@@ -391,6 +404,39 @@ test('prose that merely talks about tests is not a runner result', () => {
 test('a failing result is never reported as green', () => {
   assert.equal(parseEvidence('# pass 3\n# fail 2\n').green, false);
   assert.equal(parseEvidence('# pass 3\n# fail 0\n').green, true);
+});
+
+// ---------------------------------------------------------------------------
+// The spec reporter: node --test's default on Node ≥25, even piped (#215).
+// ---------------------------------------------------------------------------
+
+test('the spec reporter — the issue`s own failure — now parses', () => {
+  const spec =
+    'ℹ tests 31\nℹ suites 0\nℹ pass 31\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 812\n';
+  const result = parseEvidence(spec);
+  assert.equal(result.runner, 'node --test');
+  assert.equal(result.passed, 31);
+  assert.equal(result.failed, 0);
+  assert.equal(result.green, true);
+});
+
+test('a coloured spec summary parses identically — a pty capture wraps it in SGR', () => {
+  const coloured = '\x1b[34mℹ pass 31\x1b[39m\n\x1b[34mℹ fail 0\x1b[39m\n';
+  assert.equal(summarize(parseEvidence(coloured)), 'node --test, 31 passed, 0 failed');
+});
+
+test('a coloured mocha summary also parses now that the strip is global', () => {
+  assert.equal(summarize(parseEvidence('\x1b[32m4 passing (12ms)\x1b[0m\n')), 'mocha, 4 passed, 0 failed');
+});
+
+test('order follows the file, not the reporter — spec red then TAP green reports green', () => {
+  const text = 'ℹ pass 0\nℹ fail 1\n# pass 24\n# fail 0\n';
+  assert.equal(summarize(parseEvidence(text)), 'node --test, 24 passed, 0 failed');
+});
+
+test('order follows the file, not the reporter — the mirror: TAP red then spec green reports green', () => {
+  const text = '# pass 0\n# fail 1\nℹ pass 24\nℹ fail 0\n';
+  assert.equal(summarize(parseEvidence(text)), 'node --test, 24 passed, 0 failed');
 });
 
 test('detail counts characters, not soft-wrapped lines', () => {
