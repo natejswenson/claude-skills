@@ -25,6 +25,8 @@ MAIL NO RULE CLAIMS
 
 nothing — every thread in the sample is claimed by a rule.
 
+2 self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not unclaimed mail.
+
 | Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
 |--------|---------|-----------|---------------------|----------------|----------|
 | 20     | 20      | 0         | 0                   | 0              | 100%     |

@@ -45,6 +45,8 @@ MAIL NO RULE CLAIMS
 folders it could nest under, rather than becoming another top-level one:
   Recruiting · Statements · Medical · Banking · School · Receipts · Reciepts · Old Roof Job · Security · Briefings · Financial Advisor · Realty · Paperwork · Scratch · Reading List
 
+2 self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not unclaimed mail.
+
 | Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
 |--------|---------|-----------|---------------------|----------------|----------|
 | 19     | 10      | 9         | 2                   | 14             | 53%      |
