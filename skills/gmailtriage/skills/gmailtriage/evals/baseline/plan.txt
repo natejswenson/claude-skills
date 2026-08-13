@@ -64,6 +64,6 @@ reconcile these against your real labels with `labels` before applying.
 
 | Scope    | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
 |----------|---------|-------------|------------|-----------------------|---------------------|----------|
-| in:inbox | 66      | 19          | 47         | 2                     | 0                   | 0        |
+| in:inbox | 68      | 19          | 47         | 2                     | 0                   | 0        |
 
 nothing has moved — this is what the rules would do.

@@ -1,3 +1,5 @@
+2 self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not triage material.
+
 TRASH — bulk mail a rule would move to the trash
 
 | Rule id                   | Sender                    | In sample | Bulk | Example subject              |
@@ -49,6 +51,6 @@ withheld from TRASHING, not from sorting — 7 of these 25 appear in the sort ta
 
 | Sampled | Already claimed | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
 |---------|-----------------|-------------|-------|------|-------------------|----------|-----------------|
-| 66      | 0               | 20          | 5     | 7    | 5                 | 25       | 1               |
+| 68      | 0               | 20          | 5     | 7    | 5                 | 25       | 1               |
 
 nothing has moved — these are candidates. Accept the ones you want with `rules --add`.
