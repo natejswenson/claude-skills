@@ -88,6 +88,9 @@ export const BOARD_COLUMNS = ['Step', 'Model', 'State', 'Took', 'Gate'];
  * `Took` is the stage's own time — briefed until the subagent wrote its
  * artifact — and deliberately excludes the wait for the human. A run that spent
  * ten minutes implementing and twenty waiting for a reader should not report
- * thirty minutes of model time.
+ * thirty minutes of model time. A `+` suffix (`4m12s+`) means the stage has not
+ * delivered yet — a lower bound, read live off `now` rather than a finished
+ * duration — and pairs with a `State` cell of `delivered` for a stage whose
+ * artifact has landed but is not yet approved (see `run.observe()`).
  */
 export const boardRows = (rows) => rows.map((r) => [r.step, r.model, r.state, r.took ?? '—', r.gate]);
