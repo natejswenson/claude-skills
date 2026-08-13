@@ -76,7 +76,17 @@ test('unreadable-run-row: a schema-1 run names the reason and the remedy', () =>
 test('unreadable-run-row: the unreadable row keeps its directory name in Title, not a placeholder', () => {
   const { root } = mixedRunRoot();
   const r = cli(['runs', '--run-root', root]);
-  assert.match(r.out, /\bissue-2\b/, 'the row lost the one thing that still identifies which run it is');
+  // Anchored on the Title *cell*, not on the output as a whole — the Issue
+  // cell (column 1) already contains "x__y/issue-2" on both sides of this
+  // fix, so a bare /\bissue-2\b/ against the whole table would pass even
+  // against the pre-fix '(unreadable run)' placeholder. Parse the row and
+  // check column 2 specifically.
+  const row = r.out.split('\n')
+    .filter((line) => line.startsWith('|'))
+    .map((line) => line.split('|').map((cell) => cell.trim()))
+    .find((cells) => cells[1] === 'x__y/issue-2');
+  assert.ok(row, `no table row found for x__y/issue-2 in:\n${r.out}`);
+  assert.equal(row[2], 'issue-2', `the Title cell must carry the directory name, not a placeholder — got ${JSON.stringify(row[2])}`);
   rmSync(root, { recursive: true, force: true });
 });
 
