@@ -121,10 +121,32 @@ export function matchDestination(address, labels = []) {
 }
 
 /**
+ * Mail the owner sent themselves and never filed: SENT, not in the inbox, and
+ * carrying no user label.
+ *
+ * The `has:nouserlabels` fetch sweeps these up — that is the fetch working,
+ * not a defect — but they are not triage material. A thank-you note in the
+ * outbox is not "mail no rule claims", and counting it kept `audit` exiting
+ * non-zero forever on mailboxes that were actually clean. Works on raw label
+ * ids and resolved names alike: a user label under either spelling makes the
+ * thread filed, and filed mail is handled by the ordinary path.
+ */
+export const isSentOnly = (t) => {
+  const ids = [...(t.labelIds ?? []), ...(t.labels ?? [])].map((l) => String(l).toUpperCase());
+  if (!ids.includes('SENT') || ids.includes('INBOX')) return false;
+  return !ids.some((l) => !SYSTEM_LABELS.includes(l) && !l.startsWith('CATEGORY_'));
+};
+
+/**
  * Cluster a real inbox sample into candidate rules. Counts come from the
  * sample, so they are evidence of bulk, not a promise about the mailbox.
  */
-export function propose(threads, { minCount = 3, labels = [], rules = [] } = {}) {
+export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = {}) {
+  // Self-sent, never-filed mail is excluded before anything clusters: it can
+  // never be a trash candidate, a sort candidate, or "withheld" — it is the
+  // owner's own outbox. Counted and reported, never silently dropped.
+  const threads = allThreads.filter((t) => !isSentOnly(t));
+  const sentOnly = allThreads.length - threads.length;
   // ── senders an existing rule already has an opinion about ─────────────────
   //
   // Same test `audit` uses, and for the same reason: `ignoreFiled: true`,
@@ -274,10 +296,12 @@ export function propose(threads, { minCount = 3, labels = [], rules = [] } = {})
   const unhoused = sortable.filter((s) => s.unhoused).length;
 
   return {
-    candidates, withheld, below, reason, sampled: threads.length,
+    candidates, withheld, below, reason, sampled: allThreads.length,
     sortable, sortReason, unhoused,
     // Reported, never silently dropped. A shrinking candidate table with no
-    // stated cause reads as mail having gone missing.
+    // stated cause reads as mail having gone missing — and the same goes for
+    // the self-sent threads the filter above excluded.
+    sentOnly,
     claimed, claimedThreads: claimed.reduce((n, c) => n + c.count, 0),
     knownLabels: (labels ?? []).length,
   };
@@ -589,8 +613,14 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
     // thread already sitting in the folder its rule files into — which is the
     // most claimed thread in the mailbox, not an unclaimed one. `ignoreFiled`
     // asks the question this command actually has: does any rule claim it?
+    //
+    // Self-sent, never-filed mail is excluded first, for the same reason it is
+    // in `propose`: the owner's own outbox is not unclaimed mail, and counting
+    // it kept this command exiting non-zero on mailboxes that were clean.
     const rules = ruleDoc?.rules ?? [];
-    const rest = threads.filter((t) => !rules.some((r) => matches(r, t, new Date(), { ignoreFiled: true })));
+    const eligible = threads.filter((t) => !isSentOnly(t));
+    const sentOnly = threads.length - eligible.length;
+    const rest = eligible.filter((t) => !rules.some((r) => matches(r, t, new Date(), { ignoreFiled: true })));
 
     const byAddr = new Map();
     for (const t of rest) {
@@ -616,6 +646,7 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
     unclaimed = {
       threads: rest.length,
       scanned: threads.length,
+      sentOnly,
       clusters,
       // The parents a new cluster could nest under, printed beside the
       // unhoused ones so a new employer's mail is proposed as
