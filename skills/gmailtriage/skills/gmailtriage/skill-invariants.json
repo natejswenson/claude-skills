@@ -86,7 +86,7 @@
         "command": "node scripts/gmailtriage.js ingest"
       },
       {
-        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims, self-sent mail excluded and counted — returning a coverage percentage and exiting non-zero while anything is outstanding",
+        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; rules that file into a folder that no longer exists; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims, self-sent mail excluded and counted — returning a coverage percentage and exiting non-zero while anything is outstanding",
         "command": "node scripts/gmailtriage.js audit"
       },
       {
@@ -102,7 +102,7 @@
         "command": "node scripts/gmailtriage.js subdivide"
       },
       {
-        "step": "validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, matches nothing, files into a label Gmail owns, or stands in front of a rule filing into a sub-label of its own destination",
+        "step": "validate, store and remove rules — compiling each to a Gmail query, refusing one that is malformed, matches everything, matches nothing, files into a label Gmail owns, or stands in front of a rule filing into a sub-label of its own destination, backing the previous file up before every write, and refusing to remove a rule id that does not exist",
         "command": "node scripts/gmailtriage.js rules"
       },
       {
@@ -311,6 +311,22 @@
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
       "rationale": "the mid-run hand-edits coming back. apply --update-threads replays the authorised moves onto the working snapshot; a re-plan over it must take zero threads, or every mid-run rule addition costs hand-edited JSON again — and a hand-edit that seeds resolved label names wrong is exactly how a run stops converging while every table still reads correctly."
+    },
+    {
+      "id": "audit-catches-a-rule-filing-nowhere",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the reverse of the unmanaged-folder question, found live: a user deletes a folder, the rule pointing at it survives, and audit reported the system clean over it — coherence claimed in one direction only. Two-sided against the frozen corpus: the before-state carries a rule filing into a folder its label list does not have and must be called out; the after-state drops it and must still audit clean with exit 0, so the check cannot be satisfied by reporting findings unconditionally."
+    },
+    {
+      "id": "a-removed-rule-leaves-a-valid-set",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "rule removal arriving without its guarantees. Before 0.7.0 the only way to drop a rule was hand-editing the validated store — the exact thing the store exists to prevent. The trap pins: exactly the named rules go, a byte-complete backup lands beside the file first, the remainder still validates, an unknown id is refused rather than silently skipped, and --add with --remove is refused as two intents in one invocation."
     },
     {
       "id": "the-corpus-is-invented-and-stays-that-way",

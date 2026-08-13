@@ -130,9 +130,9 @@
     },
     {
       "name": "gmailtriage",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "stack": "node",
-      "cardHash": "fadf859dfa4029cf",
+      "cardHash": "a90fb5b6b17d39f3",
       "facts": 66,
       "sections": {
         "setup": 2,

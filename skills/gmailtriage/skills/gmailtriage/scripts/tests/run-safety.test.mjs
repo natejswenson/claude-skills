@@ -96,3 +96,57 @@ test('receipts default to the durable store, and undo --last finds the newest', 
   assert.match(undo, /undoing the last recorded run/);
   assert.match(undo, /2026-08-13T13:00:00Z/, 'undo --last picked an older receipt over the newest');
 });
+
+// ── 0.7.0: the reverse coherence question, and rule removal ─────────────────
+
+test('audit catches a rule that files into a folder that does not exist', () => {
+  // The live 0.6.0 run's finding: a deleted folder left a dangling rule, and
+  // audit reported "clean" over it. Two-sided against the frozen corpus: the
+  // before-state carries sort-travel → Travel (no such folder) and must be
+  // called out; the after-state drops the rule and must still audit clean
+  // with exit 0 — or the new check can never be satisfied.
+  const before = readFileSync(join(BASELINE, 'audit-before.txt'), 'utf8');
+  const after = readFileSync(join(BASELINE, 'audit-after.txt'), 'utf8');
+  assert.match(before, /RULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST/);
+  assert.match(before, /\| Travel\s+\| a rule\s+\| sort-travel/);
+  assert.ok(!/FILE INTO A FOLDER THAT DOES NOT EXIST/.test(after), 'the clean mailbox is now reported as dangling');
+  sh('node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json');
+});
+
+test('rules --remove deletes exactly the named rules, with a backup', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gt-remove-'));
+  const file = join(dir, 'rules.json');
+  writeFileSync(file, readFileSync(join(BASELINE, 'rules.json')));
+  const beforeCount = JSON.parse(readFileSync(file, 'utf8')).rules.length;
+
+  const out = sh(`node scripts/gmailtriage.js rules --file ${file} --remove trash-packages --at 2026-08-13T12:00:00Z`);
+  assert.match(out, /\| trash-packages \|/);
+  const doc = JSON.parse(readFileSync(file, 'utf8'));
+  assert.equal(doc.rules.length, beforeCount - 1);
+  assert.ok(!doc.rules.some((r) => r.id === 'trash-packages'));
+  // the previous file survives beside it, byte-complete
+  const bak = join(dir, 'rules.json.2026-08-13T12-00-00Z.bak');
+  assert.ok(existsSync(bak), 'no backup was written before the removal');
+  assert.equal(JSON.parse(readFileSync(bak, 'utf8')).rules.length, beforeCount);
+
+  // Two-sided: an unknown id is refused and nothing changes.
+  assert.throws(
+    () => sh(`node scripts/gmailtriage.js rules --file ${file} --remove no-such-rule`),
+    'removing a rule that does not exist should be an error, not a silent no-op',
+  );
+  assert.equal(JSON.parse(readFileSync(file, 'utf8')).rules.length, beforeCount - 1);
+  // and --add + --remove together is two intents, refused
+  assert.throws(() => sh(`node scripts/gmailtriage.js rules --file ${file} --remove trash-leadgen --add ${file}`));
+});
+
+test('ingest --labels-only refreshes the label snapshot and nothing else', () => {
+  const out = mkdtempSync(join(tmpdir(), 'gt-labelsonly-'));
+  const text = sh(`node scripts/gmailtriage.js ingest --labels-only --labels evals/baseline/raw-labels.json --out-labels ${out}/labels.json`);
+  assert.match(text, /label snapshot refreshed/);
+  assert.ok(existsSync(join(out, 'labels.json')));
+  assert.ok(!existsSync(join(out, 'threads.json')), 'labels-only wrote a thread snapshot');
+  // Two-sided: mixing in a thread flag is refused — the flag means ONLY.
+  assert.throws(
+    () => sh(`node scripts/gmailtriage.js ingest --labels-only --inbox evals/baseline/raw-inbox.json --labels evals/baseline/raw-labels.json --out-labels ${out}/l2.json`),
+  );
+});

@@ -15,8 +15,8 @@
     },
     {
       "path": "audit-before.txt",
-      "bytes": 4928,
-      "sha256": "b09f2343eed4ea009e2c3b5710b980ab1aa1307e437e97254c7632f6051de2b4"
+      "bytes": 5374,
+      "sha256": "aa96cf73c8eb1baa51f7deab3871ab6aebc1c866596b6d38e2735de476506668"
     },
     {
       "path": "candidates.json",

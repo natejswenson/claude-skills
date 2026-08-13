@@ -2,7 +2,7 @@
 name: gmailtriage
 description: Sort and clean a Gmail inbox under rules the user wrote — filing mail into their own labels and out of the inbox, and moving junk to the trash. On a first run it walks the user through building that rule set from their own senders and their own existing folders, instead of shipping generic defaults. Use when the user says "clean my inbox", "gmailtriage", "triage my email", "sort my gmail", "file my email into folders", "auto-label my mail", "set up my email rules", "delete my junk mail", "unsubscribe and clean up", "why is my inbox full", or wants mail automatically filed, labelled or cleared out of Gmail without doing it by hand.
 user_invocable: true
-version: 0.6.0
+version: 0.7.0
 ---
 
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
@@ -30,11 +30,11 @@ step whose command does not exist fails `skillfactory verify`.
 |---|---|
 | report whether this mailbox has any rules yet, and the single next thing to do | `node scripts/gmailtriage.js setup` |
 | normalize raw `search_threads`/`list_labels` tool output, written to files verbatim, into the snapshots every other command reads — dedupe, label-id union, category intersection, self-sent counting, and never a snippet on disk | `node scripts/gmailtriage.js ingest` |
-| report whether the label system is still coherent — which folders no rule manages, which are two spellings of one folder, and which mail no rule claims (self-sent mail excluded and counted) — and exit non-zero if any of it is outstanding | `node scripts/gmailtriage.js audit` |
+| report whether the label system is still coherent — which folders no rule manages, which rules file into a folder that no longer exists, which are two spellings of one folder, and which mail no rule claims (self-sent mail excluded and counted) — and exit non-zero if any of it is outstanding | `node scripts/gmailtriage.js audit` |
 | fold one folder into another, applying the target before removing the source, and record it so the fold can be undone | `node scripts/gmailtriage.js merge` |
 | drop every sender an existing rule already claims, then cluster what is left into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has | `node scripts/gmailtriage.js propose` |
 | cluster a folder that already has mail in it by sender, match each cluster against the sub-labels that folder already has, and say when it is still one thing | `node scripts/gmailtriage.js subdivide` |
-| validate and store rules, compiling each to a Gmail query and refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns | `node scripts/gmailtriage.js rules` |
+| validate, store and remove rules, compiling each to a Gmail query, refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns, and backing the file up before every write | `node scripts/gmailtriage.js rules` |
 | reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists | `node scripts/gmailtriage.js labels` |
 | evaluate the stored rules against the inbox and enumerate exactly which threads each would take, where each goes, and which leave the inbox, without touching any of them | `node scripts/gmailtriage.js plan` |
 | authorise exactly the threads the plan named, per action, refuse anything it did not, and write a receipt of every move | `node scripts/gmailtriage.js apply` |
@@ -149,6 +149,7 @@ first question can never see. **Run it every time**, and read out what it finds:
 | `SAME AS X` | two spellings of one folder, with mail split across both | `merge`, then delete the empty one |
 | `UNMANAGED — holds mail` | a folder that stays sorted only while the user sorts it by hand | write a rule — this is an *adopt* |
 | `UNMANAGED — and empty` | scaffolding someone made once and never used | delete it; there is no mail in it to lose |
+| `RULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST` | the folder was deleted (or never created) but the rule survived | re-create the folder, or `rules --remove` / redirect the rule — **which is the user's call** |
 | `MAIL NO RULE CLAIMS` | senders that arrived since the rules were written | a new rule, a new folder, or a trash rule |
 
 **Non-zero means outstanding, not broken.** Report the findings and propose the
@@ -261,9 +262,24 @@ node $SKILL_DIR/scripts/gmailtriage.js labels --labels labels.json
 
 When everything exists it says so in one summary row (`--verbose` has the full
 destination table with label ids). Otherwise it exits non-zero and names
-exactly the labels that do not exist yet. **Create
-those with `create_label`, re-fetch `list_labels` (verbatim, over
-`raw-labels.json`, then re-`ingest`), and re-run until it passes.**
+exactly the labels that do not exist yet — and the rules that file into them,
+because a folder deleted on purpose wants the rule changed, not the folder
+resurrected. To create: `create_label`, re-fetch `list_labels` verbatim over
+`raw-labels.json`, then
+
+```bash
+node $SKILL_DIR/scripts/gmailtriage.js ingest --labels-only --labels raw-labels.json --out-labels labels.json
+```
+
+and re-run until it passes. **A mid-run mailbox change means one re-fetch —
+never hand-edit a raw file.** The verbatim contract has no exceptions, and the
+labels-only flag exists so refreshing one snapshot never asks for four thread
+files back.
+
+**On a run whose `plan` takes zero threads, this gate guards nothing — skip
+it.** And since `audit` now proves every destination resolves, an audit that
+came back clean already implies this passes. It stays mandatory before any
+`apply`.
 Do not skip to `plan` on a non-zero exit: a folder Gmail does not have is a
 failed call on thread 27 of 50, with 26 threads already moved and a receipt
 describing a mailbox that no longer exists.
@@ -359,10 +375,10 @@ is one label away from where it was. Offer `undo --last`; do not bury it.
 | `gmailtriage setup` | state, rule counts by action, rule file — plus a first-run walkthrough when nothing is configured. The full rule table lives behind `rules`, so a run does not open with fifty rows nobody asked for |
 | `gmailtriage ingest` | take the raw output of the four `search_threads` fetches and `list_labels`, written to files verbatim, and produce the thread and label snapshots every other command reads — deduping threads across fetches, unioning label ids, deriving the category and bulk-mail markers, counting self-sent mail, refusing a metadata-only fetch by name, and never writing a snippet to disk. Ends hand-transcribed JSON, which was the slowest and least reliable step of every real run |
 | `gmailtriage propose` | read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is left — returning two tables, bulk mail worth trashing and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name, plus the senders it excluded and which rule claims each. So a first run starts from the user's own mail and own folders rather than generic defaults, and a later run can never re-propose or contradict a rule they already wrote. Proposes only; writes no rule and moves nothing. |
-| `gmailtriage audit` | read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holding mail and empty scaffolding), every pair of labels that are one folder spelled two ways, and every thread no rule claims, each matched to a folder that already exists or flagged as needing a name. Returns a coverage percentage and exits non-zero while anything is outstanding, so a system that is quietly rotting cannot read as clean. Reads only; moves nothing. |
+| `gmailtriage audit` | read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holding mail and empty scaffolding), every rule that files into a folder that no longer exists, every pair of labels that are one folder spelled two ways, and every thread no rule claims, each matched to a folder that already exists or flagged as needing a name. Returns a coverage percentage and exits non-zero while anything is outstanding, so a system that is quietly rotting cannot read as clean. Reads only; moves nothing. |
 | `gmailtriage merge` | fold one folder into another, returning the operations in the only safe order — apply the target label first, remove the source second, delete the source folder last — plus a receipt so the fold can be reversed. A merge that moves no mail is still recorded, because the folder it deleted still has to come back. |
 | `gmailtriage subdivide` | read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needing a name, and each sender that hosts mail for many organisations flagged as needing a subject matcher too, with its distinct subjects printed. Says plainly when a folder is still one thing and should be left alone. Proposes only; writes no rule and moves nothing. |
-| `gmailtriage rules` | read, validate and write the rule file, returning a table of rule id, action, destination, whether the thread leaves the inbox, and the Gmail query it compiles to — so a rule that would silently match everything, match nothing, or file into a label Gmail owns is visible before it ever runs. |
+| `gmailtriage rules` | read, validate, write and remove rules — `--add` prints only the rules just added with any warning that involves them, `--remove <id[,id]>` deletes exactly the named rules and refuses an id that does not exist, and every write lands a timestamped backup of the previous file first. The table shows rule id, action, destination, whether the thread leaves the inbox, and the compiled Gmail query, so an over-broad rule is visible before it ever runs. |
 | `gmailtriage labels` | reconcile every folder the rules file into against the mailbox's real label list, returning a table of destination, whether it exists, and which rules use it — and exit non-zero naming exactly what must be created, so a run never fails halfway with some mail moved and some not. |
 | `gmailtriage plan` | evaluate every rule against the inbox and return the exact set of threads each rule would take, where each one goes, and how many leave the inbox, as tables of rule, destination and count plus any thread matched by more than one rule. Reads only; moves nothing. |
 | `gmailtriage apply` | authorise exactly the threads a named plan listed, per action, refusing any thread the plan did not name for that action, and write a receipt recording every move so the run can be undone. Returns the threads to trash, the threads to label with which label, and the threads to take out of the inbox, as three separate blocks. |

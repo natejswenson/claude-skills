@@ -367,6 +367,19 @@ async function cmdAudit(args) {
     console.log('`list_labels` (it returns `threadsTotal`) before deciding to delete any of them.');
   }
 
+  if (a.dangling.length) {
+    console.log('\nRULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST\n');
+    console.log(table(['Rule files into', 'Named by', 'Used by'],
+      a.dangling.map((d) => [
+        d.name,
+        d.implied ? 'implied — parent of a sub-label' : 'a rule',
+        d.ruleIds.join(', '),
+      ])));
+    console.log('\nthe folder was deleted, or never created. Either re-create it, or — if it was deleted');
+    console.log('on purpose — remove or redirect the rules that file into it (`rules --remove <id>`).');
+    console.log('Which is right is your call: the mail says nothing about why the folder went away.');
+  }
+
   if (a.unclaimed) {
     console.log('\nMAIL NO RULE CLAIMS\n');
     if (a.unclaimed.clusters.length) {
@@ -529,6 +542,25 @@ async function cmdRules(args) {
   const file = resolve(args.file ?? defaultRules());
   let doc = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { version: 1, rules: [] };
 
+  // Two intents, two commands. An invocation that both adds and removes reads
+  // as one operation and fails as two halves; refused rather than sequenced.
+  if (args.add && args.remove) {
+    throw new Error('rules: --add and --remove are separate operations — run them as two commands');
+  }
+
+  let removedList = [];
+  if (args.remove) {
+    if (args.remove === true) throw new Error('rules --remove: name the rule id(s) to remove, comma-separated');
+    const ids = String(args.remove).split(',').map((s) => s.trim()).filter(Boolean);
+    const have = new Set(doc.rules.map((r) => r.id));
+    const unknown = ids.filter((id) => !have.has(id));
+    if (unknown.length) {
+      throw new Error(`rules --remove: no such rule ${unknown.map((id) => `"${id}"`).join(', ')} — nothing was removed. Run \`rules\` to see the ids.`);
+    }
+    removedList = doc.rules.filter((r) => ids.includes(r.id));
+    doc = { ...doc, rules: doc.rules.filter((r) => !ids.includes(r.id)) };
+  }
+
   let addedList = [];
   if (args.add) {
     const incoming = readJson(args.add, 'rules --add <file.json>');
@@ -553,9 +585,9 @@ async function cmdRules(args) {
   // The ids just added or updated — what `--add` reports on, instead of
   // reprinting the whole file to show one new rule at the bottom of it.
   const addedIds = args.add ? new Set(rows.filter((r) => addedList.some((a) => a.id === r.id)).map((r) => r.id)) : null;
-  if (args.add) {
+  if (args.add || removedList.length) {
     // The previous rule file survives every write. The receipts make a RUN
-    // reversible; nothing made the rule file itself reversible, and an --add
+    // reversible; nothing made the rule file itself reversible, and a write
     // that goes wrong otherwise destroys the only copy of every rule note.
     if (existsSync(file)) {
       const stamp = (args.at ?? new Date().toISOString()).replace(/[:.]/g, '-');
@@ -566,19 +598,25 @@ async function cmdRules(args) {
     writeJson(file, doc, args);
   }
 
-  const shown = addedIds ? rows.filter((r) => addedIds.has(r.id)) : rows;
-  console.log(table(['Rule id', 'Action', 'Applies', 'Leaves inbox', 'Matches on', 'Gmail query'],
-    shown.map((r) => [
-      r.id, r.action,
-      // The whole label path, not just the leaf: a rule filing into
-      // `Recruiting/Globex` puts `Recruiting` on the thread too, and a user
-      // who cannot see that cannot tell why their parent folder keeps filling.
-      r.action === 'label' ? r.applies.join(' + ') : '—',
-      r.action === 'label' ? (r.archives ? 'yes' : 'no') : '—',
-      r.fields.join(', '), trim(r.query, 46),
-    ])));
-  if (addedIds) {
-    console.log(`\n${shown.length} rule(s) added or updated — the other ${rows.length - shown.length} are unchanged. Full table: \`rules\`.`);
+  if (removedList.length) {
+    console.log(table(['Removed rule', 'Action', 'Destination'],
+      removedList.map((r) => [r.id, r.action, r.label ?? '—'])));
+    console.log(`\n${removedList.length} rule(s) removed — the backup above has them if this was a mistake.`);
+  } else {
+    const shown = addedIds ? rows.filter((r) => addedIds.has(r.id)) : rows;
+    console.log(table(['Rule id', 'Action', 'Applies', 'Leaves inbox', 'Matches on', 'Gmail query'],
+      shown.map((r) => [
+        r.id, r.action,
+        // The whole label path, not just the leaf: a rule filing into
+        // `Recruiting/Globex` puts `Recruiting` on the thread too, and a user
+        // who cannot see that cannot tell why their parent folder keeps filling.
+        r.action === 'label' ? r.applies.join(' + ') : '—',
+        r.action === 'label' ? (r.archives ? 'yes' : 'no') : '—',
+        r.fields.join(', '), trim(r.query, 46),
+      ])));
+    if (addedIds) {
+      console.log(`\n${shown.length} rule(s) added or updated — the other ${rows.length - shown.length} are unchanged. Full table: \`rules\`.`);
+    }
   }
 
   // A rule that can never fire is dead weight, and dead weight in a rule file
@@ -684,6 +722,12 @@ async function cmdLabels(args) {
   if (missing.length) {
     console.log('\ncreate exactly these labels, then re-run this command:');
     console.log(missing.map((d) => d.name).join('\n'));
+    // Creation is only half the remedy space. A folder the user deleted on
+    // purpose wants the RULE changed, not the folder resurrected — and which
+    // it is, the mail cannot say.
+    const ruleIds = [...new Set(missing.flatMap((d) => d.ruleIds))];
+    console.log(`\n…or, if a folder was deleted on purpose, remove or redirect the rules that file into it`);
+    console.log(`(\`rules --remove <id>\` — here: ${ruleIds.join(', ')}). Which is right is your call.`);
     process.exitCode = 1;
     return;
   }
@@ -978,8 +1022,28 @@ async function cmdUndo(args) {
  * verification codes, and nothing here copies it anywhere.
  */
 async function cmdIngest(args) {
-  if (!args.inbox || args.inbox === true) throw new Error('ingest: --inbox <raw.json> is required — write the search_threads result to a file verbatim');
   if (!args.labels || args.labels === true) throw new Error('ingest: --labels <raw.json> is required — without the real label list, every later step guesses the id↔name mapping');
+
+  // The create_label loop: the mailbox changed mid-run, only the label list is
+  // stale, and re-supplying four thread files to refresh one snapshot is how a
+  // "verbatim" raw file ends up hand-edited instead. One re-fetch, one flag.
+  if (args.labelsOnly) {
+    if (args.inbox || args.nolabel || args.promos || args.updates) {
+      throw new Error('ingest --labels-only: refreshes the label snapshot alone — drop the thread-file flags, or drop --labels-only');
+    }
+    const doc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
+    const out = writeJson(args.outLabels ?? 'labels.json', doc, args);
+    console.error(`wrote ${out}`);
+    const users = (doc.labels ?? []).filter((l) => {
+      const upper = String(l?.name ?? l ?? '').toUpperCase();
+      return upper && !SYSTEM_LABELS.includes(upper) && !upper.startsWith('CATEGORY_');
+    }).length;
+    console.log(table(['Your labels', 'System labels'], [[users, (doc.labels ?? []).length - users]]));
+    console.log('\nlabel snapshot refreshed — the thread snapshot is untouched.');
+    return;
+  }
+
+  if (!args.inbox || args.inbox === true) throw new Error('ingest: --inbox <raw.json> is required — write the search_threads result to a file verbatim');
 
   const inbox = normalizeSearchThreads(readJson(args.inbox, 'ingest: --inbox'), '--inbox');
   const nolabel = args.nolabel ? normalizeSearchThreads(readJson(args.nolabel, 'ingest: --nolabel'), '--nolabel') : [];
@@ -1043,12 +1107,13 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage setup     [--file <rules.json>]
   gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
                         [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
+  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]
                         [--show-claimed N] [--show-withheld N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
-  gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--scope <query>]
+  gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
   gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope <query>] [--preview N] [--out <plan.json>]
   gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>]
