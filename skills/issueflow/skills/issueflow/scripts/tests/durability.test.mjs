@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkpoint, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
+import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
 import { ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
@@ -151,6 +152,23 @@ test('a skipped stage appears in the comment as a hole, not as a stage that happ
   cleanup();
 });
 
+test('a finished run\'s comment carries a Landed table and a finished line; an unfinished one carries neither', () => {
+  const { dir, run, cleanup } = fixture();
+  const before = renderComment(dir, run);
+  assert.doesNotMatch(
+    before, /Landed|Finished/,
+    'an unfinished run must not grow either section — this is the other half of the frozen checkpoint-comment.md pin',
+  );
+
+  run.lanes[0].landed = { pr: 42, url: 'https://example.invalid/pull/42', mergedAt: '2026-08-12T00:00:00Z', at: '2026-08-12T00:00:01Z' };
+  run.finished = { at: '2026-08-12T00:00:02Z', issueClosed: true };
+  const after = renderComment(dir, run);
+  assert.match(after, /#42/);
+  assert.match(after, /\*\*Finished\*\*/);
+  assert.match(after, /issue closed/);
+  cleanup();
+});
+
 // ---------------------------------------------------------------------------
 // Worktrees — the thing that makes two concurrent lanes safe.
 // ---------------------------------------------------------------------------
@@ -233,5 +251,244 @@ test('a repo path that is not a repository root is refused, never worked around'
   );
   // and nothing was created in the enclosing repository
   assert.equal(tipOf(repoPath, run.lanes[0].branch), null);
+  cleanup();
+});
+
+// ---------------------------------------------------------------------------
+// finish — the run's terminal state (#219). A lane whose pull request GitHub
+// confirms MERGED gets its worktree removed and its branch deleted; a lane
+// whose pull request is not a confirmed merge is left completely alone. This
+// is `accept`'s drift refusal with the polarity inverted, so it is tested the
+// same two-sided way: one half proves the destructive path runs, the other
+// proves it is the ONLY path in.
+// ---------------------------------------------------------------------------
+
+/**
+ * A `gh` that answers from a small table instead of the network: `pr list
+ * --head <branch>` returns `prsByBranch[branch]`, `issue view` returns
+ * `issue`, and `issue close` appends its own arguments to `closeLog` when one
+ * is given. The offline test above stubs a `gh` that records being called;
+ * `finish` needs one that answers, so this extends that shape rather than
+ * duplicating it.
+ */
+function stubGh(bin, { prsByBranch = {}, issue = { state: 'OPEN' }, closeLog = null } = {}) {
+  const table = join(bin, 'gh-table.json');
+  writeFileSync(table, JSON.stringify({ prsByBranch, issue }));
+  const script = [
+    '#!/usr/bin/env node',
+    "const { readFileSync, appendFileSync } = require('node:fs');",
+    `const table = JSON.parse(readFileSync(${JSON.stringify(table)}, 'utf8'));`,
+    'const args = process.argv.slice(2);',
+    "if (args[0] === 'pr' && args[1] === 'list') {",
+    "  const branch = args[args.indexOf('--head') + 1];",
+    '  console.log(JSON.stringify(table.prsByBranch[branch] ?? []));',
+    "} else if (args[0] === 'issue' && args[1] === 'view') {",
+    '  console.log(JSON.stringify(table.issue));',
+    "} else if (args[0] === 'issue' && args[1] === 'close') {",
+    closeLog ? `  appendFileSync(${JSON.stringify(closeLog)}, args.join(' ') + '\\n');` : '',
+    '} else {',
+    '  process.exit(1);',
+    '}',
+  ].filter(Boolean).join('\n');
+  writeFileSync(join(bin, 'gh'), script);
+  chmodSync(join(bin, 'gh'), 0o755);
+}
+
+/** Run `fn` with `bin` in front of `PATH`, so `finish`'s own `gh`/`git` calls find the stub. Restores PATH after. */
+function withGh(bin, fn) {
+  const original = process.env.PATH;
+  process.env.PATH = `${bin}:${original}`;
+  try {
+    return fn();
+  } finally {
+    process.env.PATH = original;
+  }
+}
+
+/** A lane object shaped like `split()` produces, without going through the gate `finish` does not care about. */
+const laneFor = (slug, branch, base) => ({ id: slug, slug, title: slug, branch, base });
+
+test('a lane whose pull request GitHub reports MERGED is finished: worktree gone, branch gone, landing recorded', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+  const wt = ensureWorktree(repoPath, dir, l).path;
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  stubGh(bin, {
+    prsByBranch: {
+      [l.branch]: [{ number: 42, state: 'MERGED', url: 'https://example.invalid/pull/42', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }],
+    },
+  });
+
+  const result = withGh(bin, () => finish(dir, run, {}));
+  assert.deepEqual(result.rows, [{ lane: l.slug, state: 'landed', detail: '#42' }]);
+  assert.equal(existsSync(wt), false, 'the worktree must be gone');
+  assert.throws(() => git(['rev-parse', '--verify', `refs/heads/${l.branch}`], repoPath), 'the local branch must be gone');
+  assert.equal(l.landed.pr, 42);
+  assert.ok(run.finished, 'the only lane landed, so the run is over');
+
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('a lane whose pull request is still OPEN is not touched at all — the mirror of accept\'s drift refusal', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+  const wt = ensureWorktree(repoPath, dir, l).path;
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  stubGh(bin, {
+    prsByBranch: { [l.branch]: [{ number: 7, state: 'OPEN', url: 'https://example.invalid/pull/7', baseRefName: 'main' }] },
+  });
+
+  withGh(bin, () => {
+    assert.throws(() => finish(dir, run, {}), (err) => {
+      assert.ok(err instanceof FinishError);
+      assert.deepEqual(err.rows, [{ lane: l.slug, state: 'open', detail: '#7 is still open — left untouched' }]);
+      return true;
+    });
+  });
+
+  assert.equal(existsSync(wt), true, 'the worktree must survive an open pull request');
+  assert.ok(git(['rev-parse', '--verify', `refs/heads/${l.branch}`], repoPath), 'the branch must survive');
+  assert.ok(!l.landed, 'left untouched');
+  assert.ok(!run.finished);
+
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('a lane with no pull request at all is reported as never shipped, and a gh that fails is reported as unknown — neither is treated as merged', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  stubGh(bin, { prsByBranch: {} }); // no entry for this branch at all
+  withGh(bin, () => {
+    assert.throws(() => finish(dir, run, {}), (err) => {
+      assert.equal(err.rows[0].state, 'none');
+      return true;
+    });
+  });
+  assert.ok(!l.landed);
+
+  writeFileSync(join(bin, 'gh'), '#!/bin/sh\nexit 1\n');
+  chmodSync(join(bin, 'gh'), 0o755);
+  withGh(bin, () => {
+    assert.throws(() => finish(dir, run, {}), (err) => {
+      assert.equal(err.rows[0].state, 'unknown');
+      return true;
+    });
+  });
+  assert.ok(!l.landed, 'a gh failure must never be read as a merge');
+
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('a partially-landed split run finishes the merged lane, leaves the open one intact, and completes when finish runs again', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const first = laneFor('first', 'feature/first', 'main');
+  const second = laneFor('second', 'feature/second', 'feature/first');
+  run.lanes = [first, second];
+  saveRun(dir, run);
+  git(['branch', first.branch, 'main'], repoPath);
+  git(['branch', second.branch, first.branch], repoPath);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  stubGh(bin, {
+    prsByBranch: {
+      [first.branch]: [{ number: 1, state: 'MERGED', url: 'https://example.invalid/pull/1', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }],
+      [second.branch]: [{ number: 2, state: 'OPEN', url: 'https://example.invalid/pull/2', baseRefName: 'feature/first' }],
+    },
+  });
+
+  const firstPass = withGh(bin, () => finish(dir, run, {}));
+  assert.deepEqual(firstPass.rows.map((r) => r.state), ['landed', 'open']);
+  assert.ok(first.landed);
+  assert.ok(!second.landed);
+  assert.ok(!run.finished, 'the split run is not over — one lane is still open');
+
+  // The second lane merges. Running finish again completes the run without
+  // redoing the first lane's work.
+  stubGh(bin, {
+    prsByBranch: {
+      [first.branch]: [{ number: 1, state: 'MERGED', url: 'https://example.invalid/pull/1', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }],
+      [second.branch]: [{ number: 2, state: 'MERGED', url: 'https://example.invalid/pull/2', mergedAt: '2026-08-12T01:00:00Z', baseRefName: 'feature/first' }],
+    },
+  });
+  const secondPass = withGh(bin, () => finish(dir, run, {}));
+  assert.deepEqual(secondPass.rows.map((r) => r.state), ['already landed', 'landed']);
+  assert.ok(second.landed);
+  assert.ok(run.finished, 'every lane has now landed');
+
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('--close-issue closes an open issue and reports an already-closed one as already closed, never claiming an action it did not take', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  const closeLog = join(bin, 'close-log.txt');
+  stubGh(bin, {
+    prsByBranch: { [l.branch]: [{ number: 3, state: 'MERGED', url: 'https://example.invalid/pull/3', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }] },
+    issue: { state: 'OPEN' },
+    closeLog,
+  });
+  withGh(bin, () => finish(dir, run, { closeIssueFlag: true }));
+  assert.equal(run.finished.issueClosed, true);
+  assert.ok(existsSync(closeLog), '`gh issue close` must have been called for an open issue');
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('a second --close-issue over an already-closed issue reports it as already closed and never calls gh issue close again', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  const closeLog = join(bin, 'close-log.txt');
+  stubGh(bin, {
+    prsByBranch: { [l.branch]: [{ number: 4, state: 'MERGED', url: 'https://example.invalid/pull/4', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }] },
+    issue: { state: 'CLOSED' },
+    closeLog,
+  });
+  const result = withGh(bin, () => finish(dir, run, { closeIssueFlag: true }));
+  assert.ok(result.rows.some((r) => r.detail === 'already closed'));
+  assert.equal(existsSync(closeLog), false, 'an already-closed issue must not be closed again');
+  rmSync(bin, { recursive: true, force: true });
+  cleanup();
+});
+
+test('an offline run refuses to finish, on the flag and on the run — a network question with no way to answer it honestly offline', () => {
+  const { dir, run, cleanup } = fixture();
+  assert.throws(() => finish(dir, run, { offline: true }), /cannot verify a merge/);
+  run.offline = true;
+  assert.throws(() => finish(dir, run, {}), /cannot verify a merge/);
+  cleanup();
+});
+
+test('a run that never provisioned a worktree finishes cleanly — the --no-worktree case', () => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  const l = run.lanes[0];
+  git(['branch', l.branch, 'main'], repoPath);
+  // no ensureWorktree call here — nothing was ever provisioned to remove
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  stubGh(bin, {
+    prsByBranch: { [l.branch]: [{ number: 5, state: 'MERGED', url: 'https://example.invalid/pull/5', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }] },
+  });
+  const result = withGh(bin, () => finish(dir, run, {}));
+  assert.equal(result.rows[0].state, 'landed');
+  assert.equal(l.landed.pr, 5);
+
+  rmSync(bin, { recursive: true, force: true });
   cleanup();
 });

@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", or "break this issue into smaller pieces". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.3.0
+version: 0.4.0
 ---
 
 # /issueflow — one open issue to a pull request, through four gated stages
@@ -43,6 +43,7 @@ step whose command does not exist fails `skillfactory verify`.
 | report the state of an interrupted run so it resumes without guessing | `node "$SKILL_DIR/scripts/issueflow.js" status` |
 | list every run on this machine, so one can be found without remembering its path | `node "$SKILL_DIR/scripts/issueflow.js" runs` |
 | push the branch and open the pull request under the repo's own policy | `node "$SKILL_DIR/scripts/issueflow.js" ship` |
+| verify each lane's pull request merged, remove its worktree, delete its local branch, and mark the run done | `node "$SKILL_DIR/scripts/issueflow.js" finish` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
@@ -196,6 +197,30 @@ irreversible step, and it is the last moment the user can stop it.
 Report the pull request URLs the command returned. **Nothing else counts as
 shipped** — not a pushed branch, not a green check.
 
+### 6. Finish
+
+```bash
+node "$SKILL_DIR/scripts/issueflow.js" finish --run-dir <run> [--close-issue]
+```
+
+`ship` ends at pull request URLs. This is what happens after: once GitHub
+confirms a lane's pull request merged, `finish` removes that lane's worktree,
+deletes its local branch, and records the landing. A lane whose pull request
+has not merged is left **completely alone** — the mirror of `accept`'s drift
+refusal, and the only path to `git branch -D` is a merge GitHub confirmed.
+
+Run it any time after `ship`; it is safe to run again. It finishes whatever
+has merged and leaves the rest untouched, so a split run with one lane still
+under review finishes the lane that landed and completes on a later call once
+the other one does too. Pass `--close-issue` to close the issue once every
+lane has landed — GitHub's `Closes #<n>` keyword only fires on a merge into
+the repository's *default* branch, and issueflow targets the policy base,
+which is `dev` in a shipflow repo, so the issue does not close on its own.
+
+`finish` is a question about GitHub, so it refuses on an offline run rather
+than finishing on an assumption. Once every lane has landed, `runs` and
+`status` report the run `done` — never `ready to ship` again.
+
 ## Commands
 
 | Command | Returns |
@@ -209,6 +234,7 @@ shipped** — not a pushed branch, not a green check.
 | `status` | the run board, what has drifted on GitHub, and what can run now |
 | `runs` | every run on this machine, with what it is waiting on |
 | `ship [--dry-run] [--force]` | a pushed branch and an open pull request per lane, and the per-stage timings |
+| `finish [--close-issue]` | per lane: the merge verified, the worktree removed, the branch deleted, the landing recorded — and, once every lane has landed, the run marked `done` |
 
 `--offline` suppresses every network call and the checkpoint. It is for the
 evals; a real run should never pass it.

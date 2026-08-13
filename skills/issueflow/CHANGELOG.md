@@ -5,6 +5,49 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-13
+
+A run's terminal state — found missing from a real replay of
+`natejswenson/claude-skills#212` and `#215`: both fully-shipped runs still
+reported "ready to ship" in `runs`, and `status` on issue-212 said *"Every
+stage is approved — `issueflow ship` is the only step left"* directly under a
+reality check that itself reported both lane pull requests already merged and
+the issue closed. Watching the pull requests merge, removing the lane
+worktrees, deleting the local branches, and closing the issue was manual
+orchestrator work, done by hand twice in the measured session.
+
+### Added
+
+- **`issueflow finish [--close-issue]`.** Per lane: verifies the pull request
+  merged (leaving the lane completely untouched otherwise — never shipped, an
+  open pull request, or a `gh` failure are three different absences, none
+  treated as a merge), removes the worktree, deletes the local branch with
+  `git branch -D` (the merge GitHub confirmed is the stronger check `-d`'s
+  local-reachability test cannot make), and records the landing. Idempotent
+  and per-lane: a partially-landed split run finishes the lane that merged and
+  completes on a later call once the rest do too. Refuses outright on an
+  offline run — this is a question about GitHub, not an assumption to finish
+  on.
+- **`runState(run)`** — one function, replacing two independent re-derivations
+  of `remainingSteps(run).length === 0` that both meant "ready to ship,"
+  whether or not the pull requests had ever merged. `runs` and `status` now
+  report `in progress`, `ready to ship`, `shipped`, or `done`. The run schema
+  stays at `2`: `lane.landed`, `lane.pr` and `run.finished` are additive
+  fields, defaulted on load rather than migrated, so the two runs this command
+  exists to close remain readable.
+- **`--close-issue`.** GitHub's `Closes #<n>` keyword only fires on a merge
+  into the repository's *default* branch, and issueflow targets the policy
+  base — `dev` in a shipflow repo — so the issue does not close on its own.
+  Reports an already-closed issue as already closed rather than claiming an
+  action it did not take.
+- The sticky issue comment gains a conditional `Landed` table and a finished
+  line, rendered only once a lane has landed — an unfinished run's comment is
+  unchanged, byte for byte.
+- `ship` now records the pull request it opened for each lane (`lane.pr`) —
+  previously the URLs were printed and thrown away, so a run's own pull
+  requests were absent from `run.json` even after `checkpoint.commentUrl` and
+  `issue.url` were recorded.
+
 ## [0.3.0] - 2026-08-12
 
 Three contracts that only lived in the orchestrator's head, written down —
