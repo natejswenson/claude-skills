@@ -5,15 +5,25 @@
  * unreadable-run-row (#223) is the first piece: `runs` used to discard a
  * `RunError` that `loadRun` already wrote to be actionable, rendering the row
  * as a bare `(unreadable run)` with no reason and no remedy.
+ *
+ * live-stage-clock (#223) is the second: `Took` used to answer only after a
+ * human typed `accept` — `briefed` / `—` was the entire liveness signal a
+ * reader had for a stage that was, in fact, still running. `observe()` fills
+ * `at.delivered` in memory the moment an artifact lands on disk, and
+ * `board(run, { now })` renders a live elapsed time for a stage that has
+ * neither.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRun } from '../lib/run.mjs';
+import {
+  accept, artifactPath, board, createRun, durationOf, findStep, markBriefed, observe, saveRun,
+} from '../lib/run.mjs';
+import { STAGES } from '../lib/stages.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -58,6 +68,102 @@ function mixedRunRoot() {
 
   return { root, staleDir };
 }
+
+function freshRun(issue = { number: 9, title: 'a live run', url: 'https://example.invalid/9' }) {
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-clock-'));
+  const run = createRun({ repo: { owner: 'x', name: 'y', path: '/tmp/x' }, issue, policy });
+  saveRun(dir, run);
+  return { dir, run, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+}
+
+/** Write an artifact that satisfies `investigate`'s required sections. */
+function writeInvestigate(dir, run) {
+  const step = findStep(run, 'investigate');
+  const declared = STAGES.find((s) => s.id === 'investigate');
+  const path = artifactPath(dir, step);
+  mkdirSync(join(path, '..'), { recursive: true });
+  writeFileSync(path, declared.requires.map((r) => `## ${r}\n\nsomething real.\n`).join('\n'));
+  return step;
+}
+
+/** An ISO timestamp `secondsAgo` in the past, so a briefed stage reads as still running. */
+const ago = (secondsAgo) => new Date(Date.now() - secondsAgo * 1000).toISOString();
+
+// ---------------------------------------------------------------------------
+// live-stage-clock — a stage's clock runs while the stage does. Proof items
+// 4-8 of the design: `briefed` / `—` used to be the entire liveness signal.
+// ---------------------------------------------------------------------------
+test('live-stage-clock: briefed with no artifact shows a live elapsed Took, marked with a +', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(252)); // 4m12s ago
+  const r = cli(['status', '--run-dir', dir, '--offline']);
+  assert.equal(r.code, 0, `status exited ${r.code}: ${r.err}`);
+  const row = r.out.split('\n').find((l) => l.includes('investigate'));
+  assert.match(row, /\bbriefed\b/, `expected the persisted state to still read briefed: ${row}`);
+  const cell = row.split('|').map((c) => c.trim())[4];
+  assert.match(cell, /^\d+m\d\ds\+$/, `Took cell is not a live elapsed reading: "${cell}"`);
+  cleanup();
+});
+
+test('live-stage-clock: an artifact on disk but never accepted shows delivered, with a real duration and no +', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(300));
+  writeInvestigate(dir, run);
+  const r = cli(['status', '--run-dir', dir, '--offline']);
+  const row = r.out.split('\n').find((l) => l.includes('investigate'));
+  assert.match(row, /\bdelivered\b/, `expected the display state to read delivered: ${row}`);
+  const cell = row.split('|').map((c) => c.trim())[4];
+  assert.doesNotMatch(cell, /\+/, `an already-delivered stage should show a finished duration, not a lower bound: "${cell}"`);
+  assert.match(cell, /^\d+m?\d*s$/, `Took cell is not a real duration: "${cell}"`);
+  cleanup();
+});
+
+test('live-stage-clock: a pending step shows — in both State-adjacent columns, the clock does not start early', () => {
+  const { dir, run, cleanup } = freshRun();
+  void run;
+  const r = cli(['status', '--run-dir', dir, '--offline']);
+  const row = r.out.split('\n').find((l) => l.includes('investigate'));
+  assert.match(row, /\bpending\b/, `expected investigate to still be pending: ${row}`);
+  const cell = row.split('|').map((c) => c.trim())[4];
+  assert.equal(cell, '—', `a never-dispatched stage must not show a duration: "${cell}"`);
+  cleanup();
+});
+
+test('live-stage-clock: observe() is pure and predicts what accept() later persists', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step);
+  writeInvestigate(dir, run);
+  const before = readFileSync(join(dir, 'run.json'), 'utf8');
+
+  const observed = observe(dir, run);
+  const after = readFileSync(join(dir, 'run.json'), 'utf8');
+  assert.equal(after, before, 'observe() wrote to run.json — it must be read-only');
+  assert.equal(findStep(run, 'investigate').stage.at.delivered, undefined,
+    'observe() must not mutate the run object it was handed, either');
+
+  const predicted = findStep(observed, 'investigate').stage.at.delivered;
+  assert.ok(predicted, 'observe() found no delivered timestamp for a step with an artifact on disk');
+
+  const accepted = accept(dir, run, findStep(run, 'investigate'));
+  const persisted = findStep(accepted, 'investigate').stage.at.delivered;
+  assert.equal(persisted, predicted, 'accept() persisted a different delivered value than observe() predicted');
+  cleanup();
+});
+
+test('live-stage-clock: purity guard — board(run) with no `now` renders no + and matches the pre-#223 shape', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(120));
+  const rows = board(run);
+  assert.ok(!rows.some((r) => String(r.took).includes('+')), 'a `+` leaked into board() with no `now` passed');
+  const investigateRow = rows.find((r) => r.stage === 'investigate');
+  assert.equal(investigateRow.state, 'briefed', 'display state drifted from the persisted state with no `now`');
+  assert.equal(investigateRow.took, durationOf(step.stage) ?? '—', 'Took must equal the old durationOf-only rendering');
+  cleanup();
+});
 
 // ---------------------------------------------------------------------------
 // unreadable-run-row (trap) — the known-bad side. Without this, `runs`

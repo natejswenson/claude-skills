@@ -18,7 +18,7 @@ import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, durationOf, findStep, gateSteps, loadRun, markBriefed,
-  nextStep, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun, skip, split,
+  nextStep, observe, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun, skip, split,
   workItemsFromDesign,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
@@ -92,7 +92,7 @@ function readIssueNumber(args) {
   return args.issue;
 }
 
-const runBoard = (run) => print(BOARD_COLUMNS, boardRows(board(run)));
+const runBoard = (run, opts) => print(BOARD_COLUMNS, boardRows(board(run, opts)));
 
 /** How a step is named on the command line. */
 const stageArgs = (step) =>
@@ -223,7 +223,10 @@ async function cmdStart(args) {
  */
 async function cmdBrief(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  // Observed so a step whose artifact already landed (a retry, or a lane
+  // dispatched earlier than the one named here) shows as delivered rather than
+  // briefed the moment anything downstream renders it — see `run.observe()`.
+  const run = observe(dir, loadRun(dir));
 
   // `--ready` with one open gate is just `brief`. Printing a fan-out table over
   // a single row would tell the reader two stages can run when one can.
@@ -288,7 +291,7 @@ function briefOne(dir, run, step, args) {
 
 async function cmdAccept(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   const stageId = args.stage ?? nextStep(run)?.stage.id;
   if (!stageId) throw new Error('every stage is already approved');
   const step = findStep(run, stageId, args.lane ?? null);
@@ -310,7 +313,9 @@ async function cmdAccept(args) {
   if (args.skip) skip(dir, run, step, typeof args.skip === 'string' ? args.skip : null);
   else accept(dir, run, step, { evidence: args.evidence ? resolve(args.evidence) : null });
 
-  runBoard(run);
+  // A sibling lane's stage may still be running while this one is accepted —
+  // its row should keep ticking rather than freeze at whatever it read on load.
+  runBoard(run, { now: new Date().toISOString() });
   const facts = verify(dir, run, step);
   if (facts.length > 0) {
     console.log('');
@@ -353,7 +358,7 @@ async function cmdSplit(args) {
 
 async function cmdStatus(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   print(
     ['Issue', 'Split', 'Lanes'],
     [[`${run.repo.owner}/${run.repo.name}#${run.issue.number}`, String(run.split), String(run.lanes.length)]],
@@ -361,7 +366,7 @@ async function cmdStatus(args) {
   console.log(`\nRun: ${dir}`);
   if (run.checkpoint?.commentUrl) console.log(`Checkpoint: ${run.checkpoint.commentUrl}`);
   console.log('');
-  runBoard(run);
+  runBoard(run, { now: new Date().toISOString() });
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
 }
@@ -429,7 +434,7 @@ async function cmdRuns(args) {
 
 async function cmdShip(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   const blocked = shipBlockers(run);
   if (blocked.length > 0) {
     print(['Step', 'State', 'Reason'], blocked.map((b) => [b.step, b.state, b.reason ?? '—']));
