@@ -130,9 +130,9 @@
     },
     {
       "name": "gmailtriage",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "stack": "node",
-      "cardHash": "fadf859dfa4029cf",
+      "cardHash": "a90fb5b6b17d39f3",
       "facts": 66,
       "sections": {
         "setup": 2,
@@ -146,9 +146,9 @@
     },
     {
       "name": "issueflow",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "stack": "node",
-      "cardHash": "b1861bda727f5448",
+      "cardHash": "1b2044874bfaeb09",
       "facts": 72,
       "sections": {
         "setup": 8,
