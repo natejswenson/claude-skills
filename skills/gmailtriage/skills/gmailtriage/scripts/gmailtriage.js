@@ -7,13 +7,14 @@
  * depend on a model behaving well lives here — which threads a rule takes,
  * whether a thread was authorised, and what was actually moved.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { resolve, join, dirname } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync } from 'node:fs';
+import { resolve, join, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 
-import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE } from './lib/rules.mjs';
-import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised } from './lib/plan.mjs';
+import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
+import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
+import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
@@ -46,14 +47,43 @@ const readJson = (p, what) => {
   return JSON.parse(readFileSync(f, 'utf8'));
 };
 
-const writeJson = (p, v) => {
+const STATE_DIR = join(homedir(), '.gmailtriage');
+const RECEIPTS_DIR = join(STATE_DIR, 'receipts');
+
+/** The git repository containing `start`, if any. Worktrees keep a `.git` FILE, so existence is the test, not is-directory. */
+const repoRootOf = (start) => {
+  let dir = start;
+  for (;;) {
+    if (existsSync(join(dir, '.git'))) return dir;
+    const up = dirname(dir);
+    if (up === dir) return null;
+    dir = up;
+  }
+};
+
+/**
+ * Every file this skill writes is somebody's mailbox — senders, subjects, the
+ * shape of a life — and a git working tree is one `git add` away from a public
+ * repo. A real run once wrote its thread snapshot into this skill's own
+ * checkout, and the cleanup deleted the run's receipt along with it. So the
+ * refusal lives at the one choke point every write goes through. The skill's
+ * own state dir is exempt — it lives under $HOME on purpose, and a home
+ * directory that happens to be a dotfiles repo must not brick the rule file.
+ */
+const writeJson = (p, v, { allowRepo = false } = {}) => {
   const f = resolve(p);
-  mkdirSync(dirname(f), { recursive: true });
-  writeFileSync(f, JSON.stringify(v, null, 2) + '\n');
+  if (!allowRepo && !(f + sep).startsWith(STATE_DIR + sep)) {
+    const repo = repoRootOf(dirname(f));
+    if (repo) {
+      throw new Error(`refusing to write ${f} inside a git repository (${repo}) — mailbox data must never be committed. Use a scratchpad or home path, or pass --allow-repo if you really mean it.`);
+    }
+  }
+  mkdirSync(dirname(f), { recursive: true, mode: 0o700 });
+  writeFileSync(f, JSON.stringify(v, null, 2) + '\n', { mode: 0o600 });
   return f;
 };
 
-const defaultRules = () => join(homedir(), '.gmailtriage', 'rules.json');
+const defaultRules = () => join(STATE_DIR, 'rules.json');
 const trim = (s, n) => (String(s ?? '').length > n ? String(s).slice(0, n - 1) + '…' : String(s ?? ''));
 
 // ── setup ───────────────────────────────────────────────────────────────────
@@ -111,9 +141,17 @@ Next: fetch a sample and your label list, then \`propose\`.`);
     return;
   }
 
-  console.log(table(['Rule id', 'Action', 'Destination', 'Matches on'],
-    rows.map((r) => [r.id, r.action, r.label ?? '—', r.fields.join(', ')])));
-  console.log('\nNext: fetch a sample, then `plan`.');
+  // A summary, not the rule table. `setup` opens every run, and a mailbox with
+  // fifty rules was paying six kilobytes of transcript for a table nobody was
+  // reading at that moment — the full table is one `rules` away.
+  console.log('');
+  console.log(table(['Trash', 'Sort', 'Keep', 'Folders'], [[
+    rows.filter((r) => r.action === 'trash').length,
+    rows.filter((r) => r.action === 'label').length,
+    rows.filter((r) => r.action === 'keep').length,
+    new Set(rows.filter((r) => r.action === 'label').map((r) => r.label)).size,
+  ]]));
+  console.log('\nfull rule table: `rules`. Next: fetch a sample, then `plan`.');
 }
 
 // ── propose ─────────────────────────────────────────────────────────────────
@@ -207,8 +245,11 @@ async function cmdPropose(args) {
   const rules = ruleDoc.rules ?? [];
   const r = propose(threads, { minCount: Number(args.minCount ?? 3), labels, rules });
   const { candidates, sortable, withheld, below, reason, sortReason, unhoused, sampled,
-    claimed, claimedThreads } = r;
+    claimed, claimedThreads, sentOnly } = r;
 
+  if (sentOnly > 0) {
+    console.log(`${sentOnly} self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not triage material.\n`);
+  }
   if (claimed.length) {
     console.log(table(['Already claimed', 'Threads', 'By rule'],
       claimed.slice(0, Number(args.showClaimed ?? 8)).map((c) => [c.from, c.count, c.ruleIds.join(', ')])));
@@ -268,7 +309,7 @@ async function cmdPropose(args) {
       sortCandidates: sortable.filter((s) => !s.unhoused).map((s) => candidateToSortRule(s)),
       unhoused: sortable.filter((s) => s.unhoused),
       withheld,
-    })}`);
+    }, args)}`);
   }
 }
 
@@ -344,6 +385,9 @@ async function cmdAudit(args) {
     } else {
       console.log('nothing — every thread in the sample is claimed by a rule.');
     }
+    if (a.unclaimed.sentOnly > 0) {
+      console.log(`\n${a.unclaimed.sentOnly} self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not unclaimed mail.`);
+    }
   }
 
   console.log('');
@@ -388,8 +432,8 @@ async function cmdMerge(args) {
   }
 
   const receipt = { at: args.at ?? new Date().toISOString(), count: m.total, entries: mergeReceiptEntries(m) };
-  const out = args.receipt ?? join(homedir(), '.gmailtriage', `receipt-merge-${receipt.at.replace(/[:.]/g, '-')}.json`);
-  console.error(`wrote ${writeJson(out, receipt)}`);
+  const out = args.receipt ?? join(RECEIPTS_DIR, `merge-${receipt.at.replace(/[:.]/g, '-')}.json`);
+  console.error(`wrote ${writeJson(out, receipt, args)}`);
 
   if (m.label.length) {
     console.log(`\nfirst, LABEL "${m.to}" onto exactly these thread ids:`);
@@ -475,7 +519,7 @@ async function cmdSubdivide(args) {
       parent: r.parent,
       sortCandidates: ready.map((c) => clusterToSubRule(c)),
       unhoused: r.clusters.filter((c) => c.unhoused || c.vendorHost),
-    })}`);
+    }, args)}`);
   }
 }
 
@@ -485,6 +529,7 @@ async function cmdRules(args) {
   const file = resolve(args.file ?? defaultRules());
   let doc = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : { version: 1, rules: [] };
 
+  let addedList = [];
   if (args.add) {
     const incoming = readJson(args.add, 'rules --add <file.json>');
     const list = Array.isArray(incoming)
@@ -500,14 +545,30 @@ async function cmdRules(args) {
     const byId = new Map(doc.rules.map((r) => [r.id, r]));
     for (const r of list) byId.set(r.id, r);
     doc = { ...doc, rules: [...byId.values()] };
+    addedList = list;
   }
 
   const scope = args.scope ?? DEFAULT_SCOPE;
   const rows = validateRuleSet(doc, { scope });   // throws before anything is written
-  if (args.add) writeJson(file, doc);
+  // The ids just added or updated — what `--add` reports on, instead of
+  // reprinting the whole file to show one new rule at the bottom of it.
+  const addedIds = args.add ? new Set(rows.filter((r) => addedList.some((a) => a.id === r.id)).map((r) => r.id)) : null;
+  if (args.add) {
+    // The previous rule file survives every write. The receipts make a RUN
+    // reversible; nothing made the rule file itself reversible, and an --add
+    // that goes wrong otherwise destroys the only copy of every rule note.
+    if (existsSync(file)) {
+      const stamp = (args.at ?? new Date().toISOString()).replace(/[:.]/g, '-');
+      const bak = `${file}.${stamp}.bak`;
+      copyFileSync(file, bak);
+      console.error(`backed up previous rules to ${bak.replace(homedir(), '~')}`);
+    }
+    writeJson(file, doc, args);
+  }
 
+  const shown = addedIds ? rows.filter((r) => addedIds.has(r.id)) : rows;
   console.log(table(['Rule id', 'Action', 'Applies', 'Leaves inbox', 'Matches on', 'Gmail query'],
-    rows.map((r) => [
+    shown.map((r) => [
       r.id, r.action,
       // The whole label path, not just the leaf: a rule filing into
       // `Recruiting/Globex` puts `Recruiting` on the thread too, and a user
@@ -516,17 +577,33 @@ async function cmdRules(args) {
       r.action === 'label' ? (r.archives ? 'yes' : 'no') : '—',
       r.fields.join(', '), trim(r.query, 46),
     ])));
+  if (addedIds) {
+    console.log(`\n${shown.length} rule(s) added or updated — the other ${rows.length - shown.length} are unchanged. Full table: \`rules\`.`);
+  }
 
   // A rule that can never fire is dead weight, and dead weight in a rule file
   // is what makes a user distrust the whole set. Reported, not refused — the
   // pair that genuinely misbehaves is refused by validateRuleSet itself.
-  const shadowed = rows.filter((r) => r.shadowedBy);
+  // On an --add, only the shadows the new rules are part of; the rest were
+  // already reported when their rules landed.
+  const shadowed = rows.filter((r) => r.shadowedBy)
+    .filter((r) => !addedIds || addedIds.has(r.id) || addedIds.has(r.shadowedBy));
   if (shadowed.length) {
     console.log('');
     console.log(table(['Rule that can never fire', 'Because this earlier rule takes everything it would'],
       shadowed.map((r) => [r.id, r.shadowedBy])));
     console.log('an earlier rule owns every thread these would take, so they are dead. Narrow the earlier');
     console.log('rule, or delete these.');
+  }
+
+  // Hazards, not refusals — the rules stand as written, but the reader
+  // deserves to know which ones are safe only by narrowness or file order.
+  const lints = lintRuleSet(doc.rules)
+    .filter((l) => !addedIds || addedIds.has(l.ruleId) || (l.otherId && addedIds.has(l.otherId)));
+  if (lints.length) {
+    console.log('');
+    console.log(table(['Rule', 'Warning'], lints.map((l) => [l.ruleId, l.text])));
+    console.log('warnings, not refusals — these rules stand as written.');
   }
   console.log('');
   console.log(table(['Rules', 'Trash', 'Sort', 'Keep', 'Folders', 'File'], [[
@@ -567,19 +644,31 @@ async function cmdLabels(args) {
     return;
   }
 
-  // The label id is the point of this table, not decoration: `label_thread`
-  // takes ids, never names, so a run that has only the name is a run that has
-  // to guess the mapping.
+  const missing = dests.filter((d) => !d.exists);
+
+  // Default output is what needs DOING, not the whole reconciliation. The full
+  // table reprinted itself twice in a five-minute run; when everything exists,
+  // the summary row says so and `--verbose` has the rest. The label id column
+  // stays in the verbose table because `label_thread` takes ids, never names.
   //
   // `Named by` distinguishes a folder a rule files into from one it merely
   // implies by nesting under it — both must exist before anything moves, but
   // only one of them is a decision the user made.
-  console.log(table(['Destination', 'Status', 'Named by', 'Label id', 'Used by'],
-    dests.map((d) => [
-      d.name, d.exists ? 'exists' : 'NEEDS CREATE',
-      d.implied ? 'implied — parent of a sub-label' : 'a rule',
-      d.labelId ?? '—', d.ruleIds.join(', '),
-    ])));
+  if (args.verbose) {
+    console.log(table(['Destination', 'Status', 'Named by', 'Label id', 'Used by'],
+      dests.map((d) => [
+        d.name, d.exists ? 'exists' : 'NEEDS CREATE',
+        d.implied ? 'implied — parent of a sub-label' : 'a rule',
+        d.labelId ?? '—', d.ruleIds.join(', '),
+      ])));
+  } else if (missing.length) {
+    console.log(table(['Destination', 'Named by', 'Used by'],
+      missing.map((d) => [
+        d.name,
+        d.implied ? 'implied — parent of a sub-label' : 'a rule',
+        d.ruleIds.join(', '),
+      ])));
+  }
 
   const variants = dests.filter((d) => d.variants.length);
   if (variants.length) {
@@ -589,8 +678,7 @@ async function cmdLabels(args) {
     console.log('these are one folder, not two. Fix the spelling if that is not what you meant.');
   }
 
-  const missing = dests.filter((d) => !d.exists);
-  console.log('');
+  if (args.verbose || missing.length || variants.length) console.log('');
   console.log(table(['Destinations', 'Your labels', 'To create'], [[dests.length, existing.length, missing.length]]));
 
   if (missing.length) {
@@ -678,7 +766,7 @@ async function cmdPlan(args) {
     ]]));
   console.log('\nnothing has moved — this is what the rules would do.');
 
-  if (args.out) console.error(`wrote ${writeJson(args.out, p)}`);
+  if (args.out) console.error(`wrote ${writeJson(args.out, p, args)}`);
 }
 
 // ── apply ───────────────────────────────────────────────────────────────────
@@ -722,8 +810,46 @@ async function cmdApply(args) {
     0,
   ]]));
 
-  const out = args.receipt ?? join(homedir(), '.gmailtriage', `receipt-${receipt.at.replace(/[:.]/g, '-')}.json`);
-  console.error(`wrote ${writeJson(out, receipt)}`);
+  // The default is the durable path, and it is deliberately not a flag the
+  // flow asks anyone to pass: every receipt that landed in a session scratchpad
+  // died with the session, and three real runs are un-undoable because of it.
+  const out = args.receipt ?? join(RECEIPTS_DIR, `${receipt.at.replace(/[:.]/g, '-')}.json`);
+  console.error(`wrote ${writeJson(out, receipt, args)}`);
+
+  // Replay the authorised moves onto the working snapshot, so a re-plan
+  // converges without re-fetching — and without the agent hand-editing JSON,
+  // which is how a mid-run rule addition used to cost three manual edits.
+  // The receipt above stays the source of truth; this mutates only the
+  // snapshot the next `plan` reads.
+  if (args.updateThreads) {
+    const snapPath = resolve(args.updateThreads);
+    const snapshot = readJson(snapPath, 'apply: --update-threads <threads.json>');
+    const byId = new Map(entries.map((e) => [e.threadId, e]));
+    const updated = snapshot
+      .filter((t) => byId.get(t.id)?.action !== 'trash')
+      .map((t) => {
+        const e = byId.get(t.id);
+        if (!e || e.action !== 'label') return t;
+        // The added LABEL NAMES go into labelIds, not into a `labels` array.
+        // `resolveThreadLabels` passes an entry it cannot resolve through
+        // verbatim, so a name mixed in among the opaque ids resolves to itself
+        // — while a pre-populated `labels` array would short-circuit the
+        // resolver entirely and every OTHER label id on the thread would stop
+        // resolving, which un-converges exactly the rules this exists to
+        // converge.
+        const adds = (e.adds ?? e.labels ?? [e.label]).filter(Boolean);
+        let labelIds = [...new Set([...(t.labelIds ?? []), ...adds])];
+        let labels = Array.isArray(t.labels) && t.labels.length ? [...new Set([...t.labels, ...adds])] : null;
+        if (e.archive) {
+          const notInbox = (l) => String(l).toUpperCase() !== 'INBOX';
+          labelIds = labelIds.filter(notInbox);
+          if (labels) labels = labels.filter(notInbox);
+        }
+        return labels ? { ...t, labelIds, labels } : { ...t, labelIds };
+      });
+    writeJson(snapPath, updated, args);
+    console.error(`updated ${snapPath} — a re-plan over it now converges without re-fetching`);
+  }
 
   // Three separate instruction blocks, because they are three different calls.
   // Merging them would hand the agent a list of ids and leave it to infer what
@@ -771,6 +897,27 @@ async function cmdApply(args) {
 // ── undo ────────────────────────────────────────────────────────────────────
 
 async function cmdUndo(args) {
+  // `--last` finds the newest receipt in the durable store, by the `at` each
+  // receipt records rather than by filename — the legacy files and the merge
+  // receipts spell their names three ways, and mtime lies after a file copy.
+  if (args.last && !args.receipt) {
+    const candidates = [];
+    if (existsSync(RECEIPTS_DIR)) {
+      for (const f of readdirSync(RECEIPTS_DIR)) if (f.endsWith('.json')) candidates.push(join(RECEIPTS_DIR, f));
+    }
+    if (existsSync(STATE_DIR)) {
+      for (const f of readdirSync(STATE_DIR)) if (/^receipt-.*\.json$/.test(f)) candidates.push(join(STATE_DIR, f));
+    }
+    if (candidates.length === 0) {
+      throw new Error(`undo --last: no receipts under ${RECEIPTS_DIR.replace(homedir(), '~')} — pass --receipt <file> explicitly`);
+    }
+    const dated = candidates.map((p) => {
+      try { return { p, at: String(JSON.parse(readFileSync(p, 'utf8')).at ?? '') }; }
+      catch { return { p, at: '' }; }
+    }).sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : a.p < b.p ? 1 : -1));
+    args.receipt = dated[0].p;
+    console.log(`undoing the last recorded run — ${args.receipt.replace(homedir(), '~')} (${dated[0].at || 'no timestamp'})\n`);
+  }
   const r = readJson(args.receipt ?? '', 'undo: --receipt <receipt.json>');
   const entries = r.entries ?? [];
   if (entries.length === 0) throw new Error('undo: that receipt records no threads');
@@ -818,23 +965,109 @@ async function cmdUndo(args) {
   }
 }
 
+// ── ingest ──────────────────────────────────────────────────────────────────
+
+/**
+ * Raw MCP tool output → the snapshots every other command reads.
+ *
+ * The agent writes each tool result to a file VERBATIM; the reshaping — dedupe,
+ * label-id union, category intersection, the bulk-mail proxy — happens here,
+ * where it is deterministic and tested, instead of in sixty seconds of
+ * hand-authored JSON per run. Only the seven snapshot fields are ever written:
+ * a raw response carries `snippet`, which on a real mailbox has held live
+ * verification codes, and nothing here copies it anywhere.
+ */
+async function cmdIngest(args) {
+  if (!args.inbox || args.inbox === true) throw new Error('ingest: --inbox <raw.json> is required — write the search_threads result to a file verbatim');
+  if (!args.labels || args.labels === true) throw new Error('ingest: --labels <raw.json> is required — without the real label list, every later step guesses the id↔name mapping');
+
+  const inbox = normalizeSearchThreads(readJson(args.inbox, 'ingest: --inbox'), '--inbox');
+  const nolabel = args.nolabel ? normalizeSearchThreads(readJson(args.nolabel, 'ingest: --nolabel'), '--nolabel') : [];
+  const promoIds = args.promos ? threadIds(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
+  const updateIds = args.updates ? threadIds(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
+  const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
+
+  const merged = mergeThreadSources(inbox, nolabel);
+  const threads = applyCategories(merged, promoIds, updateIds);
+
+  console.log(table(['Source', 'Threads', 'New'], [
+    ['in:inbox', inbox.length, inbox.length],
+    ['has:nouserlabels', nolabel.length, merged.length - inbox.length],
+  ]));
+
+  // A thread with no sender or subject is almost always a metadata-only fetch,
+  // and passing it through produces subject-less "unclaimed mail" an hour
+  // later. Refused before anything is written, and the cause is named.
+  const problems = validateIngest(threads);
+  if (problems.length && !args.force) {
+    console.log(`\n${problems.length} thread(s) have no subject or sender — this looks like a metadata-only fetch`);
+    console.log('(THREAD_VIEW_METADATA_ONLY strips both). Re-fetch the inbox and no-label searches with the');
+    console.log('default view, or pass --force to ingest them anyway. Nothing was written.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const sentOnly = threads.filter((t) => isSentOnly(t)).length;
+  const userLabels = (labelsDoc.labels ?? []).filter((l) => {
+    const upper = String(l?.name ?? l ?? '').toUpperCase();
+    return upper && !SYSTEM_LABELS.includes(upper) && !upper.startsWith('CATEGORY_');
+  }).length;
+
+  const outThreads = writeJson(args.outThreads ?? 'threads.json', threads, args);
+  const outLabels = writeJson(args.outLabels ?? 'labels.json', labelsDoc, args);
+  console.error(`wrote ${outThreads}`);
+  console.error(`wrote ${outLabels}`);
+
+  console.log('');
+  console.log(table(['Threads', 'Promotions', 'Updates', 'Bulk', 'Sent-only', 'Missing subject/from', 'Your labels', 'System labels'], [[
+    threads.length,
+    threads.filter((t) => t.category === 'promotions').length,
+    threads.filter((t) => t.category === 'updates').length,
+    threads.filter((t) => t.hasUnsubscribe).length,
+    sentOnly,
+    problems.length,
+    userLabels,
+    (labelsDoc.labels ?? []).length - userLabels,
+  ]]));
+
+  if (!args.promos && !args.updates) {
+    console.log('\nno category fetches supplied — hasUnsubscribe is false everywhere, so every trash rule');
+    console.log('requiring a bulk marker will match nothing. Fetch category:promotions and category:updates');
+    console.log('(ids only) unless this run truly does not need them.');
+  }
+  console.log('\nsnippets are never written — the snapshot carries sender, subject, date and labels, nothing else.');
+}
+
 const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against rules you wrote.
 
   gmailtriage setup     [--file <rules.json>]
+  gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
+                        [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
-  gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N] [--out <f.json>]
+  gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]
+                        [--show-claimed N] [--show-withheld N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--scope <query>]
-  gmailtriage labels    --labels <f.json> [--rules <f.json>]
+  gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
   gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope <query>] [--preview N] [--out <plan.json>]
-  gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--receipt <f.json>]
-  gmailtriage undo      --receipt <f.json>
+  gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>]
+                        [--receipt <f.json>] [--at <iso>]
+  gmailtriage undo      --receipt <f.json> | --last
 
-\`--scope\` is the slice of the mailbox the rules are evaluated against, and
-defaults to \`${DEFAULT_SCOPE}\`. A retroactive pass over mail already filed is
-\`--scope 'label:Recruiting'\` — pass \`--labels\` with it, or the planner cannot
-see which threads it has already filed and will never converge.
+\`ingest\` takes the RAW output of the Gmail search_threads / list_labels tools,
+written to files verbatim, and produces the thread and label snapshots every
+other command reads — never transcribe a tool response by hand.
+
+Receipts default to ~/.gmailtriage/receipts/, which is what makes \`undo --last\`
+work across sessions. \`--scope\` is the slice of the mailbox the rules are
+evaluated against, and defaults to \`${DEFAULT_SCOPE}\`. A retroactive pass over
+mail already filed is \`--scope 'label:Recruiting'\` — pass \`--labels\` with it,
+or the planner cannot see which threads it has already filed and will never
+converge.
+
+Data outputs are refused inside a git repository (--allow-repo overrides):
+a mailbox snapshot in a working tree is one \`git add\` away from public.
 
 This binary never touches Gmail. The agent fetches, trashes, labels and
 archives; this decides what a rule may take, and refuses anything a rule did
@@ -848,6 +1081,7 @@ async function main() {
   try {
     switch (cmd) {
       case 'setup': return await cmdSetup(args);
+      case 'ingest': return await cmdIngest(args);
       case 'audit': return await cmdAudit(args);
       case 'merge': return await cmdMerge(args);
       case 'propose': return await cmdPropose(args);

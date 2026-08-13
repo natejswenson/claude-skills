@@ -60,6 +60,16 @@
       "rationale": "The withheld list is about what the skill proposes, never about what the user may decide. Losing the distinction turns a helpful default into a tool that argues with its owner."
     },
     {
+      "id": "never-reprint-a-snippet",
+      "pattern": "Never re-print a snippet or a code from a tool result",
+      "rationale": "The one leak the deterministic half cannot close. search_threads returns message snippets alongside subjects, and on a real mailbox those snippets have carried live verification codes — twice. The tool result entering the transcript is outside this skill's control; the model repeating it is not. ingest structurally never writes a snippet to disk; this line is the same guarantee for the conversation."
+    },
+    {
+      "id": "raw-tool-output-is-written-verbatim",
+      "pattern": "never transcribe a tool response by hand",
+      "rationale": "Hand-transcribing search_threads output into threads.json was 60-90 seconds per run and the main way a field got dropped or mangled — measured across five real runs. The agent's only job at the fetch boundary is to write the tool result to a scratchpad file byte-for-byte; `ingest` owns the reshaping, deterministically. Lose this line and the hand-built JSON quietly comes back, and with it the transcription errors ingest exists to end."
+    },
+    {
       "id": "propose-never-contradicts-a-rule-the-user-wrote",
       "pattern": "Never propose a rule for a sender an existing rule already claims",
       "rationale": "`propose` clustered on senders with no knowledge of the rule set, so it re-proposed rules for mail the user had already ruled on. The noise was the mild half: on a live mailbox it proposed TRASHING a sender whose mail an existing SORT rule was filing, which would have binned real-estate signing documents the user had deliberately kept. Same defect class as `audit-does-not-call-filed-mail-unclaimed`, and the same remedy — `matches(..., { ignoreFiled: true })`, because a thread already sitting in the folder its rule files into is the MOST claimed thread in the mailbox, not an unclaimed one. Claimed at SENDER granularity: a rule claiming only some of a sender's mail still proves the user has decided about that sender, and the leftovers are exactly what would otherwise cluster into a trash rule sitting in front of their sort rule."
@@ -72,7 +82,11 @@
         "command": "node scripts/gmailtriage.js setup"
       },
       {
-        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims — returning a coverage percentage and exiting non-zero while anything is outstanding",
+        "step": "normalize raw search_threads and list_labels tool output, written to files verbatim, into the thread and label snapshots every other command reads — deduping threads across fetches, unioning label ids, deriving category and the bulk-mail proxy from the category id-sets, counting self-sent mail, refusing a metadata-only fetch by name, and never writing a snippet to disk",
+        "command": "node scripts/gmailtriage.js ingest"
+      },
+      {
+        "step": "report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; pairs of labels that are one folder spelled two ways, including transpositions; and mail no rule claims, self-sent mail excluded and counted — returning a coverage percentage and exiting non-zero while anything is outstanding",
         "command": "node scripts/gmailtriage.js audit"
       },
       {
@@ -249,6 +263,54 @@
       "min_corpus": 10,
       "update_command": "bash evals/baseline/refresh.sh",
       "rationale": "a fixture refresh collapsing the corpus to a handful of threads, so the golden passes over almost nothing — pinned against the frozen thread corpus, label list and rule set, with a declared minimum count."
+    },
+    {
+      "id": "ingest-normalizes-raw-mcp-output",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the normalizer silently drifting — a dedupe that stops unioning label ids, a category intersection that stops firing, a first-message rule that changes which sender a thread reports — while the output still looks like a thread list. Pinned by the frozen ingest run over raw MCP-shaped fixtures, byte-compared like every other golden."
+    },
+    {
+      "id": "a-snippet-never-reaches-disk",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": ["evals/baseline/raw-inbox.json", "evals/baseline/ingested-threads.json"],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the one field that has carried live verification codes being persisted. The raw fixtures plant a fake code in every message snippet, and the frozen ingest output is grepped for both the field and the content — so a refactor that starts copying messages wholesale fails the moment it lands, not the first time a real code is written to somebody's disk."
+    },
+    {
+      "id": "ingest-refuses-a-metadata-only-fetch",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": ["evals/baseline/raw-inbox-metadata.json"],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the 08-09 failure re-armed: a THREAD_VIEW_METADATA_ONLY fetch has no senders or subjects, and ingesting it produces ghost threads a later audit reports as unclaimed mail. The refusal must name the cause and write nothing; --force is the documented override and must keep working, or the refusal becomes a wall instead of a gate."
+    },
+    {
+      "id": "self-sent-mail-is-not-unclaimed",
+      "kind": "trap",
+      "test": "scripts/tests/units.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the owner's own outbox reported as mail no rule claims, which kept audit exiting non-zero forever on clean mailboxes — a gate that can never be satisfied stops being read. Two-sided: a mailbox whose only unclaimed mail is self-sent must audit CLEAN, and a genuine stranger beside it must still count. The corpus carries two SENT-only threads so the frozen audit-after golden proves the clean state stays reachable."
+    },
+    {
+      "id": "mailbox-data-never-lands-in-a-git-repo",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "a real run wrote its thread snapshot into this skill's own checkout, and the cleanup deleted the run's receipt with it — that run is permanently un-undoable. Every data output now refuses a path inside a git working tree, with --allow-repo as the explicit override; the trap proves the refusal fires, the override works, and a plain temp dir never trips it."
+    },
+    {
+      "id": "apply-can-update-the-snapshot-so-a-replan-converges",
+      "kind": "trap",
+      "test": "scripts/tests/run-safety.test.mjs",
+      "fixtures": [],
+      "update_command": "bash evals/baseline/refresh.sh",
+      "rationale": "the mid-run hand-edits coming back. apply --update-threads replays the authorised moves onto the working snapshot; a re-plan over it must take zero threads, or every mid-run rule addition costs hand-edited JSON again — and a hand-edit that seeds resolved label names wrong is exactly how a run stops converging while every table still reads correctly."
     },
     {
       "id": "the-corpus-is-invented-and-stays-that-way",

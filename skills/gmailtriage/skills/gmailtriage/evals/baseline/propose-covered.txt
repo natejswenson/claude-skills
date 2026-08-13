@@ -1,3 +1,5 @@
+2 self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not triage material.
+
 | Already claimed                         | Threads | By rule              |
 |-----------------------------------------|---------|----------------------|
 | support@packages.example                | 9       | trash-packages       |
@@ -20,7 +22,7 @@
 | correspondence@insurer.example          | 1       | sort-claim-insurer   |
 | donotreply@bookstore.example            | 1       | sort-receipts-books  |
 | no-reply@accounts.mailprovider.example  | 1       | sort-security        |
-66 of 66 thread(s) are already claimed by 31 sender(s) your rules cover — excluded from everything below, so a rule you already wrote is never re-proposed or contradicted.
+66 of 68 thread(s) are already claimed by 31 sender(s) your rules cover — excluded from everything below, so a rule you already wrote is never re-proposed or contradicted.
 
 TRASH — bulk mail a rule would move to the trash
 
@@ -32,6 +34,6 @@ No sort candidates — every sender in the sample is already filed by one of you
 
 | Sampled | Already claimed | Your labels | Trash | Sort | Need a new folder | Withheld | Below threshold |
 |---------|-----------------|-------------|-------|------|-------------------|----------|-----------------|
-| 66      | 66              | 20          | 0     | 0    | 0                 | 0        | 0               |
+| 68      | 66              | 20          | 0     | 0    | 0                 | 0        | 0               |
 
 nothing has moved — these are candidates. Accept the ones you want with `rules --add`.

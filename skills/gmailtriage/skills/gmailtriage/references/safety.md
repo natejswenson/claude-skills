@@ -26,11 +26,17 @@ that does not exist.
 
 Every `apply` writes a receipt naming each thread it authorised, the rule that
 took it, **what was done to it**, and the sender and subject. The receipt is the
-undo:
+undo, and it defaults to the durable store — `~/.gmailtriage/receipts/<timestamp>.json`
+— precisely so it outlives the session that wrote it:
 
 ```
-gmailtriage undo --receipt ~/.gmailtriage/receipt-<timestamp>.json
+gmailtriage undo --last
+gmailtriage undo --receipt ~/.gmailtriage/receipts/<timestamp>.json
 ```
+
+**Do not steer the receipt somewhere else.** Three real runs wrote receipts
+into session scratchpads that no longer exist; those runs are permanently
+un-undoable. The default is the safety property.
 
 It prints three separate lists, because reversing a trash and reversing a move
 are not the same call:
@@ -53,6 +59,26 @@ rather than a silent no-op.
 **A refused run writes no receipt.** If `apply` rejects even one thread, it
 throws before writing anything — so a receipt on disk always means an
 authorised run, never a partial one.
+
+## What the working files contain, and where they may live
+
+Every file this skill writes carries mailbox data: a thread snapshot and a plan
+hold the sender and subject of every sampled thread, a receipt holds them for
+every moved one, and a rule note embeds an example subject. None of it is
+message content — no snippet is ever written to disk, and `ingest` has no field
+to write one into — but sender-plus-subject is already the shape of a life, and
+it is treated accordingly:
+
+- **The CLI refuses to write any data file inside a git repository**
+  (`--allow-repo` is the deliberate override). A snapshot in a working tree is
+  one `git add` away from a public repo; a real run got there once, and
+  cleaning it up destroyed that run's receipt.
+- Working files belong in the session scratchpad; the rule file and receipts
+  live under `~/.gmailtriage/`, which the state dir keeps at mode `0700` with
+  files at `0600`.
+- `rules --add` backs up the previous rule file beside it before every write,
+  so a bad accept never destroys the only copy of the notes that explain every
+  rule.
 
 ## What the skill will not propose *for trashing*
 

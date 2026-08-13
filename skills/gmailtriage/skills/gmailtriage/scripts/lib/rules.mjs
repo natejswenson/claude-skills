@@ -349,6 +349,58 @@ export function shadowedRules(rules = []) {
   return { fatal, dead };
 }
 
+/**
+ * Warnings a rule set earns without being refused.
+ *
+ * Both were found in a live rule file, and both are the kind of hazard that
+ * validation must not refuse — the rules work today, and refusing them would
+ * break a set the user already relies on. What they must not be is silent.
+ *
+ * `bare-domain-from`: a `from` with no `@` anywhere is a bare substring, and
+ * `matches` does containment — so `northbank.example` also matches
+ * `northbank.example.evil.example`, and a phishing lookalike is auto-filed
+ * into the folder the real sender earns, archived out of the inbox where the
+ * user would have seen it.
+ *
+ * `trash-shadows-sort`: a trash rule standing ahead of a sort rule that claims
+ * the same sender is safe only by file order and its own narrowness. Nothing
+ * in the schema enforces either, so the order is load-bearing and the reader
+ * deserves to know — reordering the file, or broadening the trash rule's
+ * match, bins mail the sort rule was deliberately keeping.
+ */
+export function lintRuleSet(rules = []) {
+  const warnings = [];
+  for (const r of rules) {
+    const f = r?.match?.from;
+    if (typeof f === 'string' && f.trim() !== '' && !f.includes('@')) {
+      warnings.push({
+        ruleId: r.id, kind: 'bare-domain-from',
+        text: `from "${f}" is a bare substring — it also matches lookalike domains ("${f.trim()}.evil.example"). Anchor it with "@${f.trim()}" if it is a domain.`,
+      });
+    }
+  }
+  for (let i = 0; i < rules.length; i += 1) {
+    const a = rules[i];
+    if (a?.action !== 'trash') continue;
+    const af = str(a.match?.from);
+    if (!af) continue;
+    for (let j = i + 1; j < rules.length; j += 1) {
+      const b = rules[j];
+      if (b?.action !== 'label') continue;
+      const bf = str(b.match?.from);
+      if (!bf) continue;
+      if (af.includes(bf) || bf.includes(af)) {
+        warnings.push({
+          ruleId: a.id, kind: 'trash-shadows-sort', otherId: b.id,
+          text: `trash rule ahead of sort rule "${b.id}" for the same sender — the order is load-bearing: reordering the file, or broadening this match, would trash mail "${b.id}" deliberately files.`,
+        });
+        break; // one warning per trash rule is enough
+      }
+    }
+  }
+  return warnings;
+}
+
 export function validateRuleSet(doc, { scope } = {}) {
   if (!isObj(doc) || !Array.isArray(doc.rules)) {
     throw new RuleProblem('rule file: expected an object with a "rules" array');
