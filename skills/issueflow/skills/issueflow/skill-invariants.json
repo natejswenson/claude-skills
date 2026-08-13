@@ -179,6 +179,31 @@
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
       "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched \u2014 the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again without redoing the first lane's work. `--close-issue` closes an open issue and reports an already-closed one as already closed rather than claiming an action it did not take, and an offline run refuses outright rather than finishing on an assumption."
+    },
+    {
+      "id": "unreadable-run-row",
+      "kind": "trap",
+      "test": "scripts/tests/liveness.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
+      "rationale": "`runs` used to discard a `RunError` that `loadRun` already writes to be actionable, rendering a schema-1 run as a bare `(unreadable run)` with no reason and no remedy \u2014 the reader could not even tell which issue the directory belonged to (#223). Drives a run root holding one schema-1 run alongside one valid schema-2 run: the unreadable row keeps its directory name in `Title` and names the schema mismatch and the remedy `loadRun` already wrote, in the same table the readable row still renders its repo/issue id, title and approved count \u2014 the bound `catch` must not have swallowed the readable rows too. A fourth assertion pins that the reason's full text, path included, lands below the table and never inside a padded cell, extending the existing rule that a padded cell holding an absolute path encodes the host's tmpdir."
+    },
+    {
+      "id": "live-stage-clock",
+      "kind": "trap",
+      "test": "scripts/tests/liveness.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
+      "rationale": "`Took` used to answer only after a human typed `accept`: `at.delivered` is written in exactly one place, so `briefed` / `\u2014` was the entire liveness signal for a stage that had, in fact, been running for minutes or had already finished and was waiting for review (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+` (a lower bound, never a finished duration); the same step once an artifact lands \u2014 still unaccepted \u2014 shows a `delivered` display state and a real duration with no `+`. A third case proves the clock does not start early on a step that was never dispatched. Two purity guards close the loop: `observe(dir, run)` never writes `run.json` and never mutates the run object handed to it, and the `delivered` value it predicts equals what `accept()` later persists for the same artifact; and `board(run)` called with no `now` renders no `+` anywhere and matches the pre-#223 shape exactly, which is what keeps the live clock from leaking into a frozen golden or the public checkpoint comment."
+    },
+    {
+      "id": "stage-timings-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/liveness.test.mjs",
+      "corpus_glob": "evals/inputs/timings/issue-*/run.json",
+      "min_corpus": 3,
+      "update_command": "field-project this repo's own current run.json for issue-212/215/219 under evals/inputs/timings/ \u2014 schema/repo/issue/stages/lanes[].stages and their `at` timestamps only, no artifact prose and no prompt text (see the dispatch-expectation implement notes for the exact shape); there is no scripted regenerator because these are frozen real runs, not a re-derivable fixture",
+      "rationale": "`brief`'s expectation line (`design on this repo: 3 past runs, 3m45s\u20136m45s (median 5m12s)`) reads real prior-run durations off the run's sibling directories, and the anti-vacuity floor is the whole point: a `readTimings` that matched nothing would silently degrade to `no past timings on this repo` and pass every other liveness assertion, which is exactly how this feature goes decorative. The floor of 3 is this repo's own #212/#215/#219 runs, and a companion test asserts the scan over them finds at least 10 individual stage samples, not just 3 files \u2014 a resolver that opened the directories but extracted nothing would still clear a file-count floor alone."
     }
   ]
 }

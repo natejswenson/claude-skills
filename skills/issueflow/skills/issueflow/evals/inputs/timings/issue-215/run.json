@@ -1,0 +1,54 @@
+{
+  "schema": 2,
+  "repo": { "owner": "natejswenson", "name": "claude-skills" },
+  "issue": {
+    "number": 215,
+    "title": "issueflow: the accept gate cannot read node --test's default reporter, and the brief never says which formats it can",
+    "url": "https://github.com/natejswenson/claude-skills/issues/215"
+  },
+  "stages": [
+    {
+      "id": "investigate",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "investigate.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T17:53:05.727Z", "delivered": "2026-08-12T17:58:37.813Z" }
+    },
+    {
+      "id": "design",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "design.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T18:01:36.016Z", "delivered": "2026-08-12T18:05:21.242Z" }
+    }
+  ],
+  "lanes": [
+    {
+      "id": "root",
+      "slug": "root",
+      "title": "issueflow: the accept gate cannot read node --test's default reporter, and the brief never says which formats it can",
+      "branch": "feature/issue-215",
+      "base": "dev",
+      "stages": [
+        {
+          "id": "implement",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "implement.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T18:11:45.896Z", "delivered": "2026-08-12T18:14:59.823Z" }
+        },
+        {
+          "id": "test",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "test.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T19:10:42.241Z", "delivered": "2026-08-12T19:17:29.128Z" }
+        }
+      ]
+    }
+  ]
+}

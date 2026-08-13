@@ -1,0 +1,79 @@
+{
+  "schema": 2,
+  "repo": { "owner": "natejswenson", "name": "claude-skills" },
+  "issue": {
+    "number": 219,
+    "title": "issueflow: lessons from the #212/#215 runs — no terminal state, weak red-side contract, silent subagent completion, cwd-dependent CLI",
+    "url": "https://github.com/natejswenson/claude-skills/issues/219"
+  },
+  "stages": [
+    {
+      "id": "investigate",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "investigate.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T19:32:36.720Z", "delivered": "2026-08-12T19:41:39.534Z" }
+    },
+    {
+      "id": "design",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "design.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T19:42:44.569Z", "delivered": "2026-08-12T19:49:29.676Z" }
+    }
+  ],
+  "lanes": [
+    {
+      "id": "written-contracts",
+      "slug": "written-contracts",
+      "title": "the three contracts that lived only in the orchestrator's head, written…",
+      "branch": "feature/issue-219-written-contracts",
+      "base": "dev",
+      "stages": [
+        {
+          "id": "implement",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "implement.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T20:07:51.428Z", "delivered": "2026-08-12T20:11:41.110Z" }
+        },
+        {
+          "id": "test",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "test.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-13T12:58:57.661Z", "delivered": "2026-08-13T13:01:12.285Z" }
+        }
+      ]
+    },
+    {
+      "id": "finish-command",
+      "slug": "finish-command",
+      "title": "the run's terminal state — runState(), lane.landed/run.finished added…",
+      "branch": "feature/issue-219-finish-command",
+      "base": "feature/issue-219-written-contracts",
+      "stages": [
+        {
+          "id": "implement",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "implement.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-13T12:58:57.886Z", "delivered": "2026-08-13T13:12:38.610Z" }
+        },
+        {
+          "id": "test",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "test.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-13T14:08:43.326Z", "delivered": "2026-08-13T14:14:46.351Z" }
+        }
+      ]
+    }
+  ]
+}

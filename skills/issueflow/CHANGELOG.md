@@ -5,6 +5,44 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-13
+
+A watched run used to be minutes of dead air (#223) — no progress signal
+during a dispatched stage, `Took` renderable only after a human typed
+`accept`, no sense of where the run stood at the moment a multi-minute wait
+began, and `runs` naming an unresumable schema-1 directory `(unreadable run)`
+with no reason and no remedy.
+
+### Added
+
+- **A stage's clock runs while the stage does.** `observe(dir, run)` fills
+  `at.delivered` in memory from an artifact's mtime the moment it lands on
+  disk — pure, never written to `run.json`; `accept()` remains the only
+  writer, recording the identical value. `board(run, { now })` renders a live
+  elapsed `Took` (`4m12s+`, a lower bound) for a stage that is still running,
+  and a `delivered` display state for one whose artifact landed but has not
+  been approved yet — `briefed` / `—` is no longer the entire liveness signal
+  a reader has mid-stage.
+- **`brief` says where the run stands and how long this usually takes here.**
+  A position line (`Step 2 of 6 · 1 approved · investigate → [design] → …`)
+  and a duration line — a range with a median from this repo's own past runs
+  of the stage, sibling directories only, never a point estimate and never an
+  invented number below two samples — print above the table, right before the
+  wait begins.
+- **A per-stage progress log.** Every brief's new `## While you work` section
+  asks the subagent to append one short line to its own `progress/<step>.log`
+  at real milestones. `status` gains a liveness block for every stage still
+  briefed, showing `Since` (always populated, from the same clock as the live
+  `Took`) and the log's last line and its age (`—` when the subagent never
+  wrote one — the log enriches a row that already exists without it, it is
+  never the only signal). Scratch work only: never quoted back to the
+  subagent, never added to the public checkpoint comment.
+- **`runs` says why an unreadable run is unreadable, and what to do about it.**
+  A bound `catch` around `loadRun`'s already-actionable `RunError` replaces
+  the bare `(unreadable run)` placeholder — the row keeps its directory name
+  in `Title`, a truncated reason in `Next`, and the full reason plus remedy
+  printed below the table, never inside a padded cell.
+
 ## [0.4.0] - 2026-08-13
 
 A run's terminal state — found missing from a real replay of

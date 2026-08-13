@@ -127,6 +127,14 @@ Write your answer to `<RUN>/shared/design.md`.
 It must contain a section for each of: **Approach**, **Rejected**, **Files**, **Proof**. The gate
 reads for those names and refuses the stage without them.
 
+## While you work
+
+Append one short lowercase line to `<RUN>/progress/design.log` whenever you
+reach a real milestone — what you just found, or what you are about to do next.
+This is scratch work for whoever is watching the run, not part of your answer:
+nobody reads it as prose, and it is never quoted back to you. Skip it if you
+genuinely have nothing to report yet; do not pad it to look busy.
+
 ## When you are done
 
 The moment the artifact is written, send the orchestrator a message with
