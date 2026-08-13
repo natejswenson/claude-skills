@@ -9,7 +9,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows } from './lib/board.mjs';
+import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief } from './lib/brief.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -17,11 +17,12 @@ import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  accept, artifactPath, blockers, board, createRun, durationOf, findStep, gateSteps, loadRun, markBriefed,
-  nextStep, observe, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun, skip, split,
-  workItemsFromDesign,
+  accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, gateSteps, loadRun,
+  markBriefed, nextStep, observe, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun,
+  skip, split, workItemsFromDesign,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
+import { readTimings } from './lib/timings.mjs';
 import { ensureWorktree } from './lib/worktree.mjs';
 import { verify } from './lib/verify.mjs';
 
@@ -135,6 +136,21 @@ function nextLine(run) {
   for (const step of ready) console.log(`  issueflow brief ${stageArgs(step)}    (${step.stage.model})`);
 }
 
+/**
+ * What this stage usually takes on this repo, and what its approval unblocks —
+ * printed at the moment a multi-minute wait begins, which used to tell the user
+ * least.
+ */
+function expectationLine(dir, run, step) {
+  const entry = readTimings(dir).find((t) => t.stage === step.stage.id);
+  const duration = entry && entry.n >= 2
+    ? `${step.stage.id} on this repo: ${entry.n} past runs, ${entry.min}–${entry.max} (median ${entry.median}).`
+    : `${step.stage.id} has no past timings on this repo — nothing to compare against.`;
+  const dependents = gateSteps(run).filter((s) => dependencies(run, s).some((d) => d.key === step.key));
+  const unblocks = dependents.length > 0 ? ` It unblocks ${dependents.map((s) => s.key).join(', ')}.` : '';
+  return `${duration}${unblocks}`;
+}
+
 /** Print a checkpoint's result. Silent only when there was genuinely nothing to send. */
 function reportCheckpoint(rows) {
   const real = rows.filter((r) => r.state !== 'offline' && r.state !== 'nothing to send');
@@ -233,6 +249,12 @@ async function cmdBrief(args) {
   if (args.ready && readySteps(run).length > 1) {
     const ready = readySteps(run);
     const briefed = ready.map((step) => briefOne(dir, run, step, args));
+    // Where the run stands, and what each of these stages usually takes —
+    // printed once, right before the wait begins. See the note at the single-
+    // step path below.
+    console.log(positionLine(run, ready));
+    for (const step of ready) console.log(expectationLine(dir, run, step));
+    console.log('');
     print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
     console.log(
       `\nThese ${briefed.length} stages are independent. Dispatch them as ${briefed.length} subagents in ONE message:\n`,
@@ -247,6 +269,13 @@ async function cmdBrief(args) {
   const step = args.stage ? findStep(run, args.stage, args.lane ?? null) : next;
   const info = briefOne(dir, run, step, args);
 
+  // Where the run stands, and how long this stage usually takes here — the
+  // moment a multi-minute wait begins is exactly the moment the user used to
+  // be told least (#223). Printed above the table on purpose; the dispatch
+  // prompt below stays last, because that is the line that gets copied.
+  console.log(positionLine(run, [step]));
+  console.log(expectationLine(dir, run, step));
+  console.log('');
   // Paths stay out of padded cells — see the note in cmdStart.
   print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
   console.log(`\nIt must write: ${info.artifact}`);

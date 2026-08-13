@@ -12,22 +12,31 @@
  * `at.delivered` in memory the moment an artifact lands on disk, and
  * `board(run, { now })` renders a live elapsed time for a stage that has
  * neither.
+ *
+ * dispatch-expectation (#223) is the third: `brief` used to print a table and
+ * the prompt and nothing about where the run stands or how long the stage it
+ * is about to dispatch usually takes here — the exact moment a multi-minute
+ * wait begins was the moment the user was told least. `positionLine()` prints
+ * `n of m`; `timings.mjs`'s `readTimings()` reads this repo's own past stage
+ * durations from the run's sibling directories.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   accept, artifactPath, board, createRun, durationOf, findStep, markBriefed, observe, saveRun,
 } from '../lib/run.mjs';
-import { STAGES } from '../lib/stages.mjs';
+import { PER_ITEM_STAGES, STAGES, stage } from '../lib/stages.mjs';
+import { readTimings } from '../lib/timings.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
 const CLI = join(SKILL, 'scripts', 'issueflow.js');
+const TIMINGS_FIXTURES = join(SKILL, 'evals', 'inputs', 'timings');
 
 const cli = (args) => {
   try {
@@ -205,4 +214,142 @@ test('unreadable-run-row: no padded table cell carries an absolute path', () => 
   // The full reason, path included, is allowed — just not inside the table.
   assert.match(r.out, new RegExp(root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'the full reason lost the path entirely — nothing tells the user which directory to look at');
   rmSync(root, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// dispatch-expectation — `brief` says where the run stands and how long this
+// stage usually takes here. Proof items 9-13 of the design.
+// ---------------------------------------------------------------------------
+
+/** One lane, hand-built with the same shape `split()` produces — no gate to satisfy this way. */
+function fixtureLane(slug, base) {
+  return {
+    id: slug,
+    slug,
+    title: `${slug} lane`,
+    branch: `feature/issue-999-${slug}`,
+    base,
+    stages: PER_ITEM_STAGES.map((id) => {
+      const s = stage(id);
+      return { id: s.id, model: s.model, agent: s.agent, artifact: s.artifact, state: 'pending', at: {} };
+    }),
+  };
+}
+
+/**
+ * A run root holding this repo's 3 frozen prior runs (#212, #215, #219) as
+ * siblings, plus one fresh split run — 2 lanes, 6 gate steps total — with its
+ * own `investigate` already approved, so `design` is briefable.
+ */
+function seededTimingsRoot() {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-'));
+  const owner = join(root, 'x__y');
+  mkdirSync(owner, { recursive: true });
+  for (const name of readdirSync(TIMINGS_FIXTURES)) {
+    cpSync(join(TIMINGS_FIXTURES, name), join(owner, name), { recursive: true });
+  }
+
+  const dir = join(owner, 'issue-999');
+  mkdirSync(dir, { recursive: true });
+  const issue = { number: 999, title: 'a fresh split run', url: 'https://example.invalid/999' };
+  let run = createRun({ repo: { owner: 'x', name: 'y', path: '/tmp/x' }, issue, policy });
+  run.split = true;
+  run.lanes = [fixtureLane('a', 'dev'), fixtureLane('b', 'feature/issue-999-a')];
+  saveRun(dir, run);
+  // `briefOne` reads the frozen issue back off disk (`loadIssue`) — `start` writes
+  // it normally, and this fixture skips `start`, so it must write it directly.
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
+
+  markBriefed(dir, run, findStep(run, 'investigate'));
+  writeInvestigate(dir, run);
+  run = accept(dir, run, findStep(run, 'investigate'));
+
+  return { root, dir, run, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+test('dispatch-expectation: readTimings summarizes investigate\'s spread exactly as measured (#223 investigation)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-exact-'));
+  const owner = join(root, 'x__y');
+  mkdirSync(owner, { recursive: true });
+  for (const name of readdirSync(TIMINGS_FIXTURES)) cpSync(join(TIMINGS_FIXTURES, name), join(owner, name), { recursive: true });
+
+  const found = readTimings(join(owner, 'issue-000'));
+  const investigate = found.find((t) => t.stage === 'investigate');
+  assert.ok(investigate, 'investigate has no entry at all — the scan found nothing');
+  assert.equal(investigate.n, 3);
+  assert.equal(investigate.min, '3m21s');
+  assert.equal(investigate.median, '5m32s');
+  assert.equal(investigate.max, '9m03s');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('dispatch-expectation: brief prints a position line and a duration range+median above its table', () => {
+  const { dir, cleanup } = seededTimingsRoot();
+  const r = cli(['brief', '--stage', 'design', '--run-dir', dir, '--offline']);
+  assert.equal(r.code, 0, `brief exited ${r.code}: ${r.err}`);
+  assert.match(r.out, /Step 2 of 6/, `no position line, or wrong position: ${r.out}`);
+  assert.match(r.out, /\[design\]/, 'the step being dispatched is not bracketed in the chain');
+  assert.match(r.out, /1 approved/, 'investigate was accepted before this brief — the approved count should say so');
+  // design's own frozen spread across the 3 fixtures, matching the design doc's own worked example verbatim.
+  assert.match(r.out, /design on this repo: 3 past runs, 3m45s–6m45s \(median 5m12s\)\./, `no duration range+median line, or the numbers drifted: ${r.out}`);
+  cleanup();
+});
+
+test('dispatch-expectation: anti-vacuity floor — the timings fixtures yield at least 10 samples across the 3 frozen runs', () => {
+  const fixtures = readdirSync(TIMINGS_FIXTURES);
+  assert.ok(fixtures.length >= 3, `only ${fixtures.length} timings fixtures on disk — the corpus floor requires 3`);
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-floor-'));
+  const owner = join(root, 'x__y');
+  mkdirSync(owner, { recursive: true });
+  for (const name of fixtures) cpSync(join(TIMINGS_FIXTURES, name), join(owner, name), { recursive: true });
+  const total = readTimings(join(owner, 'issue-000')).reduce((sum, t) => sum + t.n, 0);
+  assert.ok(total >= 10, `the timings scan found only ${total} samples — a scanner matching nothing would pass every other assertion here`);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('dispatch-expectation: two-sided — a run with no sibling history gets "no past timings", never an invented number', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-none-'));
+  const owner = join(root, 'x__y');
+  mkdirSync(owner, { recursive: true });
+  const dir = join(owner, 'issue-1');
+  mkdirSync(dir, { recursive: true });
+  const issue = { number: 1, title: 'no history yet', url: 'https://example.invalid/1' };
+  const run = createRun({ repo: { owner: 'x', name: 'y', path: '/tmp/x' }, issue, policy });
+  saveRun(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
+
+  const r = cli(['brief', '--stage', 'investigate', '--run-dir', dir, '--offline']);
+  assert.equal(r.code, 0, `brief exited ${r.code}: ${r.err}`);
+  assert.match(r.out, /investigate has no past timings on this repo — nothing to compare against\./, `the no-history line is missing or worded differently: ${r.out}`);
+  assert.doesNotMatch(r.out, /past runs?,/, 'a range was printed despite there being no sibling history — an invented number');
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('dispatch-expectation: a schema-1 sibling is skipped and the scan still returns the other run\'s samples', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-schema1-'));
+  const owner = join(root, 'x__y');
+  mkdirSync(owner, { recursive: true });
+  cpSync(join(TIMINGS_FIXTURES, 'issue-212'), join(owner, 'issue-212'), { recursive: true });
+
+  const staleDir = join(owner, 'issue-998');
+  mkdirSync(staleDir, { recursive: true });
+  const stale = createRun({
+    repo: { owner: 'x', name: 'y', path: '/tmp/x' },
+    issue: { number: 998, title: 'a schema-1 run', url: 'https://example.invalid/998' },
+    policy,
+  });
+  writeFileSync(join(staleDir, 'run.json'), `${JSON.stringify({ ...stale, schema: 1 }, null, 2)}\n`);
+
+  const found = readTimings(join(owner, 'issue-000'));
+  const investigate = found.find((t) => t.stage === 'investigate');
+  assert.ok(investigate, 'the readable sibling\'s samples went missing entirely — a schema-1 neighbour must not poison the whole scan');
+  assert.equal(investigate.n, 1, `expected exactly issue-212's one investigate sample, got ${investigate.n}`);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test('dispatch-expectation: hermeticity — timings.mjs scans only the run directory it is handed, never resolves its own root', () => {
+  const source = readFileSync(join(SKILL, 'scripts', 'lib', 'timings.mjs'), 'utf8');
+  assert.doesNotMatch(source, /homedir|runRoot/, 'timings.mjs must never resolve $HOME itself — that would make a brief under --run-dir non-hermetic');
 });

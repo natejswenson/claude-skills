@@ -1,0 +1,79 @@
+{
+  "schema": 2,
+  "repo": { "owner": "natejswenson", "name": "claude-skills" },
+  "issue": {
+    "number": 212,
+    "title": "netwatch: accept silently stores an IPv6 prefix that can never match",
+    "url": "https://github.com/natejswenson/claude-skills/issues/212"
+  },
+  "stages": [
+    {
+      "id": "investigate",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "investigate.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T16:47:16.427Z", "delivered": "2026-08-12T16:50:36.932Z" }
+    },
+    {
+      "id": "design",
+      "model": "opus",
+      "agent": "general-purpose",
+      "artifact": "design.md",
+      "state": "approved",
+      "at": { "briefed": "2026-08-12T16:55:03.368Z", "delivered": "2026-08-12T17:00:15.516Z" }
+    }
+  ],
+  "lanes": [
+    {
+      "id": "ipv6-host-matching",
+      "slug": "ipv6-host-matching",
+      "title": "IPv6 prefix arithmetic in ipInCidr, the trailing-colon sugar and",
+      "branch": "feature/issue-212-ipv6-host-matching",
+      "base": "dev",
+      "stages": [
+        {
+          "id": "implement",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "implement.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T17:07:51.874Z", "delivered": "2026-08-12T17:11:37.647Z" }
+        },
+        {
+          "id": "test",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "test.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T17:16:29.255Z", "delivered": "2026-08-12T17:17:40.170Z" }
+        }
+      ]
+    },
+    {
+      "id": "accept-zero-match-warning",
+      "slug": "accept-zero-match-warning",
+      "title": "accept --snapshot with a per-entry Matches now column and a",
+      "branch": "feature/issue-212-accept-zero-match-warning",
+      "base": "feature/issue-212-ipv6-host-matching",
+      "stages": [
+        {
+          "id": "implement",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "implement.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T17:16:29.389Z", "delivered": "2026-08-12T17:21:23.432Z" }
+        },
+        {
+          "id": "test",
+          "model": "sonnet",
+          "agent": "general-purpose",
+          "artifact": "test.md",
+          "state": "approved",
+          "at": { "briefed": "2026-08-12T17:23:00.946Z", "delivered": "2026-08-12T17:24:06.447Z" }
+        }
+      ]
+    }
+  ]
+}

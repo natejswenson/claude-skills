@@ -401,8 +401,8 @@ export function skip(dir, run, step, reason, now = () => new Date().toISOString(
   return run;
 }
 
-/** Render a millisecond span the way every duration in this file is shown. */
-const formatSpan = (ms) => {
+/** Render a millisecond span the way every duration in this file is shown. Exported so `timings.mjs` renders past durations identically instead of a second copy of the same rule. */
+export const formatSpan = (ms) => {
   const total = Math.round(ms / 1000);
   return total < 60 ? `${total}s` : `${Math.floor(total / 60)}m${String(total % 60).padStart(2, '0')}s`;
 };

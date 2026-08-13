@@ -16,6 +16,7 @@
  * against "now" — so the same issues render the same bytes tomorrow. A relative
  * age column would make this table impossible to freeze.
  */
+import { gateSteps } from './run.mjs';
 
 const CHECKLIST = /^\s*[-*]\s*\[[ xX]\]/gm;
 const HEADING = /^#{1,6}\s+\S/gm;
@@ -94,3 +95,22 @@ export const BOARD_COLUMNS = ['Step', 'Model', 'State', 'Took', 'Gate'];
  * artifact has landed but is not yet approved (see `run.observe()`).
  */
 export const boardRows = (rows) => rows.map((r) => [r.step, r.model, r.state, r.took ?? '—', r.gate]);
+
+/**
+ * Where the run stands, printed once, right before the wait it precedes:
+ * `Step n of m · k approved · a → [b] → c`. `n` is the earliest position among
+ * the step(s) being dispatched.
+ *
+ * `dispatching` may name more than one step — `--ready` fans a brief out to
+ * every independent stage at once, and every one of them is a step the reader
+ * is about to wait on, so every one of them is bracketed in the chain.
+ */
+export function positionLine(run, dispatching) {
+  const steps = gateSteps(run);
+  const order = steps.map((s) => s.key);
+  const keys = new Set(dispatching.map((s) => s.key));
+  const approved = steps.filter((s) => s.stage.state === 'approved').length;
+  const n = Math.min(...steps.filter((s) => keys.has(s.key)).map((s) => order.indexOf(s.key) + 1));
+  const chain = steps.map((s) => (keys.has(s.key) ? `[${s.key}]` : s.key)).join(' → ');
+  return `Step ${n} of ${steps.length} · ${approved} approved · ${chain}`;
+}
