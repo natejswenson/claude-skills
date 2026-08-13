@@ -1057,3 +1057,29 @@ test('lintRuleSet warns when a trash rule stands ahead of a sort rule for the sa
     rule({ id: 'file', action: 'label', label: 'B', match: { from: '@b.example' } }),
   ]), []);
 });
+
+test('an all-self-sent sample says so, instead of "no bulk mail — widen the fetch"', () => {
+  const sent = (id) => ({ id, from: 'me@mailprovider.example', subject: 'note to self', date: '2026-08-01T00:00:00Z', labelIds: ['SENT'], category: null, hasUnsubscribe: false });
+  const r = propose([sent('s1'), sent('s2')], { minCount: 3 });
+  assert.equal(r.reason.kind, 'all-sent-only');
+  assert.equal(r.sortReason.kind, 'all-sent-only');
+  assert.match(r.reason.text, /mail you sent yourself/);
+  // Two-sided: one real thread beside them and the ordinary reasons return.
+  const real = { id: 'b1', from: 'deals@shop.example', subject: 'sale', date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: 'promotions', hasUnsubscribe: true };
+  const r2 = propose([sent('s1'), real], { minCount: 3 });
+  assert.notEqual(r2.reason.kind, 'all-sent-only');
+});
+
+test('audit returns dangling destinations, and clean requires none', () => {
+  const rules = { rules: [
+    { id: 'ok', action: 'label', label: 'Filed', match: { from: '@a.example' }, note: 'resolves' },
+    { id: 'ghost', action: 'label', label: 'Gone', match: { from: '@b.example' }, note: 'folder deleted' },
+  ] };
+  const a = audit([{ name: 'Filed', threadsTotal: 1 }], rules, []);
+  assert.deepEqual(a.dangling.map((d) => d.name), ['Gone']);
+  assert.equal(a.clean, false, 'a dangling rule audited clean — the reverse question is not being asked');
+  // Two-sided: with the folder present, the same set is clean.
+  const b = audit([{ name: 'Filed', threadsTotal: 1 }, { name: 'Gone', threadsTotal: 0 }], rules, []);
+  assert.deepEqual(b.dangling, []);
+  assert.equal(b.clean, true);
+});

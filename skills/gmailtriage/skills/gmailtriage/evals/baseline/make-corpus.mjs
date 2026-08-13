@@ -232,6 +232,11 @@ const BEFORE_RULES = { version: 1, rules: [
   sort('sort-advisor', 'Financial Advisor', { from: '@wealthpartners.example' }, 'the whole firm'),
   sort('sort-realty', 'Realty', { from: '@realty.example' }, 'the agent handling the sale'),
   sort('sort-briefings', 'Briefings', { from: 'me@mailprovider.example', subjectContains: 'Morning brief' }, 'the morning brief only — the evening one lands unclaimed'),
+  // A rule whose folder was deleted (or never created): no corpus thread
+  // matches the sender, so it takes nothing and changes no counts — it exists
+  // purely so the before-audit must find a rule that files nowhere, and the
+  // after-audit (which drops it) proves the clean state stays reachable.
+  sort('sort-travel', 'Travel', { from: '@travelbookings.example' }, 'itineraries — the folder was deleted but the rule was not'),
 ] };
 
 // ── the sub-label corpus: one folder, before and after it is split ──────────

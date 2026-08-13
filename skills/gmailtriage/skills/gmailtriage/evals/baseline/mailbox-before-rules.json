@@ -154,6 +154,15 @@
         "subjectContains": "Morning brief"
       },
       "note": "the morning brief only — the evening one lands unclaimed"
+    },
+    {
+      "id": "sort-travel",
+      "action": "label",
+      "label": "Travel",
+      "match": {
+        "from": "@travelbookings.example"
+      },
+      "note": "itineraries — the folder was deleted but the rule was not"
     }
   ]
 }

@@ -8,7 +8,7 @@
  */
 import {
   matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE,
-  isNearDuplicateLabel, SYSTEM_LABELS,
+  isNearDuplicateLabel, SYSTEM_LABELS, reconcileDestinations,
 } from './rules.mjs';
 
 // ── proposing ───────────────────────────────────────────────────────────────
@@ -258,10 +258,19 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     .sort(bySize);
 
   // An empty candidate list is a result, not a failure — but only if it says
-  // which of the three reasons produced it. A bare empty table reads as "the
-  // skill is broken".
+  // which of the reasons produced it. A bare empty table reads as "the skill
+  // is broken".
+  //
+  // The all-sent-only case outranks everything: a sample that was entirely the
+  // owner's own outbox is not "no bulk mail — widen the fetch", it is a sample
+  // with nothing in it to triage, and saying the first sends the user off to
+  // re-fetch a mailbox that is working exactly as intended.
+  const allSentOnly = threads.length === 0 && sentOnly > 0
+    ? { kind: 'all-sent-only',
+        text: `the sample held only mail you sent yourself — nothing here is triage material.` }
+    : null;
   const reason = candidates.length > 0 ? null
-    : below.length > 0
+    : allSentOnly ?? (below.length > 0
       ? { kind: 'below-threshold', best: below[0].count, minCount,
           text: `no sender reached the threshold of ${minCount}. The largest unguarded cluster has ${below[0].count} (${below[0].from}) — re-run with --min-count ${below[0].count} to see it.` }
       : withheld.length > 0
@@ -275,13 +284,13 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
           ? { kind: 'all-claimed',
               text: `every sender in the sample is already claimed by one of your ${rules.length} rules. Nothing new has arrived — that is what a covered mailbox looks like.` }
           : { kind: 'nothing-bulk',
-              text: 'no bulk mail in the sample at all. Widen the fetch, or this inbox is already clean.' };
+              text: 'no bulk mail in the sample at all. Widen the fetch, or this inbox is already clean.' });
 
   // An empty sort table is a result too, and it says which of three things
   // produced it — same contract as `reason`, for the same reason: a bare empty
   // table reads as a broken skill.
   const sortReason = sortable.length > 0 ? null
-    : withheld.some((w) => w.kind !== 'no-bulk-marker')
+    : allSentOnly ?? (withheld.some((w) => w.kind !== 'no-bulk-marker')
       ? { kind: 'below-threshold',
           text: `nothing reached the threshold of ${minCount} to be worth its own folder. Re-run with a lower \`--min-count\` to see the near misses.` }
       : withheld.length > 0
@@ -291,7 +300,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
           ? { kind: 'all-claimed',
               text: `every sender in the sample is already filed by one of your ${rules.length} rules. There is nothing left over to file.` }
           : { kind: 'nothing-to-file',
-              text: 'nothing in the sample was withheld from trashing, so there is nothing left over to file.' };
+              text: 'nothing in the sample was withheld from trashing, so there is nothing left over to file.' });
 
   const unhoused = sortable.filter((s) => s.unhoused).length;
 
@@ -606,6 +615,14 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
   const unmanaged = named.filter((l) => !l.managed);
   const duplicates = named.filter((l) => l.nearDuplicateOf.length);
 
+  // The reverse of the unmanaged question, and the half this command was
+  // missing: does every folder the RULES file into still exist? A user who
+  // deletes a folder does not delete the rule pointing at it, and a real run
+  // audited "clean" over exactly that — a dangling rule the `labels` gate
+  // caught only because someone happened to run it. `audit` claims coherence,
+  // so it must ask both directions.
+  const dangling = reconcileDestinations(ruleDoc, labels).filter((d) => !d.exists);
+
   // ── the mail half ─────────────────────────────────────────────────────────
   let unclaimed = null;
   if (Array.isArray(threads)) {
@@ -661,11 +678,13 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
     managed: named.filter((l) => l.managed).length,
     unmanaged,
     duplicates,
+    dangling,
     unclaimed,
     // The one number worth watching. A system at 100% is one where every folder
     // stays sorted without the user touching it.
     coverage: named.length ? Math.round((named.filter((l) => l.managed).length / named.length) * 100) : 100,
-    clean: unmanaged.length === 0 && duplicates.length === 0 && (unclaimed?.threads ?? 0) === 0,
+    clean: unmanaged.length === 0 && duplicates.length === 0 && dangling.length === 0
+      && (unclaimed?.threads ?? 0) === 0,
   };
 }
 

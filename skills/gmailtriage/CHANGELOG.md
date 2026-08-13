@@ -5,6 +5,54 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-13
+
+Round two, from the first live run of 0.6.0 — which happened to collide with a
+mid-run folder deletion and exposed the question `audit` never asked.
+
+### Fixed
+
+- **`audit` now asks the reverse coherence question: does every folder the
+  rules file into still exist?** The live run had it exactly: the user deleted
+  the `HAC` folder, the rule filing into it survived, and `audit` reported
+  *"every folder has a rule … clean"* with exit 0 — the dangling rule was
+  caught only because `labels` happened to run afterwards. Audit now reconciles
+  rule destinations against the real label list (the same
+  `reconcileDestinations` the `labels` gate uses), reports each dangling
+  destination with the rules that use it, names both remedies without choosing
+  one (re-create the folder, or remove/redirect the rule — the user's call),
+  and refuses to call the system clean over it. Reported as its own section,
+  not a summary column, so the frozen summary shape is unchanged.
+- **An all-self-sent sample now says so.** A sample that was entirely the
+  owner's own outbox produced *"no bulk mail in the sample at all. Widen the
+  fetch…"* — sending the user to re-fetch a mailbox that was working exactly as
+  intended. Both propose reasons now have an `all-sent-only` kind that outranks
+  the rest.
+
+### Added
+
+- **`rules --remove <id[,id]>`** — before this, the only way to drop a rule was
+  hand-editing the validated store, which is the exact thing the store exists
+  to prevent. Removal names its rules in a table, lands the same timestamped
+  backup every write now gets, revalidates the remainder before writing,
+  refuses an id that does not exist (rather than silently skipping it), and
+  refuses to combine with `--add` — two intents, two commands.
+- **`ingest --labels-only`** — the `create_label` loop refreshes one snapshot,
+  and re-supplying four thread files to do it was how a "verbatim" raw file got
+  hand-patched mid-run. One re-fetch, one flag; the thread snapshot is
+  untouched. SKILL.md now says it outright: **a mid-run mailbox change means
+  one re-fetch — never hand-edit a raw file.**
+- **`labels` names the other remedy.** Its failure text presumed creation;
+  it now also lists the rule ids to `--remove` or redirect when the folder
+  went away on purpose.
+
+### Changed
+
+- SKILL.md: on a run whose plan takes zero threads, the `labels` gate guards
+  nothing and may be skipped — and an audit that came back clean already
+  implies it would pass, since audit now checks destinations. It stays
+  mandatory before any `apply`.
+
 ## [0.6.0] - 2026-08-13
 
 An evidence pass over eight real runs (2026-08-04 → 08-13), mined from their

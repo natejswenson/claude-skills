@@ -29,6 +29,16 @@ you keep sorting them by hand — write a rule, or the next run will not maintai
 2 folder(s) are empty and unmanaged — folders someone made once and never used.
 Deleting an empty label loses nothing; there is no mail in it to lose.
 
+RULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST
+
+| Rule files into | Named by | Used by     |
+|-----------------|----------|-------------|
+| Travel          | a rule   | sort-travel |
+
+the folder was deleted, or never created. Either re-create it, or — if it was deleted
+on purpose — remove or redirect the rules that file into it (`rules --remove <id>`).
+Which is right is your call: the mail says nothing about why the folder went away.
+
 MAIL NO RULE CLAIMS
 
 | Sender                           | Threads | In inbox | Goes to          | Example subject                          |
