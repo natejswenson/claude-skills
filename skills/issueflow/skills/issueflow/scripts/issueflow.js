@@ -7,9 +7,9 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows } from './lib/board.mjs';
+import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief } from './lib/brief.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -17,11 +17,12 @@ import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  accept, artifactPath, blockers, board, createRun, durationOf, findStep, gateSteps, loadRun, markBriefed,
-  nextStep, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun, skip, split,
-  workItemsFromDesign,
+  accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
+  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, remainingSteps, runDir, runRoot,
+  runState, saveRun, skip, split, workItemsFromDesign,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
+import { readTimings } from './lib/timings.mjs';
 import { ensureWorktree } from './lib/worktree.mjs';
 import { verify } from './lib/verify.mjs';
 
@@ -92,7 +93,7 @@ function readIssueNumber(args) {
   return args.issue;
 }
 
-const runBoard = (run) => print(BOARD_COLUMNS, boardRows(board(run)));
+const runBoard = (run, opts) => print(BOARD_COLUMNS, boardRows(board(run, opts)));
 
 /** How a step is named on the command line. */
 const stageArgs = (step) =>
@@ -135,6 +136,21 @@ function nextLine(run) {
   for (const step of ready) console.log(`  issueflow brief ${stageArgs(step)}    (${step.stage.model})`);
 }
 
+/**
+ * What this stage usually takes on this repo, and what its approval unblocks —
+ * printed at the moment a multi-minute wait begins, which used to tell the user
+ * least.
+ */
+function expectationLine(dir, run, step) {
+  const entry = readTimings(dir).find((t) => t.stage === step.stage.id);
+  const duration = entry && entry.n >= 2
+    ? `${step.stage.id} on this repo: ${entry.n} past runs, ${entry.min}–${entry.max} (median ${entry.median}).`
+    : `${step.stage.id} has no past timings on this repo — nothing to compare against.`;
+  const dependents = gateSteps(run).filter((s) => dependencies(run, s).some((d) => d.key === step.key));
+  const unblocks = dependents.length > 0 ? ` It unblocks ${dependents.map((s) => s.key).join(', ')}.` : '';
+  return `${duration}${unblocks}`;
+}
+
 /** Print a checkpoint's result. Silent only when there was genuinely nothing to send. */
 function reportCheckpoint(rows) {
   const real = rows.filter((r) => r.state !== 'offline' && r.state !== 'nothing to send');
@@ -144,6 +160,36 @@ function reportCheckpoint(rows) {
   if (real.some((r) => r.state === 'failed')) {
     console.log('\nA checkpoint failed. The approval above is recorded locally; this run is NOT backed up to GitHub.');
   }
+}
+
+/**
+ * Last-heartbeat liveness for every stage currently in flight — briefed, and
+ * either still running or delivered and waiting for review. `Since` is always
+ * populated from `at.briefed`, the same clock `board()`'s live `Took` reads;
+ * `Last progress` degrades to `—` when the stage never wrote to its own log.
+ * That degradation is the contract: this block must stay legible for a stage
+ * that ignores the `## While you work` instruction, not just one that honours
+ * it (#223).
+ */
+function livenessBlock(dir, run, now) {
+  const rows = gateSteps(run)
+    .filter((step) => step.stage.state === 'briefed')
+    .map((step) => {
+      const since = formatSpan(Date.parse(now) - Date.parse(step.stage.at.briefed));
+      const log = progressPath(dir, step);
+      let last = '—';
+      if (existsSync(log)) {
+        const lines = readFileSync(log, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          const age = formatSpan(Date.parse(now) - statSync(log).mtime.getTime());
+          last = `${age} ago — ${lines[lines.length - 1]}`;
+        }
+      }
+      return [step.key, since, last];
+    });
+  if (rows.length === 0) return;
+  console.log('');
+  print(['Step', 'Since', 'Last progress'], rows);
 }
 
 /** Print what has moved underneath the run, when anything has. */
@@ -223,13 +269,22 @@ async function cmdStart(args) {
  */
 async function cmdBrief(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  // Observed so a step whose artifact already landed (a retry, or a lane
+  // dispatched earlier than the one named here) shows as delivered rather than
+  // briefed the moment anything downstream renders it — see `run.observe()`.
+  const run = observe(dir, loadRun(dir));
 
   // `--ready` with one open gate is just `brief`. Printing a fan-out table over
   // a single row would tell the reader two stages can run when one can.
   if (args.ready && readySteps(run).length > 1) {
     const ready = readySteps(run);
     const briefed = ready.map((step) => briefOne(dir, run, step, args));
+    // Where the run stands, and what each of these stages usually takes —
+    // printed once, right before the wait begins. See the note at the single-
+    // step path below.
+    console.log(positionLine(run, ready));
+    for (const step of ready) console.log(expectationLine(dir, run, step));
+    console.log('');
     print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
     console.log(
       `\nThese ${briefed.length} stages are independent. Dispatch them as ${briefed.length} subagents in ONE message:\n`,
@@ -244,6 +299,13 @@ async function cmdBrief(args) {
   const step = args.stage ? findStep(run, args.stage, args.lane ?? null) : next;
   const info = briefOne(dir, run, step, args);
 
+  // Where the run stands, and how long this stage usually takes here — the
+  // moment a multi-minute wait begins is exactly the moment the user used to
+  // be told least (#223). Printed above the table on purpose; the dispatch
+  // prompt below stays last, because that is the line that gets copied.
+  console.log(positionLine(run, [step]));
+  console.log(expectationLine(dir, run, step));
+  console.log('');
   // Paths stay out of padded cells — see the note in cmdStart.
   print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
   console.log(`\nIt must write: ${info.artifact}`);
@@ -288,7 +350,7 @@ function briefOne(dir, run, step, args) {
 
 async function cmdAccept(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   const stageId = args.stage ?? nextStep(run)?.stage.id;
   if (!stageId) throw new Error('every stage is already approved');
   const step = findStep(run, stageId, args.lane ?? null);
@@ -310,7 +372,9 @@ async function cmdAccept(args) {
   if (args.skip) skip(dir, run, step, typeof args.skip === 'string' ? args.skip : null);
   else accept(dir, run, step, { evidence: args.evidence ? resolve(args.evidence) : null });
 
-  runBoard(run);
+  // A sibling lane's stage may still be running while this one is accepted —
+  // its row should keep ticking rather than freeze at whatever it read on load.
+  runBoard(run, { now: new Date().toISOString() });
   const facts = verify(dir, run, step);
   if (facts.length > 0) {
     console.log('');
@@ -353,7 +417,7 @@ async function cmdSplit(args) {
 
 async function cmdStatus(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   print(
     ['Issue', 'Split', 'Lanes'],
     [[`${run.repo.owner}/${run.repo.name}#${run.issue.number}`, String(run.split), String(run.lanes.length)]],
@@ -361,7 +425,9 @@ async function cmdStatus(args) {
   console.log(`\nRun: ${dir}`);
   if (run.checkpoint?.commentUrl) console.log(`Checkpoint: ${run.checkpoint.commentUrl}`);
   console.log('');
-  runBoard(run);
+  const now = new Date().toISOString();
+  runBoard(run, { now });
+  livenessBlock(dir, run, now);
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
 }
@@ -378,6 +444,11 @@ async function cmdRuns(args) {
   if (!existsSync(root)) { console.log(`No runs yet — ${root} does not exist.`); return; }
 
   const rows = [];
+  // Full reason text for any run `loadRun` refused, one per line below the
+  // table — never in a padded cell, which is how `baseline.test.mjs:75-87`'s
+  // rule survives here too: an absolute path there is as wide as the host's
+  // tmpdir, so it disagrees with CI on the separator row alone.
+  const unreadable = [];
   for (const repoDir of readdirSync(root)) {
     const repoPath = join(root, repoDir);
     if (!existsSync(join(repoPath))) continue;
@@ -398,19 +469,33 @@ async function cmdRuns(args) {
           next,
           run.checkpoint?.commentUrl ? 'yes' : 'no',
         ]);
-      } catch {
-        rows.push([`${repoDir}/${issueDir}`, '(unreadable run)', '—', '—', '—']);
+      } catch (err) {
+        // `loadRun` already writes an actionable reason (e.g. a schema
+        // mismatch names the schema and says the run is not resumable) — bind
+        // it instead of discarding it. The cell gets a short, path-free
+        // version so the table stays narrow; the full message, path and all,
+        // goes below the table where a path is allowed.
+        const message = String(err?.message ?? err);
+        const leadIn = `the run at ${dir} is `;
+        const reason = (message.startsWith(leadIn) ? message.slice(leadIn.length) : message.split(dir).join('this run'))
+          .replace(/\s+/g, ' ').trim();
+        rows.push([`${repoDir}/${issueDir}`, issueDir, '—', truncate(reason, 48), '—']);
+        unreadable.push(`${repoDir}/${issueDir}: ${message}`);
       }
     }
   }
   if (rows.length === 0) { console.log(`No runs under ${root}.`); return; }
   print(['Issue', 'Title', 'Approved', 'Next', 'On GitHub'], rows);
+  if (unreadable.length > 0) {
+    console.log(`\n${unreadable.length === 1 ? 'Unreadable run' : `${unreadable.length} unreadable runs`}:\n`);
+    for (const line of unreadable) console.log(`  ${line}`);
+  }
   console.log(`\nRuns live under ${root}. Resume one with \`issueflow status --run-dir <path>\`.`);
 }
 
 async function cmdShip(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = observe(dir, loadRun(dir));
   const blocked = shipBlockers(run);
   if (blocked.length > 0) {
     print(['Step', 'State', 'Reason'], blocked.map((b) => [b.step, b.state, b.reason ?? '—']));

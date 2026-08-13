@@ -259,6 +259,15 @@ export const artifactPath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR
 export const evidencePath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
 export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
 
+/**
+ * Where a stage may report progress while it works — the fourth thing a stage
+ * writes, alongside its artifact, its evidence and its brief. Never read by the
+ * state machine and never required: a stage that never touches this path is
+ * still fully visible through `board()`'s filesystem-observed clock, which is
+ * what keeps this an enrichment rather than the primary liveness signal.
+ */
+export const progressPath = (dir, step) => join(dir, 'progress', `${step.key.replace('/', '-')}.log`);
+
 /** Where a lane's stages work, so two lanes running at once never share a tree. */
 export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
 
@@ -359,6 +368,30 @@ const mtimeOf = (path) => {
   }
 };
 
+/**
+ * The run, with `at.delivered` filled in from disk for any step whose
+ * artifact has already landed but is not yet approved — in memory only.
+ * `accept()` remains the only writer: it records the same value from the same
+ * mtime when a human approves the stage, so `delivered` is identical whether
+ * it was observed first or not. This only makes it visible earlier, to a
+ * reader who is not the one approving.
+ */
+export function observe(dir, run) {
+  const cloneEntry = (s) => ({ ...s, at: { ...s.at } });
+  const observed = {
+    ...run,
+    stages: run.stages.map(cloneEntry),
+    lanes: run.lanes.map((lane) => ({ ...lane, stages: lane.stages.map(cloneEntry) })),
+  };
+  for (const step of gateSteps(observed)) {
+    if (step.stage.at.delivered) continue;
+    const artifact = artifactPath(dir, step);
+    if (!hasContent(artifact)) continue;
+    step.stage.at.delivered = mtimeOf(artifact);
+  }
+  return observed;
+}
+
 /** Mark a stage briefed, recording when — the clock the stage's duration is measured from. */
 export function markBriefed(dir, run, step, now = () => new Date().toISOString()) {
   if (step.stage.state === 'pending') step.stage.state = 'briefed';
@@ -377,14 +410,32 @@ export function skip(dir, run, step, reason, now = () => new Date().toISOString(
   return run;
 }
 
+/** Render a millisecond span the way every duration in this file is shown. Exported so `timings.mjs` renders past durations identically instead of a second copy of the same rule. */
+export const formatSpan = (ms) => {
+  const total = Math.round(ms / 1000);
+  return total < 60 ? `${total}s` : `${Math.floor(total / 60)}m${String(total % 60).padStart(2, '0')}s`;
+};
+
 /** How long a stage took, briefed to delivered — never counting the human's review. */
 export function durationOf(entry) {
   const { briefed, delivered } = entry.at ?? {};
   if (!briefed || !delivered) return null;
   const ms = Date.parse(delivered) - Date.parse(briefed);
   if (!Number.isFinite(ms) || ms < 0) return null;
-  const total = Math.round(ms / 1000);
-  return total < 60 ? `${total}s` : `${Math.floor(total / 60)}m${String(total % 60).padStart(2, '0')}s`;
+  return formatSpan(ms);
+}
+
+/**
+ * How long a stage has been running, briefed to `now` — for a stage that has
+ * not delivered yet. The `+` marks it as a lower bound ("at least this long"),
+ * never a finished duration; `durationOf` is what reports a finished one.
+ */
+export function elapsedOf(entry, now) {
+  const { briefed } = entry.at ?? {};
+  if (!briefed) return null;
+  const ms = Date.parse(now) - Date.parse(briefed);
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  return `${formatSpan(ms)}+`;
 }
 
 /**
@@ -424,16 +475,36 @@ export function split(dir, run, items) {
   return run;
 }
 
-/** The run board: one row per gate step, in the order they must happen. */
-export function board(run) {
-  return gateSteps(run).map((step) => ({
-    step: step.key,
-    stage: step.stage.id,
-    model: step.stage.model,
-    state: step.stage.state,
-    took: durationOf(step.stage) ?? '—',
-    gate: blockers(run, step).length === 0 ? 'open' : 'blocked',
-  }));
+/**
+ * The run board: one row per gate step, in the order they must happen.
+ *
+ * `now`, when given, is what makes `Took` answer for a stage that is still
+ * running: a step that is `briefed` with nothing delivered yet renders its
+ * elapsed time with a `+` suffix (`4m12s+`) — a lower bound, not a finished
+ * duration. Without `now` this renders exactly as it always has, so a caller
+ * that never passes it (or a frozen golden built before this change) stays
+ * byte-identical.
+ *
+ * `state` here is a display state, not the persisted one: a step whose
+ * `stage.state` is still `briefed` but whose `at.delivered` is already set
+ * (via `observe`) shows as `delivered` — the artifact landed, a human has not
+ * looked yet. `stage.state` itself is untouched; only this row's rendering
+ * changes.
+ */
+export function board(run, { now = null } = {}) {
+  return gateSteps(run).map((step) => {
+    const entry = step.stage;
+    const delivered = Boolean(entry.at?.delivered);
+    const running = entry.state === 'briefed' && !delivered;
+    return {
+      step: step.key,
+      stage: step.stage.id,
+      model: step.stage.model,
+      state: entry.state === 'briefed' && delivered ? 'delivered' : entry.state,
+      took: durationOf(entry) ?? (now && running ? elapsedOf(entry, now) : null) ?? '—',
+      gate: blockers(run, step).length === 0 ? 'open' : 'blocked',
+    };
+  });
 }
 
 /** The first step that could be dispatched right now, or null when none can. */
