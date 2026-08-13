@@ -28,8 +28,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  accept, artifactPath, board, createRun, durationOf, findStep, markBriefed, observe, saveRun,
+  accept, artifactPath, board, createRun, durationOf, findStep, gateSteps, markBriefed, observe, progressPath,
+  saveRun,
 } from '../lib/run.mjs';
+import { renderBrief } from '../lib/brief.mjs';
 import { PER_ITEM_STAGES, STAGES, stage } from '../lib/stages.mjs';
 import { readTimings } from '../lib/timings.mjs';
 
@@ -352,4 +354,60 @@ test('dispatch-expectation: a schema-1 sibling is skipped and the scan still ret
 test('dispatch-expectation: hermeticity — timings.mjs scans only the run directory it is handed, never resolves its own root', () => {
   const source = readFileSync(join(SKILL, 'scripts', 'lib', 'timings.mjs'), 'utf8');
   assert.doesNotMatch(source, /homedir|runRoot/, 'timings.mjs must never resolve $HOME itself — that would make a brief under --run-dir non-hermetic');
+});
+
+// ---------------------------------------------------------------------------
+// stage-heartbeat — the progress channel: every brief asks for it, `status`
+// surfaces it enriched over the filesystem clock, and it degrades cleanly
+// when the subagent never writes to it. Proof items 14-17 of the design.
+// ---------------------------------------------------------------------------
+test('stage-heartbeat: every stage brief asks for progress and names its own progress log (#223)', () => {
+  const issue = { number: 1, title: 'a synthetic issue', url: 'https://github.com/x/y/issues/1', body: 'body text', comments: [] };
+  const run = createRun({ repo: { owner: 'x', name: 'y', path: '/tmp/x' }, issue, policy });
+  const dir = '/tmp/run';
+  const steps = gateSteps(run);
+  assert.ok(steps.length >= STAGES.length, `only ${steps.length} steps rendered — fewer than the ${STAGES.length} shipped stages`);
+  for (const step of steps) {
+    const text = renderBrief(dir, run, step, issue);
+    assert.match(text, /## While you work/, `${step.key} brief lost the progress section`);
+    assert.ok(text.includes(progressPath(dir, step)), `${step.key} brief does not name its own progress log`);
+  }
+});
+
+test('stage-heartbeat: a progress log with two lines shows the LAST line and its age in the liveness block', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(252)); // 4m12s ago
+  const log = progressPath(dir, step);
+  mkdirSync(join(log, '..'), { recursive: true });
+  writeFileSync(log, 'read run.mjs and brief.mjs\nroot cause found, writing it up\n');
+  const r = cli(['status', '--run-dir', dir, '--offline']);
+  assert.equal(r.code, 0, `status exited ${r.code}: ${r.err}`);
+  const row = r.out.split('\n').find((l) => l.startsWith('| investigate') && l.split('|').length === 5);
+  assert.ok(row, `no liveness row for investigate: ${r.out}`);
+  const cells = row.split('|').map((c) => c.trim());
+  assert.match(cells[2], /^\d+m\d\ds$/, `Since is not a real elapsed duration: "${cells[2]}"`);
+  assert.match(cells[3], /ago — root cause found, writing it up$/, `Last progress did not surface the LAST line: "${cells[3]}"`);
+  assert.doesNotMatch(cells[3], /read run\.mjs/, 'the liveness block surfaced the first line instead of the last');
+  cleanup();
+});
+
+test('stage-heartbeat: with no progress log, the liveness block still shows a real Since and — for Last progress', () => {
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(90));
+  const r = cli(['status', '--run-dir', dir, '--offline']);
+  assert.equal(r.code, 0, `status exited ${r.code}: ${r.err}`);
+  const row = r.out.split('\n').find((l) => l.startsWith('| investigate') && l.split('|').length === 5);
+  assert.ok(row, `no liveness row for investigate: ${r.out}`);
+  const cells = row.split('|').map((c) => c.trim());
+  assert.match(cells[2], /^\d+m?\d*s$/, `Since is missing or not a real duration: "${cells[2]}"`);
+  assert.equal(cells[3], '—', 'a stage that never wrote a progress line must degrade to —, not disappear');
+  cleanup();
+});
+
+test('stage-heartbeat: leak guard — the frozen checkpoint comment carries no progress-log text or path', () => {
+  const text = readFileSync(join(SKILL, 'evals', 'baseline', 'checkpoint-comment.md'), 'utf8');
+  assert.doesNotMatch(text, /While you work/, 'the progress instruction leaked into the public checkpoint comment');
+  assert.doesNotMatch(text, /progress\//, 'a progress/ path leaked into the public checkpoint comment');
 });

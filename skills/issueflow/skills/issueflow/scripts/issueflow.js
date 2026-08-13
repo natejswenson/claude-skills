@@ -7,7 +7,7 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief } from './lib/brief.mjs';
@@ -17,9 +17,9 @@ import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, gateSteps, loadRun,
-  markBriefed, nextStep, observe, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun,
-  skip, split, workItemsFromDesign,
+  accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
+  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, remainingSteps, runDir, runRoot,
+  runState, saveRun, skip, split, workItemsFromDesign,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
@@ -160,6 +160,36 @@ function reportCheckpoint(rows) {
   if (real.some((r) => r.state === 'failed')) {
     console.log('\nA checkpoint failed. The approval above is recorded locally; this run is NOT backed up to GitHub.');
   }
+}
+
+/**
+ * Last-heartbeat liveness for every stage currently in flight — briefed, and
+ * either still running or delivered and waiting for review. `Since` is always
+ * populated from `at.briefed`, the same clock `board()`'s live `Took` reads;
+ * `Last progress` degrades to `—` when the stage never wrote to its own log.
+ * That degradation is the contract: this block must stay legible for a stage
+ * that ignores the `## While you work` instruction, not just one that honours
+ * it (#223).
+ */
+function livenessBlock(dir, run, now) {
+  const rows = gateSteps(run)
+    .filter((step) => step.stage.state === 'briefed')
+    .map((step) => {
+      const since = formatSpan(Date.parse(now) - Date.parse(step.stage.at.briefed));
+      const log = progressPath(dir, step);
+      let last = '—';
+      if (existsSync(log)) {
+        const lines = readFileSync(log, 'utf8').split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length > 0) {
+          const age = formatSpan(Date.parse(now) - statSync(log).mtime.getTime());
+          last = `${age} ago — ${lines[lines.length - 1]}`;
+        }
+      }
+      return [step.key, since, last];
+    });
+  if (rows.length === 0) return;
+  console.log('');
+  print(['Step', 'Since', 'Last progress'], rows);
 }
 
 /** Print what has moved underneath the run, when anything has. */
@@ -395,7 +425,9 @@ async function cmdStatus(args) {
   console.log(`\nRun: ${dir}`);
   if (run.checkpoint?.commentUrl) console.log(`Checkpoint: ${run.checkpoint.commentUrl}`);
   console.log('');
-  runBoard(run, { now: new Date().toISOString() });
+  const now = new Date().toISOString();
+  runBoard(run, { now });
+  livenessBlock(dir, run, now);
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
 }
