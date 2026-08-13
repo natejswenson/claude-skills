@@ -21,7 +21,10 @@ lives in the conversation, which is why an interrupted run resumes with
 
 The run lives outside the target repo on purpose. It survives branch switches,
 it never appears in `git status`, and the implement stage cannot lose it by
-checking out a different branch.
+checking out a different branch. Once every lane has landed, `finish` has
+already removed the `worktrees/` directories — a finished run's `run.json`
+still records everything that happened, but the checkouts it worked in are
+gone.
 
 ## The four stages
 
@@ -56,6 +59,33 @@ pending ──brief──▶ briefed ──accept──▶ approved
 `ship`, which keeps refusing and names it. That is the mechanism behind "a stage
 that was skipped is reported as skipped, never as done" — without it, skipping
 would be the one-line way to make the gate stop asking.
+
+## The run's own lifecycle
+
+The stage lifecycle above answers "is this one step done?" `runState()`
+answers a different question — "is the *run* done?" — which nothing answered
+before #219: two runs whose pull requests had already merged and whose issue
+was already closed still reported `ready to ship`, forever, because nothing
+recorded that `ship` or `finish` had ever run.
+
+```
+in progress ──every gate step approved/skipped──▶ ready to ship
+                                                         │
+                                              ship (per lane, records lane.pr)
+                                                         ▼
+                                                      shipped
+                                                         │
+                                        finish (per lane, once every lane merged)
+                                                         ▼
+                                                       done
+```
+
+`remainingSteps()` is unchanged and still means exactly what it always has —
+"every gate step passed." `runState()` reads it, plus whether every lane has a
+recorded pull request (`lane.pr`, written by `ship`) and whether the run has
+been marked over (`run.finished`, written by `finish`). A run reaches `done`
+only when every lane's pull request has been confirmed merged; a partially
+landed split run stays `shipped` until the rest do too.
 
 `accept` refuses four distinct ways a stage can look done without being done:
 

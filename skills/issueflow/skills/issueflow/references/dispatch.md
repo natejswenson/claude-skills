@@ -24,6 +24,7 @@ stopped carrying the design gets caught by CI instead of by a confused subagent.
 | what it must not do | every stage has one characteristic overreach |
 | the branch, the base and the work item | it commits; it needs to know where |
 | the artifact path and the sections the gate reads for | a stage that writes the wrong file has done nothing |
+| how to report completion, and to whom | `main`, by `SendMessage`, the moment the artifact is written |
 
 ## What never crosses
 
@@ -52,6 +53,20 @@ Pasting the brief into the transcript would put a page of machine-generated
 instructions in front of a user who has no reason to read it, and would make the
 prompt something the orchestrator retyped rather than something the renderer
 produced.
+
+## Why the brief names the recipient
+
+Going idle is not a signal. Across a real two-run corpus, ten stage subagents
+ran and only four sent the orchestrator anything on completion; the other six
+went idle with a content-free notification, indistinguishable from a stalled
+agent, and the orchestrator was left guessing whether the artifact existed. The
+brief now closes with a fixed instruction: send `main` — the agent that
+dispatched you — the artifact's path and a short result, before finishing the
+turn. `main` is the constant, not "the orchestrator": both routed identically
+in the measured runs, but only `main` needs no knowledge the brief renderer
+does not have. The wording is the same in every rendered brief, for the same
+reason the rest of the contract is — two dispatches of the same stage must
+behave the same way, and unconstrained variance was exactly the defect.
 
 ## The stage declaration is the contract
 
