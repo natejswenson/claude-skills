@@ -950,3 +950,136 @@ test('with no rules at all, propose behaves exactly as it did before', () => {
   assert.deepEqual(propose(threads, { minCount: 3 }).candidates,
     propose(threads, { minCount: 3, rules: [] }).candidates);
 });
+
+// ── 0.6.0: self-sent mail, ingest, and rule lints ───────────────────────────
+
+test('isSentOnly: SENT alone is sent-only; anything filed or inboxed is not', async () => {
+  const { isSentOnly } = await import('../lib/plan.mjs');
+  assert.equal(isSentOnly({ labelIds: ['SENT'] }), true);
+  assert.equal(isSentOnly({ labelIds: ['SENT', 'UNREAD', 'IMPORTANT'] }), true);
+  assert.equal(isSentOnly({ labelIds: ['SENT', 'INBOX'] }), false, 'in the inbox means triage material');
+  assert.equal(isSentOnly({ labelIds: ['SENT', 'Label_10'] }), false, 'a user label means filed');
+  assert.equal(isSentOnly({ labelIds: ['SENT'], labels: ['Recruiting'] }), false, 'resolved names count too');
+  assert.equal(isSentOnly({ labelIds: [] }), false, 'no SENT at all');
+  assert.equal(isSentOnly({}), false);
+});
+
+test('propose excludes self-sent mail and reports the count', () => {
+  const sent = { id: 's1', from: 'me@mailprovider.example', subject: 'note to self', date: '2026-08-01T00:00:00Z', labelIds: ['SENT'], category: null, hasUnsubscribe: false };
+  const bulk = Array.from({ length: 3 }, (_, i) => thread({ id: `b${i}`, from: 'deals@shop.example', hasUnsubscribe: true }));
+  const r = propose([sent, ...bulk], { minCount: 3 });
+  assert.equal(r.sentOnly, 1);
+  assert.equal(r.sampled, 4, 'sampled reports what was read, not what survived the filter');
+  const everywhere = [...r.candidates, ...r.withheld, ...r.below, ...r.sortable].map((c) => c.from);
+  assert.ok(!everywhere.includes('me@mailprovider.example'), 'a self-sent thread reached a candidate table');
+});
+
+test('audit excludes self-sent mail from unclaimed, and only that', () => {
+  const sent = { id: 's1', from: 'me@mailprovider.example', subject: 'note to self', labelIds: ['SENT'] };
+  const stranger = { id: 'u1', from: 'new@sender.example', subject: 'hello', labelIds: ['INBOX'] };
+  const a = audit([{ name: 'Filed', threadsTotal: 1 }], { rules: [rule({ id: 'r1', action: 'label', label: 'Filed' })] }, [sent, stranger]);
+  assert.equal(a.unclaimed.sentOnly, 1);
+  assert.equal(a.unclaimed.threads, 1, 'the real stranger still counts');
+  assert.ok(!a.unclaimed.clusters.some((c) => c.from === 'me@mailprovider.example'));
+  // and a mailbox whose only unclaimed mail is self-sent is CLEAN
+  const b = audit([{ name: 'Filed', threadsTotal: 1 }], { rules: [rule({ id: 'r1', action: 'label', label: 'Filed' })] }, [sent]);
+  assert.equal(b.clean, true, 'self-sent mail kept a clean mailbox exiting non-zero forever');
+});
+
+test('ingest: normalize, dedupe, category intersection, and the field allowlist', async () => {
+  const { normalizeSearchThreads, mergeThreadSources, applyCategories, threadIds, validateIngest, normalizeLabels } = await import('../lib/ingest.mjs');
+  const raw = {
+    resultCountEstimate: '999',
+    threads: [
+      { id: 't1', messages: [
+        { id: 'm1', date: 'd1', sender: 'a@x.example', subject: 'one', labelIds: ['INBOX'], snippet: 'code 123456' },
+        { id: 'm2', date: 'd2', sender: 'b@x.example', subject: 're: one', labelIds: ['INBOX', 'Label_9'], snippet: 'more' },
+      ] },
+    ],
+  };
+  const t = normalizeSearchThreads(raw);
+  assert.equal(t.length, 1);
+  assert.equal(t[0].from, 'a@x.example', 'the first message names the sender');
+  assert.deepEqual(t[0].labelIds, ['INBOX', 'Label_9'], 'label ids union across messages');
+
+  // {} is an empty result, not an error — and an array is neither
+  assert.deepEqual(normalizeSearchThreads({}), []);
+  assert.throws(() => normalizeSearchThreads([{ id: 'x' }]), /verbatim/);
+
+  const merged = mergeThreadSources(t, [{ id: 't1', from: null, subject: null, date: null, labelIds: ['SENT'] }, { id: 't2', from: 'c@y.example', subject: 'two', date: 'd3', labelIds: [] }]);
+  assert.equal(merged.length, 2, 'dedupe by id');
+  assert.deepEqual(merged[0].labelIds, ['INBOX', 'Label_9', 'SENT'], 'collision unions label ids');
+
+  const final = applyCategories(merged, ['t2'], ['t1']);
+  assert.equal(final[0].category, 'updates');
+  assert.equal(final[1].category, 'promotions');
+  assert.equal(final[0].hasUnsubscribe, true);
+  // The allowlist: nothing beyond the seven fields, and never a snippet.
+  for (const f of final) {
+    assert.deepEqual(Object.keys(f).sort(), ['category', 'date', 'from', 'hasUnsubscribe', 'id', 'labelIds', 'subject']);
+  }
+  assert.ok(!JSON.stringify(final).includes('snippet'), 'a snippet reached the snapshot');
+  assert.ok(!JSON.stringify(final).includes('123456'), 'snippet CONTENT reached the snapshot');
+
+  assert.deepEqual(threadIds(raw), ['t1']);
+  assert.deepEqual(validateIngest([{ id: 'x', from: null, subject: 'ok' }]), [{ id: 'x', missing: ['from'] }]);
+  assert.deepEqual(normalizeLabels({ labels: [{ name: 'A' }] }), { labels: [{ name: 'A' }] });
+  assert.deepEqual(normalizeLabels([{ name: 'A' }]), { labels: [{ name: 'A' }] });
+  assert.throws(() => normalizeLabels({ nope: true }), /verbatim/);
+});
+
+test('lintRuleSet warns on a bare-domain from, and only on one', async () => {
+  const { lintRuleSet } = await import('../lib/rules.mjs');
+  const bare = lintRuleSet([rule({ id: 'a', match: { from: 'northbank.example' } })]);
+  assert.equal(bare.length, 1);
+  assert.equal(bare[0].kind, 'bare-domain-from');
+  // Two-sided: anchoring silences it, and so does a full address.
+  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { from: '@northbank.example' } })]), []);
+  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { from: 'alerts@northbank.example' } })]), []);
+});
+
+test('lintRuleSet warns when a trash rule stands ahead of a sort rule for the same sender', async () => {
+  const { lintRuleSet } = await import('../lib/rules.mjs');
+  const trashFirst = [
+    rule({ id: 'bin-old', match: { from: 'careers@org.example', subjectContains: 'code' } }),
+    rule({ id: 'file-it', action: 'label', label: 'Jobs', match: { from: '@org.example' } }),
+  ];
+  const w = lintRuleSet(trashFirst);
+  assert.equal(w.length, 1);
+  assert.equal(w[0].kind, 'trash-shadows-sort');
+  assert.equal(w[0].ruleId, 'bin-old');
+  assert.equal(w[0].otherId, 'file-it');
+  // Two-sided: sort-before-trash is the safe order and earns no warning,
+  // and unrelated senders never pair up.
+  assert.deepEqual(lintRuleSet([trashFirst[1], trashFirst[0]]), []);
+  assert.deepEqual(lintRuleSet([
+    rule({ id: 'bin', match: { from: '@a.example' } }),
+    rule({ id: 'file', action: 'label', label: 'B', match: { from: '@b.example' } }),
+  ]), []);
+});
+
+test('an all-self-sent sample says so, instead of "no bulk mail — widen the fetch"', () => {
+  const sent = (id) => ({ id, from: 'me@mailprovider.example', subject: 'note to self', date: '2026-08-01T00:00:00Z', labelIds: ['SENT'], category: null, hasUnsubscribe: false });
+  const r = propose([sent('s1'), sent('s2')], { minCount: 3 });
+  assert.equal(r.reason.kind, 'all-sent-only');
+  assert.equal(r.sortReason.kind, 'all-sent-only');
+  assert.match(r.reason.text, /mail you sent yourself/);
+  // Two-sided: one real thread beside them and the ordinary reasons return.
+  const real = { id: 'b1', from: 'deals@shop.example', subject: 'sale', date: '2026-08-01T00:00:00Z', labelIds: ['INBOX'], category: 'promotions', hasUnsubscribe: true };
+  const r2 = propose([sent('s1'), real], { minCount: 3 });
+  assert.notEqual(r2.reason.kind, 'all-sent-only');
+});
+
+test('audit returns dangling destinations, and clean requires none', () => {
+  const rules = { rules: [
+    { id: 'ok', action: 'label', label: 'Filed', match: { from: '@a.example' }, note: 'resolves' },
+    { id: 'ghost', action: 'label', label: 'Gone', match: { from: '@b.example' }, note: 'folder deleted' },
+  ] };
+  const a = audit([{ name: 'Filed', threadsTotal: 1 }], rules, []);
+  assert.deepEqual(a.dangling.map((d) => d.name), ['Gone']);
+  assert.equal(a.clean, false, 'a dangling rule audited clean — the reverse question is not being asked');
+  // Two-sided: with the folder present, the same set is clean.
+  const b = audit([{ name: 'Filed', threadsTotal: 1 }, { name: 'Gone', threadsTotal: 0 }], rules, []);
+  assert.deepEqual(b.dangling, []);
+  assert.equal(b.clean, true);
+});

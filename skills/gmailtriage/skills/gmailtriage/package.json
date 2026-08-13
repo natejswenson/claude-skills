@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/gmailtriage",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk.",
   "license": "MIT",
   "author": "Nate Swenson",

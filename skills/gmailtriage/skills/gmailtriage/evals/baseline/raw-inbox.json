@@ -1,0 +1,21 @@
+{
+  "resultCountEstimate": "999",
+  "threads": [
+    {
+      "id": "thr-1a320095",
+      "messages": [
+        {
+          "id": "thr-1a320095-m0",
+          "date": "2026-08-07T16:10:00Z",
+          "sender": "me@mailprovider.example",
+          "subject": "Evening brief — Friday",
+          "labelIds": [
+            "INBOX",
+            "SENT"
+          ],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    }
+  ]
+}

@@ -706,5 +706,27 @@
     ],
     "category": "updates",
     "hasUnsubscribe": true
+  },
+  {
+    "id": "thr-1a3354da",
+    "from": "me@mailprovider.example",
+    "subject": "Thanks for taking the time to meet",
+    "date": "2026-08-06T15:58:00Z",
+    "labelIds": [
+      "SENT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
+  },
+  {
+    "id": "thr-1a3373c9",
+    "from": "me@mailprovider.example",
+    "subject": "Inspection notes from the walkthrough",
+    "date": "2026-05-06T00:40:00Z",
+    "labelIds": [
+      "SENT"
+    ],
+    "category": null,
+    "hasUnsubscribe": false
   }
 ]

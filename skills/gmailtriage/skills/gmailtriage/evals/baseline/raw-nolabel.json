@@ -1,0 +1,311 @@
+{
+  "resultCountEstimate": "999",
+  "threads": [
+    {
+      "id": "thr-1a2e22b5",
+      "messages": [
+        {
+          "id": "thr-1a2e22b5-m0",
+          "date": "2026-06-01T10:00:00Z",
+          "sender": "records@statearchive.gov",
+          "subject": "Your records request",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2e41a4",
+      "messages": [
+        {
+          "id": "thr-1a2e41a4-m0",
+          "date": "2026-07-01T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 1",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2e6093",
+      "messages": [
+        {
+          "id": "thr-1a2e6093-m0",
+          "date": "2026-07-02T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 2",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2e7f82",
+      "messages": [
+        {
+          "id": "thr-1a2e7f82-m0",
+          "date": "2026-07-03T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 3",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2e9e71",
+      "messages": [
+        {
+          "id": "thr-1a2e9e71-m0",
+          "date": "2026-07-04T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 4",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2ebd60",
+      "messages": [
+        {
+          "id": "thr-1a2ebd60-m0",
+          "date": "2026-07-05T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 5",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2edc4f",
+      "messages": [
+        {
+          "id": "thr-1a2edc4f-m0",
+          "date": "2026-07-06T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 6",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2efb3e",
+      "messages": [
+        {
+          "id": "thr-1a2efb3e-m0",
+          "date": "2026-07-07T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 7",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2f1a2d",
+      "messages": [
+        {
+          "id": "thr-1a2f1a2d-m0",
+          "date": "2026-07-08T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 8",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2f391c",
+      "messages": [
+        {
+          "id": "thr-1a2f391c-m0",
+          "date": "2026-07-09T10:00:00Z",
+          "sender": "support@packages.example",
+          "subject": "Package published: build 9",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2f580b",
+      "messages": [
+        {
+          "id": "thr-1a2f580b-m0",
+          "date": "2026-06-10T11:00:00Z",
+          "sender": "outreach@leadgen.example",
+          "subject": "Quick question, #1",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2f76fa",
+      "messages": [
+        {
+          "id": "thr-1a2f76fa-m0",
+          "date": "2026-06-11T11:00:00Z",
+          "sender": "outreach@leadgen.example",
+          "subject": "Quick question, #2",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2f95e9",
+      "messages": [
+        {
+          "id": "thr-1a2f95e9-m0",
+          "date": "2026-06-12T11:00:00Z",
+          "sender": "outreach@leadgen.example",
+          "subject": "Quick question, #3",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2fb4d8",
+      "messages": [
+        {
+          "id": "thr-1a2fb4d8-m0",
+          "date": "2026-06-13T11:00:00Z",
+          "sender": "outreach@leadgen.example",
+          "subject": "Quick question, #4",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2fd3c7",
+      "messages": [
+        {
+          "id": "thr-1a2fd3c7-m0",
+          "date": "2026-05-01T12:00:00Z",
+          "sender": "deals@shopfront.example",
+          "subject": "20% off this week only",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a2ff2b6",
+      "messages": [
+        {
+          "id": "thr-1a2ff2b6-m0",
+          "date": "2026-05-02T12:00:00Z",
+          "sender": "deals@shopfront.example",
+          "subject": "25% off this week only",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a3011a5",
+      "messages": [
+        {
+          "id": "thr-1a3011a5-m0",
+          "date": "2026-05-03T12:00:00Z",
+          "sender": "deals@shopfront.example",
+          "subject": "30% off this week only",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a303094",
+      "messages": [
+        {
+          "id": "thr-1a303094-m0",
+          "date": "2026-04-01T13:00:00Z",
+          "sender": "news@readinglist.example",
+          "subject": "Your weekly picks, issue 1",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a304f83",
+      "messages": [
+        {
+          "id": "thr-1a304f83-m0",
+          "date": "2026-04-02T13:00:00Z",
+          "sender": "news@readinglist.example",
+          "subject": "Your weekly picks, issue 2",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a306e72",
+      "messages": [
+        {
+          "id": "thr-1a306e72-m0",
+          "date": "2026-04-03T13:00:00Z",
+          "sender": "news@readinglist.example",
+          "subject": "Your weekly picks, issue 3",
+          "labelIds": [],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a320095",
+      "messages": [
+        {
+          "id": "thr-1a320095-m0",
+          "date": "2026-08-07T16:10:00Z",
+          "sender": "me@mailprovider.example",
+          "subject": "Evening brief — Friday",
+          "labelIds": [
+            "INBOX",
+            "SENT"
+          ],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a3354da",
+      "messages": [
+        {
+          "id": "thr-1a3354da-m0",
+          "date": "2026-08-06T15:58:00Z",
+          "sender": "me@mailprovider.example",
+          "subject": "Thanks for taking the time to meet",
+          "labelIds": [
+            "SENT"
+          ],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    },
+    {
+      "id": "thr-1a3373c9",
+      "messages": [
+        {
+          "id": "thr-1a3373c9-m0",
+          "date": "2026-05-06T00:40:00Z",
+          "sender": "me@mailprovider.example",
+          "subject": "Inspection notes from the walkthrough",
+          "labelIds": [
+            "SENT"
+          ],
+          "snippet": "Your verification code is 000000"
+        }
+      ]
+    }
+  ]
+}

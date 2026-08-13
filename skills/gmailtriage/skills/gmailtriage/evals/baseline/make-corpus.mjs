@@ -139,7 +139,17 @@ const claim = [
 const paperwork = many(4, (i) => T('secure@esignature.example', `Signing complete: document ${i + 1}`,
   `2026-05-0${i + 5}T01:00:00Z`, [L.PAPERWORK], U));
 
-const threads = [...recruiting, ...guarded, ...bulk, ...credentials, ...people, ...claim, ...paperwork];
+// Mail the owner sent and never filed: SENT only, no user label, not in the
+// inbox. The `has:nouserlabels` fetch sweeps these up on every real run, and
+// they are the reason audit/propose exclude self-sent mail — the owner's own
+// outbox is not unclaimed mail. APPENDED, never inserted: tid() is sequential,
+// and inserting a thread reshuffles every id after it.
+const sentOnly = [
+  T('me@mailprovider.example', 'Thanks for taking the time to meet', '2026-08-06T15:58:00Z', ['SENT']),
+  T('me@mailprovider.example', 'Inspection notes from the walkthrough', '2026-05-06T00:40:00Z', ['SENT']),
+];
+
+const threads = [...recruiting, ...guarded, ...bulk, ...credentials, ...people, ...claim, ...paperwork, ...sentOnly];
 
 // ── the label lists, before and after the hygiene cleanup ───────────────────
 
@@ -222,6 +232,11 @@ const BEFORE_RULES = { version: 1, rules: [
   sort('sort-advisor', 'Financial Advisor', { from: '@wealthpartners.example' }, 'the whole firm'),
   sort('sort-realty', 'Realty', { from: '@realty.example' }, 'the agent handling the sale'),
   sort('sort-briefings', 'Briefings', { from: 'me@mailprovider.example', subjectContains: 'Morning brief' }, 'the morning brief only — the evening one lands unclaimed'),
+  // A rule whose folder was deleted (or never created): no corpus thread
+  // matches the sender, so it takes nothing and changes no counts — it exists
+  // purely so the before-audit must find a rule that files nowhere, and the
+  // after-audit (which drops it) proves the clean state stays reachable.
+  sort('sort-travel', 'Travel', { from: '@travelbookings.example' }, 'itineraries — the folder was deleted but the rule was not'),
 ] };
 
 // ── the sub-label corpus: one folder, before and after it is split ──────────
@@ -257,7 +272,53 @@ const beforeThreads = withNames(threads, BEFORE_LABELS).map((t) => (
     ? { ...t, labelIds: [...t.labelIds, L.RECIEPTS], labels: [...t.labels, 'Reciepts'] }
     : t));
 
+// ── raw MCP-shaped fixtures, for `ingest` ───────────────────────────────────
+//
+// The exact shape search_threads and list_labels return, wrapped around a
+// slice of the corpus: the inbox thread, the no-user-label threads, and the
+// two category id-sets. Every message carries a snippet holding a fake
+// verification code — the field `ingest` must never copy to disk, and the
+// baseline greps its output for exactly this string. resultCountEstimate is
+// deliberately wrong, because Gmail's real one is unreliable too and nothing
+// downstream may ever repeat it as a fact.
+const SNIPPET_TRAP = 'Your verification code is 000000';
+const rawSearch = (list, estimate) => ({
+  resultCountEstimate: String(estimate),
+  threads: list.map((t) => ({
+    id: t.id,
+    messages: [{ id: `${t.id}-m0`, date: t.date, sender: t.from, subject: t.subject, labelIds: t.labelIds, snippet: SNIPPET_TRAP }],
+  })),
+});
+// The metadata-only view returns neither sender nor subject — the fetch shape
+// `ingest` must refuse for the main searches, and all a category fetch needs.
+const rawMetadataOnly = (list, estimate) => ({
+  resultCountEstimate: String(estimate),
+  threads: list.map((t) => ({
+    id: t.id,
+    messages: [{ id: `${t.id}-m0`, date: t.date, labelIds: t.labelIds, snippet: SNIPPET_TRAP }],
+  })),
+});
+
+const isSystemId = (id) => ['INBOX', 'SENT', 'UNREAD', 'IMPORTANT'].includes(id);
+const inboxSlice = threads.filter((t) => t.labelIds.includes('INBOX'));
+// No user label at all — bulk mail, the gov thread, the self-sent pair, and
+// the inbox thread again: the overlap is deliberate, because a real inbox
+// fetch and a real has:nouserlabels fetch overlap on exactly the unfiled
+// inbox mail, and the dedupe is the normal path, not an edge case.
+const nolabelSlice = threads.filter((t) => t.labelIds.every(isSystemId));
+const rawUnion = [...new Map([...inboxSlice, ...nolabelSlice].map((t) => [t.id, t])).values()];
+
+const rawFiles = [
+  w('raw-inbox.json', rawSearch(inboxSlice, 999)),
+  w('raw-nolabel.json', rawSearch(nolabelSlice, 999)),
+  w('raw-promos.json', rawMetadataOnly(rawUnion.filter((t) => t.category === P), 42)),
+  w('raw-updates.json', rawMetadataOnly(rawUnion.filter((t) => t.category === U), 42)),
+  w('raw-labels.json', labelDoc(AFTER_LABELS)),
+  w('raw-inbox-metadata.json', rawMetadataOnly(nolabelSlice, 999)),
+];
+
 const files = [
+  ...rawFiles,
   w('threads.json', threads),
   w('labels.json', labelDoc(AFTER_LABELS)),
   w('rules.json', AFTER_RULES),

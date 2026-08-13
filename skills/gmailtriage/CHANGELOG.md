@@ -5,6 +5,130 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-13
+
+Round two, from the first live run of 0.6.0 — which happened to collide with a
+mid-run folder deletion and exposed the question `audit` never asked.
+
+### Fixed
+
+- **`audit` now asks the reverse coherence question: does every folder the
+  rules file into still exist?** The live run had it exactly: the user deleted
+  the `HAC` folder, the rule filing into it survived, and `audit` reported
+  *"every folder has a rule … clean"* with exit 0 — the dangling rule was
+  caught only because `labels` happened to run afterwards. Audit now reconciles
+  rule destinations against the real label list (the same
+  `reconcileDestinations` the `labels` gate uses), reports each dangling
+  destination with the rules that use it, names both remedies without choosing
+  one (re-create the folder, or remove/redirect the rule — the user's call),
+  and refuses to call the system clean over it. Reported as its own section,
+  not a summary column, so the frozen summary shape is unchanged.
+- **An all-self-sent sample now says so.** A sample that was entirely the
+  owner's own outbox produced *"no bulk mail in the sample at all. Widen the
+  fetch…"* — sending the user to re-fetch a mailbox that was working exactly as
+  intended. Both propose reasons now have an `all-sent-only` kind that outranks
+  the rest.
+
+### Added
+
+- **`rules --remove <id[,id]>`** — before this, the only way to drop a rule was
+  hand-editing the validated store, which is the exact thing the store exists
+  to prevent. Removal names its rules in a table, lands the same timestamped
+  backup every write now gets, revalidates the remainder before writing,
+  refuses an id that does not exist (rather than silently skipping it), and
+  refuses to combine with `--add` — two intents, two commands.
+- **`ingest --labels-only`** — the `create_label` loop refreshes one snapshot,
+  and re-supplying four thread files to do it was how a "verbatim" raw file got
+  hand-patched mid-run. One re-fetch, one flag; the thread snapshot is
+  untouched. SKILL.md now says it outright: **a mid-run mailbox change means
+  one re-fetch — never hand-edit a raw file.**
+- **`labels` names the other remedy.** Its failure text presumed creation;
+  it now also lists the rule ids to `--remove` or redirect when the folder
+  went away on purpose.
+
+### Changed
+
+- SKILL.md: on a run whose plan takes zero threads, the `labels` gate guards
+  nothing and may be skipped — and an audit that came back clean already
+  implies it would pass, since audit now checks destinations. It stays
+  mandatory before any `apply`.
+
+## [0.6.0] - 2026-08-13
+
+An evidence pass over eight real runs (2026-08-04 → 08-13), mined from their
+session transcripts. The decisions were sound in every run; what the transcripts
+showed was everything *around* the decisions — 60–90 seconds of hand-transcribed
+JSON per run, 30–43 KB of tables nobody read, receipts dying with session
+scratchpads, and live verification codes transiting the conversation.
+
+### Added
+
+- **`ingest` — raw MCP output in, snapshots out; hand-built JSON is over.** The
+  agent writes the four `search_threads` results and `list_labels` to files
+  **verbatim** and runs one command. It dedupes threads across fetches, unions
+  label ids, derives `category`/`hasUnsubscribe` from the category id-sets,
+  counts self-sent mail, and writes exactly the seven snapshot fields —
+  **a snippet structurally never reaches disk**, which matters because on a
+  real mailbox snippets have carried live login codes. It refuses a main fetch
+  with no subjects and names the cause (`THREAD_VIEW_METADATA_ONLY`), the trap
+  that produced ghost "unclaimed" threads on 08-09; `--force` overrides.
+  Measured on the 08-12/08-13 runs, transcription was the single slowest step.
+- **`apply --update-threads`** replays the authorised moves onto the working
+  snapshot, so a re-plan after a mid-run rule addition converges without
+  re-fetching. The 08-13 run hand-edited `threads.json` three times; the added
+  label *names* go into `labelIds`, where the resolver passes them through,
+  rather than into `labels`, which would have silently stopped every other id
+  resolving.
+- **`undo --last`** finds the newest receipt in the durable store by each
+  receipt's own `at` stamp — filenames are spelled three ways and mtime lies
+  after a copy.
+- **`rules --add` backs up the rule file** beside itself before every write.
+  Nothing made the rule file itself reversible before, and it holds the only
+  copy of every rule note.
+- **Rule lints — warned, never refused** (both found live in the real rule set):
+  a bare-domain `from` with no `@` also matches lookalike domains and would
+  auto-file a phish out of the inbox; a trash rule standing ahead of a sort
+  rule claiming the same sender is safe only by file order.
+- **`labels --verbose`** keeps the full destination table; the default now
+  prints only what needs creating.
+
+### Changed
+
+- **Self-sent, never-filed mail is no longer "mail no rule claims".** SENT, not
+  in the inbox, no user label: excluded from `audit`'s unclaimed report and
+  `propose`'s clustering, counted in one prose line. It kept `audit` exiting
+  non-zero forever — the corpus now carries two such threads, and the frozen
+  clean-mailbox audit proves the clean state stays reachable with them present.
+- **Receipts default to `~/.gmailtriage/receipts/<timestamp>.json`**, and
+  SKILL.md no longer tells the agent to pass `--receipt`: the placeholder was
+  steering every run's receipt into a session scratchpad, and the last three
+  runs are permanently un-undoable because of it.
+- **Output diet.** `setup`'s ready state prints a one-row summary instead of
+  the full rule table (~6 KB per run); `rules --add` prints only the rules just
+  added, their warnings, and totals (~10 KB per accept); `labels` prints only
+  what needs creating. Measured 30–43 KB of tables per run before.
+- **SKILL.md workflow rewritten around the verbatim-file contract**: one
+  ToolSearch loads every Gmail tool up front; metadata-only view is for the
+  category fetches only; apply's MCP calls go out in parallel within a block,
+  never across blocks; `$SKILL_DIR`-absolute script paths from any working
+  directory (a `cd` plus a relative path broke a real run).
+
+### Security
+
+- **The CLI refuses to write mailbox data inside a git repository**
+  (`--allow-repo` overrides). The 08-09 run wrote its real thread snapshot into
+  this skill's own checkout; the cleanup deleted the run's receipt with it. The
+  refusal lives in the one write path every data file goes through; the skill's
+  own state dir under `$HOME` is exempt, so a dotfiles-repo home directory
+  cannot brick the rule file.
+- `~/.gmailtriage` directories are created `0700` and files written `0600`.
+- **Snippet handling is now a named contract**: never re-printed in
+  conversation (new non-negotiable, pinned in `skill-invariants.json`), never
+  written to disk (trap test greps the frozen ingest output for the planted
+  code the raw fixtures carry), and documented in `references/gmail.md` —
+  along with `resultCountEstimate` being a number no run may ever repeat as a
+  fact.
+
 ## [0.5.0] - 2026-08-08
 
 ### Fixed

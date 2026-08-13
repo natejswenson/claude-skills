@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", or "break this issue into smaller pieces". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.4.0
+version: 0.5.0
 ---
 
 # /issueflow — one open issue to a pull request, through four gated stages
@@ -110,8 +110,23 @@ strongest model, and the two bounded by an approved document get the faster one.
 
 **Dispatch in the background and say what is running.** These stages take
 minutes — five for investigate, ten for implement on the run this was measured
-against — and a foreground dispatch is that long with nothing on screen. One
-short lowercase line as it starts, then the result.
+against — and a foreground dispatch is that long with nothing on screen.
+`brief` prints how long this stage has taken on this repo's own past runs
+right above the dispatch prompt, so say that expectation out loud too: "this
+usually takes about N minutes here" beats a bare "starting" the same way a
+known range beats silence. One short lowercase line as it starts, then the
+result.
+
+**While it runs, `status` answers "is it stuck" — do not guess.** The board's
+`Took` column reads live (`4m12s+`) instead of `—` for a stage that has not
+delivered yet, and a liveness block underneath surfaces the stage's own last
+reported milestone and its age, when the subagent wrote one — the brief asks
+every stage to append a short line to its own progress log as it reaches real
+milestones, but that log is scratch work, never quoted back to the subagent
+and never pasted into the transcript verbatim; `status` already shows the
+latest line. Re-run `status` instead of asking the user to wait blind, and if
+the elapsed time is well past what the expectation line said, say so plainly
+rather than continuing to wait in silence.
 
 **When more than one stage can run, run them together:**
 
@@ -231,7 +246,7 @@ than finishing on an assumption. Once every lane has landed, `runs` and
 | `brief --ready` | **every** stage whose gate is open, for dispatch in one message |
 | `accept [--stage] [--lane] [--skip] [--force]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
 | `split` | one lane per work item read from the approved design, each stacked on the one below |
-| `status` | the run board, what has drifted on GitHub, and what can run now |
+| `status` | the run board with a live elapsed time for any stage still running, its last reported progress, what has drifted on GitHub, and what can run now |
 | `runs` | every run on this machine, with what it is waiting on |
 | `ship [--dry-run] [--force]` | a pushed branch and an open pull request per lane, and the per-stage timings |
 | `finish [--close-issue]` | per lane: the merge verified, the worktree removed, the branch deleted, the landing recorded — and, once every lane has landed, the run marked `done` |

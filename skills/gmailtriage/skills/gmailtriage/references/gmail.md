@@ -60,3 +60,23 @@ structural proxy available, and it is named as a proxy rather than a fact.
 
 This is worth knowing before adding a match field: if Gmail cannot express it as
 a query, the skill cannot match on it either.
+
+## Snippets carry secrets, and the estimate lies
+
+Two facts about `search_threads` responses that shape how a run must handle
+them:
+
+**The default (minimal) view returns a `snippet` beside every subject**, and a
+snippet is the opening of the message body — which for a security email IS the
+verification code. On a real mailbox, live login codes entered the conversation
+transcript this way twice. There is no view that returns subjects without
+snippets, so the exposure at the fetch boundary cannot be avoided when subjects
+are needed; what is controllable is everything after it. `ingest` never writes
+a snippet to disk (structurally — the snapshot schema has no field for one),
+and the agent never re-prints one. Use `THREAD_VIEW_METADATA_ONLY` for the two
+category fetches, which need only ids: that view strips subject and snippet
+both, which is also why it must never be used for the main fetches.
+
+**`resultCountEstimate` is an estimate in the way weather is a forecast.** A
+real fetch reported 68 and returned 6. Never repeat it as a count of anything;
+the only numbers a run may claim are counts of threads actually returned.

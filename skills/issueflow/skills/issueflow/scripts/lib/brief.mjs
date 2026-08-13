@@ -14,7 +14,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { stage } from './stages.mjs';
-import { artifactPath, briefPath, evidencePath, gateSteps } from './run.mjs';
+import { artifactPath, briefPath, evidencePath, gateSteps, progressPath } from './run.mjs';
 
 const bar = (headers, rows) =>
   [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
@@ -130,6 +130,14 @@ export function renderBrief(dir, run, step, issue, workdir = null) {
     `It must contain a section for each of: **${declared.requires.join('**, **')}**. The gate`,
     'reads for those names and refuses the stage without them.',
     '',
+    '## While you work',
+    '',
+    `Append one short lowercase line to \`${progressPath(dir, step)}\` whenever you`,
+    'reach a real milestone — what you just found, or what you are about to do next.',
+    'This is scratch work for whoever is watching the run, not part of your answer:',
+    'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
+    'genuinely have nothing to report yet; do not pad it to look busy.',
+    '',
     '## When you are done',
     '',
     'The moment the artifact is written, send the orchestrator a message with',
@@ -156,6 +164,7 @@ export function writeBrief(dir, run, step, issue, workdir = null) {
     agent: step.stage.agent,
     prompt: path,
     artifact: artifactPath(dir, step),
+    progress: progressPath(dir, step),
     workdir: workdir ?? run.repo.path,
   };
 }
