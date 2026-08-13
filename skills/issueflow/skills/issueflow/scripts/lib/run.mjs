@@ -259,6 +259,15 @@ export const artifactPath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR
 export const evidencePath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
 export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
 
+/**
+ * Where a stage may report progress while it works — the fourth thing a stage
+ * writes, alongside its artifact, its evidence and its brief. Never read by the
+ * state machine and never required: a stage that never touches this path is
+ * still fully visible through `board()`'s filesystem-observed clock, which is
+ * what keeps this an enrichment rather than the primary liveness signal.
+ */
+export const progressPath = (dir, step) => join(dir, 'progress', `${step.key.replace('/', '-')}.log`);
+
 /** Where a lane's stages work, so two lanes running at once never share a tree. */
 export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
 
