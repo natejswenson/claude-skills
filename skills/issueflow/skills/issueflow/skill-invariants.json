@@ -44,35 +44,35 @@
     "deterministic": [
       {
         "step": "read the open issues and the repo's branch and pull request policy",
-        "command": "node scripts/issueflow.js board"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" board"
       },
       {
         "step": "fetch the chosen issue and its comments to disk and open the stage state machine",
-        "command": "node scripts/issueflow.js start"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" start"
       },
       {
         "step": "render each stage's dispatch prompt, model and subagent type from the approved artifacts",
-        "command": "node scripts/issueflow.js brief"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
         "step": "enforce the gate \u2014 record an artifact, record the approval, advance only then",
-        "command": "node scripts/issueflow.js accept"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" accept"
       },
       {
         "step": "expand an approved design's work items into stacked child lanes",
-        "command": "node scripts/issueflow.js split"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" split"
       },
       {
         "step": "report the state of an interrupted run so it resumes without guessing",
-        "command": "node scripts/issueflow.js status"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" status"
       },
       {
         "step": "list every run on this machine, so a run can be found without remembering its directory",
-        "command": "node scripts/issueflow.js runs"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" runs"
       },
       {
         "step": "push the branch and open the pull request under the repo's own policy",
-        "command": "node scripts/issueflow.js ship"
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" ship"
       }
     ],
     "nondeterministic": [

@@ -5,6 +5,36 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-12
+
+Three contracts that only lived in the orchestrator's head, written down —
+found from a real replay of `natejswenson/claude-skills#212` and `#215`. No
+runtime behaviour changes; the state machine is untouched.
+
+### Changed
+
+- **The test stage's `asks` now say what does not count as a red run.** On
+  `#215`, a plain revert made the test file fail to *load* — one import error
+  masked all six behavioural assertions, and the contract's old wording
+  ("show it FAILING") was satisfied by that load error as written. The stage
+  now says explicitly: a load or import failure is not a red run; construct a
+  pre-fix state the file still loads against and watch each new assertion
+  fail on its own claim; an assertion that passes pre-fix is a coincidental
+  green, reported and not counted.
+- **Every rendered brief now asks the subagent to send a completion
+  message.** Across the two measured runs, 6 of 10 stage subagents went idle
+  with a content-free notification and sent nothing, leaving the orchestrator
+  to infer "idle = done." The brief's closing block is replaced by a
+  `## When you are done` section: send `main` the artifact's path and a
+  2–3 sentence result before finishing the turn. Deterministic wording, so
+  it is the same instruction for every stage and every run.
+- **Every documented invocation now pins `$SKILL_DIR`.** All 23 occurrences
+  of the bare `node scripts/issueflow.js …` — 15 in `SKILL.md`, 8 in
+  `skill-invariants.json` — become `node "$SKILL_DIR/scripts/issueflow.js" …`.
+  A mid-run `cd` produced `MODULE_NOT_FOUND` against a fully absolute
+  `--run-dir` on the measured run; the command needs no cwd and the docs now
+  say so everywhere it is written.
+
 ## [0.2.1] - 2026-08-12
 
 Fixed from a real run — `natejswenson/claude-skills#212` — where both test
