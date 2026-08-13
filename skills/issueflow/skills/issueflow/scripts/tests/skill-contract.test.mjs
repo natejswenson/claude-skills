@@ -29,6 +29,24 @@ test('the declared split is real', () => {
   }
 });
 
+test('no bare relative invocation survives in the shipped docs (#219)', () => {
+  // A bare `node scripts/issueflow.js` depends on the shell's cwd; the
+  // command takes an absolute `--run-dir` and needs none. Every documented
+  // invocation must resolve `$SKILL_DIR` first — so the literal bare form
+  // must not appear anywhere, and the `$SKILL_DIR` form must appear instead.
+  let matched = 0;
+  for (const file of ['SKILL.md', 'skill-invariants.json']) {
+    const text = read(file);
+    assert.doesNotMatch(text, /node\s+["'`]?scripts\/issueflow\.js/, `${file} has a bare relative invocation`);
+    matched += (text.match(/\$SKILL_DIR\/scripts\/issueflow\.js/g) ?? []).length;
+  }
+  assert.ok(matched >= 8, `only ${matched} \$SKILL_DIR-form invocations found across both files — a table that lost its rows would pass by matching nothing`);
+
+  for (const step of inv.split.deterministic) {
+    assert.match(step.command, /\$SKILL_DIR\/scripts\/issueflow\.js/, `deterministic step "${step.step}" does not use the \$SKILL_DIR form`);
+  }
+});
+
 test('version fields are in lockstep', () => {
   const pkg = JSON.parse(read('package.json')).version;
   const plugin = JSON.parse(read('../../.claude-plugin/plugin.json')).version;

@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/issueflow",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins.",
   "license": "MIT",
   "author": "Nate Swenson",

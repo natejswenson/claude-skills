@@ -21,6 +21,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate } from '../../evals/baseline/update.mjs';
 import { STAGES } from '../lib/stages.mjs';
+import { createRun, gateSteps } from '../lib/run.mjs';
+import { renderBrief } from '../lib/brief.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -172,6 +174,42 @@ test('stage-contract-corpus: the test brief says which evidence formats the gate
 test('stage-contract-corpus: the models are the ones the skill promises', () => {
   const byId = Object.fromEntries(STAGES.map((s) => [s.id, s.model]));
   assert.deepEqual(byId, { investigate: 'opus', design: 'opus', implement: 'sonnet', test: 'sonnet' });
+});
+
+test('stage-contract-corpus: the frozen test-stage contract states a load error is not a red run (#219)', () => {
+  const snapshot = JSON.parse(frozen('stage-test.json'));
+  const asks = snapshot.asks.join(' ');
+  assert.match(
+    asks,
+    /load or import error is NOT a red run/i,
+    `the frozen test-stage asks say nothing about a load error not counting as red — run \`${REFRESH}\``,
+  );
+  assert.match(
+    asks,
+    /watch each new assertion fail on its own claim/i,
+    `the frozen test-stage asks do not require each assertion be seen failing individually — run \`${REFRESH}\``,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// completion-contract — every rendered brief, not just the three frozen ones.
+// The measured failure was VARIANCE: two dispatches of the identical stage
+// contract behaved differently, so this checks every stage rather than
+// trusting the byte-compare of three briefs to stand in for the fourth.
+// ---------------------------------------------------------------------------
+test('completion-contract: every stage brief asks the subagent to SendMessage main on completion (#219)', () => {
+  const policy = { base: 'dev', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: false };
+  const issue = { number: 1, title: 'a synthetic issue', url: 'https://github.com/x/y/issues/1', body: 'body text', comments: [] };
+  const run = createRun({ repo: { owner: 'x', name: 'y', path: '/tmp/x' }, issue, policy });
+
+  const steps = gateSteps(run);
+  assert.ok(steps.length >= STAGES.length, `only ${steps.length} steps rendered — fewer than the ${STAGES.length} shipped stages`);
+  for (const step of steps) {
+    const text = renderBrief('/tmp/run', run, step, issue);
+    assert.match(text, /## When you are done/, `${step.key} brief lost the completion section`);
+    assert.match(text, /SendMessage/, `${step.key} brief does not ask for a SendMessage`);
+    assert.match(text, /addressed to `main`/, `${step.key} brief does not name the addressee`);
+  }
 });
 
 // ---------------------------------------------------------------------------
