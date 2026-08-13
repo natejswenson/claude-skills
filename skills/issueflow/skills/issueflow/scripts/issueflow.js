@@ -378,6 +378,11 @@ async function cmdRuns(args) {
   if (!existsSync(root)) { console.log(`No runs yet — ${root} does not exist.`); return; }
 
   const rows = [];
+  // Full reason text for any run `loadRun` refused, one per line below the
+  // table — never in a padded cell, which is how `baseline.test.mjs:75-87`'s
+  // rule survives here too: an absolute path there is as wide as the host's
+  // tmpdir, so it disagrees with CI on the separator row alone.
+  const unreadable = [];
   for (const repoDir of readdirSync(root)) {
     const repoPath = join(root, repoDir);
     if (!existsSync(join(repoPath))) continue;
@@ -398,13 +403,27 @@ async function cmdRuns(args) {
           next,
           run.checkpoint?.commentUrl ? 'yes' : 'no',
         ]);
-      } catch {
-        rows.push([`${repoDir}/${issueDir}`, '(unreadable run)', '—', '—', '—']);
+      } catch (err) {
+        // `loadRun` already writes an actionable reason (e.g. a schema
+        // mismatch names the schema and says the run is not resumable) — bind
+        // it instead of discarding it. The cell gets a short, path-free
+        // version so the table stays narrow; the full message, path and all,
+        // goes below the table where a path is allowed.
+        const message = String(err?.message ?? err);
+        const leadIn = `the run at ${dir} is `;
+        const reason = (message.startsWith(leadIn) ? message.slice(leadIn.length) : message.split(dir).join('this run'))
+          .replace(/\s+/g, ' ').trim();
+        rows.push([`${repoDir}/${issueDir}`, issueDir, '—', truncate(reason, 48), '—']);
+        unreadable.push(`${repoDir}/${issueDir}: ${message}`);
       }
     }
   }
   if (rows.length === 0) { console.log(`No runs under ${root}.`); return; }
   print(['Issue', 'Title', 'Approved', 'Next', 'On GitHub'], rows);
+  if (unreadable.length > 0) {
+    console.log(`\n${unreadable.length === 1 ? 'Unreadable run' : `${unreadable.length} unreadable runs`}:\n`);
+    for (const line of unreadable) console.log(`  ${line}`);
+  }
   console.log(`\nRuns live under ${root}. Resume one with \`issueflow status --run-dir <path>\`.`);
 }
 
