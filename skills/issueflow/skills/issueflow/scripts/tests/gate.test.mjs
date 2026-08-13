@@ -16,7 +16,7 @@ import { detailOf, issueRows, ISSUE_COLUMNS } from '../lib/board.mjs';
 import { branchFor, resolvePolicy, slugify } from '../lib/policy.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, evidencePath, findStep, loadRun,
-  nextStep, readySteps, saveRun, skip, split, workItemsFromDesign,
+  nextStep, readySteps, runState, saveRun, skip, split, workItemsFromDesign,
 } from '../lib/run.mjs';
 import { parseEvidence, summarize, RUNNER_IDS } from '../lib/evidence.mjs';
 import { shipBlockers } from '../lib/ship.mjs';
@@ -453,4 +453,45 @@ test('detail counts characters, not soft-wrapped lines', () => {
 test('a broad label over a thin body is flagged, not silently called small', () => {
   const rows = issueRows([{ number: 1, title: 'Phase 4: port the CMS', labels: [{ name: 'epic' }], comments: [], body: 'do it' }]);
   assert.equal(rows[0][ISSUE_COLUMNS.indexOf('Detail')], 'thin !');
+});
+
+// ---------------------------------------------------------------------------
+// runState — one predicate, one place (#219). Before this, `nextLine()` and
+// `cmdRuns` each independently re-derived `remainingSteps().length === 0` and
+// both called it "ready to ship" whether or not the pull requests had merged
+// or the run had ever been finished.
+// ---------------------------------------------------------------------------
+
+test('runState is "in progress" while any gate step is neither approved nor skipped', () => {
+  const { run } = freshRun();
+  assert.equal(runState(run), 'in progress');
+});
+
+test('runState is "ready to ship" once every gate step is approved, before any lane has a pull request', () => {
+  const { dir, run, cleanup } = freshRun();
+  for (const id of SHARED_STAGES) accept(dir, run, writeGood(dir, run, id));
+  accept(dir, run, writeGood(dir, run, 'implement'));
+  const test4 = writeGood(dir, run, 'test');
+  writeFileSync(evidencePath(dir, test4), '# pass 1\n# fail 0\n');
+  accept(dir, run, test4);
+  assert.equal(runState(run), 'ready to ship');
+  cleanup();
+});
+
+test('runState is "shipped" once every lane has a recorded pull request', () => {
+  const { dir, run, cleanup } = freshRun();
+  for (const id of SHARED_STAGES) accept(dir, run, writeGood(dir, run, id));
+  accept(dir, run, writeGood(dir, run, 'implement'));
+  const test4 = writeGood(dir, run, 'test');
+  writeFileSync(evidencePath(dir, test4), '# pass 1\n# fail 0\n');
+  accept(dir, run, test4);
+  run.lanes[0].pr = { number: 9, url: 'https://example.invalid/pull/9' };
+  assert.equal(runState(run), 'shipped');
+  cleanup();
+});
+
+test('runState is "done" once run.finished is set — the finding verbatim: both fully-shipped runs it was measured against reported "ready to ship" forever', () => {
+  const { run } = freshRun();
+  run.finished = { at: '2026-08-12T00:00:00Z', issueClosed: true };
+  assert.equal(runState(run), 'done');
 });

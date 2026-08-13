@@ -12,12 +12,14 @@ import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows } from './lib/board.mjs';
 import { loadIssue, writeBrief } from './lib/brief.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
+import { finish, FinishError } from './lib/finish.mjs';
 import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, durationOf, findStep, gateSteps, loadRun, markBriefed,
-  nextStep, readEvidence, readySteps, remainingSteps, runDir, runRoot, saveRun, skip, split, workItemsFromDesign,
+  nextStep, readEvidence, readySteps, remainingSteps, runDir, runRoot, runState, saveRun, skip, split,
+  workItemsFromDesign,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
 import { ensureWorktree } from './lib/worktree.mjs';
@@ -103,11 +105,20 @@ const stageArgs = (step) =>
  * only the first is how the measured run left its second lane untouched.
  */
 function nextLine(run) {
-  const remaining = remainingSteps(run);
-  if (remaining.length === 0) {
+  const state = runState(run);
+  if (state === 'done') {
+    console.log('\nThis run is done — every lane landed.');
+    return;
+  }
+  if (state === 'shipped') {
+    console.log('\nEvery lane has an open pull request — `issueflow finish` once they merge.');
+    return;
+  }
+  if (state === 'ready to ship') {
     console.log('\nEvery stage is approved — `issueflow ship` is the only step left.');
     return;
   }
+  const remaining = remainingSteps(run);
   const ready = readySteps(run);
   if (ready.length === 0) {
     const held = remaining[0];
@@ -377,11 +388,14 @@ async function cmdRuns(args) {
         const run = loadRun(dir);
         const done = gateSteps(run).filter((s) => s.stage.state === 'approved').length;
         const total = gateSteps(run).length;
+        const state = runState(run);
+        const next = { done: 'done', shipped: 'shipped — awaiting merge', 'ready to ship': 'ready to ship' }[state]
+          ?? (nextStep(run)?.key ?? 'blocked');
         rows.push([
           `${run.repo.owner}/${run.repo.name}#${run.issue.number}`,
           truncate(run.issue.title, 44),
           `${done}/${total}`,
-          remainingSteps(run).length === 0 ? 'ready to ship' : (nextStep(run)?.key ?? 'blocked'),
+          next,
           run.checkpoint?.commentUrl ? 'yes' : 'no',
         ]);
       } catch {
@@ -418,12 +432,51 @@ async function cmdShip(args) {
     console.log('\nDry run — nothing was pushed and no pull request was opened.');
     return;
   }
+  // `ship` used to print these URLs and throw them away — run.json carried no
+  // record of its own pull requests. `finish` needs that record to answer
+  // `runState()`'s "shipped" question without re-asking GitHub.
+  for (const r of results) {
+    const lane = run.lanes.find((l) => l.slug === r.lane);
+    if (lane && r.number) lane.pr = { number: r.number, url: r.url };
+  }
+  saveRun(dir, run);
   console.log('');
   print(
     ['Stage', 'Model', 'Took'],
     gateSteps(run).map((s) => [s.key, s.stage.model, durationOf(s.stage) ?? '—']),
   );
   reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
+}
+
+/**
+ * The run's terminal state: verify each lane's pull request merged, remove
+ * its worktree, delete its local branch, optionally close the issue, and —
+ * once every lane has landed — mark the run `done`.
+ *
+ * Refuses a lane whose pull request has not merged, and leaves it completely
+ * untouched: the only path to `git branch -D` is a merge GitHub confirmed,
+ * the mirror of `accept`'s drift refusal.
+ */
+async function cmdFinish(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+
+  try {
+    const { rows } = finish(dir, run, { offline, closeIssueFlag: Boolean(args.closeIssue) });
+    print(['Lane', 'State', 'Detail'], rows.map((r) => [r.lane, r.state, r.detail]));
+    console.log(`\nRun: ${runState(run)}`);
+    // Push is explicitly off: every landed lane's branch was just deleted, so
+    // a push would find nothing to push and every row would say `skipped` —
+    // saying `push: false` states the intent instead of relying on that
+    // degradation to look like the right answer by accident.
+    reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
+  } catch (err) {
+    if (err instanceof FinishError && err.rows.length > 0) {
+      print(['Lane', 'State', 'Detail'], err.rows.map((r) => [r.lane, r.state, r.detail]));
+    }
+    throw err;
+  }
 }
 
 const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request, through four gated stages.
@@ -436,6 +489,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow status [--issue <n>]
   issueflow runs
   issueflow ship   [--issue <n>] [--dry-run] [--draft] [--force]
+  issueflow finish [--issue <n>] [--close-issue]
 
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
@@ -443,6 +497,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   --no-worktree        run stages in the repository itself instead of a per-lane checkout
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow
   --issues-json <path> read issues from a file instead of the network (evals)
+  --close-issue        finish also closes the issue, once every lane has landed
 
 Every state change is checkpointed: the lane's branch is pushed and one comment
 on the issue is rewritten in place, so a run survives losing this machine.
@@ -462,6 +517,7 @@ async function main() {
       case 'status': return await cmdStatus(args);
       case 'runs': return await cmdRuns(args);
       case 'ship': return await cmdShip(args);
+      case 'finish': return await cmdFinish(args);
       default:
         console.log(USAGE);
         process.exitCode = cmd ? 2 : 0;

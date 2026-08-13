@@ -106,6 +106,26 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
     ),
   ];
 
+  // Both blocks are conditional on purpose: an unfinished run must render
+  // identically to before `finish` existed, which is what lets the frozen
+  // `checkpoint-comment.md` stay byte-identical.
+  const landed = run.lanes.filter((l) => l.landed);
+  if (landed.length > 0) {
+    lines.push(
+      '',
+      bar(
+        ['Lane', 'Pull request', 'Merged at'],
+        landed.map((l) => [l.slug, `#${l.landed.pr}`, l.landed.mergedAt ?? '—']),
+      ),
+    );
+  }
+  if (run.finished) {
+    lines.push(
+      '',
+      `**Finished** ${run.finished.at} — every lane landed${run.finished.issueClosed ? ', issue closed' : ''}.`,
+    );
+  }
+
   const skipped = steps.filter((s) => s.stage.state === 'skipped');
   if (skipped.length > 0) {
     lines.push(
