@@ -73,6 +73,10 @@
       {
         "step": "push the branch and open the pull request under the repo's own policy",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" ship"
+      },
+      {
+        "step": "verify each lane's pull request merged, remove its worktree, delete its local branch, and write the run's terminal state",
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" finish"
       }
     ],
     "nondeterministic": [
@@ -167,6 +171,14 @@
       "min_corpus": 4,
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "Every shipped stage frozen with its full contract \u2014 model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 4 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer than four files must go red rather than report the remainder as clean."
+    },
+    {
+      "id": "run-terminal-state",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
+      "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched \u2014 the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again without redoing the first lane's work. `--close-issue` closes an open issue and reports an already-closed one as already closed rather than claiming an action it did not take, and an offline run refuses outright rather than finishing on an assumption."
     }
   ]
 }

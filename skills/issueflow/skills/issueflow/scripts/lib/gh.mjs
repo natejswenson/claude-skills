@@ -66,6 +66,17 @@ export function issueState(cwd, number) {
 }
 
 /**
+ * Close the issue, with a comment saying why.
+ *
+ * `finish` calls this only after checking `issueState` itself, so a second
+ * `finish --close-issue` reports "already closed" rather than reaching `gh`
+ * to claim an action it did not take.
+ */
+export function closeIssue(cwd, number, comment) {
+  gh(['issue', 'close', String(number), '--comment', comment], cwd);
+}
+
+/**
  * Every pull request whose head is `branch`, open or closed.
  *
  * Closed ones matter most: a merged pull request for a lane means the work
