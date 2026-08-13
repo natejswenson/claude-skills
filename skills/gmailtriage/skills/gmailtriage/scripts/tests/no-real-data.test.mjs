@@ -94,4 +94,6 @@ const GENERATED = new Set([
   'filed.json', 'filed-after.json', 'filed-labels.json', 'rules-recruiting.json',
   'mailbox-before.json', 'mailbox-before-labels.json', 'mailbox-before-rules.json',
   'mailbox-after.json', 'mailbox-after-labels.json', 'mailbox-after-rules.json',
+  'raw-inbox.json', 'raw-nolabel.json', 'raw-promos.json', 'raw-updates.json',
+  'raw-labels.json', 'raw-inbox-metadata.json',
 ]);
