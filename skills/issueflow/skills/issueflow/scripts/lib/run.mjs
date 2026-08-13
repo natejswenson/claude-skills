@@ -86,6 +86,11 @@ export function loadRun(dir) {
   // made would be a lie told by the loader.
   run.checkpoint ??= { commentId: null, commentUrl: null, pushed: {} };
   run.offline ??= false;
+  run.finished ??= null;
+  for (const lane of run.lanes) {
+    lane.landed ??= null;
+    lane.pr ??= null;
+  }
   return run;
 }
 
@@ -205,9 +210,40 @@ export function readySteps(run) {
   );
 }
 
-/** Every step still owed, approved or skipped aside. Empty means the run is done. */
+/** Every step still owed, approved or skipped aside. Empty means the gate is clear. */
 export function remainingSteps(run) {
   return gateSteps(run).filter((s) => s.stage.state !== 'approved' && s.stage.state !== 'skipped');
+}
+
+/**
+ * The run's own state, in one place.
+ *
+ * Before this, `nextLine()` and `cmdRuns` each independently re-derived
+ * `remainingSteps(run).length === 0` and both printed "ready to ship" —
+ * which is true the moment the gate clears AND true forever after every pull
+ * request has merged and the issue is closed, because nothing recorded that
+ * `ship` or `finish` had ever run. `remainingSteps()` itself is unchanged: it
+ * still means "every gate step passed," which is what `readySteps`,
+ * `blockers` and the held-stage message depend on.
+ */
+export function runState(run) {
+  if (run.finished) return 'done';
+  if (remainingSteps(run).length > 0) return 'in progress';
+  return run.lanes.every((l) => l.pr) ? 'shipped' : 'ready to ship';
+}
+
+/** Record that a lane's pull request merged and its checkout/branch are gone. */
+export function recordLanding(dir, run, lane, { pr, url, mergedAt } = {}, now = () => new Date().toISOString()) {
+  lane.landed = { pr, url, mergedAt, at: now() };
+  saveRun(dir, run);
+  return run;
+}
+
+/** Record that every lane has landed — the run is over. */
+export function recordFinished(dir, run, { issueClosed = false } = {}, now = () => new Date().toISOString()) {
+  run.finished = { at: now(), issueClosed };
+  saveRun(dir, run);
+  return run;
 }
 
 /**

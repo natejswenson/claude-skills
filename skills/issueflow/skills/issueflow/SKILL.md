@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", or "break this issue into smaller pieces". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.2.1
+version: 0.4.0
 ---
 
 # /issueflow — one open issue to a pull request, through four gated stages
@@ -35,14 +35,15 @@ step whose command does not exist fails `skillfactory verify`.
 
 | Deterministic — the machine decides | Command |
 |---|---|
-| read the open issues and the repo's branch and pull request policy | `node scripts/issueflow.js board` |
-| fetch the chosen issue and its comments to disk and open the stage state machine | `node scripts/issueflow.js start` |
-| render each stage's dispatch prompt, model and subagent type from the approved artifacts | `node scripts/issueflow.js brief` |
-| enforce the gate — record an artifact, record the approval, advance only then | `node scripts/issueflow.js accept` |
-| expand an approved design's work items into stacked child lanes | `node scripts/issueflow.js split` |
-| report the state of an interrupted run so it resumes without guessing | `node scripts/issueflow.js status` |
-| list every run on this machine, so one can be found without remembering its path | `node scripts/issueflow.js runs` |
-| push the branch and open the pull request under the repo's own policy | `node scripts/issueflow.js ship` |
+| read the open issues and the repo's branch and pull request policy | `node "$SKILL_DIR/scripts/issueflow.js" board` |
+| fetch the chosen issue and its comments to disk and open the stage state machine | `node "$SKILL_DIR/scripts/issueflow.js" start` |
+| render each stage's dispatch prompt, model and subagent type from the approved artifacts | `node "$SKILL_DIR/scripts/issueflow.js" brief` |
+| enforce the gate — record an artifact, record the approval, advance only then | `node "$SKILL_DIR/scripts/issueflow.js" accept` |
+| expand an approved design's work items into stacked child lanes | `node "$SKILL_DIR/scripts/issueflow.js" split` |
+| report the state of an interrupted run so it resumes without guessing | `node "$SKILL_DIR/scripts/issueflow.js" status` |
+| list every run on this machine, so one can be found without remembering its path | `node "$SKILL_DIR/scripts/issueflow.js" runs` |
+| push the branch and open the pull request under the repo's own policy | `node "$SKILL_DIR/scripts/issueflow.js" ship` |
+| verify each lane's pull request merged, remove its worktree, delete its local branch, and mark the run done | `node "$SKILL_DIR/scripts/issueflow.js" finish` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
@@ -58,7 +59,7 @@ step whose command does not exist fails `skillfactory verify`.
 ### 1. Board — never ask what you can read
 
 ```bash
-node scripts/issueflow.js board --repo <path>
+node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
 ```
 
 Every open issue, plus the repo's branch policy read from its own
@@ -75,7 +76,7 @@ If the user already named an issue ("fix issue 42"), skip straight to `start`.
 ### 2. Start
 
 ```bash
-node scripts/issueflow.js start --repo <path> --issue <n>
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n>
 ```
 
 Freezes the issue and its comments to disk, opens the state machine, and posts
@@ -97,7 +98,7 @@ recorded locally and the run is **not** backed up.
 This is the whole loop, and it repeats four times (more when the run splits).
 
 ```bash
-node scripts/issueflow.js brief --run-dir <run>   # or --stage <id> [--lane <slug>]
+node "$SKILL_DIR/scripts/issueflow.js" brief --run-dir <run>   # or --stage <id> [--lane <slug>]
 ```
 
 It returns the stage, its **model**, its agent type, the artifact the stage must
@@ -115,7 +116,7 @@ short lowercase line as it starts, then the result.
 **When more than one stage can run, run them together:**
 
 ```bash
-node scripts/issueflow.js brief --run-dir <run> --ready
+node "$SKILL_DIR/scripts/issueflow.js" brief --run-dir <run> --ready
 ```
 
 `--ready` briefs every stage whose gate is open and prints them as one list.
@@ -137,8 +138,13 @@ changed, the test result. A one-line "the investigate stage is done" is not a
 gate; the user cannot approve what they have not seen. Then ask plainly whether
 to approve it.
 
+**A content-free idle notification is not a completion.** The brief tells every
+subagent to send a `SendMessage` naming its artifact path and its result before
+it goes idle; wait for that message and read the artifact it names, rather than
+treating "idle" alone as done.
+
 ```bash
-node scripts/issueflow.js accept --run-dir <run> --stage <id> [--lane <slug>]
+node "$SKILL_DIR/scripts/issueflow.js" accept --run-dir <run> --stage <id> [--lane <slug>]
 ```
 
 `accept` refuses an empty artifact, an artifact whose required sections are not
@@ -167,7 +173,7 @@ The design stage lists work items under `## Work items`. If it did, show them an
 ask before expanding — a split multiplies the gates, and that is the user's call.
 
 ```bash
-node scripts/issueflow.js split --run-dir <run>
+node "$SKILL_DIR/scripts/issueflow.js" split --run-dir <run>
 ```
 
 It reads the items out of the **approved design itself**. Never hand-write an
@@ -181,7 +187,7 @@ are not duplicated. See `references/decomposition.md`.
 ### 5. Ship
 
 ```bash
-node scripts/issueflow.js ship --run-dir <run> [--dry-run]
+node "$SKILL_DIR/scripts/issueflow.js" ship --run-dir <run> [--dry-run]
 ```
 
 Pushes each lane bottom-first and opens its pull request against the base the
@@ -190,6 +196,30 @@ irreversible step, and it is the last moment the user can stop it.
 
 Report the pull request URLs the command returned. **Nothing else counts as
 shipped** — not a pushed branch, not a green check.
+
+### 6. Finish
+
+```bash
+node "$SKILL_DIR/scripts/issueflow.js" finish --run-dir <run> [--close-issue]
+```
+
+`ship` ends at pull request URLs. This is what happens after: once GitHub
+confirms a lane's pull request merged, `finish` removes that lane's worktree,
+deletes its local branch, and records the landing. A lane whose pull request
+has not merged is left **completely alone** — the mirror of `accept`'s drift
+refusal, and the only path to `git branch -D` is a merge GitHub confirmed.
+
+Run it any time after `ship`; it is safe to run again. It finishes whatever
+has merged and leaves the rest untouched, so a split run with one lane still
+under review finishes the lane that landed and completes on a later call once
+the other one does too. Pass `--close-issue` to close the issue once every
+lane has landed — GitHub's `Closes #<n>` keyword only fires on a merge into
+the repository's *default* branch, and issueflow targets the policy base,
+which is `dev` in a shipflow repo, so the issue does not close on its own.
+
+`finish` is a question about GitHub, so it refuses on an offline run rather
+than finishing on an assumption. Once every lane has landed, `runs` and
+`status` report the run `done` — never `ready to ship` again.
 
 ## Commands
 
@@ -204,6 +234,7 @@ shipped** — not a pushed branch, not a green check.
 | `status` | the run board, what has drifted on GitHub, and what can run now |
 | `runs` | every run on this machine, with what it is waiting on |
 | `ship [--dry-run] [--force]` | a pushed branch and an open pull request per lane, and the per-stage timings |
+| `finish [--close-issue]` | per lane: the merge verified, the worktree removed, the branch deleted, the landing recorded — and, once every lane has landed, the run marked `done` |
 
 `--offline` suppresses every network call and the checkpoint. It is for the
 evals; a real run should never pass it.

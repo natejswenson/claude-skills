@@ -130,8 +130,15 @@ export function renderBrief(dir, run, step, issue, workdir = null) {
     `It must contain a section for each of: **${declared.requires.join('**, **')}**. The gate`,
     'reads for those names and refuses the stage without them.',
     '',
-    'Return only the path you wrote and a two-line summary. Your prose is not the',
-    'deliverable; the file is.',
+    '## When you are done',
+    '',
+    'The moment the artifact is written, send the orchestrator a message with',
+    '`SendMessage`, addressed to `main` — the agent that dispatched you. The message',
+    "is the artifact's path, then two or three sentences of result: what you found,",
+    'decided, or changed. Send it before you finish your turn. An agent that goes',
+    'idle without sending one leaves the orchestrator unable to tell a finished',
+    "stage from a stalled one. If your harness names the dispatching agent something",
+    'other than `main`, send it to that name instead.',
     '',
   );
   return out.join('\n');

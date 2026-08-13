@@ -81,3 +81,29 @@ export function reconcile(run, { lane = null, offline = false } = {}) {
 
 /** The rows that mean the run should stop and ask, rather than advance. */
 export const blockingDrift = (rows) => rows.filter((r) => r.blocking);
+
+/**
+ * What happened to each lane's pull request — the same question `reconcile`
+ * asks `gh`, with the opposite polarity `finish` needs. `reconcile`'s
+ * `already merged` stops a run from advancing; `finish` needs exactly that
+ * same fact before it will touch a worktree or a branch. A single `blocking`
+ * flag that means "stop" to one caller and "go" to the other is how a gate
+ * stops being readable, so this is its own function rather than `reconcile`'s
+ * flag inverted in place. `reconcile` itself is unchanged.
+ */
+export function landings(run, { lane = null } = {}) {
+  const repoPath = run.repo.path;
+  const lanes = lane ? [lane] : run.lanes;
+  return lanes.map((l) => {
+    try {
+      const prs = prsForBranch(repoPath, l.branch);
+      const merged = prs.find((p) => p.state === 'MERGED');
+      if (merged) return { lane: l, state: 'merged', pr: merged.number, url: merged.url, mergedAt: merged.mergedAt };
+      const open = prs.find((p) => p.state === 'OPEN');
+      if (open) return { lane: l, state: 'open', pr: open.number, url: open.url };
+      return { lane: l, state: 'none' };
+    } catch (err) {
+      return { lane: l, state: 'unknown', detail: String(err.message ?? err).split('\n')[0] };
+    }
+  });
+}

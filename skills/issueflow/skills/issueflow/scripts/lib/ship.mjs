@@ -32,6 +32,9 @@ export function shipBlockers(run) {
     .map((s) => ({ step: s.key, state: s.stage.state, reason: s.stage.skipReason ?? null }));
 }
 
+/** The number out of a pull request URL, so the caller can record it without a second `gh` call. */
+const prNumberFromUrl = (url) => Number(/\/pull\/(\d+)/.exec(String(url ?? ''))?.[1]) || null;
+
 const branchExists = (repo, branch) => {
   try {
     git(['rev-parse', '--verify', `refs/heads/${branch}`], repo);
@@ -132,7 +135,7 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
     const bodyFile = join(dir, lane.slug, 'pr-body.md');
     writeFileSync(bodyFile, prBody(dir, run, lane));
     const url = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
-    results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url });
+    results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url, number: prNumberFromUrl(url) });
   }
   return results;
 }
