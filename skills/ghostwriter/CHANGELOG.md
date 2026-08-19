@@ -4,6 +4,51 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-08-19
+
+### Changed
+
+- **Reach overhaul, driven by a full review of all 20 published posts** (every one
+  under ~300 impressions — distribution never left the immediate-network test
+  slice) plus current platform research: LinkedIn officially suppresses generic,
+  repetitive, AI-looking content since May 2026, and the feed pattern the skill
+  produced (uniform essay register, an identical branded card on 19/20 posts,
+  near-daily cadence, zero questions in 19/20 posts, chaotic posting times)
+  matched the suppressed profile even though each post was individually sound.
+- **`voice/algorithm.md` rewritten with tagged 2026 evidence** ([official]/
+  [measured]/[folklore]): the May 2026 slop suppression, the "account is the
+  unit" section (the strongest small-account lever is the human's own commenting
+  activity), a standing "recovering from a dead feed" protocol, and the
+  "pattern is the tell" rule (vary length, shape, visual, cadence). The
+  link-in-first-comment advice is downgraded (workaround reportedly detected).
+- **Idea-menu lane priority inverted to match outcomes**: first-person build
+  stories lead (the only lane ever rated `great`); trending/radar news ranks
+  below lived work (both `flopped` posts were news-shaped).
+- **Visual defaults flipped**: text-only or a native screenshot is the default
+  recommendation; a composed Press card only when the composition carries real
+  information, capped ~1 in 4 with a fatigue check against `published.jsonl`
+  (the identical branding on every post was feed-level repetition). The how-to
+  playbook default changed from "a composed Press card" to text or carousel.
+- **Pre-show self-check gains a feed-native check**: the draft is read next to
+  2–3 of the user's real posts from `data/my_posts.md` and must sit naturally
+  among them — one idea per line, no paragraph over ~40 words; the polished
+  essay register is itself treated as an AI tell. Genuine questions (including
+  as the ending) are first-class again; the reflexive CTA shapes stay banned.
+- **Publish mode gains advisory gates** (never blocking): off-window timing,
+  cadence (>3 in the trailing 7 days, same-day repost), and an explicit ask
+  whether the user has 10–15 minutes to engage after publishing — the printed
+  golden-hour reminder demonstrably changed nothing across 20 posts.
+
+### Added
+
+- **`post_outcome.py`**: `--impressions/--reactions/--comments` numeric fields
+  (read off the app by the human — the only real distribution signal available),
+  `--slug` addressing, and `--list-unscored`; the outcome check-in now asks for
+  the impressions number and can cover the few most recent unscored posts.
+- **`linkedin_post.py`**: `publish_condition_warnings()` — prints cadence and
+  off-window warnings on real publishes, computed from `published.jsonl` and
+  the clock. Advisory only; the source gate and approval flow are unchanged.
+
 ## [0.16.1] - 2026-08-11
 
 ### Fixed
