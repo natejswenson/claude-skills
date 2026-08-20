@@ -641,3 +641,65 @@ def test_main_dry_run_appends_nothing(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr("sys.argv", ["x", "--text", "hi", "--dry-run"])
     lp.main()
     assert not log.exists()
+
+
+# ------------------------------------------------- publish condition warnings
+def _st(s):
+    import time as _t
+    return _t.strptime(s, "%Y-%m-%d %H:%M")
+
+
+def _wlog(tmp_path, dates):
+    log = tmp_path / "published.jsonl"
+    log.write_text(
+        "".join(json.dumps({"date": d}) + "\n" for d in dates), encoding="utf-8"
+    )
+    return log
+
+
+def test_warnings_quiet_in_window_low_cadence(tmp_path):
+    # Wednesday 09:00, one post 6 days ago: in-window, under cadence.
+    log = _wlog(tmp_path, ["2026-08-13"])
+    assert lp.publish_condition_warnings(log, _st("2026-08-19 09:00")) == []
+
+
+def test_warnings_weekend_flagged(tmp_path):
+    log = _wlog(tmp_path, [])
+    ws = lp.publish_condition_warnings(log, _st("2026-08-22 09:00"))  # Saturday
+    assert any("weekend" in w for w in ws)
+
+
+def test_warnings_weekday_evening_flagged(tmp_path):
+    log = _wlog(tmp_path, [])
+    ws = lp.publish_condition_warnings(log, _st("2026-08-19 21:00"))
+    assert any("off-window" in w for w in ws)
+
+
+def test_warnings_same_day_repost_flagged(tmp_path):
+    log = _wlog(tmp_path, ["2026-08-19"])
+    ws = lp.publish_condition_warnings(log, _st("2026-08-19 09:00"))
+    assert any("already published today" in w for w in ws)
+
+
+def test_warnings_weekly_cadence_flagged(tmp_path):
+    log = _wlog(tmp_path, ["2026-08-14", "2026-08-16", "2026-08-18"])
+    ws = lp.publish_condition_warnings(log, _st("2026-08-19 09:00"))
+    assert any("trailing 7 days" in w for w in ws)
+
+
+def test_warnings_missing_log_is_fine(tmp_path):
+    ws = lp.publish_condition_warnings(tmp_path / "nope.jsonl", _st("2026-08-19 09:00"))
+    assert ws == []
+
+
+def test_warnings_skip_malformed_log_lines(tmp_path):
+    log = tmp_path / "published.jsonl"
+    log.write_text('not json\n{"date": "2026-08-19"}\n', encoding="utf-8")
+    ws = lp.publish_condition_warnings(log, _st("2026-08-19 09:00"))
+    assert any("already published today" in w for w in ws)
+
+
+def test_warn_publish_conditions_prints_to_stderr(tmp_path, capsys):
+    log = _wlog(tmp_path, ["2026-08-19"])
+    lp.warn_publish_conditions(log, _st("2026-08-19 09:00"))
+    assert "NOTE: cadence: already published today" in capsys.readouterr().err
