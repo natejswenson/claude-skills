@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.16.1
+version: 0.17.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -103,11 +103,17 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
 
-**Outcome check-in (max one, fast — the feedback loop).** Before anything else, read
-`~/.claude/ghostwriter/published.jsonl` (written automatically on every publish). If the newest
-record is **≥2 days old and has no `outcome`**, ask ONE check-in question — *"How did
-'<first_line>' do?"* with options great / normal / flopped (notes via "Other") — then record it:
-`python3 scripts/post_outcome.py --latest --outcome <answer> --notes "<notes>"`. **One dialog to
+**Outcome check-in (max one dialog, fast — the feedback loop).** Before anything else, run
+`python3 scripts/post_outcome.py --list-unscored` (reads `~/.claude/ghostwriter/published.jsonl`,
+written automatically on every publish). If any post **≥2 days old has no `outcome`**, ask ONE
+check-in covering the **most recent unscored post** (up to 3 if several are recent) — *"How did
+'<first_line>' do?"* with options great / normal / flopped — **and ask for the impressions
+number** (read off the post's analytics in the LinkedIn app; it takes seconds and it is the only
+real distribution signal we get). The label alone is still accepted if they don't have the
+number. Record each:
+`python3 scripts/post_outcome.py --slug <slug> --outcome <answer> --impressions <n> --notes "<notes>"`.
+If there's a **backlog** of older unscored posts, offer once to skip it (`--outcome skipped` is
+not a thing — just leave them; don't re-ask every session). **One dialog to
 start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
 `AskUserQuestion` call** — the check-in takes the first question slot and the flat idea question
 (step 2) takes the second — still one dialog, one round trip, never two sequential question
@@ -115,8 +121,9 @@ dialogs to get a session moving. Only when no menu is due (the topic came in con
 may the check-in be its own question. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
 outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
-from repeated `flopped`, and let format outcomes steer the visual-form recommendation (step 8).
-Say why when it's relevant ("your last carousel did great"). This is the only compliant
+from repeated `flopped`, let format outcomes steer the visual-form recommendation (step 8), and
+watch the **impressions trend** — while it sits under ~300, the recovery protocol in
+`voice/algorithm.md` governs cadence, format, and timing. This is the only compliant
 performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
 
 1. **Short-circuit if the topic is already concrete.** If the user named a specific topic, pointed
@@ -148,7 +155,22 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      above); the flat idea question is the second. Still one dialog, one round trip.
 
    The four lanes, in priority order (used to rank the flattened list, not to structure separate
-   questions):
+   questions). **This order is outcome-driven, not editorial:** first-person build stories are
+   the only lane that has ever rated `great`, and both `flopped` posts were news-shaped
+   (release/opinion takes on someone else's announcement). News still surfaces — but only when
+   the signal is strong AND the user has a real angle, and it ranks below lived work:
+   - **Your recent Claude projects (2–3 entries — the lead lane).** Run
+     `python3 scripts/recent_projects.py` and
+     take the top 2–3 repos with recent Claude Code sessions; for each, read the recent `git log`
+     + last session summary for the **one real thing shipped** (that's the anchor). Respect
+     `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
+     work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
+   - **Interests, personal stories & hot takes (1–3 entries).** Read
+     `~/.claude/ghostwriter/voice/interests.md` —
+     core themes, the "Strong opinions" list, and the story bank — for specific angles not
+     covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank
+     item beats a generic theme; label each `interests · <theme or story>`. The personal/life
+     lane rides here (voice-notes → Topic lean: ~1 post in 4).
    - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
      point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
      are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
@@ -174,23 +196,15 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
      (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
      re-renders the launchd agent against the repo's current path.
-   - **Interests & hot takes (1–3 entries).** Read `~/.claude/ghostwriter/voice/interests.md` —
-     core themes, the "Strong opinions" list, and the story bank — for specific angles not
-     covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank
-     item beats a generic theme; label each `interests · <theme or story>`.
-   - **Your recent Claude projects (2–3 entries).** Run `python3 scripts/recent_projects.py` and
-     take the top 2–3 repos with recent Claude Code sessions; for each, read the recent `git log`
-     + last session summary for the **one real thing shipped** (that's the anchor). Respect
-     `~/.claude/ghostwriter/voice/interests.md` → **Off-limits**: never surface or post anything
-     work-confidential (e.g. GoodLeap internals); personal/OSS repos only.
-
    **Build the list fast and honestly.** Gather all four lanes in parallel (the HN check, the
    radar read + top-up, interests, `recent_projects.py`) so the question is the first thing the
-   user waits on. An idea appears in exactly ONE lane — highest-signal lane wins (a release
-   that's surging on HN is Trending, not Radar). Filter every candidate against `published.jsonl`
+   user waits on. An idea appears in exactly ONE lane — a personal build story about a release
+   the user actually ran stays in the projects lane (lived beats trending); a release surging on
+   HN that the user hasn't touched is Trending, not Radar. Filter every candidate against
+   `published.jsonl`
    and recent `drafts/` so nothing already covered resurfaces. Rank the flattened list by lane
    priority and the outcome history, and say so in the provenance line when it bends the order
-   ("release how-tos lead; your last two ran great").
+   ("build stories lead; your last news post flopped").
 
    **Persist the full list — research the user paid for doesn't evaporate.** Whether or not it
    was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
@@ -257,7 +271,8 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
 7. **Pre-show self-check, then show the draft.** Before the user sees it, verify against
    `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
    - **The ending** — the #1 AI tell, flagged more than anything else. The post stops on the
-     last real point. No inverted-parallel closer, no clever-symmetry aphorism, no reflexive
+     last real point, or on a genuine question the user actually wants answered. No
+     inverted-parallel closer, no clever-symmetry aphorism, no reflexive
      "what's your…?" CTA.
    - **The register — warm, personable, human (voice-notes → Register).** This is a positive
      check, not a ban: the post opens on the situation or the human reason (not a statistic),
@@ -265,9 +280,18 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      something that happened to the user, and reads like them talking to a peer. A draft that
      merely avoids every banned tic but sounds like an incident report FAILS this check —
      rewrite the clinical sentences in the words the user would say out loud.
+   - **The feed-native check — would this sit naturally in the user's own feed?** Read 2–3 of
+     their real posts from `data/my_posts.md` next to the draft. Their real register is the
+     bar: one idea per line or a 1–2 sentence paragraph, blank line between, **no paragraph
+     over ~40 words**, questions and casual energy where they'd really use them. A draft that
+     reads like a polished essay next to their real posts FAILS this check even if it breaks
+     no ban — the essay register is itself the AI tell (voice-notes → Recalibration
+     2026-08-19). Reformat and rewrite until it belongs in that feed.
    - **Nothing fabricated** — no invented details, motivations, or timeline drama the user
      didn't actually live.
-   - **Length** — default 50–120 words (see Engagement craft).
+   - **Length and shape** — default 50–120 words (see Engagement craft), and **varied against
+     the last few posts**: if the recent posts all ran the same length and arc, this one
+     shouldn't (uniformity across a feed reads as automation).
    - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words.
    - **The hook** — the post's single most specific number or sharpest tension appears in the
      first ~210 chars (before "…see more"). If the best number sits below the fold, move it up.
@@ -284,29 +308,46 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
    Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
-   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The complete,
-   final post text rides INSIDE the approval dialog: put it (verbatim, no fold marker, no
-   metadata line) in the `preview` of the Publish option**, so the user reads the exact text at
-   the moment of decision. Never rely on the draft being visible in chat above the dialog — the
-   dialog takes focus over scrollback, and a real session (2026-08-11) reached the approval
-   question twice without the user ever having seen the whole post. The Publish tap on a dialog
-   that carries the full text is the explicit approval; an edited draft is re-shown and re-asked
-   the same way. Do not publish unprompted.
+   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The user
+   must be able to read every line of the final post at the moment of decision — both real
+   failure modes are known, pick the mechanism by line count:**
+   - **Post fits the preview pane unclipped (≤ ~9 lines): the complete, final post text goes
+     in the approval dialog** (verbatim, no fold marker, no metadata line) as the `preview` of
+     the Publish option. A real session (2026-08-11) reached the approval question twice
+     without the user ever having seen the whole post because it lived only in scrollback —
+     the dialog takes focus over chat.
+   - **Post longer than ~9 lines — which feed-native posts usually are: the preview WILL clip
+     (a real session, 2026-08-19, hid 11 of 13 lines this way).** Print the complete post
+     plainly in the chat message immediately before the dialog (no fold marker, no fence), and
+     make the question itself name the line count and the final line ("the full post is
+     printed above — 13 lines, ends with …") so the user can verify they saw all of it before
+     answering. Never put text the pane will clip in the preview and call it shown.
+   The Publish tap on a dialog whose text the user has verifiably seen in full is the explicit
+   approval; an edited draft is re-shown and re-asked the same way. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
    to repeat it next session.
 8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
-   ask a single `AskUserQuestion`: **text-only** / **single card** (name the Press hero
-   component you'd compose around, e.g. "a duel" or "a ledger") / **carousel** — with your
-   recommendation first, chosen from the post's shape and the outcome history: how-to /
-   educational → **carousel** (highest-reach native format, see `voice/algorithm.md`) or a
-   composed Press card; one punchy idea → card; personal story → text-only. A strong text post
-   beats a weak image, so text-only is always a respectable pick. **Give every option an ASCII
+   ask a single `AskUserQuestion`: **text-only** / **native screenshot** (a real terminal, chart,
+   or photo the user already has or you can capture live) / **single card** (name the Press hero
+   component you'd compose around) / **carousel** — with your recommendation first, chosen from
+   the post's shape and the outcome history: **text-only or a native screenshot is the default
+   recommendation** (dwell comes from information, and a real artifact reads as a human, not a
+   content pipeline — see `voice/algorithm.md`); a genuine multi-step how-to → **carousel**; a
+   composed Press card **only when the composition itself carries real information** (a real
+   diagram, real output), never as decoration. **Card fatigue check: read the `format` field of
+   the last 3 records in `published.jsonl` — if 2+ of them shipped an image, do not recommend a
+   card, and say why.** The identical Press branding on every post is feed-level repetition (the
+   "automation posting at scale" pattern LinkedIn explicitly targets); while the recovery
+   protocol is in force, cap cards at ~1 in 4 posts — brand consistency is deliberately traded
+   down for reach recovery. **Give every option an ASCII
    `preview` sketch of what THIS post would get:** the card option sketches the actual proposed
    Press composition as labeled blocks (masthead / hero / colophon, with this post's real
    headline and hero named, e.g. `[ DUEL: cron vs launchd ]`); the carousel option sketches the
-   slide strip (`cover → 5 steps → recap → CTA`, using this post's slide titles); text-only
+   slide strip (`cover → 5 steps → recap → CTA`, using this post's slide titles); the native
+   screenshot option names the specific real artifact it would show (which terminal output,
+   which chart); text-only
    previews the draft's first ~2 lines above the fold marker. Sketches are text in the question,
    not builds — authoring still waits for the pick. Only after
    the pick do you author and render (see **Visuals**); never render a form the user didn't
@@ -322,8 +363,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
 
 ### How-to posts (technical, from AI releases)
 
-The priority lane, and the one radar items feed directly. When the anchor is a recent AI release,
-write a genuine how-to — not a news recap.
+The lane radar items feed directly. When the anchor is a recent AI release,
+write a genuine how-to — not a news recap. (This lane no longer leads the idea menu — the
+outcome history put build stories first — but when a release pick happens, this is the playbook.)
 
 - **Structure: implication → steps → gotcha → outcome.** Lead with what the reader can now *do*
   (the implication), not "X shipped." Then the concrete steps they'd take, the one real gotcha, and
@@ -336,11 +378,12 @@ write a genuine how-to — not a news recap.
   exactly the case the source gate is for: the `*.sources.json` sidecar + `verify_sources.py` step
   (step 6) is mandatory. **Never fabricate** or imply the user personally ran a release they
   haven't — write the steps generically ("map which jobs call X"), not as a first-person story.
-- **Default visual: a composed Press card** (step 8) — a single high-quality image, usually
-  built around a **ledger** (numbered steps + the real command in a `.cmdbar`) or **tiles**
-  (exactly 4 compact steps). Compose it fresh per `assets/card-language.md` and vary the
-  composition against `images/card-history.jsonl` so how-to posts never look the same twice
-  in a row.
+- **Default visual: text-only, or a carousel when the steps genuinely need slides** (step 8).
+  A real how-to earns dwell with its content; a decorative wrapper adds nothing and repeated
+  identical branding across the feed is the pattern LinkedIn suppresses. A single composed
+  Press card is the exception, not the default — only when the composition itself carries
+  information the text can't (a real diagram, real captured output), and only within the
+  ~1-in-4 card cap while the recovery protocol is in force.
 
 ### Visuals (optional — diagrams & cards)
 
@@ -578,12 +621,17 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
 - **Teach something.** Knowledge/advice content gets ~3–5× the reach. Prescriptive, for the
   reader (see voice-notes), not autobiographical.
 - **Specifics over abstractions.** Real numbers, real moments, real names of things.
-- **Short lines, white space.** LinkedIn is read on phones. Paragraphs ≤3–4 lines, ~8th-grade
-  reading level (denser than 10th grade ≈ 35% less reach).
-- **No external links in the post body** (a single in-body link cuts reach ~50–70%). If a link
-  is needed, leave it out and tell the user to drop it in the **first comment**.
-- **Earn the ending on substance.** A line worth re-sharing, or a genuine question only when it
-  truly is the strongest ending — never a reflexive "Thoughts? 👇" (voice-notes forbids it).
+- **Feed-native formatting.** LinkedIn is read on phones: one idea per line or a 1–2 sentence
+  paragraph, blank line between, no paragraph over ~40 words, ~8th-grade reading level (denser
+  than 10th grade ≈ 35% less reach). An essay in paragraph blocks fails the pre-show check.
+- **No external links in the post body** (a single in-body link cuts reach ~60%). The
+  link-in-first-comment workaround is reportedly detected as of early 2026 — it still beats an
+  in-body link, but first ask whether the post needs the link at all.
+- **Earn the ending on substance.** The last real point, a line worth keeping, or a **genuine
+  question the user actually wants answered** — a real question is a first-class ending and the
+  main compliant way a post earns comments (voice-notes → Recalibration 2026-08-19). What stays
+  banned is the reflexive shape: "Thoughts? 👇", "what's your…?", "how do you…?" as a tacked-on
+  closer.
 - **Sound human — warmth is a positive property, not the absence of tells.** No "In today's
   fast-paced world", no "game-changer", no "delve", no manufactured humility; but avoiding
   those only gets a draft to neutral. Human means: open on the situation or the human reason,
@@ -602,6 +650,22 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
 
 Only after the user explicitly approves a specific draft.
 
+0. **Timing, cadence, and engagement-window gates (recommend, never block).** Before running
+   the publish command, check the clock and `published.jsonl` (the script prints the same
+   warnings, but surface them *before* the moment of publishing, not after):
+   - **Off-window** — outside weekdays ~7:00–13:00 local (Tue–Thu best): say so and recommend
+     holding until the next window. Friday night and weekend posts were a real pattern in the
+     first 20 posts and they land in dead air. (The window is a default from aggregate data —
+     refine it from the user's own impressions numbers as the outcome log fills in.)
+   - **Cadence** — >3 posts in the trailing 7 days, or <20 hours since the last publish:
+     say so and recommend holding (two posts within 24h split the test-audience evaluation
+     and hurt both).
+   - **Engagement window** — ask whether the user has 10–15 minutes right after publishing to
+     reply to comments and leave 5+ substantive comments on posts their audience reads. If
+     not, recommend publishing when they do: early engagement decides distribution, and a
+     printed reminder demonstrably didn't change behavior across the first 20 posts.
+   The user can override any of these with a word — they are recommendations, and the
+   compliance rule stands: the post publishes only when the user says so, never on a schedule.
 1. **Preview the payload** (optional sanity check):
    `python3 scripts/linkedin_post.py --file drafts/<file>.md --dry-run`
 2. **Publish:** `python3 scripts/linkedin_post.py --file drafts/<file>.md --lane <lane>`
@@ -623,12 +687,16 @@ Only after the user explicitly approves a specific draft.
 3. **Report** the result. On success, share the post URL the script prints. On an auth error
    (HTTP 401/403), tell the user to re-run `python3 scripts/linkedin_auth.py` (token likely
    expired after ~60 days), then retry.
-4. **Prompt the golden hour.** Reach is largely decided in the first 30–60 minutes (see
-   `voice/algorithm.md`). After sharing the URL, remind the user to, in the next hour:
-   reply to every comment with substance (a question back, not just "thanks"), go comment on
-   5+ other people's posts to signal activity, and — if the post references a link — drop that
-   link in the **first comment** now (links in the body suppress reach). The script can't do
-   these; they are the single biggest fix for low reach.
+4. **Walk the golden hour, don't just mention it.** Reach is largely decided in the first
+   30–90 minutes (see `voice/algorithm.md`), and the engagement window was already committed
+   at gate 0. After sharing the URL, hand the user the concrete checklist for the next hour:
+   reply to every comment with substance (a question back, not just "thanks"); leave 5+
+   thoughtful 10+ word comments on posts their target audience reads (the strongest
+   distribution lever a smaller account has); and if the post references a link, weigh
+   dropping it in the first comment (better than in-body, though the workaround is reportedly
+   detected now). The script can't do these, and COMPLIANCE.md forbids automating them — they
+   are the user's half of the reach equation, and the half that was skipped on all 20 posts
+   to date.
 
 Never run the non-`--dry-run` publish command without a clear, specific approval from the user
 for that exact draft.
@@ -639,9 +707,12 @@ for that exact draft.
 
 - **Never publish without explicit approval** of the specific text. Editing the draft → re-show
   → re-confirm.
-- **The user must be able to read the ENTIRE post at the moment of approval.** The complete,
-  final text goes in the approval dialog itself (the Publish option's `preview`), every time —
-  first show and every re-show. Text printed in chat above the dialog does not count as shown.
+- **The user must be able to read the ENTIRE post at the moment of approval** — first show and
+  every re-show. A post that fits the preview pane unclipped (≤ ~9 lines) rides in the approval
+  dialog itself; a longer post is printed complete in the message immediately before the dialog,
+  with the question naming the line count and final line so the user can verify nothing is
+  hidden. Text the preview pane clips does not count as shown, and neither does text left only
+  in distant scrollback (see Generate step 7 — both failure modes came from real sessions).
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
   way. Don't echo the access token or client secret in chat.
 - **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
