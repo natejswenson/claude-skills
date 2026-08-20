@@ -213,6 +213,68 @@ def warn_if_token_expiring(env: dict) -> None:
         )
 
 
+def publish_condition_warnings(
+    log_path: Path | None = None,
+    now: time.struct_time | None = None,
+) -> list[str]:
+    """Cadence + timing warnings for a real publish. Advisory only — never blocks.
+
+    Date-granular: the publish log stores dates, not times, so the cadence
+    checks are per-day (a second post the same day; >3 posts in the trailing
+    7 days). The posting window is a default from aggregate platform data —
+    the skill refines it from the user's own impressions numbers.
+    """
+    if log_path is None:
+        log_path = PUBLISHED_LOG
+    if now is None:
+        now = time.localtime()
+    warnings: list[str] = []
+
+    if now.tm_wday >= 5:
+        warnings.append(
+            "off-window: it's the weekend — weekday mornings (~7:00–13:00, Tue–Thu "
+            "best) reach a professional audience; consider holding."
+        )
+    elif not 7 <= now.tm_hour < 13:
+        warnings.append(
+            "off-window: outside the weekday ~7:00–13:00 window; consider holding "
+            "until the next morning window."
+        )
+
+    dates: list[str] = []
+    if log_path.exists():
+        for line in log_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    dates.append(json.loads(line).get("date", ""))
+                except json.JSONDecodeError:
+                    continue
+    today = time.strftime("%Y-%m-%d", now)
+    if today in dates:
+        warnings.append(
+            "cadence: already published today — two posts within a day split the "
+            "test-audience evaluation and hurt both."
+        )
+    week_floor = time.strftime(
+        "%Y-%m-%d", time.localtime(time.mktime(now) - 7 * 86400)
+    )
+    recent = sum(1 for d in dates if d > week_floor)
+    if recent >= 3:
+        warnings.append(
+            f"cadence: {recent} posts in the trailing 7 days — the recovery "
+            "protocol caps at 2–3/week; consider holding."
+        )
+    return warnings
+
+
+def warn_publish_conditions(
+    log_path: Path | None = None, now: time.struct_time | None = None
+) -> None:
+    for w in publish_condition_warnings(log_path, now):
+        print(f"NOTE: {w}", file=sys.stderr)
+
+
 def record_publish(
     post_id: str | None,
     args,
@@ -390,6 +452,7 @@ def main() -> None:
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         attached = ", with image" if image_path else (", with carousel PDF" if document_path else "")
         print(f"\n({len(text)} characters{attached})")
+        warn_publish_conditions()
         return
 
     if not author:
@@ -400,6 +463,7 @@ def main() -> None:
     enforce_source_gate(args)
 
     warn_if_token_expiring(env)
+    warn_publish_conditions()
 
     image_urn = None
     document_urn = None
