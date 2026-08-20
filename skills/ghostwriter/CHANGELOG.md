@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whether the user has 10–15 minutes to engage after publishing — the printed
   golden-hour reminder demonstrably changed nothing across 20 posts.
 
+### Fixed
+
+- **The approval dialog clipped long posts** (a real 2026-08-19 run hid 11 of a
+  13-line post's lines in the Publish option's preview — and feed-native posts
+  are deliberately many short lines, so the 0.16.1 full-text-in-preview rule
+  guaranteed clipping under the new voice). The rule is now split by line
+  count: ≤ ~9 lines rides in the dialog preview; anything longer is printed
+  complete in the message immediately before the dialog, with the question
+  naming the line count and final line so the user can verify nothing is
+  hidden.
+
 ### Added
 
 - **`post_outcome.py`**: `--impressions/--reactions/--comments` numeric fields

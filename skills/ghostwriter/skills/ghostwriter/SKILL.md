@@ -308,14 +308,22 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
    Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
-   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The complete,
-   final post text rides INSIDE the approval dialog: put it (verbatim, no fold marker, no
-   metadata line) in the `preview` of the Publish option**, so the user reads the exact text at
-   the moment of decision. Never rely on the draft being visible in chat above the dialog — the
-   dialog takes focus over scrollback, and a real session (2026-08-11) reached the approval
-   question twice without the user ever having seen the whole post. The Publish tap on a dialog
-   that carries the full text is the explicit approval; an edited draft is re-shown and re-asked
-   the same way. Do not publish unprompted.
+   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The user
+   must be able to read every line of the final post at the moment of decision — both real
+   failure modes are known, pick the mechanism by line count:**
+   - **Post fits the preview pane unclipped (≤ ~9 lines): the complete, final post text goes
+     in the approval dialog** (verbatim, no fold marker, no metadata line) as the `preview` of
+     the Publish option. A real session (2026-08-11) reached the approval question twice
+     without the user ever having seen the whole post because it lived only in scrollback —
+     the dialog takes focus over chat.
+   - **Post longer than ~9 lines — which feed-native posts usually are: the preview WILL clip
+     (a real session, 2026-08-19, hid 11 of 13 lines this way).** Print the complete post
+     plainly in the chat message immediately before the dialog (no fold marker, no fence), and
+     make the question itself name the line count and the final line ("the full post is
+     printed above — 13 lines, ends with …") so the user can verify they saw all of it before
+     answering. Never put text the pane will clip in the preview and call it shown.
+   The Publish tap on a dialog whose text the user has verifiably seen in full is the explicit
+   approval; an edited draft is re-shown and re-asked the same way. Do not publish unprompted.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
@@ -699,9 +707,12 @@ for that exact draft.
 
 - **Never publish without explicit approval** of the specific text. Editing the draft → re-show
   → re-confirm.
-- **The user must be able to read the ENTIRE post at the moment of approval.** The complete,
-  final text goes in the approval dialog itself (the Publish option's `preview`), every time —
-  first show and every re-show. Text printed in chat above the dialog does not count as shown.
+- **The user must be able to read the ENTIRE post at the moment of approval** — first show and
+  every re-show. A post that fits the preview pane unclipped (≤ ~9 lines) rides in the approval
+  dialog itself; a longer post is printed complete in the message immediately before the dialog,
+  with the question naming the line count and final line so the user can verify nothing is
+  hidden. Text the preview pane clips does not count as shown, and neither does text left only
+  in distant scrollback (see Generate step 7 — both failure modes came from real sessions).
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
   way. Don't echo the access token or client secret in chat.
 - **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
