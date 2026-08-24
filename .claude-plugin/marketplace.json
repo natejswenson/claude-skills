@@ -80,6 +80,10 @@
     {
       "name": "netwatch",
       "source": "./skills/netwatch"
+    },
+    {
+      "name": "appletv",
+      "source": "./skills/appletv"
     }
   ]
 }

@@ -1,0 +1,145 @@
+{
+  "comment": "What must not silently disappear from appletv. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never report a command as done until the Apple TV's state ha",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "never-navigate-blind",
+      "pattern": "Never send a navigation press you cannot picture the result of",
+      "rationale": "The blind-press incident: a menu from Netflix home exited to tvOS and four lefts plus a select opened PBS KIDS in front of the household. Every navigation press is preceded and followed by a screenshot."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "check python and pyatv, make the venv",
+        "command": "node scripts/appletv.js doctor"
+      },
+      {
+        "step": "discover every Apple TV on the network, with the unicast fallback",
+        "command": "node scripts/appletv.js scan"
+      },
+      {
+        "step": "pair one named device over AirPlay and Companion and store credentials",
+        "command": "node scripts/appletv.js pair --device <name>"
+      },
+      {
+        "step": "bind a room alias and the default device",
+        "command": "node scripts/appletv.js alias <room> --device <name>"
+      },
+      {
+        "step": "read power, app, focus, volume and now-playing back",
+        "command": "node scripts/appletv.js state --device <name>"
+      },
+      {
+        "step": "send a command and verify it by read-back, with a verdict per step",
+        "command": "node scripts/appletv.js send --device <name> <command>"
+      },
+      {
+        "step": "list apps and resolve a name or deep link to a launch target",
+        "command": "node scripts/appletv.js apps --device <name>"
+      },
+      {
+        "step": "type into the focused field and read it back",
+        "command": "node scripts/appletv.js type --device <name> <text>"
+      },
+      {
+        "step": "render a captured run as the report",
+        "command": "node scripts/appletv.js report --from <dir>"
+      },
+      {
+        "step": "take a screenshot of the TV over the developer tunnel",
+        "command": "node scripts/appletv.js screen"
+      },
+      {
+        "step": "open an app on the household's preferred profile",
+        "command": "node scripts/appletv.js open <app>"
+      },
+      {
+        "step": "play a title by deep link where the service honours one, verified by read-back",
+        "command": "node scripts/appletv.js play <url>"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "pick which Apple TV the user means when the phrase is a room, not a device name, and offer to alias it",
+        "why": "'the living room one' is a fact about the house, not the network"
+      },
+      {
+        "step": "turn an intent into a command sequence \u2014 'skip the intro' into skip_forward, 'put on Severance' into a deep link, 'movie night' into wake + launch + play",
+        "why": "an intent is an app, a menu path and several keypresses that no table records"
+      },
+      {
+        "step": "read the PIN off the screen through the user, one protocol at a time",
+        "why": "pairing shows a code on the TV that only a person in the room can see"
+      },
+      {
+        "step": "decide whether to confirm first \u2014 turning off or switching apps while something is playing asks, pause and skip do not",
+        "why": "the cost of a wrong action depends on who is watching, which the state hints at and the person knows"
+      },
+      {
+        "step": "show a string before typing it when it looks like a password, and never echo it back",
+        "why": "the on-screen keyboard is where credentials get entered and a transcript is forever"
+      },
+      {
+        "step": "explain a mismatch or an unverifiable result and propose the next move",
+        "why": "the TV was asleep, the wrong app had focus, tvOS hides that field, or the command was refused \u2014 the state says which, the fix is a judgment"
+      },
+      {
+        "step": "read a screenshot \u2014 which tile is highlighted, which episode is the latest that is not \"coming Friday\", whether a black frame is DRM video or a sleeping TV",
+        "why": "pixels are the only foreground read-back tvOS has, and only a model can read them"
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-scan-pair-state",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/update.mjs <run dir>",
+      "rationale": "the scan parser dropping a device or a field while the table still looks complete; the state parser losing power or now-playing so a read-back can never disagree; a known-unsupported field rendering blank \u2014 pinned against JSON captured from a real scan of the maintainer's network, the pairing result, and a real state read-back, frozen, with report re-run over the capture and byte-compared."
+    },
+    {
+      "id": "real-send-verified",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/update.mjs <run dir>",
+      "rationale": "the verifier drifting so a verified step reports differently, or the before/after values vanishing from the report \u2014 pinned against a real pause sent to the maintainer's Apple TV with its before and after read-backs, frozen, with the verdict re-derived and byte-compared."
+    },
+    {
+      "id": "readback-mismatch-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/update.mjs <run dir>",
+      "rationale": "the one rule ceasing to be code \u2014 send reporting verified without the read-back agreeing \u2014 pinned against a captured send where the command was pause but the read-back says playing, which must exit non-zero."
+    },
+    {
+      "id": "unverifiable-never-done",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [],
+      "update_command": "node evals/update.mjs <run dir>",
+      "rationale": "a command with no read-back being rounded up to done \u2014 pinned against a captured navigation keypress with no observable state change, whose report must say unverifiable and never verified."
+    }
+  ]
+}
