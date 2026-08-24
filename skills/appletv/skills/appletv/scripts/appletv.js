@@ -468,7 +468,10 @@ const TUNNELD_CMD = 'sudo ' + join(VENV, 'bin', 'pymobiledevice3') + ' remote tu
 
 /** sudo needs a TTY the agent never has: open Terminal.app with the line typed in, password to be entered there. */
 function openTerminalWith(cmd) {
-  const r = spawnSync('osascript', ['-e', `tell application "Terminal"\nactivate\ndo script "${cmd.replace(/"/g, '\\"')}"\nend tell`], { encoding: 'utf8' });
+  // AppleScript string literal: backslashes first, then quotes — in that order, or a
+  // backslash before a quote survives as an escape and breaks out of the literal.
+  const lit = cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const r = spawnSync('osascript', ['-e', `tell application "Terminal"\nactivate\ndo script "${lit}"\nend tell`], { encoding: 'utf8' });
   return r.status === 0;
 }
 
