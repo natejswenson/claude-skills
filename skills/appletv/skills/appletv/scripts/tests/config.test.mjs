@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aliasesFor, loadConfig, rememberDevices, resolveDevice, saveConfig } from '../lib/config.mjs';
+import { aliasesFor, appIdFor, loadConfig, rememberDevices, resolveDevice, saveConfig } from '../lib/config.mjs';
 
 const dev = (name, identifier, address) => ({
   name, identifier, address, model: 'Apple TV 4K', version: '18.5', all_identifiers: [identifier, `${identifier}-mac`],
@@ -38,4 +38,19 @@ test('a single remembered device is the implicit default', () => {
   const cfg = rememberDevices(loadConfig('/nonexistent'), [dev('Only', 'AAA', '10.0.0.5')], 't');
   assert.equal(resolveDevice(cfg, null).via, 'only device');
   assert.equal(resolveDevice({ default: null, aliases: {}, devices: {} }, null).error, 'no_device');
+});
+
+test('app words resolve to bundle ids and services survive a round trip', () => {
+  assert.equal(appIdFor('Netflix'), 'com.netflix.Netflix');
+  assert.equal(appIdFor('disney+'), 'com.disney.disneyplus');
+  assert.equal(appIdFor('apple tv'), 'com.apple.TVWatchList');
+  assert.equal(appIdFor('paramount+'), 'com.cbsvideo.app');
+  assert.equal(appIdFor('com.example.app'), 'com.example.app');
+  assert.equal(appIdFor('no such thing'), null);
+  const path = join(mkdtempSync(join(tmpdir(), 'appletv-cfg-')), 'config.json');
+  const cfg = loadConfig(path);
+  cfg.services = [{ word: 'netflix', id: 'com.netflix.Netflix' }];
+  saveConfig(cfg, path);
+  assert.deepEqual(loadConfig(path).services, [{ word: 'netflix', id: 'com.netflix.Netflix' }]);
+  assert.deepEqual(loadConfig('/nonexistent').services, []);
 });

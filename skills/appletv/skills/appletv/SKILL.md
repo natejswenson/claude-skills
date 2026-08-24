@@ -66,8 +66,9 @@ node scripts/appletv.js doctor
 ```
 
 One table: python, the venv (created on first run — takes a minute, say
-`installing pyatv…`), pyatv, whether credentials exist, and how many TVs are
-remembered with or without a default. **Never ask about anything in it.**
+`installing pyatv…`), pyatv, whether credentials exist, how many TVs are
+remembered with or without a default, whether screenshots work, and **which
+services the household subscribes to**. **Never ask about anything in it.**
 If `doctor` shows a remembered device with credentials, skip straight to the
 request — the user does not want to hear about setup twice.
 
@@ -125,6 +126,15 @@ user says so), show it once and ask; after typing, never repeat it. The capture
 records the field's read-back, so with `--out` a password would be on disk —
 **never pass `--out` on a `type` that carries a secret.**
 
+### 3a. Which service — never assume one
+
+`doctor` lists the services the household pays for (`appletv pref services
+"netflix, disney+, apple tv, paramount+"` sets them; local config, never the
+repo). "Put on X" means: find X on **one of those**, in that order of
+preference if it is on several, and if it is on none of them say so and stop
+— never launch a store page, a rental, or an app they do not have. If the
+list is empty, ask once ("what do you subscribe to?") and save the answer.
+
 ### 3b. Navigating inside an app — look, press, look
 
 Nothing on the network says what is on screen: `state` reports the *now-playing
@@ -154,6 +164,9 @@ Things the eyes have taught (`references/screen.md` has the rest):
 - A black capture while `state` says `playing` is DRM video: success.
 - `open netflix` lands on the household's profile (`appletv pref`); with
   several profiles, always go through `open`, never `launch_app` alone.
+- Screenshots are someone's TV: only the last 3 are kept, `screen --clean`
+  deletes them, and none is ever captured into a run directory unless
+  `--out` is passed on purpose.
 
 ### 4. Report — one table, one sentence, stop
 
@@ -184,6 +197,7 @@ Never "Done." on the last two. A mismatch exits non-zero on purpose.
 | `appletv report --from <dir>` | the same tables from a captured run, verdicts re-derived — exits non-zero if a recorded verdict no longer follows from its capture |
 | `appletv screen [--width 1280]` | a screenshot over the developer tunnel (~2.5 s), downscaled; `Read` the path it prints. `--pair` does the one-time developer pairing, `--install-tunnel` writes the LaunchDaemon |
 | `appletv pref <app> --profile <name> --position <n>` | this household's profile per app, on this Mac only (never the repo) |
+| `appletv pref services "<a, b, c>"` | the services the household subscribes to; `apps` marks them and the model only ever plays on these |
 | `appletv open <app>` | turn on, launch, and pick the preferred profile tile |
 | `appletv play <deep link> [--title <expected>]` | for services that honour deep links (YouTube, Disney+, Apple TV+, Hulu, Peacock); verified when the app is the now-playing owner and playing |
 
@@ -203,6 +217,8 @@ default. `--out <dir>` on any live command writes its JSON captures there.
   tunnel, no navigation: say so.
 - **Never ask what `doctor` or `scan` already answered**, and never ask more
   than one question in a row.
+- **Never put a title on a service the household does not have.** The list is
+  in `doctor`; if the title is only elsewhere, say where and stop.
 
 <!-- press:agent-ui -->
 

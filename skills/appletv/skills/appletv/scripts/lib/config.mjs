@@ -14,9 +14,9 @@ export function configPath() {
 }
 
 export function loadConfig(path = configPath()) {
-  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {} };
+  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {}, services: [] };
   const cfg = JSON.parse(readFileSync(path, 'utf8'));
-  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {} };
+  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {}, services: cfg.services ?? [] };
 }
 
 export function saveConfig(cfg, path = configPath()) {

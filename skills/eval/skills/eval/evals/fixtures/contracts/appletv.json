@@ -73,7 +73,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 240
+        "line": 256
       }
     },
     {
@@ -83,7 +83,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 244
+        "line": 260
       }
     },
     {
@@ -93,7 +93,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 251
+        "line": 267
       }
     },
     {
@@ -103,7 +103,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 235
+        "line": 251
       }
     },
     {
@@ -113,7 +113,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 259
+        "line": 275
       }
     },
     {
@@ -123,7 +123,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 232
+        "line": 248
       }
     },
     {
@@ -133,7 +133,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 249
+        "line": 265
       }
     },
     {
@@ -153,7 +153,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 141
+        "line": 151
       }
     },
     {
@@ -163,7 +163,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 70
+        "line": 71
       }
     },
     {
@@ -173,7 +173,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 204
+        "line": 218
       }
     },
     {
@@ -183,7 +183,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 196
+        "line": 210
       }
     },
     {
@@ -193,7 +193,17 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 126
+        "line": 127
+      }
+    },
+    {
+      "id": "skill-9cb7eb87",
+      "tag": "skill",
+      "text": "Never put a title on a service the household does not have.",
+      "severity": "high",
+      "source": {
+        "file": "skills/appletv/skills/appletv/SKILL.md",
+        "line": 220
       }
     },
     {
@@ -203,7 +213,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 200
+        "line": 214
       }
     },
     {
@@ -213,7 +223,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 201
+        "line": 215
       }
     },
     {
@@ -233,7 +243,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 198
+        "line": 212
       }
     }
   ]

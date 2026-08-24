@@ -69,3 +69,13 @@ the end.
 | `no Apple TV is advertising developer pairing` | the TV is not on Remote App and Devices |
 | `sudo: a terminal is required` | it was run with the `!` prefix — use a real terminal window |
 | all-black capture, `state` idle | the TV is asleep or on a black screensaver; `turn_on` and look again |
+
+## The TV app's read-back can freeze
+
+Seen on Silo S3E1 (2026-08-24): after **Skip** on the promo and **Skip Recap**,
+`state` stayed at `paused · 101s` for a minute while two captures 8 s apart were
+clean black — a paused TV-app player keeps its scrubber on screen, a playing one
+does not. `play` reported `mismatch` because the read-back never moved. When the
+now-playing owner is `com.apple.TVWatchList` and the position stops updating at
+a skip point, trust two consecutive scrubber-free black frames over the number,
+and say which signal you used.

@@ -18,6 +18,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `screen` — a real screenshot over Apple's developer tunnel (pymobiledevice3 DVT, ~2.5 s), the only foreground read-back tvOS 26 has; `screen --pair` for the one-time developer pairing, `screen --install-tunnel` for a LaunchDaemon. In-app navigation is look → press → look, never a recorded sequence replayed blind.
 - `pref` (this household's profile per app, local only), `open` (launch onto that profile), `play` (deep link + read-back for the services that still honour links: YouTube, Disney+, Apple TV+, Hulu, Peacock).
 - `references/screen.md`: setup, how to read a capture, what the eyes taught on real runs (Netflix S1E3, Silo's latest episode).
+- `pref services "netflix, disney+, …"` — the services the household subscribes to, on this Mac only; `doctor` shows them, `apps` marks them, and the skill never puts a title on a service they do not have.
+- Screenshots are someone's TV: only the last three are kept, `screen --clean` deletes them, none reaches a run directory without `--out`.
 
 ### Learned on the first real run (Apple TV 4K gen 3, tvOS 26.6)
 

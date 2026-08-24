@@ -28,7 +28,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 const PIN_FILE = () => process.env.APPLETV_PIN_FILE || join(dirname(configPath()), 'pairing.pin');
 
 /** Flags that never take a value, so `--keep-going up` keeps `up` as the command. */
-const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version', 'noProfile', 'pair', 'installTunnel']);
+const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version', 'noProfile', 'pair', 'installTunnel', 'clean', 'forget']);
 
 function argv(args) {
   const out = { _: [] };
@@ -105,6 +105,7 @@ async function cmdDoctor(args) {
   const cfg = loadConfig();
   const n = Object.keys(cfg.devices).length;
   rows.push(['config', configPath().replace(homedir(), '~'), n ? `${n} device${n > 1 ? 's' : ''} remembered${cfg.default ? ', default set' : ', no default'}` : 'no devices yet — scan first']);
+  rows.push(['services', (cfg.services ?? []).map((x) => x.word).join(', ') || 'none declared', (cfg.services ?? []).length ? 'ok' : 'tell it what you subscribe to: appletv pref services "netflix, disney+"']);
   say(table(['Check', 'Value', 'Status'], rows));
 }
 
@@ -291,6 +292,19 @@ async function cmdSend(args) {
 async function cmdPref(args) {
   const cfg = loadConfig();
   const word = args._[1];
+  if (word === 'services') {
+    const list = args._.slice(2).join(' ').split(',').map((w) => w.trim()).filter(Boolean);
+    if (list.length) {
+      const ids = list.map((w) => [w, appIdFor(w, cfg)]);
+      const bad = ids.filter(([, id]) => !id).map(([w]) => w);
+      if (bad.length) throw new Fail('usage', `not a known app word: ${bad.join(', ')} — use a bundle id from \`appletv apps\``);
+      cfg.services = ids.map(([w, id]) => ({ word: w.toLowerCase(), id }));
+      saveConfig(cfg);
+    }
+    const rows = (cfg.services ?? []).map((s) => [s.word, s.id]);
+    say(rows.length ? table(['Service', 'App'], rows) : 'no services declared — e.g. appletv pref services "netflix, disney+, apple tv, paramount+"');
+    return;
+  }
   if (!word) {
     const rows = Object.entries(cfg.prefs).map(([id, p]) => [p.alias ?? '—', id, p.profile ? `${p.profile.name} (tile ${p.profile.position})` : '—']);
     say(rows.length ? table(['Word', 'App', 'Profile'], rows) : `no preferences yet — e.g. appletv pref netflix --profile Nathaniel --position 1\n(stored in ${configPath().replace(homedir(), '~')}, never in the repo)`);
@@ -479,21 +493,41 @@ function installTunnel() {
   say(table(['Wrote', 'Then run once (root — installs a LaunchDaemon so the tunnel is up at every login)'], [[out, `sudo cp ${out} /Library/LaunchDaemons/ && sudo launchctl bootstrap system /Library/LaunchDaemons/com.natjswenson.appletv.tunneld.plist`]]));
 }
 
+const SCREEN_DIR = () => join(process.env.TMPDIR || '/tmp', 'appletv-screens');
+const KEEP_SCREENS = 3;
+
+/** Screenshots are a household's TV, not an artifact: keep only the last few, wipe on demand. */
+function pruneScreens(keep = KEEP_SCREENS) {
+  const d = SCREEN_DIR();
+  if (!existsSync(d)) return 0;
+  const files = readdirSync(d).filter((f) => f.endsWith('.png')).sort();
+  const doomed = keep === 0 ? files : files.slice(0, Math.max(0, files.length - keep));
+  for (const f of doomed) rmSync(join(d, f), { force: true });
+  return doomed.length;
+}
+
 async function cmdScreen(args) {
   if (args.pair) return screenPair(args);
   if (args.installTunnel) return installTunnel();
+  if (args.clean) {
+    const n = pruneScreens(0);
+    say(table(['Screenshots', 'Removed'], [[SCREEN_DIR().replace(homedir(), '~'), String(n)]]));
+    return;
+  }
   const dir = outDir(args);
   if (!existsSync(PMD3())) throw new Fail('no_pyatv', 'pymobiledevice3 is not in the skill venv — run `appletv doctor --install`');
   const t = tunnelUp();
   if (!t.up) throw new Fail('usage', `no developer tunnel — start one in another terminal (needs root, stays up for the session):\n      ${TUNNELD_CMD}`);
   if (t.devices.length === 0) throw new Fail('usage', `the tunnel is up but has no device — pair once: TV on Settings › Remotes and Devices › Remote App and Devices, then\n      ${PMD3()} remote pair`);
-  const out = resolve(args.out ? join(dir, `screen-${Date.now()}.png`) : join(process.env.TMPDIR || '/tmp', `appletv-screen-${Date.now()}.png`));
+  mkdirSync(SCREEN_DIR(), { recursive: true });
+  const out = resolve(args.out ? join(dir, `screen-${Date.now()}.png`) : join(SCREEN_DIR(), `${Date.now()}.png`));
   say('capturing the screen…');
   const started = Date.now();
   const r = spawnSync(PMD3(), ['developer', 'dvt', 'screenshot', out, '--tunnel', ''], { encoding: 'utf8', timeout: 45_000 });
   if (r.status !== 0 || !existsSync(out)) throw new Fail('usage', `screenshot failed: ${(r.stderr || r.stdout || '').trim().split('\n').pop()}`);
   const width = String(args.width ?? 1280);
   spawnSync('sips', ['--resampleWidth', width, out], { encoding: 'utf8' });
+  if (!args.out) pruneScreens();
   say(table(['Screenshot', 'Took', 'Width'], [[out, `${((Date.now() - started) / 1000).toFixed(1)}s`, `${width}px`]]));
   return out;
 }
@@ -509,7 +543,7 @@ async function cmdApps(args) {
   const res = driveDevice('apps', pick, [], { debug: !!args.debug });
   if (!res.ok) throw failFrom(res);
   capture(dir, 'apps.json', res);
-  if (!query) { say(appsTable(res)); return; }
+  if (!query) { say(appsTable(res, new Set((loadConfig().services ?? []).map((x) => x.id)))); return; }
   const q = query.toLowerCase();
   const byUrl = /^https?:\/\//i.test(query) ? launchTarget(query) : null;
   const hits = byUrl
@@ -599,6 +633,7 @@ const USAGE = `appletv v${VERSION} — find the Apple TVs on your network, pair 
   appletv screen [--width 1280]                        screenshot via the developer tunnel (Read the PNG)
   appletv screen --pair [--device <name>]              one-time developer pairing (TV on Remote App and Devices)
   appletv screen --install-tunnel                      write a LaunchDaemon so the tunnel is up at login
+  appletv screen --clean                               delete every kept screenshot (only the last 3 are ever kept)
   appletv state [--device <name>]                     power, app, playback, keyboard, volume
   appletv send [--device <name>] <cmd[=arg][,cmd…]>   send + read back → verified|mismatch|unverifiable
   appletv apps [--device <name>] [<name or url>]      installed apps; resolve a launch target

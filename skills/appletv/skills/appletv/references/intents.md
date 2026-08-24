@@ -10,7 +10,7 @@ costs someone their evening.**
 | # | They say | Send | Confirm first? | Verdict source |
 |---|---|---|---|---|
 | 1 | "pause" / "resume" / "play" | `pause` / `play` | no | playback |
-| 2 | "put on Severance" / "play The Bear on Hulu" | `launch_app=<deep link>` (`apps.md`), else `launch_app=<id>` then say what the TV shows | no | app |
+| 2 | "put on Severance" / "play The Bear" | first: which of the household's services (`doctor`) has it — never one they lack; then a deep link where the service honours one (`apps.md`), else `open <app>` + look→press→look via `screen` | no | app, then playback |
 | 3 | "skip 30 seconds" / "go back a minute" | `skip_forward=30` / `skip_backward=60` | no | position |
 | 4 | "what did they say?" | `skip_backward=15` | no | position |
 | 5 | "skip the intro" | `skip_forward=60` (Netflix ~60–90s, Apple TV+ ~45s) — nobody ships this natively | no | position |

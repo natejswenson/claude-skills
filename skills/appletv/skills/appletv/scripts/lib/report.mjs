@@ -56,8 +56,8 @@ export function sendTable(caps) {
   return table(['Step', 'Command', 'Before', 'After', 'Verdict', 'Why'], sendRows(caps).map((r) => r.row));
 }
 
-export function appsTable(apps) {
-  return table(['App', 'Bundle id'], (apps.apps ?? []).map((a) => [a.name, a.id]));
+export function appsTable(apps, subscribed = new Set()) {
+  return table(['App', 'Bundle id', 'Subscribed'], (apps.apps ?? []).map((a) => [a.name, a.id, subscribed.has(a.id) ? 'yes' : '']));
 }
 
 export function typeTable(cap) {
