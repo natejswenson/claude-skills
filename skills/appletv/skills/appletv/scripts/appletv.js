@@ -27,6 +27,9 @@ import { launchTarget, textVerdict, verdict } from './lib/verify.mjs';
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const PIN_FILE = () => process.env.APPLETV_PIN_FILE || join(dirname(configPath()), 'pairing.pin');
 
+/** Flags that never take a value, so `--keep-going up` keeps `up` as the command. */
+const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version']);
+
 function argv(args) {
   const out = { _: [] };
   for (let i = 0; i < args.length; i += 1) {
@@ -35,6 +38,7 @@ function argv(args) {
       const [k, inline] = a.slice(2).split('=');
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
+      else if (BOOL_FLAGS.has(key)) out[key] = true;
       else if (args[i + 1] !== undefined && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
       else out[key] = true;
     } else out._.push(a);
@@ -183,7 +187,7 @@ async function cmdPair(args) {
     const res = await driveAsync('pair', dargs, {
       debug: !!args.debug,
       onPhase: (p) => {
-        if (p.phase === 'pin_needed') say(`\n  ▶ ${pick.device.name} is showing a PIN for ${proto}. Deliver it within 2 minutes:\n      appletv pair --pin <the code on the screen>\n`);
+        if (p.phase === 'pin_needed') say(`\n  ▶ ${pick.device.name} is showing a PIN for ${proto}. Deliver it within ${Math.round(Number(args.pinTimeout ?? 120) / 60)} minutes:\n      appletv pair --pin <the code on the screen>\n`);
         if (p.phase === 'enter_on_device') say(`\n  ▶ enter ${p.pin} on the TV when it asks.\n`);
       },
     });
@@ -198,6 +202,10 @@ async function cmdPair(args) {
       const e = explain(res.error ?? 'pairing_failed', res.detail);
       rows.push([proto, `failed: ${e.message}`, e.fix]);
       process.exitCode = 1;
+      // A timed-out or refused PIN means nobody is at the screen; starting the
+      // next protocol would just paint another code on the TV for no one.
+      if (want.indexOf(proto) < want.length - 1) rows.push([want[want.indexOf(proto) + 1], 'skipped', `fix ${proto} first, then run pair again`]);
+      break;
     }
   }
   say(table(['Protocol', 'Result', 'Unlocks / fix'], rows));

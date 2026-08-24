@@ -93,7 +93,7 @@
       "kind": "golden",
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
-      "update_command": "node evals/baseline/update.mjs",
+      "update_command": "node evals/update.mjs <run dir>",
       "rationale": "the scan parser dropping a device or a field while the table still looks complete; the state parser losing power or now-playing so a read-back can never disagree; a known-unsupported field rendering blank — pinned against JSON captured from a real scan of the maintainer's network, the pairing result, and a real state read-back, frozen, with report re-run over the capture and byte-compared."
     },
     {
@@ -101,7 +101,7 @@
       "kind": "golden",
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
-      "update_command": "node evals/baseline/update.mjs",
+      "update_command": "node evals/update.mjs <run dir>",
       "rationale": "the verifier drifting so a verified step reports differently, or the before/after values vanishing from the report — pinned against a real pause sent to the maintainer's Apple TV with its before and after read-backs, frozen, with the verdict re-derived and byte-compared."
     },
     {
@@ -109,7 +109,7 @@
       "kind": "trap",
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
-      "update_command": "node evals/baseline/update.mjs",
+      "update_command": "node evals/update.mjs <run dir>",
       "rationale": "the one rule ceasing to be code — send reporting verified without the read-back agreeing — pinned against a captured send where the command was pause but the read-back says playing, which must exit non-zero."
     },
     {
@@ -117,7 +117,7 @@
       "kind": "trap",
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
-      "update_command": "node evals/baseline/update.mjs",
+      "update_command": "node evals/update.mjs <run dir>",
       "rationale": "a command with no read-back being rounded up to done — pinned against a captured navigation keypress with no observable state change, whose report must say unverifiable and never verified."
     }
   ]

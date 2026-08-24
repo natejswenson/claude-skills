@@ -21,7 +21,7 @@ export function scanTable(scan, aliasesOf = () => []) {
     d.version ? `tvOS ${d.version}` : '—',
     d.address,
     (d.services ?? []).filter((s) => s.paired).map((s) => s.protocol).join('+') || 'not paired',
-    (d.services ?? []).filter((s) => !s.paired && s.pairing === 'Mandatory').map((s) => s.protocol).join('+') || '—',
+    (d.services ?? []).filter((s) => !s.paired && s.pairing === 'Mandatory' && ['airplay', 'companion'].includes(s.protocol)).map((s) => s.protocol).join('+') || '—',
     aliasesOf(d.identifier).join(', ') || '—',
   ]);
   return table(['Apple TV', 'Model', 'tvOS', 'Address', 'Paired', 'Needs pairing', 'Alias'], rows);

@@ -62,7 +62,11 @@ test('power, volume and position rules read the direction, not just the send', (
 test('launch_app verifies against the bundle id, or the app a deep link opens', () => {
   const nf = st({ app: { name: 'Netflix', id: 'com.netflix.Netflix' } });
   assert.equal(verdict(cap('launch_app', st(), nf, 'com.netflix.Netflix')).verdict, 'verified');
-  assert.equal(verdict(cap('launch_app', st(), st(), 'com.netflix.Netflix')).verdict, 'mismatch');
+  // unchanged = unknowable (app is the now-playing owner, not the foreground) — never "mismatch", never "verified"
+  assert.equal(verdict(cap('launch_app', st(), st(), 'com.netflix.Netflix')).verdict, 'unverifiable');
+  // changed to something ELSE is evidence against the launch
+  const dp = st({ app: { name: 'Disney+', id: 'com.disney.disneyplus' } });
+  assert.equal(verdict(cap('launch_app', st(), dp, 'com.netflix.Netflix')).verdict, 'mismatch');
   assert.equal(verdict(cap('launch_app', st(), nf, 'https://www.netflix.com/title/80234304')).verdict, 'verified');
   assert.equal(verdict(cap('launch_app', st(), st(), 'https://example.com/x')).verdict, 'unverifiable');
   assert.equal(launchTarget('https://tv.apple.com/show/severance/umc.cmc.1'), 'com.apple.TVWatchList');

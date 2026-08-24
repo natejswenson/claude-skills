@@ -1,0 +1,199 @@
+{
+  "ok": true,
+  "device": {
+    "name": "Living Room",
+    "address": "192.168.1.48",
+    "identifier": "REDACTED-ID",
+    "all_identifiers": [
+      "REDACTED-ID"
+    ],
+    "model": "Apple TV 4K (gen 3)",
+    "raw_model": "AppleTV14,1",
+    "os": "TvOS",
+    "version": "26.6",
+    "build": null,
+    "mac": "REDACTED",
+    "deep_sleep": false,
+    "services": [
+      {
+        "protocol": "airplay",
+        "port": 7000,
+        "pairing": "Mandatory",
+        "paired": true
+      },
+      {
+        "protocol": "companion",
+        "port": 49153,
+        "pairing": "Mandatory",
+        "paired": true
+      },
+      {
+        "protocol": "raop",
+        "port": 7000,
+        "pairing": "Mandatory",
+        "paired": false
+      }
+    ]
+  },
+  "command": "up",
+  "arg": null,
+  "sent_at": "2026-08-24T16:40:04+00:00",
+  "sent": {
+    "ok": true
+  },
+  "before": {
+    "captured_at": "2026-08-24T16:40:04+00:00",
+    "power": "on",
+    "app": {
+      "name": "PBS KIDS",
+      "id": "org.pbskids.ipadplayer"
+    },
+    "focus": "unfocused",
+    "volume": null,
+    "playing": {
+      "media_type": "unknown",
+      "device_state": "idle",
+      "title": null,
+      "artist": null,
+      "album": null,
+      "genre": null,
+      "series_name": null,
+      "season_number": null,
+      "episode_number": null,
+      "position": null,
+      "total_time": null,
+      "repeat": "off",
+      "shuffle": "off",
+      "content_identifier": null
+    },
+    "unsupported": {
+      "volume": "unavailable"
+    }
+  },
+  "reads": [
+    {
+      "captured_at": "2026-08-24T16:40:07+00:00",
+      "power": "on",
+      "app": {
+        "name": "PBS KIDS",
+        "id": "org.pbskids.ipadplayer"
+      },
+      "focus": "unfocused",
+      "volume": null,
+      "playing": {
+        "media_type": "unknown",
+        "device_state": "idle",
+        "title": null,
+        "artist": null,
+        "album": null,
+        "genre": null,
+        "series_name": null,
+        "season_number": null,
+        "episode_number": null,
+        "position": null,
+        "total_time": null,
+        "repeat": "off",
+        "shuffle": "off",
+        "content_identifier": null
+      },
+      "unsupported": {
+        "volume": "unavailable"
+      }
+    },
+    {
+      "captured_at": "2026-08-24T16:40:10+00:00",
+      "power": "on",
+      "app": {
+        "name": "PBS KIDS",
+        "id": "org.pbskids.ipadplayer"
+      },
+      "focus": "unfocused",
+      "volume": null,
+      "playing": {
+        "media_type": "unknown",
+        "device_state": "idle",
+        "title": null,
+        "artist": null,
+        "album": null,
+        "genre": null,
+        "series_name": null,
+        "season_number": null,
+        "episode_number": null,
+        "position": null,
+        "total_time": null,
+        "repeat": "off",
+        "shuffle": "off",
+        "content_identifier": null
+      },
+      "unsupported": {
+        "volume": "unavailable"
+      }
+    },
+    {
+      "captured_at": "2026-08-24T16:40:13+00:00",
+      "power": "on",
+      "app": {
+        "name": "PBS KIDS",
+        "id": "org.pbskids.ipadplayer"
+      },
+      "focus": "unfocused",
+      "volume": null,
+      "playing": {
+        "media_type": "unknown",
+        "device_state": "idle",
+        "title": null,
+        "artist": null,
+        "album": null,
+        "genre": null,
+        "series_name": null,
+        "season_number": null,
+        "episode_number": null,
+        "position": null,
+        "total_time": null,
+        "repeat": "off",
+        "shuffle": "off",
+        "content_identifier": null
+      },
+      "unsupported": {
+        "volume": "unavailable"
+      }
+    }
+  ],
+  "after": {
+    "captured_at": "2026-08-24T16:40:13+00:00",
+    "power": "on",
+    "app": {
+      "name": "PBS KIDS",
+      "id": "org.pbskids.ipadplayer"
+    },
+    "focus": "unfocused",
+    "volume": null,
+    "playing": {
+      "media_type": "unknown",
+      "device_state": "idle",
+      "title": null,
+      "artist": null,
+      "album": null,
+      "genre": null,
+      "series_name": null,
+      "season_number": null,
+      "episode_number": null,
+      "position": null,
+      "total_time": null,
+      "repeat": "off",
+      "shuffle": "off",
+      "content_identifier": null
+    },
+    "unsupported": {
+      "volume": "unavailable"
+    }
+  },
+  "verdict": {
+    "verdict": "unverifiable",
+    "observes": "playback",
+    "expected": null,
+    "before": "idle",
+    "after": "idle",
+    "why": "a keypress has no readable state of its own"
+  }
+}

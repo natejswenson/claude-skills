@@ -174,16 +174,19 @@ export function verdict(cap) {
       return ok ? result('verified', 'volume', before, after, `volume ${b} → ${a}`, want) : result('mismatch', 'volume', before, after, `expected ${want}, volume ${b} → ${a}`, want);
     }
     case 'launch_app': {
+      // `app` is the now-playing OWNER reported over MRP, not the foreground
+      // app: a launch to an app's home screen changes nothing until that app
+      // starts playing. So "unchanged" is unknowable, not a proven failure —
+      // real runs against tvOS 26.6 showed Settings and Netflix both leaving
+      // `app` on the previous media app. Only a change to a *different* app
+      // than the target is evidence against the launch.
       const want = launchTarget(arg);
       const a = appId(after);
       if (a === null) return result('unverifiable', 'app', before, after, `device does not report the foreground app${unsupported.app ? ` (${unsupported.app})` : ''}`, want);
-      if (want) {
-        return a === want
-          ? result('verified', 'app', before, after, `foreground app is ${after.app.name}`, want)
-          : result('mismatch', 'app', before, after, `expected ${want}, foreground app is ${a}`, want);
-      }
-      if (a !== appId(before)) return result('verified', 'app', before, after, `foreground app changed to ${after.app.name}`, 'a different app');
-      return result('unverifiable', 'app', before, after, 'deep link host is not in the known-app table and the foreground app did not change');
+      if (want && a === want) return result('verified', 'app', before, after, appId(before) === want ? `now-playing owner is ${after.app.name} (it already was before the send)` : `now-playing owner is ${after.app.name}`, want);
+      if (a === appId(before)) return result('unverifiable', 'app', before, after, 'the TV reports the now-playing app, not the foreground one — it only changes once the launched app plays something; look at the screen', want ?? 'a different app');
+      if (want) return result('mismatch', 'app', before, after, `expected ${want}, now-playing owner became ${a}`, want);
+      return result('verified', 'app', before, after, `now-playing owner changed to ${after.app.name}`, 'a different app');
     }
     case 'home': {
       const a = appId(after);

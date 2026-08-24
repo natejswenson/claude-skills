@@ -1,25 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const BASELINE = join(HERE, '..', '..', 'evals', 'baseline');
+const SKILL = join(HERE, '..', '..');
+const BASELINE = join(SKILL, 'evals', 'baseline');
+const manifest = JSON.parse(readFileSync(join(BASELINE, 'MANIFEST.json'), 'utf8'));
 
-// ---------------------------------------------------------------------------
-// NOT YET FROZEN. appletv has no baseline until it has actually been run.
-//
-// Run the skill end to end on a real input, then:
-//     skillfactory freeze --skill appletv --from <the run's output dir>
-//
-// which replaces this file with assertions over what that run really produced.
-// Deleting this test to get green is the one shortcut that makes every other
-// gate in this repo decorative.
-// ---------------------------------------------------------------------------
-test('a real run has been frozen as the baseline', () => {
-  assert.ok(
-    existsSync(join(BASELINE, 'MANIFEST.json')),
-    'no real run frozen yet — appletv is at rung 2 (scaffolded and lint-clean), not rung 3. Run it for real, then `skillfactory freeze`.',
+// Pinned against a real run of appletv. Refresh with:
+//   cp evals/baseline/scan.json evals/baseline/state.json evals/baseline/send-*.json "<a fresh dir>"/ && node scripts/appletv.js report --from "$OUT" > "$OUT/report.txt"
+//   skillfactory freeze --skill appletv --from <that dir> --command "cp evals/baseline/scan.json evals/baseline/state.json evals/baseline/send-*.json \"$OUT\"/ && node scripts/appletv.js report --from \"$OUT\" > \"$OUT/report.txt\""
+
+const sh = (cmd, cwd) => execFileSync('bash', ['-lc', cmd], { cwd, encoding: 'utf8' });
+
+test('the frozen run covers real artifacts', () => {
+  // Anti-vacuity floor: a manifest over zero artifacts would let every
+  // assertion below iterate nothing and still report green.
+  assert.ok(manifest.artifacts.length >= 7, 'the frozen run lost artifacts — refresh or explain');
+  for (const a of manifest.artifacts) {
+    assert.ok(existsSync(join(BASELINE, a.path)), `frozen artifact missing: ${a.path}`);
+  }
+});
+
+test('re-running the frozen command reproduces it byte for byte', () => {
+  const out = mkdtempSync(join(tmpdir(), 'appletv-baseline-'));
+  sh(manifest.command.replaceAll('$OUT', out), SKILL);
+  for (const a of manifest.artifacts) {
+    const produced = readFileSync(join(out, a.path));
+    const frozen = readFileSync(join(BASELINE, a.path));
+    assert.deepEqual(produced, frozen, `${a.path} drifted from the frozen run — inspect the diff before refreshing`);
+  }
+});
+
+test('the known-bad case still fails', () => {
+  // Two-sided. A baseline that only asserts good-input-passes goes green the
+  // day someone weakens the checker.
+  assert.throws(
+    () => sh("node scripts/appletv.js report --from evals/traps/mismatch >/dev/null 2>&1 || node scripts/appletv.js report --from evals/traps/unverifiable >/dev/null 2>&1", SKILL),
+    'the known-bad input stopped failing — the checker has been weakened, not the input fixed',
   );
 });
