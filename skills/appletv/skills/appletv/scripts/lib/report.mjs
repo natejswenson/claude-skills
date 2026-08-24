@@ -66,7 +66,7 @@ export function resultOf(cap, v) {
   if (v.verdict === 'verified') return `verified (${v.before} → ${v.after})`;
   if (v.verdict === 'mismatch') return `mismatch — ${v.why}`;
   if (KEYPRESS.has(cap.command)) return 'sent';
-  if (/^already /.test(v.why)) return v.why.replace(/ before the send.*$/, ' already');
+  if (/^already /.test(v.why)) return v.why.replace(/ before the send.*$/, '');
   return `sent — ${v.why}`;
 }
 

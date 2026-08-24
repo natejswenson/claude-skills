@@ -19,9 +19,9 @@
 
 ## Sends (2 verified, 2 sent without read-back)
 
-| Step | Command                           | Before                            | After                             | Verdict      | Why                                                                     |
-|------|-----------------------------------|-----------------------------------|-----------------------------------|--------------|-------------------------------------------------------------------------|
-| 1    | turn_off                          | on                                | off                               | verified     | read-back is off                                                        |
-| 2    | turn_on                           | off                               | on                                | verified     | read-back is on                                                         |
-| 3    | up                                | idle                              | idle                              | unverifiable | a keypress has no readable state of its own                             |
-| 4    | launch_app=org.pbskids.ipadplayer | PBS KIDS (org.pbskids.ipadplayer) | PBS KIDS (org.pbskids.ipadplayer) | unverifiable | PBS KIDS already owned now-playing before the send — foreground unknown |
+| Step | Command                           | Before                            | After                             | Verdict      | Why                                                                           |
+|------|-----------------------------------|-----------------------------------|-----------------------------------|--------------|-------------------------------------------------------------------------------|
+| 1    | turn_off                          | on                                | off                               | verified     | read-back is off                                                              |
+| 2    | turn_on                           | off                               | on                                | verified     | read-back is on                                                               |
+| 3    | up                                | idle                              | idle                              | unverifiable | a keypress has no readable state of its own                                   |
+| 4    | launch_app=org.pbskids.ipadplayer | PBS KIDS (org.pbskids.ipadplayer) | PBS KIDS (org.pbskids.ipadplayer) | unverifiable | already the now-playing owner (PBS KIDS) before the send — foreground unknown |

@@ -305,7 +305,7 @@ function parseSteps(spec) {
 
 const KEYPRESSES = new Set(['up', 'down', 'left', 'right', 'select', 'menu', 'home_hold', 'top_menu', 'channel_up', 'channel_down', 'screensaver', 'guide', 'control_center']);
 /** How long the read-back may wait for each command's field to move (it stops as soon as it does). */
-const CEILING = { turn_on: 6, turn_off: 6, suspend: 6, wakeup: 6, launch_app: 5, home: 3, set_volume: 3, volume_up: 3, volume_down: 3 };
+const CEILING = { turn_on: 6, turn_off: 6, suspend: 6, wakeup: 6, launch_app: 3, home: 3, set_volume: 3, volume_up: 3, volume_down: 3 };
 const ceilingFor = (command, override) => (override !== undefined ? Number(override) : KEYPRESSES.has(command) ? 0 : CEILING[command] ?? 4);
 
 const SAFE_WHILE_WATCHING = new Set(['pause', 'volume_up', 'volume_down', 'set_volume', 'play']);
