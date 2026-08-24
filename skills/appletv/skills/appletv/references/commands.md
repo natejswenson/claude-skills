@@ -5,7 +5,21 @@ read-back that decides its verdict. The verdict logic is `scripts/lib/verify.mjs
 this file is its human copy. If the two disagree, the code is right and this
 file is stale.
 
-Three verdicts exist and there is no fourth:
+Three verdicts exist and there is no fourth. Three rules apply to all of them:
+
+- **A state that already matched before the send is not verified.** `turn_on`
+  on a TV that reads `on`, `pause` on a paused player, `launch_app` for the app
+  that already owns now-playing — all `unverifiable` ("already on before the
+  send — nothing to prove"). The user's goal may be met; the command proved
+  nothing.
+- **A read-back that never moved is not a mismatch on the TV app.** The Apple
+  TV app (`com.apple.TVWatchList`) stops publishing at skip points; if every
+  read is identical, the verdict is `unverifiable` with that reason. On any
+  other app the same numbers are a real `mismatch`.
+- **The read-back stops as soon as the expected field moves.** Each command
+  names the field it changes; `send` polls it every 0.5 s up to a ceiling
+  (power/launch 5–6 s, playback 4 s, keypresses 0 s), so a verified pause
+  returns in about a second and a keypress returns at once.
 
 | Verdict | Means | Is it "done"? |
 |---|---|---|
@@ -50,10 +64,11 @@ Three verdicts exist and there is no fourth:
 | `set_volume=0-100` | Companion/MRP | `volume` within 1 | only when audio goes to HomePod/AirPlay |
 | `volume_up` / `volume_down` | Companion/MRP | `volume` moved in that direction | HDMI-CEC volume has no read-back → unverifiable |
 
-## Keypresses — always unverifiable
+## Keypresses — always unverifiable (shown as `sent`)
 
 `up` `down` `left` `right` `select` `menu` `top_menu` `home_hold` `channel_up`
-`channel_down` `screensaver` `guide` `control_center`
+`channel_down` `screensaver` `guide` `control_center` — and `select=hold`,
+`select=double`, `menu=hold` for the long and double presses.
 
 A keypress has no state of its own. `send` still reports the before/after
 state so a person can see what moved, but the verdict is `unverifiable` and
@@ -67,6 +82,7 @@ the agent says "sent, could not confirm" — never "done". Prefer a deep link or
 | `type <text>` | `text_get == text` |
 | `type <text> --append` | `text_get == before + text` |
 | `type --clear` | `text_get == ""` |
+| `type <text> --submit` | as above, then `select` — only after the text verified |
 
 Refuses when no field is focused (`focus != focused`). tvOS keyboard is
 replace-mode: `type` replaces, `--append` adds.

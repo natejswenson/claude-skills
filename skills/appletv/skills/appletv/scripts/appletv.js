@@ -21,14 +21,15 @@ import { dirname, join, resolve } from 'node:path';
 import { aliasesFor, appIdFor, configPath, loadConfig, prefFor, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
 import { DRIVER, SKILL_DIR, VENV, drive, driveAsync, systemPython, venvPython } from './lib/driver.mjs';
 import { explain } from './lib/errors.mjs';
-import { appsTable, scanTable, sendRows, sendTable, stateTable, summarize, table, typeTable } from './lib/report.mjs';
+import { appsTable, compactSendTable, scanTable, sendRows, sendTable, stateTable, summarize, table, typeTable } from './lib/report.mjs';
 import { launchTarget, playVerdict, textVerdict, verdict } from './lib/verify.mjs';
+import { spawnSync as spawnSyncOs } from 'node:child_process';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const PIN_FILE = () => process.env.APPLETV_PIN_FILE || join(dirname(configPath()), 'pairing.pin');
 
-/** Flags that never take a value, so `--keep-going up` keeps `up` as the command. */
-const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version', 'noProfile', 'pair', 'installTunnel', 'clean', 'forget']);
+/** The only flags that take a value; everything else is a switch, so `--keep-going up` keeps `up`. */
+const VALUED_FLAGS = new Set(['device', 'out', 'hosts', 'timeout', 'protocol', 'pin', 'pinTimeout', 'settle', 'ceiling', 'tries', 'width', 'title', 'app', 'episode', 'profile', 'position', 'from', 'repo', 'install', 'text']);
 
 function argv(args) {
   const out = { _: [] };
@@ -38,8 +39,7 @@ function argv(args) {
       const [k, inline] = a.slice(2).split('=');
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
-      else if (BOOL_FLAGS.has(key)) out[key] = true;
-      else if (args[i + 1] !== undefined && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
+      else if (VALUED_FLAGS.has(key) && args[i + 1] !== undefined && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
       else out[key] = true;
     } else out._.push(a);
   }
@@ -73,19 +73,46 @@ function failFrom(res) {
   return new Fail(res.error, res.detail);
 }
 
+/** Someone is watching: refuse anything that would change what is on the screen. */
+function refuseIfOnHold(cmd) {
+  if (loadConfig().hold) throw new Fail('on_hold', `refused ${cmd}`);
+}
+
+/** Retry once on a dropped connection — Companion drops are transient on tvOS 26. */
+function driveDeviceRetry(sub, pick, extra = [], opts = {}) {
+  let res = driveDevice(sub, pick, extra, opts);
+  if (!res.ok && ['connection_failed', 'timeout'].includes(res.error)) {
+    spawnSyncOs('sleep', ['2']);
+    res = driveDevice(sub, pick, extra, opts);
+  }
+  return res;
+}
+
 // ---------------------------------------------------------------------------
 // doctor — is the machine able to talk to an Apple TV at all
 // ---------------------------------------------------------------------------
+function credentialCount(storagePath) {
+  try {
+    const j = JSON.parse(readFileSync(storagePath, 'utf8'));
+    const devices = j.devices ?? j;
+    let n = 0;
+    for (const d of Array.isArray(devices) ? devices : Object.values(devices)) {
+      const protos = d.protocols ?? {};
+      if (Object.values(protos).some((p) => p && p.credentials)) n += 1;
+    }
+    return n;
+  } catch { return 0; }
+}
+
 async function cmdDoctor(args) {
   const rows = [];
+  const fixes = [];
   const sys = systemPython();
-  rows.push(['python3', sys ? `${sys.version} (${sys.bin})` : 'missing', sys ? 'ok' : 'install Python 3 ≥ 3.9']);
   if (!sys) throw new Fail('no_python');
-
   let py = venvPython();
   if (!py || args.install) {
     if (!py || args.install === 'fresh') {
-      say(py ? 'recreating the skill venv…' : 'creating the skill venv and installing pyatv…');
+      say(py ? 'recreating the skill venv…' : 'creating the skill venv and installing pyatv (about a minute)…');
       if (py) rmSync(VENV, { recursive: true, force: true });
       const mk = spawnSync(sys.bin, ['-m', 'venv', VENV], { encoding: 'utf8' });
       if (mk.status !== 0) throw new Fail('no_python', mk.stderr.trim());
@@ -95,18 +122,32 @@ async function cmdDoctor(args) {
     py = venvPython();
   }
   const d = drive('doctor');
-  rows.push(['venv', VENV.replace(homedir(), '~'), py ? 'ok' : 'missing']);
-  rows.push(['pyatv', d.ok ? d.pyatv : 'missing', d.ok ? 'ok' : explain(d.error, d.detail).fix]);
-  if (!d.ok) { say(table(['Check', 'Value', 'Status'], rows)); throw failFrom(d); }
-  rows.push(['credentials', d.storage.replace(homedir(), '~'), existsSync(d.storage) ? 'present' : 'none yet — pair first']);
+  if (!d.ok) { say(table(['Check', 'Status'], [['pyatv', 'missing']])); throw failFrom(d); }
+  rows.push(['pyatv', `${d.pyatv} (python ${d.python})`]);
+  const creds = credentialCount(d.storage);
+  const cfg = loadConfig();
   const pm = existsSync(join(VENV, 'bin', 'pymobiledevice3'));
   const tun = pm ? tunnelUp() : { up: false, devices: [] };
-  rows.push(['screenshots', pm ? (tun.up ? (tun.devices.length ? `tunnel up, ${tun.devices.length} device` : 'tunnel up, no device paired') : 'tunnel down') : 'pymobiledevice3 missing', pm ? (tun.up && tun.devices.length ? 'ok' : `start: ${TUNNELD_CMD}`) : 'optional — pip install pymobiledevice3 in the venv']);
-  const cfg = loadConfig();
-  const n = Object.keys(cfg.devices).length;
-  rows.push(['config', configPath().replace(homedir(), '~'), n ? `${n} device${n > 1 ? 's' : ''} remembered${cfg.default ? ', default set' : ', no default'}` : 'no devices yet — scan first']);
-  rows.push(['services', (cfg.services ?? []).map((x) => x.word).join(', ') || 'none declared', (cfg.services ?? []).length ? 'ok' : 'tell it what you subscribe to: appletv pref services "netflix, disney+"']);
-  say(table(['Check', 'Value', 'Status'], rows));
+  const eyes = !pm ? 'no screenshots' : tun.up ? (tun.devices.length ? 'screenshots ok' : 'tunnel up, not developer-paired') : 'screenshots off (tunnel down)';
+  const devices = Object.entries(cfg.devices);
+  if (devices.length === 0) {
+    rows.push(['devices', 'none yet']);
+    fixes.push('run `appletv scan`');
+  }
+  for (const [id, dev] of devices) {
+    const bits = [dev.paired?.length ? `paired (${dev.paired.join('+')})` : 'NOT paired', cfg.default === id ? 'default' : null, aliasesFor(cfg, id).join(', ') || null].filter(Boolean);
+    rows.push([dev.name, bits.join(', ')]);
+    if (!dev.paired?.length) fixes.push(`\`appletv pair --device "${dev.name}"\``);
+  }
+  rows.push(['eyes', eyes]);
+  if (pm && !tun.up) fixes.push(`start the tunnel: ${TUNNELD_CMD}`);
+  if (pm && tun.up && !tun.devices.length) fixes.push('`appletv screen --pair` with the TV on Remote App and Devices');
+  rows.push(['services', (cfg.services ?? []).map((x) => x.word).join(', ') || 'none declared']);
+  if (!(cfg.services ?? []).length) fixes.push('`appletv pref services "netflix, disney+"`');
+  if (cfg.hold) rows.push(['hold', 'ON — someone is watching; only pause/state allowed']);
+  if (creds === 0 && devices.length) fixes.push('no credentials stored yet');
+  say(table(['Check', 'Status'], rows));
+  if (fixes.length) say(`\nto do: ${fixes.join('; ')}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,11 +167,13 @@ async function cmdScan(args) {
   if (res.devices.length === 0) {
     const e = explain('scan_empty');
     say(table(['Apple TV', 'Model', 'tvOS', 'Address', 'Paired', 'Needs pairing', 'Alias'], [['(none found)', '—', '—', '—', '—', '—', '—']]));
-    say(`\n${e.message} after ${res.seconds}s (${res.mode}${res.ignored.length ? `; ignored ${res.ignored.join(', ')} — not a TV` : ''}).\n  fix: ${e.fix}`);
+    const ssid = (() => { const r = spawnSync('ipconfig', ['getsummary', 'en0'], { encoding: 'utf8' }); return r.stdout?.match(/\bSSID : (.+)/)?.[1]?.trim() ?? null; })();
+    say(`\n${e.message} after ${res.seconds}s (${res.mode}${ssid ? `; this Mac is on Wi-Fi "${ssid}"` : ''}${res.ignored.length ? `; ignored ${res.ignored.join(', ')} — not a TV` : ''}).\n  fix: ${e.fix}`);
     process.exitCode = 1;
     return;
   }
   say(scanTable(res, (id) => aliasesFor(cfg, id)));
+  if (res.ignored?.length) say(`(not Apple TVs, ignored: ${res.ignored.join(', ')})`);
   const unpaired = res.devices.filter((d) => !d.services.some((s) => s.paired));
   if (unpaired.length) say(`\n${unpaired.length} not paired yet — \`appletv pair --device "${unpaired[0].name}"\` to pair one.`);
 }
@@ -178,20 +221,22 @@ async function cmdPair(args) {
     return;
   }
   const pick = pickDevice(args);
+  if (pick.device.model && !/apple tv/i.test(pick.device.model) && !pick.device.version) throw new Fail('not_an_apple_tv', pick.device.name);
   const want = args.protocol && args.protocol !== 'all' ? [String(args.protocol).toLowerCase()] : ['airplay', 'companion'];
   const already = new Set(pick.device.paired ?? []);
   const rows = [];
+  if (want.some((w) => !already.has(w) || args.force)) say(`stand in front of ${pick.device.name}: it will show a 4-digit code for each protocol (${want.filter((w) => !already.has(w) || args.force).join(', then ')}) as soon as pairing starts.`);
   for (const proto of want) {
     if (already.has(proto) && !args.force) { rows.push([proto, 'already paired', UNLOCKS[proto] ?? '']); continue; }
     const pinFile = PIN_FILE();
     rmSync(pinFile, { force: true });
-    const dargs = [...deviceArgs(pick), '--protocol', proto, '--pin-file', pinFile, '--pin-timeout', String(args.pinTimeout ?? 120)];
+    const dargs = [...deviceArgs(pick), '--protocol', proto, '--pin-file', pinFile, '--pin-timeout', String(args.pinTimeout ?? 600)];
     if (args.pin) dargs.push('--pin', String(args.pin));
     say(`pairing ${proto} with ${pick.device.name}…`);
     const res = await driveAsync('pair', dargs, {
       debug: !!args.debug,
       onPhase: (p) => {
-        if (p.phase === 'pin_needed') say(`\n  ▶ ${pick.device.name} is showing a PIN for ${proto}. Deliver it within ${Math.round(Number(args.pinTimeout ?? 120) / 60)} minutes:\n      appletv pair --pin <the code on the screen>\n`);
+        if (p.phase === 'pin_needed') say(`\n  ▶ ${pick.device.name} is showing the ${proto} code NOW (4 digits, ${Math.round(Number(args.pinTimeout ?? 600) / 60)}-minute window)\n`);
         if (p.phase === 'enter_on_device') say(`\n  ▶ enter ${p.pin} on the TV when it asks.\n`);
       },
     });
@@ -242,7 +287,7 @@ async function cmdState(args) {
   const dir = outDir(args);
   const pick = pickDevice(args);
   say(`reading ${pick.device.name}…`);
-  const res = driveDevice('state', pick, [], { debug: !!args.debug });
+  const res = driveDeviceRetry('state', pick, [], { debug: !!args.debug });
   if (!res.ok) throw failFrom(res);
   capture(dir, 'state.json', res);
   say(stateTable(res.state));
@@ -258,33 +303,51 @@ function parseSteps(spec) {
   });
 }
 
+const KEYPRESSES = new Set(['up', 'down', 'left', 'right', 'select', 'menu', 'home_hold', 'top_menu', 'channel_up', 'channel_down', 'screensaver', 'guide', 'control_center']);
+/** How long the read-back may wait for each command's field to move (it stops as soon as it does). */
+const CEILING = { turn_on: 6, turn_off: 6, suspend: 6, wakeup: 6, launch_app: 5, home: 3, set_volume: 3, volume_up: 3, volume_down: 3 };
+const ceilingFor = (command, override) => (override !== undefined ? Number(override) : KEYPRESSES.has(command) ? 0 : CEILING[command] ?? 4);
+
+const SAFE_WHILE_WATCHING = new Set(['pause', 'volume_up', 'volume_down', 'set_volume', 'play']);
+
+/** One driver connection for the whole sequence; per-step ceilings; captures written as before. */
+function pressSequence(pick, steps, { dir = null, debug = false, ceiling, stopOnRefusal = true } = {}) {
+  const payload = steps.map((st) => ({ command: st.command, arg: st.arg ?? null, ceiling: ceilingFor(st.command, ceiling) }));
+  const extra = ['--steps', JSON.stringify(payload)];
+  if (stopOnRefusal) extra.push('--stop-on-refusal');
+  const res = driveDeviceRetry('press', pick, extra, { debug });
+  if (!res.ok) throw failFrom(res);
+  const caps = (res.captures ?? [res]).map((c) => ({ ...c, verdict: verdict(c) }));
+  const existing = dir ? readdirSync(dir).filter((f) => /^send-\d+\.json$/.test(f)).length : 0;
+  caps.forEach((cap, i) => capture(dir, `send-${String(existing + i + 1).padStart(2, '0')}.json`, cap));
+  return caps;
+}
+
+async function runSteps(pick, steps, opts = {}) {
+  return pressSequence(pick, steps, opts);
+}
+
 async function cmdSend(args) {
   const dir = outDir(args);
   const spec = args._.slice(1).join(',');
   if (!spec) throw new Fail('usage', 'send [--device <name>] <command[=arg][,command...]>');
   const pick = pickDevice(args);
   const steps = parseSteps(spec);
-  const caps = [];
-  const existing = dir ? readdirSync(dir).filter((f) => /^send-\d+\.json$/.test(f)).length : 0;
-  for (const [i, step] of steps.entries()) {
-    say(`sending ${step.arg ? `${step.command}=${step.arg}` : step.command} to ${pick.device.name}, then reading back…`);
-    const extra = ['--tries', String(args.tries ?? 3), '--settle', String(args.settle ?? 1.5)];
-    if (step.arg !== null) extra.push('--arg', step.arg);
-    const res = driveDevice('press', pick, [step.command, ...extra], { debug: !!args.debug });
-    if (!res.ok) throw failFrom(res);
-    const cap = { ...res, verdict: verdict(res) };
-    caps.push(cap);
-    capture(dir, `send-${String(existing + i + 1).padStart(2, '0')}.json`, cap);
-    if (cap.verdict.verdict === 'mismatch' && steps.length > 1 && !args.keepGoing) {
-      say('stopping the sequence at the first mismatch (pass --keep-going to continue).');
-      break;
+  if (!steps.every((st) => SAFE_WHILE_WATCHING.has(st.command))) refuseIfOnHold(`send ${spec}`);
+  say(`${steps.length === 1 ? (steps[0].arg ? `${steps[0].command}=${steps[0].arg}` : steps[0].command) : `${steps.length} steps`} → ${pick.device.name}…`);
+  let caps;
+  if (args.keepGoing) caps = pressSequence(pick, steps, { dir, debug: !!args.debug, ceiling: args.ceiling ?? args.settle, stopOnRefusal: false });
+  else {
+    // stop at the first mismatch: send one at a time only when a verdict could stop us
+    caps = [];
+    for (const step of steps) {
+      caps.push(...pressSequence(pick, [step], { dir, debug: !!args.debug, ceiling: args.ceiling ?? args.settle }));
+      if (caps[caps.length - 1].verdict.verdict === 'mismatch' && steps.length > 1) { say('stopped at the first mismatch (pass --keep-going to continue).'); break; }
     }
   }
-  say(sendTable(caps));
-  say(`\n${summarize(caps)}.`);
+  say(args.verbose ? sendTable(caps) : compactSendTable(caps));
   if (caps.some((c) => c.verdict.verdict === 'mismatch')) process.exitCode = 1;
 }
-
 
 // ---------------------------------------------------------------------------
 // pref — the household's preferences, on this Mac only
@@ -292,6 +355,12 @@ async function cmdSend(args) {
 async function cmdPref(args) {
   const cfg = loadConfig();
   const word = args._[1];
+  if (word === 'hold') {
+    const v = String(args._[2] ?? '').toLowerCase();
+    if (v === 'on' || v === 'off') { cfg.hold = v === 'on'; saveConfig(cfg); }
+    say(table(['Hold', 'Meaning'], [[cfg.hold ? 'on' : 'off', cfg.hold ? 'someone is watching — only pause, volume and state are allowed' : 'free to drive']]));
+    return;
+  }
   if (word === 'services') {
     const list = args._.slice(2).join(' ').split(',').map((w) => w.trim()).filter(Boolean);
     if (list.length) {
@@ -327,38 +396,31 @@ function profileSteps(pref) {
   return [...Array(n - 1).fill({ command: 'right', arg: null }), { command: 'select', arg: null }];
 }
 
-async function runSteps(pick, steps, { settle = 2, tries = 2, debug = false, dir = null } = {}) {
-  const caps = [];
-  const existing = dir ? readdirSync(dir).filter((f) => /^send-\d+\.json$/.test(f)).length : 0;
-  for (const [i, step] of steps.entries()) {
-    const extra = ['--tries', String(tries), '--settle', String(settle)];
-    if (step.arg !== null && step.arg !== undefined) extra.push('--arg', step.arg);
-    const res = driveDevice('press', pick, [step.command, ...extra], { debug });
-    if (!res.ok) throw failFrom(res);
-    const cap = { ...res, verdict: verdict(res) };
-    caps.push(cap);
-    capture(dir, `send-${String(existing + i + 1).padStart(2, '0')}.json`, cap);
-  }
-  return caps;
-}
-
 // ---------------------------------------------------------------------------
 // open — launch an app and land on the preferred profile
 // ---------------------------------------------------------------------------
 async function cmdOpen(args) {
   const dir = outDir(args);
   const pick = pickDevice(args);
+  refuseIfOnHold('open');
   const word = args._.slice(1).join(' ');
   const cfg = loadConfig();
   const id = appIdFor(word, cfg);
   if (!id) throw new Fail('usage', `open <app word or bundle id> — "${word}" is not one I know; \`appletv apps ${word}\` finds the id`);
   const pref = prefFor(cfg, id);
-  say(`opening ${word} on ${pick.device.name}${pref?.profile ? ` as ${pref.profile.name}` : ''}…`);
-  const steps = [{ command: 'turn_on', arg: null }, { command: 'launch_app', arg: id }];
-  if (pref?.profile && !args.noProfile) steps.push(...profileSteps(pref));
-  const caps = await runSteps(pick, steps, { settle: Number(args.settle ?? 3), debug: !!args.debug, dir });
-  say(sendTable(caps));
-  say(`\n${summarize(caps)}. ${pref?.profile ? `Profile tile ${pref.profile.position} (${pref.profile.name}) selected blind — look at the screen.` : ''}`);
+  say(`opening ${word} on ${pick.device.name}…`);
+  const caps = await runSteps(pick, [{ command: 'turn_on', arg: null }, { command: 'launch_app', arg: id }], { debug: !!args.debug, dir });
+  const eyes = tunnelUp();
+  if (eyes.up && eyes.devices.length && !args.noScreen) {
+    // Look instead of pressing the profile tile blind — the picker may be tvOS's, the app's, or absent.
+    const png = await cmdScreen({ ...args, _: ['screen'] });
+    say(compactSendTable(caps));
+    say(`\nlook at ${png}: pick ${pref?.profile ? `${pref.profile.name} (tile ${pref.profile.position})` : 'the profile'} only if a picker is showing.`);
+    return;
+  }
+  if (pref?.profile && !args.noProfile) caps.push(...await runSteps(pick, profileSteps(pref), { debug: !!args.debug, dir, ceiling: 1 }));
+  say(compactSendTable(caps));
+  say(`\n${summarize(caps)}.${pref?.profile ? ` Profile tile ${pref.profile.position} (${pref.profile.name}) pressed without eyes — confirm on the screen.` : ''}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -377,18 +439,21 @@ async function cmdPlay(args) {
     throw new Fail('usage', 'play <deep link> [--title "<expected>"] — for an app without working deep links (Netflix), navigate with `appletv screen` between presses and confirm with `appletv state`');
   }
   const id = args.app ? appIdFor(args.app, cfg) : launchTarget(target);
+  if (id === 'com.netflix.Netflix') throw new Fail('deep_link_unsupported', 'netflix');
+  refuseIfOnHold('play');
   const title = args.title ? String(args.title) : null;
-  const opts = { settle: Number(args.settle ?? 5), debug: !!args.debug, dir };
+  const opts = { debug: !!args.debug, dir, ceiling: Number(args.ceiling ?? 8) };
   say(`playing ${title ?? target} on ${pick.device.name} via deep link…`);
   const caps = await runSteps(pick, [{ command: 'turn_on', arg: null }, { command: 'launch_app', arg: target }], opts);
   let end = caps[caps.length - 1];
   let played = playVerdict(end, { title, appId: id });
-  for (let i = 0; i < 3 && played.verdict !== 'verified'; i += 1) {
-    await new Promise((r) => setTimeout(r, 4000));
+  const deadline = Date.now() + 12_000;
+  while (played.verdict !== 'verified' && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1500));
     const res = driveDevice('state', pick, [], { debug: opts.debug });
-    if (res.ok) { end = { ...end, after: res.state }; played = playVerdict(end, { title, appId: id }); }
+    if (res.ok) { end = { ...end, after: res.state, reads: [...(end.reads ?? []), res.state] }; played = playVerdict(end, { title, appId: id }); }
   }
-  say(sendTable(caps));
+  say(args.verbose ? sendTable(caps) : compactSendTable(caps));
   say(`\n${played.verdict}: ${played.why}`);
   if (played.verdict !== 'verified') process.exitCode = 1;
 }
@@ -400,6 +465,12 @@ async function cmdPlay(args) {
 // ---------------------------------------------------------------------------
 const PMD3 = () => join(VENV, 'bin', 'pymobiledevice3');
 const TUNNELD_CMD = 'sudo ' + join(VENV, 'bin', 'pymobiledevice3') + ' remote tunneld --no-usb --no-usbmux --no-mobdev2 --wifi';
+
+/** sudo needs a TTY the agent never has: open Terminal.app with the line typed in, password to be entered there. */
+function openTerminalWith(cmd) {
+  const r = spawnSync('osascript', ['-e', `tell application "Terminal"\nactivate\ndo script "${cmd.replace(/"/g, '\\"')}"\nend tell`], { encoding: 'utf8' });
+  return r.status === 0;
+}
 
 function tunnelUp() {
   const r = spawnSync('curl', ['-s', '-m', '2', 'http://127.0.0.1:49151/'], { encoding: 'utf8' });
@@ -451,7 +522,7 @@ async function screenPair(args) {
   child.stderr.on('data', (d) => {
     for (const line of String(d).split('\n').filter(Boolean)) {
       let p = null; try { p = JSON.parse(line); } catch { if (args.debug) process.stderr.write(`${line}\n`); }
-      if (p?.phase === 'pin_needed') say(`\n  ▶ ${p.device} is showing a 6-digit developer pairing code. Deliver it within ${Math.round(Number(args.pinTimeout ?? 300) / 60)} minutes:\n      appletv pair --pin <the code on the screen>\n`);
+      if (p?.phase === 'pin_needed') say(`\n  ▶ ${p.device} is showing the 6-digit developer code NOW (${Math.round(Number(args.pinTimeout ?? 300) / 60)}-minute window)\n`);
     }
   });
   const deadline = Date.now() + Number(args.pinTimeout ?? 300) * 1000;
@@ -469,7 +540,7 @@ async function screenPair(args) {
   });
   const last = result.trim().split('\n').pop() || '';
   let parsed = null; try { parsed = JSON.parse(last); } catch { parsed = null; }
-  if (!parsed?.ok) throw new Fail('usage', parsed?.error === 'not_advertising' ? 'no Apple TV is advertising developer pairing — on the TV open Settings › Remotes and Devices › Remote App and Devices and stay on that screen' : `developer pairing failed: ${last || 'no PIN delivered in time'}`);
+  if (!parsed?.ok) throw new Fail(parsed?.error === 'not_advertising' ? 'not_advertising' : 'pairing_failed', parsed?.error === 'not_advertising' ? null : (last || 'no PIN delivered in time'));
   say(table(['Developer pairing', 'Result'], [[parsed.device, 'paired — record in ~/.pymobiledevice3']]));
 }
 
@@ -490,7 +561,9 @@ function installTunnel() {
 `;
   const out = join(process.env.TMPDIR || '/tmp', 'com.natjswenson.appletv.tunneld.plist');
   writeFileSync(out, plist);
-  say(table(['Wrote', 'Then run once (root — installs a LaunchDaemon so the tunnel is up at every login)'], [[out, `sudo cp ${out} /Library/LaunchDaemons/ && sudo launchctl bootstrap system /Library/LaunchDaemons/com.natjswenson.appletv.tunneld.plist`]]));
+  const line = `sudo cp ${out} /Library/LaunchDaemons/ && sudo launchctl bootstrap system /Library/LaunchDaemons/com.natjswenson.appletv.tunneld.plist`;
+  const opened = openTerminalWith(line);
+  say(table(['LaunchDaemon', 'Status'], [['com.natjswenson.appletv.tunneld', opened ? 'a Terminal window is asking for your password — that installs it; the tunnel is then up at every login' : `run once in a terminal: ${line}`]]));
 }
 
 const SCREEN_DIR = () => join(process.env.TMPDIR || '/tmp', 'appletv-screens');
@@ -517,15 +590,18 @@ async function cmdScreen(args) {
   const dir = outDir(args);
   if (!existsSync(PMD3())) throw new Fail('no_pyatv', 'pymobiledevice3 is not in the skill venv — run `appletv doctor --install`');
   const t = tunnelUp();
-  if (!t.up) throw new Fail('usage', `no developer tunnel — start one in another terminal (needs root, stays up for the session):\n      ${TUNNELD_CMD}`);
-  if (t.devices.length === 0) throw new Fail('usage', `the tunnel is up but has no device — pair once: TV on Settings › Remotes and Devices › Remote App and Devices, then\n      ${PMD3()} remote pair`);
+  if (!t.up) {
+    if (!args.noTerminal) openTerminalWith(TUNNELD_CMD);
+    throw new Fail('no_tunnel');
+  }
+  if (t.devices.length === 0) throw new Fail('no_dev_pairing');
   mkdirSync(SCREEN_DIR(), { recursive: true });
   const out = resolve(args.out ? join(dir, `screen-${Date.now()}.png`) : join(SCREEN_DIR(), `${Date.now()}.png`));
   say('capturing the screen…');
   const started = Date.now();
   const r = spawnSync(PMD3(), ['developer', 'dvt', 'screenshot', out, '--tunnel', ''], { encoding: 'utf8', timeout: 45_000 });
-  if (r.status !== 0 || !existsSync(out)) throw new Fail('usage', `screenshot failed: ${(r.stderr || r.stdout || '').trim().split('\n').pop()}`);
-  const width = String(args.width ?? 1280);
+  if (r.status !== 0 || !existsSync(out)) throw new Fail('screen_failed', (r.stderr || r.stdout || '').trim().split('\n').pop());
+  const width = String(args.width ?? 960);
   spawnSync('sips', ['--resampleWidth', width, out], { encoding: 'utf8' });
   if (!args.out) pruneScreens();
   say(table(['Screenshot', 'Took', 'Width'], [[out, `${((Date.now() - started) / 1000).toFixed(1)}s`, `${width}px`]]));
@@ -540,9 +616,10 @@ async function cmdApps(args) {
   const pick = pickDevice(args);
   const query = args._.slice(1).join(' ').trim();
   say(`listing apps on ${pick.device.name}…`);
-  const res = driveDevice('apps', pick, [], { debug: !!args.debug });
+  const res = driveDeviceRetry('apps', pick, [], { debug: !!args.debug });
   if (!res.ok) throw failFrom(res);
   capture(dir, 'apps.json', res);
+  { const cfg = loadConfig(); cfg.installed = Object.fromEntries(res.apps.map((a) => [a.id, a.name])); saveConfig(cfg); }
   if (!query) { say(appsTable(res, new Set((loadConfig().services ?? []).map((x) => x.id)))); return; }
   const q = query.toLowerCase();
   const byUrl = /^https?:\/\//i.test(query) ? launchTarget(query) : null;
@@ -567,9 +644,11 @@ async function cmdType(args) {
   const op = args.clear ? 'clear' : args.append ? 'append' : args.get ? 'get' : 'set';
   if (op !== 'clear' && op !== 'get' && !text) throw new Fail('usage', 'type [--device <name>] <text> [--append] | --clear | --get');
   say(`${op === 'get' ? 'reading' : 'typing into'} the focused field on ${pick.device.name}…`);
-  const res = driveDevice('text', pick, [op, '--text', text], { debug: !!args.debug });
+  if (op !== 'get') refuseIfOnHold('type');
+  const res = driveDeviceRetry('text', pick, [op, '--text', text], { debug: !!args.debug });
   if (!res.ok) throw failFrom(res);
   const cap = { ...res, verdict: textVerdict(res) };
+  if (args.submit && cap.verdict.verdict === 'verified') pressSequence(pick, [{ command: 'select', arg: null }], { dir, debug: !!args.debug });
   const existing = dir ? readdirSync(dir).filter((f) => /^type-\d+\.json$/.test(f)).length : 0;
   capture(dir, `type-${String(existing + 1).padStart(2, '0')}.json`, cap);
   say(typeTable(cap));
@@ -628,6 +707,8 @@ const USAGE = `appletv v${VERSION} — find the Apple TVs on your network, pair 
   appletv pair --pin <code>                            deliver the on-screen PIN to a waiting pair
   appletv alias [<room> --device <name> [--default]]  room names; no args lists them
   appletv pref [<app word> --profile <name> --position <n>]   this household's profile per app (local only)
+  appletv pref hold on|off                             someone is watching: only pause/volume/state allowed
+  (send/open/play print a compact table; --verbose shows every read-back)
   appletv open [--device <name>] <app word>            turn on, launch, land on the preferred profile
   appletv play [--device <name>] <deep link> [--title "<expected>"]   services that honour deep links, verified by read-back
   appletv screen [--width 1280]                        screenshot via the developer tunnel (Read the PNG)

@@ -12,6 +12,7 @@
  *   skillfactory freeze --skill appletv --from evals/baseline --command "$(jq -r .command evals/baseline/MANIFEST.json)" --trap-command "…"
  */
 import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { verdict, textVerdict } from '../scripts/lib/verify.mjs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -44,10 +45,20 @@ const REDACT = (obj) => {
 for (const f of readdirSync(BASELINE)) if (/\.(json|txt)$/.test(f) && f !== 'MANIFEST.json') rmSync(join(BASELINE, f));
 const keep = readdirSync(from).filter((f) => f === 'scan.json' || f === 'state.json' || /^send-\d+\.json$/.test(f) || /^type-\d+\.json$/.test(f)).sort();
 if (keep.length === 0) { console.error(`${from}: no captures`); process.exit(2); }
+const rederived = [];
 for (const f of keep) {
   const cap = REDACT(JSON.parse(readFileSync(join(from, f), 'utf8')));
+  // A refresh is a reviewed act: the recorded verdict is re-derived from the
+  // CURRENT rules, and every change is printed so the reviewer sees what moved.
+  if (/^send-/.test(f) && cap.verdict) {
+    const now = verdict(cap);
+    if (now.verdict !== cap.verdict.verdict || now.why !== cap.verdict.why) rederived.push(`${f}: ${cap.verdict.verdict} → ${now.verdict} (${now.why})`);
+    cap.verdict = now;
+  }
+  if (/^type-/.test(f) && cap.verdict) cap.verdict = textVerdict(cap);
   writeFileSync(join(BASELINE, f), `${JSON.stringify(cap, null, 2)}\n`);
 }
+if (rederived.length) console.log(`re-derived verdicts (review these):\n  ${rederived.join('\n  ')}`);
 const report = execFileSync('node', ['scripts/appletv.js', 'report', '--from', BASELINE], { cwd: SKILL, encoding: 'utf8' });
 writeFileSync(join(BASELINE, 'report.txt'), report);
 console.log(`baseline refreshed from ${from}: ${keep.join(', ')} + report.txt (identifiers redacted, apps.json omitted)`);

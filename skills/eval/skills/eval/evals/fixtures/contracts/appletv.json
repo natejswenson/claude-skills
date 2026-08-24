@@ -73,7 +73,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 256
+        "line": 287
       }
     },
     {
@@ -83,7 +83,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 260
+        "line": 291
       }
     },
     {
@@ -93,7 +93,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 267
+        "line": 298
       }
     },
     {
@@ -103,7 +103,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 251
+        "line": 282
       }
     },
     {
@@ -113,7 +113,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 275
+        "line": 306
       }
     },
     {
@@ -123,7 +123,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 248
+        "line": 279
       }
     },
     {
@@ -133,7 +133,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 265
+        "line": 296
       }
     },
     {
@@ -153,7 +153,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 151
+        "line": 168
       }
     },
     {
@@ -163,7 +163,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 71
+        "line": 76
       }
     },
     {
@@ -173,7 +173,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 218
+        "line": 249
       }
     },
     {
@@ -183,7 +183,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 210
+        "line": 241
       }
     },
     {
@@ -193,7 +193,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 127
+        "line": 144
       }
     },
     {
@@ -203,7 +203,17 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 220
+        "line": 251
+      }
+    },
+    {
+      "id": "skill-ac860c40",
+      "tag": "skill",
+      "text": "Asking the user what is on the screen is a failure of this skill, not a fallback",
+      "severity": "high",
+      "source": {
+        "file": "skills/appletv/skills/appletv/SKILL.md",
+        "line": 174
       }
     },
     {
@@ -213,7 +223,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 214
+        "line": 245
       }
     },
     {
@@ -223,7 +233,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 215
+        "line": 246
       }
     },
     {
@@ -243,7 +253,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 212
+        "line": 243
       }
     }
   ]

@@ -21,6 +21,15 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `pref services "netflix, disney+, …"` — the services the household subscribes to, on this Mac only; `doctor` shows them, `apps` marks them, and the skill never puts a title on a service they do not have.
 - Screenshots are someone's TV: only the last three are kept, `screen --clean` deletes them, none reaches a run directory without `--out`.
 
+### Changed after a four-lens review of the first day's runs (accuracy, functionality, UX, speed)
+
+- Verdicts: a state that already matched before the send is `unverifiable`, never `verified`; a read-back that never moved on the TV app is `unverifiable` (known freeze at skip points), not `mismatch`; `launch_app` is verified only when the now-playing owner *changed* to the target; `stop` that closes the player is not a verified stop; `not read (timeout)` is distinct from `known-unsupported`.
+- Speed: one driver connection per `send` sequence; the read-back polls every 0.5 s and stops when the expected field moves (per-command ceilings; keypresses wait 0 s); connect/command/field/scan timeouts cut to 8/6/3/2 s; `screen` at 960 px. A verified press is ~1.5 s (was ~5), a navigation press ~0.7 s, `open netflix` ~5 s (was ~18).
+- UX: compact `| Step | Command | Result |` tables with keypress runs collapsed and `sent` instead of `unverifiable` (`--verbose` for every read); real error headlines (`no_tunnel`, `not_advertising`, `deep_link_unsupported`, `not_an_apple_tv`, `on_hold`…); `screen` opens Terminal for the `sudo` line instead of asking the user to paste it; `pair` warns to stand in front of the TV and defaults to a 10-minute window; `doctor` shows one line per TV and a `to do` line; the empty-scan message names the Wi-Fi this Mac is on.
+- `pref hold on|off` — someone is watching: the CLI refuses anything that changes the screen.
+- `open` with eyes takes a screenshot after launch instead of pressing the profile tile blind; `play` refuses Netflix links up front; `type --submit`; `select=hold` / `select=double`; a retry on a dropped connection; app words fall back to the installed-app cache; Google TVs and other AirPlay receivers no longer appear as Apple TVs.
+- `evals/update.mjs` re-derives recorded verdicts from the current rules on refresh and prints every change for review.
+
 ### Learned on the first real run (Apple TV 4K gen 3, tvOS 26.6)
 
 - pyatv's `app` is the **now-playing owner**, not the foreground app: launching Settings or Netflix to its home screen leaves it on the previous media app. `launch_app` with an unchanged read-back is therefore `unverifiable`, never `mismatch` — and never `verified`.

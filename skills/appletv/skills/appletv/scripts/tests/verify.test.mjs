@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { VERDICTS, launchTarget, textVerdict, verdict } from '../lib/verify.mjs';
+import { VERDICTS, frozenReadback, launchTarget, playVerdict, textVerdict, verdict } from '../lib/verify.mjs';
 
 const st = (o = {}) => ({
   power: 'on',
-  app: { name: 'TV', id: 'com.apple.TVWatchList' },
+  app: { name: 'Netflix', id: 'com.netflix.Netflix' },
   focus: 'unfocused',
   volume: 30,
   playing: { device_state: 'playing', title: 'Severance', position: 100, total_time: 3000, repeat: 'off', shuffle: 'off', content_identifier: 'x1' },
@@ -20,6 +20,10 @@ test('only three verdicts exist', () => {
 
 test('pause is verified only when the read-back says paused', () => {
   assert.equal(verdict(cap('pause', play('playing'), play('paused'))).verdict, 'verified');
+  // already paused before the send proves nothing — never "verified"
+  const already = verdict(cap('pause', play('paused'), play('paused')));
+  assert.equal(already.verdict, 'unverifiable');
+  assert.match(already.why, /already paused/);
   assert.equal(verdict(cap('pause', play('playing'), play('playing'))).verdict, 'mismatch');
   assert.equal(verdict(cap('play', play('paused'), play('playing'))).verdict, 'verified');
   assert.equal(verdict(cap('play', play('paused'), play('paused'))).verdict, 'mismatch');
@@ -60,15 +64,18 @@ test('power, volume and position rules read the direction, not just the send', (
 });
 
 test('launch_app verifies against the bundle id, or the app a deep link opens', () => {
+  const tv = st({ app: { name: 'TV', id: 'com.apple.TVWatchList' } });
   const nf = st({ app: { name: 'Netflix', id: 'com.netflix.Netflix' } });
-  assert.equal(verdict(cap('launch_app', st(), nf, 'com.netflix.Netflix')).verdict, 'verified');
+  assert.equal(verdict(cap('launch_app', tv, nf, 'com.netflix.Netflix')).verdict, 'verified');
+  // already the now-playing owner: foreground unknown, never verified
+  assert.equal(verdict(cap('launch_app', nf, nf, 'com.netflix.Netflix')).verdict, 'unverifiable');
   // unchanged = unknowable (app is the now-playing owner, not the foreground) — never "mismatch", never "verified"
-  assert.equal(verdict(cap('launch_app', st(), st(), 'com.netflix.Netflix')).verdict, 'unverifiable');
+  assert.equal(verdict(cap('launch_app', tv, tv, 'com.netflix.Netflix')).verdict, 'unverifiable');
   // changed to something ELSE is evidence against the launch
   const dp = st({ app: { name: 'Disney+', id: 'com.disney.disneyplus' } });
-  assert.equal(verdict(cap('launch_app', st(), dp, 'com.netflix.Netflix')).verdict, 'mismatch');
-  assert.equal(verdict(cap('launch_app', st(), nf, 'https://www.netflix.com/title/80234304')).verdict, 'verified');
-  assert.equal(verdict(cap('launch_app', st(), st(), 'https://example.com/x')).verdict, 'unverifiable');
+  assert.equal(verdict(cap('launch_app', tv, dp, 'com.netflix.Netflix')).verdict, 'mismatch');
+  assert.equal(verdict(cap('launch_app', tv, nf, 'https://www.netflix.com/title/80234304')).verdict, 'verified');
+  assert.equal(verdict(cap('launch_app', tv, tv, 'https://example.com/x')).verdict, 'unverifiable');
   assert.equal(launchTarget('https://tv.apple.com/show/severance/umc.cmc.1'), 'com.apple.TVWatchList');
   assert.equal(launchTarget('com.disney.disneyplus'), 'com.disney.disneyplus');
 });
@@ -88,4 +95,34 @@ test('the keyboard verdict reads the field back', () => {
   assert.equal(t({ after: null }).verdict, 'unverifiable');
   assert.equal(textVerdict({ op: 'append', text: ' 2', focus: 'focused', sent: { ok: true }, before: 'stranger', after: 'stranger 2' }).verdict, 'verified');
   assert.equal(textVerdict({ op: 'clear', focus: 'focused', sent: { ok: true }, before: 'x', after: '' }).verdict, 'verified');
+});
+
+test('the TV app freeze: a read-back that never moved is unverifiable, not a mismatch', () => {
+  const tv = (device_state, position) => st({ app: { name: 'TV', id: 'com.apple.TVWatchList' }, playing: { ...st().playing, device_state, position, title: 'Silo' } });
+  const frozenCap = { ...cap('play', tv('paused', 101), tv('paused', 101)), reads: [tv('paused', 101), tv('paused', 101), tv('paused', 101)] };
+  assert.equal(frozenReadback(frozenCap), true);
+  const v = verdict(frozenCap);
+  assert.equal(v.verdict, 'unverifiable');
+  assert.match(v.why, /never changed/);
+  assert.equal(playVerdict(frozenCap, { title: 'Silo', appId: 'com.apple.TVWatchList' }).verdict, 'unverifiable');
+  // the same numbers on Netflix ARE a mismatch — the freeze is a TV-app fact
+  const nfFrozen = { ...cap('play', play('paused'), play('paused')), reads: [play('paused')] };
+  assert.equal(verdict(nfFrozen).verdict, 'mismatch');
+  // and a TV-app read-back that DID move is judged normally
+  const moved = { ...cap('play', tv('paused', 101), tv('playing', 130)), reads: [tv('paused', 101), tv('playing', 130)] };
+  assert.equal(verdict(moved).verdict, 'verified');
+});
+
+test('power already matching before the send is not verified', () => {
+  const v = verdict(cap('turn_on', st({ power: 'on' }), st({ power: 'on' })));
+  assert.equal(v.verdict, 'unverifiable');
+  assert.match(v.why, /already on/);
+  const unread = st({ power: null, unread: { power: 'TimeoutError' } });
+  assert.match(verdict(cap('turn_off', st(), unread)).why, /not read/);
+});
+
+test('stop that closes the player is not a verified stop', () => {
+  const gone = st({ app: null, playing: { ...st().playing, device_state: 'idle' } });
+  assert.equal(verdict(cap('stop', play('playing'), gone)).verdict, 'unverifiable');
+  assert.equal(verdict(cap('stop', play('playing'), play('stopped'))).verdict, 'verified');
 });

@@ -80,6 +80,20 @@ function fmtState(s, what) {
   }
 }
 
+/**
+ * Did the read-back move at all across the reads? The TV app (com.apple.TVWatchList)
+ * is known to stop publishing at a skip point while the episode plays; a verdict
+ * built on a number that never changed is not evidence of anything.
+ */
+export function frozenReadback(cap) {
+  const reads = Array.isArray(cap.reads) && cap.reads.length ? cap.reads : [cap.after];
+  const sig = (s) => JSON.stringify([ds(s), pos(s), title(s), power(s), appId(s), volume(s)]);
+  const first = sig(cap.before);
+  return reads.every((r) => sig(r) === first);
+}
+
+const TV_APP = 'com.apple.TVWatchList';
+
 const result = (verdict, what, before, after, why, expected) => ({
   verdict,
   observes: what,
@@ -100,16 +114,27 @@ export function verdict(cap) {
   }
   const unsupported = after?.unsupported ?? {};
 
+  const frozen = frozenReadback(cap);
+  const unread = after?.unread ?? {};
+  const mismatchOrFrozen = (what, why, want) => {
+    // A number that never moved is not evidence — on the TV app it is a known freeze.
+    if (frozen && appId(after) === TV_APP) return result('unverifiable', what, before, after, `read-back never changed — the TV app is known to stop reporting at skip points; look at the screen`, want);
+    return result('mismatch', what, before, after, why, want);
+  };
+
   const playback = (want, label = want) => {
-    if (ds(after) === null) return result('unverifiable', 'playback', before, after, `device does not report playback state${unsupported.playing ? ` (${unsupported.playing})` : ''}`);
-    if (ds(after) === want) return result('verified', 'playback', before, after, ds(before) === want ? `read-back is ${label} (it already was before the send)` : `read-back is ${label}`, want);
-    return result('mismatch', 'playback', before, after, `expected ${label}, read-back is ${ds(after)}`, want);
+    if (ds(after) === null) return result('unverifiable', 'playback', before, after, unread.playing ? `playback not read (${unread.playing})` : `device does not report playback state${unsupported.playing ? ` (${unsupported.playing})` : ''}`);
+    if (ds(after) === want && ds(before) === want) return result('unverifiable', 'playback', before, after, `already ${label} before the send — nothing to prove`, want);
+    if (ds(after) === want) return result('verified', 'playback', before, after, `read-back is ${label}`, want);
+    return mismatchOrFrozen('playback', `expected ${label}, read-back is ${ds(after)}`, want);
   };
 
   const powerIs = (want) => {
     const p = power(after);
+    if (p === null && unread.power) return result('unverifiable', 'power', before, after, `power not read (${unread.power}) — device asleep or Companion dropped`, want);
     if (p === null || p === 'unknown') return result('unverifiable', 'power', before, after, `device does not report power state${unsupported.power ? ` (${unsupported.power})` : ''}`, want);
-    if (p === want) return result('verified', 'power', before, after, power(before) === want ? `read-back is ${want} (it already was before the send)` : `read-back is ${want}`, want);
+    if (p === want && power(before) === want) return result('unverifiable', 'power', before, after, `already ${want} before the send — nothing to prove`, want);
+    if (p === want) return result('verified', 'power', before, after, `read-back is ${want}`, want);
     return result('mismatch', 'power', before, after, `expected ${want}, read-back is ${p}`, want);
   };
 
@@ -118,9 +143,11 @@ export function verdict(cap) {
     case 'pause': return playback('paused');
     case 'stop': {
       if (ds(after) === null) return playback('stopped');
-      return ['stopped', 'idle'].includes(ds(after))
-        ? result('verified', 'playback', before, after, `read-back is ${ds(after)}`, 'stopped')
-        : result('mismatch', 'playback', before, after, `expected stopped, read-back is ${ds(after)}`, 'stopped');
+      if (['stopped', 'idle'].includes(ds(after))) {
+        if (appId(after) === null || appId(after) !== appId(before)) return result('unverifiable', 'playback', before, after, 'player closed — the app left now-playing, which is more than a stop', 'stopped');
+        return result('verified', 'playback', before, after, `read-back is ${ds(after)}`, 'stopped');
+      }
+      return mismatchOrFrozen('playback', `expected stopped, read-back is ${ds(after)}`, 'stopped');
     }
     case 'play_pause': {
       if (ds(after) === null || ds(before) === null) return result('unverifiable', 'playback', before, after, 'device does not report playback state');
@@ -131,9 +158,6 @@ export function verdict(cap) {
     case 'previous': {
       const changed = (title(after) !== title(before) && title(after) !== null) || (cid(after) !== cid(before) && cid(after) !== null);
       if (changed) return result('verified', 'playback', before, after, `title changed to ${title(after) ?? cid(after)}`, 'a different title');
-      if (command === 'previous' && pos(before) !== null && pos(after) !== null && pos(after) < pos(before) && pos(after) <= 5) {
-        return result('verified', 'position', before, after, 'position reset to the start', 'restart or previous title');
-      }
       return result('unverifiable', 'playback', before, after, 'no title change observed — the app may not expose the queue');
     }
     case 'skip_forward':
@@ -144,15 +168,15 @@ export function verdict(cap) {
       const want = command === 'skip_forward' ? 'position moved forward' : 'position moved back';
       if (command === 'skip_forward' && delta >= 5) return result('verified', 'position', before, after, `position +${delta}s`, want);
       if (command === 'skip_backward' && delta < 0) return result('verified', 'position', before, after, `position ${delta}s`, want);
+      if (frozen) return result('unverifiable', 'position', before, after, 'position never changed across the reads — stale report, look at the screen', want);
       return result('mismatch', 'position', before, after, `expected ${want}, position moved ${delta >= 0 ? '+' : ''}${delta}s`, want);
     }
     case 'set_position': {
       const a = pos(after); const want = Number(arg);
       if (a === null) return result('unverifiable', 'position', before, after, 'device does not report position');
       if (!Number.isFinite(want)) return result('mismatch', 'position', before, after, `set_position needs a number, got ${arg}`);
-      return Math.abs(a - want) <= 6
-        ? result('verified', 'position', before, after, `position is ${a}s`, `${want}s`)
-        : result('mismatch', 'position', before, after, `expected ${want}s, position is ${a}s`, `${want}s`);
+      if (Math.abs(a - want) <= 6) return result('verified', 'position', before, after, `position is ${a}s`, `${want}s`);
+      return frozen ? result('unverifiable', 'position', before, after, 'position never changed across the reads — stale report', `${want}s`) : result('mismatch', 'position', before, after, `expected ${want}s, position is ${a}s`, `${want}s`);
     }
     case 'turn_on':
     case 'wakeup': return powerIs('on');
@@ -183,7 +207,8 @@ export function verdict(cap) {
       const want = launchTarget(arg);
       const a = appId(after);
       if (a === null) return result('unverifiable', 'app', before, after, `device does not report the foreground app${unsupported.app ? ` (${unsupported.app})` : ''}`, want);
-      if (want && a === want) return result('verified', 'app', before, after, appId(before) === want ? `now-playing owner is ${after.app.name} (it already was before the send)` : `now-playing owner is ${after.app.name}`, want);
+      if (want && a === want && appId(before) === want) return result('unverifiable', 'app', before, after, `${after.app.name} already owned now-playing before the send — foreground unknown`, want);
+      if (want && a === want) return result('verified', 'app', before, after, `now-playing owner became ${after.app.name}`, want);
       if (a === appId(before)) return result('unverifiable', 'app', before, after, 'the TV reports the now-playing app, not the foreground one — it only changes once the launched app plays something; look at the screen', want ?? 'a different app');
       if (want) return result('mismatch', 'app', before, after, `expected ${want}, now-playing owner became ${a}`, want);
       return result('verified', 'app', before, after, `now-playing owner changed to ${after.app.name}`, 'a different app');
@@ -209,7 +234,9 @@ export function verdict(cap) {
 /** Verdict for a keyboard capture (type): the field must read back what was sent. */
 export function textVerdict(cap) {
   const { op, text, before, after, sent, focus } = cap;
-  if (op === 'get') return { verdict: 'verified', expected: null, before: before ?? '', after: after ?? '', why: 'read only' };
+  if (op === 'get') return after === null || after === undefined
+    ? { verdict: 'unverifiable', expected: null, before: before ?? '', after: '', why: 'device did not return the field' }
+    : { verdict: 'verified', expected: null, before: before ?? '', after, why: 'read only' };
   if (focus !== 'focused') return { verdict: 'mismatch', expected: text ?? '', before: before ?? '', after: after ?? '', why: 'no text field is focused on the TV' };
   if (!sent?.ok) return { verdict: 'mismatch', expected: text ?? '', before: before ?? '', after: after ?? '', why: `device refused: ${sent?.error ?? 'unknown'}` };
   const expected = op === 'set' ? text : op === 'append' ? `${before ?? ''}${text}` : '';
@@ -233,6 +260,7 @@ export function playVerdict(cap, { title = null, appId: wantApp = null } = {}) {
   const app = appId(after);
   const where = `${state ?? '?'}${t ? ` · ${t}` : ''}${series ? ` (${series})` : ''}${app ? ` in ${after.app.name}` : ''}`;
   if (state === null) return { verdict: 'unverifiable', why: 'device does not report playback state', after: where };
+  if (state !== 'playing' && app === TV_APP && frozenReadback(cap)) return { verdict: 'unverifiable', why: `read-back never changed (${where}) — the TV app stops reporting at skip points; look at the screen`, after: where };
   if (state !== 'playing') return { verdict: 'mismatch', why: `expected playing, read-back is ${where}`, after: where };
   if (wantApp && app && app !== wantApp) return { verdict: 'mismatch', why: `playing, but in ${app} rather than ${wantApp}`, after: where };
   if (got && !(t.toLowerCase().includes(got) || series.toLowerCase().includes(got))) {

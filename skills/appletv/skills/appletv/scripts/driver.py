@@ -60,6 +60,32 @@ def parse(argv):
 
 
 STORAGE_PATH = os.path.join(os.path.expanduser("~"), ".pyatv.conf")
+CONNECT_TIMEOUT = 8      # pyatv connects in ~0.2 s when the TV is awake; 20 s only hid deep sleep
+COMMAND_TIMEOUT = 6      # Companion answers in <1 s; tvOS 26 drops surface twice as fast at 6
+FIELD_TIMEOUT = 3        # one slow field must not cost a whole read
+SCAN_TIMEOUT = 2         # a unicast reply is sub-second; the multicast fallback has its own budget
+
+# Which state field each command changes — the read-back stops as soon as it moves.
+OBSERVES = {
+    "play": "playback", "pause": "playback", "play_pause": "playback", "stop": "playback",
+    "next": "title", "previous": "title", "set_shuffle": "playback", "set_repeat": "playback",
+    "skip_forward": "position", "skip_backward": "position", "set_position": "position",
+    "turn_on": "power", "turn_off": "power", "suspend": "power", "wakeup": "power",
+    "set_volume": "volume", "volume_up": "volume", "volume_down": "volume",
+    "launch_app": "app", "home": "app",
+}
+
+
+def _observed(state, what):
+    p = (state or {}).get("playing") or {}
+    return {
+        "playback": p.get("device_state"),
+        "title": (p.get("title"), p.get("content_identifier")),
+        "position": p.get("position"),
+        "power": (state or {}).get("power"),
+        "volume": (state or {}).get("volume"),
+        "app": ((state or {}).get("app") or {}).get("id"),
+    }.get(what)
 
 
 def now():
@@ -142,40 +168,6 @@ def _error_code(exc, exceptions):
     return f"unexpected:{name}"
 
 
-def _error_code_old(exc, exceptions):
-    name = type(exc).__name__
-    msg = str(exc)
-    if isinstance(exc, exceptions.DeviceIdMissingError):
-        return "device_id_missing"
-    if isinstance(exc, exceptions.NoServiceError):
-        return "no_service"
-    if isinstance(exc, exceptions.AuthenticationError):
-        return "not_paired"
-    if isinstance(exc, exceptions.PairingError):
-        if "backoff" in msg.lower() or "too many" in msg.lower():
-            return "pairing_backoff"
-        return "pairing_failed"
-    if isinstance(exc, exceptions.DeviceAuthenticationError):
-        return "pairing_refused"
-    if isinstance(exc, exceptions.ConnectionFailedError) or isinstance(exc, exceptions.ConnectionLostError):
-        return "connection_failed"
-    if isinstance(exc, exceptions.NotSupportedError) or isinstance(exc, NotImplementedError):
-        return "unsupported_command"
-    if isinstance(exc, exceptions.CommandError):
-        return "command_refused"
-    if isinstance(exc, exceptions.BlockedStateError):
-        return "blocked_state"
-    if isinstance(exc, exceptions.NonLocalSubnetError):
-        return "non_local_subnet"
-    if isinstance(exc, exceptions.ProtocolError):
-        return "protocol_error"
-    if isinstance(exc, (asyncio.TimeoutError, TimeoutError)):
-        return "timeout"
-    if isinstance(exc, OSError):
-        return "network_unreachable"
-    return f"unexpected:{name}"
-
-
 def _device_json(conf, storage_names):
     services = []
     for s in conf.services:
@@ -204,7 +196,7 @@ def _device_json(conf, storage_names):
     }
 
 
-async def _scan(loop, storage, hosts=None, identifier=None, timeout=5):
+async def _scan(loop, storage, hosts=None, identifier=None, timeout=SCAN_TIMEOUT):
     pyatv, *_ = _pyatv()
     kwargs = {"timeout": timeout, "storage": storage}
     if hosts:
@@ -215,9 +207,12 @@ async def _scan(loop, storage, hosts=None, identifier=None, timeout=5):
 
 
 def _is_apple_tv(conf):
-    # A Mac advertises AirPlay too; only devices where some protocol can be or
-    # is paired are things we can control.
-    return any(s.pairing.name not in ("Unsupported",) for s in conf.services)
+    """tvOS, or something speaking a control protocol. A Mac, a Google TV or a
+    speaker advertises AirPlay too and is not controllable by this skill."""
+    os_name = conf.device_info.operating_system.name if conf.device_info.operating_system else ""
+    if os_name == "TvOS":
+        return True
+    return any(s.protocol.name in ("Companion", "MRP") and s.pairing.name != "Unsupported" for s in conf.services)
 
 
 async def a_scan(args):
@@ -255,7 +250,7 @@ async def _find(loop, storage, args):
     identifier = args.get("id")
     address = args.get("address")
     hosts = [address] if address else None
-    found = await _scan(loop, storage, hosts=hosts, identifier=identifier, timeout=int(args.get("timeout", 5)))
+    found = await _scan(loop, storage, hosts=hosts, identifier=identifier, timeout=int(args.get("timeout", SCAN_TIMEOUT if hosts else 5)))
     found = [c for c in found if _is_apple_tv(c)]
     if identifier:
         found = [c for c in found if identifier in c.all_identifiers]
@@ -282,6 +277,7 @@ async def _read_state(atv, FeatureName, FeatureState):
     """Read everything observable. A field that cannot be read says why."""
     state = {"captured_at": now()}
     unsupported = {}
+    unread = {}
 
     async def field(key, coro_factory, feature=None):
         if feature is not None:
@@ -291,9 +287,10 @@ async def _read_state(atv, FeatureName, FeatureState):
                 state[key] = None
                 return
         try:
-            state[key] = await asyncio.wait_for(coro_factory(), timeout=8)
+            state[key] = await asyncio.wait_for(coro_factory(), timeout=FIELD_TIMEOUT)
         except Exception as e:  # noqa: BLE001
-            unsupported[key] = f"{type(e).__name__}: {e}"[:120]
+            # A timeout is not "this tvOS cannot report it" — say which it was.
+            unread[key] = f"{type(e).__name__}: {e}"[:120].strip(": ")
             state[key] = None
 
     async def power():
@@ -337,6 +334,7 @@ async def _read_state(atv, FeatureName, FeatureState):
     if state.get("power") == "unknown":
         unsupported.setdefault("power", "reported unknown by the device")
     state["unsupported"] = unsupported
+    state["unread"] = unread
     return state
 
 
@@ -355,7 +353,7 @@ async def _with_device(args, fn):
         return fail("not_paired", device=_device_json(conf, storage))
     atv = None
     try:
-        atv = await asyncio.wait_for(_connect(loop, storage, conf), timeout=20)
+        atv = await asyncio.wait_for(_connect(loop, storage, conf), timeout=CONNECT_TIMEOUT)
         return await fn(atv, conf, FeatureName, FeatureState, Protocol)
     except Exception as e:  # noqa: BLE001
         return fail(_error_code(e, exceptions), e, device=_device_json(conf, storage))
@@ -378,13 +376,25 @@ def _settle(args):
     return float(args.get("settle", 1.5))
 
 
-async def _read_until(atv, FeatureName, FeatureState, tries, settle):
-    """Read state up to `tries` times, `settle` seconds apart; return every read."""
+async def _read_until(atv, FeatureName, FeatureState, before, what, ceiling, poll=0.5):
+    """Read state every `poll` seconds until the observed field moves or
+    `ceiling` seconds pass. Every read is returned so a verdict can see whether
+    anything ever changed (the TV app is known to freeze its report)."""
     reads = []
-    for _ in range(tries):
-        await asyncio.sleep(settle)
+    if what is None or ceiling <= 0:
         reads.append(await _read_state(atv, FeatureName, FeatureState))
-    return reads
+        return reads
+    start = time.monotonic()
+    first = True
+    while True:
+        await asyncio.sleep(min(poll, 0.3) if first else poll)
+        first = False
+        st = await _read_state(atv, FeatureName, FeatureState)
+        reads.append(st)
+        if _observed(st, what) != _observed(before, what):
+            return reads
+        if time.monotonic() - start >= ceiling:
+            return reads
 
 
 REMOTE_COMMANDS = {
@@ -420,41 +430,79 @@ async def _dispatch(atv, command, arg, Protocol):
 
         return await atv.remote_control.set_repeat(RepeatState[arg.capitalize()])
     if command in REMOTE_COMMANDS:
+        if arg and command in ("up", "down", "left", "right", "select", "menu", "home"):
+            from pyatv.const import InputAction
+
+            action = {"hold": InputAction.Hold, "double": InputAction.DoubleTap, "tap": InputAction.SingleTap}.get(str(arg).lower())
+            if action is None:
+                raise NotImplementedError(f"{command}={arg}: use hold, double or tap")
+            return await getattr(atv.remote_control, command)(action)
         return await getattr(atv.remote_control, command)()
     raise NotImplementedError(f"unknown command {command}")
 
 
+def _steps_from_args(args):
+    """`press <cmd> [--arg v]` or `press --steps '[{"command":..,"arg":..,"ceiling":..}]'`."""
+    if args.get("steps"):
+        steps = json.loads(args["steps"])
+    else:
+        command = args["_"][1] if len(args["_"]) > 1 else None
+        if not command:
+            return None
+        steps = [{"command": command, "arg": args.get("arg")}]
+    default_ceiling = float(args.get("ceiling", 4.0))
+    for st in steps:
+        st.setdefault("arg", None)
+        st.setdefault("ceiling", default_ceiling)
+    return steps
+
+
+async def _press_one(atv, conf, step, FeatureName, FeatureState, Protocol):
+    command, arg = step["command"], step.get("arg")
+    what = OBSERVES.get(command)
+    before = await _read_state(atv, FeatureName, FeatureState)
+    sent_at = now()
+    started = time.monotonic()
+    try:
+        await asyncio.wait_for(_dispatch(atv, command, arg, Protocol), timeout=COMMAND_TIMEOUT)
+        sent = {"ok": True}
+    except Exception as e:  # noqa: BLE001
+        from pyatv import exceptions
+
+        sent = {"ok": False, "error": _error_code(e, exceptions), "detail": str(e)[:200]}
+    reads = await _read_until(atv, FeatureName, FeatureState, before, what, float(step.get("ceiling", 4.0)))
+    return {
+        "ok": True,
+        "device": _device_json(conf, None),
+        "command": command,
+        "arg": arg,
+        "observes": what,
+        "sent_at": sent_at,
+        "sent": sent,
+        "before": before,
+        "reads": reads,
+        "after": reads[-1],
+        "seconds": round(time.monotonic() - started, 1),
+    }
+
+
 async def a_press(args):
-    command = args["_"][1] if len(args["_"]) > 1 else None
-    if not command:
-        return fail("usage", "press <command> [--arg value]")
-    arg = args.get("arg")
-    tries = int(args.get("tries", 3))
+    steps = _steps_from_args(args)
+    if not steps:
+        return fail("usage", "press <command> [--arg value] | press --steps '<json list>'")
+    stop_on_refusal = bool(args.get("stop-on-refusal"))
 
     async def go(atv, conf, FeatureName, FeatureState, Protocol):
-        before = await _read_state(atv, FeatureName, FeatureState)
-        sent_at = now()
-        try:
-            await asyncio.wait_for(_dispatch(atv, command, arg, Protocol), timeout=15)
-            sent = {"ok": True}
-        except Exception as e:  # noqa: BLE001
-            from pyatv import exceptions
-
-            sent = {"ok": False, "error": _error_code(e, exceptions), "detail": str(e)[:200]}
-        reads = await _read_until(atv, FeatureName, FeatureState, tries, _settle(args))
-        out(
-            {
-                "ok": True,
-                "device": _device_json(conf, None),
-                "command": command,
-                "arg": arg,
-                "sent_at": sent_at,
-                "sent": sent,
-                "before": before,
-                "reads": reads,
-                "after": reads[-1],
-            }
-        )
+        caps = []
+        for step in steps:
+            cap = await _press_one(atv, conf, step, FeatureName, FeatureState, Protocol)
+            caps.append(cap)
+            if stop_on_refusal and not cap["sent"]["ok"]:
+                break
+        if len(steps) == 1 and not args.get("steps"):
+            out(caps[0])
+        else:
+            out({"ok": True, "device": _device_json(conf, None), "captures": caps})
         return 0
 
     return await _with_device(args, go)
@@ -463,7 +511,7 @@ async def a_press(args):
 async def a_apps(args):
     async def go(atv, conf, FeatureName, FeatureState, Protocol):
         try:
-            apps = await asyncio.wait_for(atv.apps.app_list(), timeout=15)
+            apps = await asyncio.wait_for(atv.apps.app_list(), timeout=COMMAND_TIMEOUT)
         except Exception as e:  # noqa: BLE001
             from pyatv import exceptions
 

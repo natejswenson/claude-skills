@@ -39,9 +39,16 @@ Apple's own list: support.apple.com › deployment › "Bundle IDs for native Ap
 `send launch_app=<url>` needs Companion. Copy the link from the iOS app's
 Share sheet; if it fails, strip the country code from the path.
 
+**Netflix does not honour deep links on tvOS — none of `https://…/title/`,
+`/watch/`, `nflx://` — since Sept 2025 (Home Assistant's maintained list marks
+every form dead; eight attempts in this skill's first run were ignored, one
+produced an "Open in Netflix?" dialog whose default button is Cancel).**
+`play <netflix url>` refuses with `deep_link_unsupported`; use `open netflix`
+and navigate with `screen`.
+
 | Service | Link shape | Verified by |
 |---|---|---|
-| Netflix | `https://www.netflix.com/title/80234304` | `app.id == com.netflix.Netflix` |
+| Netflix | — (see above) | — |
 | Disney+ | `https://www.disneyplus.com/series/<slug>/<id>` | `com.disney.disneyplus` |
 | Apple TV+ | `https://tv.apple.com/show/<slug>/umc.cmc.<id>` | `com.apple.TVWatchList` |
 | Max | `https://play.max.com/...` / `https://play.hbomax.com/page/urn:hbo:page:...` | `com.wbd.stream` |

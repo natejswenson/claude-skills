@@ -30,7 +30,9 @@ The screenshot is the only foreground read-back that exists on tvOS 26.
 4. The tunnel needs root, so it is started by a person, once per login — or once
    forever: `appletv screen --install-tunnel` writes a LaunchDaemon and prints the
    one `sudo` line that installs it.
-   Manual form, in a real terminal (sudo needs a TTY; the `!` prefix has none):
+   When the tunnel is down, `screen` opens a Terminal window with the line already
+   typed — the person only enters their password there. Manual form (sudo needs a TTY;
+   the `!` prefix has none):
    `sudo <skill>/.venv/bin/pymobiledevice3 remote tunneld --no-usb --no-usbmux --no-mobdev2 --wifi`
 5. `appletv doctor` — the `screenshots` row says `tunnel up, 1 device` when everything holds.
 
@@ -55,7 +57,7 @@ appletv screen            → confirm; if wrong, `menu` backs out one level
 appletv state             → the end state: app == target and playback == playing
 ```
 
-Budget one screenshot per press (2–3 s each). A typical "open Netflix and play
+Budget one screenshot per press (1–3 s each, 960 px wide by default). A typical "open Netflix and play
 S1E3" is 4–6 looks. Sensed checkpoints still apply where they exist: keyboard
 focus for a search box, `type` reading its text back, the now-playing owner at
 the end.

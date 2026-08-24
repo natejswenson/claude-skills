@@ -24,9 +24,9 @@ stay alive until the code is entered. So:
 
 1. `appletv pair --device "Living Room"` — run it **in the background**. It
    begins AirPlay pairing, prints `▶ Living Room is showing a PIN for airplay`,
-   and waits up to two minutes.
-2. Ask the user for the four digits on the screen. **Leading zeros count** —
-   pass the PIN as a string.
+   and waits up to ten minutes (`--pin-timeout`, default 600 s).
+2. Ask the user for the four digits on the screen (developer pairing for
+   `screen` uses a six-digit code). **Leading zeros count** — pass the PIN as a string.
 3. `appletv pair --pin 0423` — delivers it to the waiting session, which
    finishes, stores the credentials, and moves on to Companion (a second PIN;
    repeat step 2–3).
@@ -43,7 +43,7 @@ a Companion that drops after a tvOS update.
 | `pairing_disabled` for MRP | tvOS 15+ | expected — pair airplay + companion |
 | `pairing_failed` right after the PIN | wrong PIN; the code changes per attempt | run pair again, read the *new* code |
 | `pairing_backoff` | too many wrong PINs | wait a few minutes or restart the Apple TV |
-| `pin_timeout` | no PIN delivered within 2 minutes | run pair again |
+| `pin_timeout` | no PIN delivered within the window (10 min) | run pair again — and tell the person the code appears the moment pairing starts |
 | `device_not_found` during pair | the TV went to sleep | press any button on its remote, retry |
 | Companion pairs but drops instantly | tvOS 18.4 (fixed in pyatv 0.16.1) or tvOS 26.5 gen-3 4K (pyatv #2845, open) | `appletv doctor --install` to update pyatv; AirPlay still works |
 

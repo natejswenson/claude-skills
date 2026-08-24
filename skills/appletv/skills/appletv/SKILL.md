@@ -12,7 +12,7 @@ network, pairs with one, and drives it — play, pause, skip, power, apps, deep
 links, the keyboard, volume, "what's playing" — reading the TV's state back
 after every command.
 
-**Announce at start:** "I'm using the appletv skill — I'll read the TV's state back after every command, and only call something done when it agrees."
+**Announce at start:** "Using appletv on <device from doctor>." — one line, then work.
 
 > Commands below run from the directory containing this `SKILL.md` (`$SKILL_DIR`).
 > Resolve it once. Every command is `node scripts/appletv.js <cmd>`.
@@ -22,10 +22,15 @@ after every command.
 **Never report a command as done until the Apple TV's state has been read back and agrees with it — a keypress over the network fails silently, so every send ends in exactly one of verified, mismatch or unverifiable, and only the first is ever called done.**
 
 `send` enforces this in code (`scripts/lib/verify.mjs`): it reads state before,
-sends, reads back up to three times, and prints a verdict per step. Your job is
-to *say* the verdict honestly — "sent `menu`, can't be confirmed" is a fine
-answer; "done" over an `unverifiable` row is the failure this skill exists to
-prevent.
+sends, polls the read-back until the expected field moves (or a per-command
+ceiling passes), and prints a verdict per step. Three things it will not do:
+call a state that already matched before the send "verified" (turning on a TV
+that was on proves nothing), call a read-back that never moved a "mismatch" on
+the TV app (it is known to freeze at skip points), or call a launch "verified"
+unless the now-playing owner *changed* to the target. Your job is to *say* the
+verdict honestly — "sent `menu`, can't confirm from here; the screen shows
+Netflix" is a fine answer; "done" over a `sent` row is the failure this skill
+exists to prevent.
 
 ## What is code and what is judgment
 
@@ -72,6 +77,15 @@ services the household subscribes to**. **Never ask about anything in it.**
 If `doctor` shows a remembered device with credentials, skip straight to the
 request — the user does not want to hear about setup twice.
 
+### 1b. Someone is watching
+
+`appletv pref hold on` (or `state` showing `playing` with a title) means a person
+is in front of the TV. Then: pause, volume, and "what's playing" are fine;
+anything that changes the screen — `send` navigation, `open`, `play`, `type`,
+turning off — is refused by the CLI (`on_hold`) and, when not on hold but
+playing, asked about first in one line with the title in it. "I am watching,
+don't test" is `pref hold on`, and stays until they say otherwise.
+
 ### 2. First contact: scan, pair, alias — once per TV
 
 Only when `doctor` says no devices or no credentials.
@@ -88,8 +102,11 @@ node scripts/appletv.js pair --device "<name>"   # run in the BACKGROUND
 ```
 
 Pairing is two protocols, one PIN each, and the session must stay alive while
-the code is read off the screen. Run `pair` with `run_in_background`, watch
-for `▶ … is showing a PIN for airplay`, ask the user for the four digits, then:
+the code is read off the screen. **Before starting, say once:** "Stand in front
+of <TV> — it will show a 4-digit code the moment pairing starts, then a second
+one; tell me each as you see it." Run `pair` with `run_in_background` (the
+window is 10 minutes per code), watch for `▶ … is showing the airplay code
+NOW`, ask for the four digits, then:
 
 ```bash
 node scripts/appletv.js pair --pin <code>        # leading zeros count — pass it as typed
@@ -152,7 +169,15 @@ node scripts/appletv.js state           # the end: app == target and playing
 (or one obvious run of the same press) per look. A wrong guess on a TV opens
 the wrong app in front of whoever is watching — this happened, and it is the
 reason this section exists. If `screen` is unavailable (no tunnel — `doctor`
-says so), say the task needs eyes and stop; do not fall back to guessing.
+says `screenshots off`), `screen` opens a Terminal window for the one `sudo`
+line; say "type your Mac password in the Terminal window that just opened"
+and wait. **Asking the user what is on the screen is a failure of this skill,
+not a fallback** — with eyes, never ask; without eyes, say the task needs the
+tunnel and stop.
+
+**Narrate the loop with at most one lowercase status line** (`navigating
+Apple TV+ → Silo → Season 3 → E1…`), not a sentence per press. Report once at
+the end. Delete the captures when the task is done: `appletv screen --clean`.
 
 Things the eyes have taught (`references/screen.md` has the rest):
 
@@ -170,16 +195,22 @@ Things the eyes have taught (`references/screen.md` has the rest):
 
 ### 4. Report — one table, one sentence, stop
 
-`send` prints `| Step | Command | Before | After | Verdict | Why |` and a
-summary line. Repeat the table, then one sentence in the verdict's own words:
+`send`, `open` and `play` print a compact `| Step | Command | Result |` table —
+`verified (off → on)`, `sent` for keypresses (the look is their verification),
+`mismatch — why`, `already on` — with runs of the same keypress collapsed
+(`down ×5`). `--verbose` shows every read-back. Show that table once, then one
+sentence in the verdict's own words:
 
 | Verdict | Say |
 |---|---|
 | verified | "Paused Severance on Living Room." |
-| unverifiable | "Sent `menu` to Living Room — a keypress can't be confirmed; it still shows Netflix." |
+| sent / unverifiable | "Sent `menu` to Living Room — can't confirm from here; the screen shows Netflix." |
 | mismatch | "Sent pause but Living Room still reads playing — YouTube may be ignoring it; try `play_pause`?" |
 
-Never "Done." on the last two. A mismatch exits non-zero on purpose.
+Never "Done." on the last two. A mismatch exits non-zero on purpose. When the
+proof came from the screen rather than the counter (the TV app freezes its
+report at skip points), say which: "playing — from the screen; the TV app's
+counter stuck at 1:41".
 
 ## Commands
 
@@ -191,14 +222,14 @@ Never "Done." on the last two. A mismatch exits non-zero on purpose.
 | `appletv pair --pin <code>` | delivers the on-screen PIN to the waiting pairing session |
 | `appletv alias [<room> --device <name> [--default]]` | binds a room name; sets the default; no args lists them |
 | `appletv state [--device <x>]` | power, foreground app, playback, title/series/episode/position, keyboard focus, volume; a field tvOS cannot report says `known-unsupported`, never blank |
-| `appletv send [--device <x>] <cmd[=arg][,cmd…]>` | before/after state and a verdict per step; stops at the first mismatch; exits non-zero on any |
+| `appletv send [--device <x>] <cmd[=arg][,cmd…]>` | one connection for the whole sequence; read-back polled until the expected field moves; a compact result per step (`--verbose` for every read); stops at the first mismatch; exits non-zero on any. `select=hold` / `select=double` for long and double presses |
 | `appletv apps [--device <x>] [<name or url>]` | installed apps with bundle ids; resolves a name or a deep link to a launch target |
 | `appletv type [--device <x>] <text> [--append] \| --clear \| --get` | puts text in the focused field and reads it back; refuses when nothing is focused |
 | `appletv report --from <dir>` | the same tables from a captured run, verdicts re-derived — exits non-zero if a recorded verdict no longer follows from its capture |
 | `appletv screen [--width 1280]` | a screenshot over the developer tunnel (~2.5 s), downscaled; `Read` the path it prints. `--pair` does the one-time developer pairing, `--install-tunnel` writes the LaunchDaemon |
 | `appletv pref <app> --profile <name> --position <n>` | this household's profile per app, on this Mac only (never the repo) |
 | `appletv pref services "<a, b, c>"` | the services the household subscribes to; `apps` marks them and the model only ever plays on these |
-| `appletv open <app>` | turn on, launch, and pick the preferred profile tile |
+| `appletv open <app>` | turn on, launch, then — with eyes — take a screenshot for the model to pick the profile from; without eyes, press the preferred tile and say so |
 | `appletv play <deep link> [--title <expected>]` | for services that honour deep links (YouTube, Disney+, Apple TV+, Hulu, Peacock); verified when the app is the now-playing owner and playing |
 
 `--device` takes an alias, a name, an identifier or an IP; omit it for the

@@ -19,7 +19,7 @@ export const ERRORS = Object.freeze({
   },
   scan_empty: {
     message: 'no Apple TV answered the scan',
-    fix: 'if the TV is asleep, press any button on its remote and rescan; if it is on another VLAN or multicast is blocked, use `appletv scan --hosts <ip>` (unicast); on this Mac check the firewall allows incoming UDP 5353 for python',
+    fix: 'most often this Mac is on a different Wi-Fi than the TV — check both are on the same network; otherwise wake the TV with its remote and rescan, or use `appletv scan --hosts <ip>`',
   },
   device_not_found: {
     message: 'that device did not answer',
@@ -100,6 +100,34 @@ export const ERRORS = Object.freeze({
   no_service: {
     message: 'the device does not offer that protocol',
     fix: 'run `appletv scan` to see which protocols it advertises',
+  },
+  no_tunnel: {
+    message: 'no developer tunnel is running, so the skill cannot see the screen',
+    fix: 'a Terminal window has been opened with the command — type your Mac password there once; or install it for good with `appletv screen --install-tunnel`',
+  },
+  no_dev_pairing: {
+    message: 'the tunnel is up but the Apple TV is not developer-paired',
+    fix: 'on the TV open Settings › Remotes and Devices › Remote App and Devices, then `appletv screen --pair`',
+  },
+  not_advertising: {
+    message: 'no Apple TV is advertising developer pairing',
+    fix: 'put the TV on Settings › Remotes and Devices › Remote App and Devices and stay on that screen, then retry',
+  },
+  screen_failed: {
+    message: 'the screenshot did not come back',
+    fix: 'the tunnel may have dropped — check `appletv doctor`; re-pair with `screen --pair` after a tvOS update',
+  },
+  deep_link_unsupported: {
+    message: 'this service ignores deep links on tvOS',
+    fix: 'Netflix disabled them in Sept 2025 — use `appletv open netflix` and navigate with `appletv screen` between presses',
+  },
+  not_an_apple_tv: {
+    message: 'that device is an AirPlay receiver, not an Apple TV',
+    fix: 'it cannot be paired or controlled by this skill; pick a device with tvOS from `appletv scan`',
+  },
+  on_hold: {
+    message: 'the TV is on hold — someone is watching',
+    fix: 'ask before touching it; lift the hold with `appletv pref hold off`',
   },
   interrupted: { message: 'interrupted', fix: 'run it again' },
   usage: { message: 'bad arguments', fix: 'see `appletv --help`' },

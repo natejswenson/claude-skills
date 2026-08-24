@@ -30,11 +30,21 @@ user-facing difference.
 | `network_unreachable` | no route | Wi-Fi/Ethernet on the Mac; TV awake |
 | `timeout` | no answer in time | wake and retry; re-pair Companion if recurring |
 | `protocol_error` | unexpected reply | tvOS changed something — update pyatv, check pyatv issues |
+| `no_service` | the device does not offer that protocol | `appletv scan` shows what it advertises |
+| `no_tunnel` | no developer tunnel, so no screenshots | a Terminal window opens with the `sudo` line — type the password there; `screen --install-tunnel` makes it permanent |
+| `no_dev_pairing` | tunnel up, TV not developer-paired | `screen --pair` with the TV on Remote App and Devices |
+| `not_advertising` | TV not on the pairing screen | Settings › Remotes and Devices › Remote App and Devices |
+| `screen_failed` | capture did not come back | check `doctor`; re-pair after a tvOS update |
+| `deep_link_unsupported` | Netflix ignores deep links | `open netflix` + `screen` navigation |
+| `not_an_apple_tv` | an AirPlay receiver (Google TV, speaker) | not controllable; pick a tvOS device |
+| `on_hold` | someone is watching | ask first; `pref hold off` |
 
 ## Two things that are not errors and must not be reported as one
 
 - **`unverifiable`** is a verdict, not a failure. The command was sent; the
   TV cannot show its effect. Say that.
+- **`not read (TimeoutError)`** is different from `known-unsupported`: the field exists
+  but the read timed out — the TV was asleep or Companion dropped. Retry after `turn_on`.
 - **Power `unknown`** on tvOS 26.5 (Apple TV 4K gen 3) is pyatv issue #2845.
   `state` prints `known-unsupported`, `turn_on`/`turn_off` come back
   `unverifiable`. The TV still responds; the skill just cannot prove it.

@@ -5,8 +5,8 @@
   "artifacts": [
     {
       "path": "report.txt",
-      "bytes": 2001,
-      "sha256": "b356120cb1f30f9e6e3fbb47b48f9f0704540478b02a3ec953a88dba5e3d5524"
+      "bytes": 2067,
+      "sha256": "a651dd04caf68637dbd8bb17f5942b78819e4fa58c15db97103de22b85206a0c"
     },
     {
       "path": "scan.json",
@@ -30,8 +30,8 @@
     },
     {
       "path": "send-04.json",
-      "bytes": 4596,
-      "sha256": "439eecc8a522e89f2e1cd37698ce46428fb42d622e60f660adf70680e26d7335"
+      "bytes": 4644,
+      "sha256": "efd74487dacdfb6643046827783b1d968e29557457e87b7c12d240f3db0a8157"
     },
     {
       "path": "state.json",

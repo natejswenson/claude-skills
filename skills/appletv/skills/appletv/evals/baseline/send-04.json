@@ -189,11 +189,11 @@
     }
   },
   "verdict": {
-    "verdict": "verified",
+    "verdict": "unverifiable",
     "observes": "app",
     "expected": "org.pbskids.ipadplayer",
     "before": "PBS KIDS (org.pbskids.ipadplayer)",
     "after": "PBS KIDS (org.pbskids.ipadplayer)",
-    "why": "now-playing owner is PBS KIDS"
+    "why": "PBS KIDS already owned now-playing before the send — foreground unknown"
   }
 }

@@ -14,9 +14,9 @@ export function configPath() {
 }
 
 export function loadConfig(path = configPath()) {
-  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {}, services: [] };
+  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {}, services: [], installed: {}, hold: false };
   const cfg = JSON.parse(readFileSync(path, 'utf8'));
-  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {}, services: cfg.services ?? [] };
+  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {}, services: cfg.services ?? [], installed: cfg.installed ?? {}, hold: cfg.hold ?? false };
 }
 
 export function saveConfig(cfg, path = configPath()) {
@@ -33,6 +33,7 @@ export function rememberDevices(cfg, devices, seenAt) {
       address: d.address,
       model: d.model,
       version: d.version,
+      os: d.os ?? null,
       identifiers: d.all_identifiers ?? [d.identifier],
       paired: (d.services ?? []).filter((s) => s.paired).map((s) => s.protocol),
       last_seen: seenAt,
@@ -110,6 +111,10 @@ export function appIdFor(word, cfg = null) {
   if (APP_WORDS[w]) return APP_WORDS[w];
   if (cfg) {
     for (const [id, p] of Object.entries(cfg.prefs ?? {})) if (norm(p.alias) === w) return id;
+    // the last `apps` run remembered what is installed — names win over the built-in table
+    for (const [id, name] of Object.entries(cfg.installed ?? {})) if (norm(name) === w) return id;
+    const partial = Object.entries(cfg.installed ?? {}).filter(([, name]) => norm(name).includes(w));
+    if (partial.length === 1) return partial[0][0];
   }
   return null;
 }
