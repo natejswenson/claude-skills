@@ -1,0 +1,27 @@
+# appletv run
+
+## Scan (unicast, 1 found)
+
+| Apple TV    | Model               | tvOS      | Address      | Paired            | Needs pairing | Alias |
+|-------------|---------------------|-----------|--------------|-------------------|---------------|-------|
+| Living Room | Apple TV 4K (gen 3) | tvOS 26.6 | 192.168.1.48 | airplay+companion | —             | —     |
+
+## State
+
+| Field    | Value                             |
+|----------|-----------------------------------|
+| Power    | on                                |
+| App      | PBS KIDS (org.pbskids.ipadplayer) |
+| Playback | idle                              |
+| Title    | —                                 |
+| Keyboard | unfocused                         |
+| Volume   | known-unsupported (unavailable)   |
+
+## Sends (2 verified, 2 sent without read-back)
+
+| Step | Command                           | Before                            | After                             | Verdict      | Why                                                                     |
+|------|-----------------------------------|-----------------------------------|-----------------------------------|--------------|-------------------------------------------------------------------------|
+| 1    | turn_off                          | on                                | off                               | verified     | read-back is off                                                        |
+| 2    | turn_on                           | off                               | on                                | verified     | read-back is on                                                         |
+| 3    | up                                | idle                              | idle                              | unverifiable | a keypress has no readable state of its own                             |
+| 4    | launch_app=org.pbskids.ipadplayer | PBS KIDS (org.pbskids.ipadplayer) | PBS KIDS (org.pbskids.ipadplayer) | unverifiable | PBS KIDS already owned now-playing before the send — foreground unknown |

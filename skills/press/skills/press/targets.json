@@ -928,22 +928,71 @@
         "align": true,
         "comments": false,
         "vars": [
-          { "token": "paper" },
-          { "token": "paper_surface" },
-          { "token": "ink_faint" },
-          { "token": "paper_elevated" },
-          { "token": "ink" },
-          { "token": "ink_mid" },
-          { "token": "dim" },
-          { "token": "accent", "name": "sig" },
-          { "token": "display_stack", "name": "font" },
-          { "token": "serif_stack", "name": "serif" },
-          { "token": "mono_stack", "name": "mono" }
+          {
+            "token": "paper"
+          },
+          {
+            "token": "paper_surface"
+          },
+          {
+            "token": "ink_faint"
+          },
+          {
+            "token": "paper_elevated"
+          },
+          {
+            "token": "ink"
+          },
+          {
+            "token": "ink_mid"
+          },
+          {
+            "token": "dim"
+          },
+          {
+            "token": "accent",
+            "name": "sig"
+          },
+          {
+            "token": "display_stack",
+            "name": "font"
+          },
+          {
+            "token": "serif_stack",
+            "name": "serif"
+          },
+          {
+            "token": "mono_stack",
+            "name": "mono"
+          }
         ]
       },
       "init": {
         "replaceFrom": "^:root \\{$",
         "replaceTo": "^\\}$"
+      }
+    },
+    {
+      "id": "appletv-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/appletv/skills/appletv/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": {
+        "doc": "agent-ui"
+      }
+    },
+    {
+      "id": "appletv-readme",
+      "repo": "claude-skills",
+      "path": "skills/appletv/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# appletv$"
       }
     }
   ],

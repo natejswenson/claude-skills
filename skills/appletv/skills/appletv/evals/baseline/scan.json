@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "captured_at": "2026-08-24T16:36:44+00:00",
+  "mode": "unicast",
+  "hosts": [
+    "192.168.1.48"
+  ],
+  "timeout": 5,
+  "seconds": 0,
+  "devices": [
+    {
+      "name": "Living Room",
+      "address": "192.168.1.48",
+      "identifier": "REDACTED-ID",
+      "all_identifiers": [
+        "REDACTED-ID"
+      ],
+      "model": "Apple TV 4K (gen 3)",
+      "raw_model": "AppleTV14,1",
+      "os": "TvOS",
+      "version": "26.6",
+      "build": null,
+      "mac": "REDACTED",
+      "deep_sleep": false,
+      "services": [
+        {
+          "protocol": "airplay",
+          "port": 7000,
+          "pairing": "Mandatory",
+          "paired": true
+        },
+        {
+          "protocol": "companion",
+          "port": 49153,
+          "pairing": "Mandatory",
+          "paired": true
+        },
+        {
+          "protocol": "raop",
+          "port": 7000,
+          "pairing": "Mandatory",
+          "paired": false
+        }
+      ]
+    }
+  ],
+  "ignored": []
+}

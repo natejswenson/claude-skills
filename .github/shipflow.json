@@ -35,6 +35,7 @@
       "workflowFile": "{name}.yml"
     },
     "components": [
+      "appletv",
       "brandreport",
       "city-report",
       "devlog",
