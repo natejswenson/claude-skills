@@ -14,9 +14,9 @@ export function configPath() {
 }
 
 export function loadConfig(path = configPath()) {
-  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {}, services: [], installed: {}, hold: false };
+  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {}, services: [], installed: {}, hold: false, users: { layout: 'horizontal', members: [], default: null } };
   const cfg = JSON.parse(readFileSync(path, 'utf8'));
-  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {}, services: cfg.services ?? [], installed: cfg.installed ?? {}, hold: cfg.hold ?? false };
+  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {}, services: cfg.services ?? [], installed: cfg.installed ?? {}, hold: cfg.hold ?? false, users: cfg.users ?? { layout: 'horizontal', members: [], default: null } };
 }
 
 export function saveConfig(cfg, path = configPath()) {
@@ -121,4 +121,25 @@ export function appIdFor(word, cfg = null) {
 
 export function prefFor(cfg, appId) {
   return cfg.prefs?.[appId] ?? null;
+}
+
+/**
+ * Resolve a person's name to their tile position on a picker: the tvOS user
+ * picker (cfg.users) or an app's own profile picker (cfg.prefs[app].profiles).
+ * Names match case-insensitively and by prefix so "nate" finds "Nathaniel".
+ */
+export function pickerFor(cfg, appId = null) {
+  if (appId) {
+    const p = cfg.prefs?.[appId];
+    if (p?.profiles?.members?.length) return { layout: p.profiles.layout ?? 'vertical', members: p.profiles.members, default: p.profiles.default ?? p.profile?.name ?? null };
+    if (p?.profile) return { layout: 'vertical', members: [{ name: p.profile.name, position: p.profile.position }], default: p.profile.name };
+    return { layout: 'vertical', members: [], default: null };
+  }
+  return cfg.users ?? { layout: 'horizontal', members: [], default: null };
+}
+
+export function memberFor(picker, name) {
+  const q = norm(name);
+  if (!q) return null;
+  return picker.members.find((m) => norm(m.name) === q) ?? picker.members.find((m) => norm(m.name).startsWith(q)) ?? null;
 }

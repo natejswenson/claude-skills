@@ -7,6 +7,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [0.1.1] - 2026-08-24
 
+### Added
+
+- **Who's watching.** A cold boot lands on tvOS's user picker and apps like Netflix have their own; the skill now records the household once (`pref users "Nathaniel, McKenzie, …"`, `pref netflix --profiles "…" --layout vertical`), asks the person at the keyboard who is using the TV as a list every time a picker shows, and `who <name> [--app]` presses to that tile, selects, and screenshots to confirm. It never picks a person by itself — a new prose guardrail.
+
 ### Fixed
 
 - A command whose state already matches — `turn_on` on a TV that is on, launching the app that already owns now-playing — no longer waits its full read-back ceiling: 0.7 s instead of 6. `open netflix` is 4.9 s (was 15.6); three keypresses 1.7 s (was ~15). The launch ceiling is 3 s.

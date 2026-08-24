@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync
 import { spawn, spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { aliasesFor, appIdFor, configPath, loadConfig, prefFor, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
+import { aliasesFor, appIdFor, configPath, loadConfig, memberFor, pickerFor, prefFor, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
 import { DRIVER, SKILL_DIR, VENV, drive, driveAsync, systemPython, venvPython } from './lib/driver.mjs';
 import { explain } from './lib/errors.mjs';
 import { appsTable, compactSendTable, scanTable, sendRows, sendTable, stateTable, summarize, table, typeTable } from './lib/report.mjs';
@@ -29,7 +29,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
 const PIN_FILE = () => process.env.APPLETV_PIN_FILE || join(dirname(configPath()), 'pairing.pin');
 
 /** The only flags that take a value; everything else is a switch, so `--keep-going up` keeps `up`. */
-const VALUED_FLAGS = new Set(['device', 'out', 'hosts', 'timeout', 'protocol', 'pin', 'pinTimeout', 'settle', 'ceiling', 'tries', 'width', 'title', 'app', 'episode', 'profile', 'position', 'from', 'repo', 'install', 'text']);
+const VALUED_FLAGS = new Set(['device', 'out', 'hosts', 'timeout', 'protocol', 'pin', 'pinTimeout', 'settle', 'ceiling', 'tries', 'width', 'title', 'app', 'episode', 'profile', 'position', 'from', 'repo', 'install', 'text', 'layout', 'profiles', 'default']);
 
 function argv(args) {
   const out = { _: [] };
@@ -355,6 +355,17 @@ async function cmdSend(args) {
 async function cmdPref(args) {
   const cfg = loadConfig();
   const word = args._[1];
+  if (word === 'users') {
+    // the household as it appears on the tvOS user picker, left to right (or top to bottom)
+    const list = args._.slice(2).join(' ').split(',').map((w) => w.trim()).filter(Boolean);
+    if (list.length) cfg.users = { layout: args.layout ?? cfg.users?.layout ?? 'horizontal', members: list.map((name, i) => ({ name, position: i + 1 })), default: cfg.users?.default ?? null };
+    if (args.layout && !list.length) cfg.users.layout = String(args.layout);
+    if (typeof args.default === 'string') { const m = memberFor(cfg.users, args.default); if (!m) throw new Fail('usage', `no household member named "${args.default}"`); cfg.users.default = m.name; }
+    saveConfig(cfg);
+    const rows = (cfg.users.members ?? []).map((m) => [String(m.position), m.name, cfg.users.default === m.name ? 'yes' : '']);
+    say(rows.length ? table(['Tile', 'Name', 'Default'], rows) + `\n(${cfg.users.layout} picker)` : 'no household members yet — read them off the picker: appletv pref users "Nathaniel, McKenzie, Angie" [--layout horizontal|vertical]');
+    return;
+  }
   if (word === 'hold') {
     const v = String(args._[2] ?? '').toLowerCase();
     if (v === 'on' || v === 'off') { cfg.hold = v === 'on'; saveConfig(cfg); }
@@ -384,9 +395,51 @@ async function cmdPref(args) {
   const pref = cfg.prefs[id] ?? {};
   pref.alias = pref.alias ?? String(word).toLowerCase();
   if (args.profile) pref.profile = { name: String(args.profile), position: Number(args.position ?? 1) };
+  if (typeof args.profiles === 'string') {
+    const names = args.profiles.split(',').map((w) => w.trim()).filter(Boolean);
+    pref.profiles = { layout: args.layout ?? pref.profiles?.layout ?? 'vertical', members: names.map((name, i) => ({ name, position: i + 1 })), default: pref.profiles?.default ?? pref.profile?.name ?? null };
+    if (typeof args.default === 'string') pref.profiles.default = args.default;
+  }
   if (args.forget) delete cfg.prefs[id]; else cfg.prefs[id] = pref;
   saveConfig(cfg);
-  say(table(['Word', 'App', 'Profile'], [[pref.alias, id, pref.profile ? `${pref.profile.name} (tile ${pref.profile.position})` : '—']]));
+  say(table(['Word', 'App', 'Profile', 'Profiles on the picker'], [[pref.alias, id, pref.profile ? `${pref.profile.name} (tile ${pref.profile.position})` : '—', pref.profiles ? `${pref.profiles.members.map((m) => m.name).join(' › ')} (${pref.profiles.layout})` : '—']]));
+}
+
+// ---------------------------------------------------------------------------
+// who — pick a person on a picker: the tvOS user picker after turn_on, or an
+// app's own profile picker after open. The agent asks the household who is
+// watching (a list, never a guess), then this presses to that tile from the
+// first one and looks to confirm.
+// ---------------------------------------------------------------------------
+async function cmdWho(args) {
+  const dir = outDir(args);
+  const pick = pickDevice(args);
+  refuseIfOnHold('who');
+  const cfg = loadConfig();
+  const appId = args.app ? appIdFor(args.app, cfg) : null;
+  const picker = pickerFor(cfg, appId);
+  const name = args._.slice(1).join(' ').trim();
+  if (!name) {
+    const rows = picker.members.map((m) => [String(m.position), m.name, picker.default === m.name ? 'yes' : '']);
+    say(rows.length ? table(['Tile', 'Name', 'Default'], rows) + `\n(${picker.layout} picker${appId ? ` for ${args.app}` : ''})` : `no ${appId ? `${args.app} profiles` : 'household members'} recorded — read them off the screen and save: ${appId ? `appletv pref ${args.app} --profiles "A, B, C" --layout vertical` : 'appletv pref users "A, B, C"'}`);
+    return;
+  }
+  const m = memberFor(picker, name);
+  if (!m) throw new Fail('usage', `"${name}" is not on the ${appId ? `${args.app} profile` : 'household'} list (${picker.members.map((x) => x.name).join(', ') || 'empty'})`);
+  const from = Number(args.from ?? 1);
+  const step = picker.layout === 'vertical' ? 'down' : 'right';
+  const back = picker.layout === 'vertical' ? 'up' : 'left';
+  const delta = m.position - from;
+  const presses = [...Array(Math.abs(delta)).fill({ command: delta > 0 ? step : back, arg: null }), { command: 'select', arg: null }];
+  say(`picking ${m.name} (tile ${m.position}) on ${pick.device.name}…`);
+  const caps = pressSequence(pick, presses, { dir, debug: !!args.debug });
+  say(compactSendTable(caps));
+  const eyes = tunnelUp();
+  if (eyes.up && eyes.devices.length && !args.noScreen) {
+    await new Promise((r) => setTimeout(r, 2500));
+    const png = await cmdScreen({ ...args, _: ['screen'] });
+    say(`\nconfirm on ${png}: ${m.name} should be in, no picker showing.`);
+  } else say(`\n${m.name} selected without eyes — confirm on the screen.`);
 }
 
 /** The keypresses that pick the preferred profile tile, counted from the left. */
@@ -710,6 +763,9 @@ const USAGE = `appletv v${VERSION} — find the Apple TVs on your network, pair 
   appletv pair --pin <code>                            deliver the on-screen PIN to a waiting pair
   appletv alias [<room> --device <name> [--default]]  room names; no args lists them
   appletv pref [<app word> --profile <name> --position <n>]   this household's profile per app (local only)
+  appletv pref users "A, B, C" [--layout horizontal] [--default A]   the household as the tvOS picker shows them
+  appletv pref <app> --profiles "A, B, C" [--layout vertical]         an app's own profile picker
+  appletv who <name> [--app <app>] [--from <tile>]     press to that person's tile and select; looks to confirm
   appletv pref hold on|off                             someone is watching: only pause/volume/state allowed
   (send/open/play print a compact table; --verbose shows every read-back)
   appletv open [--device <name>] <app word>            turn on, launch, land on the preferred profile
@@ -740,6 +796,7 @@ async function main() {
       case 'alias': return await cmdAlias(args);
       case 'pref': return await cmdPref(args);
       case 'open': return await cmdOpen(args);
+      case 'who': return await cmdWho(args);
       case 'play': return await cmdPlay(args);
       case 'screen': return await cmdScreen(args);
       case 'state': return await cmdState(args);
