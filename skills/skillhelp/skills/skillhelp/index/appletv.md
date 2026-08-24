@@ -18,7 +18,7 @@
 - Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:62`
 - Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:29`
 - Reads environment variable APPLETV_VENV. `skills/appletv/skills/appletv/scripts/lib/driver.mjs:13`
-- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:517`
+- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:520`
 
 ## Usage
 
