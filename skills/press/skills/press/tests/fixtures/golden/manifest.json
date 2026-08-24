@@ -47,6 +47,8 @@
     "brandreport-theme",
     "netwatch-agent-ui",
     "netwatch-readme",
-    "netwatch-theme"
+    "netwatch-theme",
+    "appletv-agent-ui",
+    "appletv-readme"
   ]
 }

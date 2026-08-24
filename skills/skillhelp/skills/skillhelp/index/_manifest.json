@@ -1,6 +1,22 @@
 {
   "skills": [
     {
+      "name": "appletv",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "e680195e6d12214d",
+      "facts": 74,
+      "sections": {
+        "setup": 10,
+        "usage": 12,
+        "commands": 20,
+        "architecture": 16,
+        "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
