@@ -73,7 +73,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 201
+        "line": 240
       }
     },
     {
@@ -83,7 +83,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 205
+        "line": 244
       }
     },
     {
@@ -93,7 +93,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 212
+        "line": 251
       }
     },
     {
@@ -103,7 +103,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 196
+        "line": 235
       }
     },
     {
@@ -113,7 +113,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 220
+        "line": 259
       }
     },
     {
@@ -123,7 +123,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 193
+        "line": 232
       }
     },
     {
@@ -133,7 +133,7 @@
       "severity": "medium",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 210
+        "line": 249
       }
     },
     {
@@ -147,13 +147,23 @@
       }
     },
     {
+      "id": "skill-455fb4c8",
+      "tag": "skill",
+      "text": "Never send a navigation press you cannot picture the result of.",
+      "severity": "high",
+      "source": {
+        "file": "skills/appletv/skills/appletv/SKILL.md",
+        "line": 141
+      }
+    },
+    {
       "id": "skill-76b0b827",
       "tag": "skill",
       "text": "Never ask about anything in it.",
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 66
+        "line": 70
       }
     },
     {
@@ -163,7 +173,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 165
+        "line": 204
       }
     },
     {
@@ -173,7 +183,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 158
+        "line": 196
       }
     },
     {
@@ -183,7 +193,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 122
+        "line": 126
       }
     },
     {
@@ -193,7 +203,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 162
+        "line": 200
       }
     },
     {
@@ -203,7 +213,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 163
+        "line": 201
       }
     },
     {
@@ -223,7 +233,7 @@
       "severity": "high",
       "source": {
         "file": "skills/appletv/skills/appletv/SKILL.md",
-        "line": 160
+        "line": 198
       }
     }
   ]

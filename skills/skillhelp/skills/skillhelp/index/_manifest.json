@@ -4,10 +4,10 @@
       "name": "appletv",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "219800566bcdf170",
-      "facts": 72,
+      "cardHash": "c105033e288be4b0",
+      "facts": 74,
       "sections": {
-        "setup": 8,
+        "setup": 10,
         "usage": 12,
         "commands": 20,
         "architecture": 16,

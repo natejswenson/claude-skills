@@ -14,9 +14,9 @@ export function configPath() {
 }
 
 export function loadConfig(path = configPath()) {
-  if (!existsSync(path)) return { default: null, aliases: {}, devices: {} };
+  if (!existsSync(path)) return { default: null, aliases: {}, devices: {}, prefs: {} };
   const cfg = JSON.parse(readFileSync(path, 'utf8'));
-  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {} };
+  return { default: cfg.default ?? null, aliases: cfg.aliases ?? {}, devices: cfg.devices ?? {}, prefs: cfg.prefs ?? {} };
 }
 
 export function saveConfig(cfg, path = configPath()) {
@@ -72,4 +72,48 @@ export function resolveDevice(cfg, query) {
   if (byPrefix.length === 1) return { ok: true, id: byPrefix[0][0], device: byPrefix[0][1], via: 'name match' };
   if (byPrefix.length > 1 || byName.length > 1) return { ok: false, error: 'multiple_devices', candidates: (byPrefix.length ? byPrefix : byName).map(([id, d]) => ({ id, name: d.name })) };
   return { ok: false, error: 'device_not_found', candidates: entries.map(([id, d]) => ({ id, name: d.name })) };
+}
+
+/**
+ * Per-app preferences — the household's facts, never the repo's. Keyed by
+ * bundle id: { profile: { name, position } } where position is the tile's
+ * 1-based place in the app's profile picker, counted from the left.
+ */
+export const APP_WORDS = Object.freeze({
+  netflix: 'com.netflix.Netflix',
+  youtube: 'com.google.ios.youtube',
+  'disney+': 'com.disney.disneyplus',
+  disney: 'com.disney.disneyplus',
+  'disney plus': 'com.disney.disneyplus',
+  hulu: 'com.hulu.plus',
+  max: 'com.wbd.stream',
+  'hbo max': 'com.wbd.stream',
+  'prime video': 'com.amazon.aiv.AIVApp',
+  prime: 'com.amazon.aiv.AIVApp',
+  'apple tv': 'com.apple.TVWatchList',
+  'apple tv+': 'com.apple.TVWatchList',
+  'tv': 'com.apple.TVWatchList',
+  plex: 'com.plexapp.plex',
+  spotify: 'com.spotify.client',
+  peacock: 'com.peacocktv.peacock',
+  'paramount+': 'com.cbsvideo.app',
+  paramount: 'com.cbsvideo.app',
+  music: 'com.apple.TVMusic',
+  settings: 'com.apple.TVSettings',
+  'pbs kids': 'org.pbskids.ipadplayer',
+});
+
+export function appIdFor(word, cfg = null) {
+  const w = norm(word);
+  if (!w) return null;
+  if (w.includes('.') && !w.includes(' ')) return word;
+  if (APP_WORDS[w]) return APP_WORDS[w];
+  if (cfg) {
+    for (const [id, p] of Object.entries(cfg.prefs ?? {})) if (norm(p.alias) === w) return id;
+  }
+  return null;
+}
+
+export function prefFor(cfg, appId) {
+  return cfg.prefs?.[appId] ?? null;
 }

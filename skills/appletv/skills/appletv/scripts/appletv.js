@@ -15,20 +15,20 @@
  * is what the frozen baseline replays.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { aliasesFor, configPath, loadConfig, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
+import { aliasesFor, appIdFor, configPath, loadConfig, prefFor, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
 import { DRIVER, SKILL_DIR, VENV, drive, driveAsync, systemPython, venvPython } from './lib/driver.mjs';
 import { explain } from './lib/errors.mjs';
 import { appsTable, scanTable, sendRows, sendTable, stateTable, summarize, table, typeTable } from './lib/report.mjs';
-import { launchTarget, textVerdict, verdict } from './lib/verify.mjs';
+import { launchTarget, playVerdict, textVerdict, verdict } from './lib/verify.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const PIN_FILE = () => process.env.APPLETV_PIN_FILE || join(dirname(configPath()), 'pairing.pin');
 
 /** Flags that never take a value, so `--keep-going up` keeps `up` as the command. */
-const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version']);
+const BOOL_FLAGS = new Set(['keepGoing', 'force', 'default', 'debug', 'append', 'clear', 'get', 'version', 'noProfile', 'pair', 'installTunnel']);
 
 function argv(args) {
   const out = { _: [] };
@@ -90,7 +90,7 @@ async function cmdDoctor(args) {
       const mk = spawnSync(sys.bin, ['-m', 'venv', VENV], { encoding: 'utf8' });
       if (mk.status !== 0) throw new Fail('no_python', mk.stderr.trim());
     } else say('upgrading pyatv in the skill venv…');
-    const pip = spawnSync(join(VENV, 'bin', 'pip'), ['install', '-q', '--upgrade', 'pyatv'], { encoding: 'utf8', timeout: 300_000 });
+    const pip = spawnSync(join(VENV, 'bin', 'pip'), ['install', '-q', '--upgrade', 'pyatv', 'pymobiledevice3'], { encoding: 'utf8', timeout: 600_000 });
     if (pip.status !== 0) throw new Fail('no_pyatv', pip.stderr.trim().split('\n').pop());
     py = venvPython();
   }
@@ -99,6 +99,9 @@ async function cmdDoctor(args) {
   rows.push(['pyatv', d.ok ? d.pyatv : 'missing', d.ok ? 'ok' : explain(d.error, d.detail).fix]);
   if (!d.ok) { say(table(['Check', 'Value', 'Status'], rows)); throw failFrom(d); }
   rows.push(['credentials', d.storage.replace(homedir(), '~'), existsSync(d.storage) ? 'present' : 'none yet — pair first']);
+  const pm = existsSync(join(VENV, 'bin', 'pymobiledevice3'));
+  const tun = pm ? tunnelUp() : { up: false, devices: [] };
+  rows.push(['screenshots', pm ? (tun.up ? (tun.devices.length ? `tunnel up, ${tun.devices.length} device` : 'tunnel up, no device paired') : 'tunnel down') : 'pymobiledevice3 missing', pm ? (tun.up && tun.devices.length ? 'ok' : `start: ${TUNNELD_CMD}`) : 'optional — pip install pymobiledevice3 in the venv']);
   const cfg = loadConfig();
   const n = Object.keys(cfg.devices).length;
   rows.push(['config', configPath().replace(homedir(), '~'), n ? `${n} device${n > 1 ? 's' : ''} remembered${cfg.default ? ', default set' : ', no default'}` : 'no devices yet — scan first']);
@@ -281,6 +284,220 @@ async function cmdSend(args) {
   if (caps.some((c) => c.verdict.verdict === 'mismatch')) process.exitCode = 1;
 }
 
+
+// ---------------------------------------------------------------------------
+// pref — the household's preferences, on this Mac only
+// ---------------------------------------------------------------------------
+async function cmdPref(args) {
+  const cfg = loadConfig();
+  const word = args._[1];
+  if (!word) {
+    const rows = Object.entries(cfg.prefs).map(([id, p]) => [p.alias ?? '—', id, p.profile ? `${p.profile.name} (tile ${p.profile.position})` : '—']);
+    say(rows.length ? table(['Word', 'App', 'Profile'], rows) : `no preferences yet — e.g. appletv pref netflix --profile Nathaniel --position 1\n(stored in ${configPath().replace(homedir(), '~')}, never in the repo)`);
+    return;
+  }
+  const id = appIdFor(word, cfg);
+  if (!id) throw new Fail('usage', `"${word}" is not a known app word or bundle id — pass the bundle id from \`appletv apps\``);
+  const pref = cfg.prefs[id] ?? {};
+  pref.alias = pref.alias ?? String(word).toLowerCase();
+  if (args.profile) pref.profile = { name: String(args.profile), position: Number(args.position ?? 1) };
+  if (args.forget) delete cfg.prefs[id]; else cfg.prefs[id] = pref;
+  saveConfig(cfg);
+  say(table(['Word', 'App', 'Profile'], [[pref.alias, id, pref.profile ? `${pref.profile.name} (tile ${pref.profile.position})` : '—']]));
+}
+
+/** The keypresses that pick the preferred profile tile, counted from the left. */
+function profileSteps(pref) {
+  if (!pref?.profile) return [];
+  const n = Math.max(1, Number(pref.profile.position) || 1);
+  return [...Array(n - 1).fill({ command: 'right', arg: null }), { command: 'select', arg: null }];
+}
+
+async function runSteps(pick, steps, { settle = 2, tries = 2, debug = false, dir = null } = {}) {
+  const caps = [];
+  const existing = dir ? readdirSync(dir).filter((f) => /^send-\d+\.json$/.test(f)).length : 0;
+  for (const [i, step] of steps.entries()) {
+    const extra = ['--tries', String(tries), '--settle', String(settle)];
+    if (step.arg !== null && step.arg !== undefined) extra.push('--arg', step.arg);
+    const res = driveDevice('press', pick, [step.command, ...extra], { debug });
+    if (!res.ok) throw failFrom(res);
+    const cap = { ...res, verdict: verdict(res) };
+    caps.push(cap);
+    capture(dir, `send-${String(existing + i + 1).padStart(2, '0')}.json`, cap);
+  }
+  return caps;
+}
+
+// ---------------------------------------------------------------------------
+// open — launch an app and land on the preferred profile
+// ---------------------------------------------------------------------------
+async function cmdOpen(args) {
+  const dir = outDir(args);
+  const pick = pickDevice(args);
+  const word = args._.slice(1).join(' ');
+  const cfg = loadConfig();
+  const id = appIdFor(word, cfg);
+  if (!id) throw new Fail('usage', `open <app word or bundle id> — "${word}" is not one I know; \`appletv apps ${word}\` finds the id`);
+  const pref = prefFor(cfg, id);
+  say(`opening ${word} on ${pick.device.name}${pref?.profile ? ` as ${pref.profile.name}` : ''}…`);
+  const steps = [{ command: 'turn_on', arg: null }, { command: 'launch_app', arg: id }];
+  if (pref?.profile && !args.noProfile) steps.push(...profileSteps(pref));
+  const caps = await runSteps(pick, steps, { settle: Number(args.settle ?? 3), debug: !!args.debug, dir });
+  say(sendTable(caps));
+  say(`\n${summarize(caps)}. ${pref?.profile ? `Profile tile ${pref.profile.position} (${pref.profile.name}) selected blind — look at the screen.` : ''}`);
+}
+
+// ---------------------------------------------------------------------------
+// play — a title by deep link, for the services that honour one (YouTube,
+// Disney+, Apple TV+, Hulu, Peacock). Netflix killed deep links on tvOS in
+// Sept 2025; for it — and anything else without a link — the agent navigates
+// with `screen` between presses (look → press → look), never a recorded
+// sequence replayed blind. The end state is still read back here.
+// ---------------------------------------------------------------------------
+async function cmdPlay(args) {
+  const dir = outDir(args);
+  const pick = pickDevice(args);
+  const cfg = loadConfig();
+  const target = args._[1] ?? null;
+  if (!target || !/^https?:\/\/|^[a-z][a-z0-9+.-]*:\/\//i.test(target)) {
+    throw new Fail('usage', 'play <deep link> [--title "<expected>"] — for an app without working deep links (Netflix), navigate with `appletv screen` between presses and confirm with `appletv state`');
+  }
+  const id = args.app ? appIdFor(args.app, cfg) : launchTarget(target);
+  const title = args.title ? String(args.title) : null;
+  const opts = { settle: Number(args.settle ?? 5), debug: !!args.debug, dir };
+  say(`playing ${title ?? target} on ${pick.device.name} via deep link…`);
+  const caps = await runSteps(pick, [{ command: 'turn_on', arg: null }, { command: 'launch_app', arg: target }], opts);
+  let end = caps[caps.length - 1];
+  let played = playVerdict(end, { title, appId: id });
+  for (let i = 0; i < 3 && played.verdict !== 'verified'; i += 1) {
+    await new Promise((r) => setTimeout(r, 4000));
+    const res = driveDevice('state', pick, [], { debug: opts.debug });
+    if (res.ok) { end = { ...end, after: res.state }; played = playVerdict(end, { title, appId: id }); }
+  }
+  say(sendTable(caps));
+  say(`\n${played.verdict}: ${played.why}`);
+  if (played.verdict !== 'verified') process.exitCode = 1;
+}
+
+// ---------------------------------------------------------------------------
+// screen — a screenshot, the one read-back that sees what a keypress did.
+// pymobiledevice3 DVT over a RemoteXPC tunnel (tvOS 17+). The tunnel needs
+// root, so the user starts it; the skill only checks for it and names the fix.
+// ---------------------------------------------------------------------------
+const PMD3 = () => join(VENV, 'bin', 'pymobiledevice3');
+const TUNNELD_CMD = 'sudo ' + join(VENV, 'bin', 'pymobiledevice3') + ' remote tunneld --no-usb --no-usbmux --no-mobdev2 --wifi';
+
+function tunnelUp() {
+  const r = spawnSync('curl', ['-s', '-m', '2', 'http://127.0.0.1:49151/'], { encoding: 'utf8' });
+  if (r.status !== 0 || !r.stdout) return { up: false, devices: [] };
+  try {
+    const j = JSON.parse(r.stdout);
+    const devices = Object.keys(j);
+    return { up: true, devices };
+  } catch { return { up: true, devices: [] }; }
+}
+
+const PAIR_SCRIPT = `
+import asyncio, json, sys
+from pymobiledevice3.bonjour import browse_remotepairing_manual_pairing
+from pymobiledevice3.exceptions import RemotePairingCompletedError
+from pymobiledevice3.remote.tunnel_service import RemotePairingManualPairingService
+want = sys.argv[1] if len(sys.argv) > 1 else None
+async def m():
+    found = []
+    for a in await browse_remotepairing_manual_pairing():
+        name = a.properties["name"]
+        if want and name != want: continue
+        v4 = [x.full_ip for x in a.addresses if ":" not in x.full_ip]
+        if v4: found.append((name, v4[0], a.port, a.properties["identifier"]))
+    if not found:
+        print(json.dumps({"ok": False, "error": "not_advertising"})); return
+    name, ip, port, ident = found[0]
+    print(json.dumps({"phase": "pin_needed", "device": name}), file=sys.stderr, flush=True)
+    try:
+        async with RemotePairingManualPairingService(ident, ip, port) as svc:
+            await svc.connect(autopair=True)
+    except RemotePairingCompletedError:
+        pass
+    print(json.dumps({"ok": True, "device": name, "identifier": ident}))
+asyncio.run(m())
+`;
+
+async function screenPair(args) {
+  const py = venvPython();
+  if (!py || !existsSync(PMD3())) throw new Fail('no_pyatv', 'pymobiledevice3 missing — run `appletv doctor --install`');
+  const pinFile = PIN_FILE();
+  rmSync(pinFile, { force: true });
+  say('looking for an Apple TV on its "Remote App and Devices" screen…');
+  const script = join(process.env.TMPDIR || '/tmp', 'appletv-devpair.py');
+  writeFileSync(script, PAIR_SCRIPT);
+  const child = spawn(py, [script, ...(args.device && !/^\d/.test(args.device) ? [String(args.device)] : [])], { stdio: ['pipe', 'pipe', 'pipe'] });
+  let out = ''; let pinSent = false;
+  child.stdout.on('data', (d) => { out += d; });
+  child.stderr.on('data', (d) => {
+    for (const line of String(d).split('\n').filter(Boolean)) {
+      let p = null; try { p = JSON.parse(line); } catch { if (args.debug) process.stderr.write(`${line}\n`); }
+      if (p?.phase === 'pin_needed') say(`\n  ▶ ${p.device} is showing a 6-digit developer pairing code. Deliver it within ${Math.round(Number(args.pinTimeout ?? 300) / 60)} minutes:\n      appletv pair --pin <the code on the screen>\n`);
+    }
+  });
+  const deadline = Date.now() + Number(args.pinTimeout ?? 300) * 1000;
+  const result = await new Promise((resolvePromise) => {
+    child.on('close', () => resolvePromise(out));
+    const tick = setInterval(() => {
+      if (!pinSent && existsSync(pinFile)) {
+        const pin = readFileSync(pinFile, 'utf8').trim();
+        rmSync(pinFile, { force: true });
+        if (pin) { child.stdin.write(`${pin}\n`); pinSent = true; }
+      }
+      if (Date.now() > deadline) { clearInterval(tick); child.kill(); resolvePromise(out); }
+    }, 500);
+    child.on('close', () => clearInterval(tick));
+  });
+  const last = result.trim().split('\n').pop() || '';
+  let parsed = null; try { parsed = JSON.parse(last); } catch { parsed = null; }
+  if (!parsed?.ok) throw new Fail('usage', parsed?.error === 'not_advertising' ? 'no Apple TV is advertising developer pairing — on the TV open Settings › Remotes and Devices › Remote App and Devices and stay on that screen' : `developer pairing failed: ${last || 'no PIN delivered in time'}`);
+  say(table(['Developer pairing', 'Result'], [[parsed.device, 'paired — record in ~/.pymobiledevice3']]));
+}
+
+function installTunnel() {
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.natjswenson.appletv.tunneld</string>
+  <key>ProgramArguments</key><array>
+    <string>${PMD3()}</string><string>remote</string><string>tunneld</string>
+    <string>--no-usb</string><string>--no-usbmux</string><string>--no-mobdev2</string><string>--wifi</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/appletv-tunneld.log</string>
+  <key>StandardErrorPath</key><string>/tmp/appletv-tunneld.log</string>
+</dict></plist>
+`;
+  const out = join(process.env.TMPDIR || '/tmp', 'com.natjswenson.appletv.tunneld.plist');
+  writeFileSync(out, plist);
+  say(table(['Wrote', 'Then run once (root — installs a LaunchDaemon so the tunnel is up at every login)'], [[out, `sudo cp ${out} /Library/LaunchDaemons/ && sudo launchctl bootstrap system /Library/LaunchDaemons/com.natjswenson.appletv.tunneld.plist`]]));
+}
+
+async function cmdScreen(args) {
+  if (args.pair) return screenPair(args);
+  if (args.installTunnel) return installTunnel();
+  const dir = outDir(args);
+  if (!existsSync(PMD3())) throw new Fail('no_pyatv', 'pymobiledevice3 is not in the skill venv — run `appletv doctor --install`');
+  const t = tunnelUp();
+  if (!t.up) throw new Fail('usage', `no developer tunnel — start one in another terminal (needs root, stays up for the session):\n      ${TUNNELD_CMD}`);
+  if (t.devices.length === 0) throw new Fail('usage', `the tunnel is up but has no device — pair once: TV on Settings › Remotes and Devices › Remote App and Devices, then\n      ${PMD3()} remote pair`);
+  const out = resolve(args.out ? join(dir, `screen-${Date.now()}.png`) : join(process.env.TMPDIR || '/tmp', `appletv-screen-${Date.now()}.png`));
+  say('capturing the screen…');
+  const started = Date.now();
+  const r = spawnSync(PMD3(), ['developer', 'dvt', 'screenshot', out, '--tunnel', ''], { encoding: 'utf8', timeout: 45_000 });
+  if (r.status !== 0 || !existsSync(out)) throw new Fail('usage', `screenshot failed: ${(r.stderr || r.stdout || '').trim().split('\n').pop()}`);
+  const width = String(args.width ?? 1280);
+  spawnSync('sips', ['--resampleWidth', width, out], { encoding: 'utf8' });
+  say(table(['Screenshot', 'Took', 'Width'], [[out, `${((Date.now() - started) / 1000).toFixed(1)}s`, `${width}px`]]));
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // apps — what is installed, and what a name or link resolves to
 // ---------------------------------------------------------------------------
@@ -376,6 +593,12 @@ const USAGE = `appletv v${VERSION} — find the Apple TVs on your network, pair 
   appletv pair --device <name> [--protocol airplay|companion|all] [--force]
   appletv pair --pin <code>                            deliver the on-screen PIN to a waiting pair
   appletv alias [<room> --device <name> [--default]]  room names; no args lists them
+  appletv pref [<app word> --profile <name> --position <n>]   this household's profile per app (local only)
+  appletv open [--device <name>] <app word>            turn on, launch, land on the preferred profile
+  appletv play [--device <name>] <deep link> [--title "<expected>"]   services that honour deep links, verified by read-back
+  appletv screen [--width 1280]                        screenshot via the developer tunnel (Read the PNG)
+  appletv screen --pair [--device <name>]              one-time developer pairing (TV on Remote App and Devices)
+  appletv screen --install-tunnel                      write a LaunchDaemon so the tunnel is up at login
   appletv state [--device <name>]                     power, app, playback, keyboard, volume
   appletv send [--device <name>] <cmd[=arg][,cmd…]>   send + read back → verified|mismatch|unverifiable
   appletv apps [--device <name>] [<name or url>]      installed apps; resolve a launch target
@@ -396,6 +619,10 @@ async function main() {
       case 'scan': return await cmdScan(args);
       case 'pair': return await cmdPair(args);
       case 'alias': return await cmdAlias(args);
+      case 'pref': return await cmdPref(args);
+      case 'open': return await cmdOpen(args);
+      case 'play': return await cmdPlay(args);
+      case 'screen': return await cmdScreen(args);
       case 'state': return await cmdState(args);
       case 'send': return await cmdSend(args);
       case 'apps': return await cmdApps(args);

@@ -18,6 +18,11 @@
       "id": "detection-is-the-question-budget",
       "pattern": "never ask about anything in it",
       "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "never-navigate-blind",
+      "pattern": "Never send a navigation press you cannot picture the result of",
+      "rationale": "The blind-press incident: a menu from Netflix home exited to tvOS and four lefts plus a select opened PBS KIDS in front of the household. Every navigation press is preceded and followed by a screenshot."
     }
   ],
   "split": {
@@ -57,6 +62,18 @@
       {
         "step": "render a captured run as the report",
         "command": "node scripts/appletv.js report --from <dir>"
+      },
+      {
+        "step": "take a screenshot of the TV over the developer tunnel",
+        "command": "node scripts/appletv.js screen"
+      },
+      {
+        "step": "open an app on the household's preferred profile",
+        "command": "node scripts/appletv.js open <app>"
+      },
+      {
+        "step": "play a title by deep link where the service honours one, verified by read-back",
+        "command": "node scripts/appletv.js play <url>"
       }
     ],
     "nondeterministic": [
@@ -65,7 +82,7 @@
         "why": "'the living room one' is a fact about the house, not the network"
       },
       {
-        "step": "turn an intent into a command sequence — 'skip the intro' into skip_forward, 'put on Severance' into a deep link, 'movie night' into wake + launch + play",
+        "step": "turn an intent into a command sequence \u2014 'skip the intro' into skip_forward, 'put on Severance' into a deep link, 'movie night' into wake + launch + play",
         "why": "an intent is an app, a menu path and several keypresses that no table records"
       },
       {
@@ -73,7 +90,7 @@
         "why": "pairing shows a code on the TV that only a person in the room can see"
       },
       {
-        "step": "decide whether to confirm first — turning off or switching apps while something is playing asks, pause and skip do not",
+        "step": "decide whether to confirm first \u2014 turning off or switching apps while something is playing asks, pause and skip do not",
         "why": "the cost of a wrong action depends on who is watching, which the state hints at and the person knows"
       },
       {
@@ -82,7 +99,11 @@
       },
       {
         "step": "explain a mismatch or an unverifiable result and propose the next move",
-        "why": "the TV was asleep, the wrong app had focus, tvOS hides that field, or the command was refused — the state says which, the fix is a judgment"
+        "why": "the TV was asleep, the wrong app had focus, tvOS hides that field, or the command was refused \u2014 the state says which, the fix is a judgment"
+      },
+      {
+        "step": "read a screenshot \u2014 which tile is highlighted, which episode is the latest that is not \"coming Friday\", whether a black frame is DRM video or a sleeping TV",
+        "why": "pixels are the only foreground read-back tvOS has, and only a model can read them"
       }
     ]
   },
@@ -94,7 +115,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "node evals/update.mjs <run dir>",
-      "rationale": "the scan parser dropping a device or a field while the table still looks complete; the state parser losing power or now-playing so a read-back can never disagree; a known-unsupported field rendering blank — pinned against JSON captured from a real scan of the maintainer's network, the pairing result, and a real state read-back, frozen, with report re-run over the capture and byte-compared."
+      "rationale": "the scan parser dropping a device or a field while the table still looks complete; the state parser losing power or now-playing so a read-back can never disagree; a known-unsupported field rendering blank \u2014 pinned against JSON captured from a real scan of the maintainer's network, the pairing result, and a real state read-back, frozen, with report re-run over the capture and byte-compared."
     },
     {
       "id": "real-send-verified",
@@ -102,7 +123,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "node evals/update.mjs <run dir>",
-      "rationale": "the verifier drifting so a verified step reports differently, or the before/after values vanishing from the report — pinned against a real pause sent to the maintainer's Apple TV with its before and after read-backs, frozen, with the verdict re-derived and byte-compared."
+      "rationale": "the verifier drifting so a verified step reports differently, or the before/after values vanishing from the report \u2014 pinned against a real pause sent to the maintainer's Apple TV with its before and after read-backs, frozen, with the verdict re-derived and byte-compared."
     },
     {
       "id": "readback-mismatch-trap",
@@ -110,7 +131,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "node evals/update.mjs <run dir>",
-      "rationale": "the one rule ceasing to be code — send reporting verified without the read-back agreeing — pinned against a captured send where the command was pause but the read-back says playing, which must exit non-zero."
+      "rationale": "the one rule ceasing to be code \u2014 send reporting verified without the read-back agreeing \u2014 pinned against a captured send where the command was pause but the read-back says playing, which must exit non-zero."
     },
     {
       "id": "unverifiable-never-done",
@@ -118,7 +139,7 @@
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [],
       "update_command": "node evals/update.mjs <run dir>",
-      "rationale": "a command with no read-back being rounded up to done — pinned against a captured navigation keypress with no observable state change, whose report must say unverifiable and never verified."
+      "rationale": "a command with no read-back being rounded up to done \u2014 pinned against a captured navigation keypress with no observable state change, whose report must say unverifiable and never verified."
     }
   ]
 }

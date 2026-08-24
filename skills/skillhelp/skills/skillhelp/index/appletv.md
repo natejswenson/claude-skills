@@ -12,11 +12,13 @@
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/appletv/README.md:66`
 - Python 3.9+ on the Mac; appletv doctor creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global. `skills/appletv/README.md:67`
 - The Mac on the same network as the Apple TV (Bonjour), and someone in the room to read two PINs off the screen the first time. `skills/appletv/README.md:68`
+- Optional, for in-app navigation (Netflix has no deep links since Sept 2025): appletv screen takes real screenshots over Apple's developer tunnel — one-time screen --pair with the TV on *Remote App an… `skills/appletv/README.md:69`
 - Requires Node >=18 (package.json engines). `skills/appletv/skills/appletv/package.json:33`
 - Reads environment variable APPLETV_CONFIG. `skills/appletv/skills/appletv/scripts/lib/config.mjs:13`
 - Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:62`
 - Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:28`
 - Reads environment variable APPLETV_VENV. `skills/appletv/skills/appletv/scripts/lib/driver.mjs:13`
+- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:432`
 
 ## Usage
 
@@ -35,61 +37,61 @@
 
 ## Commands
 
-- Command — Returns `skills/appletv/skills/appletv/SKILL.md:139`
-- appletv doctor [--install] — python, venv, pyatv version, credentials store, remembered devices — creates the venv when missing `skills/appletv/skills/appletv/SKILL.md:141`
-- appletv scan [--hosts ip,ip] [--timeout s] — every Apple TV: model, tvOS, address, paired protocols, what still needs pairing, alias; names the fix when empty `skills/appletv/skills/appletv/SKILL.md:142`
-- appletv pair --device <name> [--protocol airplay\ — companion\ — all] [--force] — pairs AirPlay then Companion, one PIN each, credentials to ~/.pyatv.conf; per-protocol result and what it unlocks `skills/appletv/skills/appletv/SKILL.md:143`
-- appletv pair --pin <code> — delivers the on-screen PIN to the waiting pairing session `skills/appletv/skills/appletv/SKILL.md:144`
-- appletv alias [<room> --device <name> [--default]] — binds a room name; sets the default; no args lists them `skills/appletv/skills/appletv/SKILL.md:145`
-- appletv state [--device <x>] — power, foreground app, playback, title/series/episode/position, keyboard focus, volume; a field tvOS cannot report says known-unsupported, never blank `skills/appletv/skills/appletv/SKILL.md:146`
-- appletv send [--device <x>] <cmd[=arg][,cmd…]> — before/after state and a verdict per step; stops at the first mismatch; exits non-zero on any `skills/appletv/skills/appletv/SKILL.md:147`
-- appletv apps [--device <x>] [<name or url>] — installed apps with bundle ids; resolves a name or a deep link to a launch target `skills/appletv/skills/appletv/SKILL.md:148`
-- appletv type [--device <x>] <text> [--append] \ — --clear \ — --get — puts text in the focused field and reads it back; refuses when nothing is focused `skills/appletv/skills/appletv/SKILL.md:149`
-- node scripts/appletv.js doctor `skills/appletv/skills/appletv/SKILL.md:61`
-- node scripts/appletv.js scan # multicast; --hosts <ip> for unicast `skills/appletv/skills/appletv/SKILL.md:75`
-- node scripts/appletv.js pair --device "<name>" # run in the BACKGROUND `skills/appletv/skills/appletv/SKILL.md:82`
-- node scripts/appletv.js pair --pin <code> # leading zeros count — pass it as typed `skills/appletv/skills/appletv/SKILL.md:90`
-- node scripts/appletv.js alias "living room" --device "<name>" --default `skills/appletv/skills/appletv/SKILL.md:98`
-- node scripts/appletv.js state [--device <room>] # "what's playing" `skills/appletv/skills/appletv/SKILL.md:107`
-- node scripts/appletv.js send [--device <room>] pause # one step `skills/appletv/skills/appletv/SKILL.md:108`
-- node scripts/appletv.js send [--device <room>] "turn_on,launch_app=com.netflix.Netflix" `skills/appletv/skills/appletv/SKILL.md:109`
-- node scripts/appletv.js apps [--device <room>] netflix # id for a name, or a deep link `skills/appletv/skills/appletv/SKILL.md:110`
-- node scripts/appletv.js type [--device <room>] "stranger things" `skills/appletv/skills/appletv/SKILL.md:111`
+- Command — Returns `skills/appletv/skills/appletv/SKILL.md:173`
+- appletv doctor [--install] — python, venv, pyatv version, credentials store, remembered devices — creates the venv when missing `skills/appletv/skills/appletv/SKILL.md:175`
+- appletv scan [--hosts ip,ip] [--timeout s] — every Apple TV: model, tvOS, address, paired protocols, what still needs pairing, alias; names the fix when empty `skills/appletv/skills/appletv/SKILL.md:176`
+- appletv pair --device <name> [--protocol airplay\ — companion\ — all] [--force] — pairs AirPlay then Companion, one PIN each, credentials to ~/.pyatv.conf; per-protocol result and what it unlocks `skills/appletv/skills/appletv/SKILL.md:177`
+- appletv pair --pin <code> — delivers the on-screen PIN to the waiting pairing session `skills/appletv/skills/appletv/SKILL.md:178`
+- appletv alias [<room> --device <name> [--default]] — binds a room name; sets the default; no args lists them `skills/appletv/skills/appletv/SKILL.md:179`
+- appletv state [--device <x>] — power, foreground app, playback, title/series/episode/position, keyboard focus, volume; a field tvOS cannot report says known-unsupported, never blank `skills/appletv/skills/appletv/SKILL.md:180`
+- appletv send [--device <x>] <cmd[=arg][,cmd…]> — before/after state and a verdict per step; stops at the first mismatch; exits non-zero on any `skills/appletv/skills/appletv/SKILL.md:181`
+- appletv apps [--device <x>] [<name or url>] — installed apps with bundle ids; resolves a name or a deep link to a launch target `skills/appletv/skills/appletv/SKILL.md:182`
+- appletv type [--device <x>] <text> [--append] \ — --clear \ — --get — puts text in the focused field and reads it back; refuses when nothing is focused `skills/appletv/skills/appletv/SKILL.md:183`
+- node scripts/appletv.js doctor `skills/appletv/skills/appletv/SKILL.md:65`
+- node scripts/appletv.js scan # multicast; --hosts <ip> for unicast `skills/appletv/skills/appletv/SKILL.md:79`
+- node scripts/appletv.js pair --device "<name>" # run in the BACKGROUND `skills/appletv/skills/appletv/SKILL.md:86`
+- node scripts/appletv.js pair --pin <code> # leading zeros count — pass it as typed `skills/appletv/skills/appletv/SKILL.md:94`
+- node scripts/appletv.js alias "living room" --device "<name>" --default `skills/appletv/skills/appletv/SKILL.md:102`
+- node scripts/appletv.js state [--device <room>] # "what's playing" `skills/appletv/skills/appletv/SKILL.md:111`
+- node scripts/appletv.js send [--device <room>] pause # one step `skills/appletv/skills/appletv/SKILL.md:112`
+- node scripts/appletv.js send [--device <room>] "turn_on,launch_app=com.netflix.Netflix" `skills/appletv/skills/appletv/SKILL.md:113`
+- node scripts/appletv.js apps [--device <room>] netflix # id for a name, or a deep link `skills/appletv/skills/appletv/SKILL.md:114`
+- node scripts/appletv.js type [--device <room>] "stranger things" `skills/appletv/skills/appletv/SKILL.md:115`
 
 ## Architecture
 
-- scripts/appletv.js — the CLI: doctor, scan, pair, alias, state, send, apps, type, report `skills/appletv/skills/appletv/SKILL.md:174`
-- references/commands.md — every command the skill can send, the protocol it needs, the read-back that verifies it, and which are unverifiable `skills/appletv/skills/appletv/SKILL.md:175`
-- references/pairing.md — the protocols (AirPlay, Companion, MRP-over-AirPlay), the one-PIN-per-protocol flow, where credentials live, and the TV settings that block pairing `skills/appletv/skills/appletv/SKILL.md:176`
-- references/apps.md — the verified bundle-id table and how deep links open a specific title in Netflix, Disney+, Max, YouTube and Apple TV+ `skills/appletv/skills/appletv/SKILL.md:177`
-- references/errors.md — the error taxonomy — each failure the network, the TV or tvOS produces, mapped to the message and the fix the skill gives `skills/appletv/skills/appletv/SKILL.md:178`
-- references/intents.md — the twenty things people actually ask a TV to do, each mapped to a command sequence and its confirmation policy `skills/appletv/skills/appletv/SKILL.md:179`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/appletv/skills/appletv/SKILL.md:183`
-- Deterministic: check python and pyatv, make the venv — node scripts/appletv.js doctor `skills/appletv/skills/appletv/skill-invariants.json:26`
-- Deterministic: discover every Apple TV on the network, with the unicast fallback — node scripts/appletv.js scan `skills/appletv/skills/appletv/skill-invariants.json:30`
-- Deterministic: pair one named device over AirPlay and Companion and store credentials — node scripts/appletv.js pair --device <name> `skills/appletv/skills/appletv/skill-invariants.json:34`
-- Deterministic: bind a room alias and the default device — node scripts/appletv.js alias <room> --device <name> `skills/appletv/skills/appletv/skill-invariants.json:38`
-- Deterministic: read power, app, focus, volume and now-playing back — node scripts/appletv.js state --device <name> `skills/appletv/skills/appletv/skill-invariants.json:42`
-- Deterministic: send a command and verify it by read-back, with a verdict per step — node scripts/appletv.js send --device <name> <command> `skills/appletv/skills/appletv/skill-invariants.json:46`
-- Deterministic: list apps and resolve a name or deep link to a launch target — node scripts/appletv.js apps --device <name> `skills/appletv/skills/appletv/skill-invariants.json:50`
-- Deterministic: type into the focused field and read it back — node scripts/appletv.js type --device <name> <text> `skills/appletv/skills/appletv/skill-invariants.json:54`
-- Deterministic: render a captured run as the report — node scripts/appletv.js report --from <dir> `skills/appletv/skills/appletv/skill-invariants.json:58`
+- scripts/appletv.js — the CLI: doctor, scan, pair, alias, state, send, apps, type, report `skills/appletv/skills/appletv/SKILL.md:213`
+- references/commands.md — every command the skill can send, the protocol it needs, the read-back that verifies it, and which are unverifiable `skills/appletv/skills/appletv/SKILL.md:214`
+- references/pairing.md — the protocols (AirPlay, Companion, MRP-over-AirPlay), the one-PIN-per-protocol flow, where credentials live, and the TV settings that block pairing `skills/appletv/skills/appletv/SKILL.md:215`
+- references/apps.md — the verified bundle-id table and how deep links open a specific title in Netflix, Disney+, Max, YouTube and Apple TV+ `skills/appletv/skills/appletv/SKILL.md:216`
+- references/errors.md — the error taxonomy — each failure the network, the TV or tvOS produces, mapped to the message and the fix the skill gives `skills/appletv/skills/appletv/SKILL.md:217`
+- references/intents.md — the twenty things people actually ask a TV to do, each mapped to a command sequence and its confirmation policy `skills/appletv/skills/appletv/SKILL.md:218`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/appletv/skills/appletv/SKILL.md:222`
+- Deterministic: check python and pyatv, make the venv — node scripts/appletv.js doctor `skills/appletv/skills/appletv/skill-invariants.json:31`
+- Deterministic: discover every Apple TV on the network, with the unicast fallback — node scripts/appletv.js scan `skills/appletv/skills/appletv/skill-invariants.json:35`
+- Deterministic: pair one named device over AirPlay and Companion and store credentials — node scripts/appletv.js pair --device <name> `skills/appletv/skills/appletv/skill-invariants.json:39`
+- Deterministic: bind a room alias and the default device — node scripts/appletv.js alias <room> --device <name> `skills/appletv/skills/appletv/skill-invariants.json:43`
+- Deterministic: read power, app, focus, volume and now-playing back — node scripts/appletv.js state --device <name> `skills/appletv/skills/appletv/skill-invariants.json:47`
+- Deterministic: send a command and verify it by read-back, with a verdict per step — node scripts/appletv.js send --device <name> <command> `skills/appletv/skills/appletv/skill-invariants.json:51`
+- Deterministic: list apps and resolve a name or deep link to a launch target — node scripts/appletv.js apps --device <name> `skills/appletv/skills/appletv/skill-invariants.json:55`
+- Deterministic: type into the focused field and read it back — node scripts/appletv.js type --device <name> <text> `skills/appletv/skills/appletv/skill-invariants.json:59`
+- Deterministic: render a captured run as the report — node scripts/appletv.js report --from <dir> `skills/appletv/skills/appletv/skill-invariants.json:63`
 
 ## Troubleshooting
 
 - Never report a command as done until the Apple TV's state ha — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extr… `skills/appletv/skills/appletv/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/appletv/skills/appletv/skill-invariants.json:14`
 - never ask about anything in it — Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like… `skills/appletv/skills/appletv/skill-invariants.json:19`
-- **Never report a command as done until the Apple TV's state has been read back and agrees with it — a keypress over the network fails silently, so every send ends in exactly one of verified, mismatch… `skills/appletv/skills/appletv/SKILL.md:157`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/appletv/skills/appletv/SKILL.md:158`
-- **Never turn off or switch apps over something playing without asking.** The state tells you; the person in the room decides. `skills/appletv/skills/appletv/SKILL.md:160`
-- **Never echo a typed password**, and never capture one with --out. `skills/appletv/skills/appletv/SKILL.md:162`
-- **Never navigate blind.** A deep link or launch_app is verifiable; ten keypresses toward the same title are not — prefer the one that can be proven. `skills/appletv/skills/appletv/SKILL.md:163`
-- **Never ask what doctor or scan already answered**, and never ask more than one question in a row. `skills/appletv/skills/appletv/SKILL.md:165`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/appletv/skills/appletv/SKILL.md:158`
-- **Never turn off or switch apps over something playing without asking.** The `skills/appletv/skills/appletv/SKILL.md:160`
-- **Never navigate blind.** A deep link or launch_app is verifiable; ten `skills/appletv/skills/appletv/SKILL.md:163`
-- **Never ask what doctor or scan already answered**, and never ask more `skills/appletv/skills/appletv/SKILL.md:165`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/appletv/skills/appletv/SKILL.md:196`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/appletv/skills/appletv/SKILL.md:212`
-- Previously fixed: An error taxonomy (references/errors.md, enforced in scripts/lib/errors.mjs): every failure the network, the TV or tvOS produces, mapped to a message and the setting or command that… `skills/appletv/CHANGELOG.md:15`
+- Never send a navigation press you cannot picture the result of — The blind-press incident: a menu from Netflix home exited to tvOS and four lefts plus a select opened PBS KIDS in front of the househo… `skills/appletv/skills/appletv/skill-invariants.json:24`
+- **Never report a command as done until the Apple TV's state has been read back and agrees with it — a keypress over the network fails silently, so every send ends in exactly one of verified, mismatch… `skills/appletv/skills/appletv/SKILL.md:195`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/appletv/skills/appletv/SKILL.md:196`
+- **Never turn off or switch apps over something playing without asking.** The state tells you; the person in the room decides. `skills/appletv/skills/appletv/SKILL.md:198`
+- **Never echo a typed password**, and never capture one with --out. `skills/appletv/skills/appletv/SKILL.md:200`
+- **Never navigate blind.** A deep link is verifiable; a keypress is not — so every navigation press is preceded by screen and followed by one. No tunnel, no navigation: say so. `skills/appletv/skills/appletv/SKILL.md:201`
+- **Never ask what doctor or scan already answered**, and never ask more than one question in a row. `skills/appletv/skills/appletv/SKILL.md:204`
+- **Never send a navigation press you cannot picture the result of.** One press `skills/appletv/skills/appletv/SKILL.md:141`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/appletv/skills/appletv/SKILL.md:196`
+- **Never turn off or switch apps over something playing without asking.** The `skills/appletv/skills/appletv/SKILL.md:198`
+- **Never navigate blind.** A deep link is verifiable; a keypress is not — so `skills/appletv/skills/appletv/SKILL.md:201`
+- **Never ask what doctor or scan already answered**, and never ask more `skills/appletv/skills/appletv/SKILL.md:204`
+- **Never print file contents into the conversation.** Not a fetched page, not a `skills/appletv/skills/appletv/SKILL.md:235`

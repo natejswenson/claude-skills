@@ -106,6 +106,45 @@ def _error_code(exc, exceptions):
     """Map a pyatv exception to a stable code the node side can explain."""
     name = type(exc).__name__
     msg = str(exc)
+
+    def is_(*names):
+        # pyatv's exception set varies by version; a missing class must never crash the mapper.
+        return any(isinstance(exc, getattr(exceptions, n)) for n in names if hasattr(exceptions, n))
+
+    if is_("DeviceIdMissingError"):
+        return "device_id_missing"
+    if is_("NoServiceError"):
+        return "no_service"
+    if is_("AuthenticationError"):
+        return "not_paired"
+    if is_("PairingError"):
+        if "backoff" in msg.lower() or "too many" in msg.lower():
+            return "pairing_backoff"
+        return "pairing_failed"
+    if is_("DeviceAuthenticationError"):
+        return "pairing_refused"
+    if is_("ConnectionFailedError", "ConnectionLostError"):
+        return "connection_failed"
+    if is_("NotSupportedError") or isinstance(exc, NotImplementedError):
+        return "unsupported_command"
+    if is_("CommandError"):
+        return "command_refused"
+    if is_("BlockedStateError"):
+        return "blocked_state"
+    if is_("NonLocalSubnetError"):
+        return "non_local_subnet"
+    if is_("ProtocolError"):
+        return "protocol_error"
+    if isinstance(exc, (asyncio.TimeoutError, TimeoutError)):
+        return "timeout"
+    if isinstance(exc, OSError):
+        return "network_unreachable"
+    return f"unexpected:{name}"
+
+
+def _error_code_old(exc, exceptions):
+    name = type(exc).__name__
+    msg = str(exc)
     if isinstance(exc, exceptions.DeviceIdMissingError):
         return "device_id_missing"
     if isinstance(exc, exceptions.NoServiceError):

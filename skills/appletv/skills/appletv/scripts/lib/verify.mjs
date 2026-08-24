@@ -218,3 +218,25 @@ export function textVerdict(cap) {
     ? { verdict: 'verified', expected, before: before ?? '', after, why: 'field reads back the text' }
     : { verdict: 'mismatch', expected, before: before ?? '', after, why: 'field reads back something else' };
 }
+
+/**
+ * Verdict for `play`: the last read-back must show something PLAYING, in the
+ * expected app when one is known, with the expected title when one was given.
+ * This is the one Netflix action that is fully verifiable end to end.
+ */
+export function playVerdict(cap, { title = null, appId: wantApp = null } = {}) {
+  const after = cap?.after;
+  const state = ds(after);
+  const got = title ? title.toLowerCase() : null;
+  const t = (after?.playing?.title ?? '') || '';
+  const series = (after?.playing?.series_name ?? '') || '';
+  const app = appId(after);
+  const where = `${state ?? '?'}${t ? ` · ${t}` : ''}${series ? ` (${series})` : ''}${app ? ` in ${after.app.name}` : ''}`;
+  if (state === null) return { verdict: 'unverifiable', why: 'device does not report playback state', after: where };
+  if (state !== 'playing') return { verdict: 'mismatch', why: `expected playing, read-back is ${where}`, after: where };
+  if (wantApp && app && app !== wantApp) return { verdict: 'mismatch', why: `playing, but in ${app} rather than ${wantApp}`, after: where };
+  if (got && !(t.toLowerCase().includes(got) || series.toLowerCase().includes(got))) {
+    return { verdict: 'mismatch', why: `playing, but the title reads "${t || series}" not "${title}"`, after: where };
+  }
+  return { verdict: 'verified', why: `read-back is ${where}`, after: where };
+}

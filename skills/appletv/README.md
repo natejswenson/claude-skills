@@ -66,6 +66,7 @@ for work matching the triggers below.
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 - Python 3.9+ on the Mac; `appletv doctor` creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global.
 - The Mac on the same network as the Apple TV (Bonjour), and someone in the room to read two PINs off the screen the first time.
+- Optional, for in-app navigation (Netflix has no deep links since Sept 2025): `appletv screen` takes real screenshots over Apple's developer tunnel — one-time `screen --pair` with the TV on *Remote App and Devices*, and a root tunnel (`screen --install-tunnel` writes the LaunchDaemon). No Xcode, no hardware. See `references/screen.md`.
 
 ## Development
 

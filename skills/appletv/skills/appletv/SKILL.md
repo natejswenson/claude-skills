@@ -43,6 +43,9 @@ step whose command does not exist fails `skillfactory verify`.
 | list apps and resolve a name or deep link to a launch target | `node scripts/appletv.js apps --device <name>` |
 | type into the focused field and read it back | `node scripts/appletv.js type --device <name> <text>` |
 | render a captured run as the report | `node scripts/appletv.js report --from <dir>` |
+| take a screenshot of the TV over the developer tunnel | `node scripts/appletv.js screen` |
+| open an app on the household's preferred profile | `node scripts/appletv.js open <app>` |
+| play a title by deep link where the service honours one, verified by read-back | `node scripts/appletv.js play <url>` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
@@ -52,6 +55,7 @@ step whose command does not exist fails `skillfactory verify`.
 | decide whether to confirm first — turning off or switching apps while something is playing asks, pause and skip do not | the cost of a wrong action depends on who is watching, which the state hints at and the person knows |
 | show a string before typing it when it looks like a password, and never echo it back | the on-screen keyboard is where credentials get entered and a transcript is forever |
 | explain a mismatch or an unverifiable result and propose the next move | the TV was asleep, the wrong app had focus, tvOS hides that field, or the command was refused — the state says which, the fix is a judgment |
+| read a screenshot — which tile is highlighted, which episode is the latest that is not "coming Friday", whether that black frame is DRM video or a sleeping TV | pixels are the only foreground read-back tvOS has, and only a model can read them |
 
 ## The flow
 
@@ -121,6 +125,36 @@ user says so), show it once and ask; after typing, never repeat it. The capture
 records the field's read-back, so with `--out` a password would be on disk —
 **never pass `--out` on a `type` that carries a secret.**
 
+### 3b. Navigating inside an app — look, press, look
+
+Nothing on the network says what is on screen: `state` reports the *now-playing
+owner*, which changes only once something plays. Netflix disabled deep links
+on tvOS in Sept 2025. So any task that needs "find X in the app" runs the loop:
+
+```bash
+node scripts/appletv.js screen          # Read the PNG: what is highlighted?
+node scripts/appletv.js send <one press>
+node scripts/appletv.js screen          # did it do what you predicted?
+node scripts/appletv.js state           # the end: app == target and playing
+```
+
+**Never send a navigation press you cannot picture the result of.** One press
+(or one obvious run of the same press) per look. A wrong guess on a TV opens
+the wrong app in front of whoever is watching — this happened, and it is the
+reason this section exists. If `screen` is unavailable (no tunnel — `doctor`
+says so), say the task needs eyes and stop; do not fall back to guessing.
+
+Things the eyes have taught (`references/screen.md` has the rest):
+
+- Netflix resumes wherever it was left; its episode list highlights the
+  in-progress episode, not E1. Look before counting presses.
+- Apple TV+ runs a promo before an episode with **Skip** focused; `select`
+  it and wait — sending `play` during the promo drops back to the list.
+- "Latest episode" is the last tile *without* a "coming Friday" badge.
+- A black capture while `state` says `playing` is DRM video: success.
+- `open netflix` lands on the household's profile (`appletv pref`); with
+  several profiles, always go through `open`, never `launch_app` alone.
+
 ### 4. Report — one table, one sentence, stop
 
 `send` prints `| Step | Command | Before | After | Verdict | Why |` and a
@@ -148,6 +182,10 @@ Never "Done." on the last two. A mismatch exits non-zero on purpose.
 | `appletv apps [--device <x>] [<name or url>]` | installed apps with bundle ids; resolves a name or a deep link to a launch target |
 | `appletv type [--device <x>] <text> [--append] \| --clear \| --get` | puts text in the focused field and reads it back; refuses when nothing is focused |
 | `appletv report --from <dir>` | the same tables from a captured run, verdicts re-derived — exits non-zero if a recorded verdict no longer follows from its capture |
+| `appletv screen [--width 1280]` | a screenshot over the developer tunnel (~2.5 s), downscaled; `Read` the path it prints. `--pair` does the one-time developer pairing, `--install-tunnel` writes the LaunchDaemon |
+| `appletv pref <app> --profile <name> --position <n>` | this household's profile per app, on this Mac only (never the repo) |
+| `appletv open <app>` | turn on, launch, and pick the preferred profile tile |
+| `appletv play <deep link> [--title <expected>]` | for services that honour deep links (YouTube, Disney+, Apple TV+, Hulu, Peacock); verified when the app is the now-playing owner and playing |
 
 `--device` takes an alias, a name, an identifier or an IP; omit it for the
 default. `--out <dir>` on any live command writes its JSON captures there.
@@ -160,8 +198,9 @@ default. `--out <dir>` on any live command writes its JSON captures there.
 - **Never turn off or switch apps over something playing without asking.** The
   state tells you; the person in the room decides.
 - **Never echo a typed password**, and never capture one with `--out`.
-- **Never navigate blind.** A deep link or `launch_app` is verifiable; ten
-  keypresses toward the same title are not — prefer the one that can be proven.
+- **Never navigate blind.** A deep link is verifiable; a keypress is not — so
+  every navigation press is preceded by `screen` and followed by one. No
+  tunnel, no navigation: say so.
 - **Never ask what `doctor` or `scan` already answered**, and never ask more
   than one question in a row.
 
