@@ -4,6 +4,53 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-08-24
+
+The user's ask, verbatim: "we need to ensure we run the posts through a filter that
+ensures there is no AI fingerprint on them." Until now the only deterministic voice
+check was three regexes in `evals/voice_judge.py`, and nothing on the draft path ran
+them: every ban in voice-notes was prose the model applied to itself.
+
+### Added
+
+- **`scripts/ai_tells.py`, the AI-fingerprint gate.** Eleven FAIL rules encoding the
+  hard bans in voice-notes (em dash, the "No X. No Y. No Z." list, the reflexive
+  closing question, an antithesis *closer*, the strawman opener, "here's the thing",
+  slop words, credential flexing, emoji bullets, hashtag piles, 60-word paragraphs)
+  and four WARN rules for smells the author's real posts sometimes carry (hedge words,
+  fragment runs, a symmetry-shaped last line, a question closer, 40-word paragraphs).
+  Exit 2 on any FAIL, 1 on WARN only, 0 clean; `--json` for machines. Every rule is
+  tested two-sided and the whole table runs over the ten published drafts, so a rule
+  that fires on a real post is a false positive in the rule, never a defect in the post.
+- **`--judge`: a cost-capped LLM pass** (`claude -p`, Haiku, `--max-spend 0.10` pre-call
+  gate) that scores AI-likeness 0–10 against the user's real voice files and quotes the
+  phrases it read as AI. Below `--min-score 7` is a FAIL. Skips with a printed line when
+  the `claude` CLI is absent.
+- **SKILL.md Generate step 7 opens with the gate**, run before the user sees a word and
+  re-run after every edit; the close line (`ai-tells: clean · judge 8.4/10`) rides under
+  the draft's metadata line. Three new prose invariants pin the step, the re-run, and the
+  human-only bypass.
+- **`voice/voice-notes.example.md` now lists the hard bans**, so a fresh install's judge
+  context and the gate agree. It previously carried none of them (and an em dash in a heading).
+
+### Changed
+
+- **`linkedin_post.py` refuses to publish text that trips a FAIL rule**, listing every
+  finding, on the text actually being posted (`--text` is gated the same as `--file`).
+  `--allow-ai-tells` is the HUMAN-ONLY bypass, same contract as `--allow-unverified`.
+- `evals/voice_judge.py` re-exports the rules from `ai_tells.py` (one source of truth),
+  and its judge prompt now scores ending, register and named tells, not just four
+  dimensions.
+
+### Fixed
+
+- **The judge never read the user's own voice notes.** `_voice_context()` looked only in
+  the repo's `voice/`, which is gitignored for the real files; it now reads
+  `~/.claude/ghostwriter/voice/` first (`GHOSTWRITER_HOME` overrides).
+- `evals/fixtures/offvoice-draft.md` was pinned as the deterministic layer's blind spot;
+  the word-level rules catch it now, and the test and `evals/README.md` say so.
+- README said the voice lint was pinned against 31 drafts; the committed corpus is ten.
+
 ## [0.17.0] - 2026-08-19
 
 ### Changed

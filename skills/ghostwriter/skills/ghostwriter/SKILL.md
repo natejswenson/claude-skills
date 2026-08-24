@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.17.0
+version: 0.18.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -267,9 +267,22 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      not a minute of dead air followed by a draft.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
-     sidecar before publishing.
-7. **Pre-show self-check, then show the draft.** Before the user sees it, verify against
-   `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
+     sidecar before publishing. (The AI-fingerprint gate in step 7 re-runs on every edit too.)
+7. **The AI-fingerprint gate, then the pre-show self-check, then show the draft.**
+   - **Run the gate first, every time, before the user sees a word:**
+     `python3 scripts/ai_tells.py --file drafts/YYYY-MM-DD-slug.md --judge`. It is the deterministic
+     encoding of the bans in `~/.claude/ghostwriter/voice/voice-notes.md` (em dashes, the "No X. No
+     Y. No Z." list, the reflexive closing question, an antithesis closer, the strawman opener,
+     "here's the thing", slop words, credential flexing, emoji bullets, hashtag piles, 60-word
+     paragraphs) plus a cost-capped LLM judge (`claude -p`, Haiku, ≤$0.10 a call) that scores
+     AI-likeness 0–10 against the real voice files and quotes the phrases it read as AI. **Any
+     `FAIL`, or a judge score under 7, means rewrite and re-run** until the close line reads
+     `ai-tells: clean · judge N/10`; a `WARN` is a smell to weigh, not a block. Narrate it like the
+     source gate: one line per finding as you fix it, then the close line, which also goes under
+     the draft's metadata line when you show it. **Re-run the gate after every edit** in the
+     show→edit→re-show loop; an edit is how a tell gets back in. Passing the gate is the floor:
+     the checks below are the judgment layer on top of it, not a substitute for it.
+   Then verify against `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
    - **The ending** — the #1 AI tell, flagged more than anything else. The post stops on the
      last real point, or on a genuine question the user actually wants answered. No
      inverted-parallel closer, no clever-symmetry aphorism, no reflexive
@@ -303,7 +316,8 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `┄┄┄ …see more (fold ~210 chars) ┄┄┄` — inserted at the line break nearest char 210, so the
      user sees exactly what shows above the fold. (A draft that ends before the fold needs no
      marker.)
-   - One metadata line under the block: `N words · save: <the thing a reader keeps> · lane: <lane>`.
+   - One metadata line under the block: `N words · save: <the thing a reader keeps> · lane: <lane>`,
+     and the gate's close line under that: `ai-tells: clean · judge 8.4/10`.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
@@ -677,6 +691,10 @@ Only after the user explicitly approves a specific draft.
      sourced, or `external_claims:false`). If it fails, **fix the sidecar / redo the research step,
      not the gate** — re-run Generate step 6, then retry. A bare `--text`/stdin publish is refused by
      design (nothing to verify). Do **not** reach for `--allow-unverified` to get past a failure.
+   - **AI-fingerprint gate runs automatically too.** The publish is refused while any
+     `scripts/ai_tells.py` FAIL rule fires on the text being posted (deterministic rules only; the
+     judge belongs to step 7 where there is still a draft to rewrite). If it fails, **fix the draft
+     and re-show it, not the gate**. Do **not** reach for `--allow-ai-tells` to get past a failure.
    - **With an approved single image** (only if the user opted in and approved the PNG), add
      `--image images/<slug>.png --alt "<alt text>"`.
    - **With an approved carousel**, add `--document images/<slug>.pdf --title "<short title>"`
@@ -724,6 +742,10 @@ for that exact draft.
   human to override a genuine edge case (e.g. a real source transiently down). **The agent must
   never set it to get past a failed gate** — fix the sidecar / redo the research instead (same
   spirit as "never publish without explicit approval").
+- **Every post runs through the AI-fingerprint gate before it is shown and before it publishes**
+  (`scripts/ai_tells.py`, Generate step 7). **`--allow-ai-tells` is human-only** — the single bypass
+  of that gate at publish, for a human who has read the finding and wants the line anyway. **The
+  agent must never set it** — rewrite the draft, re-run the gate, re-show.
 - **One post per request** unless the user asks for several.
 - **Compliance (LinkedIn API ToS §3.1) — never automate posting.** Every post must be
   member-initiated and explicitly approved by the user, one at a time. Do NOT set up scheduled,
