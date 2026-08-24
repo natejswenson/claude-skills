@@ -1,0 +1,42 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "cp evals/baseline/scan.json evals/baseline/state.json evals/baseline/send-*.json \"$OUT\"/ && node scripts/appletv.js report --from \"$OUT\" > \"$OUT/report.txt\"",
+  "artifacts": [
+    {
+      "path": "report.txt",
+      "bytes": 2067,
+      "sha256": "a651dd04caf68637dbd8bb17f5942b78819e4fa58c15db97103de22b85206a0c"
+    },
+    {
+      "path": "scan.json",
+      "bytes": 986,
+      "sha256": "8d2feb4cd7daa58544aa9ece6ccd0a05d02cd309da3ed7ed850b8c15880f08e6"
+    },
+    {
+      "path": "send-01.json",
+      "bytes": 4487,
+      "sha256": "7552205a8fc86c0d2d74d9efb62ee98760d86c3d424dbc09172ca0a670b95136"
+    },
+    {
+      "path": "send-02.json",
+      "bytes": 4483,
+      "sha256": "d44cc6cd90bf7b022f0abbdfc566186e4eee394b0184c85c6d80f9f0179dc3da"
+    },
+    {
+      "path": "send-03.json",
+      "bytes": 4513,
+      "sha256": "295e8a30478a643fe1da2bf9aadfa01a477cf3c161c3ae4501c357f0a0b430c7"
+    },
+    {
+      "path": "send-04.json",
+      "bytes": 4644,
+      "sha256": "efd74487dacdfb6643046827783b1d968e29557457e87b7c12d240f3db0a8157"
+    },
+    {
+      "path": "state.json",
+      "bytes": 1411,
+      "sha256": "f83e184072de0b7d7fdaffa53d7d322459aef0b0bea3e61edff131803db5b04f"
+    }
+  ]
+}
