@@ -2,7 +2,7 @@
 name: appletv
 description: Interact with and control the Apple TVs on the local network from the Mac you are on — scan for them, pair with one, and drive it: play, pause, skip, turn on or off, open an app or a deep link, type into the on-screen keyboard, navigate the menu, set the volume, and say what is playing — reading the device's state back after every command. Use when the user says "appletv", "control my apple tv", "connect to my apple tv", "find my apple tvs", "pair with the apple tv", "pause the apple tv", "turn off the tv", "what's playing on the apple tv", "open netflix on the living room tv", "skip the intro", "type stranger things into the tv", or wants to drive an Apple TV without picking up the remote. Built on pyatv over the Companion and AirPlay protocols.
 user_invocable: true
-version: 0.1.0
+version: 0.1.1
 ---
 
 # /appletv — control the Apple TVs on your network from chat
@@ -49,6 +49,7 @@ step whose command does not exist fails `skillfactory verify`.
 | type into the focused field and read it back | `node scripts/appletv.js type --device <name> <text>` |
 | render a captured run as the report | `node scripts/appletv.js report --from <dir>` |
 | take a screenshot of the TV over the developer tunnel | `node scripts/appletv.js screen` |
+| press to a named person's tile on a picker and select | `node scripts/appletv.js who <name>` |
 | open an app on the household's preferred profile | `node scripts/appletv.js open <app>` |
 | play a title by deep link where the service honours one, verified by read-back | `node scripts/appletv.js play <url>` |
 
@@ -61,6 +62,7 @@ step whose command does not exist fails `skillfactory verify`.
 | show a string before typing it when it looks like a password, and never echo it back | the on-screen keyboard is where credentials get entered and a transcript is forever |
 | explain a mismatch or an unverifiable result and propose the next move | the TV was asleep, the wrong app had focus, tvOS hides that field, or the command was refused — the state says which, the fix is a judgment |
 | read a screenshot — which tile is highlighted, which episode is the latest that is not "coming Friday", whether that black frame is DRM video or a sleeping TV | pixels are the only foreground read-back tvOS has, and only a model can read them |
+| ask who is using the TV when a picker shows, as a list of the household, and never pick for them | a shared TV's session is a fact about the room, and choosing wrong logs someone into someone else's profile |
 
 ## The flow
 
@@ -76,6 +78,27 @@ remembered with or without a default, whether screenshots work, and **which
 services the household subscribes to**. **Never ask about anything in it.**
 If `doctor` shows a remembered device with credentials, skip straight to the
 request — the user does not want to hear about setup twice.
+
+### 1a. Who is using the TV — ask, never guess
+
+A cold boot lands on tvOS's user picker ("who's watching?" — every family
+member as a tile), and apps like Netflix have their own. The skill never picks
+a person by itself:
+
+1. After `turn_on` (or `open <app>`), `screen`. If a picker is showing, and the
+   household is not yet recorded, read the names off it left→right (or
+   top→bottom) and save them once: `appletv pref users "Nathaniel, McKenzie,
+   Angie"` (`appletv pref netflix --profiles "…" --layout vertical` for an app).
+2. **Ask with a list** — `AskUserQuestion`, header `Who's watching`, one option
+   per member, the household default first and marked "(Recommended)". Do this
+   every time a picker shows; a household's TV is shared, and yesterday's
+   answer is not today's.
+3. `appletv who <name> [--app <app>]` presses from tile 1 to that person and
+   selects, then takes a screenshot; confirm the picker is gone before going on.
+
+If the user names the person in the request ("turn on the TV for McKenzie"),
+skip the question and `who McKenzie`. If no picker shows, do nothing — say
+whose session it is only if `screen` makes it obvious.
 
 ### 1b. Someone is watching
 
@@ -230,6 +253,9 @@ counter stuck at 1:41".
 | `appletv pref <app> --profile <name> --position <n>` | this household's profile per app, on this Mac only (never the repo) |
 | `appletv pref services "<a, b, c>"` | the services the household subscribes to; `apps` marks them and the model only ever plays on these |
 | `appletv open <app>` | turn on, launch, then — with eyes — take a screenshot for the model to pick the profile from; without eyes, press the preferred tile and say so |
+| `appletv pref users \"A, B, C\" [--layout] [--default A]` | the household as the tvOS picker shows them, in tile order (local only) |
+| `appletv pref <app> --profiles \"A, B, C\" [--layout vertical]` | an app's own profile picker, in tile order |
+| `appletv who <name> [--app <app>]` | press from tile 1 to that person and select; screenshot to confirm. No name lists the members |
 | `appletv play <deep link> [--title <expected>]` | for services that honour deep links (YouTube, Disney+, Apple TV+, Hulu, Peacock); verified when the app is the now-playing owner and playing |
 
 `--device` takes an alias, a name, an identifier or an IP; omit it for the
@@ -250,6 +276,8 @@ default. `--out <dir>` on any live command writes its JSON captures there.
   than one question in a row.
 - **Never put a title on a service the household does not have.** The list is
   in `doctor`; if the title is only elsewhere, say where and stop.
+- **Never pick a person on a picker without asking.** The household is a list;
+  the answer is theirs, every time.
 
 <!-- press:agent-ui -->
 

@@ -23,6 +23,11 @@
       "id": "never-navigate-blind",
       "pattern": "Never send a navigation press you cannot picture the result of",
       "rationale": "The blind-press incident: a menu from Netflix home exited to tvOS and four lefts plus a select opened PBS KIDS in front of the household. Every navigation press is preceded and followed by a screenshot."
+    },
+    {
+      "id": "ask-who-is-watching",
+      "pattern": "Never pick a person on a picker without asking",
+      "rationale": "The tvOS user picker and app profile pickers decide whose watch history, recommendations and parental settings apply. The household is recorded once; the choice is asked every time."
     }
   ],
   "split": {
@@ -74,6 +79,10 @@
       {
         "step": "play a title by deep link where the service honours one, verified by read-back",
         "command": "node scripts/appletv.js play <url>"
+      },
+      {
+        "step": "press to a named person's tile on a picker and select",
+        "command": "node scripts/appletv.js who <name>"
       }
     ],
     "nondeterministic": [
@@ -104,6 +113,10 @@
       {
         "step": "read a screenshot \u2014 which tile is highlighted, which episode is the latest that is not \"coming Friday\", whether a black frame is DRM video or a sleeping TV",
         "why": "pixels are the only foreground read-back tvOS has, and only a model can read them"
+      },
+      {
+        "step": "ask who is using the TV when a picker shows, as a list of the household, and never pick for them",
+        "why": "a shared TV's session is a fact about the room, and choosing wrong logs someone into someone else's profile"
       }
     ]
   },

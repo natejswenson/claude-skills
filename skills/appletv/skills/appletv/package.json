@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/appletv",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the TV's own state says so.",
   "license": "MIT",
   "author": "Nate Swenson",
