@@ -76,6 +76,15 @@ OBSERVES = {
 }
 
 
+# The value a command is expected to produce; when the state already reads that
+# way before the send there is nothing to wait for.
+EXPECTS = {
+    "turn_on": ("power", "on"), "wakeup": ("power", "on"),
+    "turn_off": ("power", "off"), "suspend": ("power", "off"),
+    "play": ("playback", "playing"), "pause": ("playback", "paused"),
+}
+
+
 def _observed(state, what):
     p = (state or {}).get("playing") or {}
     return {
@@ -461,6 +470,12 @@ async def _press_one(atv, conf, step, FeatureName, FeatureState, Protocol):
     command, arg = step["command"], step.get("arg")
     what = OBSERVES.get(command)
     before = await _read_state(atv, FeatureName, FeatureState)
+    ceiling = float(step.get("ceiling", 4.0))
+    exp = EXPECTS.get(command)
+    if exp and _observed(before, exp[0]) == exp[1]:
+        ceiling = 0  # already there: read once, no waiting
+    if command == "launch_app" and _observed(before, "app") == arg:
+        ceiling = 0  # already the now-playing owner: the field cannot move
     sent_at = now()
     started = time.monotonic()
     try:
@@ -470,7 +485,7 @@ async def _press_one(atv, conf, step, FeatureName, FeatureState, Protocol):
         from pyatv import exceptions
 
         sent = {"ok": False, "error": _error_code(e, exceptions), "detail": str(e)[:200]}
-    reads = await _read_until(atv, FeatureName, FeatureState, before, what, float(step.get("ceiling", 4.0)))
+    reads = await _read_until(atv, FeatureName, FeatureState, before, what, ceiling)
     return {
         "ok": True,
         "device": _device_json(conf, None),
