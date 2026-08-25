@@ -81,3 +81,11 @@ does not. `play` reported `mismatch` because the read-back never moved. When the
 now-playing owner is `com.apple.TVWatchList` and the position stops updating at
 a skip point, trust two consecutive scrubber-free black frames over the number,
 and say which signal you used.
+
+## Control Center
+
+`control_center` opens it with **Power Off** focused. `up` from there is the
+swipe-up that *closes* it — it does not reach the top-row icons (home, user
+switcher, avatar). The user picker is reached reliably only by a real cold boot
+(the box off for a few minutes, then `turn_on`); a `turn_off` of twenty seconds
+is sleep, and `turn_on` resumes whatever was playing.

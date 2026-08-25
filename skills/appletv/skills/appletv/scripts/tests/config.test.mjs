@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { aliasesFor, appIdFor, loadConfig, rememberDevices, resolveDevice, saveConfig } from '../lib/config.mjs';
+import { aliasesFor, appIdFor, loadConfig, memberFor, pickerFor, rememberDevices, resolveDevice, saveConfig } from '../lib/config.mjs';
 
 const dev = (name, identifier, address) => ({
   name, identifier, address, model: 'Apple TV 4K', version: '18.5', all_identifiers: [identifier, `${identifier}-mac`],
@@ -53,4 +53,17 @@ test('app words resolve to bundle ids and services survive a round trip', () => 
   saveConfig(cfg, path);
   assert.deepEqual(loadConfig(path).services, [{ word: 'netflix', id: 'com.netflix.Netflix' }]);
   assert.deepEqual(loadConfig('/nonexistent').services, []);
+});
+
+test('pickers: the household and an app profile list resolve names to tiles', () => {
+  const cfg = loadConfig('/nonexistent');
+  cfg.users = { layout: 'horizontal', members: [{ name: 'Nathaniel', position: 1 }, { name: 'McKenzie', position: 2 }], default: 'Nathaniel' };
+  cfg.prefs['com.netflix.Netflix'] = { profile: { name: 'Nathaniel', position: 1 }, profiles: { layout: 'vertical', members: [{ name: 'Nathaniel', position: 1 }, { name: 'Kids', position: 3 }] } };
+  assert.equal(memberFor(pickerFor(cfg), 'mckenzie').position, 2);
+  assert.equal(memberFor(pickerFor(cfg), 'nath').name, 'Nathaniel');
+  assert.equal(memberFor(pickerFor(cfg), 'nobody'), null);
+  const nf = pickerFor(cfg, 'com.netflix.Netflix');
+  assert.equal(nf.layout, 'vertical');
+  assert.equal(memberFor(nf, 'kids').position, 3);
+  assert.deepEqual(pickerFor(cfg, 'com.unknown').members, []);
 });

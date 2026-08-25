@@ -194,6 +194,6 @@
     "expected": "org.pbskids.ipadplayer",
     "before": "PBS KIDS (org.pbskids.ipadplayer)",
     "after": "PBS KIDS (org.pbskids.ipadplayer)",
-    "why": "PBS KIDS already owned now-playing before the send — foreground unknown"
+    "why": "already the now-playing owner (PBS KIDS) before the send — foreground unknown"
   }
 }
