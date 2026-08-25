@@ -207,9 +207,9 @@ export function verdict(cap) {
       const want = launchTarget(arg);
       const a = appId(after);
       if (a === null) return result('unverifiable', 'app', before, after, `device does not report the foreground app${unsupported.app ? ` (${unsupported.app})` : ''}`, want);
-      if (want && a === want && appId(before) === want) return result('unverifiable', 'app', before, after, `${after.app.name} already owned now-playing before the send — foreground unknown`, want);
+      if (want && a === want && appId(before) === want) return result('unverifiable', 'app', before, after, `already the now-playing owner (${after.app.name}) before the send — foreground unknown`, want);
       if (want && a === want) return result('verified', 'app', before, after, `now-playing owner became ${after.app.name}`, want);
-      if (a === appId(before)) return result('unverifiable', 'app', before, after, 'the TV reports the now-playing app, not the foreground one — it only changes once the launched app plays something; look at the screen', want ?? 'a different app');
+      if (a === appId(before)) return result('unverifiable', 'app', before, after, 'foreground unknown until it plays something — look at the screen', want ?? 'a different app');
       if (want) return result('mismatch', 'app', before, after, `expected ${want}, now-playing owner became ${a}`, want);
       return result('verified', 'app', before, after, `now-playing owner changed to ${after.app.name}`, 'a different app');
     }
