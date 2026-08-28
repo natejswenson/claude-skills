@@ -35,7 +35,10 @@ Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/v
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
 If not, switch to Setup.
 
-**Keep this invisible.** Do the setup check (and any other bookkeeping — idea-board/radar
+**Keep this invisible, and never narrate commands.** The user should not see bash command
+lines in chat at any point in the run; they see one status line per step or gate. Nate,
+2026-08-28: "no need for the skill to print and show all the bash commands, it makes it very
+messy." Do the setup check (and any other bookkeeping — idea-board/radar
 freshness, directory orientation) in as few, terse tool calls as possible: one chained
 existence/content check, not a parade of separate `Bash` calls with printed section headers.
 Skip exploratory commands that don't feed an immediate decision (a bare `pwd`, an `ls` "just to
@@ -307,7 +310,15 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
-   Then ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
+   **Chat text is NOT a reliable approval view.** The Claude Code client collapses the
+   assistant message immediately preceding a tool call to "(summarized)", so a post printed in
+   chat right before the dialog is routinely never seen (real session, 2026-08-28: "it says it
+   is printed but it is not", with a screenshot showing the collapsed message). Immediately
+   before EVERY approval dialog, **open the draft file on the user's own screen**:
+   `open drafts/YYYY-MM-DD-slug.md` (macOS; `xdg-open` on Linux) so the complete text is in a
+   window the dialog cannot hide, and say so in the question ("the draft is open in your
+   editor"). The preview-pane / plain-print rules below are additive, not a substitute. Then
+   ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
    takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The user
    must be able to read every line of the final post at the moment of decision — both real
    failure modes are known, pick the mechanism by line count:**
