@@ -36,7 +36,10 @@ log "Release radar starting (digest: $DIGEST)"
 # Append the concrete output target so the run writes a predictable filename.
 # Every digest from the last ~3 weeks, so the prompt can dedup against all of them
 # (deduping against only the newest file re-listed items twice; seen 2026-08-31).
-RECENT_DIGESTS="$(ls -1 research/release-radar-*.md 2>/dev/null | sort | tail -6 | tr '\n' ' ')"
+shopt -s nullglob
+digest_files=(research/release-radar-*.md)
+shopt -u nullglob
+RECENT_DIGESTS="${digest_files[*]: -6}"
 
 PROMPT="$(cat "$PROMPT_FILE")
 Today is ${TODAY}. Write the digest to ${DIGEST}.
