@@ -10,6 +10,8 @@
  * The run lives outside the target repo (`~/.claude/issueflow/…`) so a run
  * survives branch switches and never appears in the user's `git status`.
  */
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -32,11 +34,14 @@ const statePath = (dir) => join(dir, 'run.json');
 /** A stage entry, built from the declaration so the two can never disagree. */
 const stageEntry = (id) => {
   const s = stage(id);
-  return { id: s.id, model: s.model, agent: s.agent, artifact: s.artifact, state: 'pending', at: {} };
+  return {
+    id: s.id, model: s.model, agent: s.agent, artifact: s.artifact, state: 'pending', at: {},
+    review: { rounds: [], feedback: null },
+  };
 };
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false }) {
   const lane = {
     id: 'root',
     slug: 'root',
@@ -54,6 +59,11 @@ export function createRun({ repo, issue, policy, offline = false }) {
     // matter which flags the next command carries. Recording it on the run is
     // what makes that a property of the run rather than of the invocation.
     offline,
+    // An auto run's gates are held by the red team instead of the user. On the
+    // run like the offline flag, and for the same reason: whether an approval
+    // needs a human is a property of the run, not of whoever types the next
+    // command.
+    auto,
     split: false,
     // The sticky issue comment this run keeps up to date. Adopted by marker
     // when a run is resumed on a machine that has no run.json.
@@ -86,10 +96,14 @@ export function loadRun(dir) {
   // made would be a lie told by the loader.
   run.checkpoint ??= { commentId: null, commentUrl: null, pushed: {} };
   run.offline ??= false;
+  run.auto ??= false;
   run.finished ??= null;
   for (const lane of run.lanes) {
     lane.landed ??= null;
     lane.pr ??= null;
+  }
+  for (const s of [...run.stages, ...run.lanes.flatMap((l) => l.stages)]) {
+    s.review ??= { rounds: [], feedback: null };
   }
   return run;
 }
@@ -274,6 +288,9 @@ export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
 /** Non-empty means real content — a touched file is not an artifact. */
 const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim().length > 0;
 
+/** What a red-team verdict binds itself to: the exact bytes it reviewed. */
+export const sha256OfFile = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
+
 /**
  * Does the artifact carry this section as a *heading*?
  *
@@ -285,7 +302,7 @@ const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim
  * Bold-only headers (`**Root cause**` on its own line) count too: several real
  * artifacts use them and they are just as findable. Prose is what does not.
  */
-function hasSection(text, section) {
+export function hasSection(text, section) {
   const escaped = section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const heading = new RegExp(`^\\s{0,3}#{1,6}\\s+.*${escaped}`, 'im');
   const bold = new RegExp(`^\\s{0,3}\\*\\*.*${escaped}.*\\*\\*:?\\s*$`, 'im');
@@ -305,7 +322,7 @@ export function readEvidence(path) {
  * a section the stage declares, and a test stage with no evidence file. Each of
  * those is a way a stage looks done without being done.
  */
-export function accept(dir, run, step, { evidence = null, now = () => new Date().toISOString() } = {}) {
+export function accept(dir, run, step, { evidence = null, auto = false, now = () => new Date().toISOString() } = {}) {
   const blocked = blockers(run, step);
   if (blocked.length > 0) {
     throw new RunError(
@@ -349,6 +366,57 @@ export function accept(dir, run, step, { evidence = null, now = () => new Date()
     }
     step.stage.evidence = proof;
     step.stage.result = summarize(result);
+  }
+
+  // The auto path is a NARROWER gate, never a bypass: every refusal above ran
+  // first, and this adds the red team's verdict on top. `--auto` on a run that
+  // was not started auto is refused outright — which gate holds a run is
+  // decided once, at `start`, not per invocation. The human path stays open on
+  // an auto run: a person may always approve; only the machine needs a verdict.
+  if (auto) {
+    if (!run.auto) {
+      throw new RunError(
+        `cannot auto-accept ${step.key}: this run was not started with --auto — ` +
+          'its gates belong to the user, and a flag on one command does not reassign them',
+      );
+    }
+    const latest = step.stage.review?.rounds.at(-1) ?? null;
+    if (!latest) {
+      throw new RunError(
+        `cannot auto-accept ${step.key}: no red-team review is registered — ` +
+          'in an auto run the review IS the approval, and none has happened',
+      );
+    }
+    if (latest.verdict !== 'pass') {
+      throw new RunError(
+        `cannot auto-accept ${step.key}: round ${latest.round} is blocked ` +
+          `(${latest.findings.critical} critical, ${latest.findings.high} high) — ` +
+          'send the stage back with the review; never approve over an open blocking finding',
+      );
+    }
+    if (latest.artifactSha !== sha256OfFile(artifact)) {
+      throw new RunError(
+        `cannot auto-accept ${step.key}: the artifact changed after round ${latest.round} reviewed it — ` +
+          'a verdict binds to the bytes it read; re-review the current artifact',
+      );
+    }
+    if (latest.head) {
+      const tree = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : run.repo.path;
+      let head = null;
+      try {
+        head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: tree, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+      } catch {
+        head = null;
+      }
+      if (head !== latest.head) {
+        throw new RunError(
+          `cannot auto-accept ${step.key}: the branch moved after round ${latest.round} ` +
+            `(reviewed ${latest.head.slice(0, 12)}, now ${head ? head.slice(0, 12) : 'unreadable'}) — ` +
+            're-review the code that would actually ship',
+        );
+      }
+    }
+    step.stage.autoApproved = true;
   }
 
   step.stage.state = 'approved';

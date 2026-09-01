@@ -87,13 +87,26 @@ export function pushLane(repoPath, lane) {
  */
 export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
   const steps = gateSteps(run);
+  // The lead-in is the run's honesty: on a gated run a human approved every
+  // stage, on an auto run the red team did, and saying the wrong one would be
+  // a claim about an approval that never happened. Gated strictly on
+  // `run.auto` so the frozen (gated) golden stays byte-identical.
+  const approvedBy = run.auto
+    ? [
+        'Each stage below ran as its own subagent and was gated by an adversarial',
+        'red-team review — every blocking finding resolved before approval. This',
+        'comment is rewritten at every gate.',
+      ]
+    : [
+        'Each stage below ran as its own subagent and was approved by a human before',
+        'the next one started. This comment is rewritten at every gate.',
+      ];
   const lines = [
     marker(run),
     '',
     `### 🤖 issueflow — ${run.repo.owner}/${run.repo.name}#${run.issue.number}`,
     '',
-    'Each stage below ran as its own subagent and was approved by a human before',
-    'the next one started. This comment is rewritten at every gate.',
+    ...approvedBy,
     '',
     bar(
       ['Step', 'Model', 'State', 'Took'],
@@ -105,6 +118,24 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
       run.lanes.map((l) => [l.slug, `\`${l.branch}\``, `\`${l.base}\``, run.checkpoint?.pushed?.[l.slug] ?? '—']),
     ),
   ];
+
+  // Conditional like every review-aware rendering: a run with no rounds
+  // renders exactly as before reviews existed. Timestamp-free, so the frozen
+  // comment's no-wall-clock rule holds here too.
+  const reviewed = steps.filter((s) => (s.stage.review?.rounds.length ?? 0) > 0);
+  if (reviewed.length > 0) {
+    lines.push(
+      '',
+      bar(
+        ['Step', 'Rounds', 'Blocking found', 'Notes'],
+        reviewed.map((s) => {
+          const rounds = s.stage.review.rounds;
+          const sum = (keys) => rounds.reduce((n, r) => n + keys.reduce((m, k) => m + r.findings[k], 0), 0);
+          return [s.key, String(rounds.length), String(sum(['critical', 'high'])), String(sum(['medium', 'low']))];
+        }),
+      ),
+    );
+  }
 
   // Both blocks are conditional on purpose: an unfinished run must render
   // identically to before `finish` existed, which is what lets the frozen
