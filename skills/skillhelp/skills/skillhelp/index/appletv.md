@@ -15,10 +15,10 @@
 - Optional, for in-app navigation (Netflix has no deep links since Sept 2025): appletv screen takes real screenshots over Apple's developer tunnel — one-time screen --pair with the TV on *Remote App an… `skills/appletv/README.md:69`
 - Requires Node >=18 (package.json engines). `skills/appletv/skills/appletv/package.json:33`
 - Reads environment variable APPLETV_CONFIG. `skills/appletv/skills/appletv/scripts/lib/config.mjs:13`
-- Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:62`
-- Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:29`
+- Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:64`
+- Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:31`
 - Reads environment variable APPLETV_VENV. `skills/appletv/skills/appletv/scripts/lib/driver.mjs:13`
-- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:573`
+- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:575`
 
 ## Usage
 

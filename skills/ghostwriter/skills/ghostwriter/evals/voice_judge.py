@@ -2,9 +2,9 @@
 
 Two layers:
   1. Deterministic AI-tell checks ($0) — the hard rules from voice/voice-notes.md
-     that are mechanically detectable: em-dashes, the "No X. No Y. No Z."
-     rule-of-three staccato, and reflexive "Thoughts? 👇" / "what's your…?"
-     closers. Any of these is an automatic fail regardless of the LLM score.
+     that are mechanically detectable, owned by scripts/ai_tells.py (the gate
+     every draft runs through) and re-exported here. Any of these is an
+     automatic fail regardless of the LLM score.
   2. An LLM stylometry score — a cheap judge model (default Haiku 4.5) rates a
      draft against the voice profile on openers, rhythm, vocabulary, and
      anti-AI-tell adherence.
@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import sys
 from pathlib import Path
 
 from budget import DEFAULT_MAX_SPEND, Budget, estimate_usd, mock_enabled
@@ -27,59 +29,61 @@ from budget import DEFAULT_MAX_SPEND, Budget, estimate_usd, mock_enabled
 HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
 
-# Mechanically-detectable AI tells, straight from voice/voice-notes.md.
-# em-dash and the "No X. No Y. No Z." staccato are whole-text; the reflexive CTA
-# is a CLOSER tell, so it is checked ONLY against the last line — a mid-body
-# rhetorical question is legitimate and must not false-fail a good post.
-_EM_DASH = re.compile("—")  # voice-notes: "No em dashes (—)."
-_RULE_OF_THREE = re.compile(
-    r"\bNo\s+[^.\n]+\.\s+No\s+[^.\n]+\.\s+No\s+[^.\n]+\.", re.IGNORECASE
-)
-_REFLEXIVE_CTA = re.compile(
-    r"(?i)(thoughts\?|what'?s your[^?\n]{0,80}\?|how do you[^?\n]{0,80}\?)"
-    r"\s*\U0001F447?\s*$"
-)
+# The mechanical tells live in ONE place: scripts/ai_tells.py (the gate every
+# draft runs through before it is shown and before it publishes). This module
+# re-exports them so the baseline eval pins the same rules the gate enforces.
+_SCRIPTS = str(SKILL_ROOT / "scripts")
+if _SCRIPTS not in sys.path:  # pragma: no cover - tests put scripts/ on the path
+    sys.path.insert(0, _SCRIPTS)
+from ai_tells import _last_nonempty_line, deterministic_flags  # noqa: E402,F401
 
-
-def _last_nonempty_line(text):
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    return lines[-1] if lines else ""
-
-
-def deterministic_flags(text):
-    """Return the ids of any hard AI-tell rules that fired."""
-    flags = []
-    if _EM_DASH.search(text):
-        flags.append("em_dash")
-    if _RULE_OF_THREE.search(text):
-        flags.append("rule_of_three_no")
-    if _REFLEXIVE_CTA.search(_last_nonempty_line(text)):
-        flags.append("reflexive_cta")
-    return flags
+PERSONAL_VOICE_DIR = Path(
+    os.environ.get("GHOSTWRITER_HOME", Path.home() / ".claude" / "ghostwriter")
+) / "voice"
 
 
 def _voice_context():
-    """Voice files are gitignored; fall back to the committed .example versions."""
+    """The user's own voice files (~/.claude/ghostwriter/voice) first; the repo's
+    committed .example versions as the fallback for a fresh install."""
     parts = []
     for stem in ("voice-notes", "voice-profile"):
-        for name in (f"{stem}.md", f"{stem}.example.md"):
-            p = SKILL_ROOT / "voice" / name
+        candidates = (
+            PERSONAL_VOICE_DIR / f"{stem}.md",
+            SKILL_ROOT / "voice" / f"{stem}.md",
+            SKILL_ROOT / "voice" / f"{stem}.example.md",
+        )
+        for p in candidates:
             if p.exists():
                 parts.append(p.read_text(encoding="utf-8"))
                 break
     return "\n\n".join(parts)
 
 
-def _llm_score(text, model, budget):  # pragma: no cover - live judge; not in CI
-    import subprocess
-
-    prompt = (
-        "You are scoring a LinkedIn draft for fidelity to the author's voice. "
-        "Using the voice guide below, return ONLY a JSON object "
-        '{"score": <0-10 float>, "dimensions": {"openers": <0-10>, '
-        '"rhythm": <0-10>, "vocabulary": <0-10>, "anti_ai_tells": <0-10>}}.\n\n'
+def judge_prompt(text, flags=()):
+    """The judge's brief: score AI-likeness against the author's own ban list."""
+    fired = ", ".join(flags) if flags else "none"
+    return (
+        "You are an editor whose only job is to catch writing that reads as "
+        "AI-generated on LinkedIn. Score the DRAFT against the VOICE GUIDE below "
+        "(the author's own rules and real voice). Be strict about: the ending "
+        "(a tidy reframe, symmetry aphorism, or reflexive question is a tell), "
+        "hedge and filler words, rule-of-three cadence, 'it's not X, it's Y', "
+        "an essay register instead of the author's short feed-native lines, and "
+        "anything that sounds like a template rather than a person. Deterministic "
+        f"rules already fired: {fired}. Return ONLY a JSON object: "
+        '{"score": <0-10 float, 10 = unmistakably the author>, '
+        '"dimensions": {"openers": <0-10>, "rhythm": <0-10>, "vocabulary": <0-10>, '
+        '"anti_ai_tells": <0-10>, "ending": <0-10>, "register": <0-10>}, '
+        '"tells": [<up to 5 quoted phrases from the draft that read as AI, with a '
+        "3-6 word reason each>]}.\n\n"
         f"=== VOICE GUIDE ===\n{_voice_context()}\n\n=== DRAFT ===\n{text}\n"
     )
+
+
+def _llm_score(text, model, budget, flags=()):  # pragma: no cover - live judge; not in CI
+    import subprocess
+
+    prompt = judge_prompt(text, flags)
     est = estimate_usd(prompt, model)
     budget.guard(est)
     proc = subprocess.run(
@@ -89,21 +93,23 @@ def _llm_score(text, model, budget):  # pragma: no cover - live judge; not in CI
     budget.record(est)
     m = re.search(r"\{.*\}", proc.stdout, re.DOTALL)
     data = json.loads(m.group(0)) if m else {"score": 0.0, "dimensions": {}}
-    return float(data.get("score", 0.0)), data.get("dimensions", {})
+    return float(data.get("score", 0.0)), data.get("dimensions", {}), list(data.get("tells", []))
 
 
-def score_draft(text, *, mock, model="claude-haiku-4-5", budget=None):
+def score_draft(text, *, mock, model="claude-haiku-4-5", budget=None, flags=None):
     """Score a draft. Deterministic flags always run; the LLM score runs only on
     a live (non-mock) call."""
-    flags = deterministic_flags(text)
+    flags = deterministic_flags(text) if flags is None else list(flags)
+    tells = []
     if mock:
         # Approximate the LLM score from the deterministic signal so --mock is a
         # meaningful $0 smoke test (clean draft scores high, AI-tell-laden low).
         score = 4.0 if flags else 9.0
         dimensions = {"mock": True}
     else:  # pragma: no cover - live judge path; never runs in CI
-        score, dimensions = _llm_score(text, model, budget or Budget())
-    return {"score": score, "deterministic_flags": flags, "dimensions": dimensions}
+        score, dimensions, tells = _llm_score(text, model, budget or Budget(), flags)
+    return {"score": score, "deterministic_flags": flags, "dimensions": dimensions,
+            "tells": tells}
 
 
 def main(argv=None):

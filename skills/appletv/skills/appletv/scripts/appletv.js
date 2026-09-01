@@ -20,7 +20,9 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { aliasesFor, appIdFor, configPath, loadConfig, memberFor, pickerFor, prefFor, rememberDevices, resolveDevice, saveConfig } from './lib/config.mjs';
 import { DRIVER, SKILL_DIR, VENV, drive, driveAsync, systemPython, venvPython } from './lib/driver.mjs';
-import { explain } from './lib/errors.mjs';
+import { ERRORS, explain } from './lib/errors.mjs';
+import { fileURLToPath } from 'node:url';
+const ERR_CODES = new Set(Object.keys(ERRORS));
 import { appsTable, compactSendTable, scanTable, sendRows, sendTable, stateTable, summarize, table, typeTable } from './lib/report.mjs';
 import { launchTarget, playVerdict, textVerdict, verdict } from './lib/verify.mjs';
 import { spawnSync as spawnSyncOs } from 'node:child_process';
@@ -655,8 +657,13 @@ async function cmdScreen(args) {
   const out = resolve(args.out ? join(dir, `screen-${Date.now()}.png`) : join(SCREEN_DIR(), `${Date.now()}.png`));
   say('capturing the screen…');
   const started = Date.now();
-  const r = spawnSync(PMD3(), ['developer', 'dvt', 'screenshot', out, '--tunnel', ''], { encoding: 'utf8', timeout: 45_000 });
-  if (r.status !== 0 || !existsSync(out)) throw new Fail('screen_failed', (r.stderr || r.stdout || '').trim().split('\n').pop());
+  // In-process DVT capture (scripts/screenshot.py): the CLI's DTX reader caps a
+  // message at 30 MiB and a busy 4K frame is bigger, so the CLI fails on exactly
+  // the screens worth looking at.
+  const r = spawnSync(venvPython(), [join(dirname(fileURLToPath(import.meta.url)), 'screenshot.py'), out], { encoding: 'utf8', timeout: 30_000 });
+  let shot = null;
+  try { shot = JSON.parse((r.stdout || '').trim().split('\n').pop() || '{}'); } catch { shot = null; }
+  if (!shot?.ok || !existsSync(out)) throw new Fail(shot?.error && ERR_CODES.has(shot.error) ? shot.error : 'screen_failed', shot?.detail ?? (r.stderr || '').trim().split('\n').pop());
   const width = String(args.width ?? 960);
   spawnSync('sips', ['--resampleWidth', width, out], { encoding: 'utf8' });
   if (!args.out) pruneScreens();

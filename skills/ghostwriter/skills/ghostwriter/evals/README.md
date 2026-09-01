@@ -40,11 +40,13 @@ the flag — CI can never spend. The harness *logic* is unit-tested in mock mode
 call sites are marked `# pragma: no cover`.
 
 **What `--mock` does NOT grade.** In mock mode the voice judge's score is derived purely from the
-deterministic AI-tell flags (em-dash / rule-of-three / reflexive CTA) — it does **not** run the LLM
-stylometry. So the mock layer cannot catch a draft that has no hard flags but is still off-voice
-(corporate buzzwords, credential-flexing, "I'm humbled to announce"). `fixtures/offvoice-draft.md`
-is exactly that case: it passes the deterministic layer and is only caught by a **live** judge run.
-Don't read a green `--mock` voice run as "the voice is good" — it means "no hard tells fired."
+deterministic AI-tell flags (`scripts/ai_tells.py`: em-dash, rule-of-three, reflexive CTA,
+closer antithesis, slop words, credential flexing, emoji bullets, hashtag piles, 60-word
+paragraphs) — it does **not** run the LLM stylometry. The word-level rules catch
+`fixtures/offvoice-draft.md` since 0.18.0, but a draft can still be an essay in the author's
+clothes with zero hard flags: register, ending shape and "would this sit in the feed" are the
+live judge's job (`scripts/ai_tells.py --judge`). Don't read a green `--mock` voice run as "the
+voice is good" — it means "no hard tells fired."
 
 ## Behavioral harness caveats (live runs)
 
