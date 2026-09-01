@@ -22,6 +22,10 @@ official API. No copy-paste, and no unattended posting.
 
 Every external claim is verified against three or more live sources before you
 see the draft, and the gate narrates as it works rather than going silent.
+Every draft also runs through an AI-fingerprint gate (`scripts/ai_tells.py`)
+before you see it: eleven deterministic tells from your own voice notes plus a
+cost-capped LLM judge, and the publish command refuses a post that still trips
+one.
 
 ## What you get
 
@@ -197,9 +201,11 @@ pytest
 ```
 
 Python skill. `ci / ghostwriter` runs the same tests plus the house lints on
-every pull request. The voice lint is pinned against 31 published,
-user-approved drafts, so a rule strict enough to reject work already shipped
-fails there rather than in a release.
+every pull request. The AI-fingerprint gate is pinned two ways: ten published,
+user-approved drafts frozen in `evals/baseline/drafts/` must stay clean, so a
+rule strict enough to reject work already shipped fails there rather than in a
+release; and three fixtures must keep firing their exact flag sets, so a rule
+that quietly weakens fails there too.
 
 ## Changelog
 

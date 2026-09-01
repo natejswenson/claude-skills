@@ -23,6 +23,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+import ai_tells
 import verify_sources
 
 REPO = Path(__file__).resolve().parent.parent
@@ -369,6 +370,34 @@ def enforce_source_gate(args) -> None:
     print(f"Source check passed: {result['reason']}")
 
 
+def enforce_ai_tells_gate(args, text: str) -> None:
+    """Refuse to publish text that trips the AI-fingerprint gate (scripts/ai_tells.py).
+
+    Runs on the text that will actually be posted, whatever its source, so a
+    --text publish is gated the same as a --file one. Deterministic rules only:
+    the LLM judge belongs to the pre-show step, where there is still a draft to
+    rewrite. The only bypass is --allow-ai-tells, HUMAN-ONLY by convention (see
+    SKILL.md guardrails) — the agent must never self-apply it to clear the gate.
+    """
+    if args.allow_ai_tells:
+        print(
+            "WARNING: --allow-ai-tells set — publishing WITHOUT the AI-fingerprint "
+            "gate. This bypass is for human use only.",
+            file=sys.stderr,
+        )
+        return
+    findings = [f for f in ai_tells.check(text) if f.severity == ai_tells.FAIL]
+    if findings:
+        lines = "\n".join(f.render() for f in findings)
+        sys.exit(
+            f"ERROR: AI-fingerprint gate failed — {len(findings)} FAIL:\n{lines}\n"
+            "Fix the draft (see SKILL.md → Pre-show self-check) and re-run "
+            "scripts/ai_tells.py until it is clean. A human can override with "
+            "--allow-ai-tells."
+        )
+    print("AI-fingerprint gate passed: no hard tells.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     src = ap.add_mutually_exclusive_group()
@@ -408,6 +437,12 @@ def main() -> None:
         action="store_true",
         help="HUMAN-ONLY escape hatch: publish without the source-verification "
         "gate. The agent must never set this to get past the gate.",
+    )
+    ap.add_argument(
+        "--allow-ai-tells",
+        action="store_true",
+        help="HUMAN-ONLY escape hatch: publish without the AI-fingerprint gate "
+        "(scripts/ai_tells.py). The agent must never set this to get past the gate.",
     )
     args = ap.parse_args()
 
@@ -461,6 +496,7 @@ def main() -> None:
     # Source gate: before any media upload so a failed gate never orphans an
     # uploaded asset on LinkedIn's side.
     enforce_source_gate(args)
+    enforce_ai_tells_gate(args, text)
 
     warn_if_token_expiring(env)
     warn_publish_conditions()

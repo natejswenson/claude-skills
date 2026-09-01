@@ -433,7 +433,7 @@ def test_main_document_without_title_warns(monkeypatch, capsys, tmp_path):
 
 # ------------------------------------------------------------- source gate
 def _gate_args(**over):
-    base = {"allow_unverified": False, "file": None}
+    base = {"allow_unverified": False, "allow_ai_tells": False, "file": None}
     base.update(over)
     return type("A", (), base)()
 
@@ -460,6 +460,63 @@ def test_gate_file_pass_proceeds(monkeypatch, capsys):
     monkeypatch.setattr(lp.verify_sources, "verify", lambda f: {"ok": True, "reason": "3 sources"})
     lp.enforce_source_gate(_gate_args(file="drafts/p.md"))
     assert "Source check passed" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------- AI-fingerprint gate
+BAD_TEXT = "I keep seeing people ship — and then act surprised.\n\nThoughts? 👇"
+
+
+def test_ai_gate_allow_flag_warns_and_passes(capsys):
+    lp.enforce_ai_tells_gate(_gate_args(allow_ai_tells=True), BAD_TEXT)
+    assert "WITHOUT the AI-fingerprint gate" in capsys.readouterr().err
+
+
+def test_ai_gate_refuses_with_every_fail_listed():
+    with pytest.raises(SystemExit) as e:
+        lp.enforce_ai_tells_gate(_gate_args(), BAD_TEXT)
+    msg = str(e.value)
+    assert "AI-fingerprint gate failed — 3 FAIL" in msg
+    for rule in ("em_dash", "strawman_opener", "reflexive_cta"):
+        assert rule in msg
+    assert "--allow-ai-tells" in msg
+
+
+def test_ai_gate_ignores_warns(capsys):
+    lp.enforce_ai_tells_gate(_gate_args(), "I actually shipped it.\n\nIt works.")
+    assert "AI-fingerprint gate passed" in capsys.readouterr().out
+
+
+def test_main_ai_gate_fail_blocks_before_upload(monkeypatch, tmp_path):
+    """A draft that passes sources but trips the AI gate never reaches an upload."""
+    img = tmp_path / "i.png"
+    img.write_bytes(b"PNG")
+    draft = tmp_path / "p.md"
+    draft.write_text(BAD_TEXT, encoding="utf-8")
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"})
+    monkeypatch.setattr(lp.verify_sources, "verify", lambda f: {"ok": True, "reason": "ok"})
+
+    def fail_upload(*a):
+        raise AssertionError("upload must not run on a failed AI gate")
+
+    monkeypatch.setattr(lp, "initialize_image_upload", fail_upload)
+    monkeypatch.setattr("sys.argv", ["x", "--file", str(draft), "--image", str(img)])
+    with pytest.raises(SystemExit) as e:
+        lp.main()
+    assert "AI-fingerprint gate failed" in str(e.value)
+
+
+def test_main_ai_gate_human_bypass_publishes(monkeypatch, capsys, tmp_path):
+    draft = tmp_path / "p.md"
+    draft.write_text(BAD_TEXT, encoding="utf-8")
+    _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"})
+    monkeypatch.setattr(lp, "warn_if_token_expiring", lambda env: None)
+    monkeypatch.setattr(lp, "publish", lambda env, payload: print("PUBLISHED"))
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--file", str(draft), "--allow-unverified", "--allow-ai-tells"]
+    )
+    lp.main()
+    out = capsys.readouterr()
+    assert "PUBLISHED" in out.out and "WITHOUT the AI-fingerprint gate" in out.err
 
 
 def test_main_bare_text_publish_blocked_by_gate(monkeypatch):

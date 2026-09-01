@@ -86,6 +86,24 @@
       "rationale": "The ~210-char '…see more' fold decides LinkedIn reach, and the fold-marked draft presentation is the only place the user actually SEES where their post cuts off before approving it. Prose-only; deleting it regresses to showing drafts with no fold visibility."
     },
     {
+      "id": "ai-tells-gate-step",
+      "file": "SKILL.md",
+      "pattern": "ai_tells\\.py[^\\n]{0,80}--judge",
+      "rationale": "The user's standing ask (2026-08-24): 'ensure we run the posts through a filter that ensures there is no AI fingerprint on them.' The pre-show gate invocation lives only in this prose; the HARD enforcement at publish is code-tested in tests/test_linkedin_post.py (enforce_ai_tells_gate), but the pre-show run is what catches a tell while there is still a draft to rewrite."
+    },
+    {
+      "id": "ai-tells-rerun-on-edit",
+      "file": "SKILL.md",
+      "pattern": "re-run the gate after every edit",
+      "rationale": "An edit is how a tell gets back into a draft that already passed. Re-run-on-edit is prose-only; deleting it regresses to gating the first draft and publishing the third."
+    },
+    {
+      "id": "allow-ai-tells-human-only",
+      "file": "SKILL.md",
+      "pattern": "allow-ai-tells[^.\\n]*human-only",
+      "rationale": "Same shape as allow-unverified: the bypass exists for a human, and an agent that sets it to clear its own gate has removed the gate. Prose-only; the flag itself is code-tested."
+    },
+    {
       "id": "real-output-transcription",
       "file": "SKILL.md",
       "pattern": "transcription of a real session,\\s*not an\\s*invention",
@@ -103,8 +121,13 @@
         ".STAGED.md"
       ],
       "min_corpus": 8,
-      "rationale": "31 drafts the user actually approved and published are the only ground truth for 'this is my voice'. Ten of them are frozen into evals/baseline/drafts/ as a committed corpus: drafts/ itself is gitignored as a working directory ('personal data exports & generated posts'), so globbing it would find zero files in CI and red-line every PR. Pinning the corpus clean catches a voice-lint rule that grows too broad and starts blocking real work; pinning bad-draft.md's exact flag set catches a rule that gets weakened and stops catching real AI tells. The min_corpus floor stops the glob silently matching nothing and passing vacuously. `.STAGED.md` stays excluded because a staged file's human-written 'not published' banner contains an editorial em-dash that is not post body.",
-      "fixtures": []
+      "rationale": "The drafts the user actually approved and published are the only ground truth for 'this is my voice'. Ten of them are frozen into evals/baseline/drafts/ as a committed corpus: drafts/ itself is gitignored as a working directory ('personal data exports & generated posts'), so globbing it would find zero files in CI and red-line every PR. Pinning the corpus clean catches a gate rule (scripts/ai_tells.py) that grows too broad and starts blocking real work; pinning bad-draft.md's, ai-tells-draft.md's and offvoice-draft.md's exact flag sets catches a rule that gets weakened and stops catching real AI tells. The min_corpus floor stops the glob silently matching nothing and passing vacuously. `.STAGED.md` stays excluded because a staged file's human-written 'not published' banner contains an editorial em-dash that is not post body.",
+      "update_command": "Add a newly published, user-approved draft: cp drafts/<slug>.md evals/baseline/drafts/ (never edit one to appease a rule). A new FAIL rule: extend evals/fixtures/ai-tells-draft.md and KNOWN_ALL_FLAGS in tests/test_baseline_voice.py in the same commit.",
+      "fixtures": [
+        "evals/fixtures/bad-draft.md",
+        "evals/fixtures/ai-tells-draft.md",
+        "evals/fixtures/offvoice-draft.md"
+      ]
     }
   ]
 }
