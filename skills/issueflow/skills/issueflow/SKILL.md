@@ -1,8 +1,8 @@
 ---
 name: issueflow
-description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", or "break this issue into smaller pieces". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
+description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts, or, in auto mode, by an adversarial red-team review that loops until nothing blocking remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "break this issue into smaller pieces", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.5.0
+version: 0.6.0
 ---
 
 # /issueflow — one open issue to a pull request, through four gated stages
@@ -28,6 +28,11 @@ is trusted to keep; it is `blockers()` in `scripts/lib/run.mjs`, and `accept`,
 proceed without an approval, the answer is to ask for the approval — never to
 work around the refusal.
 
+On a run started with `--auto`, the user delegates the approvals once, at
+`start`: each stage is then approved by a registered, hash-bound **red-team
+review** instead of a human — see *Auto mode*, below. The one rule does not
+loosen; the gate just has a different holder.
+
 ## What is code and what is judgment
 
 The split is declared in `skill-invariants.json` and checked — a deterministic
@@ -39,6 +44,7 @@ step whose command does not exist fails `skillfactory verify`.
 | fetch the chosen issue and its comments to disk and open the stage state machine | `node "$SKILL_DIR/scripts/issueflow.js" start` |
 | render each stage's dispatch prompt, model and subagent type from the approved artifacts | `node "$SKILL_DIR/scripts/issueflow.js" brief` |
 | enforce the gate — record an artifact, record the approval, advance only then | `node "$SKILL_DIR/scripts/issueflow.js" accept` |
+| register a completed red-team review — validate every citation, derive the verdict from the severities, bind it to the artifact's hash, record the round | `node "$SKILL_DIR/scripts/issueflow.js" review` |
 | expand an approved design's work items into stacked child lanes | `node "$SKILL_DIR/scripts/issueflow.js" split` |
 | report the state of an interrupted run so it resumes without guessing | `node "$SKILL_DIR/scripts/issueflow.js" status` |
 | list every run on this machine, so one can be found without remembering its path | `node "$SKILL_DIR/scripts/issueflow.js" runs` |
@@ -52,7 +58,8 @@ step whose command does not exist fails `skillfactory verify`.
 | whether this issue is one change or several, and where the seams fall | size signals suggest a split, they never locate it — only reading the design tells you which parts can land and be reviewed alone |
 | the implementation itself, written to match the surrounding code | matching a codebase's idiom, naming and comment density is imitation, which no rule set encodes |
 | whether the tests actually prove the issue is fixed | a green suite proves the tests passed, not that they tested the reported behaviour — only reading the issue against the assertions answers that |
-| whether an artifact is good enough to approve | this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide |
+| whether an artifact is good enough to approve | this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide — or, on an auto run, the red team's call, registered and hash-bound, with every round shown to the user |
+| what the stage missed — the adversarial hunt itself | the registrar can check that a finding cites something real; only a reviewer reading the work can find the alternate root cause nobody ruled out, the file the design forgot, or the assertion that passes without the fix |
 
 ## The flow
 
@@ -236,15 +243,95 @@ which is `dev` in a shipflow repo, so the issue does not close on its own.
 than finishing on an assumption. Once every lane has landed, `runs` and
 `status` report the run `done` — never `ready to ship` again.
 
+## Auto mode — the red team replaces the human gate
+
+When the user asks for an autonomous run ("work this autonomously", "auto
+mode", "no approvals, just ship it"), start with:
+
+```bash
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --auto
+```
+
+In auto mode **the red team is the gate, and it is a dispatched subagent —
+never you.** Every stage still runs exactly as in the flow above; what changes
+is what happens when its artifact lands. Instead of showing the user and
+asking, you dispatch an adversarial reviewer, and the stage advances only on a
+registered passing review:
+
+1. **Brief and dispatch the stage** as usual — background, on the model `brief`
+   names, with the expectation said out loud. The user is watching an
+   autonomous run, so narrate more, not less: one lowercase line at every
+   dispatch, and the board after every gate.
+2. **When the artifact lands** (the stage's `SendMessage`, never a bare idle),
+   say so in one line, then brief the red team:
+
+   ```bash
+   node "$SKILL_DIR/scripts/issueflow.js" brief --review --run-dir <run> --stage <id> [--lane <slug>]
+   ```
+
+   Dispatch the reviewer it prints — **opus, always**; the red team is the
+   judgment an auto run pays for. Reviews of parallel lanes are independent:
+   dispatch them as N subagents in ONE message, exactly like `--ready` stages.
+3. **When the review lands, register it:**
+
+   ```bash
+   node "$SKILL_DIR/scripts/issueflow.js" review --run-dir <run> --stage <id> [--lane <slug>]
+   ```
+
+   It validates every citation against something that exists, derives the
+   verdict from the severities (critical and high block; medium and low are
+   notes), binds the verdict to the sha of the artifact it reviewed, and
+   prints the findings table. **Paste that table into the conversation — not a
+   summary of it.** A refused registration (a finding that cites nothing, a
+   verdict that disagrees with its own severities) goes back to the reviewer
+   with the refusal verbatim, the same way a gate-refused stage does.
+4. **Blocked?** Re-brief the stage — the brief now carries the blocking
+   findings and the path to the full review — and redispatch it on its own
+   model. Say which round this is: "round 2: sending implement back with 1
+   high, 2 notes." Then review again. **Never weaken a review to clear a
+   finding** — if a finding is wrong, the reviewer's next round is where that
+   gets decided, not your judgment and not an edit to anything.
+5. **Pass?** Approve on the verdict and show the board:
+
+   ```bash
+   node "$SKILL_DIR/scripts/issueflow.js" accept --auto --run-dir <run> --stage <id> [--lane <slug>]
+   ```
+
+   `accept --auto` runs every refusal the human path runs, then also refuses a
+   missing or blocked review, an artifact edited after its review, and a
+   branch that moved under a code review. Its refusals are the product, same
+   as ever.
+6. **A design that splits, splits.** In auto mode run `split` without asking —
+   but say so, and show the lane table.
+7. **Three blocked rounds on one stage stop the run.** `brief` and `review`
+   refuse a fourth round; when that happens, print the open blocking findings,
+   run `status`, and hand the run to the user with what is unresolved. **Never
+   auto-ship over an open blocking finding**, and never `--skip` past one.
+8. **Ship without asking, but not blind:** run `ship --dry-run`, narrate the
+   plan in one line, then `ship`. Then `finish` once merges confirm, and close
+   with the run summary: one table, `Stage | Model | Rounds | Blocking found |
+   Took`, plus the pull request URLs.
+
+**Auto mode never touches `--force`.** Blocking drift — a closed issue, an
+already-merged lane — stops an unattended run exactly like an exhausted stage:
+report it and hand back to the user. `--force` is for a human who has re-read
+the drift and decided; an auto run has no such human by definition.
+
+The user sees every round: the findings tables, the board after every gate,
+the checkpoint comment carrying the review history. Autonomous never means
+silent — it means the user reads the run instead of driving it.
+
 ## Commands
 
 | Command | Returns |
 |---|---|
 | `board` | every open issue as a pick-table, plus the repo's resolved branch policy |
-| `start --issue <n>` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue |
+| `start --issue <n> [--auto]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` hands every gate to the red team |
 | `brief [--stage] [--lane]` | the next stage's model, agent, artifact, worktree and the exact dispatch prompt |
 | `brief --ready` | **every** stage whose gate is open, for dispatch in one message |
-| `accept [--stage] [--lane] [--skip] [--force]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
+| `brief --review --stage <id>` | the red-team reviewer's brief for a delivered artifact: opus, the citation grammar, and the exact dispatch prompt |
+| `review --stage <id> [--lane]` | registers a completed review: validates every citation, derives the verdict, hash-binds it, prints the findings table and what to do next |
+| `accept [--stage] [--lane] [--skip] [--force] [--auto]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint; `--auto` approves on a registered passing review instead of a human |
 | `split` | one lane per work item read from the approved design, each stacked on the one below |
 | `status` | the run board with a live elapsed time for any stage still running, its last reported progress, what has drifted on GitHub, and what can run now |
 | `runs` | every run on this machine, with what it is waiting on |
@@ -280,6 +367,16 @@ evals; a real run should never pass it.
 - **Never claim a result you did not observe.** Say what you verified and what
   you did not — a pull request URL comes from `ship`, never from having asked
   for one.
+- **In auto mode the red team is the gate, and it is a dispatched subagent —
+  never you.** A reviewer that shares your context has already been told the
+  conclusion it was sent to attack.
+- **Never weaken a review to clear a finding.** Round 3 is exactly when fixing
+  the reviewer becomes cheaper than fixing the work; the work is what gets
+  fixed.
+- **Never auto-ship over an open blocking finding.** An exhausted stage
+  surfaces its findings and the run stops there.
+- **Auto mode never touches `--force`.** Drift stops an unattended run; the
+  flag is for a human who has re-read what moved.
 
 <!-- press:agent-ui -->
 
@@ -287,8 +384,9 @@ evals; a real run should never pass it.
 
 | Path | Is |
 |---|---|
-| `scripts/issueflow.js` | the CLI: `board`, `start`, `brief`, `accept`, `split`, `status`, `runs`, `ship` |
+| `scripts/issueflow.js` | the CLI: `board`, `start`, `brief`, `accept`, `review`, `split`, `status`, `runs`, `ship`, `finish` |
 | `scripts/lib/stages.mjs` | the four stages: model, agent, artifact, what each is asked and refused |
+| `scripts/lib/reviews.mjs` | the red team: one reviewer per stage, the finding grammar, the citation resolver, and the registrar that hash-binds a verdict |
 | `scripts/lib/run.mjs` | the state machine and the gate — `dependencies()` and `blockers()` are the one rule as code |
 | `scripts/lib/brief.mjs` | the dispatch-prompt renderer |
 | `scripts/lib/checkpoint.mjs` | the push and the sticky issue comment — how a run survives this machine |

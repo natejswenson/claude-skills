@@ -19,6 +19,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STAGES } from '../../scripts/lib/stages.mjs';
+import { REVIEWS, REVIEW_FORBIDS, REVIEW_REQUIRES } from '../../scripts/lib/reviews.mjs';
 import { renderComment } from '../../scripts/lib/checkpoint.mjs';
 import { loadRun } from '../../scripts/lib/run.mjs';
 
@@ -90,6 +91,39 @@ export function generate() {
       null,
       2,
     )}\n`;
+  }
+
+  // The reviewer contracts, frozen like the stage contracts and for the same
+  // reason: a reviewer that silently changed model or dropped a hunt would
+  // still render a complete-looking review brief.
+  for (const r of REVIEWS) {
+    artifacts[`review-${r.id}.json`] = `${JSON.stringify(
+      { id: r.id, title: r.title, model: r.model, agent: r.agent, asks: r.asks, requires: REVIEW_REQUIRES, forbids: REVIEW_FORBIDS },
+      null,
+      2,
+    )}\n`;
+  }
+
+  // The red-team round, in its own run directory: the golden run above stays a
+  // gated run, so its checkpoint comment keeps pinning the pre-review shape.
+  // The review here still drives the real CLI — brief the reviewer, drop in the
+  // reviewer's artifact, and let `review` validate, derive and hash-bind it.
+  {
+    const reviewDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
+    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '133', '--issue-json', at('issue-133.json')]);
+    cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
+    cpSync(at('artifacts', 'investigate.md'), join(reviewDir, 'shared', 'investigate.md'));
+    cli(['brief', '--review', '--stage', 'investigate', '--run-dir', reviewDir]);
+    artifacts['brief-review-investigate.md'] = normalize(
+      readFileSync(join(reviewDir, 'briefs', 'review-investigate-r1.md'), 'utf8'), reviewDir,
+    );
+    mkdirSync(join(reviewDir, 'reviews'), { recursive: true });
+    cpSync(at('artifacts', 'review-investigate-r1.md'), join(reviewDir, 'reviews', 'investigate-r1.md'));
+    cli(['review', '--stage', 'investigate', '--run-dir', reviewDir]);
+    artifacts['verdict-investigate-r1.json'] = normalize(
+      readFileSync(join(reviewDir, 'reviews', 'investigate-r1.json'), 'utf8'), reviewDir,
+    );
+    rmSync(reviewDir, { recursive: true, force: true });
   }
 
   for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key], runDir);
