@@ -1,0 +1,24 @@
+{"date": "2026-07-17", "slug": "2026-07-17-agent-spawn-budgets", "lane": "release-howto", "format": "image"}
+{"date": "2026-07-18", "slug": "2026-07-18-hardass-running-coach", "lane": "personal-project", "format": "image"}
+{"date": "2026-07-19", "slug": "2026-07-19-skill-self-review-loop", "lane": "personal-project", "format": "image", "outcome": "great"}
+{"date": "2026-07-21", "slug": "2026-07-21-llm-stream-watchdog", "lane": "personal-project", "format": "image"}
+{"date": "2026-07-22", "slug": "2026-07-22-negative-instruction-context", "lane": "personal-project", "format": "image", "outcome": "normal"}
+{"date": "2026-07-26", "slug": "2026-07-26-agent-memory-grounding-contract", "lane": "personal-project", "format": "image", "outcome": "normal"}
+{"date": "2026-07-27", "slug": "2026-07-27-claude-code-permission-fix", "lane": "release-howto", "format": "image"}
+{"date": "2026-07-29", "slug": "2026-07-29-delete-your-claude-md", "lane": "opinion", "format": "image", "outcome": "normal"}
+{"date": "2026-07-31", "slug": "2026-07-31-stacked-prs-go-native", "lane": "release-howto", "format": "carousel"}
+{"date": "2026-08-01", "slug": "2026-08-01-own-the-region-not-the-file", "lane": "release-howto", "format": "image"}
+{"date": "2026-08-02", "slug": "2026-08-02-session-portability-test", "lane": "release-howto", "format": "image"}
+{"date": "2026-08-03", "slug": "2026-08-03-refusal-on-the-write-path", "lane": "personal-project", "format": "image"}
+{"date": "2026-08-04", "slug": "2026-08-04-receipts-dont-prove-ownership", "lane": "release-howto", "format": "image", "outcome": "normal"}
+{"date": "2026-08-06", "slug": "2026-08-06-tracing-tells-you-a-step-ran", "lane": "personal-project", "format": "image"}
+{"date": "2026-08-07", "slug": "2026-08-07-connector-cant-send", "lane": "personal-project", "format": "image", "outcome": "normal"}
+{"date": "2026-08-08", "slug": "2026-08-08-every-shuffle-is-a-first", "lane": "personal", "format": "image", "outcome": "flopped"}
+{"date": "2026-08-11", "slug": "2026-08-11-where-the-hard-part-went", "lane": "opinion", "format": "image", "outcome": "flopped"}
+{"date": "2026-08-12", "slug": "2026-08-12-auto-mode-default", "lane": "release-howto", "format": "image", "outcome": "flopped"}
+{"date": "2026-08-17", "slug": "2026-08-17-read-claudes-system-prompt", "lane": "opinion", "format": "image", "outcome": "flopped"}
+{"date": "2026-08-18", "slug": "2026-08-18-autofix-injection", "lane": "opinion", "format": "image", "outcome": "flopped"}
+{"date": "2026-08-20", "slug": "2026-08-20-culture-doesnt-live-in-a-building", "lane": "opinion", "format": "image", "outcome": "great"}
+{"date": "2026-08-24", "slug": "2026-08-24-ask-why-before-you-merge", "lane": "opinion", "format": "text", "outcome": "normal"}
+{"date": "2026-08-26", "slug": "2026-08-25-the-rung-most-harnesses-skip", "lane": "opinion", "format": "text", "outcome": "flopped"}
+{"date": "2026-08-28", "slug": "2026-08-28-traces-are-not-evals", "lane": "opinion", "format": "text", "outcome": "flopped"}

@@ -167,3 +167,108 @@ def test_main_outcome_required_unless_listing(monkeypatch, tmp_path):
     monkeypatch.setattr("sys.argv", ["x", "--slug", "one", "--log", str(log)])
     with pytest.raises(SystemExit):
         po.main()
+
+
+# ------------------------------------------------------------------- --stats
+def _scored(slug, lane, fmt, outcome, **extra):
+    return dict(
+        {"date": "2026-08-01", "urn": f"urn:{slug}", "slug": slug, "lane": lane, "format": fmt},
+        outcome=outcome,
+        **extra,
+    )
+
+
+def test_stats_rolls_up_lane_and_format_with_flop_rate(monkeypatch, tmp_path, capsys):
+    log = _log(
+        tmp_path,
+        [
+            _scored("a", "opinion", "text", "flopped"),
+            _scored("b", "opinion", "image", "flopped"),
+            _scored("c", "personal-project", "image", "great", impressions=410),
+            {"date": "2026-08-02", "urn": "urn:d", "slug": "d", "format": "text"},  # unscored, no lane
+        ],
+    )
+    monkeypatch.setattr("sys.argv", ["x", "--stats", "--log", str(log)])
+    po.main()
+    out = capsys.readouterr().out
+    assert "| opinion | 0 | 0 | 2 | 0 | 2/2 |" in out
+    assert "| personal-project | 1 | 0 | 0 | 0 | 0/1 |" in out
+    assert "| ? | 0 | 0 | 0 | 1 | — |" in out  # missing lane bucket
+    assert "| image | 1 | 0 | 1 | 0 | 1/2 |" in out
+    assert "impressions recorded: 1 of 3 scored" in out
+
+
+def test_stats_counts_trailing_posts_without_numbers_and_warns(monkeypatch, tmp_path, capsys):
+    log = _log(
+        tmp_path,
+        [
+            _scored("a", "opinion", "text", "normal", impressions=210),
+            _scored("b", "opinion", "text", "flopped"),
+            _scored("c", "opinion", "text", "flopped", impressions=None),
+            _scored("d", "opinion", "text", "normal"),
+        ],
+    )
+    monkeypatch.setattr("sys.argv", ["x", "--stats", "--log", str(log)])
+    po.main()
+    out = capsys.readouterr().out
+    assert "trailing scored posts without a number: 3" in out
+    assert "recovery protocol" in out
+
+
+def test_stats_no_warning_when_numbers_current(monkeypatch, tmp_path, capsys):
+    log = _log(tmp_path, [_scored("a", "opinion", "text", "normal", impressions=210)])
+    monkeypatch.setattr("sys.argv", ["x", "--stats", "--log", str(log)])
+    po.main()
+    out = capsys.readouterr().out
+    assert "trailing scored posts without a number: 0" in out
+    assert "recovery protocol" not in out
+
+
+def test_stats_leaves_log_untouched(monkeypatch, tmp_path):
+    log = _log(tmp_path, [_scored("a", "opinion", "text", "normal")])
+    before = log.read_text(encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["x", "--stats", "--log", str(log)])
+    po.main()
+    assert log.read_text(encoding="utf-8") == before
+
+
+def test_stats_baseline_frozen_real_log(monkeypatch, capsys):
+    """Baseline: the projected freeze of the real 24-post log re-renders byte-identically."""
+    fixture = (
+        __import__("pathlib").Path(__file__).resolve().parent.parent
+        / "evals" / "baseline" / "outcomes"
+    )
+    monkeypatch.setattr(
+        "sys.argv", ["x", "--stats", "--log", str(fixture / "published-frozen.jsonl")]
+    )
+    po.main()
+    out = capsys.readouterr().out
+    expected = (fixture / "expected-stats.md").read_text(encoding="utf-8")
+    assert out == expected, (
+        "stats drifted from the frozen real log — deliberate? re-freeze via the "
+        "update_command in skill-invariants.json"
+    )
+
+
+# ------------------------------------------------------- --impressions-declined
+def test_impressions_declined_records_null(monkeypatch, tmp_path):
+    log = _log(tmp_path, [REC1])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["x", "--slug", "one", "--outcome", "flopped", "--impressions-declined", "--log", str(log)],
+    )
+    po.main()
+    rec = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
+    assert "impressions" in rec and rec["impressions"] is None
+
+
+def test_impressions_number_beats_declined_flag(monkeypatch, tmp_path):
+    log = _log(tmp_path, [REC1])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["x", "--slug", "one", "--outcome", "great", "--impressions", "300",
+         "--impressions-declined", "--log", str(log)],
+    )
+    po.main()
+    rec = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
+    assert rec["impressions"] == 300
