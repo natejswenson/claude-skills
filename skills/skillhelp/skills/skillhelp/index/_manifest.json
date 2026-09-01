@@ -4,7 +4,7 @@
       "name": "appletv",
       "version": "0.1.1",
       "stack": "node",
-      "cardHash": "ac926305eccaf8d7",
+      "cardHash": "ea189ecc491fa7cd",
       "facts": 74,
       "sections": {
         "setup": 10,
@@ -98,15 +98,15 @@
     },
     {
       "name": "ghostwriter",
-      "version": "0.17.0",
+      "version": "0.18.0",
       "stack": "python",
-      "cardHash": "b9a31f68dc4e3214",
-      "facts": 48,
+      "cardHash": "4d733257262e0e7b",
+      "facts": 49,
       "sections": {
         "setup": 4,
         "usage": 12,
         "commands": 4,
-        "architecture": 12,
+        "architecture": 13,
         "troubleshooting": 16
       },
       "emptySections": [],

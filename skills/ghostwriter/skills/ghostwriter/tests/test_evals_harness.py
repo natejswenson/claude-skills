@@ -266,6 +266,24 @@ def test_voice_context_assembles_from_committed_examples():
     assert isinstance(ctx, str) and ctx.strip()
 
 
+def test_voice_context_prefers_the_personal_voice_dir(tmp_path, monkeypatch):
+    """~/.claude/ghostwriter/voice holds the real bans; the judge must read it first."""
+    (tmp_path / "voice-notes.md").write_text("PERSONAL NOTES", encoding="utf-8")
+    monkeypatch.setattr(vj, "PERSONAL_VOICE_DIR", tmp_path)
+    ctx = vj._voice_context()
+    assert ctx.startswith("PERSONAL NOTES")
+
+
+def test_judge_prompt_names_the_fired_rules_and_asks_for_tells():
+    prompt = vj.judge_prompt("DRAFT TEXT", ["em_dash", "antithesis"])
+    assert "em_dash, antithesis" in prompt and '"tells"' in prompt and "DRAFT TEXT" in prompt
+    assert "rules already fired: none" in vj.judge_prompt("x")
+
+
+def test_score_draft_accepts_precomputed_flags():
+    assert vj.score_draft("clean", mock=True, flags=["em_dash"])["score"] == 4.0
+
+
 def test_voice_judge_main_passes_good_fails_bad(capsys):
     assert vj.main(["--draft", GOOD, "--mock"]) == 0
     assert vj.main(["--draft", BAD, "--mock"]) == 1
