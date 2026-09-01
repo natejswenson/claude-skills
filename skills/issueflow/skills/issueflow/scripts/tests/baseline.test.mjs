@@ -220,7 +220,19 @@ test('the-real-run: the frozen review brief names the artifact under attack and 
   assert.match(brief, /- \[critical\|high\|medium\|low\] <citation> — <one-sentence finding>/, 'the finding grammar is gone');
   assert.match(brief, /critical and high block the stage; medium and low are notes/, 'the severity split is gone');
   assert.match(brief, /addressed to `main`/, 'the review brief lost the completion contract');
-  assert.match(brief, /tool descriptions promise behavior/, 'the review brief lost the issue body');
+  assert.match(brief, /raw file line index/, 'the review brief lost the issue body');
+});
+
+test('the-real-run: the frozen review is the real one — its findings resolve and its coverage gap is named', () => {
+  const review = frozen('../inputs/artifacts/review-investigate-r1.md');
+  // The fixture is the round-3 review a real opus subagent wrote on the first
+  // auto-mode run. It must keep the shape the registrar checks — losing a
+  // heading here means the golden is exercising a review the gate would refuse.
+  assert.match(review, /## Findings/);
+  assert.match(review, /## Not examined/);
+  assert.match(review, /## Verdict/);
+  const findings = review.split('\n').filter((l) => /^\s*[-*]\s+\[(critical|high|medium|low)\]/.test(l));
+  assert.ok(findings.length >= 3, `the frozen review has ${findings.length} findings — a review over nothing proves nothing`);
 });
 
 test('the-real-run: the frozen verdict is hash-bound, timestamp-free and derived from its own findings', () => {

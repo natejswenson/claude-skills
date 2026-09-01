@@ -106,13 +106,19 @@ export function generate() {
 
   // The red-team round, in its own run directory: the golden run above stays a
   // gated run, so its checkpoint comment keeps pinning the pre-review shape.
+  //
+  // These fixtures are the first real auto-mode run — issue #132, its final
+  // investigate artifact, and the round-3 review a real opus red-team subagent
+  // wrote, which passed it. The review's path:line citations resolve against
+  // frozen copies of the cited local-fitness sources (a public repo) under
+  // `inputs/repo/`, so the registrar's citation gate runs for real, offline.
   // The review here still drives the real CLI — brief the reviewer, drop in the
   // reviewer's artifact, and let `review` validate, derive and hash-bind it.
   {
     const reviewDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
-    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '133', '--issue-json', at('issue-133.json')]);
+    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json')]);
     cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
-    cpSync(at('artifacts', 'investigate.md'), join(reviewDir, 'shared', 'investigate.md'));
+    cpSync(at('artifacts', 'investigate-132.md'), join(reviewDir, 'shared', 'investigate.md'));
     cli(['brief', '--review', '--stage', 'investigate', '--run-dir', reviewDir]);
     artifacts['brief-review-investigate.md'] = normalize(
       readFileSync(join(reviewDir, 'briefs', 'review-investigate-r1.md'), 'utf8'), reviewDir,

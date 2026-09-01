@@ -1,104 +1,3 @@
-# issueflow red-team brief — Review: Investigate (round 1)
-
-You are the **red-team reviewer** of the investigate stage of an issueflow run on `natejswenson/local-fitness` issue #132. Your job is to find what the
-stage missed. You are the gate: nothing you pass here gets a second look, so hunt
-like the defect is in there and you have not found it yet.
-
-You are running cold: you cannot see the conversation that dispatched you, and
-nothing you were not handed here exists for you. Everything you need is below or
-named by a path below.
-
-## The issue — #132
-
-**update_user_note / delete_user_note can silently hit the wrong preference**
-
-<https://github.com/natejswenson/local-fitness/issues/132>
-
-Found during the `docs/mcp/` audit, not previously known.
-
-## The problem
-
-`update_user_note` and `delete_user_note` address a note by its **raw file line index** in `data/user_notes.md`. Those indices are not stable:
-
-- Any `delete_user_note` shifts every subsequent index down by one.
-- The 4 KB rotation renumbers everything.
-
-Nothing detects a stale index. The target line is still a valid bullet, so the write **succeeds against the wrong note** — no error, no warning. A caller that listed notes, thought about it, then wrote back can silently overwrite or delete a different preference than the one it read.
-
-This is the worst shape a bug can take here: user notes are injected into the system prompt, so a wrong write silently changes how the coach behaves in every future conversation, and the only way to notice is to read the file.
-
-## Also in this area
-
-**`update_user_note` never triggers the 4 KB rotation.** Only `append_note` calls `_rotate_to_fit`, so replacing a short note with a much longer one can push the live file past `LIVE_FILE_MAX_BYTES` and leave it there. The prompt-injection budget is enforced on append only.
-
-**`notes.read_notes()`'s docstring is wrong** (`src/local_fitness/notes.py:99-100`): it claims "newest-first ordering matching the on-disk order". The file is append-only, so on-disk order is *oldest*-first and `read_notes` preserves it; only `render_for_prompt()` reverses. So `list_user_notes` returns oldest-first while the system prompt shows newest-first — the two surfaces disagree, and the docstring asserts the wrong one. Worth deciding which is canonical and making both match.
-
-## Suggested fix
-
-Give notes a stable identity that survives deletion and rotation. Options, roughly in order of cost:
-
-1. **Content hash as the handle** — `list_user_notes` returns a short hash per note; the write tools take that instead of an index and fail loudly if it no longer matches. No schema change, no migration.
-2. **Monotonic id in the file** — write `<!-- id:7 -->` alongside each bullet. Survives rotation, but changes the on-disk format.
-3. **Move notes to the DB** — heaviest; the Markdown file is deliberate (human-editable, greppable, gitignored), so this is probably the wrong trade.
-
-(1) fits the existing design best and makes the failure mode loud instead of silent.
-
-## Lower-severity, adjacent
-
-- `list_observations` passes `obs_type` straight into a case-sensitive SQL `=` with no validation, while `log_observation` validates against `OBS_TYPES` and returns the allowed list. A typo returns an empty list, indistinguishable from "nothing logged".
-- `delete_observation` reads `args["observation_id"]` directly rather than `.get()` with a validation branch, so a missing parameter raises a `KeyError` out of the handler instead of returning the clean `_err` shape every neighbouring tool uses.
-
-## Documented meanwhile
-
-`docs/mcp/update_user_note.md`, `delete_user_note.md`, `list_user_notes.md`, and `list_observations.md` call these out prominently, so a reader isn't surprised before the fix lands.
-
-### Comments (1)
-
-**natejswenson:**
-
-<!-- issueflow:run natejswenson/local-fitness#132 -->
-
-### 🤖 issueflow — natejswenson/local-fitness#132
-
-Each stage below ran as its own subagent and was gated by an adversarial
-red-team review — every blocking finding resolved before approval. This
-comment is rewritten at every gate.
-
-| Step | Model | State | Took |
-|---|---|---|---|
-| investigate | opus | ✅ approved | 35m22s |
-| design | opus | ✅ approved | 18m10s |
-| notes-atomic-writes/implement | sonnet | pending | — |
-| notes-atomic-writes/test | sonnet | pending | — |
-| notes-line-framing/implement | sonnet | pending | — |
-| notes-line-framing/test | sonnet | pending | — |
-| notes-handles/implement | sonnet | pending | — |
-| notes-handles/test | sonnet | pending | — |
-| notes-recency-ordering/implement | sonnet | pending | — |
-| notes-recency-ordering/test | sonnet | pending | — |
-| notes-update-rotates/implement | sonnet | pending | — |
-| notes-update-rotates/test | sonnet | pending | — |
-| observation-arg-validation/implement | sonnet | pending | — |
-| observation-arg-validation/test | sonnet | pending | — |
-
-| Lane | Branch | Base | Pushed |
-|---|---|---|---|
-| notes-atomic-writes | `feature/issue-132-notes-atomic-writes` | `main` | — |
-| notes-line-framing | `feature/issue-132-notes-line-framing` | `feature/issue-132-notes-atomic-writes` | — |
-| notes-handles | `feature/issue-132-notes-handles` | `feature/issue-132-notes-line-framing` | — |
-| notes-recency-ordering | `feature/issue-132-notes-recency-ordering` | `feature/issue-132-notes-handles` | — |
-| notes-update-rotates | `feature/issue-132-notes-update-rotates` | `feature/issue-132-notes-recency-ordering` | — |
-| observation-arg-validation | `feature/issue-132-observation-arg-validation` | `feature/issue-132-notes-update-rotates` | — |
-
-| Step | Rounds | Blocking found | Notes |
-|---|---|---|---|
-| investigate | 3 | 3 | 13 |
-| design | 2 | 1 | 16 |
-
----
-
-<details><summary><b>investigate</b> — investigate.md</summary>
-
 # Investigate — issue #132: `update_user_note` / `delete_user_note` can silently hit the wrong preference
 
 Repo: `natejswenson/local-fitness` @ `dev` (clean tree, nothing modified by this stage).
@@ -434,88 +333,200 @@ because the staleness does not come from caching. It comes from writes that land
 `render_for_prompt` emits `[N]` values that `prompts.py:211-221` tells the model to write with, and
 those indices are invalidated by the model's own next `delete_user_note`, or by any other session's
 `save_user_note` that trips rotation — no matter how fresh the render was. A perfectly fresh block
-is still a snapshot
+is still a snapshot. That is why the fix has to reach `render_for_prompt`, not just `list_user_notes`.
+Note also that the prompt's own advice cuts both ways: it says "The notes section above is the
+authoritative list" (`src/local_fitness/agent/prompts.py:213`) but also "``list_user_notes`` re-reads
+from disk if the section looks stale" (`:219-220`), and "At most one note call per turn unless he
+asks for several" (`:221`) narrows — but does not close — the intra-turn multi-write window.
 
-… truncated at 20000 characters. The whole artifact is at `investigate.md` in the run directory.
+Reproduced ordering disagreement (issue's third point), from the same run:
 
-</details>
+```
+read_notes  (what list_user_notes returns): ['oldest', 'middle', 'newest']
+render_for_prompt (what the prompt shows):  [2] newest / [1] middle / [0] oldest
+```
 
-_Remaining artifacts omitted — the comment reached its size budget._
+The docstring at `src/local_fitness/notes.py:99-100` claims "newest-first ordering matching the
+on-disk order". Precisely: **"newest-first" is wrong; "matching the on-disk order" is correct** —
+`read_notes` preserves file order and returns oldest-first. What round 2 got wrong is the *reason*:
+it is not that "the file is append-only", because `update_note` writes in place and refreshes the
+timestamp (Reproduction 6), so file order is not a recency order at all. `docs/mcp/list_user_notes.md:68-74`
+flags the docstring as wrong but repeats that same false justification.
 
+Also confirmed: a hand-edited non-bullet line consumes an index without producing a note
+(heading + blank line ⇒ first note is `line=2`), and both write paths correctly *refuse* a
+non-bullet index — that guard works.
 
-## The artifact under review
+### Lower-severity items — both reproduce exactly as written
 
-`<RUN>/shared/investigate.md`
+`list_observations` (`src/local_fitness/agent/tools.py:2793-2795`) appends `obs_type = ?` with the
+raw argument; `log_observation` validates against `OBS_TYPES` and returns the allowed list
+(`:2709-2711`). The column is plain `TEXT` with no `COLLATE NOCASE` (`src/local_fitness/db.py:188`),
+so SQLite's `=` is case-sensitive:
 
-Read all of it. This is the work you are attacking — not editing, not improving,
-attacking. Round 1 of at most 3.
+```
+obs_type "rpe"  -> count 1
+obs_type "RPE"  -> {"observations": [], "count": 0}
+obs_type "rpee" -> {"observations": [], "count": 0}
+```
 
-## Your hunt
+Indistinguishable from "nothing logged", exactly as reported.
 
-Open every `path:line` the investigation cites and check the code says what
-the artifact claims it says. A citation that does not support its claim is a
-finding at the severity of the claim.
-Hunt for an alternate root cause the artifact never ruled out. If you can
-name one it did not consider, that is a finding.
-Hunt for guesses dressed as findings: any claim presented as established
-that belongs in Unknowns.
-Check the "does the issue ask for the right fix" question was actually
-answered, not restated.
+`delete_observation` (`src/local_fitness/agent/tools.py:2830`) does `int(args["observation_id"])`
+before any validation branch. Two escapes, not one:
 
-## You must not
+```
+{}                          -> KeyError: 'observation_id'
+{"observation_id": "abc"}   -> ValueError: invalid literal for int() with base 10: 'abc'
+```
 
-Never edit the work or any file other than your own review artifact — a reviewer that fixes what it found has destroyed the gate it was sent to hold. Never file a finding without a citation that resolves; an uncited finding is an opinion, and the registrar refuses the whole review over it. Each round re-hunts the current work from scratch — never weaken a finding to make a round converge, and never re-file a resolved one from memory. Never inflate severity: medium and low are notes, and a note filed as high to force a round is the reviewer gaming its own gate.
+Neighbouring tools return the `_err` shape for both cases (`delete_coach_memory` at
+`src/local_fitness/agent/tools.py:2172-2178` is the model to copy).
 
-## Working context
+### Baseline
 
-| Field | Value |
-|---|---|
-| work in | <REPO> |
-| repository | <REPO> |
-| branch | (no branch yet — this stage does not commit) |
-| base branch | main |
-| work item | the whole issue |
+Full suite run (`.venv/bin/python -m pytest -q`, coverage gate on): **2 failed, 2644 passed, 6
+skipped in 34.55s**, total coverage 95.05% (gate 85%). The two failures are
+`tests/test_tools.py::test_fetch_metric_series_window_ends_on_the_given_date` and
+`::test_fetch_metric_series_window_starts_days_before_end`. Both are **pre-existing and
+time-dependent, unrelated to this issue**: they pin a hard-coded `end="2026-07-10"` against the
+`seeded` fixture (`tests/test_tools.py:66-81`), which seeds the 40 days ending on `date.today()` —
+so once today is more than 40 days past 2026-07-10 the window matches no rows and `assert dates`
+fails. They touch neither `notes.py` nor the observation tools. The tree was clean before and after
+the run (`git status --short` empty).
 
-## Findings format
+Neither bug in this issue has a failing test. `tests/test_notes.py` (19 tests) and
+`tests/test_tools.py -k "user_note or observation"` (22 tests) are green.
 
-Every finding is ONE line under `## Findings`, exactly:
+`tests/test_docs_drift.py` pins page-per-tool, availability lines, README counts and intra-doc links
+— it does **not** check parameter names or tables, so a `line` → new-handle rename will not be
+caught by a test. These `docs/mcp/` pages must be edited by hand in the same change:
 
-    - [critical|high|medium|low] <citation> — <one-sentence finding>
+- `docs/mcp/update_user_note.md:75-79` (the stale-index gotcha) and `:84-87` (the "never rotates"
+  gotcha) — both read as accurate today and both change under the fix.
+- `docs/mcp/delete_user_note.md:25` (the `line` parameter row) and `:57-59` ("Every later index
+  shifts down by one").
+- `docs/mcp/list_user_notes.md:68-74` — the ordering gotcha. It flags the docstring correctly but
+  justifies it with "the file is append-only, so the *last* entry is the newest", which
+  Reproduction 6 falsifies; it needs rewriting even if list order does not change.
+- `docs/mcp/daily_snapshot.md:39` — `user_notes` is documented as "a list of strings" with no
+  ordering stated at all; it is the third model-facing order and must say which one it uses.
+- `docs/mcp/list_observations.md:25` and `:74-76` (the unvalidated/case-sensitive `obs_type` notes).
+- `docs/mcp/save_user_note.md` gains a rotation-safety note it does not have today.
 
-The citation must be one of:
+## Does the issue ask for the right fix?
 
-- `path:line` (or `path:l1-l2`) — a real file, in the repository;
-- `investigate.md § <Heading>` — a heading that exists in the artifact under review;
+**Broadly yes — option 1 (a content handle) is the right shape — but it is not sufficient on its
+own, and there are five corrections.**
 
-A citation that does not resolve refuses your whole review — cite what you can
-point at, and put what you cannot prove in `## Not examined`. Severity is the
-gate: critical and high block the stage; medium and low are notes. Rate what the
-finding costs if shipped, not how strongly you feel about it.
+1. **Option 1 is a guard, not an identity.** The issue's headline asks for "a stable identity that
+   survives deletion and rotation"; a content hash does not survive an *update* (the text changes,
+   so the handle changes) and does not let you re-find a rotated note. What it actually delivers is
+   a **compare-and-swap**: the write verifies the target still holds what the caller read, and
+   refuses loudly otherwise. That is the property that matters here, and it is worth naming
+   correctly so the implementation is built against it. If literal stable identity is the
+   requirement, option 2 (`<!-- id:N -->`) is the only option that provides it — but nothing in the
+   reported failure needs it.
+2. **The fix must reach `render_for_prompt`, not just `list_user_notes`.** The staleness is not a
+   caching artefact — the server re-resolves the notes block on every request (see the surface
+   section). It is that any render, however fresh, is a snapshot: `prompts.py:211-221` tells the
+   model to write using the `[N]` values it was shown, and the model's own next delete, or another
+   session's rotating append, invalidates them after the render. So `render_for_prompt` must emit
+   the same handle the write tools accept, and the bare `line` parameter must stop being the only
+   thing checked — otherwise that path stays silently wrong while the issue reads as closed.
+3. **A handle does not close the whole bug.** Reproduction 4 destroys a preference through
+   `save_user_note`, which takes no handle and cannot be given a useful one (it is creating a note,
+   not addressing one). The line-framing invariant has to be repaired independently:
+   `_rotate_to_fit` must join on a line boundary (`src/local_fitness/notes.py:193`), and
+   `_append_archive` must do the same for the file it appends *to* (`:202-205`). Both are one-line
+   fixes; both need a regression test built from a fixture *without* a trailing newline, which no
+   test in the file currently constructs. This is the cheapest high-value item in the whole issue.
+4. **Fold in the rotation gap and the read lock.** `update_note` bypassing `_rotate_to_fit` is a
+   separate defect in the same function and cheap to fix alongside; leaving it means the prompt
+   budget is enforced on append only, so both write paths should size-check after the rewrite. And
+   the unlocked `read_notes` (Reproduction 5) is a one-line shared-`flock` fix — or, better,
+   write-to-temp + `os.replace`, which makes every writer atomic and removes the empty-file window
+   for all readers at once.
+5. **Recency must come from the timestamp, not from file position.** This is the correction the
+   issue's ordering bullet does not go far enough on, and it is a prerequisite for the ordering
+   decision rather than a consequence of it. `update_note` refreshes the timestamp in place
+   (Reproduction 6), so file order stops being a recency order after the *first* refinement — and
+   `_rotate_to_fit` then evicts the freshest note first (Reproduction 7). Concretely:
+   - `render_for_prompt` must rank by `Note.timestamp` (descending), not by `reversed(file order)`,
+     and should emit the date alongside each note so the model can apply the conflict rule itself
+     rather than trusting an ordering it cannot verify.
+   - `list_user_notes` and `daily_snapshot`'s `user_notes` must use that same ranking, so all three
+     model-facing surfaces agree. `list_user_notes` already returns `timestamp`; `daily_snapshot`
+     returns bare strings (`src/local_fitness/agent/status.py:443`) and should either carry the
+     timestamp or state its order in `docs/mcp/daily_snapshot.md:39`.
+   - `_rotate_to_fit` must evict the oldest by timestamp, not by position — otherwise the 4 KB cap
+     keeps silently deleting the preference the user most recently confirmed.
+   - Only then fix the `read_notes` docstring (`src/local_fitness/notes.py:99-100`), to say what is
+     true: on-disk order, which is *arrival* order and not recency order.
 
-## Deliver
+   The cheaper alternative — have `update_note` delete-and-re-append so position tracks recency
+   again — restores the invariant with less code, but it renumbers every later index on every
+   update, which makes the primary bug strictly worse until handles land. If it is taken, it must
+   land *after* the handle change, never before.
 
-Write your review to `<RUN>/reviews/investigate-r1.md`.
+   Once handles replace indices, changing list order is free — which is the reason to sequence the
+   ordering change after the handle change either way.
 
-It must contain a section for each of: **Findings**, **Not examined**, **Verdict**.
-`## Not examined` names what you did not check — a clean review that examined
-everything still says so there. `## Verdict` is one word, `pass` or `blocked`,
-and it must agree with your own severities: any critical or high finding means
-`blocked`.
+One thing worth checking before committing to a hash: the model has to transcribe the handle
+verbatim. Short is better than cryptographically strong here; 6–8 lowercase hex over
+`timestamp + "\n" + text` is enough, since the only adversary is a stale value. Duplicate texts
+saved in the same second would collide — the write should refuse an ambiguous handle rather than
+pick one.
 
-## While you work
+## Unknowns
 
-Append one short lowercase line to `<RUN>/progress/review-investigate-r1.log` whenever you
-reach a real milestone — what you just found, or what you are about to check next.
-This is scratch work for whoever is watching the run, not part of your answer:
-nobody reads it as prose, and it is never quoted back to you. Skip it if you
-genuinely have nothing to report yet; do not pad it to look busy.
-
-## When you are done
-
-The moment the review is written, send the orchestrator a message with
-`SendMessage`, addressed to `main` — the agent that dispatched you. The message
-is the review's path, then two or three sentences of result: your verdict and
-the worst thing you found. Send it before you finish your turn. An agent that
-goes idle without sending one leaves the orchestrator unable to tell a finished
-review from a stalled one. If your harness names the dispatching agent something
-other than `main`, send it to that name instead.
+- **How often a real MCP client re-initializes, and therefore how fresh the model's `[N]` list is.**
+  Server-side is settled and measured: stateless mode re-resolves per request and the memo
+  invalidates on the notes file's mtime/size, so the server never serves a stale block. But the SDK
+  sends `instructions` only inside an `InitializeResult`
+  (`.venv/…/mcp/server/session.py:176-197`), so what the model holds mid-conversation is whatever
+  its client last initialized with. I did not observe a real client (Claude Code, claude.ai
+  connector) to see whether it re-initializes per turn, per reconnect, or once per session — that
+  is client behaviour, not repo behaviour, and nothing in this repo records it. The fix does not
+  depend on the answer (correction 2 above rests on post-render writes, not on caching), but the
+  *severity* of the prompt path does.
+- **Which entry point real runs actually take.** The prompt both points at the notes section
+  ("the notes section above is the authoritative list", `src/local_fitness/agent/prompts.py:213`)
+  and tells the model to re-read (`:219-220`). I have no measurement of model behaviour, so I cannot
+  rank the two paths by likelihood — only assert that both are open. The round-1 artifact stated a
+  ranking here as a finding; it was a guess and is withdrawn.
+- **How often a real notes file lacks a trailing newline.** The weld (Reproduction 4) needs it, and
+  it can only arrive via a hand-edit or an external tool. Nothing in the repo creates the shape and
+  I did not read the user's real file, so I cannot say whether the condition is currently met on any
+  live install — only that the code invites it and does not defend against it.
+- **How `create_sdk_mcp_server` surfaces an uncaught handler exception.** I confirmed
+  `delete_observation` raises `KeyError`/`ValueError` out of the handler, but not whether the SDK
+  converts that to an `is_error` content block or a protocol-level error the model sees differently
+  from `_err`. It is wrong either way; I cannot say how it *looks* to the caller.
+- **Whether this has actually corrupted the live `data/user_notes.md`.** The file is gitignored and
+  I did not read the user's real notes (and read-only inspection could not prove a past mis-write
+  anyway — there is no audit trail; `update`/`delete` archive nothing, and the weld archives
+  nothing either). Unknowable from the repo.
+- **Whether any real client has ever hit it.** No logging distinguishes a correct write from a
+  wrong one (`src/local_fitness/notes.py:173` logs only "Saved user note (N chars)"), so there is
+  no signal to count.
+- **How the model behaves when handed a handle instead of an int.** Whether it reliably echoes an
+  opaque token is an empirical question about the actual model in use; I have no measurement, and
+  the choice between a hash and a small integer id partly rests on it.
+- **Whether the empty-file read window (Reproduction 5) is reachable in production.** I measured it
+  in-process with two threads on one file. Real concurrency here is two MCP sessions or a brief run
+  overlapping a chat write; whether that overlap actually occurs at deployed rates is unmeasured. The
+  22% figure is a property of my loop, not a production rate.
+- **Whether hand-edited timestamps are trustworthy enough to sort on.** Correction 5 makes
+  `Note.timestamp` load-bearing, but `_parse_line` accepts an undated bullet
+  (`src/local_fitness/notes.py:94-95`, `timestamp=""`) and never validates the ISO string, so a
+  hand-edited or malformed file would sort empties first under a naive key. I did not design or test
+  the tie-break; the implementer must, and it should probably fall back to file position.
+- **The rotation-key edge in `_notes_stat`.** It keys on `(st_mtime_ns, st_size)`. Whether a rewrite
+  that lands in the same `mtime_ns` with an identical size can alias the persona cache is a
+  theoretical hole I did not attempt to construct; `st_mtime_ns` makes it very unlikely, and it is
+  not part of this bug.
+- **Non-MCP writers.** Nothing outside `notes.py` writes the file in-repo, but the module docstring
+  advertises it as hand-editable, so a user's editor is a writer the code cannot see. No fix can
+  make an index survive that; a content guard can at least refuse, and the line-framing fix makes
+  the hand-edited shape safe rather than destructive.

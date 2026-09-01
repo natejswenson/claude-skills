@@ -146,6 +146,8 @@
         "evals/inputs/issue-133.json",
         "evals/inputs/artifacts/investigate.md",
         "evals/inputs/artifacts/design.md",
+        "evals/inputs/issue-132.json",
+        "evals/inputs/artifacts/investigate-132.md",
         "evals/inputs/artifacts/review-investigate-r1.md",
         "evals/baseline/MANIFEST.json",
         "evals/baseline/board.txt",
