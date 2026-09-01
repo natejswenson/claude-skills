@@ -98,15 +98,15 @@
     },
     {
       "name": "ghostwriter",
-      "version": "0.18.0",
+      "version": "0.19.0",
       "stack": "python",
-      "cardHash": "4d733257262e0e7b",
-      "facts": 49,
+      "cardHash": "2c6eb40d1effc673",
+      "facts": 50,
       "sections": {
         "setup": 4,
         "usage": 12,
         "commands": 4,
-        "architecture": 13,
+        "architecture": 14,
         "troubleshooting": 16
       },
       "emptySections": [],

@@ -26,7 +26,10 @@ approval step is the one change that would turn this from defensible into a like
 The §3.1 ban is on automated **posting**. Automated **research** that only reads public web
 sources and writes a local file is not posting and does not touch LinkedIn at all. The
 **release radar** (`scripts/release_radar.sh`, run twice weekly by a launchd agent) is exactly
-this: it web-searches Anthropic/Claude Code release sources and writes a digest to `research/`.
+this: it searches public AI-industry release and discussion sources (Anthropic and beyond —
+see `scripts/release_radar_prompt.md`) and writes a digest to `research/`. The same carve-out
+covers `scripts/trending.py`, which reads public surfaces (Hacker News, Lobsters, Google News,
+GitHub) on demand during a session.
 It never calls `scripts/linkedin_post.py`, never hits the LinkedIn API, and never publishes. A
 human still picks an item, reviews the resulting draft, and approves it before anything posts.
 If the radar ever gained the ability to post on its own, that would break this rule.
