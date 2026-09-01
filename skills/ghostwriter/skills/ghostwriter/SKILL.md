@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.18.0
+version: 0.19.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -107,14 +107,17 @@ ideas and the user taps one — not a blank "what do you want to post about?" Th
 post's real anchor, so there's no generic interview.
 
 **Outcome check-in (max one dialog, fast — the feedback loop).** Before anything else, run
-`python3 scripts/post_outcome.py --list-unscored` (reads `~/.claude/ghostwriter/published.jsonl`,
+`python3 scripts/post_outcome.py --stats` and `--list-unscored` (reads `~/.claude/ghostwriter/published.jsonl`,
 written automatically on every publish). If any post **≥2 days old has no `outcome`**, ask ONE
 check-in covering the **most recent unscored post** (up to 3 if several are recent) — *"How did
 '<first_line>' do?"* with options great / normal / flopped — **and ask for the impressions
 number** (read off the post's analytics in the LinkedIn app; it takes seconds and it is the only
 real distribution signal we get). The label alone is still accepted if they don't have the
-number. Record each:
+number — but record the decline: add `--impressions-declined` so the log distinguishes
+"asked, no number" from "never asked". Record each:
 `python3 scripts/post_outcome.py --slug <slug> --outcome <answer> --impressions <n> --notes "<notes>"`.
+`--stats` prints when 3+ scored posts in a row have no number; when it does, say once that
+the recovery protocol can't be evaluated without impressions, then move on.
 If there's a **backlog** of older unscored posts, offer once to skip it (`--outcome skipped` is
 not a thing — just leave them; don't re-ask every session). **One dialog to
 start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
@@ -123,8 +126,9 @@ start: if the idea menu (step 2) is also due, the check-in and the menu ride in 
 dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
 may the check-in be its own question. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
-outcomes everywhere you choose:** lean the idea menu toward lanes that scored `great` and away
-from repeated `flopped`, let format outcomes steer the visual-form recommendation (step 8), and
+outcomes everywhere you choose — from the `--stats` rollup, never re-derived by eye:** lean
+the idea menu toward lanes that scored `great` and away from repeated `flopped` (cite the
+rollup's numbers in the board's provenance line), let format outcomes steer the visual-form recommendation (step 8), and
 watch the **impressions trend** — while it sits under ~300, the recovery protocol in
 `voice/algorithm.md` governs cadence, format, and timing. This is the only compliant
 performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
@@ -174,18 +178,17 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank
      item beats a generic theme; label each `interests · <theme or story>`. The personal/life
      lane rides here (voice-notes → Topic lean: ~1 post in 4).
-   - **Trending now (live, run-day — VERIFIED trending, not vibes).** "Trending" means you can
-     point at the surge, not that a web search returned articles; vendor blogs and SEO listicles
-     are not trending signals. Check measurable surfaces directly, TODAY: **Hacker News via the
-     Algolia API** (top stories from the last ~3 days, e.g.
-     `curl 'https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>150,created_at_i>'"$(date -v-3d +%s)"`),
-     **top posts this week** in the relevant subreddits, and **news coverage from the last
-     ~48 h** (search with explicit recency). Filter through the trending areas in
-     `~/.claude/ghostwriter/voice/interests.md`, propose **2–3 topics**, each with the specific
-     angle the user could own (a trending topic without their angle is just news), and put the
-     ACTUAL signal in the preview's source line — points, comments, story volume, date
-     (`trending · HN 612 pts / 340 comments · Jul 18`). No citable signal → the item doesn't go
-     in the lane; fewer real trending items beat padded ones.
+   - **Trending now (live, run-day — VERIFIED trending, not vibes).** Run
+     `python3 scripts/trending.py` — one measured sweep of Hacker News (Algolia), Lobsters,
+     Google News (last ~2 days), and GitHub star velocity, filtered by the user's own
+     `~/.claude/ghostwriter/voice/trending-queries.json` (seeded on first run; edit it when the
+     lanes drift) and pre-deduped against `published.jsonl` and the last 3 idea boards. The
+     table's signal strings go verbatim into the option previews
+     (`trending · HN 612 pts / 340 comments · Jul 18`); the JSON sidecar is the board's receipt.
+     A surface the script reports as failed is named in the provenance line, not silently
+     absent. No citable signal → the item doesn't go in the lane; fewer real trending items
+     beat padded ones. **The angle gate (below) applies hardest here: every scored post ever
+     sourced from this lane flopped when it shipped as reaction-to-news.**
    - **Release radar — current through TODAY, not through the last digest.** Read the newest
      `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
      the board ("Jul 17 radar, job ran clean"). **If the digest is older than today, top the lane
@@ -199,9 +202,14 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
      (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
      re-renders the launchd agent against the repo's current path.
-   **Build the list fast and honestly.** Gather all four lanes in parallel (the HN check, the
-   radar read + top-up, interests, `recent_projects.py`) so the question is the first thing the
-   user waits on. An idea appears in exactly ONE lane — a personal build story about a release
+   **Build the list fast and honestly.** Gather all four lanes in parallel (the
+   `trending.py` sweep, the radar read + top-up, interests, `recent_projects.py`) so the
+   question is the first thing the user waits on. **The angle gate:** an idea enters the menu
+   only when paired with a named angle the user actually owns — a recent project, a story-bank
+   item from `interests.md`, or a listed defended opinion. A high-signal item with no such
+   pairing goes on the board's **Watchlist** section (visible, never a menu option); it
+   graduates only when a real angle appears. This is structural, not judgment: the outcome log
+   shows every scored trending/radar post shipped without a lived angle flopped. An idea appears in exactly ONE lane — a personal build story about a release
    the user actually ran stays in the projects lane (lived beats trending); a release surging on
    HN that the user hasn't touched is Trending, not Radar. Filter every candidate against
    `published.jsonl`
@@ -214,7 +222,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
    open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
    into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
-   before reusing it, and drop anything that went stale.
+   before reusing it, and drop anything that went stale. **On-deck TTL:** an idea unpicked
+   after 3 consecutive boards is dropped or demoted to the Watchlist unless its signal is
+   re-verified fresh that day — the boards are a menu, not a museum.
 
    **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
    `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the save
