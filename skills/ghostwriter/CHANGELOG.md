@@ -4,6 +4,38 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-09-01
+
+### Added
+
+- **`scripts/trending.py` — the trending lane becomes a measured instrument.** One sweep of
+  Hacker News (Algolia), Lobsters, Google News (2-day window) and GitHub star velocity,
+  filtered by a per-user `trending-queries.json` (seeded from a bundled example), deduped
+  against `published.jsonl` and the last 3 idea boards, ranked into one table with a JSON
+  receipt under `research/`. Replaces the prose-only HN curl; the subreddit and 48-hour news
+  checks SKILL.md promised were never once executed across 19 idea boards.
+- **`post_outcome.py --stats` — the feedback loop becomes computed.** Lane×format outcome
+  rollup with per-lane flop rate, cited in every idea board's provenance line instead of the
+  model re-reading the raw jsonl and freestyling a conclusion. `--impressions-declined`
+  records "asked, no number" distinctly, and `--stats` warns when 3+ scored posts in a row
+  lack the number the recovery protocol needs.
+- **The angle gate is structural.** An idea enters the menu only when paired with a named
+  angle the user owns (recent project, story-bank item, defended opinion); high-signal
+  no-angle items land on a visible Watchlist instead. Every scored post ever sourced from the
+  trending/radar lanes flopped (6 of 6) — all were news-shaped posts without a lived angle.
+- **On-deck TTL**: an idea unpicked after 3 boards is dropped or demoted unless re-verified.
+
+### Changed
+
+- **Release radar rebalanced.** The runner grants `WebFetch` so the "confirm against a primary
+  source" gate can actually fetch pages; dedup runs against every digest from the last ~3
+  weeks (one-file-back dedup re-surfaced items); at most 2 items per digest may be primarily
+  Anthropic (past digests ran ~55%); a practitioner tier (HN/Lobsters, signal required) feeds
+  the Discussion radar; and every suggested angle must end with a `Lands on:` line naming the
+  interest or project it lands on — an item that lands on none is dropped.
+- COMPLIANCE.md's radar carve-out updated to describe the broadened research scope and cover
+  `trending.py`.
+
 ## [0.18.0] - 2026-08-31
 
 The user's ask, verbatim: "we need to ensure we run the posts through a filter that

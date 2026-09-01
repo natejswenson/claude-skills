@@ -33,8 +33,15 @@ shifts that hit automated workloads.
 - Major agent / LLMOps tooling — agent frameworks (e.g. LangChain/LangGraph, LlamaIndex),
   eval / observability, and coding-agent tools — via their own changelogs / release notes.
 
-Use WebSearch to find what shipped, then confirm each item against a **primary source** (the
-vendor's own announcement, docs, or changelog) before including it. If a claim only appears on a
+**Tier 3 — practitioner surfaces (feed the Discussion radar):** what engineers are actually
+arguing about, with a measurable signal — a Hacker News thread (cite points/comments), a
+Lobsters discussion, a named engineering blog post being widely discussed. A Discussion item
+must carry its signal in the digest (e.g. "HN 612 pts / 340 comments"); an opinion with no
+citable surge is not a discussion item.
+
+Use WebSearch to find what shipped, then **WebFetch the primary source** (the
+vendor's own announcement, docs, or changelog) and confirm it states the fact before including
+the item. If a claim only appears on a
 third-party hype site, drop it. Note each item's vendor/source in the digest.
 
 **Hard verification gate — an item you did not confirm does not exist.** For every item, you must
@@ -47,8 +54,14 @@ downstream post pipeline.
 ## Window & dedup
 
 - Look at the **most recent ~1–2 weeks** of releases.
-- Read the newest existing `research/release-radar-*.md` file (if any). Do NOT re-list
-  items already covered there. Only include things new since the last digest.
+- The run command appends the list of previous digests (last ~3 weeks). Read EVERY file in
+  that list — not just the newest — and do NOT re-list items covered in any of them. Only
+  include things new since. (Deduping against one file back re-surfaced items; the 08-31
+  digest needed a hand-written exclusion list because of it.)
+- **Balance rule: at most 2 items per digest may be primarily about Anthropic/Claude.** Tier 1
+  is the core, but a digest that is mostly one vendor's changelog reads as a fan feed, not
+  research; past digests ran ~55% Anthropic. If Anthropic shipped more than 2 noteworthy
+  things, keep the 2 with the strongest ops angle.
 
 ## Voice constraints for the suggested angles (important)
 
@@ -60,6 +73,11 @@ The angle is the part Nate will actually use, so it must obey his voice rules
   "here's what I'm building."
 - **Lead with the implication, not the announcement.** The release is the hook; the
   engineering takeaway is the post.
+- **Every suggested angle must end with a `Lands on:` line** naming which of Nate's interests
+  or projects it lands on (read `~/.claude/ghostwriter/voice/interests.md` — core themes,
+  strong opinions, story bank). An item whose angle lands on none of them is not for this
+  digest — drop it, whatever its signal. Every scored post built from an item with no lived
+  angle has flopped; this line is the filter that stops those reaching the menu.
 - **No fabrication or exaggeration.** Never imply Nate has used something he hasn't, or
   invent results/metrics. If an angle would require a claim about his experience you
   can't verify, write it generically instead.

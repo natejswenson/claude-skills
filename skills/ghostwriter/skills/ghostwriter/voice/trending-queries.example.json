@@ -1,0 +1,24 @@
+{
+  "_comment": "Seed config for scripts/trending.py, derived from interests.md's Trending-watch areas. Copied to ~/.claude/ghostwriter/voice/trending-queries.json on first run — edit THAT copy; this example only ships defaults.",
+  "interests": [
+    {
+      "name": "ai-agents-ops",
+      "keywords": ["agent", "claude", "anthropic", "llm", "mcp", "copilot", "gpt", "openai", "gemini", "eval", "observab", "incident", "sre", "on-call", "llmops"],
+      "news_query": "\"AI agents\" (SRE OR DevOps OR incident OR CI/CD)"
+    },
+    {
+      "name": "platform-infra",
+      "keywords": ["kubernetes", "eks", "ecs", "terraform", "github actions", "aws", "lambda", "pipeline", "ci/cd", "cicd", "deploy"],
+      "news_query": "(Kubernetes OR Terraform OR \"GitHub Actions\") release"
+    },
+    {
+      "name": "ai-and-the-job",
+      "keywords": ["engineer", "developer", "hiring", "career", "remote work", "productivity", "junior", "senior"],
+      "news_query": "AI \"software engineers\" (role OR jobs OR skills)"
+    }
+  ],
+  "hn": { "min_points": 150, "days": 3 },
+  "lobsters": { "tags": ["ai", "vibecoding", "devops", "practices", "reliability", "release"] },
+  "news": { "window": "2d" },
+  "github": { "topics": ["ai-agents"], "days": 7, "min_stars": 150 }
+}
