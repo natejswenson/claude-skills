@@ -4,7 +4,7 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.0] - 2026-08-24
+## [0.18.0] - 2026-08-31
 
 The user's ask, verbatim: "we need to ensure we run the posts through a filter that
 ensures there is no AI fingerprint on them." Until now the only deterministic voice
@@ -44,6 +44,10 @@ them: every ban in voice-notes was prose the model applied to itself.
 
 ### Fixed
 
+- **The approval dialog no longer asks about a draft the user hasn't seen.** SKILL.md
+  now opens the draft file on screen before every approval dialog — chat text above a
+  dialog collapses to "(summarized)" in the client — and never narrates shell commands
+  into the conversation. (#238)
 - **The judge never read the user's own voice notes.** `_voice_context()` looked only in
   the repo's `voice/`, which is gitignored for the real files; it now reads
   `~/.claude/ghostwriter/voice/` first (`GHOSTWRITER_HOME` overrides).
