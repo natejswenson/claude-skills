@@ -34,8 +34,13 @@ fi
 log "Release radar starting (digest: $DIGEST)"
 
 # Append the concrete output target so the run writes a predictable filename.
+# Every digest from the last ~3 weeks, so the prompt can dedup against all of them
+# (deduping against only the newest file re-listed items twice; seen 2026-08-31).
+RECENT_DIGESTS="$(ls -1 research/release-radar-*.md 2>/dev/null | sort | tail -6 | tr '\n' ' ')"
+
 PROMPT="$(cat "$PROMPT_FILE")
-Today is ${TODAY}. Write the digest to ${DIGEST}."
+Today is ${TODAY}. Write the digest to ${DIGEST}.
+Previous digests to dedup against (read EVERY one): ${RECENT_DIGESTS:-none}"
 
 # --max-budget-usd is a hard cost ceiling (Sonnet keeps a normal run well under it).
 # acceptEdits lets the unattended run write the digest without a permission prompt
@@ -44,7 +49,7 @@ claude -p "$PROMPT" \
   --model claude-sonnet-4-6 \
   --max-budget-usd 1.00 \
   --permission-mode acceptEdits \
-  --allowedTools "WebSearch,Read,Write" \
+  --allowedTools "WebSearch,WebFetch,Read,Write" \
   >>"$LOG" 2>&1
 
 STATUS=$?
