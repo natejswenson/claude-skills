@@ -69,6 +69,29 @@ const commitsAhead = (repo, branch, base) => {
 export function prBody(dir, run, lane) {
   const shared = gateSteps(run).filter((s) => s.laneSlug === null);
   const own = gateSteps(run).filter((s) => s.laneSlug === lane.slug);
+  // On an auto run the approval sentence would be a lie — nobody signed these
+  // stages off but the red team, and the pull request is where that claim is
+  // published. Gated strictly on `run.auto` so the frozen (gated) body is
+  // byte-identical.
+  const produced = run.auto
+    ? [
+        '| Stage | Model | State | Review rounds |',
+        '|---|---|---|---|',
+        ...[...shared, ...own].map(
+          (s) => `| ${s.stage.id} | ${s.stage.model} | ${s.stage.state} | ${s.stage.review?.rounds.length ?? 0} |`,
+        ),
+        '',
+        'Every stage above was gated by an adversarial red-team review — every',
+        'blocking finding resolved before approval, no human in the loop until this',
+        'pull request.',
+      ]
+    : [
+        '| Stage | Model | State |',
+        '|---|---|---|',
+        ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${s.stage.model} | ${s.stage.state} |`),
+        '',
+        'Every stage above was approved by a human before the next one started.',
+      ];
   const lines = [
     `Closes #${run.issue.number}.`,
     '',
@@ -76,11 +99,7 @@ export function prBody(dir, run, lane) {
     '',
     '## How this was produced',
     '',
-    '| Stage | Model | State |',
-    '|---|---|---|',
-    ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${s.stage.model} | ${s.stage.state} |`),
-    '',
-    'Every stage above was approved by a human before the next one started.',
+    ...produced,
     '',
     '## Test evidence',
     '',

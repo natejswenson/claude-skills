@@ -11,6 +11,12 @@
     "stage-investigate.json": "60936f47d54e4f3a",
     "stage-design.json": "b16ff0ef911238aa",
     "stage-implement.json": "48d8240cabfc5e2f",
-    "stage-test.json": "d62c598909f2ec05"
+    "stage-test.json": "d62c598909f2ec05",
+    "review-investigate.json": "7579b5ba50fbf47e",
+    "review-design.json": "20568d32f4c9a17c",
+    "review-implement.json": "3dd09390aa3f3ed1",
+    "review-test.json": "bb4c83cbb1398f55",
+    "brief-review-investigate.md": "dfcc018340608d22",
+    "verdict-investigate-r1.json": "07a992985894dc2c"
   }
 }
