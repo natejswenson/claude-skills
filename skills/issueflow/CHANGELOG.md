@@ -5,6 +5,50 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-01
+
+### Added
+
+- **Auto mode — the red team replaces the human gate.** `start --auto` runs an
+  issue to a pull request with no per-stage human approvals: each delivered
+  artifact is attacked by a dispatched opus red-team reviewer, sent back with
+  cited findings until a round finds nothing blocking, and only then approved.
+  The user reads the run — every findings table, every round, the board at
+  every gate — instead of driving it.
+- **`review` — the registrar.** A red-team review only counts once `review` has
+  parsed its findings against a strict one-line grammar, resolved every
+  citation against something that exists (`path:line`, `<artifact>.md §
+  Heading`, or `diff:<path>`), derived the verdict from the severities
+  (critical/high block; medium/low are notes), and bound it to the sha of the
+  artifact — and, for code stages, the commit — it reviewed. One unresolvable
+  citation refuses the whole review.
+- **`accept --auto`** — a narrower gate, never a bypass: every human-path
+  refusal still runs, plus a missing/blocked review, an artifact edited after
+  its review, and a branch that moved under a code review all refuse.
+- **`brief --review`** — renders the reviewer's brief like any stage brief:
+  cold-start, the artifact under attack, the citation grammar, the SendMessage
+  completion contract, on disk where the baseline can pin it.
+- **The feedback seam.** A stage refused by the red team re-briefs with a
+  `## Review feedback — round N` section carrying the blocking findings and the
+  path to the full review — before this, a refused stage re-briefed
+  byte-identically and the refusal existed only in the conversation.
+- **The rounds cap.** Three blocked rounds on one stage stop the run: `brief`
+  and `review` refuse a fourth attempt, and the open findings surface to the
+  user. Never auto-ship over an open blocking finding; auto mode never touches
+  `--force`.
+- Four reviewer contracts frozen to the baseline (`review-<stage>.json`, floor
+  4, opus asserted per reviewer), plus a frozen review brief and hash-bound
+  verdict re-run and byte-compared, and three new traps: an uncited finding
+  refuses registration, auto-accept refuses every unbound shape, and an
+  exhausted stage cannot be briefed, approved, or shipped.
+
+### Changed
+
+- The checkpoint comment and pull request body tell the truth about who
+  approved: on an auto run the "approved by a human" sentence is replaced by
+  the red-team wording, and both gain review-round tables — conditionally, so
+  a gated run's rendering is byte-identical to 0.5.0.
+
 ## [0.5.0] - 2026-08-13
 
 A watched run used to be minutes of dead air (#223) — no progress signal

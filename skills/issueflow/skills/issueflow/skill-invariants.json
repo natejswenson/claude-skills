@@ -38,6 +38,26 @@
       "id": "the-orchestrator-does-no-stage-work",
       "pattern": "Never do a stage's work yourself",
       "rationale": "Collapsing a stage into the orchestrator's own context destroys the isolation that makes each stage's artifact reviewable on its own, and produces an approval gate over work the approver has already been told the conclusion of."
+    },
+    {
+      "id": "the-red-team-is-dispatched",
+      "pattern": "the red team is the gate, and it is a dispatched subagent — never you",
+      "rationale": "Auto mode removes the human from the gate, so the gate that replaces them must have the same independence: a reviewer that shares the orchestrator's context has already been told the conclusion it is supposed to attack. This extends the-orchestrator-does-no-stage-work to the review itself."
+    },
+    {
+      "id": "never-weaken-a-review",
+      "pattern": "Never weaken a review to clear a finding",
+      "rationale": "The eval and skillfactory rule, adopted verbatim, because an autonomous loop makes it more dangerous, not less: round 3 under a rounds cap is exactly when 'fix the reviewer' becomes cheaper than 'fix the work', and nobody is watching. The registrar refuses uncited findings; this line is what refuses the opposite move."
+    },
+    {
+      "id": "no-autoship-over-blocking-findings",
+      "pattern": "Never auto-ship over an open blocking finding",
+      "rationale": "The rounds cap stops the loop; this stops the loop's failure from being laundered into a pull request. An exhausted stage surfaces its findings to the user and the run ends there — an auto run that ships anyway has turned the red team into decoration."
+    },
+    {
+      "id": "auto-never-forces",
+      "pattern": "Auto mode never touches `--force`",
+      "rationale": "`--force` exists so a human who has re-read the drift can overrule it. An unattended run has nobody who re-read anything: blocking drift, like an exhausted stage, stops the run and surfaces — the flag is the one gate bypass in the CLI, and auto mode is exactly the caller that must never hold it."
     }
   ],
   "split": {
@@ -57,6 +77,10 @@
       {
         "step": "enforce the gate \u2014 record an artifact, record the approval, advance only then",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" accept"
+      },
+      {
+        "step": "register a completed red-team review \u2014 validate every citation, derive the verdict from the severities, bind it to the artifact's hash, record the round",
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review"
       },
       {
         "step": "expand an approved design's work items into stacked child lanes",
@@ -102,7 +126,11 @@
       },
       {
         "step": "whether an artifact is good enough to approve",
-        "why": "this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide"
+        "why": "this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide — or, on an auto run, the red team's call, registered and hash-bound, with every round shown to the user"
+      },
+      {
+        "step": "what the stage missed — the adversarial hunt itself",
+        "why": "the registrar can check that a finding cites something real; only a reviewer reading the work can find the alternate root cause nobody ruled out, the file the design forgot, or the assertion that passes without the fix"
       }
     ]
   },
@@ -118,11 +146,16 @@
         "evals/inputs/issue-133.json",
         "evals/inputs/artifacts/investigate.md",
         "evals/inputs/artifacts/design.md",
+        "evals/inputs/issue-132.json",
+        "evals/inputs/artifacts/investigate-132.md",
+        "evals/inputs/artifacts/review-investigate-r1.md",
         "evals/baseline/MANIFEST.json",
         "evals/baseline/board.txt",
         "evals/baseline/brief-investigate.md",
         "evals/baseline/brief-design.md",
         "evals/baseline/brief-implement.md",
+        "evals/baseline/brief-review-investigate.md",
+        "evals/baseline/verdict-investigate-r1.json",
         "evals/baseline/checkpoint-comment.md"
       ],
       "update_command": "node evals/baseline/update.mjs",
@@ -195,6 +228,39 @@
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
       "rationale": "`Took` used to answer only after a human typed `accept`: `at.delivered` is written in exactly one place, so `briefed` / `\u2014` was the entire liveness signal for a stage that had, in fact, been running for minutes or had already finished and was waiting for review (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+` (a lower bound, never a finished duration); the same step once an artifact lands \u2014 still unaccepted \u2014 shows a `delivered` display state and a real duration with no `+`. A third case proves the clock does not start early on a step that was never dispatched. Two purity guards close the loop: `observe(dir, run)` never writes `run.json` and never mutates the run object handed to it, and the `delivered` value it predicts equals what `accept()` later persists for the same artifact; and `board(run)` called with no `now` renders no `+` anywhere and matches the pre-#223 shape exactly, which is what keeps the live clock from leaking into a frozen golden or the public checkpoint comment."
+    },
+    {
+      "id": "review-verdict-two-sided",
+      "kind": "trap",
+      "test": "scripts/tests/review.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/review.test.mjs\"",
+      "rationale": "The registrar is the anti-hallucination gate for the red team, and it needs both sides: a review with a cited note registers hash-bound, while a citation naming a file that does not exist, a heading the artifact lacks, or a line past EOF refuses the WHOLE review and writes no verdict — a finding that cites nothing is an opinion. Also refuses a finding line off the declared grammar (a finding that fails to parse silently stops existing), a declared pass over a high finding (the severities decide, not the reviewer's summary of itself), and zero findings above an empty Not examined section — 'clean' without naming what nobody looked at is indistinguishable from 'unreviewed', the eval skill's coverage rule as code."
+    },
+    {
+      "id": "auto-accept-trap",
+      "kind": "trap",
+      "test": "scripts/tests/review.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/review.test.mjs\"",
+      "rationale": "The mirror of the unapproved-stage trap, for the gate that replaces the human. accept --auto must refuse: a run not started --auto (which gate holds a run is decided once, at start), no registered review, a blocked round, an artifact edited after its review (the verdict binds to the sha of the bytes it read), and — driven against a real git repository — a commit landed after a code review (the branch moved under the verdict). The good side approves and records autoApproved, and a plain human accept still works on an auto run. Without the bad side, weakening any one binding check leaves auto mode approving work its red team never saw."
+    },
+    {
+      "id": "rounds-cap-trap",
+      "kind": "trap",
+      "test": "scripts/tests/review.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/review.test.mjs\"",
+      "rationale": "Three blocked rounds is where the loop stops converging and must stop running. Drives the real CLI over a run with three registered blocked rounds: a fourth brief of the stage and a fourth review brief both exit non-zero, auto-accept still refuses, and ship still refuses the run — exhaustion surfaces to the user, it never rounds up to shipped. Two-sided: below the cap the loop continues, and the re-brief carries the blocked round's findings verbatim, which is the feedback seam a refused stage used to lack."
+    },
+    {
+      "id": "review-contract-corpus",
+      "kind": "corpus",
+      "test": "scripts/tests/baseline.test.mjs",
+      "corpus_glob": "evals/baseline/review-*.json",
+      "min_corpus": 4,
+      "update_command": "node evals/baseline/update.mjs",
+      "rationale": "Every shipped reviewer frozen with its full contract, same discipline as the stage corpus: one reviewer per stage, in stage order, each on opus — the red team is the judgment an auto run pays for, and a reviewer quietly moved to a cheaper model is a gate that rubber-stamps while every board still looks complete. The floor of 4 stops a resolver that matches nothing from reporting an unguarded pipeline as fully reviewed."
     },
     {
       "id": "stage-timings-corpus",

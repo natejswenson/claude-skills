@@ -1,0 +1,23 @@
+{
+  "id": "investigate",
+  "title": "Review: Investigate",
+  "model": "opus",
+  "agent": "general-purpose",
+  "asks": [
+    "Open every `path:line` the investigation cites and check the code says what",
+    "the artifact claims it says. A citation that does not support its claim is a",
+    "finding at the severity of the claim.",
+    "Hunt for an alternate root cause the artifact never ruled out. If you can",
+    "name one it did not consider, that is a finding.",
+    "Hunt for guesses dressed as findings: any claim presented as established",
+    "that belongs in Unknowns.",
+    "Check the \"does the issue ask for the right fix\" question was actually",
+    "answered, not restated."
+  ],
+  "requires": [
+    "Findings",
+    "Not examined",
+    "Verdict"
+  ],
+  "forbids": "Never edit the work or any file other than your own review artifact — a reviewer that fixes what it found has destroyed the gate it was sent to hold. Never file a finding without a citation that resolves; an uncited finding is an opinion, and the registrar refuses the whole review over it. Each round re-hunts the current work from scratch — never weaken a finding to make a round converge, and never re-file a resolved one from memory. Never inflate severity: medium and low are notes, and a note filed as high to force a round is the reviewer gaming its own gate."
+}
