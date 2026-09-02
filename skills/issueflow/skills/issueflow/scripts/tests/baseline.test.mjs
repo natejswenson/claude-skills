@@ -21,8 +21,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate } from '../../evals/baseline/update.mjs';
 import { STAGES } from '../lib/stages.mjs';
+import { REVIEWS, REVIEW_REQUIRES } from '../lib/reviews.mjs';
 import { createRun, gateSteps } from '../lib/run.mjs';
-import { renderBrief } from '../lib/brief.mjs';
+import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -192,6 +193,62 @@ test('stage-contract-corpus: the frozen test-stage contract states a load error 
 });
 
 // ---------------------------------------------------------------------------
+// review-contract-corpus — every shipped reviewer, same floor discipline as
+// the stage corpus: a resolver that matches nothing must go red, and a
+// reviewer that changed model changes what every auto run costs and how well
+// it is gated.
+// ---------------------------------------------------------------------------
+test('review-contract-corpus: every shipped reviewer is frozen with its full contract, on opus', () => {
+  const files = readdirSync(BASELINE).filter((f) => /^review-[a-z]+\.json$/.test(f));
+  assert.ok(files.length >= 4, `the review corpus matched ${files.length} files, floor is 4 — run \`${REFRESH}\``);
+  assert.equal(files.length, REVIEWS.length, `${REVIEWS.length} reviewers ship but ${files.length} are frozen — run \`${REFRESH}\``);
+
+  for (const r of REVIEWS) {
+    const snapshot = JSON.parse(frozen(`review-${r.id}.json`));
+    assert.equal(snapshot.model, 'opus', `${r.id} reviewer changed model — the red team is the judgment an auto run pays for`);
+    assert.equal(snapshot.agent, r.agent);
+    assert.deepEqual(snapshot.asks, r.asks, `${r.id} reviewer changed what it hunts`);
+    assert.deepEqual(snapshot.requires, REVIEW_REQUIRES);
+    assert.match(snapshot.forbids, /Never edit the work/, 'the shared forbids lost its first rule');
+  }
+});
+
+test('the-real-run: the frozen review brief names the artifact under attack and the citation grammar', () => {
+  const brief = frozen('brief-review-investigate.md');
+  assert.match(brief, /red-team reviewer/, 'the review brief lost its identity');
+  assert.match(brief, /<RUN>\/shared\/investigate\.md/, 'the review brief lost the artifact under review');
+  assert.match(brief, /- \[critical\|high\|medium\|low\] <citation> — <one-sentence finding>/, 'the finding grammar is gone');
+  assert.match(brief, /critical and high block the stage; medium and low are notes/, 'the severity split is gone');
+  assert.match(brief, /addressed to `main`/, 'the review brief lost the completion contract');
+  assert.match(brief, /raw file line index/, 'the review brief lost the issue body');
+});
+
+test('the-real-run: the frozen review is the real one — its findings resolve and its coverage gap is named', () => {
+  const review = frozen('../inputs/artifacts/review-investigate-r1.md');
+  // The fixture is the round-3 review a real opus subagent wrote on the first
+  // auto-mode run. It must keep the shape the registrar checks — losing a
+  // heading here means the golden is exercising a review the gate would refuse.
+  assert.match(review, /## Findings/);
+  assert.match(review, /## Not examined/);
+  assert.match(review, /## Verdict/);
+  const findings = review.split('\n').filter((l) => /^\s*[-*]\s+\[(critical|high|medium|low)\]/.test(l));
+  assert.ok(findings.length >= 3, `the frozen review has ${findings.length} findings — a review over nothing proves nothing`);
+});
+
+test('the-real-run: the frozen verdict is hash-bound, timestamp-free and derived from its own findings', () => {
+  const verdict = JSON.parse(frozen('verdict-investigate-r1.json'));
+  assert.equal(verdict.step, 'investigate');
+  assert.equal(verdict.round, 1);
+  assert.equal(verdict.verdict, 'pass');
+  assert.match(verdict.artifactSha, /^[0-9a-f]{64}$/, 'a verdict that binds to no bytes approves anything');
+  assert.equal(verdict.head, null, 'a document review binds to no commit');
+  assert.equal(verdict.review, 'reviews/investigate-r1.md');
+  const raw = frozen('verdict-investigate-r1.json');
+  assert.doesNotMatch(raw, /\d{4}-\d{2}-\d{2}T/, 'a timestamp in the verdict would churn the golden on every refresh');
+  assert.doesNotMatch(raw, /\/(Users|home|tmp|var)\//, 'the verdict publishes a machine path');
+});
+
+// ---------------------------------------------------------------------------
 // completion-contract — every rendered brief, not just the three frozen ones.
 // The measured failure was VARIANCE: two dispatches of the identical stage
 // contract behaved differently, so this checks every stage rather than
@@ -209,6 +266,15 @@ test('completion-contract: every stage brief asks the subagent to SendMessage ma
     assert.match(text, /## When you are done/, `${step.key} brief lost the completion section`);
     assert.match(text, /SendMessage/, `${step.key} brief does not ask for a SendMessage`);
     assert.match(text, /addressed to `main`/, `${step.key} brief does not name the addressee`);
+  }
+  // A reviewer is a subagent like any other, and the measured idle-without-a-
+  // message failure applies to it identically — so its briefs carry the same
+  // contract, checked for every stage rather than only the frozen one.
+  for (const step of steps) {
+    const text = renderReviewBrief('/tmp/run', run, step, issue, 1);
+    assert.match(text, /## When you are done/, `${step.key} review brief lost the completion section`);
+    assert.match(text, /SendMessage/, `${step.key} review brief does not ask for a SendMessage`);
+    assert.match(text, /addressed to `main`/, `${step.key} review brief does not name the addressee`);
   }
 });
 
