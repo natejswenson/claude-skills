@@ -460,6 +460,27 @@ export function observe(dir, run) {
   return observed;
 }
 
+/**
+ * Record that the USER re-opened a rounds-capped stage for one more round.
+ *
+ * The cap stops the autonomous loop; it does not overrule the person the loop
+ * works for. What makes the override legitimate is that it is recorded with
+ * the user's reason — an unexplained fourth round is indistinguishable from
+ * the oscillation the cap exists to stop.
+ */
+export function recordCapOverride(dir, run, step, reason, now = () => new Date().toISOString()) {
+  if (typeof reason !== 'string' || reason.trim().length === 0) {
+    throw new RunError(
+      'a cap override needs the user\'s direction as its reason — ' +
+        'pass --another-round "<what the user decided>", never a bare flag',
+    );
+  }
+  step.stage.review.overrides ??= [];
+  step.stage.review.overrides.push({ round: step.stage.review.rounds.length + 1, reason: reason.trim(), at: now() });
+  saveRun(dir, run);
+  return run;
+}
+
 /** Mark a stage briefed, recording when — the clock the stage's duration is measured from. */
 export function markBriefed(dir, run, step, now = () => new Date().toISOString()) {
   if (step.stage.state === 'pending') step.stage.state = 'briefed';

@@ -109,6 +109,12 @@ function feedbackSection(dir, run, step) {
   if (!step.stage.review?.feedback || latest?.verdict !== 'blocked') return null;
   const blocking = (latest.items ?? []).filter((f) => BLOCKING.includes(f.severity));
   const notes = (latest.items ?? []).length - blocking.length;
+  // A round the user re-opened past the cap carries their direction verbatim —
+  // it is the reason this round exists, and the stage must not have to guess it.
+  const override = (step.stage.review?.overrides ?? []).find((o) => o.round === latest.round + 1);
+  const directed = override
+    ? ['', '## The user directed this round', '', override.reason]
+    : [];
   return [
     `## Review feedback — round ${latest.round + 1}`,
     '',
@@ -122,6 +128,7 @@ function feedbackSection(dir, run, step) {
     'place. Do not argue with the review inside the artifact, and do not delete',
     'sections to make findings unciteable — the next round re-hunts everything',
     'from scratch.',
+    ...directed,
   ].join('\n');
 }
 

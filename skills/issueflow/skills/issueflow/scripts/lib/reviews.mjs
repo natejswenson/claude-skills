@@ -161,7 +161,11 @@ export const latestRound = (step) => step.stage.review?.rounds.at(-1) ?? null;
 /** True when the cap is spent: MAX_ROUNDS reviews registered and the last one still blocked. */
 export const roundsExhausted = (step) => {
   const rounds = step.stage.review?.rounds ?? [];
-  return rounds.length >= MAX_ROUNDS && rounds.at(-1)?.verdict === 'blocked';
+  if (rounds.length < MAX_ROUNDS || rounds.at(-1)?.verdict !== 'blocked') return false;
+  // A recorded user override for the next round re-opens the stage — the cap
+  // stops the autonomous loop, not the person it works for.
+  const overrides = step.stage.review?.overrides ?? [];
+  return !overrides.some((o) => o.round === rounds.length + 1);
 };
 
 /** The body of one `## <name>` section, or null when the heading is absent. */

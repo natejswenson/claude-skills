@@ -307,6 +307,10 @@ registered passing review:
    refuse a fourth round; when that happens, print the open blocking findings,
    run `status`, and hand the run to the user with what is unresolved. **Never
    auto-ship over an open blocking finding**, and never `--skip` past one.
+   If the user then directs another round, re-open the stage with
+   `brief --another-round "<what the user decided>"` — the reason is the
+   user's decision, recorded on the run and rendered into the brief verbatim,
+   and it is never yours to invent.
 8. **Ship without asking, but not blind:** run `ship --dry-run`, narrate the
    plan in one line, then `ship`. Then `finish` once merges confirm, and close
    with the run summary: one table, `Stage | Model | Rounds | Blocking found |

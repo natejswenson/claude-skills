@@ -327,6 +327,34 @@ test('rounds-cap-trap: auto-accept still refuses the exhausted stage, and ship r
   cleanup();
 });
 
+test('rounds-cap-trap: a bare --another-round is not an override — the reason is the user\'s, and required', () => {
+  const { dir, cleanup } = exhaustedRun();
+  const r = cli(['brief', '--stage', 'investigate', '--run-dir', dir, '--offline', '--another-round']);
+  assert.notEqual(r.code, 0, 'a reasonless flag re-opened a capped stage');
+  assert.match(r.err, /not converging|--another-round/);
+  cleanup();
+});
+
+test('rounds-cap-trap: a user-directed round re-opens the stage, records the reason, and briefs it verbatim', () => {
+  const { dir, cleanup } = exhaustedRun();
+  const direction = 'restore the positive lock test alongside the seam fix';
+  const r = cli(['brief', '--stage', 'investigate', '--run-dir', dir, '--offline', '--another-round', direction]);
+  assert.equal(r.code, 0, r.err);
+  const brief = readFileSync(join(dir, 'briefs', 'investigate.md'), 'utf8');
+  assert.match(brief, /## The user directed this round/);
+  assert.ok(brief.includes(direction), 'the direction must cross verbatim');
+  const step = findStep(loadRun(dir), 'investigate');
+  assert.deepEqual(
+    step.stage.review.overrides.map((o) => ({ round: o.round, reason: o.reason })),
+    [{ round: MAX_ROUNDS + 1, reason: direction }],
+  );
+  assert.equal(roundsExhausted(step), false, 'the recorded override re-opens the stage');
+  // and the round-4 review brief renders too, without needing the flag again
+  const rv = cli(['brief', '--review', '--stage', 'investigate', '--run-dir', dir, '--offline']);
+  assert.equal(rv.code, 0, rv.err);
+  cleanup();
+});
+
 test('rounds-cap-trap: two-sided — below the cap the loop continues: brief carries the feedback', () => {
   const { dir, run, step, cleanup } = autoRun();
   writeReview(dir, step, { findings: ['- [high] investigate.md § Evidence — evidence never reproduces.'] });

@@ -19,8 +19,8 @@ import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
-  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, remainingSteps, runDir, runRoot,
-  runState, saveRun, skip, split, workItemsFromDesign, worktreePath,
+  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, recordCapOverride, remainingSteps,
+  runDir, runRoot, runState, saveRun, skip, split, workItemsFromDesign, worktreePath,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
@@ -305,10 +305,15 @@ async function cmdBrief(args) {
       throw new Error(`${step.key} has not delivered its artifact yet — there is nothing to review`);
     }
     if (roundsExhausted(step)) {
-      throw new Error(
-        `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
-          'Stop, checkpoint, and surface the open findings to the user; never approve over them',
-      );
+      if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+        recordCapOverride(dir, run, step, args.anotherRound);
+      } else {
+        throw new Error(
+          `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
+            'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
+            'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
+        );
+      }
     }
     const round = nextRound(step);
     const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
@@ -380,12 +385,18 @@ function briefOne(dir, run, step, args) {
 
   // The rounds cap. A stage the red team has refused MAX_ROUNDS times does not
   // get a quiet fourth attempt — the loop is not converging, and the honest
-  // move is to stop and put the open findings in front of the user.
+  // move is to stop and put the open findings in front of the user. Only the
+  // user re-opens it, and only with their direction recorded as the reason.
   if (roundsExhausted(step)) {
-    throw new Error(
-      `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
-        'Stop, checkpoint, and surface the open findings to the user; never approve over them',
-    );
+    if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+      recordCapOverride(dir, run, step, args.anotherRound);
+    } else {
+      throw new Error(
+        `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
+          'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
+          'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
+      );
+    }
   }
 
   // A stage that commits gets its own checkout. Failing to provision one is not
@@ -695,6 +706,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   --auto               on start: the red team gates every stage instead of a human;
                        on accept: approve on a registered, hash-bound passing review
   --review             brief the red-team reviewer of a delivered stage artifact
+  --another-round "<reason>"  re-open a rounds-capped stage on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
   --offline            make no network call and no checkpoint
