@@ -10,7 +10,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
-import { loadIssue, writeBrief } from './lib/brief.mjs';
+import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
+import { MAX_ROUNDS, latestRound, nextRound, registerReview, roundsExhausted } from './lib/reviews.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
@@ -18,8 +19,8 @@ import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
-  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, remainingSteps, runDir, runRoot,
-  runState, saveRun, skip, split, workItemsFromDesign,
+  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, recordCapOverride, remainingSteps,
+  runDir, runRoot, runState, saveRun, skip, split, workItemsFromDesign, worktreePath,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
@@ -27,6 +28,13 @@ import { ensureWorktree } from './lib/worktree.mjs';
 import { verify } from './lib/verify.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+
+/**
+ * Flags that never take a value. Without this list, `--auto` followed by a
+ * positional would quietly eat it as its value — a boolean that sometimes is
+ * not one is exactly the kind of parser surprise a gate flag cannot afford.
+ */
+const BOOLEAN_FLAGS = new Set(['auto', 'review']);
 
 function argv(args) {
   const out = { _: [] };
@@ -36,6 +44,7 @@ function argv(args) {
       const [k, inline] = a.slice(2).split('=');
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
+      else if (BOOLEAN_FLAGS.has(key)) out[key] = true;
       else if (args[i + 1] && !args[i + 1].startsWith('--')) { out[key] = args[i + 1]; i += 1; }
       else out[key] = true;
     } else out._.push(a);
@@ -229,7 +238,7 @@ async function cmdStart(args) {
   const policy = resolvePolicy(repo, info.defaultBranch);
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
 
-  const run = createRun({ repo: info, issue, policy, offline: isOffline(args) });
+  const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
   saveRun(dir, run);
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
@@ -256,6 +265,14 @@ async function cmdStart(args) {
   // a table containing one cannot be compared across two machines.
   console.log(`\nRun: ${dir}\n`);
   runBoard(run);
+  // Conditional so a gated run's `start` output stays byte-identical to the
+  // frozen golden — the same rule every review-aware rendering follows.
+  if (run.auto) {
+    console.log(
+      '\nAuto run: every stage is gated by a red-team review instead of a human.\n' +
+        `A stage advances only on a registered pass; ${MAX_ROUNDS} blocked rounds stop the run.`,
+    );
+  }
   nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
 }
@@ -273,6 +290,43 @@ async function cmdBrief(args) {
   // dispatched earlier than the one named here) shows as delivered rather than
   // briefed the moment anything downstream renders it — see `run.observe()`.
   const run = observe(dir, loadRun(dir));
+
+  // `--review` briefs the red team on a delivered artifact instead of briefing
+  // the stage itself. It never provisions anything: the worktree, if the stage
+  // has one, already exists — a reviewer that had to create the checkout would
+  // be reviewing code the stage never ran in.
+  if (args.review) {
+    if (!args.stage) throw new Error('name the stage to review with --stage <id>');
+    const step = findStep(run, args.stage, args.lane ?? null);
+    if (step.stage.state === 'approved' || step.stage.state === 'skipped') {
+      throw new Error(`${step.key} is already ${step.stage.state} — there is nothing left to review`);
+    }
+    if (!existsSync(artifactPath(dir, step))) {
+      throw new Error(`${step.key} has not delivered its artifact yet — there is nothing to review`);
+    }
+    if (roundsExhausted(step)) {
+      if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+        recordCapOverride(dir, run, step, args.anotherRound);
+      } else {
+        throw new Error(
+          `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
+            'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
+            'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
+        );
+      }
+    }
+    const round = nextRound(step);
+    const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+    const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
+    print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
+    console.log(`\nIt must write: ${info.artifact}`);
+    if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
+    console.log(
+      `\nDispatch ONE subagent, model \`${info.model}\`, with exactly this prompt:\n\n` +
+        `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
+    );
+    return;
+  }
 
   // `--ready` with one open gate is just `brief`. Printing a fan-out table over
   // a single row would tell the reader two stages can run when one can.
@@ -329,6 +383,22 @@ function briefOne(dir, run, step, args) {
     );
   }
 
+  // The rounds cap. A stage the red team has refused MAX_ROUNDS times does not
+  // get a quiet fourth attempt — the loop is not converging, and the honest
+  // move is to stop and put the open findings in front of the user. Only the
+  // user re-opens it, and only with their direction recorded as the reason.
+  if (roundsExhausted(step)) {
+    if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+      recordCapOverride(dir, run, step, args.anotherRound);
+    } else {
+      throw new Error(
+        `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
+          'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
+          'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
+      );
+    }
+  }
+
   // A stage that commits gets its own checkout. Failing to provision one is not
   // fatal — the stage can still run in the repository — but it must be said,
   // because a lane silently sharing the user's tree is the hazard this removes.
@@ -370,7 +440,7 @@ async function cmdAccept(args) {
   }
 
   if (args.skip) skip(dir, run, step, typeof args.skip === 'string' ? args.skip : null);
-  else accept(dir, run, step, { evidence: args.evidence ? resolve(args.evidence) : null });
+  else accept(dir, run, step, { evidence: args.evidence ? resolve(args.evidence) : null, auto: Boolean(args.auto) });
 
   // A sibling lane's stage may still be running while this one is accepted —
   // its row should keep ticking rather than freeze at whatever it read on load.
@@ -383,6 +453,43 @@ async function cmdAccept(args) {
   reportDrift(drift);
   nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline }));
+}
+
+/**
+ * Register a completed red-team review and say what it decided.
+ *
+ * Exit 0 either way: registering a blocked review is a success — the gate
+ * worked. Refusing to *advance* on it belongs to `accept --auto` and `brief`,
+ * the same split that keeps `skip` out of `ship`'s way.
+ */
+async function cmdReview(args) {
+  const { dir } = locate(args);
+  const run = observe(dir, loadRun(dir));
+  if (!args.stage) throw new Error('name the reviewed stage with --stage <id>');
+  const step = findStep(run, args.stage, args.lane ?? null);
+  const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+
+  const result = registerReview(dir, run, step, { workdir });
+
+  console.log(`Round ${result.round} of ${MAX_ROUNDS} on ${step.key}: ${result.verdict.toUpperCase()}`);
+  if (result.items.length > 0) {
+    console.log('');
+    print(['Severity', 'Cite', 'Finding'], result.items.map((f) => [f.severity, f.cite, truncate(f.text, 72)]));
+  } else {
+    console.log('\nNo findings. Read the review\'s "Not examined" section before trusting a clean round.');
+  }
+
+  if (result.verdict === 'pass') {
+    console.log(`\nNext: \`issueflow accept --auto ${stageArgs(step)}\``);
+  } else if (roundsExhausted(step)) {
+    console.log(
+      `\nThe red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging.\n` +
+        'Stop here: checkpoint, and surface the open findings to the user; never approve over them.',
+    );
+  } else {
+    console.log(`\nNext: \`issueflow brief ${stageArgs(step)}\` — the re-brief carries this review's findings.`);
+  }
+  reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
 }
 
 async function cmdSplit(args) {
@@ -427,6 +534,25 @@ async function cmdStatus(args) {
   console.log('');
   const now = new Date().toISOString();
   runBoard(run, { now });
+  // Conditional on rounds existing, so a run the red team never touched
+  // renders exactly as it always has.
+  const reviewed = gateSteps(run).filter((s) => (s.stage.review?.rounds.length ?? 0) > 0);
+  if (reviewed.length > 0) {
+    console.log('');
+    print(
+      ['Step', 'Round', 'Verdict', 'Blocking', 'Notes'],
+      reviewed.map((s) => {
+        const r = latestRound(s);
+        return [
+          s.key,
+          `${r.round} of ${MAX_ROUNDS}`,
+          r.verdict,
+          String(r.findings.critical + r.findings.high),
+          String(r.findings.medium + r.findings.low),
+        ];
+      }),
+    );
+  }
   livenessBlock(dir, run, now);
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
@@ -567,15 +693,20 @@ async function cmdFinish(args) {
 const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request, through four gated stages.
 
   issueflow board  [--repo <path>]
-  issueflow start  --issue <n> [--repo <path>]
-  issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--issue <n>]
-  issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force]
+  issueflow start  --issue <n> [--repo <path>] [--auto]
+  issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
+  issueflow review --stage <id> [--lane <slug>] [--issue <n>]
+  issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
   issueflow split  [--items-json <path>] [--issue <n>]
   issueflow status [--issue <n>]
   issueflow runs
   issueflow ship   [--issue <n>] [--dry-run] [--draft] [--force]
   issueflow finish [--issue <n>] [--close-issue]
 
+  --auto               on start: the red team gates every stage instead of a human;
+                       on accept: approve on a registered, hash-bound passing review
+  --review             brief the red-team reviewer of a delivered stage artifact
+  --another-round "<reason>"  re-open a rounds-capped stage on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
   --offline            make no network call and no checkpoint
@@ -598,6 +729,7 @@ async function main() {
       case 'start': return await cmdStart(args);
       case 'brief': return await cmdBrief(args);
       case 'accept': return await cmdAccept(args);
+      case 'review': return await cmdReview(args);
       case 'split': return await cmdSplit(args);
       case 'status': return await cmdStatus(args);
       case 'runs': return await cmdRuns(args);

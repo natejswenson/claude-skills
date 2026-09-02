@@ -1,0 +1,25 @@
+{
+  "id": "design",
+  "title": "Review: Design",
+  "model": "opus",
+  "agent": "general-purpose",
+  "asks": [
+    "Hunt for files the change must touch that the Files table misses — open the",
+    "code and trace the call sites yourself.",
+    "Check the Proof maps to the behaviour the issue reports, not merely to the",
+    "code being changed. A proof that would pass without fixing the issue is a",
+    "critical finding.",
+    "Check the Rejected alternative is real. A strawman nobody would have built",
+    "is a design with no rejected alternative.",
+    "If there are Work items, check each one is reviewable and mergeable ALONE,",
+    "and that the landing order is buildable.",
+    "Check nothing here contradicts the approved investigation. A design that",
+    "quietly re-decides the root cause is revisiting a decision it inherited."
+  ],
+  "requires": [
+    "Findings",
+    "Not examined",
+    "Verdict"
+  ],
+  "forbids": "Never edit the work or any file other than your own review artifact — a reviewer that fixes what it found has destroyed the gate it was sent to hold. Never file a finding without a citation that resolves; an uncited finding is an opinion, and the registrar refuses the whole review over it. Each round re-hunts the current work from scratch — never weaken a finding to make a round converge, and never re-file a resolved one from memory. Never inflate severity: medium and low are notes, and a note filed as high to force a round is the reviewer gaming its own gate."
+}
