@@ -12,9 +12,9 @@
 - **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:117`
 - **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:118`
 - **A git repo with a GitHub remote.** `skills/issueflow/README.md:120`
-- **gh, authenticated**, with read access to the repo's issues and write access to open a pull request. `skills/issueflow/skills/issueflow/SKILL.md:346`
-- **A git repo with a GitHub remote.** Everything is resolved from it — the owner, the name, the default branch and the branch policy. `skills/issueflow/skills/issueflow/SKILL.md:348`
-- **Subagent dispatch.** Every stage runs as its own subagent; without that this is a checklist, not a pipeline. `skills/issueflow/skills/issueflow/SKILL.md:350`
+- **gh, authenticated**, with read access to the repo's issues and write access to open a pull request. `skills/issueflow/skills/issueflow/SKILL.md:350`
+- **A git repo with a GitHub remote.** Everything is resolved from it — the owner, the name, the default branch and the branch policy. `skills/issueflow/skills/issueflow/SKILL.md:352`
+- **Subagent dispatch.** Every stage runs as its own subagent; without that this is a checklist, not a pipeline. `skills/issueflow/skills/issueflow/SKILL.md:354`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:33`
 - Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:89`
 
@@ -35,16 +35,16 @@
 
 ## Commands
 
-- Command — Returns `skills/issueflow/skills/issueflow/SKILL.md:326`
-- board — every open issue as a pick-table, plus the repo's resolved branch policy `skills/issueflow/skills/issueflow/SKILL.md:328`
-- start --issue <n> [--auto] — the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — --auto hands every gate to the red team `skills/issueflow/skills/issueflow/SKILL.md:329`
-- brief [--stage] [--lane] — the next stage's model, agent, artifact, worktree and the exact dispatch prompt `skills/issueflow/skills/issueflow/SKILL.md:330`
-- brief --ready — **every** stage whose gate is open, for dispatch in one message `skills/issueflow/skills/issueflow/SKILL.md:331`
-- brief --review --stage <id> — the red-team reviewer's brief for a delivered artifact: opus, the citation grammar, and the exact dispatch prompt `skills/issueflow/skills/issueflow/SKILL.md:332`
-- review --stage <id> [--lane] — registers a completed review: validates every citation, derives the verdict, hash-binds it, prints the findings table and what to do next `skills/issueflow/skills/issueflow/SKILL.md:333`
-- accept [--stage] [--lane] [--skip] [--force] [--auto] — the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint; --auto approves on a re… `skills/issueflow/skills/issueflow/SKILL.md:334`
-- split — one lane per work item read from the approved design, each stacked on the one below `skills/issueflow/skills/issueflow/SKILL.md:335`
-- status — the run board with a live elapsed time for any stage still running, its last reported progress, what has drifted on GitHub, and what can run now `skills/issueflow/skills/issueflow/SKILL.md:336`
+- Command — Returns `skills/issueflow/skills/issueflow/SKILL.md:330`
+- board — every open issue as a pick-table, plus the repo's resolved branch policy `skills/issueflow/skills/issueflow/SKILL.md:332`
+- start --issue <n> [--auto] — the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — --auto hands every gate to the red team `skills/issueflow/skills/issueflow/SKILL.md:333`
+- brief [--stage] [--lane] — the next stage's model, agent, artifact, worktree and the exact dispatch prompt `skills/issueflow/skills/issueflow/SKILL.md:334`
+- brief --ready — **every** stage whose gate is open, for dispatch in one message `skills/issueflow/skills/issueflow/SKILL.md:335`
+- brief --review --stage <id> — the red-team reviewer's brief for a delivered artifact: opus, the citation grammar, and the exact dispatch prompt `skills/issueflow/skills/issueflow/SKILL.md:336`
+- review --stage <id> [--lane] — registers a completed review: validates every citation, derives the verdict, hash-binds it, prints the findings table and what to do next `skills/issueflow/skills/issueflow/SKILL.md:337`
+- accept [--stage] [--lane] [--skip] [--force] [--auto] — the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint; --auto approves on a re… `skills/issueflow/skills/issueflow/SKILL.md:338`
+- split — one lane per work item read from the approved design, each stacked on the one below `skills/issueflow/skills/issueflow/SKILL.md:339`
+- status — the run board with a live elapsed time for any stage still running, its last reported progress, what has drifted on GitHub, and what can run now `skills/issueflow/skills/issueflow/SKILL.md:340`
 - node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:69`
 - node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> `skills/issueflow/skills/issueflow/SKILL.md:86`
 - node "$SKILL_DIR/scripts/issueflow.js" brief --run-dir <run> # or --stage <id> [--lane <slug>] `skills/issueflow/skills/issueflow/SKILL.md:108`
@@ -58,19 +58,19 @@
 
 ## Architecture
 
-- scripts/issueflow.js — the CLI: board, start, brief, accept, review, split, status, runs, ship, finish `skills/issueflow/skills/issueflow/SKILL.md:387`
-- scripts/lib/stages.mjs — the four stages: model, agent, artifact, what each is asked and refused `skills/issueflow/skills/issueflow/SKILL.md:388`
-- scripts/lib/reviews.mjs — the red team: one reviewer per stage, the finding grammar, the citation resolver, and the registrar that hash-binds a verdict `skills/issueflow/skills/issueflow/SKILL.md:389`
-- scripts/lib/run.mjs — the state machine and the gate — dependencies() and blockers() are the one rule as code `skills/issueflow/skills/issueflow/SKILL.md:390`
-- scripts/lib/brief.mjs — the dispatch-prompt renderer `skills/issueflow/skills/issueflow/SKILL.md:391`
-- scripts/lib/checkpoint.mjs — the push and the sticky issue comment — how a run survives this machine `skills/issueflow/skills/issueflow/SKILL.md:392`
-- scripts/lib/reconcile.mjs — what has moved on GitHub since the run last looked `skills/issueflow/skills/issueflow/SKILL.md:393`
-- scripts/lib/worktree.mjs — a checkout per lane, so two lanes never share a tree `skills/issueflow/skills/issueflow/SKILL.md:394`
-- scripts/lib/evidence.mjs — reading a test runner's own summary out of the evidence file `skills/issueflow/skills/issueflow/SKILL.md:395`
-- scripts/lib/verify.mjs — the facts accept reports instead of the orchestrator shelling out for them `skills/issueflow/skills/issueflow/SKILL.md:396`
-- references/anatomy.md — the run directory, the stage state machine, and what each stage's artifact owes the next one `skills/issueflow/skills/issueflow/SKILL.md:397`
-- references/dispatch.md — the dispatch-prompt contract — what must cross into a cold subagent, what may never, and why the prompt is rendered rather than written `skills/issueflow/skills/issueflow/SKILL.md:398`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/issueflow/skills/issueflow/SKILL.md:403`
+- scripts/issueflow.js — the CLI: board, start, brief, accept, review, split, status, runs, ship, finish `skills/issueflow/skills/issueflow/SKILL.md:391`
+- scripts/lib/stages.mjs — the four stages: model, agent, artifact, what each is asked and refused `skills/issueflow/skills/issueflow/SKILL.md:392`
+- scripts/lib/reviews.mjs — the red team: one reviewer per stage, the finding grammar, the citation resolver, and the registrar that hash-binds a verdict `skills/issueflow/skills/issueflow/SKILL.md:393`
+- scripts/lib/run.mjs — the state machine and the gate — dependencies() and blockers() are the one rule as code `skills/issueflow/skills/issueflow/SKILL.md:394`
+- scripts/lib/brief.mjs — the dispatch-prompt renderer `skills/issueflow/skills/issueflow/SKILL.md:395`
+- scripts/lib/checkpoint.mjs — the push and the sticky issue comment — how a run survives this machine `skills/issueflow/skills/issueflow/SKILL.md:396`
+- scripts/lib/reconcile.mjs — what has moved on GitHub since the run last looked `skills/issueflow/skills/issueflow/SKILL.md:397`
+- scripts/lib/worktree.mjs — a checkout per lane, so two lanes never share a tree `skills/issueflow/skills/issueflow/SKILL.md:398`
+- scripts/lib/evidence.mjs — reading a test runner's own summary out of the evidence file `skills/issueflow/skills/issueflow/SKILL.md:399`
+- scripts/lib/verify.mjs — the facts accept reports instead of the orchestrator shelling out for them `skills/issueflow/skills/issueflow/SKILL.md:400`
+- references/anatomy.md — the run directory, the stage state machine, and what each stage's artifact owes the next one `skills/issueflow/skills/issueflow/SKILL.md:401`
+- references/dispatch.md — the dispatch-prompt contract — what must cross into a cold subagent, what may never, and why the prompt is rendered rather than written `skills/issueflow/skills/issueflow/SKILL.md:402`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/issueflow/skills/issueflow/SKILL.md:407`
 - Deterministic: read the open issues and the repo's branch and pull request policy — node "$SKILL_DIR/scripts/issueflow.js" board `skills/issueflow/skills/issueflow/skill-invariants.json:66`
 - Deterministic: fetch the chosen issue and its comments to disk and open the stage state machine — node "$SKILL_DIR/scripts/issueflow.js" start `skills/issueflow/skills/issueflow/skill-invariants.json:70`
 - Deterministic: render each stage's dispatch prompt, model and subagent type from the approved artifacts — node "$SKILL_DIR/scripts/issueflow.js" brief `skills/issueflow/skills/issueflow/skill-invariants.json:74`
@@ -88,8 +88,8 @@
 - Never weaken a review to clear a finding — The eval and skillfactory rule, adopted verbatim, because an autonomous loop makes it more dangerous, not less: round 3 under a rounds cap is exactly when '… `skills/issueflow/skills/issueflow/skill-invariants.json:49`
 - Never auto-ship over an open blocking finding — The rounds cap stops the loop; this stops the loop's failure from being laundered into a pull request. An exhausted stage surfaces its findings to the… `skills/issueflow/skills/issueflow/skill-invariants.json:54`
 - Auto mode never touches --force — --force exists so a human who has re-read the drift can overrule it. An unattended run has nobody who re-read anything: blocking drift, like an exhausted stage, stop… `skills/issueflow/skills/issueflow/skill-invariants.json:59`
-- **No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.** `skills/issueflow/skills/issueflow/SKILL.md:355`
-- **Every state change is checkpointed.** The branch is pushed and the issue's comment is rewritten at every gate. A run that exists only on this machine is a run one crash away from having produced no… `skills/issueflow/skills/issueflow/SKILL.md:356`
-- **Never advance over drift you have not shown the user.** If accept says the work already merged, that is the answer — --force is for after they decide, never before. `skills/issueflow/skills/issueflow/SKILL.md:359`
-- **Never dispatch a stage on a model other than the one brief names.** `skills/issueflow/skills/issueflow/SKILL.md:362`
-- **Never do a stage's work yourself.** An orchestrator that investigates the issue "quickly, to save a dispatch" has collapsed four isolated contexts into one and thrown away the only thing this shape… `skills/issueflow/skills/issueflow/SKILL.md:363`
+- **No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.** `skills/issueflow/skills/issueflow/SKILL.md:359`
+- **Every state change is checkpointed.** The branch is pushed and the issue's comment is rewritten at every gate. A run that exists only on this machine is a run one crash away from having produced no… `skills/issueflow/skills/issueflow/SKILL.md:360`
+- **Never advance over drift you have not shown the user.** If accept says the work already merged, that is the answer — --force is for after they decide, never before. `skills/issueflow/skills/issueflow/SKILL.md:363`
+- **Never dispatch a stage on a model other than the one brief names.** `skills/issueflow/skills/issueflow/SKILL.md:366`
+- **Never do a stage's work yourself.** An orchestrator that investigates the issue "quickly, to save a dispatch" has collapsed four isolated contexts into one and thrown away the only thing this shape… `skills/issueflow/skills/issueflow/SKILL.md:367`
