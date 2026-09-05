@@ -433,8 +433,11 @@ test('the fix report: a not-changed major is a dispute, and the same major dispu
   writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ [id]: { status: 'not-changed' } }));
   assert.throws(() => applyFixReport(dir, run, lane, 1), /no reason/);
   writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ [id]: { status: 'not-changed', note: 'Map.get already returns undefined for a missing key' } }));
+  currentRound(lane).fix = { briefed: true, model: 'sonnet', items: 1, redChecks: 0 };
   const replies = applyFixReport(dir, run, lane, 1);
   assert.equal(replies[0].body, 'Not changed — Map.get already returns undefined for a missing key');
+  assert.equal(currentRound(lane).fix.briefed, true, 'recording the report must not forget the fixer was briefed — next would re-brief it');
+  assert.equal(currentRound(lane).fix.reported, true);
   const f = lane.review.findings.find((x) => x.id === id);
   assert.equal(f.dispute, 'Map.get already returns undefined for a missing key');
   assert.equal(f.disputes, 0, 'the first dispute is recorded; the verifier rules on it next round');

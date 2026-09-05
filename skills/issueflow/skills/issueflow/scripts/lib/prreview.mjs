@@ -790,7 +790,11 @@ export function applyFixReport(dir, run, lane, round) {
       replies.push({ id: f.id, threadId: f.threadId, body: `Addressed${str(r.note) ? ` — ${r.note.trim()}` : ''}; the next round verifies it.` });
     }
   }
-  entry.fix = { reported: true, fixed: replies.filter((r) => r.body.startsWith('Addressed')).length, notChanged: replies.filter((r) => r.body.startsWith('Not changed')).length };
+  // Merge, never replace: `briefed` and `model` were recorded when the fixer
+  // was briefed, and losing them made `next` re-brief a fixer whose fix was
+  // already pushed — a stale dispatch printed on every round of the first
+  // real loop.
+  entry.fix = { ...(entry.fix ?? {}), reported: true, fixed: replies.filter((r) => r.body.startsWith('Addressed')).length, notChanged: replies.filter((r) => r.body.startsWith('Not changed')).length };
   saveRun(dir, run);
   if (disputed.length > 0) {
     throw new HandBack(
