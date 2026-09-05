@@ -3,20 +3,15 @@
   "source": "natejswenson/local-fitness#133",
   "artifacts": {
     "board.txt": "8525996d8949254f",
-    "start.txt": "9af6999657ac702b",
-    "brief-investigate.md": "6048121826b13b96",
-    "brief-design.md": "c6b7ae36121d1fac",
-    "brief-implement.md": "c7dafaef97d9c078",
-    "checkpoint-comment.md": "bcd75527d98ba994",
-    "stage-investigate.json": "60936f47d54e4f3a",
-    "stage-design.json": "b16ff0ef911238aa",
-    "stage-implement.json": "48d8240cabfc5e2f",
-    "stage-test.json": "d62c598909f2ec05",
-    "review-investigate.json": "7579b5ba50fbf47e",
-    "review-design.json": "20568d32f4c9a17c",
-    "review-implement.json": "3dd09390aa3f3ed1",
-    "review-test.json": "bb4c83cbb1398f55",
-    "brief-review-investigate.md": "dfcc018340608d22",
-    "verdict-investigate-r1.json": "07a992985894dc2c"
+    "start.txt": "4cb6a9a7a56bc5ce",
+    "brief-investigate.md": "7889827c2389a1b1",
+    "brief-implement.md": "093b1b7e1eb62e0c",
+    "checkpoint-comment.md": "72534f2ea98b6649",
+    "stage-investigate.json": "c1402e2594b49166",
+    "stage-implement.json": "51fce845aff9bcda",
+    "review-investigate.json": "09b99b573bfe050b",
+    "brief-review-investigate.md": "7037b5fdafd9ed63",
+    "review-investigate-r1.txt": "dc45a0bdd91055ff",
+    "verdict-investigate-r1.json": "e283ab8381b81432"
   }
 }

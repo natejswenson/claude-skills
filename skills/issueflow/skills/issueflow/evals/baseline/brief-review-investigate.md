@@ -452,8 +452,8 @@ attacking. Round 1 of at most 3.
 
 ## Your hunt
 
-Open every `path:line` the investigation cites and check the code says what
-the artifact claims it says. A citation that does not support its claim is a
+Open every `path:line` the plan cites and check the code says what the
+artifact claims it says. A citation that does not support its claim is a
 finding at the severity of the claim.
 Hunt for an alternate root cause the artifact never ruled out. If you can
 name one it did not consider, that is a finding.
@@ -461,10 +461,19 @@ Hunt for guesses dressed as findings: any claim presented as established
 that belongs in Unknowns.
 Check the "does the issue ask for the right fix" question was actually
 answered, not restated.
+Hunt for files the change must touch that the Files section misses — open
+the code and trace the call sites yourself.
+Check the Proof maps to the behaviour the issue reports, not merely to the
+code being changed. A proof that would pass without fixing the issue is a
+critical finding.
+Check the Rejected alternative is real. A strawman nobody would have built
+is a plan with no rejected alternative.
+If there are Work items, check each one is reviewable and mergeable ALONE,
+and that the landing order is buildable.
 
 ## You must not
 
-Never edit the work or any file other than your own review artifact — a reviewer that fixes what it found has destroyed the gate it was sent to hold. Never file a finding without a citation that resolves; an uncited finding is an opinion, and the registrar refuses the whole review over it. Each round re-hunts the current work from scratch — never weaken a finding to make a round converge, and never re-file a resolved one from memory. Never inflate severity: medium and low are notes, and a note filed as high to force a round is the reviewer gaming its own gate.
+Never edit the work or any file other than your own review — a reviewer that fixes what it found has destroyed the gate it was sent to hold. Never file a finding without a citation that resolves; an uncited finding is an opinion, and the registrar refuses the whole review over it. Each round re-hunts the current work from scratch — never weaken a finding to make a round converge, and never re-file a resolved one from memory. Never inflate severity: medium and low are notes, and a note filed as high to force a round is the reviewer gaming its own gate.
 
 ## Working context
 
@@ -478,29 +487,34 @@ Never edit the work or any file other than your own review artifact — a review
 
 ## Findings format
 
-Every finding is ONE line under `## Findings`, exactly:
+Your review is ONE JSON file, exactly this shape:
 
-    - [critical|high|medium|low] <citation> — <one-sentence finding>
+    {
+      "findings": [
+        { "severity": "critical|high|medium|low", "cite": "<citation>", "text": "<one-sentence finding>" }
+      ],
+      "notExamined": ["<what you did not check, one entry each>"],
+      "verdict": "pass|blocked"
+    }
 
 The citation must be one of:
 
 - `path:line` (or `path:l1-l2`) — a real file, in the repository;
-- `investigate.md § <Heading>` — a heading that exists in the artifact under review;
+- `investigate.md § <Heading>` — a heading that exists in the artifact under review.
 
 A citation that does not resolve refuses your whole review — cite what you can
-point at, and put what you cannot prove in `## Not examined`. Severity is the
-gate: critical and high block the stage; medium and low are notes. Rate what the
+point at, and put what you cannot prove in `notExamined`. Severity is the gate:
+critical and high block the stage; medium and low are notes. Rate what the
 finding costs if shipped, not how strongly you feel about it.
 
 ## Deliver
 
-Write your review to `<RUN>/reviews/investigate-r1.md`.
+Write your review to `<RUN>/reviews/investigate-r1.findings.json`.
 
-It must contain a section for each of: **Findings**, **Not examined**, **Verdict**.
-`## Not examined` names what you did not check — a clean review that examined
-everything still says so there. `## Verdict` is one word, `pass` or `blocked`,
-and it must agree with your own severities: any critical or high finding means
-`blocked`.
+`notExamined` names what you did not check — a clean review that examined
+everything still says so there, and a review with no findings and an empty
+`notExamined` is refused. `verdict` must agree with your own severities: any
+critical or high finding means `blocked`.
 
 ## While you work
 

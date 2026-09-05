@@ -2,8 +2,8 @@
  * The run: a directory on disk, and the state machine that decides what may
  * happen next.
  *
- * The one rule lives here, as code. Every advance goes through `gateFor`, which
- * refuses a step whose predecessors are not approved — so "the gates are
+ * The one rule lives here, as code. Every advance goes through `blockers`,
+ * which refuses a step whose predecessors are not approved — so "the gates are
  * enforced" is a property of the program rather than a paragraph the
  * orchestrator is trusted to have read.
  *
@@ -15,12 +15,30 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { EVIDENCE_FILE, PER_ITEM_STAGES, SHARED_STAGES, stage } from './stages.mjs';
+import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
-import { parseEvidence, summarize, RUNNER_IDS } from './evidence.mjs';
+import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
 
-export const SCHEMA = 2;
+/**
+ * Schema 3: two stages instead of four, and a review loop on every lane. A
+ * schema-2 run is not migrated — every one on the maintainer's machine is
+ * `done`, and inventing a plan stage out of a separate investigate and design
+ * would be the loader rewriting history. `runs` names the mismatch and the
+ * remedy for any that remain.
+ */
+export const SCHEMA = 3;
+
+/** A gate refusal: the work is not done, send it back. Exit code 2. */
 export class RunError extends Error {}
+
+/**
+ * The run must stop and a human must decide: an exhausted stage, drift on
+ * GitHub, a finding disputed twice, or the human stop itself. Exit code 4 —
+ * distinct from a refusal (2) and from infrastructure (3), so a driver can
+ * tell "send the work back" from "retry" from "ask the person" without
+ * parsing English.
+ */
+export class HandBack extends Error {}
 
 /** Where runs live. `--run-dir` overrides it, which is how the evals stay offline and hermetic. */
 export function runRoot(override) {
@@ -40,16 +58,23 @@ const stageEntry = (id) => {
   };
 };
 
+/** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
+const laneReviewEntry = () => ({ rounds: [], converged: false, draft: null });
+
+const laneEntry = (policy, issue, { slug, title, base }) => ({
+  id: slug,
+  slug,
+  title,
+  branch: branchFor(policy, issue.number, slug),
+  base,
+  pr: null,
+  landed: null,
+  review: laneReviewEntry(),
+  stages: PER_ITEM_STAGES.map(stageEntry),
+});
+
 /** A fresh run for one issue, with a single unsplit lane. */
 export function createRun({ repo, issue, policy, offline = false, auto = false }) {
-  const lane = {
-    id: 'root',
-    slug: 'root',
-    title: issue.title,
-    branch: branchFor(policy, issue.number, 'root'),
-    base: policy.base,
-    stages: PER_ITEM_STAGES.map(stageEntry),
-  };
   return {
     schema: SCHEMA,
     repo,
@@ -59,17 +84,19 @@ export function createRun({ repo, issue, policy, offline = false, auto = false }
     // matter which flags the next command carries. Recording it on the run is
     // what makes that a property of the run rather than of the invocation.
     offline,
-    // An auto run's gates are held by the red team instead of the user. On the
-    // run like the offline flag, and for the same reason: whether an approval
-    // needs a human is a property of the run, not of whoever types the next
-    // command.
+    // Every run's plan is red-teamed. `auto` decides the one thing left to
+    // decide: whether a human also reads the red-teamed plan before any code
+    // is written. On the run like the offline flag, and for the same reason:
+    // whether an approval needs a human is a property of the run, not of
+    // whoever types the next command.
     auto,
     split: false,
     // The sticky issue comment this run keeps up to date. Adopted by marker
     // when a run is resumed on a machine that has no run.json.
     checkpoint: { commentId: null, commentUrl: null, pushed: {} },
+    finished: null,
     stages: SHARED_STAGES.map(stageEntry),
-    lanes: [lane],
+    lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base })],
   };
 }
 
@@ -101,6 +128,7 @@ export function loadRun(dir) {
   for (const lane of run.lanes) {
     lane.landed ??= null;
     lane.pr ??= null;
+    lane.review ??= laneReviewEntry();
   }
   for (const s of [...run.stages, ...run.lanes.flatMap((l) => l.stages)]) {
     s.review ??= { rounds: [], feedback: null };
@@ -144,38 +172,44 @@ export function findStep(run, stageId, laneSlug = null) {
   return step;
 }
 
+/** Resolve one lane by slug, or the only lane when the run is unsplit. */
+export function findLane(run, slug = null) {
+  if (!slug) {
+    if (run.lanes.length > 1) {
+      throw new RunError(`this run has ${run.lanes.length} lanes — name one with --lane <${run.lanes.map((l) => l.slug).join('|')}>`);
+    }
+    return run.lanes[0];
+  }
+  const lane = run.lanes.find((l) => l.slug === slug);
+  if (!lane) throw new RunError(`no lane "${slug}" in this run`);
+  return lane;
+}
+
 /**
  * What one step actually depends on.
  *
  * This used to be "every step listed above it", which is cheap to write and
  * wrong: it made a lane's `implement` wait on the *previous lane's tests*, a
- * dependency that does not exist. On the run this was measured against, lane 2
- * never started because lane 1's test stage was still awaiting approval — an
- * hour of gate for an edge nothing needs.
- *
- * The real edges:
+ * dependency that does not exist. The real edges, in the two-stage shape:
  *
  *   investigate     ← nothing
- *   design          ← investigate
- *   lane.implement  ← design, plus the implement of the lane it stacks on
- *   lane.test       ← that same lane's implement
+ *   lane.implement  ← investigate, plus the implement of the lane it stacks on
  *
  * The stacked-parent edge is real and load-bearing: a lane branches off the
  * branch below it, so its commits cannot exist until that branch does. What is
- * NOT real is waiting for the parent lane to have been *tested*.
+ * NOT real is waiting for the parent lane's pull request to be reviewed — the
+ * review loop orders itself bottom-first separately (see `next.mjs`).
  */
 export function dependencies(run, step) {
   const steps = gateSteps(run);
   const at = (key) => steps.find((s) => s.key === key) ?? null;
   const out = [];
 
-  if (step.stage.id === 'design') out.push(at('investigate'));
   if (step.stage.id === 'implement') {
-    out.push(at('design'));
+    out.push(at(PLAN_STAGE));
     const parent = run.lanes.find((l) => l.branch === step.lane?.base);
     if (parent) out.push(at(`${parent.slug}/implement`));
   }
-  if (step.stage.id === 'test') out.push(at(`${step.laneSlug}/implement`));
 
   return out.filter(Boolean);
 }
@@ -232,18 +266,19 @@ export function remainingSteps(run) {
 /**
  * The run's own state, in one place.
  *
- * Before this, `nextLine()` and `cmdRuns` each independently re-derived
- * `remainingSteps(run).length === 0` and both printed "ready to ship" —
- * which is true the moment the gate clears AND true forever after every pull
- * request has merged and the issue is closed, because nothing recorded that
- * `ship` or `finish` had ever run. `remainingSteps()` itself is unchanged: it
- * still means "every gate step passed," which is what `readySteps`,
- * `blockers` and the held-stage message depend on.
+ * `in progress` while any gate step is owed; `ready to ship` once the gate is
+ * clear; `in review` while any lane's pull request is open and its review
+ * loop has not converged; `shipped` once every lane's pull request has
+ * converged and awaits a merge; `done` once `finish` has recorded every
+ * landing. `remainingSteps()` itself is unchanged: it still means "every gate
+ * step passed," which is what `readySteps`, `blockers` and the held-stage
+ * message depend on.
  */
 export function runState(run) {
   if (run.finished) return 'done';
   if (remainingSteps(run).length > 0) return 'in progress';
-  return run.lanes.every((l) => l.pr) ? 'shipped' : 'ready to ship';
+  if (!run.lanes.every((l) => l.pr)) return 'ready to ship';
+  return run.lanes.every((l) => l.review?.converged) ? 'shipped' : 'in review';
 }
 
 /** Record that a lane's pull request merged and its checkout/branch are gone. */
@@ -286,7 +321,7 @@ export const progressPath = (dir, step) => join(dir, 'progress', `${step.key.rep
 export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
 
 /** Non-empty means real content — a touched file is not an artifact. */
-const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim().length > 0;
+export const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim().length > 0;
 
 /** What a red-team verdict binds itself to: the exact bytes it reviewed. */
 export const sha256OfFile = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -309,18 +344,32 @@ export function hasSection(text, section) {
   return heading.test(text) || bold.test(text);
 }
 
-/** The last real test result in an evidence file, or null when it holds none. */
+/** Every real test result in an evidence file, in order — empty when it holds none. */
 export function readEvidence(path) {
-  if (!hasContent(path)) return null;
-  return parseEvidence(readFileSync(path, 'utf8'));
+  if (!hasContent(path)) return [];
+  return parseAllEvidence(readFileSync(path, 'utf8'));
 }
 
+const git = (args, cwd) => {
+  try {
+    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return null;
+  }
+};
+
+/** The checkout a lane's stage worked in: its worktree when it has one, else the repo. */
+export const laneTree = (dir, run, lane) =>
+  lane && existsSync(worktreePath(dir, lane)) ? worktreePath(dir, lane) : run.repo.path;
+
 /**
- * Record an artifact and the user's approval, advancing the state machine.
+ * Record an artifact and its approval, advancing the state machine.
  *
  * Refuses on: an unopened gate, a missing or empty artifact, an artifact missing
- * a section the stage declares, and a test stage with no evidence file. Each of
- * those is a way a stage looks done without being done.
+ * a section the stage declares, an implement stage whose evidence holds no
+ * runner result or no red run before its green one, an implement stage that
+ * left uncommitted work in its tree, and a plan the red team never read. Each
+ * of those is a way a stage looks done without being done.
  */
 export function accept(dir, run, step, { evidence = null, auto = false, now = () => new Date().toISOString() } = {}) {
   const blocked = blockers(run, step);
@@ -346,7 +395,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     );
   }
 
-  if (step.stage.id === 'test') {
+  if (PER_ITEM_STAGES.includes(step.stage.id)) {
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {
       throw new RunError(
@@ -357,71 +406,85 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     // A non-empty file is not a test run. Reading the runner's own summary out
     // of it is what makes the evidence evidence — a stage that wrote `ok` used
     // to clear this gate.
-    const result = parseEvidence(readFileSync(proof, 'utf8'));
-    if (!result) {
+    const results = parseAllEvidence(readFileSync(proof, 'utf8'));
+    if (results.length === 0) {
       throw new RunError(
         `cannot accept ${step.key}: ${proof} holds no summary in a format I can parse. ` +
           `I read: ${RUNNER_IDS.join(', ')}.`,
       );
     }
-    step.stage.evidence = proof;
-    step.stage.result = summarize(result);
-  }
-
-  // The auto path is a NARROWER gate, never a bypass: every refusal above ran
-  // first, and this adds the red team's verdict on top. `--auto` on a run that
-  // was not started auto is refused outright — which gate holds a run is
-  // decided once, at `start`, not per invocation. The human path stays open on
-  // an auto run: a person may always approve; only the machine needs a verdict.
-  if (auto) {
-    if (!run.auto) {
+    // The red half, mechanically. The separate test stage used to be the pair
+    // of eyes that checked the test was seen failing; this is what replaced it.
+    const sided = twoSided(results);
+    if (!sided.ok) {
       throw new RunError(
-        `cannot auto-accept ${step.key}: this run was not started with --auto — ` +
-          'its gates belong to the user, and a flag on one command does not reassign them',
+        `cannot accept ${step.key}: ${proof} ${sided.reason}. The evidence must show the test failing ` +
+          'against the unfixed behaviour, then passing — in that order.',
       );
     }
+    // The pull request is opened from the branch's commits, so anything left
+    // uncommitted in the tree is work the review would never see. Checked only
+    // when git can answer: a run against no checkout has nothing to leave dirty.
+    const tree = laneTree(dir, run, step.lane);
+    const dirty = git(['status', '--porcelain'], tree);
+    if (dirty !== null && dirty !== '') {
+      throw new RunError(
+        `cannot accept ${step.key}: ${dirty.split('\n').length} uncommitted path(s) in ${tree} — ` +
+          'the pull request is opened from the commits, and uncommitted work is work the review never sees',
+      );
+    }
+    step.stage.evidence = proof;
+    step.stage.result = summarize(results.at(-1));
+  }
+
+  // The plan is red-teamed on every run. A human may approve a plan the red
+  // team blocked — that is what the human stop is for — but never one it has
+  // not read: a plan with no registered round is a plan whose rejected
+  // alternatives nobody has attacked. The auto path is NARROWER, never a
+  // bypass: every refusal above ran first, and this adds the verdict on top.
+  if (step.stage.id === PLAN_STAGE) {
     const latest = step.stage.review?.rounds.at(-1) ?? null;
     if (!latest) {
       throw new RunError(
-        `cannot auto-accept ${step.key}: no red-team review is registered — ` +
-          'in an auto run the review IS the approval, and none has happened',
+        `cannot accept ${step.key}: no red-team review is registered — ` +
+          'the plan is attacked before anyone approves it; brief the reviewer first',
       );
     }
-    if (latest.verdict !== 'pass') {
-      throw new RunError(
-        `cannot auto-accept ${step.key}: round ${latest.round} is blocked ` +
-          `(${latest.findings.critical} critical, ${latest.findings.high} high) — ` +
-          'send the stage back with the review; never approve over an open blocking finding',
-      );
-    }
-    if (latest.artifactSha !== sha256OfFile(artifact)) {
-      throw new RunError(
-        `cannot auto-accept ${step.key}: the artifact changed after round ${latest.round} reviewed it — ` +
-          'a verdict binds to the bytes it read; re-review the current artifact',
-      );
-    }
-    if (latest.head) {
-      const tree = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : run.repo.path;
-      let head = null;
-      try {
-        head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: tree, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-      } catch {
-        head = null;
-      }
-      if (head !== latest.head) {
+    if (auto) {
+      if (!run.auto) {
         throw new RunError(
-          `cannot auto-accept ${step.key}: the branch moved after round ${latest.round} ` +
-            `(reviewed ${latest.head.slice(0, 12)}, now ${head ? head.slice(0, 12) : 'unreadable'}) — ` +
-            're-review the code that would actually ship',
+          `cannot auto-accept ${step.key}: this run was not started with --auto — ` +
+            'its plan is approved by the user, and a flag on one command does not reassign that',
         );
       }
+      if (latest.verdict !== 'pass') {
+        throw new RunError(
+          `cannot auto-accept ${step.key}: round ${latest.round} is blocked ` +
+            `(${latest.findings.critical} critical, ${latest.findings.high} high) — ` +
+            'send the stage back with the review; never approve over an open blocking finding',
+        );
+      }
+      if (latest.artifactSha !== sha256OfFile(artifact)) {
+        throw new RunError(
+          `cannot auto-accept ${step.key}: the artifact changed after round ${latest.round} reviewed it — ` +
+            'a verdict binds to the bytes it read; re-review the current artifact',
+        );
+      }
+      step.stage.autoApproved = true;
+    }
+  } else if (auto) {
+    if (!run.auto) {
+      throw new RunError(
+        `cannot auto-accept ${step.key}: this run was not started with --auto — ` +
+          'a flag on one command does not reassign who holds the gate',
+      );
     }
     step.stage.autoApproved = true;
   }
 
   step.stage.state = 'approved';
   // The artifact's mtime is when the subagent finished; `approved` is when the
-  // human said yes. Keeping both apart is what lets the run report stage time
+  // gate said yes. Keeping both apart is what lets the run report stage time
   // separately from review time instead of blaming the model for the wait.
   step.stage.at = { ...step.stage.at, delivered: mtimeOf(artifact), approved: now() };
   saveRun(dir, run);
@@ -437,12 +500,27 @@ const mtimeOf = (path) => {
 };
 
 /**
+ * Did this artifact land after the step's latest brief? An artifact older
+ * than its brief is the previous round's — a re-dispatched stage must not
+ * render `delivered` the instant it is briefed again, which is exactly what
+ * a plain existence check did.
+ */
+export function deliveredSince(dir, step) {
+  const artifact = artifactPath(dir, step);
+  if (!hasContent(artifact)) return null;
+  const delivered = mtimeOf(artifact);
+  const briefed = step.stage.at?.briefed;
+  if (briefed && Date.parse(delivered) < Date.parse(briefed)) return null;
+  return delivered;
+}
+
+/**
  * The run, with `at.delivered` filled in from disk for any step whose
  * artifact has already landed but is not yet approved — in memory only.
  * `accept()` remains the only writer: it records the same value from the same
- * mtime when a human approves the stage, so `delivered` is identical whether
- * it was observed first or not. This only makes it visible earlier, to a
- * reader who is not the one approving.
+ * mtime when the stage is approved, so `delivered` is identical whether it was
+ * observed first or not. This only makes it visible earlier, to a reader who
+ * is not the one approving.
  */
 export function observe(dir, run) {
   const cloneEntry = (s) => ({ ...s, at: { ...s.at } });
@@ -453,9 +531,8 @@ export function observe(dir, run) {
   };
   for (const step of gateSteps(observed)) {
     if (step.stage.at.delivered) continue;
-    const artifact = artifactPath(dir, step);
-    if (!hasContent(artifact)) continue;
-    step.stage.at.delivered = mtimeOf(artifact);
+    const delivered = deliveredSince(dir, step);
+    if (delivered) step.stage.at.delivered = delivered;
   }
   return observed;
 }
@@ -481,10 +558,27 @@ export function recordCapOverride(dir, run, step, reason, now = () => new Date()
   return run;
 }
 
-/** Mark a stage briefed, recording when — the clock the stage's duration is measured from. */
+/**
+ * Mark a stage briefed, recording when — the clock the stage's duration is
+ * measured from.
+ *
+ * A re-brief (a stage sent back by the red team) starts a fresh clock: the
+ * previous dispatch's `briefed`/`delivered` pair is archived under
+ * `at.rounds` so the expectation line stops folding every review round into
+ * one duration, and `delivered` is cleared so the board shows the stage
+ * running again rather than `delivered` off the previous round's artifact.
+ */
 export function markBriefed(dir, run, step, now = () => new Date().toISOString()) {
   if (step.stage.state === 'pending') step.stage.state = 'briefed';
-  step.stage.at = { ...step.stage.at, briefed: step.stage.at?.briefed ?? now() };
+  const at = { ...step.stage.at };
+  if (at.briefed && at.delivered) {
+    at.rounds = [...(at.rounds ?? []), { briefed: at.briefed, delivered: at.delivered }];
+    delete at.delivered;
+    at.briefed = now();
+  } else {
+    at.briefed = at.briefed ?? now();
+  }
+  step.stage.at = at;
   saveRun(dir, run);
   return run;
 }
@@ -528,36 +622,38 @@ export function elapsedOf(entry, now) {
 }
 
 /**
- * Expand an approved design's work items into lanes.
+ * Expand an approved plan's work items into lanes.
  *
  * Each lane stacks on the one below it — the bottom targets the repo's base
  * branch and every layer above targets its predecessor, which is the house
- * shape for reviewable layered work. Splitting after implementation has begun
- * would strand commits on a branch no lane owns, so it is refused.
+ * shape for reviewable layered work. Splitting after a lane has delivered an
+ * implementation would strand commits on a branch no lane owns, so it is
+ * refused — but a lane that was merely *briefed* has produced nothing yet, and
+ * a split is still safe. (A `brief --ready` straight after the plan used to
+ * foreclose `split` forever.)
  */
 export function split(dir, run, items) {
   if (run.split) throw new RunError('this run is already split — a second split would strand the first split\'s lanes');
-  const design = findStep(run, 'design');
-  if (design.stage.state !== 'approved') {
-    throw new RunError('cannot split before the design is approved — the seams come from the design, not from the issue');
+  const plan = findStep(run, PLAN_STAGE);
+  if (plan.stage.state !== 'approved') {
+    throw new RunError('cannot split before the plan is approved — the seams come from the plan, not from the issue');
   }
-  const started = run.lanes.some((l) => l.stages.some((s) => s.state !== 'pending'));
-  if (started) throw new RunError('cannot split a run whose implementation has started — its commits belong to no lane');
+  const started = gateSteps(run).some(
+    (s) => s.laneSlug && (s.stage.state === 'approved' || s.stage.state === 'skipped' || hasContent(artifactPath(dir, s))),
+  );
+  if (started) throw new RunError('cannot split a run whose implementation has delivered — its commits belong to no lane');
   if (items.length < 2) throw new RunError(`a split needs at least 2 work items, got ${items.length}`);
 
   const seen = new Set();
+  const issue = { number: run.issue.number };
   run.lanes = items.map((item, i) => {
     const slug = slugify(item.slug ?? item.title);
     if (seen.has(slug)) throw new RunError(`two work items slug to "${slug}" — each lane needs its own branch`);
     seen.add(slug);
-    return {
-      id: slug,
-      slug,
-      title: item.title,
-      branch: branchFor(run.policy, run.issue.number, slug),
-      base: i === 0 ? run.policy.base : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title)),
-      stages: PER_ITEM_STAGES.map(stageEntry),
-    };
+    const base = i === 0
+      ? run.policy.base
+      : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
+    return laneEntry(run.policy, issue, { slug, title: item.title, base });
   });
   run.split = true;
   saveRun(dir, run);
@@ -576,9 +672,9 @@ export function split(dir, run, items) {
  *
  * `state` here is a display state, not the persisted one: a step whose
  * `stage.state` is still `briefed` but whose `at.delivered` is already set
- * (via `observe`) shows as `delivered` — the artifact landed, a human has not
- * looked yet. `stage.state` itself is untouched; only this row's rendering
- * changes.
+ * (via `observe`) shows as `delivered` — the artifact landed, nobody has
+ * approved it yet. `stage.state` itself is untouched; only this row's
+ * rendering changes.
  */
 export function board(run, { now = null } = {}) {
   return gateSteps(run).map((step) => {
@@ -602,20 +698,20 @@ export function nextStep(run) {
 }
 
 /**
- * The work items an approved design declared, read out of the design itself.
+ * The work items an approved plan declared, read out of the plan itself.
  *
  * The orchestrator used to retype these into a JSON file by hand, which is a
  * second, unreviewed copy of a decision the user already approved — and on the
  * run this was measured against, the retyped copy differed from the artifact.
  * Parsing the approved file removes the copy.
  *
- * The format is the one the design stage is asked for verbatim:
+ * The format is the one the plan stage is asked for verbatim:
  * `- <slug>: <what lands in this layer>` under a `## Work items` heading.
  */
-export function workItemsFromDesign(text) {
+export function workItemsFromPlan(text) {
   const section = /^\s{0,3}#{1,6}\s+work items\s*$/im.exec(text);
   if (!section) {
-    throw new RunError('the design declares no `## Work items` heading — it decided this issue is ONE change');
+    throw new RunError('the plan declares no `## Work items` heading — it decided this issue is ONE change');
   }
   const rest = text.slice(section.index + section[0].length);
   const end = /^\s{0,3}#{1,6}\s+/m.exec(rest);
@@ -626,12 +722,12 @@ export function workItemsFromDesign(text) {
     const m = /^\s*[-*]\s+`?([A-Za-z0-9][A-Za-z0-9 _-]*?)`?\s*:\s*(\S.*)$/.exec(line);
     // A work item's description is often a full paragraph, and the title ends
     // up in a branch's pull request title and every board row. Keep the first
-    // clause for display; the design remains the place the whole thing lives.
+    // clause for display; the plan remains the place the whole thing lives.
     if (m) items.push({ slug: slugify(m[1]), title: firstClause(m[2].trim()) });
   }
   if (items.length === 0) {
     throw new RunError(
-      'the design has a `## Work items` heading but no `- <slug>: <what lands>` lines under it — ' +
+      'the plan has a `## Work items` heading but no `- <slug>: <what lands>` lines under it — ' +
         'nothing there names a lane',
     );
   }

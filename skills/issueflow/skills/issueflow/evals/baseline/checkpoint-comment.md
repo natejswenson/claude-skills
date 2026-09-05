@@ -8,19 +8,21 @@ the next one started. This comment is rewritten at every gate.
 | Step | Model | State | Took |
 |---|---|---|---|
 | investigate | opus | ✅ approved | — |
-| design | opus | ✅ approved | — |
-| root/implement | sonnet | briefed | — |
-| root/test | sonnet | pending | — |
+| root/implement | opus | briefed | — |
 
 | Lane | Branch | Base | Pushed |
 |---|---|---|---|
 | root | `feature/issue-133` | `main` | — |
 
+| Step | Rounds | Blocking found | Notes |
+|---|---|---|---|
+| investigate | 1 | 0 | 6 |
+
 ---
 
 <details><summary><b>investigate</b> — investigate.md</summary>
 
-# Investigation — natejswenson/local-fitness #133
+# Investigate — natejswenson/local-fitness #133
 
 **MCP audit: tool descriptions promise behavior the handlers don't deliver**
 
@@ -118,19 +120,6 @@ The one item that deserves promotion above "description fix" is **§B.9 (`days=0
 - **Whether any `baselines` row could historically have had `ctl` without `tsb`.** I checked only the current `data/fitness.db` (0 rows) and the current writer. A pre-0.22 schema or an abandoned migration could have produced such rows; I did not walk the migration history.
 - **The `trends` field's intended contract.** `BriefContext.trends` re-emits snapshot entries verbatim. I could not determine whether the field was meant to carry real trend statistics and was left unfinished, or whether the name is simply wrong for a "these four are the ones to watch" subset.
 
-</details>
-
-<details><summary><b>design</b> — design.md</summary>
-
-# Design — natejswenson/local-fitness #133
-
-**MCP audit: tool descriptions promise behavior the handlers don't deliver**
-
-Repo: `/Users/natejswenson/localrepo/local-fitness` · base `main` · read at `dev` @ `d4938fb` (0.43.0).
-Inherits: `investigate.md` (6 items already fixed in 0.32.0/0.38.1, 12 open, 2 recommended won't-fix).
-
----
-
 ## One correction to the inherited investigation
 
 I am implementing investigate's per-item evidence as approved. One summary
@@ -194,9 +183,17 @@ rewrites a description:
 - **Positive:** `get_metric_trend`'s description must say the slope basis is
   per *observation*.
 - **Negative:** `_DAILY_SNAPSHOT_DESCRIPTION` must **not** contain
-  `trend-related` — that is the exact clause that se
+  `trend-related` — that is the exact clause that sends the model to
+  `BriefContext.trends`, a field carrying no trend.
 
-… truncated at 3417 characters. The whole artifact is at `design.md` in the run directory.
+Plus two anti-vacuity guards, since a substring table is easy to make decorative:
+
+- every key in the table must be a registered tool name (a typo'd key pins
+  nothing and passes forever);
+- the table must cover **at least** the tools this issue touched (a floor
+  
+
+… truncated at 20000 characters. The whole artifact is at `investigate.md` in the run directory.
 
 </details>
 

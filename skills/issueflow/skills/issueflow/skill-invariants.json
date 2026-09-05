@@ -75,11 +75,11 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
-        "step": "enforce the gate \u2014 record an artifact, record the approval, advance only then",
+        "step": "enforce the gate — record an artifact, record the approval, advance only then",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" accept"
       },
       {
-        "step": "register a completed red-team review \u2014 validate every citation, derive the verdict from the severities, bind it to the artifact's hash, record the round",
+        "step": "register a completed red-team review — validate every citation, derive the verdict from the severities, bind it to the artifact's hash, record the round",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review"
       },
       {
@@ -109,12 +109,12 @@
         "why": "an issue is a person's description of a symptom; nothing on disk says which code causes it or whether the reporter asked for the right fix"
       },
       {
-        "step": "the design \u2014 the approach chosen, and the approaches rejected",
+        "step": "the design — the approach chosen, and the approaches rejected",
         "why": "trade-offs between working designs are judgment; a file records the code that exists, never the one that should"
       },
       {
         "step": "whether this issue is one change or several, and where the seams fall",
-        "why": "size signals suggest a split, they never locate it \u2014 only reading the design tells you which parts can land and be reviewed alone"
+        "why": "size signals suggest a split, they never locate it — only reading the design tells you which parts can land and be reviewed alone"
       },
       {
         "step": "the implementation itself, written to match the surrounding code",
@@ -122,7 +122,7 @@
       },
       {
         "step": "whether the tests actually prove the issue is fixed",
-        "why": "a green suite proves the tests passed, not that they tested the reported behaviour \u2014 only reading the issue against the assertions answers that"
+        "why": "a green suite proves the tests passed, not that they tested the reported behaviour — only reading the issue against the assertions answers that"
       },
       {
         "step": "whether an artifact is good enough to approve",
@@ -134,7 +134,7 @@
       }
     ]
   },
-  "_baseline_comment": "Pinned against a real run of this skill against natejswenson/local-fitness#133 \u2014 its real open issue list, its real issue payload, and the investigation and design a real opus subagent produced from the briefs this skill rendered. Offline and $0 by construction: the frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, so CI cannot spend and cannot flake.",
+  "_baseline_comment": "Pinned against a real run of this skill against natejswenson/local-fitness#133 — its real open issue list, its real issue payload, and the investigation and design a real opus subagent produced from the briefs this skill rendered. Offline and $0 by construction: the frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, so CI cannot spend and cannot flake.",
   "baseline": [
     {
       "id": "the-real-run",
@@ -145,32 +145,31 @@
         "evals/inputs/issues.json",
         "evals/inputs/issue-133.json",
         "evals/inputs/artifacts/investigate.md",
-        "evals/inputs/artifacts/design.md",
         "evals/inputs/issue-132.json",
         "evals/inputs/artifacts/investigate-132.md",
-        "evals/inputs/artifacts/review-investigate-r1.md",
         "evals/baseline/MANIFEST.json",
         "evals/baseline/board.txt",
         "evals/baseline/brief-investigate.md",
-        "evals/baseline/brief-design.md",
         "evals/baseline/brief-implement.md",
         "evals/baseline/brief-review-investigate.md",
         "evals/baseline/verdict-investigate-r1.json",
-        "evals/baseline/checkpoint-comment.md"
+        "evals/baseline/checkpoint-comment.md",
+        "evals/inputs/artifacts/review-investigate-r1.findings.json",
+        "evals/baseline/review-investigate-r1.txt"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and \u2014 the expensive one \u2014 a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Since 0.2.0 it also pins the sticky issue comment, which is the ONLY artifact of a run that leaves the machine: a comment that lost the board, lost an approved artifact, or grew a local path is a run that cannot be recovered or a home directory published to a public issue, and nothing else in the repo would notice. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
+      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and — the expensive one — a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Since 0.2.0 it also pins the sticky issue comment, which is the ONLY artifact of a run that leaves the machine: a comment that lost the board, lost an approved artifact, or grew a local path is a run that cannot be recovered or a home directory published to a public issue, and nothing else in the repo would notice. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
     },
     {
       "id": "unapproved-stage-trap",
       "kind": "trap",
       "test": "scripts/tests/baseline.test.mjs",
       "fixtures": [
-        "evals/inputs/artifacts/design.md",
-        "evals/inputs/artifacts/investigate.md"
+        "evals/inputs/artifacts/investigate.md",
+        "evals/inputs/artifacts/review-investigate-r1.findings.json"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose design artifact is real and complete on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero \u2014 plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
+      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose design artifact is real and complete on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero — plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
     },
     {
       "id": "dependency-graph-pair",
@@ -178,7 +177,7 @@
       "test": "scripts/tests/gate.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/gate.test.mjs\"",
-      "rationale": "0.2.0 replaced the gate's flat prefix scan with a real dependency graph, which LOOSENS it \u2014 so it needs a two-sided pair, not a single assertion. One half proves a stacked lane still cannot be implemented before the lane it branches off (the loosening opened no hole); the other proves a lane CAN be implemented while the lane below it is still being tested (the concurrency is real rather than decorative). Either half alone passes over a graph that is wrong in the other direction, which is exactly how a parallelism feature ends up shipping as a comment. A third case asserts a hole two levels down is still named rather than hidden behind the step above it."
+      "rationale": "0.2.0 replaced the gate's flat prefix scan with a real dependency graph, which LOOSENS it — so it needs a two-sided pair, not a single assertion. One half proves a stacked lane still cannot be implemented before the lane it branches off (the loosening opened no hole); the other proves a lane CAN be implemented while the lane below it is still being tested (the concurrency is real rather than decorative). Either half alone passes over a graph that is wrong in the other direction, which is exactly how a parallelism feature ends up shipping as a comment. A third case asserts a hole two levels down is still named rather than hidden behind the step above it."
     },
     {
       "id": "offline-means-offline",
@@ -186,7 +185,7 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network \u2014 spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 \u2014 and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network — spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 — and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
     },
     {
       "id": "worktree-isolation",
@@ -194,16 +193,16 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the test stage's revert-and-rerun proof is only safe for the same reason \u2014 before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo \u2014 the first offline eval run of this feature left a stray `feature/issue-133` branch in claude-skills itself."
+      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the test stage's revert-and-rerun proof is only safe for the same reason — before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo — the first offline eval run of this feature left a stray `feature/issue-133` branch in claude-skills itself."
     },
     {
       "id": "stage-contract-corpus",
       "kind": "corpus",
       "test": "scripts/tests/baseline.test.mjs",
       "corpus_glob": "evals/baseline/stage-*.json",
-      "min_corpus": 4,
+      "min_corpus": 2,
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "Every shipped stage frozen with its full contract \u2014 model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 4 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer than four files must go red rather than report the remainder as clean."
+      "rationale": "Every shipped stage frozen with its full contract — model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 4 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer than four files must go red rather than report the remainder as clean."
     },
     {
       "id": "run-terminal-state",
@@ -211,7 +210,7 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched \u2014 the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again without redoing the first lane's work. `--close-issue` closes an open issue and reports an already-closed one as already closed rather than claiming an action it did not take, and an offline run refuses outright rather than finishing on an assumption."
+      "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched — the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again without redoing the first lane's work. `--close-issue` closes an open issue and reports an already-closed one as already closed rather than claiming an action it did not take, and an offline run refuses outright rather than finishing on an assumption."
     },
     {
       "id": "unreadable-run-row",
@@ -219,7 +218,7 @@
       "test": "scripts/tests/liveness.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
-      "rationale": "`runs` used to discard a `RunError` that `loadRun` already writes to be actionable, rendering a schema-1 run as a bare `(unreadable run)` with no reason and no remedy \u2014 the reader could not even tell which issue the directory belonged to (#223). Drives a run root holding one schema-1 run alongside one valid schema-2 run: the unreadable row keeps its directory name in `Title` and names the schema mismatch and the remedy `loadRun` already wrote, in the same table the readable row still renders its repo/issue id, title and approved count \u2014 the bound `catch` must not have swallowed the readable rows too. A fourth assertion pins that the reason's full text, path included, lands below the table and never inside a padded cell, extending the existing rule that a padded cell holding an absolute path encodes the host's tmpdir."
+      "rationale": "`runs` used to discard a `RunError` that `loadRun` already writes to be actionable, rendering a schema-1 run as a bare `(unreadable run)` with no reason and no remedy — the reader could not even tell which issue the directory belonged to (#223). Drives a run root holding one schema-1 run alongside one valid schema-2 run: the unreadable row keeps its directory name in `Title` and names the schema mismatch and the remedy `loadRun` already wrote, in the same table the readable row still renders its repo/issue id, title and approved count — the bound `catch` must not have swallowed the readable rows too. A fourth assertion pins that the reason's full text, path included, lands below the table and never inside a padded cell, extending the existing rule that a padded cell holding an absolute path encodes the host's tmpdir."
     },
     {
       "id": "live-stage-clock",
@@ -227,7 +226,7 @@
       "test": "scripts/tests/liveness.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
-      "rationale": "`Took` used to answer only after a human typed `accept`: `at.delivered` is written in exactly one place, so `briefed` / `\u2014` was the entire liveness signal for a stage that had, in fact, been running for minutes or had already finished and was waiting for review (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+` (a lower bound, never a finished duration); the same step once an artifact lands \u2014 still unaccepted \u2014 shows a `delivered` display state and a real duration with no `+`. A third case proves the clock does not start early on a step that was never dispatched. Two purity guards close the loop: `observe(dir, run)` never writes `run.json` and never mutates the run object handed to it, and the `delivered` value it predicts equals what `accept()` later persists for the same artifact; and `board(run)` called with no `now` renders no `+` anywhere and matches the pre-#223 shape exactly, which is what keeps the live clock from leaking into a frozen golden or the public checkpoint comment."
+      "rationale": "`Took` used to answer only after a human typed `accept`: `at.delivered` is written in exactly one place, so `briefed` / `—` was the entire liveness signal for a stage that had, in fact, been running for minutes or had already finished and was waiting for review (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+` (a lower bound, never a finished duration); the same step once an artifact lands — still unaccepted — shows a `delivered` display state and a real duration with no `+`. A third case proves the clock does not start early on a step that was never dispatched. Two purity guards close the loop: `observe(dir, run)` never writes `run.json` and never mutates the run object handed to it, and the `delivered` value it predicts equals what `accept()` later persists for the same artifact; and `board(run)` called with no `now` renders no `+` anywhere and matches the pre-#223 shape exactly, which is what keeps the live clock from leaking into a frozen golden or the public checkpoint comment."
     },
     {
       "id": "review-verdict-two-sided",
@@ -258,7 +257,7 @@
       "kind": "corpus",
       "test": "scripts/tests/baseline.test.mjs",
       "corpus_glob": "evals/baseline/review-*.json",
-      "min_corpus": 4,
+      "min_corpus": 1,
       "update_command": "node evals/baseline/update.mjs",
       "rationale": "Every shipped reviewer frozen with its full contract, same discipline as the stage corpus: one reviewer per stage, in stage order, each on opus — the red team is the judgment an auto run pays for, and a reviewer quietly moved to a cheaper model is a gate that rubber-stamps while every board still looks complete. The floor of 4 stops a resolver that matches nothing from reporting an unguarded pipeline as fully reviewed."
     },
@@ -268,8 +267,8 @@
       "test": "scripts/tests/liveness.test.mjs",
       "corpus_glob": "evals/inputs/timings/issue-*/run.json",
       "min_corpus": 3,
-      "update_command": "field-project this repo's own current run.json for issue-212/215/219 under evals/inputs/timings/ \u2014 schema/repo/issue/stages/lanes[].stages and their `at` timestamps only, no artifact prose and no prompt text (see the dispatch-expectation implement notes for the exact shape); there is no scripted regenerator because these are frozen real runs, not a re-derivable fixture",
-      "rationale": "`brief`'s expectation line (`design on this repo: 3 past runs, 3m45s\u20136m45s (median 5m12s)`) reads real prior-run durations off the run's sibling directories, and the anti-vacuity floor is the whole point: a `readTimings` that matched nothing would silently degrade to `no past timings on this repo` and pass every other liveness assertion, which is exactly how this feature goes decorative. The floor of 3 is this repo's own #212/#215/#219 runs, and a companion test asserts the scan over them finds at least 10 individual stage samples, not just 3 files \u2014 a resolver that opened the directories but extracted nothing would still clear a file-count floor alone."
+      "update_command": "field-project this repo's own current run.json for issue-212/215/219 under evals/inputs/timings/ — schema/repo/issue/stages/lanes[].stages and their `at` timestamps only, no artifact prose and no prompt text (see the dispatch-expectation implement notes for the exact shape); there is no scripted regenerator because these are frozen real runs, not a re-derivable fixture",
+      "rationale": "`brief`'s expectation line (`design on this repo: 3 past runs, 3m45s–6m45s (median 5m12s)`) reads real prior-run durations off the run's sibling directories, and the anti-vacuity floor is the whole point: a `readTimings` that matched nothing would silently degrade to `no past timings on this repo` and pass every other liveness assertion, which is exactly how this feature goes decorative. The floor of 3 is this repo's own #212/#215/#219 runs, and a companion test asserts the scan over them finds at least 10 individual stage samples, not just 3 files — a resolver that opened the directories but extracted nothing would still clear a file-count floor alone."
     }
   ]
 }

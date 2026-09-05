@@ -8,11 +8,9 @@
 
 Run: <RUN>
 
-| Step           | Model  | State   | Took | Gate    |
-|----------------|--------|---------|------|---------|
-| investigate    | opus   | pending | —    | open    |
-| design         | opus   | pending | —    | blocked |
-| root/implement | sonnet | pending | —    | blocked |
-| root/test      | sonnet | pending | —    | blocked |
+| Step           | Model | State   | Took | Gate    |
+|----------------|-------|---------|------|---------|
+| investigate    | opus  | pending | —    | open    |
+| root/implement | opus  | pending | —    | blocked |
 
 Next: `issueflow brief --stage investigate` (opus)

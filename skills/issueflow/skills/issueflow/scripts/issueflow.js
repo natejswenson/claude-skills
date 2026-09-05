@@ -11,7 +11,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
-import { MAX_ROUNDS, latestRound, nextRound, registerReview, roundsExhausted } from './lib/reviews.mjs';
+import { MAX_ROUNDS, latestRound, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
+import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
@@ -20,7 +21,7 @@ import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
   loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, recordCapOverride, remainingSteps,
-  runDir, runRoot, runState, saveRun, skip, split, workItemsFromDesign, worktreePath,
+  runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan, worktreePath,
 } from './lib/run.mjs';
 import { ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
@@ -298,6 +299,9 @@ async function cmdBrief(args) {
   if (args.review) {
     if (!args.stage) throw new Error('name the stage to review with --stage <id>');
     const step = findStep(run, args.stage, args.lane ?? null);
+    if (!reviewable(step)) {
+      throw new Error(`${step.key} is not red-teamed on disk — code is reviewed on its pull request, by the review loop`);
+    }
     if (step.stage.state === 'approved' || step.stage.state === 'skipped') {
       throw new Error(`${step.key} is already ${step.stage.state} — there is nothing left to review`);
     }
@@ -476,8 +480,12 @@ async function cmdReview(args) {
     console.log('');
     print(['Severity', 'Cite', 'Finding'], result.items.map((f) => [f.severity, f.cite, truncate(f.text, 72)]));
   } else {
-    console.log('\nNo findings. Read the review\'s "Not examined" section before trusting a clean round.');
+    console.log('\nNo findings.');
   }
+  // The coverage gap, always next to the finding count: three findings and
+  // silence about what nobody looked at reads as "everything else is fine".
+  console.log(`\nNot examined (${result.notExamined.length}):`);
+  for (const item of result.notExamined) console.log(`  - ${truncate(item, 110)}`);
 
   if (result.verdict === 'pass') {
     console.log(`\nNext: \`issueflow accept --auto ${stageArgs(step)}\``);
@@ -503,12 +511,12 @@ async function cmdSplit(args) {
   if (args.itemsJson) items = JSON.parse(readFileSync(resolve(args.itemsJson), 'utf8'));
   else if (args.items) items = JSON.parse(args.items);
   else {
-    const design = findStep(run, 'design');
-    if (design.stage.state !== 'approved') {
-      throw new Error('cannot read work items from an unapproved design — approve it, or pass --items-json');
+    const plan = findStep(run, PLAN_STAGE);
+    if (plan.stage.state !== 'approved') {
+      throw new Error('cannot read work items from an unapproved plan — approve it, or pass --items-json');
     }
-    items = workItemsFromDesign(readFileSync(artifactPath(dir, design), 'utf8'));
-    console.log(`Read ${items.length} work items from the approved design.\n`);
+    items = workItemsFromPlan(readFileSync(artifactPath(dir, plan), 'utf8'));
+    console.log(`Read ${items.length} work items from the approved plan.\n`);
   }
 
   split(dir, run, items);

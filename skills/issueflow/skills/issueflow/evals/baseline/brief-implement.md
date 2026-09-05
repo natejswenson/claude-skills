@@ -88,7 +88,6 @@ All are documented as gotchas in the corresponding `docs/mcp/` pages.
 | Stage | Path |
 |---|---|
 | investigate | <RUN>/shared/investigate.md |
-| design | <RUN>/shared/design.md |
 
 Read every one before you touch anything else. They were approved by the user;
 you are implementing them, not revisiting them. If one is wrong, say so and stop —
@@ -96,17 +95,32 @@ do not quietly design around it.
 
 ## Your task
 
-Make the change described in the approved design, and nothing else.
+Make the change described in the approved plan, and nothing else.
 Match the surrounding code: its naming, its comment density, its idiom.
+Write the test the plan named as its proof, in the place this repo already
+keeps its tests.
+Prove the test is two-sided: show it FAILING against the unfixed behaviour
+(revert, stub, or assert the old value) before showing it pass. A test that
+was never seen red proves the suite runs, not that the issue is fixed.
+A load or import error is NOT a red run. A file that fails to compile fails
+as one unit and proves nothing about any assertion inside it. Construct a
+pre-fix state the test file still loads against — a shim, a stub, an old
+value asserted — and watch each new assertion fail on its own claim. An
+assertion that passes against the pre-fix code is a coincidental green:
+report it, do not count it.
+Run the suite. Save the real, unedited command output to the evidence file
+named in the brief — the red run first, then the green — including the runner's
+own pass/fail summary lines, and add a line recording the exit code after each.
 Commit on the branch named in the brief. Stage explicit paths — never
 `git add -A` or `git add .`; another session may hold uncommitted work in
-this tree.
-Report what you changed as a table of `file | what changed`, and name
-anything in the design you did NOT do, with the reason.
+this tree. Leave the tree clean: the pull request is opened from the commits.
+Report what you changed as a table of `file | what changed`, name anything
+in the plan you did NOT do with the reason, and report the test command you
+ran and its exit code.
 
 ## You must not
 
-Do not go beyond the approved design. A better idea found mid-implementation goes back to the design gate; it does not get built because it was noticed.
+Do not go beyond the approved plan. A better idea found mid-implementation goes back to the plan gate; it does not get built because it was noticed. Never report a pass you did not watch happen. If the suite could not run, say so and stop — an unrun suite reported as green is the failure this whole skill is built to prevent.
 
 ## Working context
 
@@ -117,12 +131,13 @@ Do not go beyond the approved design. A better idea found mid-implementation goe
 | branch | feature/issue-133 |
 | base branch | main |
 | work item | root — MCP audit: tool descriptions promise behavior the handlers don't deliver |
+| evidence file | <RUN>/root/test-output.txt |
 
 ## Deliver
 
 Write your answer to `<RUN>/root/implement.md`.
 
-It must contain a section for each of: **Changed**, **Deviations**. The gate
+It must contain a section for each of: **Changed**, **Deviations**, **Command**, **Two-sided**, **Result**. The gate
 reads for those names and refuses the stage without them.
 
 ## While you work

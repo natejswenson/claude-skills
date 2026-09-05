@@ -104,10 +104,10 @@ export function prBody(dir, run, lane) {
     '## Test evidence',
     '',
   ];
-  const test = own.find((s) => s.stage.id === 'test');
-  if (test?.stage.evidence) {
-    if (test.stage.result) lines.push(`\`${test.stage.result}\``, '');
-    const output = readFileSync(test.stage.evidence, 'utf8').trim().split('\n');
+  const proved = own.find((s) => s.stage.evidence);
+  if (proved) {
+    if (proved.stage.result) lines.push(`\`${proved.stage.result}\``, '');
+    const output = readFileSync(proved.stage.evidence, 'utf8').trim().split('\n');
     const tail = output.slice(-25);
     lines.push('```', ...(output.length > tail.length ? [`… ${output.length - tail.length} earlier lines`] : []), ...tail, '```');
   } else {

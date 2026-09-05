@@ -3,11 +3,12 @@
  * Refresh the frozen baseline by re-running issueflow over the real inputs.
  *
  * The inputs are a real run: `natejswenson/local-fitness`'s actual open issues,
- * its actual issue #133, and the investigation and design a real opus subagent
- * produced from the briefs this skill rendered. Nothing here is invented, and
- * nothing here touches the network — the frozen `gh` payloads are fed in
- * through `--repo-json` / `--issues-json` / `--issue-json`, which is what lets
- * `ci / issueflow` run the whole state machine for $0 and never flake.
+ * its actual issue #133, and the plan a real opus subagent produced from the
+ * briefs this skill rendered (its investigation and its design, which since
+ * 0.7.0 are one artifact). Nothing here is invented, and nothing here touches
+ * the network — the frozen `gh` payloads are fed in through `--repo-json` /
+ * `--issues-json` / `--issue-json`, which is what lets `ci / issueflow` run the
+ * whole state machine for $0 and never flake.
  *
  * Run it when a deliberate change to the board, the state machine or a brief
  * makes the golden stale. The failing assertion prints this command.
@@ -19,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STAGES } from '../../scripts/lib/stages.mjs';
-import { REVIEWS, REVIEW_FORBIDS, REVIEW_REQUIRES } from '../../scripts/lib/reviews.mjs';
+import { REVIEWS, REVIEW_FORBIDS } from '../../scripts/lib/reviews.mjs';
 import { renderComment } from '../../scripts/lib/checkpoint.mjs';
 import { loadRun } from '../../scripts/lib/run.mjs';
 
@@ -58,18 +59,22 @@ export function generate() {
   artifacts['board.txt'] = cli(['board', '--repo', REPO, '--repo-json', at('repo.json'), '--issues-json', at('issues.json')]);
   artifacts['start.txt'] = cli(['start', ...common, '--issue', '133', '--issue-json', at('issue-133.json')]);
 
-  // investigate — the artifact a real opus subagent wrote from the brief below.
+  // investigate — the plan a real opus subagent wrote from the brief below,
+  // red-teamed and approved. The round registered here is the real #132 review
+  // (six path:line findings into the frozen local-fitness sources, verdict
+  // pass): the #133 run predates the red team, so it has no review of its own,
+  // and a review invented for the golden would pin the registrar against
+  // nothing real. The dogfood run that freezes 0.7.0's review loop replaces it.
   artifacts['brief-investigate.md'] = readBrief(cli(['brief', '--stage', 'investigate', '--run-dir', runDir]), runDir, 'investigate');
   cpSync(at('artifacts', 'investigate.md'), join(runDir, 'shared', 'investigate.md'));
+  cli(['brief', '--review', '--stage', 'investigate', '--run-dir', runDir]);
+  mkdirSync(join(runDir, 'reviews'), { recursive: true });
+  cpSync(at('artifacts', 'review-investigate-r1.findings.json'), join(runDir, 'reviews', 'investigate-r1.findings.json'));
+  cli(['review', '--stage', 'investigate', '--run-dir', runDir]);
   cli(['accept', '--stage', 'investigate', '--run-dir', runDir]);
 
-  // design — same, and it inherits the approved investigation by path.
-  artifacts['brief-design.md'] = readBrief(cli(['brief', '--stage', 'design', '--run-dir', runDir]), runDir, 'design');
-  cpSync(at('artifacts', 'design.md'), join(runDir, 'shared', 'design.md'));
-  cli(['accept', '--stage', 'design', '--run-dir', runDir]);
-
-  // implement — briefable for real, because both stages it inherits are approved.
-  artifacts['brief-implement.md'] = readBrief(cli(['brief', '--stage', 'implement', '--run-dir', runDir]), runDir, 'root-implement');
+  // implement — briefable for real, because the plan it inherits is approved.
+  artifacts['brief-implement.md'] = readBrief(cli(['brief', '--stage', 'implement', '--run-dir', runDir, '--no-worktree']), runDir, 'root-implement');
 
   // The sticky issue comment this run would have posted. It is the durable
   // record of the whole run, so it is frozen for the same reason the briefs
@@ -82,7 +87,7 @@ export function generate() {
   for (const s of [...state.stages, ...state.lanes.flatMap((l) => l.stages)]) s.at = {};
   artifacts['checkpoint-comment.md'] = renderComment(runDir, state);
 
-  // The shipped stage contract, one file per stage. Four files, four stages:
+  // The shipped stage contract, one file per stage. Two files, two stages:
   // the corpus floor is what stops a resolver that matches nothing from
   // reporting a state machine with a missing stage as complete.
   for (const s of STAGES) {
@@ -93,19 +98,18 @@ export function generate() {
     )}\n`;
   }
 
-  // The reviewer contracts, frozen like the stage contracts and for the same
+  // The reviewer contract, frozen like the stage contracts and for the same
   // reason: a reviewer that silently changed model or dropped a hunt would
   // still render a complete-looking review brief.
   for (const r of REVIEWS) {
     artifacts[`review-${r.id}.json`] = `${JSON.stringify(
-      { id: r.id, title: r.title, model: r.model, agent: r.agent, asks: r.asks, requires: REVIEW_REQUIRES, forbids: REVIEW_FORBIDS },
+      { id: r.id, title: r.title, model: r.model, agent: r.agent, asks: r.asks, forbids: REVIEW_FORBIDS },
       null,
       2,
     )}\n`;
   }
 
-  // The red-team round, in its own run directory: the golden run above stays a
-  // gated run, so its checkpoint comment keeps pinning the pre-review shape.
+  // The red-team round, in its own run directory.
   //
   // These fixtures are the first real auto-mode run — issue #132, its final
   // investigate artifact, and the round-3 review a real opus red-team subagent
@@ -113,10 +117,10 @@ export function generate() {
   // frozen copies of the cited local-fitness sources (a public repo) under
   // `inputs/repo/`, so the registrar's citation gate runs for real, offline.
   // The review here still drives the real CLI — brief the reviewer, drop in the
-  // reviewer's artifact, and let `review` validate, derive and hash-bind it.
+  // reviewer's findings, and let `review` validate, derive and hash-bind it.
   {
     const reviewDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
-    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json')]);
+    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json'), '--auto']);
     cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
     cpSync(at('artifacts', 'investigate-132.md'), join(reviewDir, 'shared', 'investigate.md'));
     cli(['brief', '--review', '--stage', 'investigate', '--run-dir', reviewDir]);
@@ -124,10 +128,10 @@ export function generate() {
       readFileSync(join(reviewDir, 'briefs', 'review-investigate-r1.md'), 'utf8'), reviewDir,
     );
     mkdirSync(join(reviewDir, 'reviews'), { recursive: true });
-    cpSync(at('artifacts', 'review-investigate-r1.md'), join(reviewDir, 'reviews', 'investigate-r1.md'));
-    cli(['review', '--stage', 'investigate', '--run-dir', reviewDir]);
+    cpSync(at('artifacts', 'review-investigate-r1.findings.json'), join(reviewDir, 'reviews', 'investigate-r1.findings.json'));
+    artifacts['review-investigate-r1.txt'] = normalize(cli(['review', '--stage', 'investigate', '--run-dir', reviewDir]), reviewDir);
     artifacts['verdict-investigate-r1.json'] = normalize(
-      readFileSync(join(reviewDir, 'reviews', 'investigate-r1.json'), 'utf8'), reviewDir,
+      readFileSync(join(reviewDir, 'reviews', 'investigate-r1.verdict.json'), 'utf8'), reviewDir,
     );
     rmSync(reviewDir, { recursive: true, force: true });
   }

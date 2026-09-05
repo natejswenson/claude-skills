@@ -92,10 +92,20 @@ State explicitly whether the issue as written asks for the right fix, and
 if it does not, say what the reporter probably wants instead.
 List what you could NOT determine. An unknown named is worth more than a
 guess presented as a finding.
+Then plan the change. Name the approach chosen AND at least one approach
+rejected, with the reason — a plan with no rejected alternative is a first
+idea wearing a design doc.
+List every file that will be touched and what happens to it.
+State how the change will be proven: the specific behaviour a test must
+assert, phrased so a reader can tell it maps to the issue.
+Decide whether this is ONE change or SEVERAL. If several, list the work
+items in landing order under a `## Work items` heading, one per line as
+`- <slug>: <what lands in this layer>`. Each item must be reviewable and
+mergeable ALONE. If one change, say so and write no work items.
 
 ## You must not
 
-Do not change a single file. This stage reads and reports; an investigation that edited the codebase has destroyed the evidence it was sent to gather.
+Do not change a single file, and do not write the implementation. This stage reads, reports and plans; an investigation that edited the codebase has destroyed the evidence it was sent to gather, and a plan containing the finished diff is a change nobody got to review before it existed.
 
 ## Working context
 
@@ -111,7 +121,7 @@ Do not change a single file. This stage reads and reports; an investigation that
 
 Write your answer to `<RUN>/shared/investigate.md`.
 
-It must contain a section for each of: **Root cause**, **Evidence**, **Unknowns**. The gate
+It must contain a section for each of: **Root cause**, **Evidence**, **Unknowns**, **Approach**, **Rejected**, **Files**, **Proof**. The gate
 reads for those names and refuses the stage without them.
 
 ## While you work

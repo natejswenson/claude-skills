@@ -2,11 +2,10 @@
  * The baseline: a real issueflow run, frozen and re-run.
  *
  * Pinned against `natejswenson/local-fitness#133` — its real open issue list, its
- * real issue payload, and the investigation and design a real opus subagent
- * produced from the briefs this skill rendered. `update.mjs` re-runs the whole
- * state machine over those frozen inputs and the assertions byte-compare, so
- * the eval fails when behaviour changes rather than merely when someone edits a
- * fixture.
+ * real issue payload, and the plan a real opus subagent produced from the
+ * briefs this skill rendered. `update.mjs` re-runs the whole state machine over
+ * those frozen inputs and the assertions byte-compare, so the eval fails when
+ * behaviour changes rather than merely when someone edits a fixture.
  *
  * Offline and $0 by construction: the frozen `gh` payloads are fed in through
  * `--repo-json` / `--issues-json` / `--issue-json`, so nothing here can reach
@@ -21,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate } from '../../evals/baseline/update.mjs';
 import { STAGES } from '../lib/stages.mjs';
-import { REVIEWS, REVIEW_REQUIRES } from '../lib/reviews.mjs';
+import { REVIEWS } from '../lib/reviews.mjs';
 import { createRun, gateSteps } from '../lib/run.mjs';
 import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
 
@@ -79,7 +78,7 @@ test('the-real-run: no padded table cell carries a path, so the golden survives 
   // /tmp/… on Linux — and normalising the path afterwards shrinks the text but
   // not the padding, so the golden disagreed with CI on the separator row alone.
   // Paths belong on their own line.
-  for (const name of ['board.txt', 'start.txt']) {
+  for (const name of ['board.txt', 'start.txt', 'review-investigate-r1.txt']) {
     for (const line of frozen(name).split('\n')) {
       if (!line.startsWith('|')) continue;
       assert.doesNotMatch(line, /\/(tmp|var|home|Users)\//, `${name} puts a machine-dependent path in a padded cell: ${line}`);
@@ -91,15 +90,16 @@ test('the-real-run: each frozen brief carries the issue and the artifacts it inh
   const investigate = frozen('brief-investigate.md');
   assert.match(investigate, /tool descriptions promise behavior/, 'the investigate brief lost the issue body');
   assert.doesNotMatch(investigate, /Read these first/, 'the first stage inherits nothing and must claim nothing');
-
-  const design = frozen('brief-design.md');
-  assert.match(design, /Read these first/, 'the design brief lost its inherited artifacts');
-  assert.match(design, /shared\/investigate\.md/, 'the design brief lost the investigation');
+  // The plan stage owes the design's sections too, now that design is folded in.
+  assert.match(investigate, /\*\*Approach\*\*, \*\*Rejected\*\*, \*\*Files\*\*, \*\*Proof\*\*/, 'the plan brief lost the design half of its contract');
+  assert.match(investigate, /## Work items/, 'the plan brief no longer asks whether the issue splits');
 
   const implement = frozen('brief-implement.md');
-  assert.match(implement, /shared\/investigate\.md/);
-  assert.match(implement, /shared\/design\.md/, 'the implement brief lost the design — the subagent would start blind');
+  assert.match(implement, /Read these first/, 'the implement brief lost its inherited artifacts');
+  assert.match(implement, /shared\/investigate\.md/, 'the implement brief lost the plan — the subagent would start blind');
   assert.match(implement, /feature\/issue-133/, 'the implement brief lost the branch it must commit to');
+  assert.match(implement, /evidence file/, 'the implement brief lost the evidence file — the test half of the stage');
+  assert.match(implement, /the red run first, then the green/, 'the implement brief no longer states the evidence order the gate reads for');
 });
 
 // ---------------------------------------------------------------------------
@@ -118,10 +118,13 @@ test('the-real-run: the frozen checkpoint comment carries the run, its board and
   );
   assert.match(comment, /\| investigate \| opus \| ✅ approved \|/, 'the board lost its approved stages');
   assert.match(comment, /\| root \| `feature\/issue-133` \| `main` \|/, 'the lane table lost its branch');
-  // Both approved artifacts, in full — this is what makes the issue the record.
+  assert.match(comment, /\| investigate \| 1 \| 0 \| \d+ \|/, 'the round table lost the plan review');
+  // The approved plan, in full — this is what makes the issue the record.
   assert.match(comment, /<details><summary><b>investigate<\/b>/);
-  assert.match(comment, /<details><summary><b>design<\/b>/);
   assert.match(comment, /tools\.py:296-304/, 'the investigation body is not actually in the comment');
+  // `## Work items` sits past the comment's 20 000-character artifact budget on
+  // this plan; `## Approach` is the design half's first heading and is within it.
+  assert.match(comment, /## Approach/, 'the plan half of the artifact is not in the comment');
   assert.ok(comment.length > 5000, `the comment is ${comment.length} bytes — an empty record would pass every check above`);
 });
 
@@ -139,8 +142,8 @@ test('the-real-run: the checkpoint comment publishes no local path and no wall-c
   }
   // The Took column must be frozen empty: a duration here would pin the speed
   // of whichever machine last ran the refresh.
-  const board = comment.split('\n').filter((l) => /^\| (investigate|design|root\/)/.test(l));
-  assert.ok(board.length >= 4, `the frozen board has ${board.length} rows — a board over nothing proves nothing`);
+  const board = rendered.split('\n').filter((l) => /^\| (investigate|root\/implement) \| (opus|sonnet) \|/.test(l));
+  assert.ok(board.length >= 2, `the frozen board has ${board.length} rows — a board over nothing proves nothing`);
   for (const row of board) {
     assert.match(row, /\| — \|$|\| — \|\s*$/, `a wall-clock duration was frozen into the golden: ${row}`);
   }
@@ -151,7 +154,7 @@ test('the-real-run: the checkpoint comment publishes no local path and no wall-c
 // ---------------------------------------------------------------------------
 test('stage-contract-corpus: every shipped stage is frozen with its full contract', () => {
   const files = readdirSync(BASELINE).filter((f) => /^stage-.*\.json$/.test(f));
-  assert.ok(files.length >= 4, `the stage corpus matched ${files.length} files, floor is 4 — a resolver that matches nothing must go red`);
+  assert.ok(files.length >= 2, `the stage corpus matched ${files.length} files, floor is 2 — a resolver that matches nothing must go red`);
   assert.equal(files.length, STAGES.length, `${STAGES.length} stages ship but ${files.length} are frozen — run \`${REFRESH}\``);
 
   for (const s of STAGES) {
@@ -165,74 +168,84 @@ test('stage-contract-corpus: every shipped stage is frozen with its full contrac
   }
 });
 
-test('stage-contract-corpus: the test brief says which evidence formats the gate can read (#215)', () => {
-  const snapshot = JSON.parse(frozen('stage-test.json'));
+test('stage-contract-corpus: the implement brief says which evidence the gate reads, and in what order (#215, 0.7.0)', () => {
+  const snapshot = JSON.parse(frozen('stage-implement.json'));
   const asks = snapshot.asks.join(' ');
-  assert.match(asks, /pass\/fail summary/, `the frozen test-stage asks say nothing about the evidence contract — run \`${REFRESH}\``);
-  assert.match(asks, /exit code/, `the frozen test-stage asks say nothing about the evidence contract — run \`${REFRESH}\``);
+  assert.match(asks, /pass\/fail summary/, `the frozen implement asks say nothing about the evidence contract — run \`${REFRESH}\``);
+  assert.match(asks, /exit code/, `the frozen implement asks say nothing about the evidence contract — run \`${REFRESH}\``);
+  assert.match(asks, /the red run first, then the green/, 'the frozen implement asks do not state the order the gate enforces');
 });
 
 test('stage-contract-corpus: the models are the ones the skill promises', () => {
   const byId = Object.fromEntries(STAGES.map((s) => [s.id, s.model]));
-  assert.deepEqual(byId, { investigate: 'opus', design: 'opus', implement: 'sonnet', test: 'sonnet' });
+  assert.deepEqual(byId, { investigate: 'opus', implement: 'opus' });
 });
 
-test('stage-contract-corpus: the frozen test-stage contract states a load error is not a red run (#219)', () => {
-  const snapshot = JSON.parse(frozen('stage-test.json'));
+test('stage-contract-corpus: the frozen implement contract states a load error is not a red run (#219)', () => {
+  const snapshot = JSON.parse(frozen('stage-implement.json'));
   const asks = snapshot.asks.join(' ');
   assert.match(
     asks,
     /load or import error is NOT a red run/i,
-    `the frozen test-stage asks say nothing about a load error not counting as red — run \`${REFRESH}\``,
+    `the frozen implement asks say nothing about a load error not counting as red — run \`${REFRESH}\``,
   );
   assert.match(
     asks,
     /watch each new assertion fail on its own claim/i,
-    `the frozen test-stage asks do not require each assertion be seen failing individually — run \`${REFRESH}\``,
+    `the frozen implement asks do not require each assertion be seen failing individually — run \`${REFRESH}\``,
   );
 });
 
 // ---------------------------------------------------------------------------
-// review-contract-corpus — every shipped reviewer, same floor discipline as
+// review-contract-corpus — the shipped reviewer, same floor discipline as
 // the stage corpus: a resolver that matches nothing must go red, and a
-// reviewer that changed model changes what every auto run costs and how well
-// it is gated.
+// reviewer that changed model changes what every run costs and how well it
+// is gated.
 // ---------------------------------------------------------------------------
-test('review-contract-corpus: every shipped reviewer is frozen with its full contract, on opus', () => {
+test('review-contract-corpus: the shipped plan reviewer is frozen with its full contract, on opus', () => {
   const files = readdirSync(BASELINE).filter((f) => /^review-[a-z]+\.json$/.test(f));
-  assert.ok(files.length >= 4, `the review corpus matched ${files.length} files, floor is 4 — run \`${REFRESH}\``);
+  assert.ok(files.length >= 1, `the review corpus matched ${files.length} files, floor is 1 — run \`${REFRESH}\``);
   assert.equal(files.length, REVIEWS.length, `${REVIEWS.length} reviewers ship but ${files.length} are frozen — run \`${REFRESH}\``);
 
   for (const r of REVIEWS) {
     const snapshot = JSON.parse(frozen(`review-${r.id}.json`));
-    assert.equal(snapshot.model, 'opus', `${r.id} reviewer changed model — the red team is the judgment an auto run pays for`);
+    assert.equal(snapshot.model, 'opus', `${r.id} reviewer changed model — the red team is the judgment the run pays for`);
     assert.equal(snapshot.agent, r.agent);
     assert.deepEqual(snapshot.asks, r.asks, `${r.id} reviewer changed what it hunts`);
-    assert.deepEqual(snapshot.requires, REVIEW_REQUIRES);
+    assert.ok(snapshot.asks.length >= 8, 'the plan reviewer hunts the investigation AND the design — fewer than eight asks means one half fell out');
     assert.match(snapshot.forbids, /Never edit the work/, 'the shared forbids lost its first rule');
   }
 });
 
-test('the-real-run: the frozen review brief names the artifact under attack and the citation grammar', () => {
+test('the-real-run: the frozen review brief names the artifact under attack and the JSON shape', () => {
   const brief = frozen('brief-review-investigate.md');
   assert.match(brief, /red-team reviewer/, 'the review brief lost its identity');
   assert.match(brief, /<RUN>\/shared\/investigate\.md/, 'the review brief lost the artifact under review');
-  assert.match(brief, /- \[critical\|high\|medium\|low\] <citation> — <one-sentence finding>/, 'the finding grammar is gone');
+  assert.match(brief, /"severity": "critical\|high\|medium\|low"/, 'the finding shape is gone');
+  assert.match(brief, /"notExamined"/, 'the coverage-gap field is gone');
   assert.match(brief, /critical and high block the stage; medium and low are notes/, 'the severity split is gone');
   assert.match(brief, /addressed to `main`/, 'the review brief lost the completion contract');
   assert.match(brief, /raw file line index/, 'the review brief lost the issue body');
+  assert.doesNotMatch(brief, /- \[critical\|high\|medium\|low\] <citation>/, 'the 0.6.0 one-line grammar is back');
 });
 
 test('the-real-run: the frozen review is the real one — its findings resolve and its coverage gap is named', () => {
-  const review = frozen('../inputs/artifacts/review-investigate-r1.md');
+  const review = JSON.parse(frozen('../inputs/artifacts/review-investigate-r1.findings.json'));
   // The fixture is the round-3 review a real opus subagent wrote on the first
-  // auto-mode run. It must keep the shape the registrar checks — losing a
-  // heading here means the golden is exercising a review the gate would refuse.
-  assert.match(review, /## Findings/);
-  assert.match(review, /## Not examined/);
-  assert.match(review, /## Verdict/);
-  const findings = review.split('\n').filter((l) => /^\s*[-*]\s+\[(critical|high|medium|low)\]/.test(l));
-  assert.ok(findings.length >= 3, `the frozen review has ${findings.length} findings — a review over nothing proves nothing`);
+  // auto-mode run, carried into the JSON shape with its text unchanged. It must
+  // keep the shape the registrar checks — losing a field here means the golden
+  // is exercising a review the gate would refuse.
+  assert.ok(review.findings.length >= 3, `the frozen review has ${review.findings.length} findings — a review over nothing proves nothing`);
+  assert.ok(review.notExamined.length >= 3, 'the frozen review names nothing it did not examine');
+  assert.equal(review.verdict, 'pass');
+  for (const f of review.findings) assert.match(f.cite, /^[\w./-]+:\d+(-\d+)?$/, `a frozen finding cites nothing checkable: ${f.cite}`);
+});
+
+test('the-real-run: the registered round prints its findings table and names the coverage gap', () => {
+  const out = frozen('review-investigate-r1.txt');
+  assert.match(out, /Round 1 of 3 on investigate: PASS/);
+  assert.match(out, /\| Severity \| Cite/, 'the findings table is gone');
+  assert.match(out, /Not examined/, 'the coverage gap is not printed next to the findings');
 });
 
 test('the-real-run: the frozen verdict is hash-bound, timestamp-free and derived from its own findings', () => {
@@ -241,18 +254,17 @@ test('the-real-run: the frozen verdict is hash-bound, timestamp-free and derived
   assert.equal(verdict.round, 1);
   assert.equal(verdict.verdict, 'pass');
   assert.match(verdict.artifactSha, /^[0-9a-f]{64}$/, 'a verdict that binds to no bytes approves anything');
-  assert.equal(verdict.head, null, 'a document review binds to no commit');
-  assert.equal(verdict.review, 'reviews/investigate-r1.md');
+  assert.equal(verdict.review, 'reviews/investigate-r1.findings.json');
   const raw = frozen('verdict-investigate-r1.json');
   assert.doesNotMatch(raw, /\d{4}-\d{2}-\d{2}T/, 'a timestamp in the verdict would churn the golden on every refresh');
   assert.doesNotMatch(raw, /\/(Users|home|tmp|var)\//, 'the verdict publishes a machine path');
 });
 
 // ---------------------------------------------------------------------------
-// completion-contract — every rendered brief, not just the three frozen ones.
+// completion-contract — every rendered brief, not just the frozen ones.
 // The measured failure was VARIANCE: two dispatches of the identical stage
 // contract behaved differently, so this checks every stage rather than
-// trusting the byte-compare of three briefs to stand in for the fourth.
+// trusting the byte-compare of two briefs to stand in for the rest.
 // ---------------------------------------------------------------------------
 test('completion-contract: every stage brief asks the subagent to SendMessage main on completion (#219)', () => {
   const policy = { base: 'dev', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: false };
@@ -268,14 +280,13 @@ test('completion-contract: every stage brief asks the subagent to SendMessage ma
     assert.match(text, /addressed to `main`/, `${step.key} brief does not name the addressee`);
   }
   // A reviewer is a subagent like any other, and the measured idle-without-a-
-  // message failure applies to it identically — so its briefs carry the same
-  // contract, checked for every stage rather than only the frozen one.
-  for (const step of steps) {
-    const text = renderReviewBrief('/tmp/run', run, step, issue, 1);
-    assert.match(text, /## When you are done/, `${step.key} review brief lost the completion section`);
-    assert.match(text, /SendMessage/, `${step.key} review brief does not ask for a SendMessage`);
-    assert.match(text, /addressed to `main`/, `${step.key} review brief does not name the addressee`);
-  }
+  // message failure applies to it identically — so its brief carries the same
+  // contract.
+  const plan = steps.find((s) => s.stage.id === 'investigate');
+  const text = renderReviewBrief('/tmp/run', run, plan, issue, 1);
+  assert.match(text, /## When you are done/, 'the review brief lost the completion section');
+  assert.match(text, /SendMessage/, 'the review brief does not ask for a SendMessage');
+  assert.match(text, /addressed to `main`/, 'the review brief does not name the addressee');
 });
 
 // ---------------------------------------------------------------------------
@@ -295,31 +306,33 @@ const cli = (args) => {
   }
 };
 
-/** A run where design has a real artifact on disk but was never approved. */
+/** A run where the plan has a real, red-teamed artifact on disk but was never approved. */
 function trapRun() {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-trap-'));
   const repo = join(INPUTS, 'repo');
   cli(['start', '--repo', repo, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json')]);
   mkdirSync(join(dir, 'shared'), { recursive: true });
   writeFileSync(join(dir, 'shared', 'investigate.md'), readFileSync(join(INPUTS, 'artifacts', 'investigate.md')));
-  cli(['accept', '--stage', 'investigate', '--run-dir', dir]);
-  // the artifact exists and is good — the ONLY thing missing is the approval
-  writeFileSync(join(dir, 'shared', 'design.md'), readFileSync(join(INPUTS, 'artifacts', 'design.md')));
+  mkdirSync(join(dir, 'reviews'), { recursive: true });
+  writeFileSync(join(dir, 'reviews', 'investigate-r1.findings.json'), readFileSync(join(INPUTS, 'artifacts', 'review-investigate-r1.findings.json')));
+  cli(['review', '--stage', 'investigate', '--run-dir', dir]);
+  // the artifact exists, is complete, and passed its review — the ONLY thing missing is the approval
   return dir;
 }
 
-test('unapproved-stage-trap: a later stage cannot be briefed over an unapproved design', () => {
+test('unapproved-stage-trap: a later stage cannot be briefed over an unapproved plan', () => {
   const dir = trapRun();
   const r = cli(['brief', '--stage', 'implement', '--run-dir', dir]);
-  assert.notEqual(r.code, 0, 'brief accepted a stage gated behind an unapproved design');
-  assert.match(r.err, /design \(briefed\)|design \(pending\)/);
+  assert.notEqual(r.code, 0, 'brief accepted a stage gated behind an unapproved plan');
+  assert.match(r.err, /investigate \(briefed\)|investigate \(pending\)/);
   rmSync(dir, { recursive: true, force: true });
 });
 
-test('unapproved-stage-trap: a later stage cannot be accepted over an unapproved design', () => {
+test('unapproved-stage-trap: a later stage cannot be accepted over an unapproved plan', () => {
   const dir = trapRun();
   mkdirSync(join(dir, 'root'), { recursive: true });
-  writeFileSync(join(dir, 'root', 'implement.md'), '## Changed\n\nstuff\n\n## Deviations\n\nnone\n');
+  writeFileSync(join(dir, 'root', 'implement.md'), '## Changed\n\nstuff\n\n## Deviations\n\nnone\n## Command\n\nx\n## Two-sided\n\nx\n## Result\n\nx\n');
+  writeFileSync(join(dir, 'root', 'test-output.txt'), '# pass 0\n# fail 1\n\n# pass 3\n# fail 0\n');
   const r = cli(['accept', '--stage', 'implement', '--run-dir', dir]);
   assert.notEqual(r.code, 0, 'accept advanced a stage whose predecessor was never approved');
   assert.match(r.err, /no stage runs on anything but its predecessor/);
@@ -336,7 +349,7 @@ test('unapproved-stage-trap: ship refuses an unapproved run and names every hole
 
 test('unapproved-stage-trap: a skipped stage is not a pass — ship still refuses', () => {
   const dir = trapRun();
-  cli(['accept', '--stage', 'design', '--run-dir', dir]);
+  cli(['accept', '--stage', 'investigate', '--run-dir', dir]);
   cli(['accept', '--stage', 'implement', '--run-dir', dir, '--skip', 'nothing to build']);
   const r = cli(['ship', '--run-dir', dir]);
   assert.notEqual(r.code, 0, 'a skipped stage was treated as done');
