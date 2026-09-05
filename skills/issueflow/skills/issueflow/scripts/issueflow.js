@@ -153,6 +153,10 @@ function nextLine(run) {
     return;
   }
   if (ready.length === 1) {
+    if (ready[0].stage.state === 'briefed') {
+      console.log(`\n${ready[0].key} is dispatched — \`issueflow next\` waits on it and takes the next step.`);
+      return;
+    }
     console.log(`\nNext: \`issueflow brief ${stageArgs(ready[0])}\` (${ready[0].stage.model})`);
     return;
   }
