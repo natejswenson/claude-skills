@@ -231,7 +231,9 @@ async function cmdBoard(args) {
   const repo = resolve(args.repo ?? '.');
   const info = identify(repo, args);
   const issues = args.issuesJson ? JSON.parse(readFileSync(args.issuesJson, 'utf8')) : listIssues(repo);
-  const policy = resolvePolicy(repo, info.defaultBranch);
+  // An offline run reads nothing from git it was not handed: the frozen
+  // repo.json is the whole remote, so the dev-on-origin detection is off.
+  const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
 
   if (issues.length === 0) {
     console.log(`No open issues in ${info.owner}/${info.name}.`);
@@ -254,7 +256,9 @@ async function cmdStart(args) {
   const info = identify(repo, args);
   const number = readIssueNumber(args);
   const issue = args.issueJson ? JSON.parse(readFileSync(args.issueJson, 'utf8')) : viewIssue(repo, number);
-  const policy = resolvePolicy(repo, info.defaultBranch);
+  // An offline run reads nothing from git it was not handed: the frozen
+  // repo.json is the whole remote, so the dev-on-origin detection is off.
+  const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
 
   const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });

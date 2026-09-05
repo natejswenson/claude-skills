@@ -6,8 +6,21 @@
  * `.github/shipflow.json`; repos that have not get a conservative default that
  * targets the repo's actual default branch, never a guessed `dev`.
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+/** The branch names on `origin`, from the local remote-tracking refs — no network. */
+export function remoteBranchesOf(repoPath) {
+  try {
+    const out = execFileSync('git', ['for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin/'], {
+      cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return out.split('\n').map((l) => l.trim().replace(/^origin\//, '')).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
 
 const readJson = (path) => {
   try {
@@ -23,16 +36,24 @@ const readJson = (path) => {
  * `defaultBranch` is the remote's default, supplied by the caller because only
  * `gh` knows it — passing it in keeps this function pure and testable.
  */
-export function resolvePolicy(repoPath, defaultBranch = 'main') {
+export function resolvePolicy(repoPath, defaultBranch = 'main', { remoteBranches = null } = {}) {
   const configPath = join(repoPath, '.github', 'shipflow.json');
   const config = existsSync(configPath) ? readJson(configPath) : null;
 
   if (!config) {
+    // No shipflow config, but the remote has a `dev` branch beside the
+    // default: that is the dev → main shape with the policy written in prose
+    // instead of JSON. The first real 0.7.0 run opened four pull requests into
+    // `main` on exactly such a repo, and the review loop's own conventions
+    // angle caught it against the repo's CLAUDE.md. A `dev` that exists on
+    // origin is the integration branch; a guessed one would still be wrong.
+    const remote = remoteBranches ?? remoteBranchesOf(repoPath);
+    const hasDev = remote.includes('dev') && defaultBranch !== 'dev';
     return {
-      base: defaultBranch,
+      base: hasDev ? 'dev' : defaultBranch,
       featurePrefix: 'feature/',
       mergeMethod: 'squash',
-      source: 'defaults (no .github/shipflow.json)',
+      source: hasDev ? 'origin has a dev branch (no .github/shipflow.json)' : 'defaults (no .github/shipflow.json)',
       shipflow: false,
     };
   }

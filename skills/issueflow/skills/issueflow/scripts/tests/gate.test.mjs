@@ -386,11 +386,23 @@ test('every stage declares a model, an agent, an artifact and what the gate read
   }
 });
 
-test('policy falls back to the repo default branch when there is no shipflow config', () => {
+test('policy falls back to the repo default branch when there is no shipflow config and no dev on origin', () => {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-policy-'));
-  const policy = resolvePolicy(dir, 'trunk');
+  const policy = resolvePolicy(dir, 'trunk', { remoteBranches: ['trunk', 'feature/x'] });
   assert.equal(policy.base, 'trunk');
   assert.equal(policy.shipflow, false);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+test('policy targets dev when origin has one beside the default branch, shipflow config or not', () => {
+  // The first real 0.7.0 run opened four pull requests into `main` on a repo
+  // whose CLAUDE.md says feature/* → dev → main but which has no shipflow.json.
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-policy-'));
+  const policy = resolvePolicy(dir, 'main', { remoteBranches: ['main', 'dev'] });
+  assert.equal(policy.base, 'dev');
+  assert.match(policy.source, /origin has a dev branch/);
+  // and a repo whose DEFAULT is dev does not point at itself twice
+  assert.equal(resolvePolicy(dir, 'dev', { remoteBranches: ['dev'] }).base, 'dev');
   rmSync(dir, { recursive: true, force: true });
 });
 
