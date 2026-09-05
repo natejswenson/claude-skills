@@ -20,9 +20,9 @@
  * Waiting is filesystem-observed: the wait line is `until [ <output> -nt
  * <brief> ]`, output newer than the brief that dispatched it, so a re-dispatch
  * over an existing artifact does not fire instantly and no sentinel the
- * subagent could forget is needed. The timeout is three times this repo's
- * median for the step, else thirty minutes; `timeout` exits 124, and `next`
- * reads that as a stall.
+ * subagent could forget is needed. The deadline is three times this repo's
+ * median for the step, else thirty minutes; the wait exits 124 at it, and
+ * `next` reads that as a stall.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -56,10 +56,16 @@ export function timeoutFor(dir, stageId) {
 
 const sh = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
-/** A background-Bash wait: exit 0 when every output is newer than its brief, 124 on the timeout. */
+/**
+ * A background-Bash wait: exit 0 when every output is newer than its brief,
+ * 124 at the deadline. Plain POSIX sh with a `date +%s` deadline — not GNU
+ * `timeout`, which a stock Mac does not have; the first real run of 0.7.0
+ * exited 127 on that within a second of arming the wait.
+ */
 export function waitLine({ pairs, timeout }) {
   const conds = pairs.map(([output, brief]) => (brief ? `[ ${sh(output)} -nt ${sh(brief)} ]` : `[ -f ${sh(output)} ]`)).join(' && ');
-  return `timeout ${timeout}s sh -c 'until ${conds.replace(/'/g, `'\\''`)}; do sleep 5; done'`;
+  const script = `end=$(( $(date +%s) + ${timeout} )); until ${conds}; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done`;
+  return `sh -c '${script.replace(/'/g, `'\\''`)}'`;
 }
 
 const dispatch = (items, { pairs, timeout, note = null }) => ({ kind: 'dispatch', items, wait: waitLine({ pairs, timeout }), note });

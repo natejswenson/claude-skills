@@ -66,14 +66,16 @@ output's path and a short result before finishing — but since 0.7.0 the
 orchestrator does not wait on that message. `next` prints a wait line:
 
 ```
-timeout 1800s sh -c 'until [ <output> -nt <brief> ]; do sleep 5; done'
+sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'
 ```
 
 Output *newer than the brief that dispatched it*. A re-dispatch over an
 existing artifact does not fire instantly, no sentinel the subagent could
-forget is needed, and `timeout`'s exit 124 is a stall the orchestrator reads
-without guessing. The timeout is three times this repo's own median for the
-step, else thirty minutes. The message remains the enrichment: it tells the
+forget is needed, and exit 124 at the deadline is a stall the orchestrator reads
+without guessing. The deadline is three times this repo's own median for the
+step, else thirty minutes — plain POSIX `sh` and `date +%s`, because GNU
+`timeout` is not on a stock Mac, which the first real run of 0.7.0 found
+within a second of arming its first wait. The message remains the enrichment: it tells the
 orchestrator what happened, not whether it happened.
 
 ## The declarations are the contract

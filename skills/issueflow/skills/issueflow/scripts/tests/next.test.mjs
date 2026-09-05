@@ -79,7 +79,8 @@ test('decide: a fresh run briefs the plan; a briefed plan waits on its artifact;
   markBriefed(dir, run, step, () => at(-60));
   a = decide(dir, run);
   assert.equal(a.kind, 'wait');
-  assert.match(a.wait, /^timeout \d+s sh -c 'until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do sleep 5; done'$/);
+  assert.match(a.wait, /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done'$/);
+  assert.doesNotMatch(a.wait, /^timeout /, 'GNU timeout is not on a stock Mac — the deadline is shell arithmetic');
   writeGood(dir, run, 'investigate');
   a = decide(dir, run);
   assert.deepEqual([a.kind, a.command, a.args], ['run', 'brief', { review: true, stage: 'investigate' }]);
@@ -348,8 +349,17 @@ test('renderAction: a fixed shape — the first line is `next: <kind>`, a wait c
 });
 
 test('waitLine quotes paths and uses -nt against the brief; timeoutFor is 3× the repo median, else 30 minutes', () => {
-  assert.equal(waitLine({ pairs: [['/a b/out.md', '/a b/brief.md']], timeout: 10 }), "timeout 10s sh -c 'until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do sleep 5; done'");
-  assert.equal(waitLine({ pairs: [['/x', null]], timeout: 5 }), "timeout 5s sh -c 'until [ -f '\\''/x'\\'' ]; do sleep 5; done'");
+  assert.equal(
+    waitLine({ pairs: [['/a b/out.md', '/a b/brief.md']], timeout: 10 }),
+    "sh -c 'end=$(( $(date +%s) + 10 )); until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'",
+  );
+  assert.equal(waitLine({ pairs: [['/x', null]], timeout: 5 }), "sh -c 'end=$(( $(date +%s) + 5 )); until [ -f '\\''/x'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'");
+  // and it actually runs on this machine's sh: an existing pair returns 0 at once, a missing one hits the deadline with 124
+  const ok = execFileSync('sh', ['-c', waitLine({ pairs: [[CLI, INPUTS]], timeout: 5 }).replace(/^sh -c '/, '').replace(/'$/, '').replace(/'\\''/g, "'")], { encoding: 'utf8' });
+  void ok;
+  let code = 0;
+  try { execFileSync('sh', ['-c', "end=$(( $(date +%s) + 1 )); until [ -f /nonexistent-issueflow ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 1; done"], { stdio: 'ignore' }); } catch (e) { code = e.status; }
+  assert.equal(code, 124, 'the deadline must exit 124, the code next reads as a stall');
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-timeout-'));
   assert.equal(timeoutFor(join(dir, 'issue-1'), 'implement'), 1800, 'no history → the default');
   rmSync(dir, { recursive: true, force: true });
@@ -390,7 +400,7 @@ test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the re
   assert.match(r.out, /▶ brief/);
   assert.match(r.out, /next: dispatch \(brief\)/);
   assert.match(r.out, /Dispatch ONE subagent, model `opus`/);
-  assert.match(r.out, /wait: timeout \d+s sh -c 'until \[ .*investigate\.md.* -nt .*briefs\/investigate\.md/);
+  assert.match(r.out, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*investigate\.md.* -nt .*briefs\/investigate\.md/);
   assert.match(r.out, /then: node "\$SKILL_DIR\/scripts\/issueflow\.js" next --run-dir/);
 
   r = cli(['next', '--run-dir', dir]);

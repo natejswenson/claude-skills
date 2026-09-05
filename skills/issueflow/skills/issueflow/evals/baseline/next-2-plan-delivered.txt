@@ -14,5 +14,5 @@ Dispatch ONE subagent, model `opus`, with exactly this prompt:
 next: dispatch (brief)
   The prompt(s) to dispatch are printed above.
 
-wait: timeout 1800s sh -c 'until [ '\''<RUN>/reviews/investigate-r1.findings.json'\'' -nt '\''<RUN>/briefs/review-investigate-r1.md'\'' ]; do sleep 5; done'
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ '\''<RUN>/reviews/investigate-r1.findings.json'\'' -nt '\''<RUN>/briefs/review-investigate-r1.md'\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'
 then: node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <RUN>
