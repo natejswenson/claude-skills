@@ -111,6 +111,10 @@ report it, do not count it.
 Run the suite. Save the real, unedited command output to the evidence file
 named in the brief — the red run first, then the green — including the runner's
 own pass/fail summary lines, and add a line recording the exit code after each.
+The gate reads every runner summary in that file in order and requires the LAST
+one to be green: if a broader run fails on something pre-existing (a missing
+system library, a known-red test), record it earlier in the file and end with
+the green targeted run that proves your change.
 Commit on the branch named in the brief. Stage explicit paths — never
 `git add -A` or `git add .`; another session may hold uncommitted work in
 this tree. Leave the tree clean: the pull request is opened from the commits.
