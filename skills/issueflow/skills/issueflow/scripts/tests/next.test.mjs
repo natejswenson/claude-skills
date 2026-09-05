@@ -314,6 +314,25 @@ test('decide: finders wait → verify → verifiers wait → register → fix br
   cleanup();
 });
 
+test('decide: a finder fleet that never delivers is a stall with the prompts to re-dispatch, not a wait forever', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  const brief = join(dir, 'briefs', 'root-review-r1-finder-1.md');
+  mkdirSync(dirname(brief), { recursive: true });
+  writeFileSync(brief, '# finder\n');
+  let a = decide(dir, run);
+  assert.equal(a.kind, 'wait', 'a fresh brief is waited on');
+  backdate(brief, 4000);
+  a = decide(dir, run);
+  assert.equal(a.kind, 'stop');
+  assert.equal(a.reason, 'stalled');
+  assert.equal(a.items.length, 1);
+  assert.match(a.items[0].prompt, /root-review-r1-finder-1\.md/);
+  assert.equal(a.items[0].model, 'opus');
+  cleanup();
+});
+
 test('decide: an unpushed fix is a stop when the remote head disagrees, and a stacked lane is rebased before its first round', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];

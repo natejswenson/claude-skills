@@ -33,8 +33,8 @@ import {
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
-  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, fixBriefPath, fixReportPath, openMajors,
-  reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  FINDER_MODEL, MAX_REVIEW_ROUNDS, VERIFIER_MODEL, candidatesPath, currentRound, finderBriefPath, fixBriefPath,
+  fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
 
@@ -204,11 +204,26 @@ function decideLoop(dir, run, lane, ctx) {
 
   if (!entry.registered) {
     const round = entry.round;
+    // A reviewer fleet that never writes is the stall this exists for: the
+    // first real loop lost all four round-3 finders to a session rate limit
+    // at once, and a wait with no stall rule would have been printed forever.
+    // Missing outputs whose briefs are older than the deadline stop the run
+    // with exactly the prompts to re-dispatch — the same one-line prompts.
+    const stalled = (files, briefs, model, what) => {
+      const missing = files.map((f, i) => [f, briefs[i]]).filter(([f]) => !existsSync(f));
+      const oldest = Math.min(...missing.map(([, b]) => mtime(b) ?? Infinity));
+      if (missing.length === 0 || !Number.isFinite(oldest)) return null;
+      const elapsed = (Date.parse(ctx.now()) - oldest) / 1000;
+      if (elapsed <= DEFAULT_TIMEOUT_S) return null;
+      return stop('stalled', `${lane.slug} round ${round}: ${missing.length} ${what}(s) briefed ${Math.round(elapsed / 60)} minutes ago and never delivered — past the ${Math.round(DEFAULT_TIMEOUT_S / 60)}-minute threshold`, {
+        items: missing.map(([, b]) => ({ model, prompt: promptFor(b) })),
+      });
+    };
     if (entry.verifiers === null) {
       const files = Array.from({ length: entry.finders }, (_, i) => candidatesPath(dir, lane, round, i + 1));
       const briefs = Array.from({ length: entry.finders }, (_, i) => finderBriefPath(dir, lane, round, i + 1));
       if (allPresent(files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
-      return wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
+      return stalled(files, briefs, FINDER_MODEL, 'finder') ?? wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
         pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
       });
     }
@@ -216,7 +231,7 @@ function decideLoop(dir, run, lane, ctx) {
     const files = Array.from({ length: entry.verifiers }, (_, i) => verdictsPath(dir, lane, round, i + 1));
     const briefs = Array.from({ length: entry.verifiers }, (_, i) => verifierBriefPath(dir, lane, round, i + 1));
     if (allPresent(files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
-    return wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
+    return stalled(files, briefs, VERIFIER_MODEL, 'verifier') ?? wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
       pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
     });
   }
