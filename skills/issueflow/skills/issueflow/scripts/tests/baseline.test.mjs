@@ -97,9 +97,36 @@ test('the-real-run: each frozen brief carries the issue and the artifacts it inh
   const implement = frozen('brief-implement.md');
   assert.match(implement, /Read these first/, 'the implement brief lost its inherited artifacts');
   assert.match(implement, /shared\/investigate\.md/, 'the implement brief lost the plan — the subagent would start blind');
-  assert.match(implement, /feature\/issue-133/, 'the implement brief lost the branch it must commit to');
+  assert.match(implement, /feature\/issue-133-descriptions/, 'the implement brief lost the branch it must commit to');
   assert.match(implement, /evidence file/, 'the implement brief lost the evidence file — the test half of the stage');
   assert.match(implement, /the red run first, then the green/, 'the implement brief no longer states the evidence order the gate reads for');
+});
+
+test('the-real-run: the frozen `next` outputs carry the driver\'s contract at every state', () => {
+  const fresh = frozen('next-1-fresh.txt');
+  assert.match(fresh, /▶ brief — the plan has not been briefed/);
+  assert.match(fresh, /next: dispatch \(brief\)/);
+  assert.match(fresh, /Dispatch ONE subagent, model `opus`/);
+  assert.match(fresh, /wait: timeout 1800s sh -c 'until \[ .*<RUN>\/shared\/investigate\.md.* -nt .*<RUN>\/briefs\/investigate\.md.* \]; do sleep 5; done'/, 'the wait line lost its -nt shape');
+  assert.match(fresh, /then: node "\$SKILL_DIR\/scripts\/issueflow\.js" next --run-dir <RUN>/);
+  const delivered = frozen('next-2-plan-delivered.txt');
+  assert.match(delivered, /▶ brief — the plan is delivered — briefing red-team round 1/);
+  assert.match(delivered, /review-investigate-r1\.md/);
+  assert.match(delivered, /investigate-r1\.findings\.json/, 'the wait names the findings file');
+  const reviewed = frozen('next-3-reviewed.txt');
+  assert.match(reviewed, /Round 1 of 3 on investigate: PASS/);
+  assert.match(reviewed, /next: stop — human/);
+  assert.match(reviewed, /command: node "\$SKILL_DIR\/scripts\/issueflow\.js" accept --stage investigate --run-dir <RUN>/);
+  assert.doesNotMatch(reviewed, /next: dispatch/, 'the human stop must not be skipped past');
+  const approved = frozen('next-4-approved.txt');
+  assert.match(approved, /▶ split/);
+  assert.match(approved, /Read 4 work items from the approved plan/);
+  assert.match(approved, /▶ brief — descriptions\/implement is ready to be briefed/);
+  assert.match(approved, /\| investigate\s+\| opus\s+\| approved\s+\| 4m58s/, 'the pinned plan clock must render, not a wall-clock value');
+  assert.match(approved, /next: dispatch \(brief\)/);
+  for (const name of ['next-1-fresh.txt', 'next-2-plan-delivered.txt', 'next-3-reviewed.txt', 'next-4-approved.txt']) {
+    assert.doesNotMatch(frozen(name), /\/(Users|home)\/[a-z]/i, `${name} carries a machine path`);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -117,7 +144,9 @@ test('the-real-run: the frozen checkpoint comment carries the run, its board and
     'the marker is how a run is adopted on another machine — it must lead the comment',
   );
   assert.match(comment, /\| investigate \| opus \| ✅ approved \|/, 'the board lost its approved stages');
-  assert.match(comment, /\| root \| `feature\/issue-133` \| `main` \|/, 'the lane table lost its branch');
+  // The frozen plan lists four work items, so the run is split by the time the comment is rendered.
+  assert.match(comment, /\| descriptions \| `feature\/issue-133-descriptions` \| `main` \|/, 'the lane table lost its branch');
+  assert.match(comment, /\| dead-notes-param \| `feature\/issue-133-dead-notes-param` \| `feature\/issue-133-plan-tool-truth` \|/, 'the stack lost its shape');
   assert.match(comment, /\| investigate \| 1 \| 0 \| \d+ \|/, 'the round table lost the plan review');
   // The approved plan, in full — this is what makes the issue the record.
   assert.match(comment, /<details><summary><b>investigate<\/b>/);
@@ -142,8 +171,8 @@ test('the-real-run: the checkpoint comment publishes no local path and no wall-c
   }
   // The Took column must be frozen empty: a duration here would pin the speed
   // of whichever machine last ran the refresh.
-  const board = rendered.split('\n').filter((l) => /^\| (investigate|root\/implement) \| (opus|sonnet) \|/.test(l));
-  assert.ok(board.length >= 2, `the frozen board has ${board.length} rows — a board over nothing proves nothing`);
+  const board = rendered.split('\n').filter((l) => /^\| (investigate|[a-z-]+\/implement) \| (opus|sonnet) \|/.test(l));
+  assert.ok(board.length >= 5, `the frozen board has ${board.length} rows — a board over nothing proves nothing`);
   for (const row of board) {
     assert.match(row, /\| — \|$|\| — \|\s*$/, `a wall-clock duration was frozen into the golden: ${row}`);
   }

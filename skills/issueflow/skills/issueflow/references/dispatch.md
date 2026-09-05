@@ -8,10 +8,11 @@ That makes the dispatch prompt the highest-variance part of a multi-agent run �
 and, when it is improvised in the moment, the only part nobody reviews, because
 it never lands on disk.
 
-**So it lands on disk.** `issueflow brief` renders it from the run state and the
-approved artifacts, writes it to `briefs/<step>.md`, and hands back a path. The
-baseline eval byte-compares those files, which is how a brief that silently
-stopped carrying the design gets caught by CI instead of by a confused subagent.
+**So it lands on disk.** Every brief — a stage's, the red team's, a finder's, a
+verifier's, the fixer's — is rendered from the run state and the approved
+artifacts, written under `briefs/`, and handed back as a path. The baseline
+eval byte-compares those files, which is how a brief that silently stopped
+carrying the plan gets caught by CI instead of by a confused subagent.
 
 ## What crosses
 
@@ -20,11 +21,12 @@ stopped carrying the design gets caught by CI instead of by a confused subagent.
 | who the subagent is, and that it is cold | it will otherwise assume shared context and ask questions nobody hears |
 | the issue body and every comment, inlined | the ground truth, and the fix is often in the comments |
 | the paths of every approved prior artifact | the decisions it inherits, with an instruction to read them first |
-| the exact task, from the stage declaration | so two runs of the same stage are asked the same thing |
+| the exact task, from the stage declaration or the method file | so two runs of the same stage are asked the same thing |
 | what it must not do | every stage has one characteristic overreach |
 | the branch, the base and the work item | it commits; it needs to know where |
 | the artifact path and the sections the gate reads for | a stage that writes the wrong file has done nothing |
-| how to report completion, and to whom | `main`, by `SendMessage`, the moment the artifact is written |
+| for a review-loop brief: the diff file, the head, the checkout, and the findings already open by id | a reviewer reads the change, not the pull request page; a finder hunts gaps, not repeats |
+| how to report completion, and to whom | `main`, by `SendMessage`, the moment the output is written |
 
 ## What never crosses
 
@@ -54,25 +56,34 @@ instructions in front of a user who has no reason to read it, and would make the
 prompt something the orchestrator retyped rather than something the renderer
 produced.
 
-## Why the brief names the recipient
+## Why the wait is a file, not a message
 
 Going idle is not a signal. Across a real two-run corpus, ten stage subagents
 ran and only four sent the orchestrator anything on completion; the other six
 went idle with a content-free notification, indistinguishable from a stalled
-agent, and the orchestrator was left guessing whether the artifact existed. The
-brief now closes with a fixed instruction: send `main` — the agent that
-dispatched you — the artifact's path and a short result, before finishing the
-turn. `main` is the constant, not "the orchestrator": both routed identically
-in the measured runs, but only `main` needs no knowledge the brief renderer
-does not have. The wording is the same in every rendered brief, for the same
-reason the rest of the contract is — two dispatches of the same stage must
-behave the same way, and unconstrained variance was exactly the defect.
+agent. The brief still closes with a fixed instruction — send `main` the
+output's path and a short result before finishing — but since 0.7.0 the
+orchestrator does not wait on that message. `next` prints a wait line:
 
-## The stage declaration is the contract
+```
+timeout 1800s sh -c 'until [ <output> -nt <brief> ]; do sleep 5; done'
+```
+
+Output *newer than the brief that dispatched it*. A re-dispatch over an
+existing artifact does not fire instantly, no sentinel the subagent could
+forget is needed, and `timeout`'s exit 124 is a stall the orchestrator reads
+without guessing. The timeout is three times this repo's own median for the
+step, else thirty minutes. The message remains the enrichment: it tells the
+orchestrator what happened, not whether it happened.
+
+## The declarations are the contract
 
 `scripts/lib/stages.mjs` holds each stage's model, agent type, artifact name,
-`asks`, `forbids` and `requires`. Everything else reads it: the brief renderer,
-the gate, the run board. A stage cannot drift between what it is told to do and
-what it is checked for, because both come from the same object — and the corpus
-baseline goes red if any stage loses a field, since a state machine missing a
-stage still renders as a complete-looking board.
+`asks`, `forbids` and `requires`. `scripts/lib/reviews.mjs` holds the red
+team's. `references/review-method.md` holds the review loop's angles, the
+verifier's contract and the fixer's rule, spliced into those briefs verbatim.
+Everything else reads them: the brief renderers, the gate, the run board. A
+stage cannot drift between what it is told to do and what it is checked for,
+because both come from the same object — and the corpus baseline goes red if
+any declaration loses a field, since a state machine missing a stage still
+renders as a complete-looking board.

@@ -8,11 +8,17 @@ the next one started. This comment is rewritten at every gate.
 | Step | Model | State | Took |
 |---|---|---|---|
 | investigate | opus | ✅ approved | — |
-| root/implement | opus | briefed | — |
+| descriptions/implement | opus | briefed | — |
+| query-workouts-honesty/implement | opus | pending | — |
+| plan-tool-truth/implement | opus | pending | — |
+| dead-notes-param/implement | opus | pending | — |
 
 | Lane | Branch | Base | Pushed |
 |---|---|---|---|
-| root | `feature/issue-133` | `main` | — |
+| descriptions | `feature/issue-133-descriptions` | `main` | — |
+| query-workouts-honesty | `feature/issue-133-query-workouts-honesty` | `feature/issue-133-descriptions` | — |
+| plan-tool-truth | `feature/issue-133-plan-tool-truth` | `feature/issue-133-query-workouts-honesty` | — |
+| dead-notes-param | `feature/issue-133-dead-notes-param` | `feature/issue-133-plan-tool-truth` | — |
 
 | Step | Rounds | Blocking found | Notes |
 |---|---|---|---|

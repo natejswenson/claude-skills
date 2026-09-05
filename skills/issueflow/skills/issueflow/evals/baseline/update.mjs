@@ -59,22 +59,39 @@ export function generate() {
   artifacts['board.txt'] = cli(['board', '--repo', REPO, '--repo-json', at('repo.json'), '--issues-json', at('issues.json')]);
   artifacts['start.txt'] = cli(['start', ...common, '--issue', '133', '--issue-json', at('issue-133.json')]);
 
+  // `next` at each state of the plan gate. Frozen because the driver's output
+  // is what the orchestrator copies: a wait line that stopped naming the
+  // brief, or a dispatch printed before the red team had run, would otherwise
+  // regress in prose nobody diffs. The run directory has no siblings here, so
+  // every timeout is the 1800s default and the golden is machine-independent.
+  artifacts['next-1-fresh.txt'] = cli(['next', '--run-dir', runDir]);
+
   // investigate — the plan a real opus subagent wrote from the brief below,
   // red-teamed and approved. The round registered here is the real #132 review
   // (six path:line findings into the frozen local-fitness sources, verdict
   // pass): the #133 run predates the red team, so it has no review of its own,
   // and a review invented for the golden would pin the registrar against
   // nothing real. The dogfood run that freezes 0.7.0's review loop replaces it.
-  artifacts['brief-investigate.md'] = readBrief(cli(['brief', '--stage', 'investigate', '--run-dir', runDir]), runDir, 'investigate');
+  artifacts['brief-investigate.md'] = readBrief(null, runDir, 'investigate');
   cpSync(at('artifacts', 'investigate.md'), join(runDir, 'shared', 'investigate.md'));
-  cli(['brief', '--review', '--stage', 'investigate', '--run-dir', runDir]);
+  artifacts['next-2-plan-delivered.txt'] = cli(['next', '--run-dir', runDir]);
   mkdirSync(join(runDir, 'reviews'), { recursive: true });
   cpSync(at('artifacts', 'review-investigate-r1.findings.json'), join(runDir, 'reviews', 'investigate-r1.findings.json'));
-  cli(['review', '--stage', 'investigate', '--run-dir', runDir]);
+  artifacts['next-3-reviewed.txt'] = cli(['next', '--run-dir', runDir]);
   cli(['accept', '--stage', 'investigate', '--run-dir', runDir]);
+  // The plan's clock is wall-clock — briefed, delivered and approved seconds
+  // apart on whichever machine last ran this. Pinned to fixed instants so the
+  // board `next` prints below carries a real-looking `Took` that never churns.
+  {
+    const state = loadRun(runDir);
+    state.stages[0].at = { briefed: '2026-09-04T12:00:00.000Z', delivered: '2026-09-04T12:04:58.000Z', approved: '2026-09-04T12:10:00.000Z' };
+    writeFileSync(join(runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+  }
 
-  // implement — briefable for real, because the plan it inherits is approved.
-  artifacts['brief-implement.md'] = readBrief(cli(['brief', '--stage', 'implement', '--run-dir', runDir, '--no-worktree']), runDir, 'root-implement');
+  // The approved plan lists work items, so `next` splits and briefs the bottom
+  // lane — implement, briefable for real, because the plan it inherits is approved.
+  artifacts['next-4-approved.txt'] = cli(['next', '--run-dir', runDir, '--no-worktree']);
+  artifacts['brief-implement.md'] = readBrief(null, runDir, 'descriptions-implement');
 
   // The sticky issue comment this run would have posted. It is the durable
   // record of the whole run, so it is frozen for the same reason the briefs

@@ -128,21 +128,21 @@ Do not go beyond the approved plan. A better idea found mid-implementation goes 
 |---|---|
 | work in | <REPO> |
 | repository | <REPO> |
-| branch | feature/issue-133 |
+| branch | feature/issue-133-descriptions |
 | base branch | main |
-| work item | root — MCP audit: tool descriptions promise behavior the handlers don't deliver |
-| evidence file | <RUN>/root/test-output.txt |
+| work item | descriptions — the eight description-string rewrites, the interpret.tsb_zone docstring… |
+| evidence file | <RUN>/descriptions/test-output.txt |
 
 ## Deliver
 
-Write your answer to `<RUN>/root/implement.md`.
+Write your answer to `<RUN>/descriptions/implement.md`.
 
 It must contain a section for each of: **Changed**, **Deviations**, **Command**, **Two-sided**, **Result**. The gate
 reads for those names and refuses the stage without them.
 
 ## While you work
 
-Append one short lowercase line to `<RUN>/progress/root-implement.log` whenever you
+Append one short lowercase line to `<RUN>/progress/descriptions-implement.log` whenever you
 reach a real milestone — what you just found, or what you are about to do next.
 This is scratch work for whoever is watching the run, not part of your answer:
 nobody reads it as prose, and it is never quoted back to you. Skip it if you
