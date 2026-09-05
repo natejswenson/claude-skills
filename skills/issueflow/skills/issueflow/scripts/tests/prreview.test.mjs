@@ -154,7 +154,8 @@ test('validateCandidates and validateVerdicts refuse every shape the registrar w
   assert.match(validateCandidates('nope', 1).error, /not valid JSON/);
   assert.match(validateCandidates(JSON.stringify({ candidates: [] }), 1).error, /notExamined/);
   assert.match(validateCandidates(JSON.stringify({ candidates: [{ file: 'a', line: 1 }], notExamined: [] }), 1).error, /category/);
-  assert.match(validateCandidates(JSON.stringify({ candidates: [cand({ short_summary: 'x'.repeat(61) })], notExamined: [] }), 1).error, /60 characters/);
+  assert.match(validateCandidates(JSON.stringify({ candidates: [cand({ short_summary: 'x'.repeat(81) })], notExamined: [] }), 1).error, /80 characters/);
+  assert.equal(validateCandidates(JSON.stringify({ candidates: [cand({ short_summary: 'x'.repeat(64) })], notExamined: ['y'] }), 1).candidates.length, 1, 'a 64-character summary is over the target, not over the cap');
   assert.match(validateCandidates(JSON.stringify({ candidates: [cand({ failure_scenario: '' })], notExamined: [] }), 1).error, /failure_scenario/);
   const ok = validateCandidates(JSON.stringify({ candidates: [cand()], notExamined: ['x'] }), 2);
   assert.equal(ok.candidates[0].id, 'c-2-1');

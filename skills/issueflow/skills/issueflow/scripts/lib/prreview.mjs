@@ -39,6 +39,9 @@ export const SEVERITIES = ['major', 'nit', 'pre-existing'];
 /** How many nits a round may post inline. The rest are counted in the body. */
 export const NIT_CAP = 5;
 
+/** The hard cap on a finding's one-line claim. The brief asks for 60; a finder that writes 64 is not refused. */
+export const SHORT_SUMMARY_CAP = 80;
+
 /** Under this many changed lines, one finder carries every angle and two verifiers suffice. */
 export const SMALL_DIFF_LINES = 60;
 
@@ -243,7 +246,11 @@ export function validateCandidates(text, finder) {
     if (!Number.isInteger(c.line) || c.line < 1) return { error: `${where}.line must be a positive integer` };
     if (!str(c.category)) return { error: `${where}.category is missing — name the angle that produced it` };
     if (!str(c.summary)) return { error: `${where}.summary is missing` };
-    if (!str(c.short_summary) || c.short_summary.length > 60) return { error: `${where}.short_summary must be 1–60 characters` };
+    // 60 is the target the brief asks for; 80 is the cap. The first real loop
+    // refused two whole finder files over summaries of 62–66 characters — the
+    // punctuation-class refusal the 0.6.0 grammar taught reviewers to write
+    // less. A cosmetic length is not a correctness property.
+    if (!str(c.short_summary) || c.short_summary.length > SHORT_SUMMARY_CAP) return { error: `${where}.short_summary must be 1–${SHORT_SUMMARY_CAP} characters (aim for 60)` };
     if (!str(c.failure_scenario)) return { error: `${where}.failure_scenario is missing — a candidate with no nameable failure is not a candidate` };
     candidates.push({
       id: `c-${finder}-${i + 1}`,
