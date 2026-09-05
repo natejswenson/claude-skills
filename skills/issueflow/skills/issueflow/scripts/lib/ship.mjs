@@ -153,8 +153,11 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
     git(['push', '-u', 'origin', lane.branch], repo);
     const bodyFile = join(dir, lane.slug, 'pr-body.md');
     writeFileSync(bodyFile, prBody(dir, run, lane));
-    const url = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
-    results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url, number: prNumberFromUrl(url) });
+    const opened = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+    results.push({
+      lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: opened.url,
+      number: prNumberFromUrl(opened.url), draft: opened.draft, title,
+    });
   }
   return results;
 }

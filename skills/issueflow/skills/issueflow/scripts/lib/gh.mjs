@@ -7,6 +7,7 @@
  * that promise is to have one place where the network is.
  */
 import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 
 const run = (args, cwd) =>
   execFileSync('gh', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 });
@@ -52,11 +53,26 @@ export function viewIssue(cwd, number) {
   return JSON.parse(raw);
 }
 
-/** Open a pull request and return its URL. */
+/**
+ * Open a pull request and return its URL.
+ *
+ * Draft when asked, with a fallback: a private repository on a plan without
+ * draft pull requests refuses `--draft` outright, and a run must not die on
+ * a billing tier. The caller learns which happened through `draft` in the
+ * result and labels the pull request instead.
+ */
 export function createPr(cwd, { head, base, title, bodyFile, draft }) {
   const args = ['pr', 'create', '--head', head, '--base', base, '--title', title, '--body-file', bodyFile];
-  if (draft) args.push('--draft');
-  return gh(args, cwd).trim().split('\n').filter(Boolean).pop() ?? '';
+  if (draft) {
+    try {
+      const url = gh([...args, '--draft'], cwd).trim().split('\n').filter(Boolean).pop() ?? '';
+      return { url, draft: true };
+    } catch (err) {
+      if (!/draft/i.test(String(err.message))) throw err;
+    }
+  }
+  const url = gh(args, cwd).trim().split('\n').filter(Boolean).pop() ?? '';
+  return { url, draft: false };
 }
 
 /** Just the issue's state, for the cheap "has reality moved?" check before every advance. */
@@ -130,3 +146,111 @@ export function updateIssueComment(cwd, { owner, name, commentId, inputFile }) {
   const url = raw.trim();
   return { url, commentId };
 }
+
+// ---------------------------------------------------------------------------
+// The pull request review loop. Every write below is one GraphQL mutation
+// through `gh api graphql --input <file>` — a file, never `-f` fields, for the
+// same reason the sticky comment crosses as a file: the bodies are arbitrary
+// markdown. The REST review endpoint is deliberately NOT used to post
+// threads: `POST pulls/{n}/reviews` with `comments[]` is atomic, so one line
+// GitHub cannot anchor loses every comment in the round. The pending-review
+// flow posts thread by thread, and a refused anchor costs one thread.
+// ---------------------------------------------------------------------------
+
+/** The pull request the loop reviews: node id for GraphQL, head sha for binding, draft state. */
+export function prView(cwd, number) {
+  const raw = gh(['pr', 'view', String(number), '--json', 'id,number,url,headRefOid,headRefName,baseRefName,isDraft,title,state'], cwd);
+  return JSON.parse(raw);
+}
+
+/**
+ * Every check on the pull request, bucketed the way `gh pr checks` reports
+ * them. A repository with no CI at all makes `gh pr checks` exit non-zero
+ * with "no checks reported" — that is `[]` here, not an error: the loop
+ * treats it as nothing to wait for, and says so.
+ */
+export function prChecks(cwd, number) {
+  try {
+    const raw = gh(['pr', 'checks', String(number), '--json', 'name,bucket,state,link'], cwd);
+    return JSON.parse(raw);
+  } catch (err) {
+    if (/no checks reported/i.test(String(err.message))) return [];
+    throw err;
+  }
+}
+
+/** Mark a draft pull request ready for review. */
+export function prReady(cwd, number) {
+  gh(['pr', 'ready', String(number)], cwd);
+}
+
+/** Retitle a pull request — used to drop the `[reviewing]` prefix the draft fallback added. */
+export function prRetitle(cwd, number, title) {
+  gh(['pr', 'edit', String(number), '--title', title], cwd);
+}
+
+/** Add or remove a label on a pull request; a missing label is created. */
+export function prLabel(cwd, number, label, { remove = false } = {}) {
+  if (remove) {
+    gh(['pr', 'edit', String(number), '--remove-label', label], cwd);
+    return;
+  }
+  try {
+    gh(['pr', 'edit', String(number), '--add-label', label], cwd);
+  } catch {
+    gh(['label', 'create', label, '--color', 'FBCA04', '--description', 'issueflow review loop in progress', '--force'], cwd);
+    gh(['pr', 'edit', String(number), '--add-label', label], cwd);
+  }
+}
+
+/** A plain top-level pull request comment (the convergence summary). Returns its URL. */
+export function prComment(cwd, number, bodyFile) {
+  return gh(['pr', 'comment', String(number), '--body-file', bodyFile], cwd).trim().split('\n').filter(Boolean).pop() ?? '';
+}
+
+/**
+ * One GraphQL call. `variables` and `query` cross as a JSON file so no body
+ * is ever shell-quoted. Errors GitHub reports inside a 200 are thrown too —
+ * `gh api graphql` exits 0 on them, and a mutation that "succeeded" with an
+ * `errors` array did nothing.
+ */
+export function graphql(cwd, inputFile, { query, variables }) {
+  writeFileSync(inputFile, `${JSON.stringify({ query, variables })}\n`);
+  const raw = gh(['api', 'graphql', '--input', inputFile], cwd);
+  const data = JSON.parse(raw);
+  if (Array.isArray(data.errors) && data.errors.length > 0) {
+    throw new GhError(data.errors.map((e) => e.message).join('; '));
+  }
+  return data.data;
+}
+
+export const GQL = {
+  addReview: `mutation($pr: ID!, $body: String) {
+    addPullRequestReview(input: { pullRequestId: $pr, body: $body }) { pullRequestReview { id } }
+  }`,
+  addThread: `mutation($review: ID!, $path: String!, $line: Int!, $side: DiffSide!, $body: String!) {
+    addPullRequestReviewThread(input: { pullRequestReviewId: $review, path: $path, line: $line, side: $side, body: $body }) {
+      thread { id }
+    }
+  }`,
+  submitReview: `mutation($review: ID!, $body: String) {
+    submitPullRequestReview(input: { pullRequestReviewId: $review, event: COMMENT, body: $body }) {
+      pullRequestReview { id url }
+    }
+  }`,
+  reply: `mutation($thread: ID!, $body: String!) {
+    addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $thread, body: $body }) { comment { id } }
+  }`,
+  resolve: `mutation($thread: ID!) {
+    resolveReviewThread(input: { threadId: $thread }) { thread { id isResolved } }
+  }`,
+  threads: `query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes { id isResolved isOutdated path line comments(first: 1) { nodes { body } } }
+        }
+      }
+    }
+  }`,
+};

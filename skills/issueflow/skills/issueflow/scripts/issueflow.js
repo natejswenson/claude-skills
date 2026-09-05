@@ -15,17 +15,24 @@ import { MAX_ROUNDS, latestRound, nextRound, registerReview, reviewable, roundsE
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
-import { listIssues, repoInfo, viewIssue } from './lib/gh.mjs';
+import { GhError, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
+import {
+  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixItems, fixerModel, headOf,
+  laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
+  registerRound, reviewExhausted, roundRows,
+} from './lib/prreview.mjs';
+import { writeFinderBriefs, writeFixBrief, writeVerifierBriefs } from './lib/reviewbrief.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findStep, formatSpan, gateSteps,
-  loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps, recordCapOverride, remainingSteps,
-  runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan, worktreePath,
+  HandBack, RunError, accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findLane, findStep,
+  formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps,
+  recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan, worktreePath,
 } from './lib/run.mjs';
-import { ship, shipBlockers } from './lib/ship.mjs';
+import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { ensureWorktree } from './lib/worktree.mjs';
+import { WorktreeError, ensureWorktree } from './lib/worktree.mjs';
+import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -35,7 +42,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'review']);
+const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version']);
 
 function argv(args) {
   const out = { _: [] };
@@ -122,7 +129,12 @@ function nextLine(run) {
     return;
   }
   if (state === 'shipped') {
-    console.log('\nEvery lane has an open pull request — `issueflow finish` once they merge.');
+    console.log('\nEvery lane\'s review loop has converged — `issueflow finish` once the pull requests merge.');
+    return;
+  }
+  if (state === 'in review') {
+    const lane = run.lanes.find((l) => l.pr && !l.review?.converged);
+    console.log(`\nLane ${lane.slug} is under review — \`issueflow next\` drives the loop.`);
     return;
   }
   if (state === 'ready to ship') {
@@ -312,7 +324,7 @@ async function cmdBrief(args) {
       if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
         recordCapOverride(dir, run, step, args.anotherRound);
       } else {
-        throw new Error(
+        throw new HandBack(
           `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
             'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
             'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
@@ -381,7 +393,7 @@ async function cmdBrief(args) {
 function briefOne(dir, run, step, args) {
   const blocked = blockers(run, step);
   if (blocked.length > 0) {
-    throw new Error(
+    throw new RunError(
       `${step.key} is gated behind ${blocked.map((b) => `${b.key} (${b.stage.state})`).join(', ')} — ` +
         'no stage runs on anything but its predecessor\'s approved artifact',
     );
@@ -395,7 +407,7 @@ function briefOne(dir, run, step, args) {
     if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
       recordCapOverride(dir, run, step, args.anotherRound);
     } else {
-      throw new Error(
+      throw new HandBack(
         `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
           'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
           'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
@@ -437,7 +449,7 @@ async function cmdAccept(args) {
   const blocking = blockingDrift(drift);
   if (blocking.length > 0 && !args.force && !args.skip) {
     reportDrift(drift);
-    throw new Error(
+    throw new HandBack(
       `this run is out of date with GitHub: ${blocking.map((b) => `${b.check} ${b.state}`).join(', ')} — ` +
         'the work may already have landed. Re-read it, then pass --force if approving is still right',
     );
@@ -633,19 +645,21 @@ async function cmdShip(args) {
   const blocked = shipBlockers(run);
   if (blocked.length > 0) {
     print(['Step', 'State', 'Reason'], blocked.map((b) => [b.step, b.state, b.reason ?? '—']));
-    throw new Error('cannot ship — every stage above must be approved first');
+    throw new RunError('cannot ship — every stage above must be approved first');
   }
   const drift = reconcile(run, { offline: isOffline(args) });
   const blocking = blockingDrift(drift);
   if (blocking.length > 0 && !args.force) {
     reportDrift(drift);
-    throw new Error(
+    throw new HandBack(
       `this run is out of date with GitHub: ${blocking.map((b) => `${b.check} ${b.state}`).join(', ')} — ` +
         'shipping now would open a pull request over work that already landed. Pass --force if it is still right',
     );
   }
 
-  const results = ship(dir, run, { dryRun: Boolean(args.dryRun), draft: Boolean(args.draft) });
+  // Draft by default: the pull request opens under review, and `ready` lifts
+  // the draft once the loop converges. `--no-draft` opts out.
+  const results = ship(dir, run, { dryRun: Boolean(args.dryRun), draft: !args.noDraft });
   print(['Lane', 'Branch', 'Base', 'Commits', 'Pull request'], results.map((r) => [r.lane, r.branch, r.base, r.commits, r.url]));
   if (args.dryRun) {
     console.log('\nDry run — nothing was pushed and no pull request was opened.');
@@ -654,11 +668,30 @@ async function cmdShip(args) {
   // `ship` used to print these URLs and throw them away — run.json carried no
   // record of its own pull requests. `finish` needs that record to answer
   // `runState()`'s "shipped" question without re-asking GitHub.
+  const marks = [];
   for (const r of results) {
     const lane = run.lanes.find((l) => l.slug === r.lane);
-    if (lane && r.number) lane.pr = { number: r.number, url: r.url };
+    if (!lane || !r.number) continue;
+    lane.pr = { number: r.number, url: r.url, title: r.title };
+    lane.review.draft = r.draft;
+    // The draft fallback: a repository whose plan has no draft pull requests
+    // gets a label and a title prefix that `ready` removes, so "under review"
+    // is still visible on the pull request itself.
+    if (!r.draft && !args.noDraft && !isOffline(args)) {
+      try {
+        prLabel(run.repo.path, r.number, 'review-loop');
+        prRetitle(run.repo.path, r.number, `[reviewing] ${r.title}`);
+        lane.review.fallback = { label: 'review-loop', prefix: '[reviewing] ' };
+        marks.push([lane.slug, 'labelled review-loop, titled [reviewing] — drafts are not available here']);
+      } catch (err) {
+        marks.push([lane.slug, `could not mark as under review: ${String(err.message).split('\n')[0]}`]);
+      }
+    } else if (r.draft) {
+      marks.push([lane.slug, 'opened as a draft — `ready` lifts it once the review loop converges']);
+    }
   }
   saveRun(dir, run);
+  if (marks.length > 0) { console.log(''); print(['Lane', 'Under review'], marks); }
   console.log('');
   print(
     ['Stage', 'Model', 'Took'],
@@ -698,6 +731,226 @@ async function cmdFinish(args) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// The pull request review loop. Six commands, each one round step; `next`
+// drives them in order. Every one is a registered CLI write, so a subagent
+// that dies mid-flight leaves run state exactly where the last command put it.
+// ---------------------------------------------------------------------------
+
+const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+
+/** The lane about to be reviewed, and the checkout its head is read from. */
+function reviewLane(run, dir, args) {
+  const lane = findLane(run, args.lane ?? null);
+  if (!lane.pr) throw new RunError(`lane ${lane.slug} has no pull request yet — \`issueflow ship\` first`);
+  return { lane, tree: laneTree(dir, run, lane) };
+}
+
+/** The pull request's node id, cached on the lane after the first `gh pr view`. */
+function prIdentity(run, lane, offline) {
+  if (offline) return { nodeId: lane.pr.nodeId ?? null, headRefOid: null, isDraft: lane.review.draft };
+  const view = prView(run.repo.path, lane.pr.number);
+  lane.pr.nodeId = view.id;
+  return { nodeId: view.id, headRefOid: view.headRefOid, isDraft: view.isDraft, state: view.state };
+}
+
+function printDispatch(items, kind) {
+  if (items.length === 1) {
+    console.log(`\nDispatch ONE subagent, model \`${items[0].model}\`, with exactly this prompt:\n\n  Read ${items[0].prompt} and follow it exactly. It is your complete brief.\n`);
+    return;
+  }
+  console.log(`\nThese ${items.length} ${kind} are independent. Dispatch them as ${items.length} subagents in ONE message:\n`);
+  for (const it of items) console.log(`  [${it.model}] Read ${it.prompt} and follow it exactly. It is your complete brief.`);
+  console.log('');
+}
+
+async function cmdReviewBrief(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane, tree } = reviewLane(run, dir, args);
+  const head = headOf(tree);
+  let remoteHead = null;
+  let prHead = null;
+  if (!offline) {
+    // The round reviews what GitHub has. Fetch the branch and compare; a
+    // failed fetch is infrastructure, not a refusal.
+    try {
+      git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
+      remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+    } catch (err) {
+      throw new GhError(`could not fetch origin/${lane.branch}: ${String(err.stderr ?? err.message).split('\n')[0]}`);
+    }
+    prHead = prIdentity(run, lane, offline).headRefOid;
+  }
+  const diffText = laneDiff(tree, lane.base);
+  const { round, plan, lines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText });
+  const entry = currentRound(lane);
+  const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
+  saveRun(dir, run);
+  print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Finders', 'Verifiers (max)'],
+    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), String(plan.finders), String(plan.maxVerifiers)]]);
+  console.log('');
+  print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
+  const prior = openFindings(lane);
+  if (prior.length > 0) console.log(`\n${prior.length} finding(s) still open from earlier rounds will be re-judged this round.`);
+  printDispatch(briefs, 'finders');
+  console.log(`Then: \`issueflow review-verify --lane ${lane.slug}\` once every candidates file has landed.`);
+}
+
+async function cmdReviewVerify(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const { lane } = reviewLane(run, dir, args);
+  const entry = currentRound(lane);
+  if (!entry || entry.registered) throw new RunError(`no open review round on ${lane.slug} — \`issueflow review-brief\` starts one`);
+  if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
+  const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
+  const { batches, prior, fresh } = planVerification(dir, run, lane, entry.round, candidates);
+  print(['Lane', 'Round', 'Candidates', 'Prior open', 'Verifiers', 'Not examined'],
+    [[lane.slug, String(entry.round), String(fresh.length), String(prior.length), String(batches.length), String(notExamined.length)]]);
+  if (batches.length === 0) {
+    console.log('\nNothing to verify: no candidates and no prior open findings. Register the round to record a clean pass:');
+    console.log(`  issueflow review-register --lane ${lane.slug}`);
+    return;
+  }
+  const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
+  console.log('');
+  print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
+  printDispatch(briefs, 'verifiers');
+  console.log(`Then: \`issueflow review-register --lane ${lane.slug}\` once every verdicts file has landed.`);
+}
+
+async function cmdReviewRegister(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const { lane, tree } = reviewLane(run, dir, args);
+  const entry = currentRound(lane);
+  if (!entry) throw new RunError(`no review round on ${lane.slug}`);
+  if (entry.verifiers === null) {
+    // No candidates and nothing prior: a clean round, registered as such.
+    const { candidates } = readCandidates(dir, lane, entry.round);
+    if (candidates.length > 0 || openFindings(lane).length > 0) throw new RunError(`round ${entry.round} of ${lane.slug} has not been verified — \`issueflow review-verify\` first`);
+    planVerification(dir, run, lane, entry.round, []);
+  }
+  const record = registerRound(dir, run, lane, entry.round, { tree });
+  const t = record.transitions;
+  console.log(`Round ${record.round} of ${MAX_REVIEW_ROUNDS} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
+    `${record.counts.majors} major open, ${record.counts.nits} nit, ${record.counts.preExisting} pre-existing`);
+  if (record.round > 1) console.log(`Transitions: ${t.fixed.length} fixed, ${t.stillOpen.length} still open, ${t.withdrawn.length} withdrawn, ${t.new.length} new, ${t.suppressed.length} suppressed, ${t.dropped.length} refuted`);
+  const rows = record.findings.map((f) => [f.severity, `${f.file}:${f.line}`, truncate(f.short_summary, 60), f.status === 'open' ? (f.firstRound === record.round ? 'new' : 'still open') : f.status, f.inline ? 'inline' : 'body']);
+  if (rows.length > 0) { console.log(''); print(['Severity', 'Where', 'Finding', 'Status', 'Posts'], rows); }
+  console.log(`\nNot examined (${record.notExamined.length}):`);
+  for (const item of record.notExamined) console.log(`  - ${truncate(item, 110)}`);
+  const offline = isOffline(args);
+  if (offline) console.log('\nOffline run: the review payload is written beside the round; nothing is posted.');
+  else console.log(`\nNext: \`issueflow review-post --lane ${lane.slug}\``);
+  reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
+}
+
+async function cmdReviewPost(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane } = reviewLane(run, dir, args);
+  const entry = currentRound(lane);
+  if (!entry?.registered) throw new RunError(`round ${entry?.round ?? '?'} of ${lane.slug} is not registered — \`issueflow review-register\` first`);
+  if (offline) throw new RunError('cannot post a review on an offline run — the payload is on disk beside the round');
+  const { nodeId } = prIdentity(run, lane, offline);
+  const posted = postRound(dir, run, lane, entry.round, { prNodeId: nodeId });
+  print(['Lane', 'Round', 'Review', 'Threads', 'Unanchored', 'Replies'],
+    [[lane.slug, String(entry.round), posted.url, String(posted.threads), String(posted.unanchored), posted.replies.map((r) => r.state).join(', ') || '—']]);
+  if (entry.verdict === 'converged') console.log(`\nConverged — \`issueflow ready --lane ${lane.slug}\` lifts the draft once CI is green.`);
+  else console.log(`\nNext: \`issueflow review-fix-brief --lane ${lane.slug}\``);
+}
+
+async function cmdReviewFixBrief(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane } = reviewLane(run, dir, args);
+  const entry = currentRound(lane);
+  if (!entry?.registered) throw new RunError(`round ${entry?.round ?? '?'} of ${lane.slug} is not registered — nothing to fix yet`);
+  if (entry.verdict === 'converged') throw new RunError(`round ${entry.round} of ${lane.slug} converged — there is nothing to fix; \`issueflow ready\``);
+  const items = fixItems(lane);
+  const checks = offline ? [] : prChecks(run.repo.path, lane.pr.number).filter((c) => c.bucket === 'fail');
+  const model = fixerModel(lane);
+  const info = writeFixBrief(dir, run, lane, entry, { items, checks, model, issue: loadIssue(dir) });
+  entry.fix = { ...(entry.fix ?? {}), briefed: true, model, items: items.length, redChecks: checks.length };
+  saveRun(dir, run);
+  print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
+  if (model === 'opus') console.log('\nOpus this round: a major survived the previous fix.');
+  printDispatch([info], 'fixers');
+  console.log(`Then: \`issueflow review-fix-report --lane ${lane.slug}\` once the fix report has landed.`);
+}
+
+async function cmdReviewFixReport(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane } = reviewLane(run, dir, args);
+  const entry = currentRound(lane);
+  if (!entry?.registered) throw new RunError(`round ${entry?.round ?? '?'} of ${lane.slug} is not registered`);
+  let replies;
+  try {
+    replies = applyFixReport(dir, run, lane, entry.round);
+  } catch (err) {
+    if (!(err instanceof HandBack)) throw err;
+    // The report is recorded; the dispute is what stops the run. Print the sides, then hand back.
+    for (const f of openMajors(lane).filter((x) => x.disputes >= 1 && x.dispute)) {
+      console.log(`${f.id} ${f.file}:${f.line}\n  reviewer: ${f.summary}\n  fixer:    ${f.dispute}`);
+    }
+    throw err;
+  }
+  const rows = offline ? replies.map((r) => ({ id: r.id, state: 'offline', detail: 'nothing sent' })) : postFixReplies(dir, run, lane, entry.round, replies);
+  print(['Finding', 'Reply', 'Detail'], rows.map((r) => [r.id, r.state, r.detail ?? '—']));
+  console.log(`\nNext: \`issueflow review-brief --lane ${lane.slug}\` — round ${entry.round + 1} reviews the pushed fix.`);
+}
+
+async function cmdReady(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane } = reviewLane(run, dir, args);
+  if (!offline) {
+    const checks = prChecks(run.repo.path, lane.pr.number);
+    const red = checks.filter((c) => c.bucket === 'fail');
+    const pending = checks.filter((c) => c.bucket === 'pending');
+    if (red.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${red.map((c) => c.name).join(', ')} failing — a red check is a major`);
+    if (pending.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${pending.map((c) => c.name).join(', ')} still running — wait for CI`);
+    if (checks.length === 0) console.log('No checks reported on this pull request — nothing to wait for.');
+  }
+  const last = converge(dir, run, lane);
+  const rows = [];
+  if (!offline) {
+    const { isDraft } = prIdentity(run, lane, offline);
+    if (isDraft) { prReady(run.repo.path, lane.pr.number); rows.push(['draft', 'lifted']); }
+    if (lane.review.fallback) {
+      prRetitle(run.repo.path, lane.pr.number, lane.pr.title);
+      prLabel(run.repo.path, lane.pr.number, lane.review.fallback.label, { remove: true });
+      rows.push(['title/label', 'restored']);
+    }
+    const summary = join(dir, lane.slug, 'review', 'summary.md');
+    writeFileSync(summary, [
+      `### issueflow review loop — converged after ${last.round} round${last.round === 1 ? '' : 's'}`,
+      '',
+      table(ROUND_COLUMNS, roundRows(lane)).replace(/^\|[-| ]+\|$/m, (m) => m.replace(/-+/g, '---')),
+      '',
+      `Open nits: ${openFindings(lane).filter((f) => f.severity === 'nit').length} · pre-existing: ${openFindings(lane).filter((f) => f.severity === 'pre-existing').length} · majors: 0.`,
+      '',
+      `<!-- issueflow:converged ${lane.slug} ${last.head} -->`,
+      '',
+    ].join('\n'));
+    rows.push(['summary comment', prComment(run.repo.path, lane.pr.number, summary)]);
+  }
+  saveRun(dir, run);
+  print(['Lane', 'Rounds', 'Head', 'State'], [[lane.slug, String(last.round), last.head.slice(0, 12), 'ready for review']]);
+  if (rows.length > 0) { console.log(''); print(['Action', 'Result'], rows); }
+  nextLine(run);
+  reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
+}
+
 const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request, through four gated stages.
 
   issueflow board  [--repo <path>]
@@ -708,12 +961,22 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow split  [--items-json <path>] [--issue <n>]
   issueflow status [--issue <n>]
   issueflow runs
-  issueflow ship   [--issue <n>] [--dry-run] [--draft] [--force]
+  issueflow ship   [--issue <n>] [--dry-run] [--no-draft] [--force]
+  issueflow review-brief      --lane <slug>     open a review round: the diff, the finder briefs
+  issueflow review-verify     --lane <slug>     pool the candidates, brief the verifiers
+  issueflow review-register   --lane <slug>     the registrar: ids, transitions, convergence
+  issueflow review-post       --lane <slug>     one GitHub review: threads, replies, resolves
+  issueflow review-fix-brief  --lane <slug>     brief the fixer on every open major
+  issueflow review-fix-report --lane <slug>     record the fixer's report, reply on the threads
+  issueflow ready             --lane <slug>     lift the draft once the loop has converged and CI is green
   issueflow finish [--issue <n>] [--close-issue]
 
-  --auto               on start: the red team gates every stage instead of a human;
+Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (gh/git — retry) ·
+4 hand back to the user (a cap, drift, a dispute, the human stop).
+
+  --auto               on start: no human stop after the red-teamed plan;
                        on accept: approve on a registered, hash-bound passing review
-  --review             brief the red-team reviewer of a delivered stage artifact
+  --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
@@ -742,6 +1005,13 @@ async function main() {
       case 'status': return await cmdStatus(args);
       case 'runs': return await cmdRuns(args);
       case 'ship': return await cmdShip(args);
+      case 'review-brief': return await cmdReviewBrief(args);
+      case 'review-verify': return await cmdReviewVerify(args);
+      case 'review-register': return await cmdReviewRegister(args);
+      case 'review-post': return await cmdReviewPost(args);
+      case 'review-fix-brief': return await cmdReviewFixBrief(args);
+      case 'review-fix-report': return await cmdReviewFixReport(args);
+      case 'ready': return await cmdReady(args);
       case 'finish': return await cmdFinish(args);
       default:
         console.log(USAGE);
@@ -749,8 +1019,20 @@ async function main() {
     }
   } catch (err) {
     console.error(`issueflow: ${err.message}`);
-    process.exitCode = 1;
+    process.exitCode = exitCodeFor(err);
   }
+}
+
+/**
+ * The exit-code contract. A driver needs to tell "send the work back" from
+ * "retry" from "ask the person" without parsing English: 2 is a gate
+ * refusal, 3 is infrastructure, 4 is a hand-back, 1 is a bug in this tool.
+ */
+export function exitCodeFor(err) {
+  if (err instanceof HandBack) return 4;
+  if (err instanceof RunError || err instanceof ShipError || err instanceof FinishError) return 2;
+  if (err instanceof GhError || err instanceof WorktreeError) return 3;
+  return 1;
 }
 
 main();
