@@ -164,7 +164,7 @@
       "name": "issueflow",
       "version": "0.7.0",
       "stack": "node",
-      "cardHash": "61c4b1ce83c35eeb",
+      "cardHash": "ee6888dc0b1658c8",
       "facts": 70,
       "sections": {
         "setup": 8,
