@@ -776,4 +776,28 @@ export const roundRows = (lane) =>
 
 export const ROUND_COLUMNS = ['Round', 'Head', 'Lines', 'Finders', 'Verifiers', 'Open', 'Verdict'];
 
+/** Is `parentBranch` already an ancestor of the lane's HEAD? False means the lane below moved under it. */
+export function stackedOn(tree, laneBranch, parentBranch) {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', parentBranch, laneBranch], { cwd: tree, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Rebase a stacked lane onto the lane below it, and push it. Only ever
+ * before the lane's first review round — a lane with posted threads is never
+ * rebased under them — and never with a plain force: `--force-with-lease`
+ * refuses if the remote moved since it was fetched.
+ */
+export function rebaseLane(tree, lane, parent, { push = true } = {}) {
+  const before = headOf(tree);
+  git(['rebase', parent.branch], tree);
+  const after = headOf(tree);
+  if (push) git(['push', '--force-with-lease', 'origin', lane.branch], tree);
+  return { before, after, onto: headOf(tree) === after ? git(['rev-parse', parent.branch], tree).trim() : null };
+}
+
 export const listReviewFiles = (dir, lane, round) => (existsSync(reviewDir(dir, lane, round)) ? readdirSync(reviewDir(dir, lane, round)) : []);

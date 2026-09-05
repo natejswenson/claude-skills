@@ -11,7 +11,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
-import { MAX_ROUNDS, latestRound, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
+import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
+import { decide, renderAction } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -19,8 +20,9 @@ import { GhError, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, 
 import {
   MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixItems, fixerModel, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
-  registerRound, reviewExhausted, roundRows,
+  rebaseLane, registerRound, reviewExhausted, roundRows,
 } from './lib/prreview.mjs';
+import { landings } from './lib/reconcile.mjs';
 import { writeFinderBriefs, writeFixBrief, writeVerifierBriefs } from './lib/reviewbrief.mjs';
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
@@ -334,6 +336,7 @@ async function cmdBrief(args) {
     const round = nextRound(step);
     const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
+    markReviewBriefed(dir, run, step, round);
     print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
     console.log(`\nIt must write: ${info.artifact}`);
     if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
@@ -574,6 +577,13 @@ async function cmdStatus(args) {
     );
   }
   livenessBlock(dir, run, now);
+  for (const lane of run.lanes) {
+    if ((lane.review?.rounds.length ?? 0) === 0) continue;
+    console.log(`\nReview loop — ${lane.slug} (#${lane.pr?.number ?? '?'})${lane.review.converged ? ' — converged' : ''}`);
+    print(ROUND_COLUMNS, roundRows(lane));
+    const open = openFindings(lane);
+    if (open.length > 0) print(['Open', 'Where', 'Finding', 'Rounds open'], open.map((f) => [f.severity, `${f.file}:${f.line}`, truncate(f.short_summary, 60), String(f.stillOpenRounds + 1)]));
+  }
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
 }
@@ -951,8 +961,117 @@ async function cmdReady(args) {
   reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }
 
-const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request, through four gated stages.
 
+async function cmdRebase(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const { lane, tree } = reviewLane(run, dir, args);
+  const parent = run.lanes.find((l) => l.branch === lane.base);
+  if (!parent) throw new RunError(`${lane.slug} stacks on ${lane.base}, which is not a lane — nothing to rebase onto`);
+  if ((lane.review?.rounds.length ?? 0) > 0) throw new RunError(`${lane.slug} has posted review rounds — a lane is never rebased under its threads`);
+  const result = rebaseLane(tree, lane, parent, { push: !isOffline(args) });
+  print(['Lane', 'Onto', 'Before', 'After'], [[lane.slug, parent.branch, result.before.slice(0, 12), result.after.slice(0, 12)]]);
+}
+
+/**
+ * The driver. Computes the one next action; performs every deterministic
+ * one it reaches (a brief, the gate, a registration, a split, a ship, a
+ * post) and re-decides, until the run needs a subagent, is waiting on one,
+ * or needs a person. Prints that in a fixed shape the orchestrator copies.
+ */
+async function cmdNext(args) {
+  const { dir } = locate(args);
+  const offline = isOffline(args);
+  const skillCommand = 'node "$SKILL_DIR/scripts/issueflow.js"';
+  const ctx = {
+    offline,
+    checks: (lane) => (offline ? [] : prChecks(loadRun(dir).repo.path, lane.pr.number)),
+    remoteHead: (lane) => {
+      if (offline) return null;
+      const run = loadRun(dir);
+      try {
+        git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
+        return git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+      } catch {
+        return null;
+      }
+    },
+    landings: () => (offline ? [] : landings(loadRun(dir))),
+  };
+  const perform = {
+    brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: false }),
+    review: (a) => cmdReview({ ...args, stage: a.stage, lane: a.lane }),
+    accept: (a) => cmdAccept({ ...args, stage: a.stage, lane: a.lane, auto: Boolean(a.auto) }),
+    split: () => cmdSplit({ ...args }),
+    ship: () => cmdShip({ ...args, dryRun: false }),
+    rebase: (a) => cmdRebase({ ...args, lane: a.lane }),
+    'review-brief': (a) => cmdReviewBrief({ ...args, lane: a.lane }),
+    'review-verify': (a) => cmdReviewVerify({ ...args, lane: a.lane }),
+    'review-register': (a) => cmdReviewRegister({ ...args, lane: a.lane }),
+    'review-post': (a) => cmdReviewPost({ ...args, lane: a.lane }),
+    'review-fix-brief': (a) => cmdReviewFixBrief({ ...args, lane: a.lane }),
+    'review-fix-report': (a) => cmdReviewFixReport({ ...args, lane: a.lane }),
+    ready: (a) => cmdReady({ ...args, lane: a.lane }),
+    finish: () => cmdFinish({ ...args }),
+  };
+  const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief']);
+  let dispatched = null;
+  for (let i = 0; i < 12; i += 1) {
+    const run = observe(dir, loadRun(dir));
+    const action = decide(dir, run, ctx);
+    if (action.kind !== 'run') {
+      if (dispatched && action.kind === 'wait') {
+        // The brief just rendered above is the thing in flight: report it as a dispatch.
+        console.log(`\n${renderAction({ ...action, kind: 'dispatch', items: [], note: action.note }, { skillCommand, runDir: dir })
+          .replace(/^next: dispatch/, `next: dispatch (${dispatched})`)
+          .replace('\n\n  These 0 are independent. Dispatch them as 0 subagents in ONE message:\n', '\n  The prompt(s) to dispatch are printed above.')}`);
+        return;
+      }
+      console.log(`\n${renderAction(action, { skillCommand, runDir: dir })}`);
+      if (action.kind === 'stop' && ['exhausted', 'stalled', 'unpushed', 'blocked'].includes(action.reason)) process.exitCode = 4;
+      return;
+    }
+    console.log(`▶ ${action.command}${action.note ? ` — ${action.note}` : ''}\n`);
+    try {
+      await perform[action.command](action.args);
+    } catch (err) {
+      if (action.command === 'accept' && err instanceof RunError) {
+        // The gate refused a delivery: say why, re-render the brief (which
+        // resets the stage's clock), and hand the same prompt back with the
+        // refusal. The stage goes back; nobody edits the artifact.
+        console.log(`gate refused: ${err.message}\n`);
+        await cmdBrief({ ...args, stage: action.args.stage, lane: action.args.lane, review: false, ready: false });
+        const run2 = observe(dir, loadRun(dir));
+        const again = decide(dir, run2, ctx);
+        console.log(`\n${renderAction({ ...again, kind: 'dispatch', items: [], note: 'send the stage back with the refusal above — append it to the prompt as: "The gate refused your last delivery: <reason>. Fix that first."' }, { skillCommand, runDir: dir })
+          .replace(/^next: dispatch/, 'next: dispatch (send-back)')
+          .replace('\n\n  These 0 are independent. Dispatch them as 0 subagents in ONE message:\n', '\n  The prompt to dispatch is printed above.')}`);
+        process.exitCode = 2;
+        return;
+      }
+      throw err;
+    }
+    dispatched = DISPATCHES.has(action.command) ? action.command : null;
+    if (dispatched) {
+      const run2 = observe(dir, loadRun(dir));
+      const after = decide(dir, run2, ctx);
+      if (after.kind === 'wait') {
+        console.log(`\n${renderAction({ ...after, kind: 'dispatch', items: [] }, { skillCommand, runDir: dir })
+          .replace(/^next: dispatch/, `next: dispatch (${dispatched})`)
+          .replace('\n\n  These 0 are independent. Dispatch them as 0 subagents in ONE message:\n', '\n  The prompt(s) to dispatch are printed above.')}`);
+        return;
+      }
+      // Nothing to wait for after a brief means the output already exists — fall through and keep going.
+    }
+    console.log('');
+  }
+  throw new Error('next performed 12 actions without reaching a dispatch, a wait or a stop — this is a bug in the driver');
+}
+
+const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request: plan, red team, implement, review loop.
+
+  issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
+                                                 prints ONE thing to do — a dispatch, a wait, or a stop
   issueflow board  [--repo <path>]
   issueflow start  --issue <n> [--repo <path>] [--auto]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
@@ -969,6 +1088,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow review-fix-brief  --lane <slug>     brief the fixer on every open major
   issueflow review-fix-report --lane <slug>     record the fixer's report, reply on the threads
   issueflow ready             --lane <slug>     lift the draft once the loop has converged and CI is green
+  issueflow rebase            --lane <slug>     rebase a stacked lane onto the lane below, before its first round
   issueflow finish [--issue <n>] [--close-issue]
 
 Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (gh/git — retry) ·
@@ -1012,6 +1132,8 @@ async function main() {
       case 'review-fix-brief': return await cmdReviewFixBrief(args);
       case 'review-fix-report': return await cmdReviewFixReport(args);
       case 'ready': return await cmdReady(args);
+      case 'rebase': return await cmdRebase(args);
+      case 'next': return await cmdNext(args);
       case 'finish': return await cmdFinish(args);
       default:
         console.log(USAGE);

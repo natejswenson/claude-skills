@@ -220,7 +220,14 @@ export const deriveVerdict = (findings) =>
  * review to make it registrable, for the same reason the orchestrator never
  * edits an artifact to get it past `accept` — the refusal is the product.
  */
-export function registerReview(dir, run, step) {
+/** Record that round `round`'s reviewer has been briefed — the clock `next` waits against. */
+export function markReviewBriefed(dir, run, step, round, now = () => new Date().toISOString()) {
+  step.stage.review.briefed = { round, at: now() };
+  saveRun(dir, run);
+  return run;
+}
+
+export function registerReview(dir, run, step, { now = () => new Date().toISOString() } = {}) {
   if (!reviewable(step)) {
     throw new RunError(`cannot review ${step.key}: only the plan is red-teamed on disk — code is reviewed on its pull request`);
   }
@@ -284,7 +291,8 @@ export function registerReview(dir, run, step) {
   // baseline strips — a timestamp here would make every frozen verdict churn.
   writeFileSync(verdictPath(dir, step, round), `${JSON.stringify(verdict, null, 2)}\n`);
 
-  step.stage.review.rounds.push({ ...verdict, items: findings, notExamined });
+  // `at` lives on the run entry only — the verdict file stays timestamp-free.
+  step.stage.review.rounds.push({ ...verdict, items: findings, notExamined, at: now() });
   step.stage.review.feedback = derived === 'blocked' ? verdict.review : null;
   saveRun(dir, run);
 

@@ -571,8 +571,12 @@ export function recordCapOverride(dir, run, step, reason, now = () => new Date()
 export function markBriefed(dir, run, step, now = () => new Date().toISOString()) {
   if (step.stage.state === 'pending') step.stage.state = 'briefed';
   const at = { ...step.stage.at };
-  if (at.briefed && at.delivered) {
-    at.rounds = [...(at.rounds ?? []), { briefed: at.briefed, delivered: at.delivered }];
+  // `at.delivered` is persisted only by `accept`; a stage sent back before it
+  // was accepted has its delivery on disk and nowhere else, so the artifact
+  // is asked directly.
+  const delivered = at.delivered ?? deliveredSince(dir, step);
+  if (at.briefed && delivered) {
+    at.rounds = [...(at.rounds ?? []), { briefed: at.briefed, delivered }];
     delete at.delivered;
     at.briefed = now();
   } else {
