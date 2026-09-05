@@ -107,7 +107,7 @@ test('the-real-run: the frozen `next` outputs carry the driver\'s contract at ev
   assert.match(fresh, /▶ brief — the plan has not been briefed/);
   assert.match(fresh, /next: dispatch \(brief\)/);
   assert.match(fresh, /Dispatch ONE subagent, model `opus`/);
-  assert.match(fresh, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ 1800 \)\); until \[ .*<RUN>\/shared\/investigate\.md.* -nt .*<RUN>\/briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done'/, 'the wait line lost its -nt shape or its deadline');
+  assert.match(fresh, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ 1800 \)\); until \[ .*<RUN>\/shared\/investigate\.md.* -nt .*<RUN>\/briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done; a=\$\(wc -c < .*; sleep 20; b=.*; while \[ "\$a" != "\$b" \]; do a=\$b; sleep 20; b=.*; done'/, 'the wait line lost its -nt shape, its deadline or its settle');
   assert.doesNotMatch(fresh, /wait: timeout /, 'GNU timeout is not on a stock Mac');
   assert.match(fresh, /then: node "\$SKILL_DIR\/scripts\/issueflow\.js" next --run-dir <RUN>/);
   const delivered = frozen('next-2-plan-delivered.txt');

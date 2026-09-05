@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accept, artifactPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
-import { markReviewBriefed, reviewBriefPath, reviewPath } from '../lib/reviews.mjs';
+import { markReviewBriefed, registerReview, reviewBriefPath, reviewPath } from '../lib/reviews.mjs';
 import { candidatesPath, currentRound, fixBriefPath, fixReportPath, headOf, laneDiff, openRound, planVerification, readCandidates, registerRound, verdictsPath } from '../lib/prreview.mjs';
 import { decide, renderAction, timeoutFor, waitLine } from '../lib/next.mjs';
 import { approveImplement, approvePlan, redTeamBlock, redTeamPass, writeGood, writeReview } from './helpers.mjs';
@@ -79,7 +79,7 @@ test('decide: a fresh run briefs the plan; a briefed plan waits on its artifact;
   markBriefed(dir, run, step, () => at(-60));
   a = decide(dir, run);
   assert.equal(a.kind, 'wait');
-  assert.match(a.wait, /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done'$/);
+  assert.match(a.wait, /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done; a=\$\(wc -c < .*\); sleep 20; b=.*; while \[ "\$a" != "\$b" \]; do a=\$b; sleep 20; b=.*; done'$/);
   assert.doesNotMatch(a.wait, /^timeout /, 'GNU timeout is not on a stock Mac — the deadline is shell arithmetic');
   writeGood(dir, run, 'investigate');
   a = decide(dir, run);
@@ -138,6 +138,29 @@ test('decide: a blocked round sends the plan back, waits for the new delivery, t
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'exhausted');
   assert.match(a.command, /--another-round/);
+  cleanup();
+});
+
+test('decide: findings newer than the artifact register even when the review brief was re-rendered after them; findings older than the artifact re-brief', () => {
+  const { dir, run, cleanup } = freshRun({ auto: true });
+  const step = writeGood(dir, run, 'investigate');
+  markBriefed(dir, run, step, () => at(-120));
+  backdate(artifactPath(dir, step), 60);
+  mkdirSync(join(dir, 'briefs'), { recursive: true });
+  writeFileSync(reviewBriefPath(dir, step, 1), '# review brief\n');
+  markReviewBriefed(dir, run, step, 1);
+  writeReview(dir, step, { findings: [] });
+  // the brief is re-rendered AFTER the findings landed (what a racing `next` did on the first real run)
+  execFileSync('sh', ['-c', `sleep 1; touch ${reviewBriefPath(dir, step, 1)}`]);
+  let a = decide(dir, run);
+  assert.deepEqual([a.kind, a.command], ['run', 'review'], 'a finished review is registered, not re-briefed');
+  // findings older than the artifact reviewed different bytes: re-brief, and the registrar refuses them
+  writeFileSync(artifactPath(dir, step), `${readFileSync(artifactPath(dir, step), 'utf8')}\nmore, after the review\n`);
+  backdate(reviewPath(dir, step, 1), 30);
+  a = decide(dir, run);
+  assert.deepEqual([a.kind, a.command, a.args], ['run', 'brief', { review: true, stage: 'investigate' }]);
+  // the registrar refuses the stale findings file outright (redTeamPass would overwrite it, so call the registrar directly)
+  assert.throws(() => registerReview(dir, run, step), /changed after the review was written/);
   cleanup();
 });
 
@@ -350,13 +373,25 @@ test('renderAction: a fixed shape — the first line is `next: <kind>`, a wait c
 
 test('waitLine quotes paths and uses -nt against the brief; timeoutFor is 3× the repo median, else 30 minutes', () => {
   assert.equal(
-    waitLine({ pairs: [['/a b/out.md', '/a b/brief.md']], timeout: 10 }),
-    "sh -c 'end=$(( $(date +%s) + 10 )); until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'",
+    waitLine({ pairs: [['/a b/out.md', '/a b/brief.md']], timeout: 10, settle: 1 }),
+    "sh -c 'end=$(( $(date +%s) + 10 )); until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); while [ \"$a\" != \"$b\" ]; do a=$b; sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); done'",
   );
-  assert.equal(waitLine({ pairs: [['/x', null]], timeout: 5 }), "sh -c 'end=$(( $(date +%s) + 5 )); until [ -f '\\''/x'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'");
-  // and it actually runs on this machine's sh: an existing pair returns 0 at once, a missing one hits the deadline with 124
-  const ok = execFileSync('sh', ['-c', waitLine({ pairs: [[CLI, INPUTS]], timeout: 5 }).replace(/^sh -c '/, '').replace(/'$/, '').replace(/'\\''/g, "'")], { encoding: 'utf8' });
-  void ok;
+  assert.match(waitLine({ pairs: [['/x', null]], timeout: 5 }), /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ 5 \)\); until \[ -f '\\''\/x'\\'' \]; do/);
+  // and it actually runs on this machine's sh: a settled pair returns 0, a file still growing holds the wait, a missing one hits the deadline with 124
+  const dirW = mkdtempSync(join(tmpdir(), 'issueflow-wait-'));
+  writeFileSync(join(dirW, 'brief.md'), 'b');
+  const out = join(dirW, 'out.md');
+  const runWait = (line) => execFileSync('sh', ['-c', line.replace(/^sh -c '/, '').replace(/'$/, '').replace(/'\\''/g, "'")], { encoding: 'utf8' });
+  execFileSync('sh', ['-c', `sleep 1; printf x > ${out}`]);
+  const started = Date.now();
+  runWait(waitLine({ pairs: [[out, join(dirW, 'brief.md')]], timeout: 30, settle: 1 }));
+  assert.ok(Date.now() - started >= 900, 'the settle window must be waited out even when the file is already there');
+  // a file that keeps growing during the settle window holds the wait until it stops:
+  // the writer appends every 0.4s for ~3s, sampled at 1s the size never holds still before it ends
+  const t2 = Date.now();
+  runWait(`sh -c '(i=0; while [ $i -lt 8 ]; do printf y >> ${out}; sleep 0.4; i=$((i+1)); done) & ${waitLine({ pairs: [[out, join(dirW, 'brief.md')]], timeout: 30, settle: 1 }).replace(/^sh -c '/, '').replace(/'$/, '').replace(/'\\''/g, "'")}'`);
+  assert.ok(Date.now() - t2 >= 2500, `the wait returned after ${Date.now() - t2}ms while the file was still growing`);
+  rmSync(dirW, { recursive: true, force: true });
   let code = 0;
   try { execFileSync('sh', ['-c', "end=$(( $(date +%s) + 1 )); until [ -f /nonexistent-issueflow ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 1; done"], { stdio: 'ignore' }); } catch (e) { code = e.status; }
   assert.equal(code, 124, 'the deadline must exit 124, the code next reads as a stall');

@@ -66,11 +66,13 @@ output's path and a short result before finishing — but since 0.7.0 the
 orchestrator does not wait on that message. `next` prints a wait line:
 
 ```
-sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'
+sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
 ```
 
-Output *newer than the brief that dispatched it*. A re-dispatch over an
-existing artifact does not fire instantly, no sentinel the subagent could
+Output *newer than the brief that dispatched it*, and then *unchanged in size
+for twenty seconds* — a subagent writes its artifact in passes, and the first
+real 0.7.0 run briefed the red team on a plan that was 409 of its 823 lines
+long. A re-dispatch over an existing artifact does not fire instantly, no sentinel the subagent could
 forget is needed, and exit 124 at the deadline is a stall the orchestrator reads
 without guessing. The deadline is three times this repo's own median for the
 step, else thirty minutes — plain POSIX `sh` and `date +%s`, because GNU

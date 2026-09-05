@@ -40,6 +40,8 @@ import { readTimings } from './timings.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
+/** How long an output's size must hold still before the wait believes it is finished. */
+export const SETTLE_S = 20;
 
 const spanToSeconds = (span) => {
   const m = /^(?:(\d+)m)?(\d+)s$/.exec(span);
@@ -62,9 +64,14 @@ const sh = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
  * `timeout`, which a stock Mac does not have; the first real run of 0.7.0
  * exited 127 on that within a second of arming the wait.
  */
-export function waitLine({ pairs, timeout }) {
+export function waitLine({ pairs, timeout, settle = SETTLE_S }) {
   const conds = pairs.map(([output, brief]) => (brief ? `[ ${sh(output)} -nt ${sh(brief)} ]` : `[ -f ${sh(output)} ]`)).join(' && ');
-  const script = `end=$(( $(date +%s) + ${timeout} )); until ${conds}; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done`;
+  // Settle: a subagent writes its artifact in several passes, and the first
+  // one already satisfies `-nt`. The first real 0.7.0 run briefed the red
+  // team on a plan that was still being written (409 of 823 lines). So the
+  // wait only returns once every output's size has held still for a while.
+  const sizes = pairs.map(([output]) => `$(wc -c < ${sh(output)} 2>/dev/null)`).join(':');
+  const script = `end=$(( $(date +%s) + ${timeout} )); until ${conds}; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=${sizes}; sleep ${settle}; b=${sizes}; while [ "$a" != "$b" ]; do a=$b; sleep ${settle}; b=${sizes}; done`;
   return `sh -c '${script.replace(/'/g, `'\\''`)}'`;
 }
 
@@ -135,10 +142,16 @@ function decidePlan(dir, run, step, ctx) {
   const reviewBrief = reviewBriefPath(dir, step, round);
   const findings = reviewPath(dir, step, round);
   const briefedRound = step.stage.review?.briefed?.round ?? null;
+  // Findings written after the artifact's last change reviewed THIS artifact,
+  // whatever the brief's mtime says — a brief re-rendered under a finished
+  // review must not make the review look stale. The registrar binds the
+  // verdict to the artifact's bytes either way.
+  if (briefedRound === round && newerThan(findings, artifact)) {
+    return act('review', { stage: step.stage.id }, `red-team round ${round} delivered — registering it`);
+  }
   if (briefedRound !== round || !newerThan(reviewBrief, artifact)) {
     return act('brief', { review: true, stage: step.stage.id }, `the plan is delivered — briefing red-team round ${round}`);
   }
-  if (newerThan(findings, reviewBrief)) return act('review', { stage: step.stage.id }, `red-team round ${round} delivered — registering it`);
   return wait(`red-team round ${round}`, { pairs: [[findings, reviewBrief]], timeout: DEFAULT_TIMEOUT_S });
 }
 

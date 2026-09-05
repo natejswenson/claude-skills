@@ -96,7 +96,7 @@ prints exactly one of four things:
 ```
 next: dispatch (brief)                 ← start the subagent(s) printed above it, in the background
   …
-wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done'
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
 then: node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 
 next: wait                             ← something is in flight; run the wait line, then next

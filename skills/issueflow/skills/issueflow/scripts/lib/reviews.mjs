@@ -245,6 +245,14 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
     throw new RunError(`cannot register round ${round} of ${step.key}: no review at ${file}`);
   }
 
+  // A review written before the artifact's last change reviewed different
+  // bytes; binding its verdict to the current sha would launder a stale pass.
+  if (statSync(file).mtimeMs < statSync(artifact).mtimeMs) {
+    throw new RunError(
+      `cannot register round ${round} of ${step.key}: the artifact changed after the review was written — ` +
+        're-brief the reviewer on the current artifact',
+    );
+  }
   const parsed = parseFindings(readFileSync(file, 'utf8'));
   if (parsed.error) {
     throw new RunError(`cannot register the review of ${step.key}: ${file} ${parsed.error}`);
