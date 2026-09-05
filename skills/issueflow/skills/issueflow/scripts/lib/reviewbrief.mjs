@@ -95,7 +95,9 @@ function guidanceBlock(run, files) {
   }
   const nested = [...dirs].filter((d) => existsSync(join(run.repo.path, d, 'CLAUDE.md'))).map((d) => `\`${d}/CLAUDE.md\``);
   if (existsSync(claudeMd)) {
-    out.push(`For the conventions angle, read \`${claudeMd}\`${nested.length > 0 ? ` and ${nested.join(', ')}` : ''} — quote the exact rule when you cite one.`);
+    // Named repo-relative on purpose: a finder that copies the absolute path
+    // into a finding puts the maintainer's home directory on the pull request.
+    out.push(`For the conventions angle, read \`CLAUDE.md\` at the repository root${nested.length > 0 ? ` and ${nested.join(', ')}` : ''} — quote the exact rule when you cite one, and cite files by their repository-relative path.`);
   } else {
     out.push('The repository has no `CLAUDE.md`; the conventions angle returns nothing unless `REVIEW.md` above states a rule.');
   }

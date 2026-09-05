@@ -1,0 +1,60 @@
+{
+  "verdicts": [
+    {
+      "id": "f-3d9ed162",
+      "verdict": "still-open",
+      "quote": "  AND `db.connect()`-open-count for the brief/plan hot paths",
+      "line": 161,
+      "note": "The interim commit c577f1f touched only tests/test_perf_benchmarks.py (69+/10-); CLAUDE.md is byte-identical to 776ccbd, so the canonical two-axis description of the gate at CLAUDE.md:159-161 still omits the work-count axis the same PR added, and `grep -n 'work-count\\|counts work\\|Three axes' CLAUDE.md` returns nothing."
+    },
+    {
+      "id": "f-91fa75b9",
+      "verdict": "still-open",
+      "quote": "    assert counts[\"n\"] == 87",
+      "line": 312,
+      "note": "The bound moved in the opposite direction — `<= 90` became an exact `== 87` (deliberately, to close the early-return finding the same commit fixed) — so the coupling this finding named is strictly tighter at head: `_ran` is still reached from three call sites in plans.py (189, 201, 213), and a single extra prescribed week in scripts/perf_fixture.py or flipping cfg.count_walks_mileage now reds a test whose stated subject is 'did the fold survive', with no message and no documented refresh procedure. The docstring records why the number is exact, not how to re-derive it."
+    },
+    {
+      "id": "f-de08442c",
+      "verdict": "still-open",
+      "quote": "    payload = _capture_progress_payload(monkeypatch)",
+      "line": 555,
+      "note": "Unchanged: the sibling at line 501-502 still carries `assert payload.get(\"workouts\"), \"the fixture must produce a real plan payload\"` and `test_the_round_floats_oracle_can_actually_fail` (def at 520) still does not, so an `{\"active\": False}` or `_err(...)` envelope leaves the mutant check passing on `_ROUND_FLOATS_CASES` alone. `_capture_progress_payload`'s docstring at line 481 still claims 'The first `_round_floats` call of the handler IS the whole payload', true only on the success path."
+    },
+    {
+      "id": "f-283d2ef7",
+      "verdict": "still-open",
+      "quote": "    assert \"--benchmark-compare-fail=min:15%\" in (",
+      "line": 570,
+      "note": "Half fixed: the pyproject.toml half now parses TOML (`addopts = tomllib.loads(...)[\"tool\"][\"pytest\"][\"ini_options\"][\"addopts\"]`, lines 571-574), so moving `--benchmark-skip` around the file no longer reds it. The ci.yml half is untouched — still a raw substring of the file text, so wrapping ci.yml:72's flag onto a continuation line, quoting it, or lifting the threshold into an `env:`/matrix variable fails the assert with the gate exactly as armed, and there is still no assertion message."
+    },
+    {
+      "id": "f-7304a058",
+      "verdict": "still-open",
+      "quote": "def _count_connect_opens(monkeypatch):",
+      "line": 91,
+      "note": "Both helpers survive at head — `_count_connect_opens` at line 91 and the generic `_count_calls(monkeypatch, module, name)` at line 254 — still the same closure-and-monkeypatch shape differing only in the hard-coded `db`/`connect` target, and the eight connection-count assertions at lines 172-243 all still call the specialised copy."
+    },
+    {
+      "id": "f-b608107a",
+      "verdict": "still-open",
+      "quote": "                out[k] = round(v, _TEXT_HIGH_DP if k in _TEXT_HIGH_PRECISION_KEYS",
+      "line": 197,
+      "note": "src/local_fitness/agent/tools.py is unchanged between 776ccbd and c577f1f; the dp-selection ternary is still written three times in `_round_floats` — line 190 (scalar entry), 197-198 (dict fast path) and 205 (list fast path)."
+    },
+    {
+      "id": "f-bbf94366",
+      "verdict": "still-open",
+      "quote": "def _freeze_progress_clock(monkeypatch, today):",
+      "line": 287,
+      "note": "The concrete red half is fixed — both count tests now pin the clock (lines 309 and 327) and assert exact counts. The reuse half is what the fix chose: `_freeze_progress_clock` (287-301) is a third hand-rolled copy of the `class _FakeDate(date)` + `monkeypatch.setattr(<module>, \"date\", _FakeDate)` shape, beside tests/test_tools.py:3797's `_freeze_ledger_clock` and tests/test_mcp_server.py's copy, rather than the shared `tests/` helper the finding named — i.e. exactly the 'cheap version of the same duplication' it called out."
+    },
+    {
+      "id": "f-8e1b825a",
+      "verdict": "still-open",
+      "quote": "    assert plans._workout_actuals([_MISLABELLED_WALK])[4] == [\"walking\"]",
+      "line": 582,
+      "note": "tests/test_plans.py is unchanged between the two heads; the positional `[4]` reads are still at lines 582, 583, 602 and 609, with the whole-tuple positional comparison at tests/test_perf_benchmarks.py:423 and the ordinal written down again in plans.py's docstring and `build_plan_detail` unpack."
+    }
+  ]
+}

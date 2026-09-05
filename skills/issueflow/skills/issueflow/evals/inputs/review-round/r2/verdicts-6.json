@@ -1,0 +1,76 @@
+{
+  "verdicts": [
+    {
+      "id": "c-3-2",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] == 83",
+      "line": 330,
+      "note": "Reproduced: the count is exactly 3 + 2*W (25/W=11 at _TODAY, 81/39 at +56d, 83/40 at +57-58d, 115/56 at +100d), so it is a perf_fixture property, not a rounding property - rebuilding the shared fixture with range(-70, 98, 3) instead of (-70, 98, 2) moves it 83 -> 57 while the _round_floats change is untouched; omitting empty lists from the tools.py:3808 compaction drops it to 51 (measured; 32 of 40 actual_activity_types lists are empty, so the candidate's '~43' is really 51, which reds the test just the same)."
+    },
+    {
+      "id": "c-1-7",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    recursive-per-leaf version cost one Python call per node — 470 of them for",
+      "line": 178,
+      "note": "Re-measured in this checkout against the perf fixture: pre-inline nodes / post-inline calls are 157/25 at _TODAY, 461/81 at +56d, 470/83 at +57d and +58d, 644/115 from +100d, and the serialized payload is 3.4 KB at _TODAY, 5.4 KB at the 2026-07-26 baseline-capture date, 10.1 KB at the pinned +58d and 13.9 KB at plateau - so the candidate's figures are exact and '470 ... for a single 10 KB payload' is true only at the pinned date, while CHANGELOG.md:28 and CLAUDE.md:208 repeat the pair with no caveat."
+    },
+    {
+      "id": "c-1-8",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "def test_workout_actuals_still_answers_exactly_what_it_answered_before(perf_db):",
+      "line": 401,
+      "note": "Reproduced with a real mutant: _workout_actuals with `_ran(a)` in place of `_ran(a, cfg)` produces ZERO divergences from the vendored reference across all 548 fixture activity-days plus all 7 edge cases (the corpus is 548 rows, every one activity_type='running' with avg_pace_sec_per_km NULL, one activity per day), and diverges only under GradingConfig(pace_gated_locomotion=False) - which only tests/test_plans.py:609 supplies. One wording correction: cfg.pace_gated_locomotion IS consulted, but is_running_effort(None) returns None so the label fallback makes the outcome cfg-independent; rated nit rather than major because the defect class is still caught, just in another file."
+    },
+    {
+      "id": "c-4-8",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] == 87",
+      "line": 312,
+      "note": "Both halves check out: investigate.md's Proof 2 says 'assert <= 90' and Proof 3 'assert <= 100', the head pins ==87 (:312) and ==83 (:330), and implement.md:12 still records the shipped behaviour as '_ran <= 90 and _round_floats <= 100' under a Deviations section reading 'None from the plan's substance'. On the tension the candidate flags: the exact pins came from r1's f-0583160f/f-7098c483 (a bare bound passes vacuously on an early-return handler), and a two-sided bound - 87 <= n <= 90 and 83 <= n <= 100 - satisfies both that anti-vacuity floor and the plan's stated intent, so it is the form to prefer over choosing one."
+    },
+    {
+      "id": "c-1-10",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "- **Work through `feature/* → dev → main`.** Normal changes land via a PR",
+      "line": 230,
+      "note": "Confirmed against the live PR, not just the brief: `gh pr view 236 --json baseRefName,headRefName` returns baseRefName 'main' with head 'feature/issue-232-perf-plan-progress-regression', which CLAUDE.md:230-233 forbids and CLAUDE.md:128-131 reinforces (the live container is built from dev, so a merge to main ships the fix nowhere and diverges the branches). Fixable without touching the diff: `gh pr edit 236 --base dev`."
+    },
+    {
+      "id": "c-2-2",
+      "verdict": "PLAUSIBLE",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    monkeypatch.setattr(tools, \"date\", _FakeDate)",
+      "line": 301,
+      "note": "The mechanism is real and the test asserts nothing about totality, but I could not construct a failure at this head: grep over the whole handler path (plans.py, config.py, units.py, agent/interpret.py) finds zero date.today()/datetime.now() calls, and patching tools.date alone demonstrably IS the effective clock (25 calls at offset 0 vs 83 at +58d). It becomes real the moment the window computation or units/config reads a clock of its own - what would confirm it is any such move, after which the pinned counts drift on a calendar and read as a perf regression. An assertion on the payload's workout count (40 at the pinned date) would bind the freeze to the handler's own view of today."
+    },
+    {
+      "id": "c-2-3",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    _IntSubclass(7),",
+      "line": 465,
+      "note": "Verified both the blindness and a mutant that exploits it: json.dumps normalizes all four subclass cases (new and reference agree on value AND, today, on type, so the cases can only ever detect a value divergence), and a fast path that coerces an int subclass / IntEnum to a plain int - {'reps': G.OK} -> {'reps': 2} against the reference's {'reps': <G.OK: 2>} - produces 0 divergences across all 21 _ROUND_FLOATS_CASES while the two new tuple isinstance asserts still pass. Same mechanism as f-7ede0eb0; the r1 fix closed the tuple half only, so the subclass half the cases exist for is still unguarded."
+    },
+    {
+      "id": "c-2-4",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "            elif t is str or t is int or t is bool or v is None:",
+      "line": 199,
+      "note": "The candidate's exact drift reproduces: adding `or t is tuple` to the dict scalar list at :199 (and not the list one at :211) yields 0 json divergences over all 21 _ROUND_FLOATS_CASES and still passes both new isinstance asserts, while _round_floats({'splits': (1.0, 2.0)}) returns a tuple and _round_floats([(1.0, 2.0)])'s element returns a list - inconsistent output from one function, divergent from the vendored reference. No current wrong output, so nit: the gap is that nothing structurally ties the two hand-written type lists to the isinstance ladder, and no case in the list puts a tuple inside a dict."
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "verdicts": [
+    {
+      "id": "c-2-5",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "tests/test_plans.py:558: assert foot == pytest.approx(14777.60)",
+      "line": 423,
+      "note": "The cited sibling uses approx against a hand-computed LITERAL, a different job from this test, which compares two implementations and whose whole contract is bit-identity ('the fast path must be a pure speed change'); approx would let the fold move an answer and still pass. And no divergence is constructible at the head: plans.py:1208-1237 and _workout_actuals_reference (tests/test_perf_benchmarks.py:350-363) accumulate foot/run/walk/dur in the identical order over the identical list, and NaN cannot enter either input — SQLite stores NaN as NULL so scripts/perf_fixture.py's rows cannot carry one, and none of the seven _WORKOUT_ACTUALS_EDGE_CASES does."
+    },
+    {
+      "id": "c-4-9",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    # read [\"other\", \"running\"] — `_workout_actuals` classified it by the",
+      "line": 566,
+      "note": "Verified against history: at b9dbcb9~1 `_workout_actuals` was `return dist, pace, _normalize_activity_types(day_activities)` and the label classifier (`_is_running`/`_is_walking`/`other`) lived entirely in `_normalize_activity_types`, introduced by 20b19e0 — so the retarget does credit `_workout_actuals` with a classification it never contained; one detail of the candidate is wrong, though: the pre-fix return was a three-tuple, not a four-tuple."
+    },
+    {
+      "id": "c-2-7",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    _freeze_progress_clock(monkeypatch, _TODAY + timedelta(days=58))",
+      "line": 309,
+      "note": "_TODAY is date(2026, 7, 9) and +58d is 2026-09-05, which is exactly c577f1f's author date — the freeze reproduces the authoring day's unfrozen behaviour, and neither test says why 58 rather than 0 or 100 on the 25/83/115 curve its own helper docstring publishes; corroborating detail the candidate did not have: tools.py:178-181 sources the 470 headline from a 2026-09-03 measurement, i.e. _TODAY+56d, so the CHANGELOG's 470 -> 83 is two points on that curve, not one."
+    },
+    {
+      "id": "c-2-8",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "src/local_fitness/plans.py:339: else _running_distance(day_activities, cfg)",
+      "line": 1238,
+      "note": "The three siblings are not kept in defiance of the fold's rule, they are kept because they have their own callers outside `_workout_actuals`: `_running_distance` at plans.py:339 and :532, `_foot_distance` at :337 and :532, `_running_duration` at :351 — all inside `classify_workout`, which `_workout_actuals` does not run. `_normalize_activity_types` had exactly one caller and the fold removed it, which is the criterion the CHANGELOG states ('the fold left it with no caller'), applied consistently rather than to one of four. (`_walking_distance` is indeed src-callerless, but that is pre-existing at 7326f66 and untouched by this diff.)"
+    },
+    {
+      "id": "c-4-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    The fix closes the gap; it does not touch the threshold, the baseline, or",
+      "line": 566,
+      "note": "The body (tests/test_perf_benchmarks.py:569-574) is two asserts — the 15% threshold grep and `--benchmark-skip` in addopts — and nothing reads `--benchmark-compare=0001` (.github/workflows/ci.yml:72), the committed .benchmarks/Linux-CPython-3.12-64bit/0001_8edfb701...json, or the absence of `continue-on-error` on the 'Perf-benchmark regression gate' step, all three of which exist at the head; rated a nit rather than a major because the approved plan's proof 7 asked only for the threshold grep ('A grep assertion is enough'), so this is a strengthening ask, not a spec miss — though the unguarded route is the rebaseline the plan's Alternatives section explicitly rejected."
+    },
+    {
+      "id": "c-3-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "        assert plans._workout_actuals(case) == _workout_actuals_reference(case), case",
+      "line": 426,
+      "note": "Both loops (lines 422-426) call live and reference with no cfg, so both resolve to plans._DEFAULT_GRADING_CONFIG (plans.py:51, :1183, :1231) and rewriting plans.py:1231 as `_ran(a)` diverges on nothing this test feeds; the mutant is still caught, but only by tests/test_plans.py:609, outside the oracle presented as the equivalence proof — hence a gap in the oracle rather than a hole in the suite."
+    },
+    {
+      "id": "c-3-6",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "# are deliberately frozen copies, not imports: their whole job is to still",
+      "line": 335,
+      "note": "The copies are structurally frozen, not frozen: lines 338 and 350 default cfg to the live plans._DEFAULT_GRADING_CONFIG and call plans._is_on_foot/plans._ran, and lines 370-371 read the live tools._TEXT_HIGH_DP / _TEXT_DEFAULT_DP / _TEXT_HIGH_PRECISION_KEYS (tools.py:146-151), so changing _TEXT_HIGH_DP from 4 to 5 moves both sides and the oracle stays green over a payload whose rounding did move — against a docstring that says 'the fast path must be a pure speed change'. The candidate's own dict-key example is weaker than it claims (a key-vs-enclosing-key logic bug WOULD diverge, since only the live side has it); the constants are the part that actually travels together."
+    },
+    {
+      "id": "c-3-7",
+      "verdict": "PLAUSIBLE",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    payload = _capture_progress_payload(monkeypatch)",
+      "line": 501,
+      "note": "Factually right that the halves diverge — lines 501 and 555 call _capture_progress_payload with no _freeze_progress_clock while lines 309 and 320 freeze at _TODAY+58d, so the compared payload is wall-clock dependent while the counted one is pinned. What is NOT constructible is the harm named: the window is max(frontier, today)+7d and today is already 2026-09-05 == _TODAY+58d, so on every future date the unfrozen payload is a SUPERSET of the frozen one and the oracle compares at least the rows the counts pin — never fewer. Confirming it as a real defect rather than a consistency ask would need a case where the unfrozen window is narrower than +58d, which no future date produces."
+    }
+  ]
+}

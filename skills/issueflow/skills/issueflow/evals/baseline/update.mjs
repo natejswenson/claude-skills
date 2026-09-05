@@ -14,7 +14,7 @@
  * makes the golden stale. The failing assertion prints this command.
  */
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -164,7 +164,11 @@ export function generate() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const artifacts = generate();
-  for (const f of readdirSync(HERE)) if (f !== 'update.mjs') rmSync(join(HERE, f), { force: true });
+  // Clear only what a previous freeze wrote — the manifest's own list — never
+  // the whole directory. The first `freeze-round.mjs` lived here for an
+  // afternoon and was deleted by the next refresh without a word.
+  const previous = existsSync(join(HERE, 'MANIFEST.json')) ? Object.keys(JSON.parse(readFileSync(join(HERE, 'MANIFEST.json'), 'utf8')).artifacts ?? {}) : [];
+  for (const f of [...previous, 'MANIFEST.json']) rmSync(join(HERE, f), { force: true });
   mkdirSync(HERE, { recursive: true });
   const manifest = {};
   for (const [name, body] of Object.entries(artifacts)) {

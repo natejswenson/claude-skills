@@ -90,7 +90,12 @@ named unreadable by `runs`, with the remedy.
 - The baseline is re-frozen over the same real #133 inputs with the
   investigation and design merged into one artifact, and the real #132 review
   carried into the JSON shape with its text unchanged. New two-sided suites
-  for the review loop (`prreview.test.mjs`) and the driver (`next.test.mjs`).
+  for the review loop (`prreview.test.mjs`) and the driver (`next.test.mjs`),
+  and a **review-round golden** (`review-round.test.mjs`): two real rounds of
+  the first real loop (local-fitness#236), frozen by `evals/freeze-round.mjs`
+  with the real finders' candidates, the real verifiers' verdicts, the diff
+  and every cited file at each head, re-registered against a rebuilt
+  repository and byte-compared — record, payload, replies and resolves.
 
 ### Removed
 

@@ -1,0 +1,97 @@
+{
+  "candidates": [
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 168,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "The new docstring claims the `int` fast path makes the top-level `bool` guard load-bearing; it does not, and the diff's own test comment says the opposite.",
+      "short_summary": "bool-guard rationale is false and self-contradictory",
+      "failure_scenario": "The added parenthetical says \"there is no ``int`` branch there and ``isinstance(True, float)`` is False — but the ``int`` fast path below makes it load-bearing\". It does not: the container fast paths match `t is bool` (tools.py:199, :211) before any recursion, and even with that arm deleted a bool never satisfies `t is int` because `type(True) is bool`, so a bool still falls to the ladder and still returns unchanged. Verified empirically at the head commit: deleting `if isinstance(obj, bool): return obj` (tools.py:187) produces byte-identical output over the real `get_training_plan_progress` payload and every case in `_ROUND_FLOATS_CASES`, plus bools nested in dicts, lists, tuples and dict subclasses. The diff's own test at tests/test_perf_benchmarks.py:470 asserts the contrary of the docstring (\"removing the `bool` guard diverges on nothing\"), so the two halves of one change disagree. Concrete cost: a maintainer who later adds a genuine `int` branch to the ladder will read this docstring as saying the guard already protects that case and will not add the test that would catch `True` serializing as `1`.",
+      "introduced_by_diff": true,
+      "suggestion": "    (That guard is inert today — there is no ``int`` branch in the ladder,\n    ``isinstance(True, float)`` is False, and the container fast paths match\n    ``type(v) is bool`` before recursing — but it is the thing that keeps an\n    ``int`` branch from ever swallowing a bool, so it stays.)"
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1256,
+      "side": "RIGHT",
+      "category": "altitude",
+      "summary": "The fold removes only 36 of the handler's 87 `_ran` evaluations; the other 51 come from `grade_workout` re-walking the very same day list three more times in the same loop iteration, which is the identical defect class the diff was sent to fix.",
+      "short_summary": "grade_workout still re-walks the same day's activities",
+      "failure_scenario": "Measured at the head commit against the perf fixture (`build_perf_fixture_db(today=2026-07-09)`), one `get_training_plan_progress` request: `_ran` is evaluated 87 times, of which only 36 come from `_workout_actuals` (one per activity — the fold works) and 51 come from the generator expressions in `_running_distance` (plans.py:189), `_walking_distance` and `_running_duration` (plans.py:213), reached through `grade_workout` on line 1259 — over the *same* `day` list that line 1256 just walked, in the same loop iteration. `weekly_mileage` (plans.py:1279, via the `dist_fn` at plans.py:532) walks them a fourth time. `_workout_actuals` already returns `foot`, `run` and `walk` and already accumulates `dur`, so `grade_workout` is recomputing values its caller is holding. The simpler, more general change is to hand `grade_workout` the actuals tuple `_workout_actuals` just produced (or return `dur` alongside it) instead of letting it re-derive them — that removes 51 of the 87 remaining evaluations and three list walks per graded day, versus the 36 this diff removes. As shipped, the new gate at tests/test_perf_benchmarks.py:284 pins `<= 90`, which cements the remaining duplication as the accepted floor, and `_workout_actuals`'s docstring keeps claiming \"ONE pass ... `_ran` is evaluated at most once per activity\" while the request as a whole evaluates it 2.4x per activity.",
+      "introduced_by_diff": false
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1231,
+      "side": "RIGHT",
+      "category": "altitude",
+      "summary": "Inside the loop this diff rewrote, `_ran(a, cfg)` re-runs the `_is_on_foot` substring scan that the line above already computed, so the loop does more label-matching work than the `_ran` count it optimises.",
+      "short_summary": "_ran redoes the _is_on_foot check the loop just did",
+      "failure_scenario": "plans.py:1222 computes `_is_on_foot(at)` and `continue`s when it is False; line 1231 then calls `_ran(a, cfg)`, whose first statement (plans.py:167-169) is `if not _is_on_foot(at): return False` — the identical call on the identical value. Measured at the head commit on the perf fixture, one `get_training_plan_progress` request over 36 activities: `_is_on_foot` 139 calls and `_is_running` 226 calls, against 87 `_ran` calls. `_is_running`/`_is_walking` each lowercase the label and run an `any(...)` substring scan over a frozenset, so this is strictly more work per activity than the `_ran` dispatch the diff counts — and the new assertion counts `_ran` only, so the duplication is invisible to the gate the change adds. The deeper fix in the lines the diff already touches: split `_ran` into an on-foot-known variant (or hoist `at.lower()` once per activity) so the loop's known-on-foot branch does not pay for the check a second time. Cleanup, not a crash.",
+      "introduced_by_diff": false
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 284,
+      "side": "RIGHT",
+      "category": "altitude",
+      "summary": "The `_ran` work-count assertion is an upper bound with no floor, so it passes over zero work if the fixture ever stops producing an active plan.",
+      "short_summary": "_ran count assertion has no anti-vacuity floor",
+      "failure_scenario": "`get_training_plan_progress` short-circuits at tools.py:3764 — `if active is None: return _text({\"active\": False})` — before any grading runs. If `plans.get_active_plan` ever stops matching the fixture's plan (a `status` value renamed, a schema migration, a change to `scripts/perf_fixture.py`'s `_seed_plan`, or the plan's date window moving out of range), `_ran` is called 0 times, `assert counts[\"n\"] <= 90` passes, and the assertion the whole PR is built on measures nothing while still reporting green — the exact failure mode the change's own CHANGELOG entry says the latency axis suffered from for five weeks. The two sibling tests added in the same block DO carry floors (`assert len(by_date) > 500` at line 373; `assert payload.get(\"workouts\")` at line 455), so the omission is inconsistent within this one change. CLAUDE.md:118-120: \"The bar is 'would this test FAIL if the code under test were broken?' — if not, it isn't a test.\" Measured actual at head: 87.",
+      "introduced_by_diff": true,
+      "suggestion": "    assert 80 <= counts[\"n\"] <= 90, counts[\"n\"]"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 297,
+      "side": "RIGHT",
+      "category": "altitude",
+      "summary": "The `_round_floats` work-count assertion is likewise upper-bound-only, and an empty/error payload makes it pass at a single call.",
+      "short_summary": "_round_floats count assertion has no floor either",
+      "failure_scenario": "With no active plan the handler returns `_text({\"active\": False})`, which is one `_round_floats` call on a two-key dict; `assert counts[\"n\"] <= 100` passes. The same is true of any payload shrink — the tool's own docstring says the response is windowed by default, so a windowing change that dropped the `workouts` list would collapse the count to a handful and the test would still be green while the assertion it documents (\"470 before, 83 after\") no longer describes anything. Unlike its neighbour at line 455 this test never asserts the payload is real. Measured actual at head: 83.",
+      "introduced_by_diff": true,
+      "suggestion": "    assert 70 <= counts[\"n\"] <= 100, counts[\"n\"]"
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 227,
+      "side": "LEFT",
+      "category": "removed-behaviour",
+      "summary": "Deleting `_normalize_activity_types` removes the only way to ask \"what activity classes were on this day\" without also running the distance/pace accumulation, which is what invites the next caller to re-add a second pass.",
+      "short_summary": "no standalone classifier left after the fold",
+      "failure_scenario": "Before the diff, a consumer needing only the day's classes called `_normalize_activity_types(day, cfg)`. After the fold the only entry point is `_workout_actuals(day, cfg)[4]`, which also accumulates foot/run/walk distance and pace and allocates a set — so a future caller in the plan view, `assemble_status`, or the report-card path that wants classes alone must either discard four computed values or write its own loop. Writing its own loop over the same list is precisely how PR #162 introduced the regression this PR is fixing (the docstring at plans.py:1200-1206 says so), and the retargeted tests at tests/test_plans.py:582-609 now go through the five-tuple, so nothing in the suite would flag a re-added standalone classifier as a duplicate pass. The safer shape is to keep a thin `_activity_classes(day, cfg)` that the fold calls once per activity via the same loop, or to note in the docstring that classes are only ever obtainable from the five-tuple so the next caller does not re-derive them.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 197,
+      "side": "RIGHT",
+      "category": "altitude",
+      "summary": "The precision rule is now written out four times inside one function and the type ladder twice, with only a test keeping the fast path and the fallback in agreement.",
+      "short_summary": "dp rule duplicated 4x, type ladder duplicated 2x",
+      "failure_scenario": "`_TEXT_HIGH_DP if <key> in _TEXT_HIGH_PRECISION_KEYS else _TEXT_DEFAULT_DP` appears at tools.py:190, :197-198 and :205, and the `float`/`str`/`int`/`bool`/`None` classification appears at :187-191, :196-200 and :209-212 — three near-copies whose only difference is that the dict arm keys off the child key `k` and the list arm off the enclosing `key`. Cost: any change to the precision rule (a suffix match, a per-tool override, a third precision tier) has to land in four places and get the `k`-vs-`key` distinction right in each; the docstring itself concedes \"the fast path must stay semantically identical to the fallback\" and delegates that guarantee to a test rather than to the code's shape. A single local `def _dp(k): ...` (or hoisting the scalar classification into one helper the branches share) keeps one statement of the rule at a fraction of the per-leaf recursion cost the change is buying back. Cleanup, not a defect — a 40k-case differential fuzz of the new implementation against the vendored reference (dict/list subclasses, tuples, non-str dict keys, Decimal, date, bytes, IntEnum, NaN/inf) found zero divergences at this head.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "CLAUDE.md",
+      "line": 161,
+      "side": "RIGHT",
+      "category": "removed-behaviour",
+      "summary": "The change adds a third assertion axis to the perf suite and updates the test module's docstring, but leaves CLAUDE.md's own description of that gate saying it has two.",
+      "short_summary": "CLAUDE.md still says the perf gate has two axes",
+      "failure_scenario": "The diff rewrites tests/test_perf_benchmarks.py's docstring from \"Two axes are asserted\" to \"Three axes are asserted\" and adds part (3) of the drift tell at CLAUDE.md:199-221, but CLAUDE.md:160-161 still reads \"latency AND `db.connect()`-open-count for the brief/plan hot paths\" — the canonical description of the gate, in the file this same diff edits, now omits the work-COUNT axis that the CHANGELOG calls the main behavioural change (\"The perf-benchmark suite now counts work, not just connections\"). Cost: the next person adding a benchmark target reads the two-axis description, adds a latency-plus-connection-count pair, and ships exactly the blind spot this PR exists to close.",
+      "introduced_by_diff": true
+    }
+  ],
+  "notExamined": [
+    "The pytest-benchmark latency baseline itself (.benchmarks/Linux-CPython-3.12-64bit/0001_*.json) — not in the diff, and its committed values cannot be re-measured on this machine (Darwin-CPython-3.12-64bit).",
+    "The CHANGELOG's measured claims of '-6.0% (p05, interleaved in-process A/B)' and '49.6% of this function's own runtime' — I verified the two call counts (87 and 83 at this head, matching) but did not re-run a timing A/B.",
+    "The CPython 3.12.13 vs 3.12.14 interpreter question recorded as open in the new CLAUDE.md text — not resolvable without a capture-perf-baseline.yml dispatch.",
+    "The four other benchmark targets (assemble_brief_context, get_training_plan_status, _build_plan_section, daily_snapshot) and the report-card path — untouched by the diff except through the shared `_round_floats`, which the fuzz covered generically.",
+    "tests/test_plans.py beyond the four renamed activity-type tests and their two neighbours (lines 553-610).",
+    "The three notes.py items (1-3) from issue #232 — this work item is the perf half only; they belong to other lanes.",
+    "The PR page, its CI run history, and any review comments — the brief says the diff and the checkout are the source.",
+    "Whether the `docs/plans/2026-06-23-*` design docs that describe `_workout_actuals`'s signature need updating for the fold; I confirmed they do not name `_normalize_activity_types`, but did not read them in full."
+  ]
+}

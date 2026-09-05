@@ -435,6 +435,18 @@ export function registerRound(dir, run, lane, round, { tree, now = () => new Dat
     throw new RunError(`cannot register round ${round} of ${lane.slug}: the branch moved (reviewed ${entry.head.slice(0, 12)}, now ${head.slice(0, 12)}) — the verdicts are about code that is no longer HEAD`);
   }
   const verdicts = readVerdicts(dir, lane, round);
+  // Nothing posted to the pull request may carry this machine's paths. A
+  // finder handed an absolute CLAUDE.md path in its brief copied it into a
+  // finding on the first real round, and the review body published the
+  // maintainer's home directory. Every text field is made repository-relative
+  // here, before it is recorded, rendered or posted.
+  const roots = [workdir, run.repo.path].filter(Boolean).sort((a, b) => b.length - a.length);
+  const relative = (text) => (typeof text === 'string' ? roots.reduce((t, r) => t.split(`${r}/`).join('').split(r).join('<repo>'), text) : text);
+  for (const v of verdicts.values()) { v.quote = relative(v.quote); v.note = relative(v.note); }
+  for (const c of entry.candidates ?? []) {
+    for (const k of ['summary', 'short_summary', 'failure_scenario', 'suggestion']) c[k] = relative(c[k]);
+    c.file = relative(c.file);
+  }
   const files = parseDiff(readFileSync(diffPath(dir, lane, round), 'utf8'));
   const delta = entry.prevHead ? parseDiff(deltaDiff(workdir, entry.prevHead, entry.head)) : null;
   const { notExamined } = readCandidates(dir, lane, round);
@@ -516,7 +528,7 @@ export function registerRound(dir, run, lane, round, { tree, now = () => new Dat
   entry.registered = { at: now(), head };
   entry.verdict = verdict;
   entry.transitions = transitions;
-  entry.notExamined = notExamined;
+  entry.notExamined = notExamined.map(relative);
   entry.counts = {
     open: openFindings(lane).length, majors,
     nits: openFindings(lane).filter((f) => f.severity === 'nit').length,

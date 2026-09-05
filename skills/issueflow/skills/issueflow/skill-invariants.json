@@ -334,6 +334,27 @@
       "rationale": "Every rule the pull request registrar enforces, paired with the shape it refuses, over a real git repository: a finding on a hunk's context line posts inline beside one outside every hunk that is body-only but KEEPS its severity; a nit posts in round 1 beside one suppressed in round 2 and one over the cap; a fixed prior finding resolves beside a moved line that stays open and escalates the fixer to opus; a PLAUSIBLE major on a line the fix did not touch becomes a note beside a PLAUSIBLE major on a line it did touch that stays a major; a cleanup angle cannot be a major; ids are content-addressed and stable across rewording; a prior finding with no verdict, a citation past EOF, and a branch that moved each refuse the round; the fifth round is a hand-back; converge refuses over an open major; a not-changed major is a dispute and the second dispute hands the run back. Posting is driven against a stubbed gh: exactly one pending review per round, one thread per inline finding, submitted as COMMENT, a refused anchor costing one thread and landing in the body, the fixed finding's thread resolved."
     },
     {
+      "id": "review-round-golden",
+      "kind": "golden",
+      "test": "scripts/tests/review-round.test.mjs",
+      "fixtures": [
+        "evals/inputs/review-round/meta.json",
+        "evals/inputs/review-round/r1/diff.patch",
+        "evals/inputs/review-round/r1/registered.json",
+        "evals/inputs/review-round/r1/review-payload.json",
+        "evals/inputs/review-round/r1/fix-report.json",
+        "evals/inputs/review-round/r2/diff.patch",
+        "evals/inputs/review-round/r2/registered.json",
+        "evals/inputs/review-round/r2/review-payload.json",
+        "evals/inputs/review-round/r1/plan.json",
+        "evals/inputs/review-round/r2/plan.json"
+      ],
+      "corpus_glob": "evals/inputs/review-round/r*/verdicts-*.json",
+      "min_corpus": 8,
+      "update_command": "node evals/freeze-round.mjs --run-dir <run> --lane <slug> --rounds 1,2 (freezes real rounds out of a finished run — never edit the fixture by hand)",
+      "rationale": "The review loop's whole product is what the registrar decides and what it posts, and both are byte-compared here against two REAL rounds of the first real loop (natejswenson/local-fitness#236): a throwaway repository is rebuilt whose commits carry the files each round could look at, the real finders' candidates and the real verifiers' verdicts are dropped in, and the registrar runs for real — hunk classification against the real diff, citations against the rebuilt trees, ids assigned once, the round-1 fix report applied so round 2's fixed/still-open transitions and resolves are real. Floors: two rounds, ≥3 majors in round 1, ≥8 fixed in round 2, ≥5 new nits suppressed by the round-1 rule, ≥8 inline threads, and a verdict-file corpus of at least 8 — a refresh that collapsed to an empty round, or a registrar that stopped posting inline, cannot pass. A second test asserts no frozen file outside the target repo's own content carries a machine path, which is the rule the first real round broke on the pull request itself."
+    },
+    {
       "id": "next-driver",
       "kind": "trap",
       "test": "scripts/tests/next.test.mjs",
