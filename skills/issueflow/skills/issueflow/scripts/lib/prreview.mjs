@@ -183,6 +183,17 @@ export function touched(files, path, line) {
   return Boolean(file && file.newLines.has(line));
 }
 
+/** Is `path` byte-identical between two commits? A finding in such a file cannot have changed status. */
+export function fileUnchanged(tree, from, to, path) {
+  if (!from || !to || from === to) return from === to;
+  try {
+    const out = execFileSync('git', ['diff', '--name-only', from, to, '--', path], { cwd: tree, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return out.trim() === '';
+  } catch {
+    return false;
+  }
+}
+
 /** How many lines a file has at a commit, or null when the file is not there. */
 export function lineCountAt(tree, head, path) {
   try {
@@ -389,9 +400,21 @@ export function readCandidates(dir, lane, round) {
  * status is a guess. Records the batches on the round so `readVerdicts` knows
  * what must come back.
  */
-export function planVerification(dir, run, lane, round, candidates) {
+export function planVerification(dir, run, lane, round, candidates, { tree = null } = {}) {
   const entry = lane.review.rounds.find((r) => r.round === round);
-  const prior = openFindings(lane).map((f) => ({
+  // A prior nit or pre-existing finding whose file is byte-identical to the
+  // head it was filed against cannot have been fixed, moved or refuted by the
+  // fix — it is still open by construction, and sending it to a verifier is
+  // what made round 3 of the first real loop re-judge 47 findings with eight
+  // opus verifiers, most of whom wrote "file unchanged since filing". Majors
+  // are always re-judged: a major is what the round exists to close.
+  const workdir = tree ?? laneTree(dir, run, lane);
+  const auto = [];
+  const prior = openFindings(lane).filter((f) => {
+    if (f.severity === 'major' || !f.head || !fileUnchanged(workdir, f.head, entry.head, f.file)) return true;
+    auto.push(f.id);
+    return false;
+  }).map((f) => ({
     id: f.id, prior: true, file: f.file, line: f.line, side: f.side, severity: f.severity, category: f.category,
     short_summary: f.short_summary, summary: f.summary, failure_scenario: f.failure_scenario,
     dispute: f.dispute ?? null, filedAtHead: f.head,
@@ -402,9 +425,10 @@ export function planVerification(dir, run, lane, round, candidates) {
   entry.verifiers = batches.length;
   entry.candidateIds = fresh.map((c) => c.id);
   entry.priorIds = prior.map((p) => p.id);
+  entry.autoStillOpen = auto;
   entry.candidates = fresh;
   saveRun(dir, run);
-  return { batches, prior, fresh };
+  return { batches, prior, fresh, auto };
 }
 
 /** Every verifier's verdicts for the round, keyed by item id; refuses a missing batch or an unruled item. */
@@ -460,6 +484,16 @@ export function registerRound(dir, run, lane, round, { tree, now = () => new Dat
   lane.review.findings ??= [];
 
   const transitions = { fixed: [], stillOpen: [], withdrawn: [], new: [], notes: [], suppressed: [], dropped: [] };
+
+  // Findings in files the fix never touched: still open by construction.
+  for (const id of entry.autoStillOpen ?? []) {
+    const f = lane.review.findings.find((x) => x.id === id);
+    if (!f || f.status !== 'open') continue;
+    f.lastRound = round;
+    f.history = [...(f.history ?? []), { round, verdict: 'still-open', quote: `${f.file} unchanged since ${String(f.head).slice(0, 12)}`, note: 'auto: file byte-identical to the filing head' }];
+    f.stillOpenRounds = (f.stillOpenRounds ?? 0) + 1;
+    transitions.stillOpen.push(id);
+  }
 
   // Prior findings first: their fate this round.
   for (const id of entry.priorIds ?? []) {

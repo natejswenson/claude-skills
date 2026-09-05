@@ -102,9 +102,11 @@ function replayRound(ctx, n, heads) {
   // the registrar, and the pooling rule may move on its own tests.
   readCandidates(dir, lane, n);
   const plan = readJson(join(frozenDir, 'plan.json'));
-  const prior = planVerification(dir, run, lane, n, []).prior;
-  assert.deepEqual(prior.map((p) => p.id).sort(), [...plan.priorIds].sort(), `round ${n}: the prior open findings differ from the live round's — ids must be assigned once`);
-  Object.assign(entry, { verifiers: plan.verifiers, candidateIds: plan.candidateIds, priorIds: plan.priorIds, candidates: plan.candidates });
+  const { prior, auto } = planVerification(dir, run, lane, n, [], { tree: repo });
+  assert.deepEqual([...prior.map((p) => p.id), ...auto].sort(), [...plan.priorIds].sort(), `round ${n}: the prior open findings differ from the live round's — ids must be assigned once`);
+  // The live rounds predate the unchanged-file rule: every prior finding was
+  // sent to a verifier and every verifier ruled. Replay the live plan exactly.
+  Object.assign(entry, { verifiers: plan.verifiers, candidateIds: plan.candidateIds, priorIds: plan.priorIds, autoStillOpen: [], candidates: plan.candidates });
   saveRun(dir, run);
   for (let i = 1; i <= plan.verifiers; i += 1) cpSync(join(frozenDir, `verdicts-${i}.json`), verdictsPath(dir, lane, n, i));
   const record = registerRound(dir, run, lane, n, { tree: repo });

@@ -15,7 +15,7 @@ cleanup angles run in round one only and yield nits only.
 
 ```
 finders (2–5, opus, one angle set each) ──▶ candidates
-    ──▶ verifiers (≤8, opus, ≤3 items each, every prior open finding a mandatory item) ──▶ verdicts
+    ──▶ verifiers (≤8, opus, ≤3 items each; every prior MAJOR is a mandatory item, and every prior nit whose file the fix touched — a nit in an untouched file is still open by construction) ──▶ verdicts
     ──▶ registrar (code) ──▶ one GitHub review, inline threads, transitions on prior threads
     ──▶ fixer (sonnet; opus once a major is still-open) ──▶ one commit, a push, a fix report
     ──▶ next round, until open majors = 0 (nits may remain) or the cap

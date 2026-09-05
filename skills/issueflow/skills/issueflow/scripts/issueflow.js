@@ -825,9 +825,10 @@ async function cmdReviewVerify(args) {
   if (!entry || entry.registered) throw new RunError(`no open review round on ${lane.slug} — \`issueflow review-brief\` starts one`);
   if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
-  const { batches, prior, fresh } = planVerification(dir, run, lane, entry.round, candidates);
-  print(['Lane', 'Round', 'Candidates', 'Prior open', 'Verifiers', 'Not examined'],
-    [[lane.slug, String(entry.round), String(fresh.length), String(prior.length), String(batches.length), String(notExamined.length)]]);
+  const { batches, prior, fresh, auto } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
+  print(['Lane', 'Round', 'Candidates', 'Prior re-judged', 'Prior unchanged', 'Verifiers', 'Not examined'],
+    [[lane.slug, String(entry.round), String(fresh.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
+  if (auto.length > 0) console.log(`\n${auto.length} prior nit/pre-existing finding(s) sit in files the fix did not touch — still open by construction, not sent to a verifier.`);
   if (batches.length === 0) {
     console.log('\nNothing to verify: no candidates and no prior open findings. Register the round to record a clean pass:');
     console.log(`  issueflow review-register --lane ${lane.slug}`);

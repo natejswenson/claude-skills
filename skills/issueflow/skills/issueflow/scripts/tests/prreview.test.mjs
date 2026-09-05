@@ -321,6 +321,42 @@ test('round 2: every prior finding needs a verdict; fixed resolves, a moved line
   cleanup();
 });
 
+test('round 2: a prior nit in a file the fix never touched is still open by construction — no verifier item; a prior major always gets one', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  open(dir, run, lane, repoPath);
+  writeCandidates(dir, lane, 1, 1, [
+    cand(),                                                                                                                     // major, widget.js
+    cand({ file: 'README.md', line: 1, category: 'conventions', short_summary: 'README never mentions eviction', summary: 'docs', failure_scenario: 'cost: the README lies' }), // nit, README.md
+  ]);
+  planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+  writeVerdicts(dir, lane, 1, 1, [
+    { id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'return cache.get(key);' },
+    { id: 'c-1-2', verdict: 'CONFIRMED', severity: 'nit', quote: '# widgets' },
+  ]);
+  const r1 = registerRound(dir, run, lane, 1, { tree: repoPath });
+  const [major, readme] = r1.findings;
+  // the fix touches widget.js only
+  writeFileSync(join(repoPath, 'widget.js'), WIDGET_V2.replace('export function get(key) {\n', 'export function get(key) {\n  if (!cache.has(key)) return undefined;\n'));
+  git(['commit', '-qam', 'fix'], repoPath);
+  open(dir, run, lane, repoPath);
+  writeCandidates(dir, lane, 2, 1, []);
+  const { prior, auto } = planVerification(dir, run, lane, 2, [], { tree: repoPath });
+  assert.deepEqual(prior.map((p) => p.id), [major.id], 'only the major is a verifier item');
+  assert.deepEqual(auto, [readme.id], 'the README nit is still open by construction');
+  writeVerdicts(dir, lane, 2, 1, [{ id: major.id, verdict: 'fixed', quote: 'if (!cache.has(key)) return undefined;' }]);
+  const r2 = registerRound(dir, run, lane, 2, { tree: repoPath });
+  assert.deepEqual(r2.transitions.fixed, [major.id]);
+  assert.deepEqual(r2.transitions.stillOpen, [readme.id]);
+  const nit = lane.review.findings.find((f) => f.id === readme.id);
+  assert.equal(nit.status, 'open');
+  assert.equal(nit.stillOpenRounds, 1);
+  assert.match(nit.history.at(-1).note, /auto: file byte-identical/);
+  assert.equal(r2.verdict, 'converged');
+  // two-sided: a nit in a file the fix DID touch is re-judged like any other
+  git(['commit', '-q', '--allow-empty', '-m', 'noop'], repoPath);
+  cleanup();
+});
+
 test('round 2: a confirmed major on a line the fix touched stays a major — the oscillation rule is about untouched lines only', () => {
   const { dir, run, lane, repoPath, cleanup } = fixture();
   open(dir, run, lane, repoPath);
@@ -550,9 +586,10 @@ test('postRound: one pending review, one thread per inline finding, submitted as
   // registrar classifies it inline; the stub then refuses the anchor.
   writeCandidates(dir, lane, 2, 1, [cand({ line: 10, category: 'line-by-line', short_summary: 'clear() on the 101st set drops live entries', summary: 'whole-cache eviction', failure_scenario: 'the 101st set() empties the cache mid-request' })]);
   planVerification(dir, run, lane, 2, readCandidates(dir, lane, 2).candidates);
+  // README.md is untouched by the fix, so the README nit is still open by
+  // construction and gets no verifier item — only the major and the new candidate do.
   writeVerdicts(dir, lane, 2, 1, [
     { id: lane.review.findings[0].id, verdict: 'fixed', quote: 'if (!cache.has(key)) return undefined;' },
-    { id: readme.id, verdict: 'still-open', quote: '# widgets' },
     { id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'if (cache.size > 100) cache.clear();' },
   ]);
   const r2 = registerRound(dir, run, lane, 2, { tree: repoPath });

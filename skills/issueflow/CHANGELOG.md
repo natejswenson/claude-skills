@@ -36,8 +36,10 @@ named unreadable by `runs`, with the remedy.
   `intent` angle that reads the diff against the approved plan and the tests
   against the issue; up to 8 opus verifiers ruling CONFIRMED / PLAUSIBLE /
   REFUTED with "REFUTED only when constructible from the code", and ruling
-  fixed / still-open / withdrawn on every prior open finding with a quote at
-  the new head (a moved line is still-open); the registrar in
+  fixed / still-open / withdrawn on every prior open major — and every prior
+  nit whose file the fix touched; a nit in an untouched file is still open by
+  construction and costs no verifier — with a quote at the new head (a moved
+  line is still-open); the registrar in
   `scripts/lib/prreview.mjs`; one GitHub review per round through the
   pending-review flow (a refused anchor costs one thread, not the round), a
   thread per inline finding, a reply and a resolve on every prior thread; a

@@ -160,7 +160,9 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
 6. **Review loop**, bottom lane first. Each round: 2–5 opus finders (one under
    sixty changed lines), each dealt angles from `references/review-method.md`;
    up to 8 opus verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the
-   candidates and fixed / still-open / withdrawn on every prior finding; the
+   candidates and fixed / still-open / withdrawn on every prior major and every
+   prior nit in a file the fix touched (a nit in an untouched file is still open
+   by construction, and costs no verifier); the
    registrar; one GitHub review with a thread per inline finding; then a fixer
    (sonnet, or opus once a major survived a fix) on every open major, one commit
    per round, a push, a fix report. **Paste the round's findings table into the
