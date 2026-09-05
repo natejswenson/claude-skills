@@ -168,13 +168,14 @@ test('validateCandidates and validateVerdicts refuse every shape the registrar w
   assert.ok(validateVerdicts(JSON.stringify({ verdicts: [{ id: 'c-1-1', verdict: 'REFUTED', quote: 'x' }] }), expected).verdicts.has('c-1-1'), 'a refutation needs no severity');
 });
 
-test('dedupCandidates keeps the most concrete of two candidates on the same mechanism', () => {
+test('dedupCandidates keeps the most concrete of two candidates on the same mechanism, and folds same-line candidates across angles', () => {
   const a = { ...cand(), id: 'c-1-1', failure_scenario: 'short' };
   const b = { ...cand({ line: 5 }), id: 'c-2-1', failure_scenario: 'a much longer, more concrete failure scenario naming inputs' };
-  const c = { ...cand({ category: 'cross-file' }), id: 'c-2-2' };
-  const kept = dedupCandidates([a, b, c]);
-  assert.deepEqual(kept.map((k) => k.id), ['c-2-1', 'c-2-2']);
-  assert.deepEqual(kept[0].mergedFrom, ['c-1-1']);
+  const c = { ...cand({ category: 'cross-file' }), id: 'c-2-2', failure_scenario: 'x' }; // same line 4 as `a`, different angle
+  const d = { ...cand({ line: 9, category: 'cross-file' }), id: 'c-3-1' };          // a different line: kept
+  const kept = dedupCandidates([a, b, c, d]);
+  assert.deepEqual(kept.map((k) => k.id), ['c-2-1', 'c-3-1']);
+  assert.deepEqual(kept[0].mergedFrom.sort(), ['c-1-1', 'c-2-2'], 'three finders on one line is one finding');
 });
 
 // ---------------------------------------------------------------------------
@@ -189,7 +190,7 @@ test('round 1: a confirmed major on a context line posts inline; a nit posts; a 
   writeCandidates(dir, lane, 1, 1, [
     cand(),                                                                                   // context line 3-ish: inline
     cand({ line: 13, category: 'cross-file', short_summary: 'size() unaffected but callers assume no eviction', summary: 'size() callers assume monotonic growth', failure_scenario: 'a caller caches size() and indexes past it after an eviction' }),
-    cand({ category: 'simplification', short_summary: 'inline the clear() threshold constant', summary: 'the 100 is a magic number', failure_scenario: 'cost: the threshold is duplicated in the test' }),
+    cand({ line: 9, category: 'simplification', short_summary: 'inline the clear() threshold constant', summary: 'the 100 is a magic number', failure_scenario: 'cost: the threshold is duplicated in the test' }),
   ]);
   const { candidates } = readCandidates(dir, lane, 1);
   assert.equal(candidates.length, 3);

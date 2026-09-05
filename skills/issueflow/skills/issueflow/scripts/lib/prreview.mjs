@@ -297,10 +297,19 @@ export function validateVerdicts(text, expected) {
 export function dedupCandidates(candidates) {
   const kept = [];
   for (const c of candidates) {
-    const twin = kept.find((k) => k.file === c.file && k.side === c.side && k.category === c.category && Math.abs(k.line - c.line) <= 3);
+    // Same file and the same line (or within three lines under the same
+    // angle) is the same finding whatever words it arrived in. The first real
+    // round posted the bool-guard docstring finding three times under three
+    // phrasings from three finders, each on tools.py:169, because the twin
+    // test also required the category to match.
+    const lines = (k) => [k.line, ...(k.mergedLines ?? [])];
+    const twin = kept.find((k) => k.file === c.file && k.side === c.side
+      && (lines(k).includes(c.line) || (k.category === c.category && lines(k).some((l) => Math.abs(l - c.line) <= 3))));
     if (!twin) { kept.push(c); continue; }
-    if (c.failure_scenario.length > twin.failure_scenario.length) kept[kept.indexOf(twin)] = { ...c, mergedFrom: [...(twin.mergedFrom ?? []), twin.id] };
-    else twin.mergedFrom = [...(twin.mergedFrom ?? []), c.id];
+    const mergedFrom = [...(twin.mergedFrom ?? []), c.failure_scenario.length > twin.failure_scenario.length ? twin.id : c.id];
+    const mergedLines = [...new Set([...lines(twin), c.line])];
+    if (c.failure_scenario.length > twin.failure_scenario.length) kept[kept.indexOf(twin)] = { ...c, mergedFrom, mergedLines };
+    else Object.assign(twin, { mergedFrom, mergedLines });
   }
   return kept;
 }
