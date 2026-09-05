@@ -92,7 +92,11 @@ export const reviewable = (step) => step.stage.id === PLAN_STAGE;
  */
 export const REVIEW_FORBIDS =
   'Never edit the work or any file other than your own review — a reviewer that fixes ' +
-  'what it found has destroyed the gate it was sent to hold. Never file a finding without a ' +
+  'what it found has destroyed the gate it was sent to hold. Never move the checkout: no ' +
+  'checkout, merge, pull, fetch or fast-forward of the repository you were handed — if a ' +
+  'citation does not resolve at the commit the plan names, read that commit with ' +
+  '`git show <sha>:<path>` or a throwaway worktree, and say so in notExamined; a reviewer ' +
+  'that moved the tree has changed what the next stage builds on. Never file a finding without a ' +
   'citation that resolves; an uncited finding is an opinion, and the registrar refuses the ' +
   'whole review over it. Each round re-hunts the current work from scratch — never weaken a ' +
   'finding to make a round converge, and never re-file a resolved one from memory. Never ' +
