@@ -1,0 +1,42 @@
+▶ split — the approved plan lists work items — splitting into lanes
+
+Read 4 work items from the approved plan.
+
+| Lane                   | Work item                                        | Branch                                   | Stacks on                                |
+|------------------------|--------------------------------------------------|------------------------------------------|------------------------------------------|
+| descriptions           | the eight description-string rewrites, the inte… | feature/issue-133-descriptions           | main                                     |
+| query-workouts-honesty | source added to the SELECT                       | feature/issue-133-query-workouts-honesty | feature/issue-133-descriptions           |
+| plan-tool-truth        | revise_training_plan revalidates goal-field-onl… | feature/issue-133-plan-tool-truth        | feature/issue-133-query-workouts-honesty |
+| dead-notes-param       | the unread notes parameter removed from assembl… | feature/issue-133-dead-notes-param       | feature/issue-133-plan-tool-truth        |
+
+| Step                             | Model | State    | Took  | Gate    |
+|----------------------------------|-------|----------|-------|---------|
+| investigate                      | opus  | approved | 4m58s | open    |
+| descriptions/implement           | opus  | pending  | —     | open    |
+| query-workouts-honesty/implement | opus  | pending  | —     | blocked |
+| plan-tool-truth/implement        | opus  | pending  | —     | blocked |
+| dead-notes-param/implement       | opus  | pending  | —     | blocked |
+
+Next: `issueflow brief --stage implement --lane descriptions` (opus)
+
+▶ brief — descriptions/implement is ready to be briefed
+
+Step 2 of 5 · 1 approved · investigate → [descriptions/implement] → query-workouts-honesty/implement → plan-tool-truth/implement → dead-notes-param/implement
+implement has no past timings on this repo — nothing to compare against. It unblocks query-workouts-honesty/implement.
+
+| Stage     | Model | Agent           |
+|-----------|-------|-----------------|
+| implement | opus  | general-purpose |
+
+It must write: <RUN>/descriptions/implement.md
+
+Dispatch ONE subagent, model `opus`, with exactly this prompt:
+
+  Read <RUN>/briefs/descriptions-implement.md and follow it exactly. It is your complete brief.
+
+
+next: dispatch (brief)
+  The prompt(s) to dispatch are printed above.
+
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ '\''<RUN>/descriptions/implement.md'\'' -nt '\''<RUN>/briefs/descriptions-implement.md'\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); sleep 20; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); while [ "$a" != "$b" ]; do a=$b; sleep 20; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); done'
+then: node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <RUN>

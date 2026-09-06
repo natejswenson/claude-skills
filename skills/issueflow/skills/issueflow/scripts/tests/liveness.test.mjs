@@ -34,6 +34,7 @@ import {
 import { renderBrief } from '../lib/brief.mjs';
 import { PER_ITEM_STAGES, STAGES, stage } from '../lib/stages.mjs';
 import { readTimings } from '../lib/timings.mjs';
+import { redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -55,7 +56,7 @@ const cli = (args) => {
 
 const policy = { base: 'dev', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: false };
 
-/** A well-formed run root: one readable schema-2 run, one schema-1 run `loadRun` refuses. */
+/** A well-formed run root: one readable current-schema run, one schema-1 run `loadRun` refuses. */
 function mixedRunRoot() {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-runs-'));
 
@@ -158,6 +159,7 @@ test('live-stage-clock: observe() is pure and predicts what accept() later persi
   const predicted = findStep(observed, 'investigate').stage.at.delivered;
   assert.ok(predicted, 'observe() found no delivered timestamp for a step with an artifact on disk');
 
+  redTeamPass(dir, run, findStep(run, 'investigate'));
   const accepted = accept(dir, run, findStep(run, 'investigate'));
   const persisted = findStep(accepted, 'investigate').stage.at.delivered;
   assert.equal(persisted, predicted, 'accept() persisted a different delivered value than observe() predicted');
@@ -173,6 +175,26 @@ test('live-stage-clock: purity guard — board(run) with no `now` renders no + a
   const investigateRow = rows.find((r) => r.stage === 'investigate');
   assert.equal(investigateRow.state, 'briefed', 'display state drifted from the persisted state with no `now`');
   assert.equal(investigateRow.took, durationOf(step.stage) ?? '—', 'Took must equal the old durationOf-only rendering');
+  cleanup();
+});
+
+test('live-stage-clock: a re-briefed stage does not read `delivered` off the previous round\'s artifact', () => {
+  // Round 2 of a stage sent back by the red team used to render `delivered`
+  // the instant it was briefed again, because the round-1 artifact was on
+  // disk — so "round 2 running" and "round 2 finished" looked identical.
+  const { dir, run, cleanup } = freshRun();
+  const step = findStep(run, 'investigate');
+  markBriefed(dir, run, step, () => ago(600));
+  writeInvestigate(dir, run);
+  const first = observe(dir, run);
+  assert.ok(findStep(first, 'investigate').stage.at.delivered, 'round 1 delivered');
+  // the artifact is now older than the round-2 brief
+  const inAMoment = new Date(Date.now() + 5000).toISOString();
+  markBriefed(dir, run, findStep(first, 'investigate'), () => inAMoment);
+  findStep(run, 'investigate').stage.at = findStep(first, 'investigate').stage.at;
+  const second = observe(dir, run);
+  assert.equal(findStep(second, 'investigate').stage.at.delivered, undefined, 'round 2 must show as running, not delivered');
+  assert.equal(findStep(second, 'investigate').stage.at.rounds.length, 1, 'round 1 timing is archived, not lost');
   cleanup();
 });
 
@@ -231,6 +253,7 @@ function fixtureLane(slug, base) {
     title: `${slug} lane`,
     branch: `feature/issue-999-${slug}`,
     base,
+    review: { rounds: [], converged: false, draft: null },
     stages: PER_ITEM_STAGES.map((id) => {
       const s = stage(id);
       return { id: s.id, model: s.model, agent: s.agent, artifact: s.artifact, state: 'pending', at: {} };
@@ -240,8 +263,8 @@ function fixtureLane(slug, base) {
 
 /**
  * A run root holding this repo's 3 frozen prior runs (#212, #215, #219) as
- * siblings, plus one fresh split run — 2 lanes, 6 gate steps total — with its
- * own `investigate` already approved, so `design` is briefable.
+ * siblings, plus one fresh split run — 2 lanes, 3 gate steps total — with its
+ * own `investigate` already approved, so lane a's `implement` is briefable.
  */
 function seededTimingsRoot() {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-timings-'));
@@ -265,6 +288,7 @@ function seededTimingsRoot() {
 
   markBriefed(dir, run, findStep(run, 'investigate'));
   writeInvestigate(dir, run);
+  redTeamPass(dir, run, findStep(run, 'investigate'));
   run = accept(dir, run, findStep(run, 'investigate'));
 
   return { root, dir, run, cleanup: () => rmSync(root, { recursive: true, force: true }) };
@@ -288,13 +312,13 @@ test('dispatch-expectation: readTimings summarizes investigate\'s spread exactly
 
 test('dispatch-expectation: brief prints a position line and a duration range+median above its table', () => {
   const { dir, cleanup } = seededTimingsRoot();
-  const r = cli(['brief', '--stage', 'design', '--run-dir', dir, '--offline']);
+  const r = cli(['brief', '--stage', 'implement', '--lane', 'a', '--run-dir', dir, '--offline', '--no-worktree']);
   assert.equal(r.code, 0, `brief exited ${r.code}: ${r.err}`);
-  assert.match(r.out, /Step 2 of 6/, `no position line, or wrong position: ${r.out}`);
-  assert.match(r.out, /\[design\]/, 'the step being dispatched is not bracketed in the chain');
+  assert.match(r.out, /Step 2 of 3/, `no position line, or wrong position: ${r.out}`);
+  assert.match(r.out, /\[a\/implement\]/, 'the step being dispatched is not bracketed in the chain');
   assert.match(r.out, /1 approved/, 'investigate was accepted before this brief — the approved count should say so');
-  // design's own frozen spread across the 3 fixtures, matching the design doc's own worked example verbatim.
-  assert.match(r.out, /design on this repo: 3 past runs, 3m45s–6m45s \(median 5m12s\)\./, `no duration range+median line, or the numbers drifted: ${r.out}`);
+  // implement's own frozen spread across the 3 fixtures: five lane implements, 3m14s to 13m41s.
+  assert.match(r.out, /implement on this repo: 5 past runs, 3m14s–13m41s \(median 3m50s\)\./, `no duration range+median line, or the numbers drifted: ${r.out}`);
   cleanup();
 });
 

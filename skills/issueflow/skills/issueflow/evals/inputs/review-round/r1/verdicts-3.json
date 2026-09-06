@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-2-1",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 168,
+      "quote": "    (Against the ladder alone that guard is inert — there is no ``int`` branch\n    there and ``isinstance(True, float)`` is False — but the ``int`` fast path\n    below makes it load-bearing, so it stays and no test may claim removing it\n    is observable.)",
+      "note": "The rationale is false and provable so: the only `int` fast path added by this diff is `elif t is str or t is int or t is bool or v is None` (tools.py:199, :211), which dispatches on `type(v)` — `type(True) is bool`, so `t is int` can never match a bool, and the sibling `t is bool` arm returns it unchanged anyway. Verified empirically at 776ccbd by deleting `if isinstance(obj, bool): return obj` (tools.py:187) and byte-comparing json.dumps over 30 inputs — the real `get_training_plan_progress` payload, all 21 `_ROUND_FLOATS_CASES`, and bools nested in dicts, lists, tuples, a dict subclass and two nesting levels: zero divergences. One correction to the candidate: the docstring's closing clause (\"no test may claim removing it is observable\") does NOT contradict tests/test_perf_benchmarks.py:470-472 — the two agree; what is wrong is the stated reason, not the conclusion. Doc-only, no behaviour change, hence nit — but the suggested replacement is accurate and free."
+    },
+    {
+      "id": "c-2-2",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "line": 1259,
+      "quote": "            \"verdict\": grade_workout(w, day, frontier, cfg),",
+      "note": "Measured at 776ccbd on build_perf_fixture_db(today=2026-07-09), one handler call with `plans._ran` instrumented by caller frame: 87 total — 36 from `_workout_actuals:1231` (the fold works), 46 from the `_running_distance` genexp (plans.py:189) and 5 from the `_running_duration` genexp (plans.py:213), i.e. 51 from re-walking the same `day` list that plans.py:1256 just walked, reached via `grade_workout` (1259 → classify_workout 339/351) and `weekly_mileage` (1279 → dist_fn 532/543). Two corrections: `_walking_distance` contributes 0 — it has no production caller at all (only tests/test_plans.py), so the candidate's attribution list is wrong on that one name; and `_workout_actuals`'s docstring claim is scoped (\"``_ran`` is evaluated at most once per activity **here**\", plans.py:1198) so it is not itself false. The core is right and reproduced: the diff removes 36 of 87 evaluations while 51 of the same class remain in the very lines it rewrote. Cleanup angle on code the diff did not introduce."
+    },
+    {
+      "id": "c-2-3",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "line": 1212,
+      "quote": "        if not _is_on_foot(at):",
+      "note": "plans.py:1211-1212 computes `at = a.get(\"activity_type\")` then `if not _is_on_foot(at): ... continue`; plans.py:1231 then calls `_ran(a, cfg)`, whose first statements are plans.py:164-166 `at = activity.get(\"activity_type\") / if not _is_on_foot(at): return False` — the identical call on the identical value. Measured at 776ccbd on the perf fixture, one request: `_is_on_foot` 139 calls (87 from `_ran:165`, 36 duplicated from `_workout_actuals:1212`, 16 from `_foot_distance:223`) and `_is_running` 226, against 87 `_ran` — so the label-matching work does exceed the `_ran` count the new gate measures, exactly as filed, and the 36 in-loop duplicates are invisible to it. Two line corrections: the loop's `_is_on_foot` is at 1212, not 1222 (1222 is a comment), and `_ran`'s guard is 164-166, not 167-169. Detail nit: `_RUNNING_SUBSTRINGS`/`_WALKING_SUBSTRINGS` (plans.py:103, :109) are tuples, not frozensets — the scan is still a per-call `.lower()` plus `any(...)`. Cleanup angle, pre-existing."
+    },
+    {
+      "id": "c-2-4",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 284,
+      "quote": "    assert counts[\"n\"] <= 90",
+      "note": "Reproduced at 776ccbd: pointed at a schema-initialised DB with no active plan, `get_training_plan_progress` returns via tools.py:3764-3765 `if active is None: # ... return _text({\"active\": False})`, `plans._ran` is called 0 times, and `assert counts[\"n\"] <= 90` passes green over zero work. Same on a DB error (0 calls). Real value at head is 87. This is a latent-vacuity hazard, not a present defect — the assertion does discriminate today (123 before the fold), so it is not \"a test that would pass without the fix\" — hence nit; but it is the one assertion the PR's headline claim rests on, the two sibling tests added in the same block do carry floors (line 373 `assert len(by_date) > 500`, line 455 `assert payload.get(\"workouts\")`), local-fitness CLAUDE.md:119-120 states the bar, and the suggested `assert 80 <= counts[\"n\"] <= 90, counts[\"n\"]` is a one-token fix."
+    },
+    {
+      "id": "c-2-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 297,
+      "quote": "    assert counts[\"n\"] <= 100",
+      "note": "Same reproduction: with no active plan the handler returns `_text({\"active\": False})` and `tools._round_floats` is called exactly 1 time, so `assert counts[\"n\"] <= 100` passes over a two-key dict. Real value at head is 83. The windowing trigger the candidate names is real — the tool's own description (tools.py:3751-3755) says the `workouts` list is windowed by default — and unlike its neighbour at line 455 this test never asserts the payload is real. Identical defect class and identical severity to c-2-4; suggested `assert 70 <= counts[\"n\"] <= 100, counts[\"n\"]` is correct."
+    }
+  ]
+}

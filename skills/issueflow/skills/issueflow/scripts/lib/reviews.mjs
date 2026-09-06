@@ -1,30 +1,36 @@
 /**
- * The red team, declared once — the reviewer contracts, the finding grammar,
+ * The red team, declared once — the reviewer contract, the finding shape,
  * and the registrar that turns a review on disk into a verdict the gate can
  * read.
  *
- * Reviews are deliberately NOT a fifth entry in `STAGES`: a review is not a
- * step the run owes, it is a gate mechanism `auto` mode swaps in for the
- * human. Modelling it as a stage would put "review" rows on every board and a
- * fifth artifact in every corpus that pins `files.length === STAGES.length`.
+ * Since 0.7.0 the red team attacks the PLAN, before any code is written: the
+ * root cause, the approach, the rejected alternatives, the files, the proof
+ * and the work items. Code is reviewed on the pull request, by the review
+ * loop in `prreview.mjs`, where a finding can sit on the line it is about.
+ * Attacking the same code twice — once on disk, once on GitHub — was the
+ * round multiplier that made 0.6.0 slow.
+ *
+ * Reviews are deliberately NOT an entry in `STAGES`: a review is not a step
+ * the run owes, it is a gate mechanism. Modelling it as a stage would put
+ * "review" rows on every board and a review artifact in every corpus that
+ * pins `files.length === STAGES.length`.
  *
  * The registrar is what makes a red-team verdict real: a review only counts
- * once `registerReview` has parsed its findings, resolved every citation
+ * once `registerReview` has validated its findings, resolved every citation
  * against something that exists, derived the verdict from the severities, and
- * bound it to the sha of the artifact it read. `accept --auto` trusts nothing
- * but that persisted, hash-bound record.
+ * bound it to the sha of the artifact it read. `accept` trusts nothing but
+ * that persisted, hash-bound record.
  */
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { PER_ITEM_STAGES } from './stages.mjs';
-import { RunError, artifactPath, hasSection, saveRun, sha256OfFile, worktreePath } from './run.mjs';
+import { PLAN_STAGE } from './stages.mjs';
+import { RunError, artifactPath, hasSection, saveRun, sha256OfFile } from './run.mjs';
 
 /**
  * Three blocked rounds is the ceiling. The house's adversarial doc reviews
- * converged in 7–10 rounds over whole designs; a single stage artifact that a
- * red team has refused three times is not converging, it is oscillating — and
- * an autonomous loop that keeps paying for oscillation is the failure mode a
+ * converged in 7–10 rounds over whole designs; a single plan that a red team
+ * has refused three times is not converging, it is oscillating — and an
+ * autonomous loop that keeps paying for oscillation is the failure mode a
  * cap exists to name. On exhaustion the run stops and surfaces the open
  * findings; it never skips, never forces, never approves over them.
  */
@@ -40,14 +46,11 @@ export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
  */
 export const BLOCKING = ['critical', 'high'];
 
-/** The one line a finding is allowed to be. Anything else refuses the review. */
-const FINDING_LINE = /^\s*[-*]\s+\[(critical|high|medium|low)\]\s+(\S(?:.*?\S)?)\s+—\s+(\S.*)$/;
-
 /**
- * The four reviewers, one per stage. Same field shape as `STAGES` so the
- * corpus baseline freezes them the same way. All four run on opus: the red
- * team is the judgment the run is paying for — a reviewer on a cheaper model
- * than the stage it reviews is a gate that rubber-stamps.
+ * The one reviewer, on opus: the red team is the judgment the run pays for —
+ * a reviewer on a cheaper model than the stage it reviews is a gate that
+ * rubber-stamps. Same field shape as `STAGES` so the corpus baseline freezes
+ * it the same way.
  */
 export const REVIEWS = [
   {
@@ -56,8 +59,8 @@ export const REVIEWS = [
     model: 'opus',
     agent: 'general-purpose',
     asks: [
-      'Open every `path:line` the investigation cites and check the code says what',
-      'the artifact claims it says. A citation that does not support its claim is a',
+      'Open every `path:line` the plan cites and check the code says what the',
+      'artifact claims it says. A citation that does not support its claim is a',
       'finding at the severity of the claim.',
       'Hunt for an alternate root cause the artifact never ruled out. If you can',
       'name one it did not consider, that is a finding.',
@@ -65,90 +68,52 @@ export const REVIEWS = [
       'that belongs in Unknowns.',
       'Check the "does the issue ask for the right fix" question was actually',
       'answered, not restated.',
-    ],
-  },
-  {
-    id: 'design',
-    title: 'Review: Design',
-    model: 'opus',
-    agent: 'general-purpose',
-    asks: [
-      'Hunt for files the change must touch that the Files table misses — open the',
-      'code and trace the call sites yourself.',
+      'Hunt for files the change must touch that the Files section misses — open',
+      'the code and trace the call sites yourself.',
       'Check the Proof maps to the behaviour the issue reports, not merely to the',
       'code being changed. A proof that would pass without fixing the issue is a',
       'critical finding.',
       'Check the Rejected alternative is real. A strawman nobody would have built',
-      'is a design with no rejected alternative.',
+      'is a plan with no rejected alternative.',
       'If there are Work items, check each one is reviewable and mergeable ALONE,',
       'and that the landing order is buildable.',
-      'Check nothing here contradicts the approved investigation. A design that',
-      'quietly re-decides the root cause is revisiting a decision it inherited.',
-    ],
-  },
-  {
-    id: 'implement',
-    title: 'Review: Implement',
-    model: 'opus',
-    agent: 'general-purpose',
-    asks: [
-      'Review the DIFF, not the report. Run the diff command named in your working',
-      'context and read every hunk; `implement.md` is the stage\'s account of',
-      'itself, and the diff is what actually happened.',
-      'Hunt for changes beyond the approved design — a file touched that the design',
-      'never names, behaviour added that no ask covers.',
-      'Hunt for design items silently dropped that the Deviations section does not',
-      'confess.',
-      'Hunt for bugs in the diff itself: broken edge cases, inverted conditions,',
-      'resources left open, errors swallowed.',
-      'Check the commits stage explicit paths — a `git add -A`-shaped commit may',
-      'have swept in another session\'s work.',
-      'Idiom mismatches with the surrounding code are findings at medium, never',
-      'higher — they are notes for a human, not a reason to loop.',
-    ],
-  },
-  {
-    id: 'test',
-    title: 'Review: Test',
-    model: 'opus',
-    agent: 'general-purpose',
-    asks: [
-      'Read the evidence file against the artifact\'s claims. A summary line that',
-      'disagrees with what the artifact reports is a critical finding.',
-      'Check the red run was a real red: an assertion watched failing on its own',
-      'claim. A load or import error reported as the red side is a critical',
-      'finding — it proves the file broke, not that the assertion bites.',
-      'Hunt for assertions that would pass against the pre-fix code — read the diff',
-      'the implement stage landed and ask what each assertion would do without it.',
-      'Check the test proves what the design\'s Proof section promised, phrased so',
-      'a reader can tell it maps to the issue.',
     ],
   },
 ];
 
 export const review = (id) => REVIEWS.find((r) => r.id === id) ?? null;
 
-/** Every review artifact must carry these, checked like `accept` checks stages. */
-export const REVIEW_REQUIRES = ['Findings', 'Not examined', 'Verdict'];
+/** Only the plan is red-teamed on disk; code is reviewed on its pull request. */
+export const reviewable = (step) => step.stage.id === PLAN_STAGE;
 
 /**
  * What every reviewer is forbidden, verbatim in every review brief. Each line
  * is a way a red team stops being a gate.
  */
 export const REVIEW_FORBIDS =
-  'Never edit the work or any file other than your own review artifact — a reviewer ' +
-  'that fixes what it found has destroyed the gate it was sent to hold. Never file a ' +
-  'finding without a citation that resolves; an uncited finding is an opinion, and the ' +
-  'registrar refuses the whole review over it. Each round re-hunts the current work ' +
-  'from scratch — never weaken a finding to make a round converge, and never re-file a ' +
-  'resolved one from memory. Never inflate severity: medium and low are notes, and a ' +
-  'note filed as high to force a round is the reviewer gaming its own gate.';
+  'Never edit the work or any file other than your own review — a reviewer that fixes ' +
+  'what it found has destroyed the gate it was sent to hold. Never move the checkout: no ' +
+  'checkout, merge, pull, fetch or fast-forward of the repository you were handed — if a ' +
+  'citation does not resolve at the commit the plan names, read that commit with ' +
+  '`git show <sha>:<path>` or a throwaway worktree, and say so in notExamined; a reviewer ' +
+  'that moved the tree has changed what the next stage builds on. Never file a finding without a ' +
+  'citation that resolves; an uncited finding is an opinion, and the registrar refuses the ' +
+  'whole review over it. Each round re-hunts the current work from scratch — never weaken a ' +
+  'finding to make a round converge, and never re-file a resolved one from memory. Never ' +
+  'inflate severity: medium and low are notes, and a note filed as high to force a round is ' +
+  'the reviewer gaming its own gate.';
 
 const keyOf = (step) => step.key.replace('/', '-');
 
-/** The reviewer's artifact for round `n`, and the verdict the registrar writes beside it. */
-export const reviewPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.md`);
-export const verdictPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.json`);
+/**
+ * The reviewer's findings for round `n`, and the verdict the registrar writes
+ * beside them. JSON since 0.7.0: the one-line grammar it replaced refused a
+ * whole review over a backtick around a citation, twice in twenty-four real
+ * rounds — a parser that fails a review on punctuation is a parser that
+ * teaches the reviewer to write less.
+ */
+export const reviewPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.findings.json`);
+export const verdictPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.verdict.json`);
 export const reviewBriefPath = (dir, step, round) => join(dir, 'briefs', `review-${keyOf(step)}-r${round}.md`);
 export const reviewProgressPath = (dir, step, round) => join(dir, 'progress', `review-${keyOf(step)}-r${round}.log`);
 
@@ -168,72 +133,60 @@ export const roundsExhausted = (step) => {
   return !overrides.some((o) => o.round === rounds.length + 1);
 };
 
-/** The body of one `## <name>` section, or null when the heading is absent. */
-function sectionBody(text, name) {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const heading = new RegExp(`^\\s{0,3}#{1,6}\\s+${escaped}\\s*$`, 'im').exec(text);
-  if (!heading) return null;
-  const rest = text.slice(heading.index + heading[0].length);
-  const end = /^\s{0,3}#{1,6}\s+/m.exec(rest);
-  return (end ? rest.slice(0, end.index) : rest).trim();
-}
-
 /**
- * Parse the `## Findings` section. Strict on purpose: a list line that does
- * not match the declared shape refuses the whole review, because a finding
- * that silently fails to parse is a finding that silently stops existing.
+ * Parse and validate the reviewer's JSON. Strict on purpose — a finding with
+ * no severity, no citation or no text refuses the whole review, because a
+ * finding that silently fails to validate is a finding that silently stops
+ * existing. What it is NOT strict about is punctuation: a citation wrapped in
+ * backticks is a citation.
  */
 export function parseFindings(text) {
-  const body = sectionBody(text, 'Findings');
-  if (body === null) return { findings: null, malformed: [] };
-  const findings = [];
-  const malformed = [];
-  for (const line of body.split('\n')) {
-    if (!/^\s*[-*]\s+/.test(line)) continue;
-    const m = FINDING_LINE.exec(line);
-    if (m) findings.push({ severity: m[1], cite: m[2], text: m[3].trim() });
-    else malformed.push(line.trim());
-  }
-  return { findings, malformed };
-}
-
-const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-
-/** The commit a code review is bound to, so a later commit invalidates the verdict. */
-export function headOf(workdir) {
+  let data;
   try {
-    return git(['rev-parse', 'HEAD'], workdir);
-  } catch {
-    return null;
+    data = JSON.parse(text);
+  } catch (err) {
+    return { error: `is not valid JSON (${String(err.message).split('\n')[0]})` };
   }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return { error: 'must be a JSON object' };
+  if (!Array.isArray(data.findings)) return { error: 'has no `findings` array' };
+  const findings = [];
+  for (const [i, f] of data.findings.entries()) {
+    const where = `findings[${i}]`;
+    if (!f || typeof f !== 'object') return { error: `${where} is not an object` };
+    if (!SEVERITIES.includes(f.severity)) return { error: `${where}.severity must be one of ${SEVERITIES.join('|')}` };
+    if (typeof f.cite !== 'string' || !f.cite.trim()) return { error: `${where}.cite is missing — a finding that cites nothing is an opinion` };
+    if (typeof f.text !== 'string' || !f.text.trim()) return { error: `${where}.text is missing` };
+    findings.push({ severity: f.severity, cite: f.cite.trim().replace(/^`+|`+$/g, ''), text: f.text.trim() });
+  }
+  const notExamined = Array.isArray(data.notExamined)
+    ? data.notExamined.map((s) => String(s).trim()).filter(Boolean)
+    : typeof data.notExamined === 'string' && data.notExamined.trim()
+      ? [data.notExamined.trim()]
+      : null;
+  if (notExamined === null) return { error: 'has no `notExamined` list — a review names what nobody looked at' };
+  const verdict = typeof data.verdict === 'string' ? data.verdict.trim().toLowerCase() : null;
+  if (verdict !== 'pass' && verdict !== 'blocked') return { error: '`verdict` must be "pass" or "blocked"' };
+  return { findings, notExamined, verdict };
 }
 
 /**
  * Resolve one citation against what exists, or return the reason it does not.
  *
- * Three forms, each deterministically checkable:
+ * Two forms, each deterministically checkable:
  *   `path:line` / `path:l1-l2` — the file exists under one of `roots` and the
  *     line is within it;
- *   `<file>.md § <Heading>` — the heading exists in the reviewed artifact;
- *   `diff:<path>` — the path appears in the lane's diff over its base.
+ *   `<file>.md § <Heading>` — the heading exists in the reviewed artifact.
  *
  * `strict` is the only mode: one unresolvable citation refuses the whole
  * review. A red team whose findings cannot be checked is a red team whose
  * findings cannot be trusted — the eval skill's rule, adopted as code.
  */
-export function resolveCitation(cite, { roots = [], artifactText = '', diffFiles = null } = {}) {
+export function resolveCitation(cite, { roots = [], artifactText = '' } = {}) {
   const heading = /^\S+\.md\s+§\s+(.+)$/.exec(cite);
   if (heading) {
     return hasSection(artifactText, heading[1].trim())
       ? { ok: true }
       : { ok: false, reason: `no "${heading[1].trim()}" heading in the reviewed artifact` };
-  }
-
-  const diff = /^diff:(.+)$/.exec(cite);
-  if (diff) {
-    const path = diff[1].trim();
-    if (diffFiles === null) return { ok: false, reason: 'diff: citations only resolve for a stage with a branch' };
-    return diffFiles.includes(path) ? { ok: true } : { ok: false, reason: `${path} is not in this lane's diff` };
   }
 
   const loc = /^(.+?):(\d+)(?:-(\d+))?$/.exec(cite);
@@ -250,17 +203,7 @@ export function resolveCitation(cite, { roots = [], artifactText = '', diffFiles
     return { ok: false, reason: `${path} not found under ${roots.length} search roots` };
   }
 
-  return { ok: false, reason: 'not a `path:line`, `<file>.md § Heading`, or `diff:<path>` citation' };
-}
-
-/** The files a lane's branch changed over its base — the universe `diff:` cites into. */
-export function diffFiles(workdir, base) {
-  try {
-    const out = git(['diff', '--name-only', `${base}...HEAD`], workdir);
-    return out ? out.split('\n').filter(Boolean) : [];
-  } catch {
-    return null;
-  }
+  return { ok: false, reason: 'not a `path:line` or `<file>.md § Heading` citation' };
 }
 
 const countsOf = (findings) => {
@@ -281,7 +224,17 @@ export const deriveVerdict = (findings) =>
  * review to make it registrable, for the same reason the orchestrator never
  * edits an artifact to get it past `accept` — the refusal is the product.
  */
-export function registerReview(dir, run, step, { workdir = null } = {}) {
+/** Record that round `round`'s reviewer has been briefed — the clock `next` waits against. */
+export function markReviewBriefed(dir, run, step, round, now = () => new Date().toISOString()) {
+  step.stage.review.briefed = { round, at: now() };
+  saveRun(dir, run);
+  return run;
+}
+
+export function registerReview(dir, run, step, { now = () => new Date().toISOString() } = {}) {
+  if (!reviewable(step)) {
+    throw new RunError(`cannot review ${step.key}: only the plan is red-teamed on disk — code is reviewed on its pull request`);
+  }
   if (step.stage.state === 'approved' || step.stage.state === 'skipped') {
     throw new RunError(`cannot review ${step.key}: the stage is already ${step.stage.state}`);
   }
@@ -291,47 +244,36 @@ export function registerReview(dir, run, step, { workdir = null } = {}) {
   }
 
   const round = nextRound(step);
-  const reviewMd = reviewPath(dir, step, round);
-  if (!existsSync(reviewMd) || readFileSync(reviewMd, 'utf8').trim().length === 0) {
-    throw new RunError(`cannot register round ${round} of ${step.key}: no review at ${reviewMd}`);
+  const file = reviewPath(dir, step, round);
+  if (!existsSync(file) || readFileSync(file, 'utf8').trim().length === 0) {
+    throw new RunError(`cannot register round ${round} of ${step.key}: no review at ${file}`);
   }
-  const text = readFileSync(reviewMd, 'utf8');
 
-  const missing = REVIEW_REQUIRES.filter((section) => !hasSection(text, section));
-  if (missing.length > 0) {
+  // A review written before the artifact's last change reviewed different
+  // bytes; binding its verdict to the current sha would launder a stale pass.
+  if (statSync(file).mtimeMs < statSync(artifact).mtimeMs) {
     throw new RunError(
-      `cannot register the review of ${step.key}: it has no ${missing.join(' section, no ')} section — ` +
-        `a review owes a heading for each of ${REVIEW_REQUIRES.join(', ')}`,
+      `cannot register round ${round} of ${step.key}: the artifact changed after the review was written — ` +
+        're-brief the reviewer on the current artifact',
     );
   }
-
-  const { findings, malformed } = parseFindings(text);
-  if (malformed.length > 0) {
-    throw new RunError(
-      `cannot register the review of ${step.key}: ${malformed.length} finding ` +
-        `line${malformed.length === 1 ? ' does' : 's do'} not match ` +
-        '`- [severity] <citation> — <finding>`. First: ' + JSON.stringify(malformed[0]),
-    );
+  const parsed = parseFindings(readFileSync(file, 'utf8'));
+  if (parsed.error) {
+    throw new RunError(`cannot register the review of ${step.key}: ${file} ${parsed.error}`);
   }
+  const { findings, notExamined, verdict: declared } = parsed;
 
-  if (findings.length === 0) {
-    const notExamined = sectionBody(text, 'Not examined') ?? '';
-    if (notExamined.length === 0) {
-      throw new RunError(
-        `cannot register the review of ${step.key}: zero findings and an empty "Not examined" section — ` +
-          '"clean" without naming what nobody looked at is indistinguishable from "unreviewed"',
-      );
-    }
+  if (findings.length === 0 && notExamined.length === 0) {
+    throw new RunError(
+      `cannot register the review of ${step.key}: zero findings and an empty notExamined list — ` +
+        '"clean" without naming what nobody looked at is indistinguishable from "unreviewed"',
+    );
   }
 
   const artifactText = readFileSync(artifact, 'utf8');
-  const isCodeStage = PER_ITEM_STAGES.includes(step.stage.id);
-  const tree = workdir ?? (step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : run.repo.path);
-  const changed = isCodeStage && step.lane ? diffFiles(tree, step.lane.base) : null;
-  const roots = [tree, run.repo.path, join(dir, step.laneSlug ?? 'shared')];
-
+  const roots = [run.repo.path, join(dir, step.laneSlug ?? 'shared')];
   for (const f of findings) {
-    const resolved = resolveCitation(f.cite, { roots, artifactText, diffFiles: changed });
+    const resolved = resolveCitation(f.cite, { roots, artifactText });
     if (!resolved.ok) {
       throw new RunError(
         `cannot register the review of ${step.key}: the citation "${f.cite}" does not resolve ` +
@@ -341,27 +283,11 @@ export function registerReview(dir, run, step, { workdir = null } = {}) {
   }
 
   const derived = deriveVerdict(findings);
-  const declaredBody = (sectionBody(text, 'Verdict') ?? '').toLowerCase();
-  const declared = /\bblocked\b/.test(declaredBody) ? 'blocked' : /\bpass\b/.test(declaredBody) ? 'pass' : null;
-  if (declared === null) {
-    throw new RunError(`cannot register the review of ${step.key}: the Verdict section names neither pass nor blocked`);
-  }
   if (declared !== derived) {
     throw new RunError(
       `cannot register the review of ${step.key}: the review declares ${declared} but its own findings ` +
         `derive ${derived} — the severities decide, and a review that disagrees with itself registers nothing`,
     );
-  }
-
-  let head = null;
-  if (isCodeStage) {
-    head = headOf(tree);
-    if (!head) {
-      throw new RunError(
-        `cannot register the review of ${step.key}: no commit to bind it to in ${tree} — ` +
-          'a code review that names no commit cannot say which code it reviewed',
-      );
-    }
   }
 
   const counts = countsOf(findings);
@@ -371,16 +297,16 @@ export function registerReview(dir, run, step, { workdir = null } = {}) {
     verdict: derived,
     findings: counts,
     artifactSha: sha256OfFile(artifact),
-    head,
-    review: `reviews/${keyOf(step)}-r${round}.md`,
+    review: `reviews/${keyOf(step)}-r${round}.findings.json`,
   };
   // No timestamps in this file: round timing lives on the run entry, which the
   // baseline strips — a timestamp here would make every frozen verdict churn.
   writeFileSync(verdictPath(dir, step, round), `${JSON.stringify(verdict, null, 2)}\n`);
 
-  step.stage.review.rounds.push({ ...verdict, items: findings });
+  // `at` lives on the run entry only — the verdict file stays timestamp-free.
+  step.stage.review.rounds.push({ ...verdict, items: findings, notExamined, at: now() });
   step.stage.review.feedback = derived === 'blocked' ? verdict.review : null;
   saveRun(dir, run);
 
-  return { ...verdict, items: findings };
+  return { ...verdict, items: findings, notExamined };
 }

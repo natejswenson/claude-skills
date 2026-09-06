@@ -72,7 +72,11 @@ export function readTimings(runDir) {
     } catch {
       continue;
     }
-    if (run?.schema !== SCHEMA) continue;
+    // Schema 2 recorded the same `at` shape on the same stage ids, so its runs
+    // are still real durations of this repo's own stages — the three frozen
+    // runs the expectation line was measured against are schema 2. Schema 1
+    // predates `at` and is skipped.
+    if (![2, SCHEMA].includes(run?.schema)) continue;
 
     let samples;
     try {

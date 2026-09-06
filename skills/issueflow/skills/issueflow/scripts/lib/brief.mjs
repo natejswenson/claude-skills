@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path';
 import { PER_ITEM_STAGES, stage } from './stages.mjs';
 import { artifactPath, briefPath, evidencePath, gateSteps, progressPath } from './run.mjs';
 import {
-  BLOCKING, REVIEW_FORBIDS, REVIEW_REQUIRES, review, reviewBriefPath, reviewPath, reviewProgressPath,
+  BLOCKING, MAX_ROUNDS, REVIEW_FORBIDS, review, reviewBriefPath, reviewPath, reviewProgressPath,
 } from './reviews.mjs';
 
 const bar = (headers, rows) =>
@@ -80,7 +80,7 @@ function contextSection(dir, run, step, workdir) {
     ['base branch', step.lane ? step.lane.base : run.policy.base],
     ['work item', step.lane ? `${step.lane.slug} — ${step.lane.title}` : 'the whole issue'],
   ];
-  if (step.stage.id === 'test') rows.push(['evidence file', evidencePath(dir, step)]);
+  if (PER_ITEM_STAGES.includes(step.stage.id)) rows.push(['evidence file', evidencePath(dir, step)]);
   const out = ['## Working context', '', bar(['Field', 'Value'], rows)];
   if (workdir && workdir !== run.repo.path) {
     out.push(
@@ -223,7 +223,7 @@ export function writeBrief(dir, run, step, issue, workdir = null) {
  */
 export function renderReviewBrief(dir, run, step, issue, round, workdir = null) {
   const declared = review(step.stage.id);
-  const isCodeStage = PER_ITEM_STAGES.includes(step.stage.id);
+  if (!declared) throw new Error(`${step.stage.id} has no red-team reviewer — code is reviewed on its pull request`);
   const artifact = artifactPath(dir, step);
   const out = [
     `# issueflow red-team brief — ${declared.title} (round ${round})`,
@@ -244,7 +244,7 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     `\`${artifact}\``,
     '',
     'Read all of it. This is the work you are attacking — not editing, not improving,',
-    'attacking. Round ' + round + ' of at most 3.',
+    `attacking. Round ${round} of at most ${MAX_ROUNDS}.`,
     '',
   ];
 
@@ -262,41 +262,36 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     '',
     contextSection(dir, run, step, workdir),
     '',
-  );
-  if (isCodeStage && step.lane) {
-    out.push(
-      `The diff you are reviewing: run \`git diff ${step.lane.base}...HEAD\` in the`,
-      '`work in` directory. The report may summarize it; the diff is the truth.',
-      '',
-    );
-  }
-  out.push(
     '## Findings format',
     '',
-    'Every finding is ONE line under `## Findings`, exactly:',
+    'Your review is ONE JSON file, exactly this shape:',
     '',
-    '    - [critical|high|medium|low] <citation> — <one-sentence finding>',
+    '    {',
+    '      "findings": [',
+    '        { "severity": "critical|high|medium|low", "cite": "<citation>", "text": "<one-sentence finding>" }',
+    '      ],',
+    '      "notExamined": ["<what you did not check, one entry each>"],',
+    '      "verdict": "pass|blocked"',
+    '    }',
     '',
     'The citation must be one of:',
     '',
-    `- \`path:line\` (or \`path:l1-l2\`) — a real file, in the ${isCodeStage ? 'worktree or repository' : 'repository'};`,
-    `- \`${step.stage.artifact} § <Heading>\` — a heading that exists in the artifact under review;`,
-    ...(isCodeStage ? ['- `diff:<path>` — a file that appears in the diff named above.'] : []),
+    '- `path:line` (or `path:l1-l2`) — a real file, in the repository;',
+    `- \`${step.stage.artifact} § <Heading>\` — a heading that exists in the artifact under review.`,
     '',
     'A citation that does not resolve refuses your whole review — cite what you can',
-    'point at, and put what you cannot prove in `## Not examined`. Severity is the',
-    'gate: critical and high block the stage; medium and low are notes. Rate what the',
+    'point at, and put what you cannot prove in `notExamined`. Severity is the gate:',
+    'critical and high block the stage; medium and low are notes. Rate what the',
     'finding costs if shipped, not how strongly you feel about it.',
     '',
     '## Deliver',
     '',
     `Write your review to \`${reviewPath(dir, step, round)}\`.`,
     '',
-    `It must contain a section for each of: **${REVIEW_REQUIRES.join('**, **')}**.`,
-    '`## Not examined` names what you did not check — a clean review that examined',
-    'everything still says so there. `## Verdict` is one word, `pass` or `blocked`,',
-    'and it must agree with your own severities: any critical or high finding means',
-    '`blocked`.',
+    '`notExamined` names what you did not check — a clean review that examined',
+    'everything still says so there, and a review with no findings and an empty',
+    '`notExamined` is refused. `verdict` must agree with your own severities: any',
+    'critical or high finding means `blocked`.',
     '',
     '## While you work',
     '',

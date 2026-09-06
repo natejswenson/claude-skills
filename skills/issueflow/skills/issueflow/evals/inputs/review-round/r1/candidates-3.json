@@ -1,0 +1,119 @@
+{
+  "candidates": [
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 297,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The new `_round_floats` work-count bound `counts[\"n\"] <= 100` is not deterministic across dates — the count it measures grows with `date.today()` because `get_training_plan_progress`'s default window is `max(frontier, today) + 7d`, so the assertion goes permanently red on 2026-09-22, 17 days after this head commit, with no code change.",
+      "short_summary": "round_floats count bound goes red on 2026-09-22",
+      "failure_scenario": "Executed in this checkout at 776ccbd, with `tools.date.today()` faked and everything else untouched: the `_round_floats` call count for `get_training_plan_progress.handler({})` against the module-scoped `perf_db` (built with `today=date(2026,7,9)`) is 25 on 2026-07-09, 79 on 2026-09-01, 83 on 2026-09-05 (real today), 101 on 2026-09-22 — the first date the `<= 100` assertion fails — 109 on 2026-09-30, and it plateaus at 115 from 2026-10-06 onward. The mechanism is cross-file: the handler (src/local_fitness/agent/tools.py:3850-3854) sets `anchor_fwd = max(frontier or today, today)` and `window_end = anchor_fwd + 7d`, so every extra day of wall clock past the fixture's frontier sweeps another prescribed workout dict into `workouts_full`, and each extra dict is one more `_round_floats` recursion. `_ran` is immune (87 at every date probed) only because `build_plan_detail` grades the full plan; the serialized payload is the windowed one. This is the failure class issue #232 item 4 names — a today-relative fixture under a hard-coded expectation — and the test's own header comment at line 285 claims the opposite of it: \"they are deterministic, they do not care which CPU CI drew\".",
+      "introduced_by_diff": true,
+      "suggestion": "Freeze the clock for the two work-count tests the way the repo already does elsewhere (`tests/test_tools.py:3797` `_freeze_ledger_clock`, `tests/test_mcp_server.py:790`): `monkeypatch.setattr(tools, \"date\", _FakeDate)` pinned to `_TODAY` before calling the handler, then assert the exact count (83 at `_TODAY + 58d`, 25 at `_TODAY`) rather than a `<=` bound."
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 284,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "`assert counts[\"n\"] <= 90` sits 3 calls above the measured 87, and the 87 is a product of the perf fixture's plan length crossed with three separate `_ran` call sites in `plans`, so an unrelated fixture or grading change red-lines it without any regression.",
+      "short_summary": "_ran bound of 90 has 3 calls of headroom over 87",
+      "failure_scenario": "Measured at head against the same fixture: 87 `_ran` evaluations per request, attributed 36 to `_workout_actuals` and 51 to the generator expressions in `_running_distance`/`_walking_distance`/`_running_duration` (plans.py:189, 201, 213), reached from `classify_workout` (plans.py:339, 351) and `weekly_mileage` (plans.py:543). Each graded day with one on-foot activity therefore costs ~3 evaluations, so adding a single week of prescribed workouts to `scripts/perf_fixture.py`, or turning on `cfg.count_walks_mileage` (which swaps `weekly_mileage`'s `dist_fn` to `_foot_distance` and would change the count), pushes the total past 90 and fails a test whose stated subject is \"did the fold survive\". The docstring's own numbers (123 before, 87 after) show the real signal band is ~36 wide; a bound 3 above the measurement converts that into a tripwire on the fixture instead.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1259,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The fold removes one of four passes over each day's activity list, but `grade_workout` on the very next line and `weekly_mileage` further down re-walk the same list through `_running_distance`/`_foot_distance`/`_running_duration`, so 51 of the 87 remaining `_ran` evaluations are still second-pass work the diff's docstring says no longer exists.",
+      "short_summary": "grade_workout re-walks the list _workout_actuals walked",
+      "failure_scenario": "In `build_plan_detail`, line 1256 calls `_workout_actuals(day, cfg)` (which evaluates `_ran` once per on-foot activity) and line 1259 immediately calls `grade_workout(w, day, frontier, cfg)` on the SAME `day` list, which reaches `classify_workout` -> `_running_distance(day_activities, cfg)` (plans.py:339) or `_running_duration` (plans.py:351) — a second `_ran` per activity — and line 1279's `weekly_mileage(...)` walks each date's list a third time via `dist_fn` (plans.py:543). Instrumented at head with a stack-attributed counter: of 87 `_ran` calls per `get_training_plan_progress` request, `_workout_actuals` accounts for 36 and those generator expressions for 51. The diff's new docstring text at plans.py:1206 states \"Anything else this day needs is computed in the loop below, not in a pass of its own\", and the CHANGELOG presents the regression as closed at -6.0%; the larger share of the duplicated `_ran` work is still there, and the new `<= 90` assertion pins it as acceptable. Predates this diff (the helper calls are 2026-07-22 code) but is squarely inside the invariant this change re-asserts.",
+      "introduced_by_diff": false
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 498,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "`test_the_round_floats_oracle_can_actually_fail` captures the real payload but omits the anti-vacuity assertion its sibling at line 455 has, so if the handler ever returns an error or `{\"active\": false}` envelope the two-sidedness proof silently narrows to the hand-written case list.",
+      "short_summary": "oracle-can-fail test never checks the payload is real",
+      "failure_scenario": "`_capture_progress_payload` (line 431) grabs whatever object reaches `_round_floats` first. If the perf fixture stops seeding an active plan, `get_training_plan_progress` returns at tools.py:3765 with `_text({\"active\": False})`, and if it raises into an error envelope it returns `_err(...)`; either way `captured[\"payload\"]` is a two-key dict. `test_round_floats_output_is_identical_to_the_pre_inline_implementation` catches that at line 455 (`assert payload.get(\"workouts\")`); line 498's caller does not, so the mutant check keeps passing on `_ROUND_FLOATS_CASES` alone while the claim it makes — that the oracle can fail over the REAL payload — has quietly stopped being tested. The docstring at line 434 also states \"The first `_round_floats` call of the handler IS the whole payload\", which is only true on the success path.",
+      "introduced_by_diff": true,
+      "suggestion": "    payload = _capture_progress_payload(monkeypatch)\n    assert payload.get(\"workouts\"), \"the fixture must produce a real plan payload\""
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 512,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "`test_the_latency_gate_is_still_armed` asserts a raw substring of `.github/workflows/ci.yml`, so a purely cosmetic reformat of the pytest command in CI reds the test while the gate it guards is untouched.",
+      "short_summary": "gate test greps ci.yml for a literal command substring",
+      "failure_scenario": "The assertion needs the exact bytes `--benchmark-compare-fail=min:15%` to appear in the file. Today they do — ci.yml:72 is `--benchmark-compare=0001 --benchmark-compare-fail=min:15% --no-cov`. Wrapping that flag onto its own YAML continuation line, quoting it, or moving the threshold into a workflow `env:`/matrix variable (`--benchmark-compare-fail=min:${{ env.PERF_THRESHOLD }}%`) leaves the gate exactly as armed but fails this test, and there is no message on the assert to say why. Symmetrically, moving `--benchmark-skip` out of `pyproject.toml`'s `addopts` into a conftest hook or a CI flag passes nothing and fails the second assert for the same reason.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 83,
+      "side": "RIGHT",
+      "category": "reuse",
+      "summary": "The diff adds a generic `_count_calls(monkeypatch, module, name)` beside the pre-existing `_count_connect_opens`, which is now literally the same instrument specialised to `db.connect` — two counter helpers in one file where one would do.",
+      "short_summary": "_count_connect_opens duplicates the new generic _count_calls",
+      "failure_scenario": "Cost, not a crash: `_count_connect_opens` (line 83) and `_count_calls` (line 246) are byte-for-byte the same closure-and-monkeypatch shape, differing only in the hard-coded `db`/`connect` target — `_count_connect_opens(monkeypatch)` is exactly `_count_calls(monkeypatch, db, \"connect\")`. The new helper's own docstring says so (\"`_count_connect_opens`'s instrument pointed at a hot function\"). Anyone hardening the instrument later — resetting on error, asserting the patch was actually installed, recording arguments — now has to find and change both, and the six existing connection-count tests keep using the copy that did not get the fix.",
+      "introduced_by_diff": true,
+      "suggestion": "def _count_connect_opens(monkeypatch):\n    return _count_calls(monkeypatch, db, \"connect\")"
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 197,
+      "side": "RIGHT",
+      "category": "reuse",
+      "summary": "The \"which dp does this key get\" ternary is now written three times in one function (lines 190, 197-198, 205); the fast path and the fallback ladder can drift apart on any future precision change, and the vendored oracle only catches that after the fact.",
+      "short_summary": "dp-selection ternary duplicated three times in _round_floats",
+      "failure_scenario": "Cost, not a crash: `_TEXT_HIGH_DP if <k> in _TEXT_HIGH_PRECISION_KEYS else _TEXT_DEFAULT_DP` appears at line 190 (scalar entry), 197-198 (dict fast path) and 205 (list fast path). A change to the precision policy — a third tier, a per-key dp map, or a prefix rule such as \"any key ending `_pace_sec_per_km`\" — has to be applied at all three sites; miss one and the fast path silently rounds differently from the `isinstance` fallback for the same key, which is exactly the divergence `test_round_floats_output_is_identical_to_the_pre_inline_implementation` exists to detect, i.e. it is caught in CI rather than prevented. A module-level lookup keeps it to one place without reintroducing the per-node Python call the change removed.",
+      "introduced_by_diff": true,
+      "suggestion": "Hoist the policy to a module constant next to `_TEXT_HIGH_PRECISION_KEYS` — `_TEXT_DP_BY_KEY = {k: _TEXT_HIGH_DP for k in _TEXT_HIGH_PRECISION_KEYS}` — and write each of the three sites as `_TEXT_DP_BY_KEY.get(k, _TEXT_DEFAULT_DP)` (a dict `.get` on a frozenset-sized map, no extra Python-level call)."
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 339,
+      "side": "RIGHT",
+      "category": "reuse",
+      "summary": "`classify_workout` re-derives the running/foot distance for a day that `_workout_actuals` has already computed and returned in the same `build_plan_detail` iteration — the folded five-tuple is the existing helper the grading branch should be reading.",
+      "short_summary": "classify_workout re-derives what _workout_actuals returns",
+      "failure_scenario": "Cost, not a crash: `build_plan_detail` line 1256 already holds `(actual_dist, run_m, walk_m, actual_pace, actual_types)` for `day` when line 1259 calls `grade_workout(w, day, frontier, cfg)`, whose `classify_workout` recomputes `_foot_distance(day_activities)`/`_running_distance(day_activities, cfg)` (line 337-340) and `_running_duration(day_activities, cfg)` (line 351) from the raw list. `_foot_distance` is `actual_dist`, `_running_distance` is `run_m`, and `_walking_distance` is `walk_m` by construction — three sums re-derived from data already in hand, and the duplicated `_ran` calls behind them are 51 of the 87 measured per request. It also duplicates the pace-gate policy in two places, so the run/walk definition can drift between the surfaced actuals and the verdict — the very disagreement PR #162's classifier fix was written to close.",
+      "introduced_by_diff": false
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 287,
+      "side": "RIGHT",
+      "category": "reuse",
+      "summary": "The new work-count tests hand-roll their handler invocation instead of reusing the repo's existing clock-freezing helper, which is the one thing that would make a count taken over a today-relative fixture reproducible.",
+      "short_summary": "new count tests skip the repo's existing clock-freeze helper",
+      "failure_scenario": "Cost, plus the concrete red in the `<= 100` candidate above: `tests/test_tools.py:3797` already defines `_freeze_ledger_clock(monkeypatch, day)` and `tests/test_mcp_server.py:790` uses the same `monkeypatch.setattr(<module>, \"date\", _FakeDate)` shape, so the repo has a settled pattern for pinning `date.today()` in a handler test. Neither new test at lines 279 and 287 uses it, so both measure a fixture that is anchored to `_TODAY = 2026-07-09` through a handler that is anchored to the wall clock — and the counts they assert are only reproducible on the day they were taken. A third copy of the pattern (rather than a shared `_freeze_clock` in `tests/`) is the cheap version of the same duplication.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_plans.py",
+      "line": 582,
+      "side": "RIGHT",
+      "category": "reuse",
+      "summary": "Four renamed tests now reach the class list by positional index `[4]` on the five-tuple, spreading knowledge of the tuple's shape across four more call sites where a named accessor (or a `NamedTuple` return) would keep it in one.",
+      "short_summary": "four tests index _workout_actuals's five-tuple by [4]",
+      "failure_scenario": "Cost, not a crash: lines 582, 583, 602 and 609 each read `plans._workout_actuals(...)[4]`, and `tests/test_perf_benchmarks.py:376` compares the whole tuple positionally too. `_workout_actuals`'s contract is now `(foot_m, run_m, walk_m, pace, activity_types)` with the ordinal written down in src (plans.py:1184 docstring), in `build_plan_detail`'s unpack (plans.py:1256), and in six test expressions. Adding a sixth element is safe, but reordering or inserting one silently changes what four tests assert about — and the deleted `_normalize_activity_types` was the named entry point those four tests used to call, so this is a readability regression the fold created rather than pre-existing.",
+      "introduced_by_diff": true,
+      "suggestion": "Add a one-line accessor in the test module — `def _types(activities, cfg=plans._DEFAULT_GRADING_CONFIG): return plans._workout_actuals(activities, cfg)[4]` — and call it from the four assertions, or have `_workout_actuals` return a `NamedTuple` so `.activity_types` reads at every site."
+    }
+  ],
+  "notExamined": [
+    "The CHANGELOG.md and CLAUDE.md prose hunks were read for claims to check against the code, but not reviewed as documentation (wording, placement, house style) — that is the conventions angle, not mine.",
+    "The pytest-benchmark latency baseline artifact itself (.benchmarks/ / the committed 0001_*.json) — I did not open it or re-run `--benchmark-only`, so I cannot say whether the -6.0% claim reproduces on this machine.",
+    "The 84 test failures in tests/test_visuals.py and tests/test_tools.py on this machine are all WeasyPrint `OSError: cannot load library 'libgobject-2.0-0'` and were treated as environmental, not diffed against the base commit to prove they pre-exist.",
+    "`plans.grade_workout`/`classify_workout` grading semantics beyond the `_ran` call-count question — I checked which helpers they call over the same list, not whether their verdicts are correct.",
+    "Non-`get_training_plan_progress` consumers of `_round_floats` beyond `_text`, `_err` and `mcp_server._render_status` — I confirmed by grep those are the only three call sites but did not enumerate what each of the 55+ tools puts through it, so an exotic payload type (a `Decimal`, a `datetime`, a dataclass) reaching the new fast path is reasoned about from the code, not observed.",
+    "The `full=true` branch of the handler and `get_training_plan_status`/`_build_plan_section`, which share `build_plan_detail`'s day lists — I did not instrument their call counts.",
+    "scripts/perf_fixture.py's construction (how many activity days, how long the seeded plan is) beyond confirming `len(by_date) > 500` holds — the fixture-shape sensitivity in the `<= 90` candidate is reasoned from the call-site arithmetic, not from reading the generator.",
+    "Whether PR #236's CI has actually run these tests, and on which date — I read the checkout and the diff file only, never the pull request page."
+  ]
+}

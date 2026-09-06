@@ -1,0 +1,118 @@
+{
+  "candidates": [
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 478,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The plan's Proof 3 and Proof 5 are a closed pair over the same payload, but `_capture_progress_payload` runs the handler on the real wall clock while the two count tests freeze it at `_TODAY` + 58d, so from 2026-09-06 onward the equivalence oracle no longer describes the payload the 83-call assertion is pinned to.",
+      "short_summary": "Oracle payload is unfrozen; count payload is frozen",
+      "failure_scenario": "Verified in the checkout: with `tools.date` frozen, `get_training_plan_progress` produces payloads costing 25 / 55 / 83 / 85 / 115 `_round_floats` calls at `_TODAY` + 0 / 30 / 58 / 59 / 100 days. `_freeze_progress_clock` pins the two count tests to +58d (= 2026-09-05, the authoring date, which is why the numbers 87/83 currently reproduce). `_capture_progress_payload` at line 478 does NOT freeze anything, so `test_round_floats_output_is_identical_to_the_pre_inline_implementation` and `test_the_round_floats_oracle_can_actually_fail` byte-compare a payload whose node count changes every day. The plan states the pair explicitly — \"3 says less work happened, 5 says the answer did not change\" — and that only holds while both halves see the same object. On any day other than 2026-09-05 they do not, and nothing in the file says so.",
+      "introduced_by_diff": true,
+      "suggestion": "def _capture_progress_payload(monkeypatch, today=None):\n    _freeze_progress_clock(monkeypatch, today or (_TODAY + timedelta(days=58)))"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 287,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "`_freeze_progress_clock` is a mechanism the approved plan never named and the implement stage's Deviations section does not record, and it turns 83 into a property of one chosen calendar day rather than of the perf fixture.",
+      "short_summary": "Clock freeze is an undeclared deviation from the plan",
+      "failure_scenario": "The plan's Files table and Proofs 1-8 describe counters around `plans._ran` and `tools._round_floats` and say nothing about the wall clock; the Deviations section of the implement artifact lists three carry-out notes and states 'None from the plan's substance', none of them the clock. Measured in the checkout, the choice matters: the handler's window is `max(frontier, today) + 7d`, so the same fixture yields 25, 55, 83, 85 or 115 `_round_floats` calls depending on the date supplied. +58d was chosen because it is the authoring day, not because anything about the fixture points at it, so a maintainer reading `assert counts[\"n\"] == 83` cannot re-derive either number from the fixture and has no principle for updating it (the plateau at +100d, 115, would have been re-derivable).",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 178,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The new docstring states 470 and 83 as properties of \"a single 10 KB `get_training_plan_progress` payload\", but both numbers are properties of the calendar day the measurement was taken, and neither reproduces on any other date.",
+      "short_summary": "470/83 in the docstring hold only on 2026-09-05",
+      "failure_scenario": "Measured directly against the perf fixture in the checkout, driving the real handler with `tools.date` frozen: old implementation 157 calls / new implementation 25 at `_TODAY`; 470 / 83 at `_TODAY` + 58d; 644 / 115 at `_TODAY` + 100d and beyond. A reader who follows the docstring's invitation to re-measure on any day but 2026-09-05 gets a pair that matches neither number and concludes the docstring (and the CHANGELOG's \"`_round_floats` calls 470 -> 83\", and CLAUDE.md:208's \"470 `_round_floats` calls\") is wrong. The test that pins 83 needed a clock freeze to be stable; the prose quoting the same figure carries no such qualifier.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 447,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The `list` fast path's scalar clause (`t is str or t is int or t is bool or v is None`) is not exercised by the differential corpus at all — no case in `_ROUND_FLOATS_CASES`, and nothing in the real payload, puts a non-float scalar inside a list.",
+      "short_summary": "No case puts a bool/int/str/None inside a list",
+      "failure_scenario": "Mutation-verified in the checkout. I built a mutant of the shipped `_round_floats` differing only in the list branch — a `bool` element rounded (`out_l.append(round(v, dp))`) instead of copied, so `[True]` serializes as `[1]` — and ran the exact assertion `test_round_floats_output_is_identical_to_the_pre_inline_implementation` makes, over the captured handler payload plus all 21 `_ROUND_FLOATS_CASES`: **0 divergences**. The proof-5 corpus therefore cannot see a defect in the clause the diff added. Controls: the same harness caught `list_else_passthrough` (2 divergences) and `dict_else_passthrough` (3), so the corpus does reach the container-recursion branches — it is specifically the list scalar clause that is unreached. The cases containing lists are `[(...,), (...,)]` (tuples), `{\"aerobic_te\": [floats]}`, `{\"day\": {...}}` and `{\"rows\": [{...}]}`; the only list elements anywhere are floats, tuples and dicts.",
+      "introduced_by_diff": true,
+      "suggestion": "    {\"rows\": [{\"avg_pace_sec_per_km\": 333.2222672948015, \"ok\": True,\n               \"name\": \"Run\", \"reps\": 4, \"note\": None,\n               \"splits\": [1.111111111, 2.222222222],\n               \"flags\": [True, False, None, 4, \"easy\", 1.23456789]}]},"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 566,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "`test_the_latency_gate_is_still_armed` claims to guard three things and asserts two — the plan named three demotion routes (no threshold change, no `continue-on-error`, no rebaseline) and only the threshold and the skip default are checked.",
+      "short_summary": "Gate guard names the baseline but never asserts it",
+      "failure_scenario": "The docstring says the fix 'does not touch the threshold, the baseline, or the `--benchmark-skip` default'. The body greps ci.yml for `--benchmark-compare-fail=min:15%` and reads `--benchmark-skip` out of pyproject's addopts. Nothing asserts (a) `--benchmark-compare=0001` is still on the perf step, (b) `.benchmarks/Linux-CPython-3.12-64bit/0001_*.json` is still the committed baseline, or (c) the `Perf-benchmark regression gate` step has no `continue-on-error`. A later change that adds `continue-on-error: true` to that step, or replaces the `0001_*.json` capture with one taken on the regressed code, demotes the gate exactly as the plan warned and this test — the one written to stop that — stays green. Related to but distinct from f-283d2ef7 and f-9674e7de, which are about the form and vacuity of the greps that do exist.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "CLAUDE.md",
+      "line": 176,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "CLAUDE.md still says the perf-benchmark suite is 'Skipped on every ordinary `pytest` run' and that the validate job 'opts back in' — the diff deliberately makes seven tests in that file the exact inverse, and this bullet was edited in the same change without being corrected.",
+      "short_summary": "CLAUDE.md still says the whole perf file is skipped",
+      "failure_scenario": "The bullet at :159 is scoped to `tests/test_perf_benchmarks.py` as a whole. Verified in the checkout: `uv run pytest tests/test_perf_benchmarks.py` reports `16 passed, 6 skipped` — the seven new work-count/oracle/gate tests run on an ordinary pytest run, and are the ones skipped under the validate job's `--benchmark-only`. A maintainer following CLAUDE.md concludes a red work-count assertion surfaces in the 'Perf-benchmark regression gate' step, when the diff's own module docstring (:26-28) says it surfaces in 'Run tests with coverage gate'. The diff added 23 lines to this very section (part (3) of the tell) and left the contradicting sentence 17 lines above it. Same class as f-6c527dc9 / f-3d9ed162 but a different claim on a different line.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "pyproject.toml",
+      "line": 56,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The `addopts` comment says 'the perf-benchmark suite (tests/test_perf_benchmarks.py) only runs when explicitly requested via `--benchmark-only`', which the diff makes false for seven tests in that file — a second place the same contract is written and was not updated.",
+      "short_summary": "pyproject comment: whole perf file needs --benchmark-only",
+      "failure_scenario": "`test_the_latency_gate_is_still_armed` reads this very file's `addopts` as its guard, so the diff already treats this file as part of the contract, yet the sentence three lines above the string it reads is now wrong. Verified: those seven tests run under a bare `uv run pytest`. A contributor trusting this comment adds a slow, network-touching or fixture-heavy assertion to `tests/test_perf_benchmarks.py` believing it is opt-in, and it lands in the default coverage job on every PR.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 312,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The plan's Proof 2 and Proof 3 specify upper bounds (`_ran` <= 90, `_round_floats` <= 100); the head asserts exact equality (87 and 83 at :330) with no Deviations entry recording the change.",
+      "short_summary": "Plan asked for <=90/<=100; diff pins ==87/==83",
+      "failure_scenario": "The plan wrote both as bounds precisely so the assertion tracks the invariant ('the doubled work is gone') rather than a snapshot. Pinning exactly makes any unrelated change to the progress payload's shape — one more prescribed-workout field, one more rollup dict — turn `ci / validate`'s coverage step red on a perf test with a number the author of that change cannot re-derive (83 is not a fixture property; it is the node count on 2026-09-05, see the clock finding). The implement artifact's Deviations section still describes the shipped behaviour as '`_ran` <= 90 and `_round_floats` <= 100', so the record of the change disagrees with the change. I note this responds to f-0583160f / f-7098c483 (the `<=` form passing vacuously) — the verifier should weigh whether an anti-vacuity floor plus a bound (`87 <= n <= 90`) satisfies both concerns rather than choosing one.",
+      "introduced_by_diff": true,
+      "suggestion": "    assert 87 <= counts[\"n\"] <= 90"
+    },
+    {
+      "file": "tests/test_plans.py",
+      "line": 566,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "The retargeted comment now attributes the pre-2026-07-22 label classification to `_workout_actuals`, which never contained it — the label classification lived in `_normalize_activity_types`, the function this diff deletes.",
+      "short_summary": "Comment credits _workout_actuals with history it never had",
+      "failure_scenario": "The comment reads 'Before the pace-gating fix this read [\"other\", \"running\"] — `_workout_actuals` classified it by the \"treadmill_running\" LABEL alone'. Before the pace-gating fix `_workout_actuals` returned a four-tuple and did no classification at all; the label-based classifier was `_normalize_activity_types`, whose own (now-deleted) docstring recorded exactly that history. A reader running `git log -S` on `_workout_actuals` to find when it classified by label finds nothing, and the one record of the real history is the deleted function. The plan asked for the comment to 'name `_workout_actuals`' — it can do that without rewriting who did what.",
+      "introduced_by_diff": true,
+      "suggestion": "    # read [\"other\", \"running\"] — the classification (then a separate helper,\n    # `_normalize_activity_types`, now folded into the loop below) went by the"
+    },
+    {
+      "file": "tests/test_plans.py",
+      "line": 577,
+      "side": "RIGHT",
+      "category": "intent",
+      "summary": "`test_activity_types_classify_by_pace_not_label` still calls itself a 'Direct unit test of the classifier itself' after the retarget, when there is no longer any way to reach the classifier directly and the test now drives the whole accumulation loop.",
+      "short_summary": "Docstring still claims a direct unit test of the classifier",
+      "failure_scenario": "The classifier is now three lines inside `_workout_actuals`'s loop, reached only through distance/duration accumulation and pace computation. The test's second paragraph already says so ('there is no separate helper to call'), directly contradicting its own first line. A reader diagnosing a classification bug trusts the label 'direct unit test', concludes the classifier is isolated, and is surprised when a change to distance accumulation reds it.",
+      "introduced_by_diff": true
+    }
+  ],
+  "notExamined": [
+    "The three other work items in the plan (notes-update-handle-collision, notes-archive-failure-preserves-live, notes-undated-eviction-order) and everything in src/local_fitness/notes.py — out of this PR's scope.",
+    "Issue items 1, 2 and 3, which this work item deliberately does not address.",
+    "The latency benchmarks themselves (test_bench_*) and the committed .benchmarks/0001_*.json baseline contents — unchanged by the diff and never executed here (the 6 benchmark tests skip under the default addopts).",
+    "Whether the projected post-fix CI readings (+7.1% / +11.7%) hold on real GitHub runners — the plan itself labels that an observable, not a test, and it needs CI runs.",
+    "The CPython 3.12.13 vs 3.12.14 interpreter question CLAUDE.md now records as open; no 3.12.14 build is available here to A/B.",
+    "The non-intent angles (security, conventions, performance micro-review of the emitted bytecode, error handling) — this brief assigned only the intent angle.",
+    "Existing untouched tests outside tests/test_plans.py and tests/test_perf_benchmarks.py that consume _workout_actuals indirectly (test_plan_tools.py, tests/evals/) — I confirmed by grep that no other file references _normalize_activity_types, but I did not run the full suite (it has 84 pre-existing WeasyPrint/libgobject failures on this machine).",
+    "docs/plans/2026-07-09-mcp-speed-and-ui-retirement-design.md beyond confirming it does not use the phrase 'two axes' and so is not stale in the way CLAUDE.md and pyproject.toml are."
+  ]
+}

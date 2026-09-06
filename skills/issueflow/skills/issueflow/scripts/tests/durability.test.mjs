@@ -19,6 +19,7 @@ import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
 import { ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
+import { approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'issueflow.js');
@@ -81,7 +82,7 @@ test('an offline run makes no gh call at all', () => {
 
   run.offline = true;
   saveRun(dir, run);
-  writeGood(dir, run, 'investigate');
+  redTeamPass(dir, run, writeGood(dir, run, 'investigate'));
 
   execFileSync(process.execPath, [CLI, 'accept', '--stage', 'investigate', '--run-dir', dir], {
     encoding: 'utf8',
@@ -119,21 +120,22 @@ test('the comment carries the marker that lets another machine adopt it', () => 
 
 test('the comment carries every approved artifact, and nothing that is not approved', () => {
   const { dir, run, cleanup } = fixture();
-  writeGood(dir, run, 'investigate');
-  writeGood(dir, run, 'design'); // written but NEVER approved
-  accept(dir, run, findStep(run, 'investigate'));
+  approvePlan(dir, run);
+  writeGood(dir, run, 'implement'); // written but NEVER approved
 
   const body = renderComment(dir, run);
   assert.match(body, /<details><summary><b>investigate<\/b>/, 'the approved artifact is missing');
-  assert.doesNotMatch(body, /<details><summary><b>design<\/b>/, 'an unapproved artifact was published as though it were decided');
+  assert.doesNotMatch(body, /<details><summary><b>root\/implement<\/b>/, 'an unapproved artifact was published as though it were decided');
   cleanup();
 });
 
 test('an oversized artifact is truncated visibly, never silently', () => {
   const { dir, run, cleanup } = fixture();
   const step = findStep(run, 'investigate');
+  const declared = STAGES.find((s) => s.id === 'investigate');
   mkdirSync(join(artifactPath(dir, step), '..'), { recursive: true });
-  writeFileSync(artifactPath(dir, step), `## Root cause\n\n## Evidence\n\n## Unknowns\n\n${'x'.repeat(5000)}`);
+  writeFileSync(artifactPath(dir, step), `${declared.requires.map((r) => `## ${r}\n`).join('\n')}\n${'x'.repeat(5000)}`);
+  redTeamPass(dir, run, step);
   accept(dir, run, step);
 
   const body = renderComment(dir, run, { budget: 200 });

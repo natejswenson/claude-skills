@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-3-8",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "            else _running_distance(day_activities, cfg)",
+      "line": 339,
+      "note": "Measured on the perf fixture at this head: of 87 `_ran` calls per request, 36 are `_workout_actuals`'s single pass (plans.py:1256) and 51 are re-derivations of the same days — 15 inside `classify_workout` (10 via `_running_distance` at :339, 5 via `_running_duration` at :351) and 36 via `weekly_mileage` → `_running_distance`; the finder's 51 is exactly right as a total, though only 15 of it is `classify_workout`'s. The drift half of the claim is weaker than stated: both sides call the same `_ran(a, cfg)`, so the pace GATE cannot diverge — what is duplicated is the summation, which the fold now inlines rather than calling `_running_distance`/`_walking_distance`."
+    },
+    {
+      "id": "c-3-9",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "def test_get_training_plan_progress_rounds_without_a_call_per_node(default_db, monkeypatch):",
+      "line": 287,
+      "note": "Not just a cleanup angle — it is a dated CI red. The handler windows on `date.today()` (tools.py:3851-3853, `anchor_fwd + 7d`) while the fixture is pinned to `_TODAY = 2026-07-09`, so the payload grows with the wall clock and so does the `_round_floats` count: measured in the worktree at 25 on 2026-07-09, 83 today, 101 on 2026-09-22 and 115 from 2026-10-06 — `assert counts[\"n\"] <= 100` at line 297 goes red on 2026-09-22, seventeen days out, with no code change. The sibling `_ran` count at :284 is clock-STABLE (87 at every date from 2026-07-09 to 2027-03-01), so only one of the two new tests actually drifts; `_freeze_ledger_clock` also patches `ledger.date`, not `tools.date`, so reuse means lifting the pattern, not calling that helper."
+    },
+    {
+      "id": "c-3-10",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert plans._workout_actuals([_MISLABELLED_WALK])[4] == [\"walking\"]",
+      "line": 582,
+      "note": "Real but smaller than filed: four `[4]` call sites (582, 583, 602, 609) across THREE tests — the fourth renamed test at :586 unpacks by name (`foot, run, walk, _pace, types = ...`), and :376 is a whole-tuple equality, not a shape read. Positional indexing into this tuple is also not new (`[3]` at :573 is untouched context in this diff); what the diff added is four sites that used to name `_normalize_activity_types`."
+    },
+    {
+      "id": "c-4-1",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] <= 90",
+      "line": 284,
+      "note": "Reproduced in the worktree: with the fixture's `training_plans` row flipped to status='completed', the handler early-returns at tools.py:3765 and `plans._ran` is called 0 times, so `counts[\"n\"] <= 90` passes green over zero work. `get_active_plan` filters on status only, so the trigger is a fixture/seed change rather than the plan aging out — but the same diff writes the opposite rule 90 lines down (`assert len(by_date) > 500`, 'A query that quietly matched nothing must fail here') and the sibling oracle at :455 carries `assert payload.get(\"workouts\")`, so the floor is the house convention this one assertion skips."
+    },
+    {
+      "id": "c-4-2",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] <= 100",
+      "line": 297,
+      "note": "Measured with no active plan: `_text({\"active\": False})` drives `tools._round_floats` exactly 1 time and `counts[\"n\"] <= 100` passes, against 83 on the real payload — a 1-call run and an 83-call run are indistinguishable to it, which is exactly the claim its docstring makes. Note the suggested `60 <= counts[\"n\"] <= 100` fixes the floor but leaves the ceiling, which c-3-9 shows goes red on 2026-09-22 on the wall clock alone; both ends need fixing in the same edit."
+    }
+  ]
+}
