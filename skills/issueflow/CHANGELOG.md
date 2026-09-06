@@ -5,6 +5,111 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-09-04
+
+The 0.6.0 dogfood ran 24 red-team rounds across 4 stages × 6 lanes and never
+read the pull request back. Measured across five real runs, a stage took 3–14
+minutes of model time and the gate between two stages took 4–56; every stage
+boundary cost more than the stage, and the one thing a reviewer most wants — a
+finding on the line it is about — did not exist. 0.7.0 is the redesign: two
+stages, a red team on the plan only, one human stop, and a review loop on the
+pull request that converges when only nits remain. Schema 3; a schema-2 run is
+named unreadable by `runs`, with the remedy.
+
+### Added
+
+- **`next` — the driver.** One command computes the one next action from the
+  run's state, performs every deterministic step it reaches (a brief, the gate,
+  a registration, the split, the ship, a post, ready) and prints exactly one
+  thing to do: a dispatch with its wait line, a wait, or a stop naming who must
+  act. SKILL.md's flow is now "run `next`, do what it prints, repeat". Waiting
+  is filesystem-observed — `until [ <output> -nt <brief> ]` under a timeout of
+  3× this repo's median for the step — so a re-dispatch over an existing
+  artifact does not fire instantly, no sentinel the subagent could forget is
+  needed, and exit 124 is a stall. A refused gate is a send-back: the refusal
+  printed, the brief re-rendered, exit 2.
+- **The pull request review loop** (`review-brief`, `review-verify`,
+  `review-register`, `review-post`, `review-fix-brief`, `review-fix-report`,
+  `ready`). Each round: 2–5 opus finders sized to the diff (one under sixty
+  changed lines), each dealt angles from the new `references/review-method.md`
+  — Claude Code's own `/code-review` angles kept verbatim, plus a house
+  `intent` angle that reads the diff against the approved plan and the tests
+  against the issue; up to 8 opus verifiers ruling CONFIRMED / PLAUSIBLE /
+  REFUTED with "REFUTED only when constructible from the code", and ruling
+  fixed / still-open / withdrawn on every prior open major — and every prior
+  nit whose file the fix touched; a nit in an untouched file is still open by
+  construction and costs no verifier — with a quote at the new head (a moved
+  line is still-open); the registrar in
+  `scripts/lib/prreview.mjs`; one GitHub review per round through the
+  pending-review flow (a refused anchor costs one thread, not the round), a
+  thread per inline finding, a reply and a resolve on every prior thread; a
+  fixer — sonnet, or opus once a major survived a fix — on every open major
+  plus round-1 nits with a complete suggestion, one commit per round, a push,
+  a fix report whose not-changed majors become disputes the next verifier rules
+  on. Severity is `major | nit | pre-existing`; only majors block. Four rounds
+  is the cap; at it the round-4 fix lands unverified and the user rules on each
+  open major (`review-rule --finding <id> --fixed|--withdrawn --note "<what
+  they checked>"`, refused before the cap and never issued by `next`) or buys
+  round five with `review-brief --another-round "<why>"`. The first real loop
+  reached the cap with two majors open in prose the round-2 fix had added, and
+  had no way out.
+- **Convergence as code.** Ids are assigned once and matched by id thereafter.
+  Citations are classified against the diff's hunks including context lines:
+  an outside-hunk major is body-only but still blocks. No new nit posts after
+  round 1; nits are capped at five; cleanup angles cannot be majors; from
+  round 2 a PLAUSIBLE major on a line the last fix did not touch is a note in
+  the body, not a major. `ready` and `next` both refuse over an open major.
+  The same major disputed twice hands the run back.
+- **The red-before-green rule in `accept`.** `parseAllEvidence` reads every
+  runner result in file order; `twoSided()` refuses a green-only file, a
+  green-then-red file, and a red half that is only a load or import error.
+  This is what replaced the separate test stage's pair of eyes. `accept` also
+  refuses an implement whose tree has uncommitted paths.
+- **Exit codes are a contract:** 0 · 2 a gate refused (send the work back) ·
+  3 infrastructure (`gh`, git — retry) · 4 hand back to a person.
+- `ship` opens drafts by default, with a `review-loop` label + `[reviewing]`
+  title fallback where drafts are unavailable; `--no-draft` opts out. A
+  stacked lane is rebased onto the lane below once, before its first round,
+  and never after (`rebase`). `status` shows every lane's rounds and open
+  findings.
+
+### Changed
+
+- **Two stages, not four.** `design` folds into `investigate` (one plan
+  artifact: Root cause, Evidence, Unknowns, Approach, Rejected, Files, Proof,
+  Work items) and `test` folds into `implement` (Changed, Deviations, Command,
+  Two-sided, Result, plus the evidence file). `implement` runs on **opus**: a
+  review round costs more than the model difference.
+- **The red team attacks the plan, and only the plan.** Code is reviewed on
+  its pull request. The plan cannot be approved before a round is registered
+  on either path; a human may approve over a blocked round (that is what the
+  human stop is for), the auto path may not.
+- **Red-team findings are JSON** (`reviews/investigate-r<k>.findings.json`:
+  `findings[{severity, cite, text}]`, `notExamined[]`, `verdict`), replacing
+  the one-line grammar that refused a whole review over a backtick twice in
+  twenty-four real rounds. A citation wrapped in backticks is a citation.
+- `--auto` now means one thing: no human stop after the red-teamed plan.
+- `split` refuses only once a lane has *delivered*, not once it was briefed —
+  a `brief --ready` straight after the plan used to foreclose it forever.
+- `markBriefed` archives a previous delivery's clock on a re-brief, so the
+  expectation line stops folding review rounds into one duration and a
+  re-dispatched stage no longer renders `delivered` off the old artifact.
+- The baseline is re-frozen over the same real #133 inputs with the
+  investigation and design merged into one artifact, and the real #132 review
+  carried into the JSON shape with its text unchanged. New two-sided suites
+  for the review loop (`prreview.test.mjs`) and the driver (`next.test.mjs`),
+  and a **review-round golden** (`review-round.test.mjs`): two real rounds of
+  the first real loop (local-fitness#236), frozen by `evals/freeze-round.mjs`
+  with the real finders' candidates, the real verifiers' verdicts, the diff
+  and every cited file at each head, re-registered against a rebuilt
+  repository and byte-compared — record, payload, replies and resolves.
+
+### Removed
+
+- The `design` and `test` stages; three of the four per-stage red-team
+  contracts; the one-line finding grammar; the eight-step auto-mode prose
+  procedure.
+
 ## [0.6.0] - 2026-09-01
 
 ### Added

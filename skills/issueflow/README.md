@@ -6,47 +6,64 @@
 ---
 <!-- <<< press:masthead -->
 
-*Takes one open GitHub issue to a pull request through four gated stages, each run by its own subagent, each artifact approved by you before the next begins.*
+*Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus implementation with its own proof, and a review loop of finders, verifiers and a fixer on the pull request until no major remains.*
 
-> **No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.**
+> **No stage runs on anything but its predecessor's artifact, approved and written to disk — and a stage that was skipped is reported as skipped, never as done.**
 
 ## Why install this
 
 An agent that takes an issue and hands back a pull request is easy to build and
-hard to trust: four stages run to completion, and the first thing a human sees is
-a diff nobody chose. issueflow inverts that. Each stage is its own subagent with
-its own isolated context, each writes one artifact to disk, and **nothing
-advances until you have read that artifact and said yes.**
+hard to trust: the stages run to completion, and the first thing a human sees is
+a diff nobody chose. issueflow inverts that, and since 0.7.0 it does it in the
+place a reviewer actually looks — the pull request.
 
-The gate is not a habit the orchestrator is asked to keep — it is code.
-`accept` refuses an empty artifact, an artifact whose required sections are not
-headings, and a test stage whose evidence holds no runner result at all. `ship`
-refuses to open a pull request over any stage that is unapproved, including one
-that was explicitly skipped.
+**The plan is attacked before any code exists.** One opus subagent investigates
+and plans in a single document: root cause, evidence, unknowns, the approach
+and what was rejected, the files, the proof, the work items. A red-team
+subagent then hunts it — the alternate root cause nobody ruled out, the file
+the plan forgot, the proof that would pass without fixing the issue — and its
+findings only count once the registrar has checked every citation resolves.
+You read the red-teamed plan once and say yes. (`--auto` makes the registered
+pass the approval instead.)
 
-**Every gate leaves a trace on GitHub.** The lane's branch is pushed and one
-comment on the issue is rewritten in place, carrying the board, the branches and
-every approved artifact — so a run survives losing the machine that started it,
-and the issue rather than someone's terminal is the record of how the change was
-decided. Before advancing, it asks GitHub what is actually true: an issue that
-has been closed, or a lane whose pull request already merged, stops the run
-rather than being approved over.
+**The implementation proves itself, mechanically.** One opus subagent per lane
+makes the change and writes the test, and `accept` reads the whole evidence
+file: no failing run before the passing one, or a red that is only an import
+error, and the stage goes back. A tree with uncommitted work goes back too —
+the pull request is opened from the commits.
 
-The models are picked per stage, not per run: `opus` investigates and designs,
-where a wrong answer is cheapest to produce and most expensive to discover;
-`sonnet` implements and tests, bounded by a design you already approved.
+**Then the review loop, on the pull request.** The pull request opens as a
+draft. Each round, two to five opus finders — each dealt angles from
+`references/review-method.md`: line-by-line, removed behaviour, cross-file,
+intent against the plan, conventions — file candidates; up to eight opus
+verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED, and rule every
+earlier finding fixed, still open, or withdrawn with a quote at the new head;
+the registrar assigns ids once, decides which lines may carry a thread, and
+applies the convergence rules as code; one GitHub review goes up with a thread
+per finding and a resolve on every fixed one; a fixer addresses every open
+major, commits once, pushes, and says what it did with each. It converges when
+no major is open — nits may remain — and `ready` lifts the draft once CI is
+green. Four rounds is the cap; a fifth is a conversation with you.
 
-And when an issue turns out to be four changes, it says so — and expands into
-four stacked pull requests, each reviewable alone, each in its own git worktree
-so the independent ones can be worked at the same time.
+**One command drives all of it.** `next` performs every deterministic step it
+can and prints exactly one thing to do: a dispatch with the wait line that
+tells you when it is done, a wait, or a stop naming who must act. Every state
+change is checkpointed to one comment on the issue, and before advancing it
+asks GitHub what is actually true: an issue that has been closed, or a lane
+whose pull request already merged, stops the run rather than being approved
+over.
+
+And when an issue turns out to be four changes, the plan says so — and it
+expands into four stacked pull requests, each reviewed alone, bottom first.
 
 ## What you get
 
 | Path | What it provides |
 |---|---|
 | `skills/issueflow/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/issueflow/scripts/` | The deterministic half — `board`, `start`, `brief`, `accept`, `split`, `status`, `runs`, `ship`. |
-| `skills/issueflow/references/anatomy.md` | The run directory, the stage state machine, and what each stage's artifact owes the next one. |
+| `skills/issueflow/scripts/` | The deterministic half — `next`, `board`, `start`, `brief`, `accept`, `review`, `split`, `ship`, the six `review-*` round commands, `ready`, `status`, `runs`, `finish`. |
+| `skills/issueflow/references/review-method.md` | The review loop's angle catalogue, the verifier's contract, the severity definitions and the fixer's rule — the source every review brief is rendered from. |
+| `skills/issueflow/references/anatomy.md` | The run directory, the state machine, and the review loop's record. |
 | `skills/issueflow/references/dispatch.md` | The dispatch-prompt contract — what must cross into a cold subagent, what may never, and why the prompt is rendered rather than written. |
 | `skills/issueflow/references/decomposition.md` | When an issue splits, how work items become stacked pull request layers, and what a split may not do. |
 | `skills/issueflow/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
@@ -67,12 +84,10 @@ Ask for it in words — the skill drives the commands:
 > **3**
 
 ```
-| Step           | Model  | State    | Took  | Gate    |
-|----------------|--------|----------|-------|---------|
-| investigate    | opus   | approved | 4m58s | open    |
-| design         | opus   | briefed  | —     | open    |
-| root/implement | sonnet | pending  | —     | blocked |
-| root/test      | sonnet | pending  | —     | blocked |
+| Step           | Model | State    | Took  | Gate    |
+|----------------|-------|----------|-------|---------|
+| investigate    | opus  | approved | 4m58s | open    |
+| root/implement | opus  | briefed  | —     | open    |
 
 | Checkpoint    | State   | Detail                                    |
 |---------------|---------|-------------------------------------------|

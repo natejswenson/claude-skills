@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-4-3",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    below makes it load-bearing, so it stays and no test may claim removing it",
+      "line": 169,
+      "note": "Both fast paths dispatch on exact type (`elif t is str or t is int or t is bool or v is None`, tools.py:199 and :211), and `type(True) is int` is False, so a bool is copied by the `t is bool` arm and never reaches an int arm; the ladder still has no int branch either. Deleting `if isinstance(obj, bool): return obj` (:187-188) produced 0 divergences by both repr and json.dumps over 30,000 generated payloads plus the targeted probes True/False/{\"x\": True}/[True, False]/(True,)/{\"aerobic_te\": True}/[[True]]/{\"a\": [True]}/_DictSubclass/_ListSubclass. The diff contradicts itself on this: tests/test_perf_benchmarks.py:470-471 states \"removing the `bool` guard diverges on nothing\"."
+    },
+    {
+      "id": "c-4-4",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "    assert len(by_date) > 500",
+      "line": 373,
+      "note": "Measured against build_perf_fixture_db: 548 dates, exactly 1 activity on every one, all 548 typed `running`, `avg_pace_sec_per_km` NULL on all 548 (scripts/perf_fixture.py:196-206) — the single distinct class tuple over the whole fixture is ('running',). Constructed the mutant: change the fold's `continue` (plans.py:1215) to `break`, which discards every foot activity after a non-foot row — it yields 0 divergences over all 548 fixture days AND all 6 edge cases, while a real mixed day [ride, paced run] goes from (9574.85, 9574.85, 0.0, 313.32, ['other','running']) to (0.0, 0.0, 0.0, None, ['other']). The `> 500` floor counts days, not behaviour. The candidate's parenthetical is optimistic too: tests/test_plans.py:553 puts the cycling row LAST, so that test survives the same mutant."
+    },
+    {
+      "id": "c-4-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "#: whether a fast path may use `type(x) is ...` instead of `isinstance`.",
+      "line": 399,
+      "note": "The gap is real but only one of the two named mechanisms is: widening `type(obj) is list` (:204) to `isinstance(obj, list)` diverges on NOTHING, because the fast path and the ladder both return a plain list for a list subclass — measured, 0 divergences including against `_ListSubclass`. What does confirm it is the symmetric narrowing: change the ladder's `isinstance(obj, (list, tuple))` (:218) to `isinstance(obj, tuple)` and a list subclass stops being rounded entirely, while all 21 committed cases and proof 6 (which asserts only that SOME case diverges) stay green. `_DictSubclass` (:419) has no `_ListSubclass` twin. The tuple-as-a-dict-value probe is weaker: `{\"aerobic_te\": [2.12345678]}` (:416) already exercises the dict fast path's else arm and its key threading, so no mutant I could build distinguishes it."
+    },
+    {
+      "id": "c-4-6",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "_WORKOUT_ACTUALS_EDGE_CASES = [",
+      "line": 347,
+      "note": "Factually exact: the sibling corpus is pinned with `assert len(_ROUND_FLOATS_CASES) >= 20` (:458) and the fixture side with `assert len(by_date) > 500` (:373), but nothing pins the edge-case list — and per c-4-4 those six entries are the only part of this oracle that reaches anything other than a paceless labelled run, so emptying the list leaves a test that still reports a 548-day pass over one branch. The suggested `assert len(_WORKOUT_ACTUALS_EDGE_CASES) >= 6` is correct as written."
+    },
+    {
+      "id": "c-4-7",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    if type(obj) is list:",
+      "line": 204,
+      "note": "The duplication is real — the scalar-dispatch rule is written twice at :192-203 and :204-215, differing only in accumulation and where `dp` resolves. But the suggested `def _scalar(v, dp)` helper must NOT be taken: it reintroduces exactly one Python call per scalar node, which is the cost this change exists to remove (the docstring's own 470 -> 83 call-count claim, :178-181). Only an inline dedup is compatible — e.g. the `_SCALARS` membership test the candidate also offers, hoisting `dp` resolution, keeping both loops."
+    }
+  ]
+}

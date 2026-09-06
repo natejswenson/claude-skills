@@ -1,0 +1,70 @@
+{
+  "verdicts": [
+    {
+      "id": "c-1-1",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "line": 117,
+      "quote": "    result = benchmark(lambda: _run(tools.get_training_plan_progress.handler({})))",
+      "note": "Reproduced independently in the checkout at head: the handler windows on date.today() (tools.py:3762 today = date.today().isoformat(), :3851 anchor_fwd = max(frontier or today, today), :3853 window_end = anchor_fwd + 7d) while perf_db is pinned to today=_TODAY, so the serialized payload measured 3,404 chars / 11 workouts at _TODAY, 5,447 / 20 at the 2026-07-26 baseline-capture date, 9,946 / 39 at the 2026-09-02 CI date, plateauing at 13,869 / 56 from _TODAY+100d; interleaved in-process A/B over those frozen dates, 3 rounds x 40 iters, min 897.7us / 924.2us / 929.2us = +2.95% at the CI date and +3.51% at plateau on identical code (the candidate's 5,447 / 9,946 / 13,869 char figures match exactly; its '11 workouts' at +17d is wrong, that is the count at _TODAY, the real count is 20). Not introduced by this diff -- line 116-118 is untouched by it -- but it does mean part of the +13.86% reading is calendar, not code."
+    },
+    {
+      "id": "c-1-2",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "line": 200,
+      "quote": "  fleet-wide: it moves all five together. One benchmark out of line with its\n  four siblings is a code regression however slow the runner was",
+      "note": "The committed baseline holds exactly five benchmarks, and of those three pin the date (test_bench_assemble_brief_context:109 today=_TODAY.isoformat(), test_bench_build_plan_section:126, test_bench_daily_snapshot:131) while two read the real clock (test_bench_get_training_plan_progress:116 and test_bench_get_training_plan_status:121, whose handler reads date.today() at tools.py:3762 and :3702). Measured counterexample: with no code change at all, progress ran +2.95% at the 2026-09-02 CI date versus the 2026-07-26 baseline-capture date while the three pinned siblings do a fixed amount of work forever -- exactly the divergence shape the new rule declares 'a code regression however slow the runner was'. The worked example itself survives (+13.86% is far above the ~3-5% calendar band), but the rule as written admits no threshold and is going into CLAUDE.md as durable guidance."
+    },
+    {
+      "id": "c-1-3",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 1205,
+      "quote": "    threshold for five weeks. Anything else this day needs is computed in the\n    loop below, not in a pass of its own.",
+      "note": "build_plan_detail (plans.py:1256) is _workout_actuals' only caller and at plans.py:1279 (not :1273) calls weekly_mileage, whose dist_fn is _running_distance (plans.py:532, :189) and re-walks each date's activity list. Stack-attributed count at head, one get_training_plan_progress request at the frozen _TODAY+58d clock: 87 _ran evaluations total -- 36 in _workout_actuals, 36 (41%) in weekly_mileage, 15 in grade_workout -- so the candidate's 36-of-87 figure is exact. Rated a nit because the sentence is scoped to a private helper's docstring and the underlying duplicate-pass cost is the same mechanism f-87bad23f already carries; the two should be posted as one item if the poster de-duplicates."
+    },
+    {
+      "id": "c-1-4",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 570,
+      "quote": "    assert \"--benchmark-compare-fail=min:15%\" in (\n        root / \".github/workflows/ci.yml\").read_text()",
+      "note": "Reproduced: running the gate's exact command with --benchmark-only removed (pyproject.toml:59 addopts carries --benchmark-skip) skips all six benchmark tests, warns 'Can't compare. No benchmark files match 0001', and exits 0 -- '16 passed, 6 skipped', EXIT=0. test_the_latency_gate_is_still_armed (tests/test_perf_benchmarks.py:564-574) asserts only the threshold string and the addopts default, so both of its assertions still pass under that demotion. Same hole for --benchmark-compare=0001 and for the committed .benchmarks/Linux-CPython-3.12-64bit/0001_8edfb70*.json existing at all. Hardening, not a live break -- ci.yml:70 still carries --benchmark-only today -- and the candidate's four-line suggestion closes it."
+    },
+    {
+      "id": "c-2-1",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 478,
+      "quote": "def _capture_progress_payload(monkeypatch):",
+      "note": "Confirmed on point (a): _capture_progress_payload (tests/test_perf_benchmarks.py:478-493) calls the handler with no _freeze_progress_clock, while its two count siblings at :311 and :329 pin _TODAY + 58d -- so the '87 calls'/'83 calls' claims and the byte-identical-output claim are made about different payloads, and the captured payload measurably varies with the wall-clock date (11 workouts / 3,404 chars at _TODAY, 40 / 10,122 at +58d, 56 / 13,869 at +100d) and with the local timezone, since tools.py:3762 reads date.today(). Point (b) does not hold and should be dropped from the posted text: window_start is anchored on the fixed data frontier (tools.py:3850 anchor_back = frontier ...) and window_end only ever grows, so the payload is monotonically increasing and no case shape ever drops out of the window."
+    },
+    {
+      "id": "f-d44090f3",
+      "verdict": "still-open",
+      "line": 1212,
+      "quote": "        if not _is_on_foot(at):",
+      "note": "The interim diff 776ccbd..c577f1f touches only tests/test_perf_benchmarks.py, so plans.py is byte-identical to the head this was filed on. At the current head line 1212 computes _is_on_foot(at) and continues on False; line 1231 then calls _ran(a, cfg), whose first statement at plans.py:165 is 'if not _is_on_foot(at): return False' on the identical value. Re-measured at head, one get_training_plan_progress request: _is_on_foot 139 calls and _is_running 226 against 87 _ran -- the finding's numbers reproduce exactly. Cleanup, still pre-existing."
+    },
+    {
+      "id": "f-87bad23f",
+      "verdict": "still-open",
+      "line": 1259,
+      "quote": "            \"verdict\": grade_workout(w, day, frontier, cfg),",
+      "note": "plans.py unchanged since the previous head. Line 1256 calls _workout_actuals(day, cfg) and line 1259 passes the SAME day list to grade_workout, reaching classify_workout's _running_distance (plans.py:339) / _running_duration (plans.py:351); line 1279's weekly_mileage walks each date's list again through _running_distance. Stack-attributed at head: 87 _ran per request = 36 _workout_actuals + 36 weekly_mileage + 15 grade_workout, i.e. exactly the 51 second-pass evaluations the finding claims. One detail in the finding is now stale and should not be posted as written: the '<= 90' assertion it cites was tightened to 'assert counts[\"n\"] == 87' at tests/test_perf_benchmarks.py:312 in the r1 fix -- the pinning point stands, the number changed."
+    },
+    {
+      "id": "f-708c84ed",
+      "verdict": "still-open",
+      "line": 339,
+      "quote": "            else _running_distance(day_activities, cfg)",
+      "note": "plans.py unchanged since the previous head. build_plan_detail line 1256 already holds (foot, run_m, walk_m, pace, types) for `day` when line 1259 calls grade_workout on the same list, and classify_workout re-derives _foot_distance (plans.py:337) / _running_distance (plans.py:339) / _running_duration (plans.py:351) from the raw rows. The equivalence the finding asserts holds by construction at head -- _foot_distance (plans.py:218-223) is the loop's `foot`, _running_distance (plans.py:186-190) is `run`, _walking_distance is `walk`, all under the same cfg -- so the three distance sums are genuinely re-derivable from data already in hand. Note the duration branch is not covered: _workout_actuals' `dur` is total on-foot duration, not the running-only duration classify_workout needs at line 351."
+    }
+  ]
+}

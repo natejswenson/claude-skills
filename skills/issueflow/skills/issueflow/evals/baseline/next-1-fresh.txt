@@ -1,0 +1,21 @@
+▶ brief — the plan has not been briefed
+
+Step 1 of 2 · 0 approved · [investigate] → root/implement
+investigate has no past timings on this repo — nothing to compare against. It unblocks root/implement.
+
+| Stage       | Model | Agent           |
+|-------------|-------|-----------------|
+| investigate | opus  | general-purpose |
+
+It must write: <RUN>/shared/investigate.md
+
+Dispatch ONE subagent, model `opus`, with exactly this prompt:
+
+  Read <RUN>/briefs/investigate.md and follow it exactly. It is your complete brief.
+
+
+next: dispatch (brief)
+  The prompt(s) to dispatch are printed above.
+
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ '\''<RUN>/shared/investigate.md'\'' -nt '\''<RUN>/briefs/investigate.md'\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=$(wc -c < '\''<RUN>/shared/investigate.md'\'' 2>/dev/null); sleep 20; b=$(wc -c < '\''<RUN>/shared/investigate.md'\'' 2>/dev/null); while [ "$a" != "$b" ]; do a=$b; sleep 20; b=$(wc -c < '\''<RUN>/shared/investigate.md'\'' 2>/dev/null); done'
+then: node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <RUN>

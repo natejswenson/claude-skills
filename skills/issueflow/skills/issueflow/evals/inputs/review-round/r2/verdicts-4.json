@@ -1,0 +1,60 @@
+{
+  "verdicts": [
+    {
+      "id": "f-64004f72",
+      "verdict": "still-open",
+      "line": 169,
+      "quote": "    below makes it load-bearing, so it stays and no test may claim removing it",
+      "note": "src/local_fitness/agent/tools.py is byte-identical between 776ccbd5 and c577f1fe (`git diff` over src/ is empty), so the docstring sentence is unchanged and still wrong: the container arms dispatch on exact type and carry their own `t is bool` arm (:199, :211), the ladder still has no `int` branch, and `isinstance(True, float)` is False — a bool never reaches the top-level guard from any path, so it remains inert."
+    },
+    {
+      "id": "f-87a32893",
+      "verdict": "still-open",
+      "line": 447,
+      "quote": "_ROUND_FLOATS_CASES = [",
+      "note": "Round 2 added assertions AFTER the corpus (the tuple-type checks at :509-516) but no new case: the list still runs True..{\"rows\": [...]} with `_FloatSubclass`, `_IntSubclass`, `_DictSubclass` and `_Grade` and no `list` subclass, so `type(obj) is list` (tools.py:204) is still unguarded; no case holds a tuple as a dict value either, so the dict fast path's `else` arm (tools.py:202) is still only ever reached with a dict or list child."
+    },
+    {
+      "id": "f-a06265fc",
+      "verdict": "fixed",
+      "line": 420,
+      "quote": "    assert len(_WORKOUT_ACTUALS_EDGE_CASES) >= 7",
+      "note": "The floor now exists at tests/test_perf_benchmarks.py:420, directly beside the fixture-side `assert len(by_date) > 500` (:415), and the list grew to exactly 7 with the mixed-day case at :387-394 — so deleting any entry now reddens the test instead of silently shrinking the only discriminating half of the oracle."
+    },
+    {
+      "id": "f-c0797478",
+      "verdict": "still-open",
+      "line": 204,
+      "quote": "    if type(obj) is list:",
+      "note": "tools.py is unchanged between the two heads; the scalar-dispatch rule is still written twice, at :192-203 and :204-215, with no shared `_scalar` helper or `_SCALARS` tuple."
+    },
+    {
+      "id": "f-474265e6",
+      "verdict": "still-open",
+      "line": 254,
+      "quote": "def _count_calls(monkeypatch, module, name):",
+      "note": "Both helpers survive at the current head with identical bodies: `_count_connect_opens` (:91-100) is exactly `_count_calls(monkeypatch, db, \"connect\")`, and its eight call sites (:172, :178, :184, :190, :196, :209, :239) were not migrated in round 2."
+    },
+    {
+      "id": "f-68bf670c",
+      "verdict": "still-open",
+      "line": 487,
+      "quote": "        captured.setdefault(\"payload\", obj)",
+      "note": "`_capture_progress_payload` (:478-489) is untouched by the round-2 fix — the wrapper is still installed on the module attribute `_round_floats` recurses through, so `setdefault` still runs on all 83 calls, and the two oracle tests (:505, :564) each still pay a full `get_training_plan_progress` run rather than sharing a module-scoped fixture."
+    },
+    {
+      "id": "f-8e190b4d",
+      "verdict": "still-open",
+      "line": 1205,
+      "quote": "    threshold for five weeks. Anything else this day needs is computed in the",
+      "note": "src/local_fitness/plans.py is unchanged between 776ccbd5 and c577f1fe. `build_plan_detail` still calls `_workout_actuals(day, cfg)` at :1256 and `grade_workout(w, day, frontier, cfg)` at :1259 in the same iteration, so `classify_workout` still re-derives `_foot_distance`/`_running_distance`/`_running_duration` over the same list — the docstring sentence quoted above is still contradicted by the next statement in its only caller."
+    },
+    {
+      "id": "f-0e170358",
+      "verdict": "still-open",
+      "line": 1259,
+      "quote": "            \"verdict\": grade_workout(w, day, frontier, cfg),",
+      "note": "plans.py is byte-identical between the two heads, so `grade_workout` still re-walks the very list `_workout_actuals` walked on :1256. Round 2 changed only the gate's form — tests/test_perf_benchmarks.py:312 went from `assert counts[\"n\"] <= 90` to `assert counts[\"n\"] == 87` under a frozen clock — which tightens the pin but cements the remaining 51 duplicate `_ran` evaluations even harder as the accepted floor rather than removing them."
+    }
+  ]
+}
