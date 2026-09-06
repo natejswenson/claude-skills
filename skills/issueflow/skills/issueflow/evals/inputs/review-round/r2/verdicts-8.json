@@ -1,0 +1,58 @@
+{
+  "verdicts": [
+    {
+      "id": "c-3-8",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "def _walking_distance(",
+      "line": 193,
+      "note": "Verified: `git grep _walking_distance -- src/` at the head returns only plans.py:193 (the def); the only executable references are tests/test_plans.py:463, 511, 542. It is equally uncalled at the base 7326f66 and on origin/main, so the diff neither created nor worsened it — the diff's own deletion note (CHANGELOG.md:21) just makes the inconsistency visible. One correction to the candidate: plans.py:196 is inside `_walking_distance`'s OWN docstring naming `_running_distance`, not the other way round."
+    },
+    {
+      "id": "c-4-2",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    _freeze_progress_clock(monkeypatch, _TODAY + timedelta(days=58))",
+      "line": 309,
+      "note": "Both halves check out. (a) The plan names no clock: its Files table for tests/test_perf_benchmarks.py describes counters plus an equivalence oracle only, and its Proofs 2 and 3 specify `assert <= 90` / `assert <= 100` — the head asserts `== 87` / `== 83` behind a frozen clock, which is a real, unrecorded departure from the approved proofs (implement.md's Deviations says 'None from the plan's substance' and lists three unrelated carry-outs; in fairness the freeze arrived in the round-1 fix commit c577f1f, after implement.md was written, so the omission is ordering rather than concealment, and the change strengthens the proof). (b) The date sensitivity is exactly as the docstring claims — measured in the checkout with the same monkeypatch: +0d=25, +30d=55, +58d=83, +100d=115, +200d=115. The residue is that +58d resolves to 2026-09-05, the authoring day, and sits on the slope; the +100d plateau would have given a value (115) a maintainer could re-derive as 'the whole plan, windowed out'. A nit: the test is deterministic and self-documenting, so nothing rots — it is only unexplained."
+    },
+    {
+      "id": "c-4-4",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] == 83",
+      "line": 330,
+      "note": "The premise is factually wrong and the gap it infers is already guarded. (1) The real payload DOES put non-float scalars inside lists: scanning the captured `get_training_plan_progress` payload at the head finds 8 of them, every `payload.workouts[N].actual_activity_types[0] == 'running'` — a str hitting the list branch's scalar clause. (2) No output-differing defect is constructible in that clause at all: for `str`/`int`/`bool`/`None` the else arm's `_round_floats(v, key)` returns v unchanged (tools.py:184 `if isinstance(obj, bool): return obj`, and the ladder's final `return obj`), so copy and recurse are semantically identical and NO corpus, however enriched, can make the equivalence oracle diverge on it. The candidate's 0-divergence result is that identity, not a coverage hole — its mutant (rounding a bool) is a hand-injected bug, not an edit the clause admits. (3) The reduction the clause exists for IS pinned: I ran the shipped `_round_floats` against a variant differing only in dropping that clause — 83 calls vs 91 — so `assert counts[\"n\"] == 83` at tests/test_perf_benchmarks.py:330 reds on its removal. The suggested extra case would add no detection power to proof 5."
+    },
+    {
+      "id": "c-4-6",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "  machine-dependent and would false-fail the floor. Skipped on every ordinary\n  `pytest` run (`--benchmark-skip` in `pyproject.toml`'s `addopts`); the",
+      "line": 176,
+      "note": "The sentence is false at the head — `uv run pytest tests/test_perf_benchmarks.py` reports `16 passed, 6 skipped`, and the bullet it sits in explicitly scopes itself to both axes ('latency AND `db.connect()`-open-count', CLAUDE.md:161-162). But it was ALREADY false before this diff: `--benchmark-skip` skips only tests taking the `benchmark` fixture, and the base 7326f66 version of that file has 9 tests that do not — verified by running two of them, `test_get_training_plan_progress_opens_one_connection` and `test_compute_signals_activities_query_is_bounded`, under a bare `uv run pytest`: both pass. The diff widens the gap 9 -> 16; it did not open it, so `introduced_by_diff` is corrected to false. Still worth the one-line fix in this PR, since the diff edits this very section."
+    },
+    {
+      "id": "c-4-7",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "# --benchmark-skip: the perf-benchmark suite (tests/test_perf_benchmarks.py)\n# only runs when explicitly requested via --benchmark-only, which cancels",
+      "line": 55,
+      "note": "Same fact, same correction as c-4-6. The comment is file-scoped and wrong — the seven new tests plus the nine that predate them run under a bare `uv run pytest` (16 passed, 6 skipped), and the inverse invocation `--benchmark-only` reports `6 passed, 16 skipped`. Wrong before the diff too (the 9 connection-count tests never needed `--benchmark-only`), so `introduced_by_diff` is corrected to false. The candidate's point that `test_the_latency_gate_is_still_armed` now reads this exact `addopts` string three lines below the stale sentence is accurate and is the reason to fix it here."
+    },
+    {
+      "id": "c-4-10",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    Reads the fifth element of `_workout_actuals` — since the fold, that is\n    where the classification lives; there is no separate helper to call.\"\"\"",
+      "line": 580,
+      "note": "Pure style with no observable effect, and the misreading it posits is closed two lines below by the same docstring: the paragraph the diff added at tests/test_plans.py:579-580 states outright that there is no separate helper and that the test reads `_workout_actuals`'s fifth element. A reader cannot get to 'the classifier is isolated' without reading past the sentence that says it is not. The test also asserts only element [4], so the surprise scenario (a distance-accumulation change redding it) requires the classification itself to break, which is what the test is for."
+    }
+  ]
+}

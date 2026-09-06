@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-3-3",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "            \"verdict\": grade_workout(w, day, frontier, cfg),",
+      "line": 1259,
+      "note": "Reproduced at head with a stack-attributed counter over the perf fixture: get_training_plan_progress evaluates plans._ran 87 times — 36 from _workout_actuals:1231, 46 from the _running_distance genexpr at plans.py:189 and 5 from the _running_duration genexpr at plans.py:213 — so 51 of 87 are still repeat passes over the same day list reached from grade_workout (1259) and weekly_mileage (1279); the finder's numbers are exact. Optimization headroom the diff did not claim to take, not a wrong answer."
+    },
+    {
+      "id": "c-3-4",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    payload = _capture_progress_payload(monkeypatch)",
+      "line": 498,
+      "note": "Accurate: line 498 takes the captured payload with no anti-vacuity check while its sibling at line 455 has one, and both degenerate envelopes are real (tools.py:3765 returns _text({\"active\": False}) and _err at tools.py:233 also routes through _round_floats, so captured[\"payload\"] would be a two-key dict rather than a KeyError). Held to nit because the narrowing is not actually silent at suite level — line 455's assert fires on the exact same condition from the same fixture and reds the file — but the one-line suggestion is still right for this test read alone."
+    },
+    {
+      "id": "c-3-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert \"--benchmark-compare-fail=min:15%\" in (",
+      "line": 513,
+      "note": "The literal-substring coupling is real and the assert carries no message, but two of the three triggers named are provably wrong: `in` is a substring test over the whole file text, so wrapping the flag onto its own YAML continuation line or quoting it leaves the bytes contiguous and the test green. Only parameterizing the threshold (--benchmark-compare-fail=min:${{ env.PERF_THRESHOLD }}%) breaks it while the gate stays armed — as does moving --benchmark-skip out of pyproject.toml:59 for the second assert. One valid construction, so it stands, as a nit."
+    },
+    {
+      "id": "c-3-6",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "def _count_connect_opens(monkeypatch):",
+      "line": 83,
+      "note": "Verified same shape: _count_connect_opens (83) and _count_calls (246) differ only in the hard-coded db/\"connect\" target, and _count_calls's own docstring names the older helper as its model. The suggested one-line body resolves _count_calls at call time despite being defined 163 lines earlier, so it works as written; six existing connection-count tests keep the copy."
+    },
+    {
+      "id": "c-3-7",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "                out[k] = round(v, _TEXT_HIGH_DP if k in _TEXT_HIGH_PRECISION_KEYS",
+      "line": 197,
+      "note": "Three live copies of the dp policy confirmed at tools.py:190, 197-198 and 205, two of them added by this diff. The drift is real but bounded: the vendored-oracle test at tests/test_perf_benchmarks.py:449 catches a fast-path/fallback divergence in CI, so this is prevention-vs-detection, i.e. a cleanup nit rather than a defect."
+    }
+  ]
+}

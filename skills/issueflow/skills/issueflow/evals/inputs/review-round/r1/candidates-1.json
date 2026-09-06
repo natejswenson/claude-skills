@@ -1,0 +1,119 @@
+{
+  "candidates": [
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 515,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "The `--benchmark-skip` half of `test_the_latency_gate_is_still_armed` cannot fail: `pyproject.toml` line 55 is a comment that begins `# --benchmark-skip:`, so the substring survives deletion of the flag from `addopts`.",
+      "short_summary": "--benchmark-skip grep assertion can never fail",
+      "failure_scenario": "Verified: `sed '59s/ --benchmark-skip//' pyproject.toml | grep -c -- '--benchmark-skip'` returns 1 — the comment at pyproject.toml:55 (\"# --benchmark-skip: the perf-benchmark suite (tests/test_perf_benchmarks.py) / only runs when explicitly requested via --benchmark-only...\") keeps the string alive. Someone removes `--benchmark-skip` from `addopts` (line 59); every ordinary `uv run pytest` then runs the six timed latency benchmarks, and the test whose docstring says it guards \"the `--benchmark-skip` default that keeps these benchmarks off an ordinary `pytest` run\" stays green. Directly against CLAUDE.md:113-125: \"The bar is 'would this test FAIL if the code under test were broken?' — if not, it isn't a test.\" (The sibling assertion on line 513 is sound: `--benchmark-compare-fail=min:15%` appears exactly once in ci.yml, in the run command at :72, with no comment mentioning it.)",
+      "introduced_by_diff": true,
+      "suggestion": "    import tomllib\n    addopts = tomllib.loads((root / \"pyproject.toml\").read_text())[\"tool\"][\"pytest\"][\"ini_options\"][\"addopts\"]\n    assert \"--benchmark-skip\" in addopts"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 373,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "The equivalence oracle's anti-vacuity floor (`assert len(by_date) > 500`) presents a 548-day corpus that is measurably one input shape repeated 548 times, and neither it nor the six edge cases contains a multi-activity day — the exact case the fold changed.",
+      "short_summary": "548-day oracle corpus is one shape, 548 times",
+      "failure_scenario": "Measured against the real fixture (scripts/perf_fixture.py:196-206 seeds one row per date, always `activity_type='running'`, always with no `avg_pace_sec_per_km`): 548 days, max 1 activity/day, exactly 1 distinct classification shape `(('running', paceless, dist>0),)`, and every single day returns `['running']`. The `walking` branch, the `other` branch and every multi-activity list are never differentially compared. The fold's actual control-flow change is that `classes.add('other')` now runs inside the loop that accumulates `foot`/`dur` and hits `continue` before the distance work — so a day holding one on-foot activity and one ride is the case that would catch an ordering or accumulation mistake, and no case in `_WORKOUT_ACTUALS_EDGE_CASES` (all six are single-activity) or in the 548-day loop is one. Combined with `test_workout_actuals_evaluates_ran_once_per_on_foot_activity` (:269), which passes a mixed 3-activity day but asserts only the `_ran` count and never the returned classes, the mixed-day fold is differentially untested here; only `tests/test_plans.py:test_workout_actuals_returns_foot_run_and_walk_in_one_pass` covers it, and it is not an oracle against the pre-fold implementation. Same CLAUDE.md rule as above (\"never coverage theater\", :113-125) plus its \"Cover the edge cases\" clause.",
+      "introduced_by_diff": true,
+      "suggestion": "Add a mixed day to `_WORKOUT_ACTUALS_EDGE_CASES`, e.g. `[_PACED_RUN, _PACED_WALK, _RIDE, {\"activity_type\": None, \"distance_meters\": 100.0}]`, and assert a floor on `len(_WORKOUT_ACTUALS_EDGE_CASES)` the way `_ROUND_FLOATS_CASES` does at :506."
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 169,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "The new docstring parenthetical claims the `bool` guard \"becomes load-bearing\" under the fast path and forbids any test showing otherwise; measured, the guard is still completely inert after this change.",
+      "short_summary": "Docstring says bool guard is now load-bearing; it isn't",
+      "failure_scenario": "Deleted `if isinstance(obj, bool): return obj` (tools.py:187-188) from the post-change implementation and differentially fuzzed it against the pre-inline reference over 40,000 randomly generated nested payloads (dicts/lists/dict-subclass/list-subclass containers; leaves covering float, float/int subclasses, bool, int, str, None, NaN, +/-inf, -0.0, tuple, bytes, Decimal, date, frozenset, OrderedDict; high-precision and non-string keys), comparing structurally with type preservation, not via json.dumps: 0 divergences — identical to the 0 divergences the unmodified new implementation produces. The reason is that the guard was never reachable in a way that mattered and still isn't: both container fast paths copy a `bool` child inline via `t is bool` (lines 199, 211) and never recurse for it, and the fallback `isinstance` ladder (lines 220-225) still has no `int` branch, so a bool arriving at the top falls all the way through to `return obj` unchanged. There is no `int` fast path that rounds — line 199/211 only copy. Cost: the comment states a false invariant about the code three lines below it, and instructs the next author (\"no test may claim removing it is observable\") on the strength of that false reason, so the guard's real status — dead-but-harmless defensive code — is now recorded backwards in the one place a reader checks.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 16,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "The new third axis never runs in the invocation this file's own docstring says is the only one that runs it — `--benchmark-only` skips every non-benchmark test, so all six new tests are skipped in CI's perf-gate step.",
+      "short_summary": "Third axis is skipped by the only run the docstring names",
+      "failure_scenario": "Ran it: `pytest tests/test_perf_benchmarks.py --benchmark-only` reports `6 passed, 16 skipped` with `SKIPPED [16] Skipping non-benchmark (--benchmark-only active).` — pytest-benchmark's `pytest_collection_modifyitems` (plugin.py:336-347) marks every item without the `benchmark` fixture skipped under `--benchmark-only`. `.github/workflows/ci.yml:70` is exactly that invocation, so the entire work-COUNT axis and both equivalence oracles are skipped in the \"Perf-benchmark regression gate\" step and only execute in the \"Run tests with coverage gate\" step. Lines 4-7 of this same docstring — unchanged by the diff — say \"a plain `uv run pytest` never runs the ... benchmarks here — only an explicit `--benchmark-only` invocation does\", and the diff appends \"Three axes are asserted\" under it. A maintainer debugging a red perf gate reads that header, expects the work counts to be part of what the gate reported, and will not find them; a maintainer adding a fourth work-count assertion will reasonably put it behind the `benchmark` fixture and silently disable it in the coverage job instead. The axis does run in CI (in the other step), so this is a documentation/placement defect, not dead code.",
+      "introduced_by_diff": true,
+      "suggestion": "Add one sentence to the axis list saying the work-COUNT axis runs in the ordinary `pytest` job and is skipped under `--benchmark-only`, the inverse of the latency axis."
+    },
+    {
+      "file": "CLAUDE.md",
+      "line": 161,
+      "side": "RIGHT",
+      "category": "conventions",
+      "summary": "The PR adds a third assertion axis to the perf suite and edits the same CLAUDE.md bullet, but leaves that bullet's description of what the suite asserts at \"latency AND `db.connect()`-open-count\".",
+      "short_summary": "CLAUDE.md perf bullet still says two axes, not three",
+      "failure_scenario": "CLAUDE.md:234-239 states the rule verbatim: \"**Keep CLAUDE.md current — in the same commit/PR.** Any change that alters the workflow, architecture, deploy/branch model, security contract, or an env var updates the relevant CLAUDE.md section as part of that same commit, not as a follow-up. CLAUDE.md is the source of truth future-you reads first; a diff that changes behavior but leaves CLAUDE.md stale is incomplete.\" The diff edits lines 199-221 of this very bullet (adding drift-tell part 3) and updates the test module docstring from \"Two axes are asserted\" to \"Three axes are asserted\", yet CLAUDE.md:160-161 still reads \"separate axis from the coverage gate: latency AND `db.connect()`-open-count for the brief/plan hot paths\". Line 176 of the same bullet — \"Skipped on every ordinary `pytest` run (`--benchmark-skip` in `pyproject.toml`'s `addopts`)\" — is now false for this file in the direction that matters: 16 of its 22 tests, including all 6 new ones, run on every ordinary `pytest` and are skipped by the perf-gate step (verified above). The next person reading CLAUDE.md first, as the rule tells them to, will not know the work-count axis exists or which job runs it.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 427,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "`_dumped`'s `json.dumps` comparison is type-blind, so the oracle cannot assert the tuple-to-list conversion the cases at :412 and :413 exist to cover, nor any container/scalar subclass identity.",
+      "short_summary": "json.dumps oracle can't see tuple vs list",
+      "failure_scenario": "`json.dumps((1.23, 2.35)) == json.dumps([1.23, 2.35]) == '[1.23, 2.35]'`, and `default=str` further collapses anything unserializable to its `str()`. The approved plan's Proof 5 names \"a `tuple` (must become a `list`)\" as a required case and `_ROUND_FLOATS_CASES` duly carries `(1.23456789, 2.3456789)` and `[(1.23456789,), (2.3456789,)]` — but the comparison function cannot distinguish pass from fail on that property. A later fast-path extension such as `if type(obj) is tuple: return obj` (a tempting next optimization, since tuples currently take the slow ladder) changes `_round_floats`'s return type contract and leaves both oracle tests green. The same blindness covers `_FloatSubclass`/`_IntSubclass`/`_DictSubclass`: `_mishandles_a_dict_subclass` only diverges because its *values* stay unrounded, not because its type differs, so the two-sidedness proof at :463 does not demonstrate type coverage either. (For the record, a type-preserving 40k-case differential fuzz confirms the shipped implementation IS equivalent today — the gap is that the committed oracle would not notice if it stopped being.)",
+      "introduced_by_diff": true,
+      "suggestion": "Compare with a type-preserving normalizer, or add one direct assertion: `assert isinstance(tools._round_floats((1.0, 2.0)), list)`."
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1205,
+      "side": "RIGHT",
+      "category": "efficiency",
+      "summary": "The fold removes one redundant pass over the day's activity list but leaves another in the same caller loop: `classify_workout` recomputes `_running_distance`/`_foot_distance`, values `_workout_actuals` returned two lines earlier.",
+      "short_summary": "grade_workout re-walks the day list just walked",
+      "failure_scenario": "In `build_plan_detail` (plans.py:1254-1257) each iteration calls `_workout_actuals(day, cfg)` — which returns `foot` and `run_m` — and then immediately `grade_workout(w, day, frontier, cfg)`, whose `classify_workout` recomputes `_foot_distance(day_activities)` (plans.py:337) or `_running_distance(day_activities, cfg)` (plans.py:339) or `_running_duration(day_activities, cfg)` (plans.py:351) over the same list, evaluating `_ran` once more per activity. Because `_ran` checks on-foot first (plans.py:165-166, \"ON-FOOT IS CHECKED FIRST\"), `_running_distance(day, cfg)` is exactly the `run_m` already in hand and `_foot_distance(day)` is exactly `foot` — the recomputation is byte-identical work. Measured on the perf fixture at this head: the handler still makes 87 `_ran` calls (and 83 `_round_floats` calls) for one `get_training_plan_progress` request; the fold's own accounting (one `_ran` per on-foot activity) implies roughly a third of that. Cheaper alternative: have `_workout_actuals` also accumulate running duration and pass its five/six-tuple into `grade_workout`/`classify_workout` instead of letting them re-derive it. This predates the diff, but the diff's new docstring sentence on this very line — \"Anything else this day needs is computed in the loop below, not in a pass of its own\" — is contradicted by the next statement in its only caller, so the invariant it re-asserts is still not true at the handler level.",
+      "introduced_by_diff": false
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 197,
+      "side": "RIGHT",
+      "category": "efficiency",
+      "summary": "The new hot loops do a global lookup for `_TEXT_HIGH_DP`, `_TEXT_DEFAULT_DP`, `_TEXT_HIGH_PRECISION_KEYS` and `round` on every float child, and an attribute lookup for `out_l.append` on every list item, in the function this change exists to make faster.",
+      "short_summary": "Hot loop re-loads globals and .append per element",
+      "failure_scenario": "Cost, not a crash: the dict branch (tools.py:196-198) evaluates `round`, `_TEXT_HIGH_DP`, `_TEXT_HIGH_PRECISION_KEYS` and `_TEXT_DEFAULT_DP` as LOAD_GLOBALs (module-dict hash lookups) for every float value it rounds; the list branch repeats `round` per item (line 210) and resolves `out_l.append` per item (lines 210-213). On the measured payload that is hundreds of float children per request, in the one function the CHANGELOG says accounts for 49.6% of its own runtime. Cheaper alternative: bind them once — `def _round_floats(obj, key=None, *, _hi=_TEXT_HIGH_DP, _lo=_TEXT_DEFAULT_DP, _keys=_TEXT_HIGH_PRECISION_KEYS, _round=round)` (or plain locals at the top of each branch), and `append = out_l.append` before the list loop. This is a nit on top of a change that already delivers its measured win, not a defect in it.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 431,
+      "side": "RIGHT",
+      "category": "efficiency",
+      "summary": "`_capture_progress_payload` re-runs the whole `get_training_plan_progress` handler over the 3-year fixture once per calling test, for a payload that is identical both times.",
+      "short_summary": "Progress payload rebuilt per test instead of once",
+      "failure_scenario": "Cost: the new block adds four full `get_training_plan_progress.handler({})` invocations to the ordinary `pytest` job — one each in `test_get_training_plan_progress_does_not_double_classify` (:279) and `test_get_training_plan_progress_rounds_without_a_call_per_node` (:287), which genuinely need their own counted run, plus one each in `test_round_floats_output_is_identical_to_the_pre_inline_implementation` (:449) and `test_the_round_floats_oracle_can_actually_fail` (:463), which both want the same unchanging payload object. During capture the handler also runs with `_round_floats` wrapped, so every node pays two Python frames instead of one. Cheaper alternative: make the captured payload a module-scoped fixture (built once alongside `perf_db`) and have both oracle tests consume it, removing one full handler run and one wrapped traversal from every suite run — the suite CLAUDE.md:126 tells you to run before claiming done.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 284,
+      "side": "RIGHT",
+      "category": "line-by-line",
+      "summary": "`assert counts[\"n\"] <= 90` sits three calls above the measured 87, so an unrelated perf-fixture change reddens it with a message about double classification.",
+      "short_summary": "_ran bound of 90 has 3 calls of headroom over 87",
+      "failure_scenario": "Measured at this head: the handler makes exactly 87 `_ran` calls against the current fixture. `scripts/perf_fixture.py` seeds one activity per date; adding a second activity to even two days, or adding the paced rows CLAUDE.md:167-177 explicitly discusses as a recurring temptation, pushes the count past 90 and fails a test named `test_get_training_plan_progress_does_not_double_classify` with a bare `assert 92 <= 90` — a fixture change reported as a classification regression. The sibling bound at :297 (`<= 100` against a measured 83) has ample room; only the `_ran` bound is tight. The bounds are the approved plan's own numbers (Proof 2/3), so this is a robustness note rather than a deviation.",
+      "introduced_by_diff": true,
+      "suggestion": "Assert against a per-on-foot-activity ratio, or raise the bound to a value that still fails at the pre-fold 123 (e.g. `<= 105`) and put the measured 87 in the message."
+    }
+  ],
+  "notExamined": [
+    "The six pytest-benchmark latency targets themselves and the committed `.benchmarks/Linux-CPython-3.12-64bit/0001_*.json` baseline — untouched by the diff, and I did not re-run a timed comparison or verify the projected +7%/+12% outcome (Proof 8, explicitly labelled 'not a test').",
+    "The factual accuracy of the narrative claims added to CLAUDE.md and CHANGELOG.md about CI history — run `33652312669`, the EPYC 7763 clock pair, the -0.34%/+13.86% readings, the bisect to `b28c74e`, and the CPython 3.12.13-vs-3.12.14 note. These name external CI artifacts I cannot read offline.",
+    "`docs/plans/2026-07-09-mcp-speed-and-ui-retirement-design.md`, which also documents the 15% gate and which the plan deliberately left untouched — I did not audit it for staleness against the new third axis.",
+    "The other three work items on issue #232 (`notes-update-handle-collision`, `notes-archive-failure-preserves-live`, `notes-undated-eviction-order`) and `src/local_fitness/notes.py` — outside this lane's diff.",
+    "`tests/test_plans.py` beyond the four retargeted `_normalize_activity_types` tests and the comment at :566 — I read the renamed tests and confirmed they exercise the same inputs through `_workout_actuals()[4]`, but did not audit the rest of the file.",
+    "Whether real (non-fixture) `get_training_plan_progress` payloads ever contain `dict`/`list` subclasses or tuples that would take the slow `isinstance` fallback — I verified the fallback is semantically identical, not how often it is hit in production.",
+    "The report-card path (`rc_db`, `build_report_card_fixture_db`) and the other four benchmarked handlers — `_round_floats` is shared by all 55+ tools via `_text`/`_err`, and I verified equivalence generically rather than per-tool payload.",
+    "Sections of CLAUDE.md outside those governing perf benchmarks, testing/workflow expectations, and run-vs-walk classification (roughly lines 286-1664 were skimmed by heading only)."
+  ]
+}

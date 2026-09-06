@@ -1,0 +1,44 @@
+{
+  "comment": "Real pull request review rounds, frozen by evals/freeze-round.mjs. Candidates are what real opus finders filed, verdicts what real opus verifiers ruled, the diff the real change; files/ holds every cited or changed file at each round's head.",
+  "source": "natejswenson/local-fitness#232",
+  "lane": "perf-plan-progress-regression",
+  "pr": 236,
+  "base": "dev",
+  "branch": "feature/issue-232-perf-plan-progress-regression",
+  "rounds": [
+    {
+      "round": 1,
+      "head": "776ccbd5cb96c9d46946418b037241eaa1623d51",
+      "prevHead": null,
+      "lines": 489,
+      "finders": 4,
+      "verifiers": 8,
+      "verdict": "open",
+      "counts": {
+        "open": 35,
+        "majors": 5,
+        "nits": 25,
+        "preExisting": 5,
+        "dropped": 3
+      },
+      "files": 7
+    },
+    {
+      "round": 2,
+      "head": "c577f1fed4c528141b954da67b2b12bd76a3cb35",
+      "prevHead": "776ccbd5cb96c9d46946418b037241eaa1623d51",
+      "lines": 548,
+      "finders": 4,
+      "verifiers": 8,
+      "verdict": "open",
+      "counts": {
+        "open": 47,
+        "majors": 2,
+        "nits": 36,
+        "preExisting": 9,
+        "dropped": 4
+      },
+      "files": 7
+    }
+  ]
+}

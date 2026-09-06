@@ -1,0 +1,11 @@
+{
+  "f-b54113f9": {
+    "status": "fixed",
+    "note": "Qualified CLAUDE.md's drift-vs-regression rule (3): the fleet-wide clock-deficit tell only applies among calendar-invariant siblings — three benchmarks pin today=_TODAY and always do fixed work, but get_training_plan_progress/get_training_plan_status read the real date.today() with no override, so a wide gap since the baseline's capture date is now documented as a second candidate explanation for either of those two, requiring the same same-day/same-code A/B before calling a divergence a regression."
+  },
+  "f-2ac501ea": {
+    "status": "fixed",
+    "note": "PR #236 retargeted to base dev by the orchestrator; no diff change"
+  },
+  "_summary": "Pushed commit 366580e to feature/issue-232-perf-plan-progress-regression, addressing f-b54113f9 via a CLAUDE.md wording fix; full suite run is 84 failed/2606 passed/6 skipped, an identical pre-existing local WeasyPrint gap already documented in round 1's evidence and unrelated to this change."
+}

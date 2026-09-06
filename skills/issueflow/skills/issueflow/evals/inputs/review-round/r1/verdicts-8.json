@@ -1,0 +1,31 @@
+{
+  "verdicts": [
+    {
+      "id": "c-4-8",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "def _count_calls(monkeypatch, module, name):",
+      "line": 246,
+      "note": "Body-for-body identical to `_count_connect_opens` (:83) with `getattr(module, name)`/`monkeypatch.setattr(module, name, counting)` (:249, :254) standing in for `db.connect`/`monkeypatch.setattr(db, \"connect\", counting_connect)` (:85, :92), so the old helper is exactly `_count_calls(monkeypatch, db, \"connect\")` — the candidate undercounts the call sites though: there are seven (:164, :170, :176, :182, :188, :201, :231), not four, which makes the collapse a slightly wider but still mechanical edit."
+    },
+    {
+      "id": "c-4-9",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "# are deliberately frozen copies, not imports: their whole job is to still describe the OLD behaviour after the new one lands.",
+      "line": 300,
+      "note": "The only cost named is \"when the reference is refreshed ... the two mutants have to be re-derived by hand\", and the code says the reference is never refreshed — :299-301 pins `_round_floats_reference` as `src/` at 7326f66, vendored precisely so it keeps describing the old behaviour; the high-precision rule the candidate imagines changing is read live off `tools._TEXT_HIGH_PRECISION_KEYS` (:336) and needs no edit at all. With the shared skeleton frozen, an independently written mutant is the point of a mutation oracle rather than a duplication defect: routing both through one `_mutant(kind)` closure would make a mistake in that closure change what both mutants prove, which is the failure the test at :461 exists to rule out. No observable effect, and the maintenance scenario is contradicted by the file."
+    },
+    {
+      "id": "c-4-10",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "        captured.setdefault(\"payload\", obj)",
+      "line": 440,
+      "note": "The mechanism holds: `_round_floats` recurses through the module global (`out[k] = _round_floats(v, k)`, tools.py:202, and :214/:217/:219), which is the attribute `monkeypatch.setattr(tools, \"_round_floats\", capturing)` (:445) replaces, so `capturing` really is entered once per dict/list node — 83 times for this payload per the same docstring the diff cites — and 82 of those `setdefault` calls are dead. The redundant lookups are unmeasurable, so the substance is the other two halves: `_capture_progress_payload` is called from both :454 and :498, paying a full `get_training_plan_progress` run twice for one immutable payload that a module-scoped fixture could produce once, and the capture is coupled to the recursion strategy it measures — note that `assert counts[\"n\"] <= 100` (:297) is an upper bound, so a `_round_floats` that stopped recursing through the module attribute would drop that reading to 1 and still pass. Cleanup only; nothing here makes a current assertion wrong."
+    }
+  ]
+}

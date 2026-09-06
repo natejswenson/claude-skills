@@ -1,0 +1,60 @@
+{
+  "verdicts": [
+    {
+      "id": "f-6c527dc9",
+      "verdict": "still-open",
+      "line": 161,
+      "quote": "  AND `db.connect()`-open-count for the brief/plan hot paths",
+      "note": "The r1->r2 delta (git diff 776ccbd5..c577f1fe) touches tests/test_perf_benchmarks.py and nothing else; CLAUDE.md:160-161 still describes the suite as two axes (latency AND db.connect()-open-count) with no mention of the work-count axis, and CLAUDE.md:176 still reads \"Skipped on every ordinary `pytest` run\" while pyproject.toml:59's `--benchmark-skip` leaves all 16 non-benchmark tests in this file running in the coverage-gate job. The fix instead documented the inverse skip rule in the test module's own docstring (tests/test_perf_benchmarks.py:21-28), which is the file CLAUDE.md is supposed to be read before."
+    },
+    {
+      "id": "f-7ede0eb0",
+      "verdict": "fixed",
+      "line": 514,
+      "quote": "    assert isinstance(tools._round_floats((1.23456789, 2.3456789)), list)",
+      "note": "Lines 514-517 now assert the tuple-to-list conversion by type directly, on both the bare-tuple case and the list-of-single-element-tuples case, so the named trigger (a `if type(obj) is tuple: return obj` fast path) now reddens the oracle instead of passing it. The residual container/scalar-subclass blindness the finding also mentioned is inert: both the shipped ladder (tools.py:216-219) and the vendored reference collapse a dict/list subclass to a plain dict/list, so there is no type divergence for the oracle to miss."
+    },
+    {
+      "id": "f-6dbf8b0e",
+      "verdict": "still-open",
+      "line": 478,
+      "quote": "def _capture_progress_payload(monkeypatch):",
+      "note": "Unchanged in the r1->r2 delta. It is still a plain function, not a fixture, and is still called once from test_round_floats_output_is_identical_to_the_pre_inline_implementation (:501) and once from test_the_round_floats_oracle_can_actually_fail (:555), each running the full handler at :491 with `_round_floats` wrapped, for a payload identical both times. Together with the two counted tests at :304 and :315 the ordinary pytest job still pays four full `get_training_plan_progress.handler({})` runs over the 3-year fixture."
+    },
+    {
+      "id": "f-9124fbce",
+      "verdict": "still-open",
+      "line": 312,
+      "quote": "    assert counts[\"n\"] == 87",
+      "note": "The bound moved from `<= 90` to `== 87`, which removes the three calls of headroom rather than widening them — the mechanism the finding named (an unrelated `scripts/perf_fixture.py` change reddening a test called `test_get_training_plan_progress_does_not_double_classify` with a bare numeric assert) is now strictly easier to trigger, firing at 88 instead of 91, and the assertion still carries no message. The exact pin was made to satisfy f-b9986c2f's floor; a floor plus a ceiling with a message (e.g. `assert 80 <= counts[\"n\"] <= 90, ...`) would have satisfied both. Still a nit, and the added docstring at :306-308 does explain the choice."
+    },
+    {
+      "id": "f-7704a32a",
+      "verdict": "still-open",
+      "line": 168,
+      "quote": "    there and ``isinstance(True, float)`` is False — but the ``int`` fast path",
+      "note": "Unchanged in the r1->r2 delta. tools.py:167-170 still claims the `int` fast path makes the top-level bool guard load-bearing. It does not: both container fast paths test `t is bool` before `t is int` (tools.py:199 and :211), and `type(True) is bool`, so a bool never reaches an `int` arm; with tools.py:187 deleted a bool still falls through the ladder (:216-220) and returns unchanged. The diff's own test comment at tests/test_perf_benchmarks.py:527 onward still asserts the contrary."
+    },
+    {
+      "id": "f-b9986c2f",
+      "verdict": "fixed",
+      "line": 312,
+      "quote": "    assert counts[\"n\"] == 87",
+      "note": "The upper bound became an exact equality, which is a floor as well as a ceiling: the early-return path at tools.py:3764 (`if active is None: return _text({\"active\": False})`) yields 0 `_ran` calls, and `0 == 87` fails. The docstring at :306-308 names that scenario explicitly. Verified green at head (4 passed)."
+    },
+    {
+      "id": "f-5f91ea2a",
+      "verdict": "fixed",
+      "line": 330,
+      "quote": "    assert counts[\"n\"] == 83",
+      "note": "Same fix: the `<= 100` upper bound became `== 83`, so the no-active-plan payload (one `_round_floats` call on a two-key dict) and any payload shrink now fail rather than pass. The new `_freeze_progress_clock` helper (:287) pins the window frontier to `_TODAY + 58d` so the exact count is deterministic rather than growing with wall-clock date. Verified green at head."
+    },
+    {
+      "id": "f-4006dff0",
+      "verdict": "still-open",
+      "line": 205,
+      "quote": "        dp = _TEXT_HIGH_DP if key in _TEXT_HIGH_PRECISION_KEYS else _TEXT_DEFAULT_DP",
+      "note": "Unchanged in the r1->r2 delta. The precision rule is still written four times (tools.py:190, :197-198, :205) and the scalar type classification three times (:187-191, :196-200, :209-212), with no shared `_dp(k)` helper introduced and the fast-path/fallback agreement still guaranteed only by the oracle test. Cleanup, not a defect."
+    }
+  ]
+}

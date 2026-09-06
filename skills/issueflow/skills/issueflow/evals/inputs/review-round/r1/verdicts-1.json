@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-1-1",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "line": 515,
+      "quote": "    assert \"--benchmark-skip\" in (root / \"pyproject.toml\").read_text()",
+      "note": "Reproduced at the head commit: pyproject.toml:55 is the comment \"# --benchmark-skip: the perf-benchmark suite (tests/test_perf_benchmarks.py)\" and addopts is line 59, so `sed '59s/ --benchmark-skip//' pyproject.toml | grep -c -- '--benchmark-skip'` returns 1 — deleting the flag from addopts leaves this assertion green while every ordinary pytest run starts executing the six timed benchmarks. The sibling assertion on :513 is sound (--benchmark-compare-fail=min:15% occurs once, in ci.yml:72, with no comment carrying it)."
+    },
+    {
+      "id": "c-1-2",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 373,
+      "quote": "    assert len(by_date) > 500",
+      "note": "Measurements reproduced exactly against the real fixture (548 days, max 1 activity/day, one distinct shape ('running', paceless, dist>0), every day returning ['running']), and all six _WORKOUT_ACTUALS_EDGE_CASES are single-activity or empty — so no mixed day is ever differentially compared and the >500 floor advertises strength the corpus does not have. Held at nit, not major: the oracle is not vacuous for the purpose its own docstring states (a mutant that stops classifying diverges on all 548 days), and the mixed-day fold — the case the candidate names — is asserted class-for-class by tests/test_plans.py:553-570 (`assert types == [\"other\", \"running\", \"walking\"]`). The suggestion (one mixed day in the edge-case list plus a len() floor) is right and cheap."
+    },
+    {
+      "id": "c-1-3",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 169,
+      "quote": "    below makes it load-bearing, so it stays and no test may claim removing it",
+      "note": "The stated reason is false at the head commit: there is no int fast path that rounds. Both container branches only COPY an int or bool child (tools.py:200 `elif t is str or t is int or t is bool or v is None: out[k] = v`, and :212 for the list branch) and never recurse for one, and the fallback ladder (:217-225) has no int branch, so a bool falls through to `return obj`. Independently verified: deleting `if isinstance(obj, bool): return obj` and differentially fuzzing the result against the unmodified implementation over 40,000 nested payloads (dict/list/dict-subclass/list-subclass containers; float, float/int subclasses, bool, int, str, None, NaN, +/-inf, -0.0, tuple, bytes, Decimal, date, frozenset leaves; high-precision and non-string keys), compared structurally with type preservation, produced 0 divergences. Nit, not major: no output moves — the cost is a false invariant recorded in the one place a reader checks, and it directly contradicts tests/test_perf_benchmarks.py:487-489, which correctly says removing the bool guard \"diverges on nothing\"."
+    },
+    {
+      "id": "c-1-4",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 16,
+      "quote": "  * work COUNT (added 2026-09-03, #232) — the same counter pointed at the",
+      "note": "Ran it at the head commit: `uv run pytest tests/test_perf_benchmarks.py --benchmark-only --no-cov` reports `6 passed, 16 skipped` with `SKIPPED [16] Skipping non-benchmark (--benchmark-only active).`, and .github/workflows/ci.yml:70-72 is exactly that invocation — so all six new tests run only in the \"Run tests with coverage gate\" step (ci.yml:59, `uv run pytest --cov-report=xml`). Nit and a documentation/placement defect only, as the candidate itself scopes it: the axis does run in CI, and the pre-existing connection-open-COUNT axis (axis 2, unchanged by this diff) already had the identical property, so the header's ambiguity is not new in kind — only the third bullet is."
+    },
+    {
+      "id": "c-1-5",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "line": 161,
+      "quote": "  AND `db.connect()`-open-count for the brief/plan hot paths",
+      "note": "Confirmed at the head commit: the diff edits this same bullet (CLAUDE.md:199-221, drift-tell part 3) and moves the module docstring from \"Two axes are asserted\" to \"Three axes are asserted\" (tests/test_perf_benchmarks.py:9), yet CLAUDE.md:160-161 still enumerates two axes, against the repo's own rule at CLAUDE.md:234-239 (\"Keep CLAUDE.md current — in the same commit/PR ... a diff that changes behavior but leaves CLAUDE.md stale is incomplete\"). The candidate's second half is over-claimed and I do not carry it: CLAUDE.md:176-177's \"Skipped on every ordinary `pytest` run\" was already imprecise before this diff — 10 non-benchmark tests in that file already ran on an ordinary pytest — so that half is pre-existing, not introduced. Nit: no behavioural effect, one sentence to fix."
+    }
+  ]
+}
