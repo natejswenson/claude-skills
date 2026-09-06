@@ -53,6 +53,36 @@ export const marker = (run) => markerFor(run.repo.owner, run.repo.name, run.issu
  */
 export const FINISHED_MARKER = '<!-- issueflow:finished -->';
 
+const escapeRe = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+/**
+ * The part of a sticky comment the run itself wrote.
+ *
+ * `renderComment` splices up to 20000 characters of approved-artifact prose
+ * into the same body, verbatim, inside `<details>` blocks — and an artifact can
+ * say anything, including the markers this module matches on. The investigate
+ * plan for #251 quotes `<!-- issueflow:finished -->` while describing this very
+ * design; approve it and a live run's own comment carries the literal finished
+ * marker. Everything from the first `<details>` on is somebody else's prose and
+ * must never be read as this module's own bookkeeping.
+ */
+const runRegion = (body) => String(body ?? '').split(/\n<details>/)[0];
+
+/**
+ * Whether a comment says its run is over.
+ *
+ * Anchored to a whole line, and only in the run's own region: a substring
+ * search anywhere in the body makes an artifact that merely mentions the marker
+ * enough to hide a live run's claim, which is the failure the claim check
+ * exists to prevent, turned invisible. The pattern is built from
+ * `FINISHED_MARKER` and the exact shape `renderComment` emits, so a producer
+ * that stops emitting it is a consumer that stops matching it, not two
+ * spellings that quietly drift apart.
+ */
+const FINISHED_LINE = new RegExp(`^${escapeRe(FINISHED_MARKER)} \\*\\*Finished\\*\\*`, 'm');
+
+export const finishedIn = (body) => FINISHED_LINE.test(runRegion(body));
+
 /**
  * The comment on an issue that already claims this run, or null.
  *
@@ -80,7 +110,7 @@ export function claimedIn(comments, owner, name, number) {
   for (const c of Array.isArray(comments) ? comments : []) {
     const body = String(c?.body ?? '');
     if (!body.includes(mine)) continue;
-    if (body.includes(FINISHED_MARKER)) continue;
+    if (finishedIn(body)) continue;
     return { url: c.url ?? null, commentId: c.url ? commentIdFromUrl(c.url) : null };
   }
   return null;
@@ -241,11 +271,19 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
  *
  * This is what makes a run resumable from a machine that never saw it: the
  * marker is the identity, not the local state file.
+ *
+ * A comment that carries the finished marker is skipped, for the same reason
+ * `claimedIn` skips it and with the same predicate: it is a *completed* run's
+ * record — its pull request links, merge times and approved artifacts — and
+ * adopting it means PATCHing a fresh all-pending board over the only account of
+ * a change that already landed. A reopened issue gets a new comment instead,
+ * which costs one comment and preserves an irreplaceable one.
  */
 function adoptComment(repoPath, run) {
   const mine = marker(run);
   for (const c of issueComments(repoPath, run.issue.number)) {
-    if (String(c.body ?? '').includes(mine) && c.commentId) return { commentId: c.commentId, url: c.url };
+    const body = String(c.body ?? '');
+    if (body.includes(mine) && !finishedIn(body) && c.commentId) return { commentId: c.commentId, url: c.url };
   }
   return null;
 }

@@ -14,12 +14,12 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkpoint, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
+import { FINISHED_MARKER, checkpoint, claimedIn, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
 import { finish, FinishError } from '../lib/finish.mjs';
-import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
+import { accept, artifactPath, createRun, findStep, loadRun, saveRun, split, worktreePath } from '../lib/run.mjs';
 import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
-import { approvePlan, redTeamPass } from './helpers.mjs';
+import { approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'issueflow.js');
@@ -173,12 +173,58 @@ test('a finished run\'s comment carries a Landed table and a finished line; an u
     'an unfinished run must not grow either section — this is the other half of the frozen checkpoint-comment.md pin',
   );
 
+  // The unfinished comment is a LIVE claim, and must read as one. This is the
+  // green half of the pair below: without it the consumer assertion could pass
+  // by `claimedIn` having stopped matching anything at all.
+  const asComment = (body) => [{ body, url: 'https://example.invalid/c#issuecomment-5' }];
+  const who = [run.repo.owner, run.repo.name, run.issue.number];
+  assert.ok(claimedIn(asComment(before), ...who), 'a live run\'s own comment must read as a claim');
+
   run.lanes[0].landed = { pr: 42, url: 'https://example.invalid/pull/42', mergedAt: '2026-08-12T00:00:00Z', at: '2026-08-12T00:00:01Z' };
   run.finished = { at: '2026-08-12T00:00:02Z', issueClosed: true };
   const after = renderComment(dir, run);
   assert.match(after, /#42/);
-  assert.match(after, /\*\*Finished\*\*/);
   assert.match(after, /issue closed/);
+  // Anchored to the marker, not just to the prose beside it. `claimedIn` and
+  // `adoptComment` both decide a run is over by finding `FINISHED_MARKER` on
+  // its own line; asserting only on `**Finished**` lets the marker be dropped
+  // as noise with every test still green, and the finished exemption then
+  // silently stops working in production.
+  assert.match(
+    after,
+    new RegExp(`^${FINISHED_MARKER.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')} \\*\\*Finished\\*\\*`, 'm'),
+    'the marker its own consumers key on must actually be emitted, on its own line',
+  );
+  // And the consumer, driven on the real rendered body rather than one the
+  // test builds by hand: this is the only assertion that fails if the producer
+  // and the consumer ever stop agreeing on the spelling.
+  assert.equal(claimedIn(asComment(after), ...who), null, 'a finished run\'s comment must not read as a live claim');
+  cleanup();
+});
+
+test('an artifact that merely quotes the finished marker does not hide a live run\'s claim', () => {
+  // `renderComment` splices approved artifacts into the same comment body,
+  // verbatim. Working issueflow on its own repository is the concrete case:
+  // the plan for #251 quotes `<!-- issueflow:finished -->` while describing
+  // this design. A substring search anywhere in the body would read that live
+  // run's own comment as a dead one, `board` would print `—` for a claimed
+  // issue, and a second session's `start` would republish over it.
+  const { dir, run, cleanup } = fixture();
+  const step = findStep(run, 'investigate');
+  mkdirSync(join(dir, 'shared'), { recursive: true });
+  writeFileSync(
+    artifactPath(dir, step),
+    STAGES.find((s) => s.id === 'investigate').requires.map((r) => `## ${r}\n\nthe run publishes ${FINISHED_MARKER} when it ends.\n`).join('\n'),
+  );
+  redTeamPass(dir, run, step);
+  accept(dir, run, step);
+
+  const body = renderComment(dir, run);
+  assert.ok(body.includes(FINISHED_MARKER), 'the fixture must actually carry the marker inside the artifact');
+  assert.ok(
+    claimedIn([{ body, url: 'https://example.invalid/c#issuecomment-6' }], run.repo.owner, run.repo.name, run.issue.number),
+    'a live run whose artifact quotes the marker still holds the issue',
+  );
   cleanup();
 });
 
@@ -436,8 +482,64 @@ test('originConfigured tells "no origin" apart from a git failure — only the f
   // stale-base defect the fetch exists to prevent, made invisible instead of
   // fatal.
   const notARepo = mkdtempSync(join(tmpdir(), 'issueflow-not-a-repo-'));
-  assert.throws(() => originConfigured(notARepo), WorktreeError, 'a git failure must surface, not read as "no origin"');
+  let err = null;
+  try {
+    originConfigured(notARepo);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof WorktreeError, 'a git failure must surface, not read as "no origin"');
+  // And it must surface as the FATAL kind. `briefOne` re-throws a `FetchError`
+  // and swallows every other `WorktreeError` into a warning that briefs the
+  // stage against the user's LIVE checkout — so a transient `git remote`
+  // failure (two parallel sessions contending for `.git/config.lock`, EMFILE)
+  // classified as survivable silently drops a lane out of its own worktree,
+  // which is the hazard the worktree exists to remove.
+  assert.ok(err instanceof FetchError, `not knowing whether there is an origin is not knowing whether the base is stale; got ${err?.constructor?.name}`);
   rmSync(notARepo, { recursive: true, force: true });
+});
+
+test('`brief` provisions a stacked lane over a repo that HAS an origin — the production call, not the library one', () => {
+  // The library skips the fetch for a stacked lane only when it is handed the
+  // run's sibling lanes. `briefOne` is the only production caller, so a test
+  // that passes `lanes` in by hand proves nothing about whether a split run
+  // works: every one of them hard-stopped at exit 3 on its second lane with
+  // that test green. This drives the CLI, which is what a split run runs.
+  const o = tempRepoWithOrigin();
+  // Nested one level below the temp root on purpose: this is the only case here
+  // that APPROVES an implement stage, and `readTimings` reads every sibling of a
+  // run directory for past stage durations. A run directory sitting directly in
+  // the temp root is a sibling of every other test's, including the frozen
+  // baseline replay, whose golden says "no past timings on this repo".
+  const dir = join(mkdtempSync(join(tmpdir(), 'issueflow-stacked-')), 'run');
+  mkdirSync(dir, { recursive: true });
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  split(dir, run, [{ title: 'the first half', slug: 'a' }, { title: 'the second half', slug: 'b' }]);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  // Lane a first, because lane b's base IS lane a's branch and nothing creates
+  // it until lane a is provisioned. Its base is the repo's own, so it fetches.
+  const a = spawnCli(['brief', '--stage', 'implement', '--lane', 'a', '--run-dir', dir]);
+  assert.equal(a.code, 0, `lane a must brief, got ${a.code}: ${a.err}`);
+  // Lane b's gate is lane a's approved implement — the same order a real split
+  // run walks, and the reason lane b is where every split run stopped.
+  const briefed = loadRun(dir);
+  approveImplement(dir, briefed, 'a');
+
+  const b = spawnCli(['brief', '--stage', 'implement', '--lane', 'b', '--run-dir', dir]);
+  assert.equal(b.code, 0, `lane b must brief, got ${b.code}: ${b.err}`);
+  assert.doesNotMatch(b.err, /could not fetch/, 'a stacked lane must not fetch a branch origin has never had');
+  assert.equal(
+    git(['rev-parse', 'HEAD'], worktreePath(dir, run.lanes[1])),
+    git(['rev-parse', run.lanes[0].branch], o.path),
+    'the stacked lane is still cut from the sibling branch below it',
+  );
+
+  rmSync(dirname(dir), { recursive: true, force: true });
+  o.cleanup();
 });
 
 test('a WorktreeError that is not a FetchError still warns and `brief` continues — the survivable half of the fatal split', () => {

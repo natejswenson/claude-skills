@@ -16,7 +16,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -380,6 +380,138 @@ test('--take-over clears the previous run\'s artifacts, worktree and branch — 
     branchGone = true;
   }
   assert.equal(branchGone, true, 'the displaced branch must be deleted, not silently reused by the fresh run');
+  f.cleanup();
+});
+
+/** The single `superseded/<timestamp>/` a take-over just wrote, or null. */
+function archiveOf(runDir) {
+  const root = join(runDir, 'superseded');
+  if (!existsSync(root)) return null;
+  const stamps = readdirSync(root);
+  assert.equal(stamps.length, 1, `expected exactly one archive under ${root}, got ${stamps.join(', ')}`);
+  return join(root, stamps[0]);
+}
+
+test('a displaced run\'s artifacts move to superseded/, they are not deleted', () => {
+  // The reset takes them out of the fresh run's way — `deliveredSince` and
+  // `hasContent` read them straight off disk — but a run's plan, evidence and
+  // review rounds are the only local account of how a change was designed and
+  // proved, and the finished-run path reaches this with no flag at all. Out of
+  // the way is not the same as gone.
+  const f = online();
+  assert.equal(f.start().code, 0);
+  mkdirSync(join(f.runDir, 'shared'), { recursive: true });
+  writeFileSync(join(f.runDir, 'shared', 'investigate.md'), '## Root cause\n\nsession A\'s plan.\n');
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const second = f.start();
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  const archive = archiveOf(f.runDir);
+  assert.ok(archive, 'the displaced run left no archive at all');
+  assert.equal(
+    readFileSync(join(archive, 'shared', 'investigate.md'), 'utf8'),
+    '## Root cause\n\nsession A\'s plan.\n',
+    'the displaced plan must survive, unchanged',
+  );
+  assert.ok(existsSync(join(archive, 'run.json')), 'the displaced state file goes with it');
+  // And the fresh run must be able to say where, or the archive is a secret.
+  assert.match(second.out, /superseded/, 'start must print where the previous run went');
+  f.cleanup();
+});
+
+test('--take-over on a directory that holds no run deletes nothing in it', () => {
+  // `dir` on this path is whatever `--run-dir` names. A mistyped or
+  // tab-completed path used to reach an unguarded recursive delete of the whole
+  // directory — the pre-0.8.0 code could only ever overwrite a `run.json`.
+  const f = online();
+  const notARun = mkdtempSync(join(tmpdir(), 'issueflow-parallel-notes-'));
+  mkdirSync(join(notARun, 'chapters'), { recursive: true });
+  writeFileSync(join(notARun, 'chapters', 'one.md'), 'a year of notes\n');
+
+  const r = cli(['start', '--repo', f.repoPath, '--issue', String(NUMBER), '--run-dir', notARun, '--take-over'],
+    { PATH: `${dirname(f.log)}:${process.env.PATH}` });
+  assert.equal(r.code, 0, `expected a clean start, got ${r.code}: ${r.err}`);
+  assert.equal(readFileSync(join(notARun, 'chapters', 'one.md'), 'utf8'), 'a year of notes\n', 'the directory was not a run — nothing in it may be touched');
+  assert.equal(existsSync(join(notARun, 'superseded')), false, 'and there was nothing to archive either');
+  rmSync(notARun, { recursive: true, force: true });
+  f.cleanup();
+});
+
+test('a worktree git refused to remove is still unregistered, so the fresh run can create it again', () => {
+  // `removeWorktree` swallows a failure — a corrupt `.git` file makes
+  // `git worktree remove --force` refuse outright, leaving the worktree
+  // present AND registered. Pruning at that moment prunes nothing; only a
+  // prune AFTER the directory has moved out from under the registered path
+  // clears it, and until it is cleared the fresh run's first
+  // `git worktree add <same path>` fails with "already registered".
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const lane = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8')).lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  writeFileSync(join(wt, '.git'), 'not a gitfile\n');
+  assert.match(git(['worktree', 'list'], f.repoPath), new RegExp(wt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'the fixture must actually leave a registered worktree');
+
+  assert.equal(f.start(['--take-over']).code, 0);
+  assert.doesNotMatch(
+    git(['worktree', 'list'], f.repoPath),
+    new RegExp(wt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    'a worktree whose directory has moved must not stay registered',
+  );
+  // The consequence, driven rather than argued: the fresh run provisions the
+  // same path, which is what "already registered" would have refused.
+  assert.equal(ensureWorktree(f.repoPath, f.runDir, lane).created, true);
+  f.cleanup();
+});
+
+test('a finished local run does not take over a claim somebody posted after it ended', () => {
+  // Machine 1 finishes #42. The issue is reopened, machine 2 starts a fresh run
+  // on it, and machine 2's checkpoint rewrites the sticky comment — which now
+  // carries machine 2's live board and no finished marker. Machine 1 running a
+  // plain `start` must refuse, or the finished-run exemption is a no-flag way
+  // to republish an empty board over a live run.
+  const f = online({ comments: [claimComment()] });
+  assert.equal(f.start(['--take-over']).code, 0, 'the fixture needs a local run to mark finished');
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+  const before = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+  const postedSoFar = commentCalls(f.log).length;
+
+  const r = f.start();
+  assert.equal(r.code, 4, `a live claim outranks a finished local run, got ${r.code}: ${r.err || r.out}`);
+  assert.match(r.err, /already claimed by an issueflow run on another machine/);
+  assert.match(r.err, /issuecomment-999/, 'the refusal must name the comment to read');
+  assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'a refused start must rewrite no state');
+  assert.equal(existsSync(join(f.runDir, 'superseded')), false, 'and must displace nothing');
+  assert.equal(commentCalls(f.log).length, postedSoFar, 'and must not touch the claim it refused');
+  f.cleanup();
+});
+
+test('a reopened issue gets its own comment — the finished run\'s record on the issue is never rewritten', () => {
+  // `claimedIn` already knows a FINISHED_MARKER comment is a dead run.
+  // `adoptComment` matched by marker alone, so the fresh run adopted the
+  // finished run's sticky comment and PATCHed an all-pending board over it,
+  // destroying that run's pull request links, merge times and artifacts — with
+  // no flag and no warning.
+  const finished = {
+    body: `${markerFor(OWNER, NAME, NUMBER)}\n### issueflow\n\n${FINISHED_MARKER} **Finished** 2026-01-01T00:00:00.000Z — every lane landed, issue closed.\n`,
+    url: `https://example.invalid/${OWNER}/${NAME}/issues/${NUMBER}#issuecomment-777`,
+  };
+  const f = online({ comments: [finished] });
+  assert.equal(f.start().code, 0, 'a dead marker must not read as a live claim');
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: true };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const second = f.start();
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  assert.deepEqual(
+    commentCalls(f.log).filter((l) => l.includes('-X PATCH')), [],
+    'the finished run\'s comment must never be adopted and rewritten',
+  );
+  assert.equal(commentCalls(f.log).length, 2, 'each run posts its own comment');
   f.cleanup();
 });
 

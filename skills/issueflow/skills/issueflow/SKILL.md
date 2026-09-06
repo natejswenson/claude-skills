@@ -207,7 +207,7 @@ from `ship`, a converged loop from `ready`, a merge from `finish`.
 - **Never auto-ship over an open blocking finding.** An exhausted plan surfaces its findings and the run stops there.
 - **A round never reviews code GitHub has not received.** `review-brief` refuses when the local head, the remote head and the pull request's head disagree.
 - **Auto mode never touches `--force`.** Drift stops an unattended run; the flag is for a human who has re-read what moved.
-- **Never `--take-over` a claim you have not read.** It overwrites another session's run and republishes an empty board over that run's comment on the issue. Auto mode never passes `--take-over`.
+- **Never `--take-over` a claim you have not read.** It republishes an empty board over that run's comment on the issue, removes the displaced run's worktrees, force-deletes its local branches with `git branch -D` — so any commit that lane never pushed goes with them — and moves every artifact that run wrote into `superseded/<timestamp>/` inside the run directory. Auto mode never passes `--take-over`.
 
 ## Parallel sessions
 
@@ -226,7 +226,10 @@ it safe, and all three are the CLI's job, not yours:
   human who has read that comment. A **finished** run is the one exception:
   `finish` already removed its worktrees and deleted its branches, so a
   reopened (or twice-worked) issue starts fresh with no flag needed, and its
-  own dead marker comment is never read as a stranger's claim.
+  own dead marker comment is never read as a stranger's claim — unless a live
+  claim is on the issue now, which outranks it and refuses like any other.
+  Either way the displaced run's artifacts move to `superseded/<timestamp>/`
+  rather than being deleted, and `start` prints where they went.
 - **A lane is cut from the base as it is now.** `brief` fetches the base before
   it creates a branch, so a lane started after another session's pull request
   merged contains that merge. A fetch that fails is exit 3 — infrastructure,

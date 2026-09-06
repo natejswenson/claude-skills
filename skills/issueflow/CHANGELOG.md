@@ -28,6 +28,23 @@ that identity was already claimed.
   the claim. Its own flag rather than a second meaning for `--force`; auto mode
   never passes it.
 - `board --run-root <path>`, so the run scan can be pointed somewhere else.
+- A finished run publishes `<!-- issueflow:finished -->` on its own line in its
+  sticky comment. It is what tells a later `start` that the comment is a
+  completed run's record rather than a live claim — so a reopened or
+  twice-worked issue is not refused by its own old comment forever, and that
+  record is never adopted and rewritten by the next run.
+- `superseded/<timestamp>/` inside the run directory. A displaced run's plan,
+  implementation artifact, evidence, review rounds and progress logs move there
+  rather than being deleted, and `start` prints the path.
+
+### Changed
+
+- `--take-over` now costs more than a rewritten comment, and says so in
+  `SKILL.md` and `--help`: it also removes the displaced run's worktrees and
+  force-deletes its local branches with `git branch -D`, so a lane's unpushed
+  commits go with them. That cleanup is what stops a taken-over run from
+  reporting the displaced session's artifacts as its own delivered work, or
+  silently continuing in its checkout, on top of its commits.
 
 ### Fixed
 
@@ -46,7 +63,29 @@ that identity was already claimed.
   retry. A lane started after another session's pull request merged now contains
   that merge. A fetch that fails twice is exit 3 — infrastructure — while every
   other provisioning failure keeps its tolerated warning. Offline runs and
-  checkouts with no `origin` skip it.
+  checkouts with no `origin` skip it. So does a **stacked** lane: its base is
+  the lane below it, a branch that lives only locally until that lane ships, so
+  fetching it fails every time rather than only when stale.
+- `start` on a local run marked finished starts fresh with no flag — `finish`
+  already removed its worktrees and deleted its branches, so nobody holds it —
+  **unless** a live claim is on the issue now, which outranks it and refuses
+  like any other claim. A finished run's own dead comment is likewise never
+  read as a stranger's claim.
+- A finished run's comment is never adopted. A reopened issue's fresh run posts
+  its own, so the completed run's pull request links, merge times and artifacts
+  survive on the issue.
+- The finished/claimed decision is anchored to the marker on its own line and
+  read only outside the artifacts the comment splices in — an approved artifact
+  that merely quotes the marker no longer hides a live run's claim.
+- `--take-over` on a `--run-dir` that holds no run does nothing to that
+  directory. It used to reach an unguarded recursive delete of whatever path was
+  named.
+- A worktree `git worktree remove` refuses is no longer left registered against
+  a path that is gone, which made the next run's `git worktree add` fail with
+  "already registered" and silently drop that lane's checkout.
+- A `git remote` that fails (lock contention, EMFILE) is fatal like a failed
+  fetch, instead of being tolerated as a warning that briefs the stage against
+  the user's live checkout.
 
 ## [0.7.1] - 2026-09-05
 

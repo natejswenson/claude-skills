@@ -89,13 +89,22 @@ const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0
  * unreadable `.git/config`, EMFILE) is not "no origin", and must not be read as one: silently
  * skipping the fetch on a transient error is the exact stale-base defect this change exists to
  * prevent, made invisible instead of fatal.
+ *
+ * It fails as a `FetchError`, not a plain `WorktreeError`, because of what the
+ * caller does with each: `brief` tolerates a `WorktreeError` by briefing the
+ * stage against the user's live checkout, and a transient `git remote` failure
+ * — two parallel sessions contending for `.git/config.lock`, which is the
+ * scenario this whole change is for — must not be the thing that silently
+ * downgrades a lane out of its own worktree. Not knowing whether there is an
+ * origin is not knowing whether the base is stale, which is exactly what
+ * `FetchError` means everywhere else in this file.
  */
 export function originConfigured(repoPath) {
   try {
     return execFileSync('git', ['remote'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).includes('origin');
   } catch (err) {
-    throw new WorktreeError(`could not read the remotes of ${repoPath}: ${String(err.message ?? err)}`);
+    throw new FetchError(`could not read the remotes of ${repoPath}: ${String(err.message ?? err)}`);
   }
 }
 
