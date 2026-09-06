@@ -14,7 +14,7 @@ import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
-import { checkpoint } from './lib/checkpoint.mjs';
+import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
@@ -27,13 +27,14 @@ import { writeFinderBriefs, writeFixBrief, writeVerifierBriefs } from './lib/rev
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  HandBack, RunError, accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findLane, findStep,
-  formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps,
-  recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan, worktreePath,
+  HandBack, RunError, accept, artifactPath, blockers, board, claimRunDir, createRun, dependencies, durationOf, findLane,
+  findStep, formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence,
+  readySteps, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
+  worktreePath,
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { WorktreeError, ensureWorktree } from './lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree } from './lib/worktree.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 
@@ -44,7 +45,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
 
 function argv(args) {
   const out = { _: [] };
@@ -227,6 +228,37 @@ function reportDrift(rows) {
   print(['Reality check', 'State', 'Detail'], rows.map((r) => [r.check, r.state, r.detail]));
 }
 
+/**
+ * Who already has each issue, keyed by issue number, for the `Run` column.
+ *
+ * Precedence is deliberate: a run directory on this machine outranks a marker
+ * comment, because it is the one you can actually resume. `unreadable` is its
+ * own cell and never degrades to `—` — a broken run reading as a free issue is
+ * the single misreading this column exists to prevent.
+ *
+ * `root` is null when nothing is to be scanned, and then no filesystem read
+ * happens at all. That is what keeps the frozen `board.txt` hermetic: this
+ * machine really does hold a run for issue 132, which is a row in that golden,
+ * so a board that scanned `homedir()` would freeze as `in progress` here and
+ * `—` everywhere else.
+ */
+function runCellsFor(issues, info, root) {
+  const cells = new Map();
+  for (const issue of issues) {
+    const dir = root ? runDir(root, info.owner, info.name, issue.number) : null;
+    if (dir && existsSync(join(dir, 'run.json'))) {
+      try {
+        cells.set(issue.number, runState(loadRun(dir)));
+      } catch {
+        cells.set(issue.number, 'unreadable');
+      }
+      continue;
+    }
+    if (claimedIn(issue.comments, info.owner, info.name, issue.number)) cells.set(issue.number, 'claimed');
+  }
+  return cells;
+}
+
 async function cmdBoard(args) {
   const repo = resolve(args.repo ?? '.');
   const info = identify(repo, args);
@@ -234,12 +266,18 @@ async function cmdBoard(args) {
   // An offline run reads nothing from git it was not handed: the frozen
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
+  // Keyed on `--issues-json`, NOT on `isOffline(args)`: this command still
+  // calls `listIssues` over the network whenever `--issues-json` is absent, so
+  // keying the scan on offlineness would blank the column on an invocation that
+  // had just dialled out. `--issues-json` is the flag that makes the golden
+  // hermetic, so it is the flag the rule names.
+  const root = args.runRoot ? resolve(args.runRoot) : (args.issuesJson ? null : runRoot());
 
   if (issues.length === 0) {
     console.log(`No open issues in ${info.owner}/${info.name}.`);
     return;
   }
-  print(ISSUE_COLUMNS, issueRows(issues));
+  print(ISSUE_COLUMNS, issueRows(issues, runCellsFor(issues, info, root)));
   console.log('');
   print(
     ['Repo', 'Base branch', 'Feature prefix', 'Merge', 'Policy from'],
@@ -249,6 +287,62 @@ async function cmdBoard(args) {
     '\nDetail is how much the issue text specifies, not how much work it is — a thin issue\n' +
       'under a broad title is the one most likely to come back from design as several work items.',
   );
+  console.log(
+    'Run says who already has it: a state means a run on this machine, `claimed` means a run\n' +
+      'on another one. Pick a different issue, or resume that run with `next --run-dir <path>`.',
+  );
+}
+
+/**
+ * Refuse to `start` an issue somebody else is already working.
+ *
+ * A run's identity is `owner/name#N`, and until 0.8.0 nothing ever asked
+ * whether that identity was taken: two sessions that both said "fix issue 42"
+ * resolved to the same directory, and the second reset the first's state
+ * machine to all-pending. Worse, the checkpoint that follows adopts the run's
+ * sticky comment BY MARKER and rewrites it in place, so the second session
+ * also published an empty board over the first's only artifact that leaves
+ * this machine.
+ *
+ * Two claims, and they are not the same fact:
+ *
+ * - A local `run.json` is a local fact and refuses either way. What it tells
+ *   you to do next depends on whether that run still loads: a loadable run
+ *   gets the resume command, and one `loadRun` refuses gets `loadRun`'s own
+ *   reason plus `--take-over` — printing `next --run-dir` there would send the
+ *   reader to a command that fails for the same reason, which is a dead end
+ *   rather than a guardrail.
+ * - A marker comment with no local run means another machine has it, and that
+ *   one is scoped to ONLINE invocations. The harm is `checkpoint()` PATCHing
+ *   over a stranger's comment, and `checkpoint()` returns before any `gh` call
+ *   on an offline run — an offline replay makes no claim and can clobber
+ *   nothing, which is what keeps the frozen `issue-132.json` payload (whose
+ *   real comment carries a real marker) replayable.
+ */
+function refuseClaimed(dir, info, issue, args) {
+  if (args.takeOver) return;
+
+  if (existsSync(join(dir, 'run.json'))) {
+    let reason = `a run already exists at ${dir}`;
+    let remedy = 'Resume it with `issueflow next --run-dir <dir>` — only if the session that started it is gone.';
+    try {
+      loadRun(dir);
+    } catch (err) {
+      reason = String(err?.message ?? err);
+      remedy = 'Start over on top of it with `--take-over`, which overwrites it.';
+    }
+    throw new HandBack(`${reason}. ${remedy}`);
+  }
+
+  if (isOffline(args)) return;
+  const claim = claimedIn(issue.comments, info.owner, info.name, issue.number);
+  if (claim) {
+    throw new HandBack(
+      `${info.owner}/${info.name}#${issue.number} is already claimed by an issueflow run on another machine — ` +
+        `read its comment first: ${claim.url ?? issue.url}. ` +
+        'Starting here would republish an empty board over it. Take it over with `--take-over` once you have.',
+    );
+  }
 }
 
 async function cmdStart(args) {
@@ -260,9 +354,12 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  refuseClaimed(dir, info, issue, args);
 
   const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
-  saveRun(dir, run);
+  // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
+  // that must lose to a run already there rather than overwrite it.
+  claimRunDir(dir, run, { takeOver: Boolean(args.takeOver) });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 
@@ -433,8 +530,13 @@ function briefOne(dir, run, step, args) {
   let warning = null;
   if (step.lane && !args.noWorktree) {
     try {
-      workdir = ensureWorktree(run.repo.path, dir, step.lane).path;
+      workdir = ensureWorktree(run.repo.path, dir, step.lane, { offline: run.offline }).path;
     } catch (err) {
+      // A `FetchError` is the one provisioning failure that is not survivable:
+      // continuing would cut the lane from whatever `origin/<base>` this
+      // checkout last saw, which is the stale base the fetch exists to refuse.
+      // Every other `WorktreeError` still warns and runs in the repository.
+      if (err instanceof FetchError) throw err;
       warning = String(err.message ?? err).split('\n')[0];
     }
   }
@@ -1116,8 +1218,8 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
 
   issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
                                                  prints ONE thing to do — a dispatch, a wait, or a stop
-  issueflow board  [--repo <path>]
-  issueflow start  --issue <n> [--repo <path>] [--auto]
+  issueflow board  [--repo <path>] [--run-root <path>]
+  issueflow start  --issue <n> [--repo <path>] [--auto] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
@@ -1146,6 +1248,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
+  --take-over          on start: overwrite a run another session owns, and republish over its
+                       checkpoint comment — only for a human who has READ that comment
   --offline            make no network call and no checkpoint
   --no-worktree        run stages in the repository itself instead of a per-lane checkout
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow

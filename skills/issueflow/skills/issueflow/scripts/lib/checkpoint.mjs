@@ -38,7 +38,27 @@ const ARTIFACT_BUDGET = 20000;
  * comment and the issue would grow one per machine. With it, the comment is
  * found and adopted.
  */
-export const marker = (run) => `<!-- issueflow:run ${run.repo.owner}/${run.repo.name}#${run.issue.number} -->`;
+export const markerFor = (owner, name, number) => `<!-- issueflow:run ${owner}/${name}#${number} -->`;
+
+export const marker = (run) => markerFor(run.repo.owner, run.repo.name, run.issue.number);
+
+/**
+ * The comment on an issue that already claims this run, or null.
+ *
+ * Takes the comments a caller already has rather than fetching them: both
+ * callers — `start`'s refusal and `board`'s Run column — are handed every
+ * comment body by the payload they already fetched, so a claim costs no extra
+ * `gh` call. It goes through `markerFor` for the reason `marker` now does too:
+ * two spellings of the marker is exactly how a claim check silently stops
+ * matching the comment it is supposed to find.
+ */
+export function claimedIn(comments, owner, name, number) {
+  const mine = markerFor(owner, name, number);
+  for (const c of comments ?? []) {
+    if (String(c?.body ?? '').includes(mine)) return { url: c.url ?? null, commentId: c.commentId ?? null };
+  }
+  return null;
+}
 
 const git = (args, cwd) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

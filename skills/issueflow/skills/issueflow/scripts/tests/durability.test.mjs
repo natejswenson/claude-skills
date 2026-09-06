@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { checkpoint, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
 import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
-import { ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
 import { approvePlan, redTeamPass } from './helpers.mjs';
 
@@ -28,6 +28,17 @@ const ISSUE = { number: 9, title: 'Checkpoint the run', url: 'https://example.in
 const POLICY = { base: 'main', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: true };
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+
+/** The CLI as a child process, for the assertions that are about its exit code. */
+const spawnCli = (args) => {
+  try {
+    return { code: 0, out: execFileSync(process.execPath, [CLI, ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+    }), err: '' };
+  } catch (e) {
+    return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') };
+  }
+};
 
 /** A real git repository with one commit — enough for a branch, a worktree and a tip. */
 function tempRepo() {
@@ -254,6 +265,137 @@ test('a repo path that is not a repository root is refused, never worked around'
   // and nothing was created in the enclosing repository
   assert.equal(tipOf(repoPath, run.lanes[0].branch), null);
   cleanup();
+});
+
+// ---------------------------------------------------------------------------
+// The base a lane is cut from (#251). Every test above runs against a repo with
+// no `origin` at all, which is exactly the regression floor: an unconditional
+// fetch would break all of them. These need a real bare origin instead.
+// ---------------------------------------------------------------------------
+
+/**
+ * A bare origin, a clone of it, and a second clone that can land work on the
+ * base behind the first clone's back — which is what session A merging while
+ * session B is still working looks like from inside session B's checkout.
+ */
+function tempRepoWithOrigin() {
+  const home = mkdtempSync(join(tmpdir(), 'issueflow-origin-'));
+  const origin = join(home, 'origin.git');
+  const seed = join(home, 'seed');
+  const path = join(home, 'clone');
+  const other = join(home, 'other');
+
+  git(['init', '-q', '--bare', '-b', 'main', origin], home);
+  git(['init', '-q', '-b', 'main', seed], home);
+  const commit = (cwd, file, message) => {
+    writeFileSync(join(cwd, file), `${message}\n`);
+    git(['add', file], cwd);
+    git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', message], cwd);
+  };
+  commit(seed, 'README.md', 'initial');
+  git(['remote', 'add', 'origin', origin], seed);
+  git(['push', '-q', '-u', 'origin', 'main'], seed);
+
+  git(['clone', '-q', origin, path], home);
+  git(['clone', '-q', origin, other], home);
+  return { home, origin, path, other, commit, cleanup: () => rmSync(home, { recursive: true, force: true }) };
+}
+
+test('a lane is cut from the base as it is NOW, not as this checkout last saw it', () => {
+  // Session A's pull request merges into the base; session B starts an hour
+  // later. Before 0.8.0 B's branch was cut from whatever `origin/<base>` B's
+  // checkout last happened to fetch, so it did not contain A's work.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const lane = run.lanes[0];
+
+  const stale = git(['rev-parse', 'origin/main'], o.path);
+  o.commit(o.other, 'landed.txt', 'session A landed');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  const current = git(['rev-parse', 'HEAD'], o.other);
+  assert.notEqual(current, stale, 'the fixture must actually move origin');
+
+  const wt = ensureWorktree(o.path, dir, lane).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), current, 'the lane was cut from a stale base');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a base that was force-pushed still cuts a lane, because the refspec is forced', () => {
+  // `dev` is unprotected in this repo's own policy, so a force-push of the base
+  // is permitted. An unforced refspec exits 1 with `! [rejected] …
+  // (non-fast-forward)`, which — paired with a fatal exit 3 — would hard-block
+  // every new lane after one rewind.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+
+  o.commit(o.other, 'a.txt', 'first');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  git(['reset', '-q', '--hard', 'HEAD~1'], o.other);
+  o.commit(o.other, 'b.txt', 'rewritten');
+  git(['push', '-q', '--force', 'origin', 'main'], o.other);
+  const rewound = git(['rev-parse', 'HEAD'], o.other);
+
+  const wt = ensureWorktree(o.path, dir, run.lanes[0]).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), rewound, 'a rewound base must still be reachable');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('an offline run cuts its lane without a fetch, even when origin is unreachable', () => {
+  // The other half: cases above cannot pass without a real fetch, and this one
+  // cannot pass if the fetch fires when the run says it is offline.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+
+  const stale = git(['rev-parse', 'origin/main'], o.path);
+  o.commit(o.other, 'landed.txt', 'session A landed');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  rmSync(o.origin, { recursive: true, force: true });
+
+  const wt = ensureWorktree(o.path, dir, run.lanes[0], { offline: true }).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), stale, 'an offline lane is cut from what the checkout already had');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 instead of warning past it', () => {
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  // `implement` is the stage that gets a checkout, so it is the one whose
+  // brief has to stop; opening its gate is what makes the case reachable.
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+  rmSync(o.origin, { recursive: true, force: true });
+
+  let err = null;
+  try {
+    ensureWorktree(o.path, dir, run.lanes[0]);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof FetchError, `expected a FetchError, got ${err}`);
+  assert.match(String(err.message), /must not be cut from a stale base/);
+  assert.equal(err instanceof WorktreeError, true, 'a FetchError is still a WorktreeError, so `next` still classifies it');
+
+  // And the caller stops rather than warning past it. Every OTHER
+  // `WorktreeError` is survivable — the stage can run in the repository — but
+  // a stage briefed after a failed fetch would work on a stale base.
+  const brief = spawnCli(['brief', '--stage', 'implement', '--run-dir', dir]);
+  assert.equal(brief.code, 3, `expected infrastructure exit 3, got ${brief.code}: ${brief.err}`);
+  assert.match(brief.err, /stale base/);
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
 });
 
 // ---------------------------------------------------------------------------

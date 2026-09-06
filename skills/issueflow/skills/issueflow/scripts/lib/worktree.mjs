@@ -24,6 +24,17 @@ import { worktreePath } from './run.mjs';
 
 export class WorktreeError extends Error {}
 
+/**
+ * A failed fetch, told apart from every other provisioning failure.
+ *
+ * `brief` tolerates a `WorktreeError` — a stage can still run in the repository
+ * itself, so a missing checkout is a warning. A failed fetch is not that: the
+ * branch would be cut anyway, from whatever `origin/<base>` this checkout last
+ * happened to see, which is the stale base this class exists to refuse. Its own
+ * class is what lets the caller re-throw this one and keep warning on the rest.
+ */
+export class FetchError extends WorktreeError {}
+
 const real = (path) => {
   try {
     return realpathSync(resolve(path));
@@ -69,6 +80,64 @@ function startPoint(repoPath, lane) {
   throw new WorktreeError(`base branch ${lane.base} exists neither locally nor on origin`);
 }
 
+/** Wait, synchronously — this whole module is `execFileSync`, and a promise here would infect the caller. */
+const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+
+/** Whether this checkout has an `origin` at all. A fixture repo made by `git init` does not. */
+function originConfigured(repoPath) {
+  try {
+    return execFileSync('git', ['remote'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').map((l) => l.trim()).includes('origin');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Refresh what `origin/<base>` means, right before a branch is cut from it.
+ *
+ * Without this a lane is cut from whatever this checkout last happened to
+ * fetch: session A's pull request merges into `dev`, session B starts an hour
+ * later, and B's branch does not contain A's work. In serial use that is last
+ * week's base at worst; in parallel use it is a merge conflict by design.
+ *
+ * The refspec is explicit AND forced, and both halves were measured against a
+ * throwaway bare origin:
+ *
+ * - Explicit, because a clone whose `remote.origin.fetch` does not cover the
+ *   base (`--single-branch`) answers a plain `git fetch origin <base>` with
+ *   exit 0, writes `FETCH_HEAD`, and leaves `refs/remotes/origin/<base>`
+ *   absent — which is the ref `startPoint` reads, so the fetch would report
+ *   success and buy nothing.
+ * - Forced, because a base rewound on origin is not a fast-forward: git exits 1
+ *   with `! [rejected] … (non-fast-forward)`. This repo's own policy permits
+ *   force-pushing `dev`, and without the `+` one force-push would hard-block
+ *   every new lane.
+ *
+ * Retried once, unconditionally, rather than on lock-shaped stderr: a fetch is
+ * idempotent and cheap, and matching git's message text is how a retry quietly
+ * stops firing on the failure it was written for. Two concurrent sessions
+ * contend for the same `refs/remotes/origin/<base>` lock, so the retry is the
+ * common case, not a rare one.
+ */
+function fetchBase(repoPath, base) {
+  const refspec = `+${base}:refs/remotes/origin/${base}`;
+  for (const attempt of [0, 1]) {
+    try {
+      execFileSync('git', ['fetch', 'origin', refspec], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      return;
+    } catch (err) {
+      if (attempt === 1) {
+        throw new FetchError(
+          `could not fetch ${base} from origin — a lane must not be cut from a stale base: ` +
+            (String(err.stderr ?? err.message ?? '').trim().split('\n').filter(Boolean).pop() ?? 'git fetch failed'),
+        );
+      }
+      sleep(700);
+    }
+  }
+}
+
 /**
  * The lane's own checkout, created if it is not there yet.
  *
@@ -81,8 +150,12 @@ function startPoint(repoPath, lane) {
  * worktree in the enclosing repo instead. That is not theoretical: the first
  * offline eval run of this feature created a stray `feature/issue-133` branch
  * in this very repository, because its fixture repo lives under `evals/`.
+ *
+ * `offline` is the run's own, and it skips the fetch. An offline run makes no
+ * network call by contract, and the evals replay frozen payloads against
+ * fixture repositories that have no remote at all.
  */
-export function ensureWorktree(repoPath, dir, lane) {
+export function ensureWorktree(repoPath, dir, lane, { offline = false } = {}) {
   const path = worktreePath(dir, lane);
   if (existsSync(path)) return { path, created: false };
 
@@ -98,6 +171,10 @@ export function ensureWorktree(repoPath, dir, lane) {
   if (exists(repoPath, `refs/heads/${lane.branch}`)) {
     git(['worktree', 'add', path, lane.branch], repoPath);
   } else {
+    // Only on the path that creates a branch: an existing worktree returned
+    // above, and a branch that already exists has nothing left to cut from a
+    // base, so re-briefing a stage still costs no network.
+    if (!offline && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
     git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
   }
   return { path, created: true };
