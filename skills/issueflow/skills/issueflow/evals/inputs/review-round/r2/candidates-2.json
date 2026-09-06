@@ -1,0 +1,97 @@
+{
+  "candidates": [
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 478,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "`_capture_progress_payload` never freezes the clock, so both equivalence-oracle tests run over a payload whose size and contents depend on the wall-clock date and the machine's local timezone — while the two call-count tests 180 lines above pin the same handler to `_TODAY` + 58d.",
+      "short_summary": "oracle payload is captured on an unfrozen wall clock",
+      "failure_scenario": "`get_training_plan_progress` windows `workouts` to `[frontier-14d, max(frontier, today)+7d]` and reads `today` from `date.today()` (local timezone). `_capture_progress_payload` calls the handler with no `_freeze_progress_clock`, so on 2026-09-05 the captured payload carries ~83 nodes and on 2027-01-01 it carries the plateau shape (~115 per the sibling docstring), and a CI runner in UTC captures a different payload from a dev machine in America/Chicago on the same evening. Two consequences: (a) the '83 calls' claim and the 'byte-identical output' claim are made about DIFFERENT payloads, so the oracle does not certify the payload the count test measures; (b) a divergence the oracle catches on one date is not reproducible on another, and a case shape that drops out of the window (e.g. a graded day carrying `actual_pace_sec_per_km`) silently stops being covered while the test still passes.",
+      "introduced_by_diff": true,
+      "suggestion": "    _freeze_progress_clock(monkeypatch, _TODAY + timedelta(days=58))"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 301,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "The clock freeze patches exactly one module attribute (`tools.date`) and nothing asserts that is the only clock the handler reads, yet two exact-equality count pins (87 and 83) depend on the freeze being total.",
+      "short_summary": "freeze patches only tools.date; no check it is total",
+      "failure_scenario": "`monkeypatch.setattr(tools, 'date', _FakeDate)` rebinds the name `date` in `local_fitness.agent.tools` only. It holds today because `plans` has no `date.today()` call, but `get_training_plan_progress` reaches `plans.build_plan_detail`, `plans.best_recent_effort`, `config.riegel_lookback_days` and `units.display_units()`, none of which is frozen. Move the window computation into `plans` (or have `units`/`config` read `date.today()`), and the pinned counts silently become wall-clock-dependent again: the test then goes red on a calendar schedule and reads as a perf regression rather than a leaked clock. Nothing in the test asserts the frozen date is the one the handler actually used — e.g. no assertion on `window_end` or on the number of workouts in the payload.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 465,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "`_dumped`'s `json.dumps(..., default=str)` normalizes every subclass case in `_ROUND_FLOATS_CASES` (`_IntSubclass`, `_Grade`, `_DictSubclass`, `_FloatSubclass`) to its base JSON form, so the four cases added specifically to justify the `type(x) is ...` fast paths can only detect a value divergence, never the type divergence they exist to guard.",
+      "short_summary": "json oracle is blind to the subclass cases' whole point",
+      "failure_scenario": "`json.dumps(_IntSubclass(7)) == json.dumps(7)`, `json.dumps(_Grade.OK) == json.dumps(2)`, `json.dumps(_DictSubclass({'a':1})) == json.dumps({'a':1})`, `json.dumps(_FloatSubclass(1.23)) == json.dumps(1.23)`. So a fast-path change that converts a dict-subclass value to a plain dict, or an IntEnum to a plain int, passes `test_round_floats_output_is_identical_to_the_pre_inline_implementation` unchanged. The diff already recognised this blindness for tuple-vs-list and bolted on explicit `isinstance` asserts at the end of that test, but did not extend the same treatment to the four subclass cases — which are the only reason those cases are in the list at all.",
+      "introduced_by_diff": true,
+      "same_as": "f-7ede0eb0"
+    },
+    {
+      "file": "src/local_fitness/agent/tools.py",
+      "line": 199,
+      "side": "RIGHT",
+      "category": "removed-behaviour",
+      "summary": "The single `isinstance` dispatch was replaced by a hand-maintained literal type list in two places (`t is str or t is int or t is bool or v is None`), and nothing structurally ties that list to the `isinstance` ladder it must stay identical to — the only guard is 21 remembered cases in a test.",
+      "short_summary": "fast-path scalar type list can drift from the ladder",
+      "failure_scenario": "The docstring states 'the fast path must stay semantically identical to the fallback'. That property is now maintained by two duplicated hand-written type lists (lines 199 and 211) against a five-branch ladder 15 lines below. Concretely: someone adds `or t is tuple` to the scalar list as an obvious pass-through. The ladder at line 218 still converts tuples to lists, so `_round_floats({'splits': (1.0, 2.0)})` returns a tuple while `_round_floats([(1.0, 2.0)])`'s inner value returns a list — inconsistent output from one function. `_dumped`'s json comparison cannot see it (f-7ede0eb0), and the explicit tuple asserts only cover a bare tuple and a list-of-tuples, not a tuple inside a dict, so the equivalence oracle passes.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 423,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "The `_workout_actuals` oracle compares two accumulated floats and a float division with `==` (exact float equality) rather than `pytest.approx`, which the file's sibling tests in `test_plans.py` use for exactly these fields.",
+      "short_summary": "oracle compares accumulated floats with ==, not approx",
+      "failure_scenario": "`foot`, `run`, `walk` are `+=` accumulations and `pace = dur / (foot / 1000.0)`. The assertion only holds bit-for-bit because the fold happens to accumulate in the same order as the vendored reference. Any future refactor that sums run and walk separately and derives `foot = run + walk`, or reorders the loop, changes the last bit and reddens this test over a change that moved no answer — the exact failure mode the oracle is supposed to distinguish itself from. It is also NaN-unsafe: a row whose `duration_seconds` is `float('nan')` makes `pace` NaN on both sides and the tuple `==` then evaluates False, so the oracle reports a divergence between two implementations that agree. `tests/test_plans.py:558-560` already uses `pytest.approx` for the same three values.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_plans.py",
+      "line": 566,
+      "side": "RIGHT",
+      "category": "removed-behaviour",
+      "summary": "The diff replaces a historically-correct attribution with an incorrect one: the deleted comment said `_normalize_activity_types` classified by the label, and the replacement says `_workout_actuals` did — but `_workout_actuals` never classified by label, it delegated to the helper from 20b19e0 until this commit.",
+      "short_summary": "renamed comment misattributes the old label-gated bug",
+      "failure_scenario": "`git log -S'_normalize_activity_types' -- src/local_fitness/plans.py` shows the classifier was introduced in 20b19e0 (0.8.0) and pace-gated on 2026-07-22; `_workout_actuals` at 7326f66 only called it. A reader chasing the `[\"other\", \"running\"]` symptom this comment describes greps `_workout_actuals` at that era, finds a function that returns a delegated classification, and concludes the comment is describing something else. The deleted line named the actual culprit; the replacement names a function that did not have that behaviour at the time it describes.",
+      "introduced_by_diff": true,
+      "suggestion": "    # read [\"other\", \"running\"] — the classifier now folded in here (then"
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 309,
+      "side": "RIGHT",
+      "category": "language-pitfalls",
+      "summary": "The frozen date `_TODAY + timedelta(days=58)` is unexplained and equals the wall-clock date the tests were written (2026-09-05), so the two exact counts are pinned at one arbitrary point on a curve the helper's own docstring documents as varying 25 → 83 → 115.",
+      "short_summary": "58d freeze is the authoring date, not a chosen regime",
+      "failure_scenario": "`_freeze_progress_clock`'s docstring states the `_round_floats` count is 25 at `_TODAY`, 83 at `_TODAY` + 58d, and plateaus at 115 from `_TODAY` + 100d. `_TODAY` is 2026-07-09 and +58d is 2026-09-05, the date the diff was authored — i.e. the freeze reproduces the unfrozen behaviour of that one day rather than a deliberately chosen operating point. The payload it measures is dominated by 58 days of ungraded `pending` future rows (a two-month-stale data frontier), not by the graded history the regression was found in; at a realistic frontier (`_TODAY`) the count is 25, so the 470 → 83 headline is quoted against a shape the handler rarely serves. Nothing in the test says why 58 was chosen, so a future maintainer who re-freezes at a different date cannot tell whether the new number is a regression or a different point on the same curve.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1238,
+      "side": "RIGHT",
+      "category": "removed-behaviour",
+      "summary": "Deleting `_normalize_activity_types` removes the module's only standalone activity classifier while its three single-purpose siblings that walk the same list (`_running_distance`, `_walking_distance`, `_foot_distance`) are all kept, so the class list is now reachable only by running the full five-value accumulation and discarding four results.",
+      "short_summary": "only the classifier lost its standalone helper form",
+      "failure_scenario": "`_running_distance` (:181), `_walking_distance` (:193) and `_foot_distance` (:217) all survive as independently callable helpers even though `_workout_actuals` also computes each of them in its single pass — so the fold's argument ('anything else this day needs is computed in the loop below, not in a pass of its own') is applied to exactly one of the four. The concrete cost is already visible in the diff: four tests in `tests/test_plans.py` (:582, :583, :602, :609) now call `plans._workout_actuals(...)[4]`, a positional index into a five-tuple, to assert a classification, and any future caller wanting only the class list must do the same.",
+      "introduced_by_diff": true,
+      "same_as": "f-8e1b825a"
+    }
+  ],
+  "notExamined": [
+    "The pytest-benchmark latency baseline artifacts (.benchmarks/Linux-CPython-3.12-64bit/0001_*.json) — not in the diff and not verifiable off a Linux runner from this checkout.",
+    "The CHANGELOG's and CLAUDE.md's measured figures (-6.0% p05 handler latency, 49.6% of _round_floats runtime, the 33652312669 CI run, the b28c74e bisect) — reproducing them needs the CI runner, so I took them on trust.",
+    "The conventions angle against CLAUDE.md (assigned to another finder); I only read its perf-gate bullet to confirm the already-open two-axes findings and did not re-file them.",
+    ".github/workflows/ci.yml and capture-perf-baseline.yml beyond the two literal strings test_the_latency_gate_is_still_armed greps for.",
+    "The PDF/visuals surfaces that also consume actual_activity_types (tests/test_visuals.py, tests/test_tools.py report-card paths) — 84 of them fail in this checkout for an environmental WeasyPrint 'cannot load library libgobject-2.0-0' reason, so I could not run them; every other test in the suite passes (2229 passed, 6 skipped).",
+    "The web/API layer and docs/mcp/get_training_plan_progress.md as consumers of the five-tuple — I only grepped for callers of the deleted helper and of actual_activity_types, and confirmed the deleted function has no remaining caller.",
+    "scripts/perf_fixture.py internals beyond confirming the fixture is deterministic (no RNG, and pytest-randomly is not installed), which is what the exact 87/83 pins rest on."
+  ]
+}

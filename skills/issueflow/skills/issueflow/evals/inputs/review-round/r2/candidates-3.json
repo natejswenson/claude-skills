@@ -1,0 +1,97 @@
+{
+  "candidates": [
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 312,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The `_ran == 87` pin counts work done in `plans.classify_workout`, not just in `_workout_actuals`, so the next fix to the re-walk this review has already filed as pre-existing turns this test red under a name that reads as a regression.",
+      "short_summary": "_ran==87 pin blocks the next re-walk fix in plans.py",
+      "failure_scenario": "`build_plan_detail` (src/local_fitness/plans.py:1256-1259) calls `_workout_actuals(day, cfg)` and then, one statement later, `grade_workout(w, day, frontier, cfg)`, which reaches `classify_workout` (plans.py:337-351) and re-walks the same `day` list through `_foot_distance` / `_running_distance` / `_running_duration` — each of which evaluates `_ran` per on-foot activity again. The 87 therefore is not `_workout_actuals`'s budget; it is `_workout_actuals` plus those extra passes. Someone landing the already-filed pre-existing fixes (f-708c84ed, f-8e190b4d, f-d44090f3) removes real duplicated work and this assertion goes red with the message `test_get_training_plan_progress_does_not_double_classify`, i.e. a pure improvement is reported as double classification. The pin is exact (`== 87`), so there is no headroom to absorb it.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 330,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The `_round_floats == 83` pin is a function of the perf fixture's plan span and of the payload carrying one list per workout row, not of the rounding change, so an edit to `scripts/perf_fixture.py` or a payload compaction in `tools.py` breaks it.",
+      "short_summary": "83 is 3 + 2*windowed-workouts, set by the fixture",
+      "failure_scenario": "The count decomposes exactly as `3 + 2*W`: one call for the top-level payload dict, one for `this_week`, one for the `workouts` list, then one per workout dict and one per that row's `actual_activity_types` list. W is the windowed workout count, which comes from `scripts/perf_fixture.py:137` (`range(-70, 98, 2)`) intersected with the handler's `[frontier-14d, today+7d]` window — 11 at `_TODAY` (25 calls), 40 at `_TODAY`+58d (83), 56 from `_TODAY`+100d (115), which is precisely the table in `_freeze_progress_clock`'s docstring. Two consequences: (a) `scripts/perf_fixture.py` is the SHARED fixture that five other benchmarks read, so changing `_RUN_EVERY_N_DAYS` or the plan's day range for an unrelated benchmark silently moves this number and the failure names the `_round_floats` fix; (b) half of the 83 is the per-row `actual_activity_types` list, so extending `get_training_plan_progress`'s existing 'omit None-valued keys at build time' compaction (tools.py:3809-3824) to also omit an EMPTY list — a strictly better payload — drops the count to ~43 and reds a test whose stated purpose is to prove work went down.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 1205,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The invariant this diff adds to `_workout_actuals`'s docstring — 'Anything else this day needs is computed in the loop below, not in a pass of its own' — is contradicted by its only caller one statement later.",
+      "short_summary": "New docstring invariant is false at its only call site",
+      "failure_scenario": "`build_plan_detail` is the sole caller: line 1256 calls `_workout_actuals(day, cfg)`, line 1259 calls `grade_workout(w, day, frontier, cfg)` on the same list, and `classify_workout` then walks it 1-2 more times (`_foot_distance` at plans.py:337, `_running_distance` at 339, `_running_duration` at 351), re-evaluating `_ran` per on-foot activity. A reader who trusts the new sentence will believe the day's activity list is walked once per graded day and will size the next perf question wrongly — and the same reader is the person the sentence is aimed at, since it is written as the rule that stops PR #162's mistake recurring. The docstring should either name `grade_workout`'s remaining passes as a known exception or the sentence should be scoped to this function.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 566,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "`test_the_latency_gate_is_still_armed` says it guards 'the threshold, the baseline, or the --benchmark-skip default' but asserts nothing about the committed baseline file, so the gate can be silently disarmed by deleting it.",
+      "short_summary": "Gate test never checks the committed baseline still exists",
+      "failure_scenario": "The gate is `uv run pytest ... --benchmark-compare=0001 --benchmark-compare-fail=min:15%` (.github/workflows/ci.yml:70-72) and the thing it compares against is the single committed file `.benchmarks/Linux-CPython-3.12-64bit/0001_8edfb701a41fe4343e73999f764fe5137df19d4e_20260726_202050.json`. Delete, rename, or move that file — or change the storage directory — and pytest-benchmark finds no matching save, warns, and continues: `--benchmark-compare-fail` has nothing to fail against, the CI step exits 0, and the perf gate is a no-op. This test, whose whole stated job is to catch a gate demotion, stays green throughout because it only greps ci.yml for the threshold string and pyproject for `--benchmark-skip`. Add an assertion that exactly one `.benchmarks/*/0001_*.json` exists.",
+      "introduced_by_diff": true,
+      "suggestion": "    assert list((root / \".benchmarks\").glob(\"*/0001_*.json\")), \\\n        \"the committed pytest-benchmark baseline the gate compares against is gone\""
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 426,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The `_workout_actuals` equivalence oracle never passes a non-default `GradingConfig`, so a fold that dropped `cfg` from the in-loop classification would satisfy it over all 548 fixture days and all 7 edge cases.",
+      "short_summary": "Oracle never exercises a non-default GradingConfig",
+      "failure_scenario": "Both loops call the live and the reference implementation with the default config (`plans._workout_actuals(activities)` / `(case)` at lines 423-426), and `_workout_actuals_reference`'s own `cfg=plans._DEFAULT_GRADING_CONFIG` parameter is therefore dead. The fold moved the classification into a loop that must thread `cfg` into `_ran(a, cfg)` (plans.py:1231); write `_ran(a)` there instead and every assertion in this test still passes, because the default config is what both sides use. The only thing that catches it is `tests/test_plans.py:609` (`test_activity_types_pace_gate_can_be_turned_off`), a different file that is not part of the byte-for-byte equivalence proof this test is presented as. Add a `pace_gated_locomotion=False` pass over the same corpus, or at least one edge case run under a non-default cfg.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 335,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The comment calls the vendored references 'deliberately frozen copies, not imports', but all three read live symbols out of `plans` and `tools`, so a change to those symbols moves both sides of the oracle together.",
+      "short_summary": "The \"frozen\" reference copies call live src symbols",
+      "failure_scenario": "`_normalize_activity_types_reference` (line 338) and `_workout_actuals_reference` (line 350) call `plans._is_on_foot` and `plans._ran`, and default their `cfg` to the live `plans._DEFAULT_GRADING_CONFIG`; `_round_floats_reference` (line 366) reads the live `tools._TEXT_HIGH_DP`, `tools._TEXT_DEFAULT_DP` and `tools._TEXT_HIGH_PRECISION_KEYS`. Concretely: add a key to `_TEXT_HIGH_PRECISION_KEYS` (tools.py:146-149) and get the fast path's inline lookup wrong — say the dict branch keeps using the child key `k` where the intended semantics for the new key is the enclosing key — and the reference, reading the same frozenset through the same variable, cannot show the divergence for any case whose shape the fixed `_ROUND_FLOATS_CASES` list does not already contain. Same for a change to `_ran`'s pace gate: both implementations move, the oracle stays green, and the comment tells the next reader the reference still 'describes the OLD behaviour'. Freeze the constants the references depend on (copy the dp values and the key set into the test module) if the copies are meant to be frozen.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "tests/test_perf_benchmarks.py",
+      "line": 501,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "The two equivalence-oracle tests run the handler on an unfrozen clock while the two count tests freeze it at `_TODAY`+58d, so 'the real payload' the oracle proves over is not the payload the counts pin.",
+      "short_summary": "Oracle payload and counted payload are different payloads",
+      "failure_scenario": "`test_get_training_plan_progress_does_not_double_classify` (line 304) and `..._rounds_without_a_call_per_node` (line 315) both call `_freeze_progress_clock(monkeypatch, _TODAY + timedelta(days=58))` before capturing counts; `test_round_floats_output_is_identical_to_the_pre_inline_implementation` (line 501) and `test_the_round_floats_oracle_can_actually_fail` (line 604's capture) call `_capture_progress_payload` with no freeze at all, so the payload they compare is whatever the real wall-clock date produces (`window_end = today + 7d`, tools.py:3853). Today that happens to be the same window; on any other date it is not. The consequence is that the two halves of the proof — 'output is identical over the real payload' and 'the payload costs 83 calls' — are statements about different objects, and a fast-path bug that only shows up for the rows outside the unfrozen window would be counted but never compared. Freeze both, using the same helper, so the proof and the count describe one payload.",
+      "introduced_by_diff": true
+    },
+    {
+      "file": "src/local_fitness/plans.py",
+      "line": 193,
+      "side": "RIGHT",
+      "category": "cross-file",
+      "summary": "`_walking_distance` has no caller anywhere in `src/` — it is kept alive only by its own unit tests, which is the exact rule this diff used to delete `_normalize_activity_types`.",
+      "short_summary": "_walking_distance has no src caller, left in place",
+      "failure_scenario": "Grep over `src/` finds `_walking_distance` only at its own definition (plans.py:193) and in `_running_distance`'s docstring at line 196; the only executable references are `tests/test_plans.py:463, 511, 542`. The run/walk split that production actually serves comes from `_workout_actuals`'s single pass (`walk += d`, plans.py:1234). The diff removed `_normalize_activity_types` on the stated grounds that 'the fold left it with no caller' (CHANGELOG.md:21) but left its sibling in the same helper block under the same condition, so the module still advertises four one-pass distance helpers of which one is unreachable. Cost: a reader looking for how walk distance is computed finds two implementations and no way to tell which one ships, and the dead one is separately maintained by three tests.",
+      "introduced_by_diff": false
+    }
+  ],
+  "notExamined": [
+    "No test was executed — the brief forbids touching the checkout and pytest would write .pytest_cache/.coverage into it; every count in this report was derived by reading the code, not by running it.",
+    "The latency numbers themselves (the claimed -6.0% p05, the 470->83 and 123->87 measurements) were not reproduced; no benchmark was run.",
+    "The pytest-benchmark internals behind `--benchmark-compare=0001` were reasoned about from its documented behaviour, not verified against the installed version, so the 'missing baseline degrades to a warning' claim in candidate 4 is stated as the failure mode to check, not as an observed run.",
+    "src/local_fitness/web/ beyond mcp_server.py — api.py and the plan tab templates were grepped for the changed symbols (no hits) but not read.",
+    "The PDF/brief renderers (agent/briefs.py, report_card.py, brief_planner.py) — grepped for _round_floats/_workout_actuals/_normalize_activity_types callers, none found, otherwise unread.",
+    "tests/test_plans_db.py, tests/test_plan_tools.py, tests/test_ledger.py and tests/test_tools.py — located by grep as consumers of actual_activity_types / actual_run_distance_m, their assertions were not read in full.",
+    "The other four benchmark targets (assemble_brief_context, get_training_plan_status, _build_plan_section, daily_snapshot, workout_report_card) and their connection-count assertions were not re-derived.",
+    "docs/plans/*.md historical design documents were only grepped; the 3-tuple signature they still document for _workout_actuals predates this change and was not pursued.",
+    "The CHANGELOG.md and CLAUDE.md prose was read for cross-references but not graded for accuracy beyond the symbol names it cites.",
+    "Whether `--benchmark-only` really skips the new fixture-less tests in the installed pytest-benchmark was taken from its documented semantics, not observed."
+  ]
+}

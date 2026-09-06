@@ -104,10 +104,10 @@ export function prBody(dir, run, lane) {
     '## Test evidence',
     '',
   ];
-  const test = own.find((s) => s.stage.id === 'test');
-  if (test?.stage.evidence) {
-    if (test.stage.result) lines.push(`\`${test.stage.result}\``, '');
-    const output = readFileSync(test.stage.evidence, 'utf8').trim().split('\n');
+  const proved = own.find((s) => s.stage.evidence);
+  if (proved) {
+    if (proved.stage.result) lines.push(`\`${proved.stage.result}\``, '');
+    const output = readFileSync(proved.stage.evidence, 'utf8').trim().split('\n');
     const tail = output.slice(-25);
     lines.push('```', ...(output.length > tail.length ? [`… ${output.length - tail.length} earlier lines`] : []), ...tail, '```');
   } else {
@@ -153,8 +153,11 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
     git(['push', '-u', 'origin', lane.branch], repo);
     const bodyFile = join(dir, lane.slug, 'pr-body.md');
     writeFileSync(bodyFile, prBody(dir, run, lane));
-    const url = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
-    results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url, number: prNumberFromUrl(url) });
+    const opened = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+    results.push({
+      lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: opened.url,
+      number: prNumberFromUrl(opened.url), draft: opened.draft, title,
+    });
   }
   return results;
 }

@@ -1,0 +1,60 @@
+{
+  "verdicts": [
+    {
+      "id": "f-9674e7de",
+      "verdict": "fixed",
+      "line": 574,
+      "quote": "    addopts = tomllib.loads((root / \"pyproject.toml\").read_text())[\n        \"tool\"][\"pytest\"][\"ini_options\"][\"addopts\"]\n    assert \"--benchmark-skip\" in addopts",
+      "note": "The raw-text grep is gone: the assertion now reads the parsed `tool.pytest.ini_options.addopts` value, so the comment at pyproject.toml:55 is out of scope. Re-ran the finding's own mutation restricted to the addopts line only (`l.replace(' --benchmark-skip','') if l.startswith('addopts')`): the old raw grep still returns True, the new parsed assertion returns False — the test now fails when the flag is removed."
+    },
+    {
+      "id": "f-eea114d4",
+      "verdict": "fixed",
+      "line": 327,
+      "quote": "    _freeze_progress_clock(monkeypatch, _TODAY + timedelta(days=58))\n    counts = _count_calls(monkeypatch, tools, \"_round_floats\")\n    _run(tools.get_training_plan_progress.handler({}))\n    assert counts[\"n\"] == 83",
+      "note": "`_freeze_progress_clock` (line 287) monkeypatches `tools.date` to a `date` subclass whose `today()` is fixed, and `_TODAY = date(2026, 7, 9)` is a hard-coded constant, so the count no longer moves with wall clock. Verified the freeze is effective and not a no-op by probing the same handler at offsets 0/58/200/5000 days: 25 / 83 / 115 / 115 — the exact curve the finding measured, now pinned at 58. Also confirmed no other `date.today()` in the reachable chain (plans.py and config.py have none; db.py:504 is a write timestamp)."
+    },
+    {
+      "id": "f-0583160f",
+      "verdict": "fixed",
+      "line": 312,
+      "quote": "    assert counts[\"n\"] == 87",
+      "note": "The upper bound became an exact equality. The finding's own trigger — `get_training_plan_progress.handler` returning `_text({\"active\": False})` at tools.py:3765 with `plans._ran` called 0 times — now fails the assertion (0 != 87), so it can no longer pass over zero work."
+    },
+    {
+      "id": "f-7098c483",
+      "verdict": "fixed",
+      "line": 330,
+      "quote": "    assert counts[\"n\"] == 83",
+      "note": "Same fix: exact equality replaces `<= 100`. The early-return payload the finding measured drives `_round_floats` exactly 1 time, and 1 != 83, so the 1-call run and the 83-call run are no longer indistinguishable."
+    },
+    {
+      "id": "f-7115b02e",
+      "verdict": "fixed",
+      "line": 396,
+      "quote": "    [_RIDE, _PACED_RUN, _PACED_WALK,\n     {\"activity_type\": None, \"distance_meters\": 100.0}],",
+      "note": "A mixed on-foot/non-foot day is now in `_WORKOUT_ACTUALS_EDGE_CASES` — a ride FIRST, then a run, a walk, and a typeless non-foot row — which is exactly the interaction the finding said no case reached. Mutation-probed the two mutants the finding named against all seven edge cases in this checkout: dropping `classes.add(\"other\")` is caught by cases [1, 6]; replacing `continue` with `break` is caught by case [6] and by nothing else. The new case is the only thing in the file that catches the ordering/accumulation defect the fold could introduce."
+    },
+    {
+      "id": "f-73a7ebc6",
+      "verdict": "fixed",
+      "line": 420,
+      "quote": "    # Anti-vacuity, same rule applied to the edge-case list itself (#232): the\n    # 548-day corpus above is measurably one input shape (one activity/day,\n    # always `running`) repeated 548 times, so the differential coverage this\n    # oracle actually relies on lives here, not in the day count.\n    assert len(_WORKOUT_ACTUALS_EDGE_CASES) >= 7",
+      "note": "Both halves of the nit are addressed: `assert len(by_date) > 500` no longer reads as the differential guard (the comment above line 420 states outright that the 548-day corpus is one shape repeated), and the multi-activity day it said was missing now exists at line 396 — the only case catching a `break`-for-`continue` mutant."
+    },
+    {
+      "id": "f-0dd0d0da",
+      "verdict": "still-open",
+      "line": 169,
+      "quote": "    (Against the ladder alone that guard is inert — there is no ``int`` branch\n    there and ``isinstance(True, float)`` is False — but the ``int`` fast path\n    below makes it load-bearing, so it stays and no test may claim removing it\n    is observable.)",
+      "note": "`src/local_fitness/agent/tools.py` is untouched by `git diff 776ccbd..c577f1f` (the incremental change is 69/-10 lines in `tests/test_perf_benchmarks.py` and nothing else), and the docstring is verbatim what it was at the previous head. The claimed \"`int` fast path\" is still `elif t is str or t is int or t is bool or v is None: out[k] = v` (line 199, mirrored at 211) — it copies, it does not round — so the `bool` guard at line 188 remains inert and the comment still records its status backwards."
+    },
+    {
+      "id": "f-63b3df6d",
+      "verdict": "fixed",
+      "line": 21,
+      "quote": "    was read as runner drift and re-run to green. Unlike the latency axis,\n    this one has no `benchmark` fixture, so it is the INVERSE of that axis'\n    skip rule: it runs in the ordinary `uv run pytest` job (this file's\n    `--benchmark-skip` default does not skip it, only the timed benchmarks)\n    and is itself skipped under `--benchmark-only`, the CI invocation that\n    runs the latency axis — so a red work-count assertion shows up in the\n    \"Run tests with coverage gate\" step, not the \"Perf-benchmark regression\n    gate\" step.",
+      "note": "The finding was a documentation/placement defect and the header now documents exactly the behaviour it described. Re-measured at this head: `uv run pytest tests/test_perf_benchmarks.py --benchmark-only --no-cov` reports `6 passed, 16 skipped`, and `uv run pytest tests/test_perf_benchmarks.py` reports `16 passed, 6 skipped` — the inverse the new text states. Both CI step names it cites are accurate (`.github/workflows/ci.yml:58` and `:68`)."
+    }
+  ]
+}

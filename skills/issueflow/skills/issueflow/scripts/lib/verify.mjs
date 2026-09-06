@@ -13,8 +13,9 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { PER_ITEM_STAGES } from './stages.mjs';
 import { evidencePath, readEvidence, worktreePath } from './run.mjs';
-import { summarize } from './evidence.mjs';
+import { summarize, twoSided } from './evidence.mjs';
 
 const git = (args, cwd) => {
   try {
@@ -55,13 +56,13 @@ export function verify(dir, run, step) {
     rows.push(['tree', dirty === null ? 'unknown' : dirty === '' ? 'clean' : `${dirty.split('\n').length} uncommitted path(s)`]);
   }
 
-  if (step.stage.id === 'test') {
+  if (PER_ITEM_STAGES.includes(step.stage.id)) {
     const proof = step.stage.evidence ?? evidencePath(dir, step);
-    const result = readEvidence(proof);
-    rows.push(['test result', summarize(result)]);
-    if (result && result.green === false) {
-      rows.push(['note', 'the LAST run in the evidence failed — check it is the red half of a two-sided proof']);
-    }
+    const results = readEvidence(proof);
+    rows.push(['test result', summarize(results.at(-1) ?? null)]);
+    rows.push(['runs in evidence', String(results.length)]);
+    const sided = twoSided(results);
+    rows.push(['two-sided', sided.ok ? 'red run, then green' : sided.reason]);
   }
 
   return rows;

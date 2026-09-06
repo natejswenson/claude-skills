@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-1-6",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    return json.dumps(obj, default=str)",
+      "line": 428,
+      "note": "Type-blindness demonstrated at this head: a type-PRESERVING tuple fast path (round each element, return a tuple) leaves both oracle tests green while `_round_floats` starts returning a `tuple` where it returned a `list` — the exact property the approved plan's Proof 5 (investigate.md:732-733, \"a `tuple` (must become a `list`)\") says is asserted. Correcting the candidate's example: its named mutant `if type(obj) is tuple: return obj` IS caught, because it also skips rounding, so it diverges on value not type. Nit, not major: `_text` serializes through `json.dumps`, so the tuple/list distinction is invisible on the product surface, and the shipped code does convert (`type(tools._round_floats((1.0,2.0))) is list`). The one-line suggestion closes it."
+    },
+    {
+      "id": "c-1-7",
+      "verdict": "CONFIRMED",
+      "severity": "pre-existing",
+      "introduced_by_diff": false,
+      "quote": "    threshold for five weeks. Anything else this day needs is computed in the",
+      "line": 1205,
+      "note": "Attributed the 87 `_ran` calls by caller frame at this head: 36 from `_workout_actuals` (plans.py:1256), 36 from `weekly_mileage` -> `_running_distance`, and 15 from `classify_workout` -> `grade_workout` (10 via `_running_distance` at plans.py:339, 5 via `_running_duration` at plans.py:351) — so the same-loop re-derivation the candidate names is real and accounts for 15 of 87, with `_foot_distance` (plans.py:337) re-walking the list on top of that without touching `_ran`. `_running_distance(day, cfg)` is byte-identical to `run_m` and `_foot_distance(day)` to `foot`, since `_ran` returns False for anything not on foot (plans.py:165-166). Pre-existing: the re-derivation predates the diff. The candidate's \"roughly a third\" is 36/87 = 41%. The docstring sentence quoted above is new in this diff and is contradicted by the next statement in its only caller (plans.py:1259)."
+    },
+    {
+      "id": "c-1-8",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "                out[k] = round(v, _TEXT_HIGH_DP if k in _TEXT_HIGH_PRECISION_KEYS",
+      "line": 197,
+      "note": "The bytecode observation is correct — `dis` on `_round_floats` at this head shows LOAD_GLOBAL x7 for `round`, x3 each for `_TEXT_HIGH_DP`/`_TEXT_DEFAULT_DP`/`_TEXT_HIGH_PRECISION_KEYS`, and three per-item `LOAD_ATTR ... append` — but the finding is that this costs something, and it does not: on this repo's own CPython 3.12.13, CPython's adaptive specialization turns a module-global load into a cached inline lookup. Both remedies the candidate proposes were built and measured against the shipped code over a 60-row/8-split payload, best-of-7 x 300 iterations, repeated three times each: the keyword-default binding ran 3.4-4.6% SLOWER and the plain branch-locals + hoisted `append` variant 1.3-3.9% SLOWER, never faster in six runs. Pure style with no observable effect — and the suggested change would make the function marginally worse."
+    },
+    {
+      "id": "c-1-9",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "def _capture_progress_payload(monkeypatch):",
+      "line": 431,
+      "note": "Accurate: the diff adds four ordinary-pytest handler runs (tests/test_perf_benchmarks.py:283, :296, and :444 reached from both :454 and :498), and the two oracle runs produce a byte-identical payload — verified by capturing twice against the same fixture and comparing `json.dumps(..., default=str)`. Sizing it honestly, though: one capture run measures ~1.1 ms against a 15 ms module fixture build, so this is a tidiness/readability argument for a module-scoped payload fixture, not a suite-speed one. Nit."
+    },
+    {
+      "id": "c-1-10",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] <= 90",
+      "line": 284,
+      "note": "Constructed the trigger at this head: the fixture measures 87 `_ran` calls; adding one extra on-foot activity to the most recent seeded day gives 89, to two days gives 92, to three gives 94. So a second activity on two days fails `assert 92 <= 90` inside `test_get_training_plan_progress_does_not_double_classify` — a fixture change reported as a classification regression, with no measured number in the message. `scripts/perf_fixture.py:44,196-207` does seed exactly one activity per date (`_RUN_EVERY_N_DAYS = 2`), so the second row is the realistic edit. The sibling bound at :297 is `<= 100` against a measured 83 and has ample room. The bound does still fail at the pre-fold 123, so the gate is real — this is robustness, hence nit."
+    }
+  ]
+}

@@ -1,25 +1,26 @@
 ---
 name: issueflow
-description: Work a GitHub issue from open to pull request through gated stages — investigate, design, implement, test — each stage run by its own subagent on its own model, each artifact approved by you before the next stage starts, or, in auto mode, by an adversarial red-team review that loops until nothing blocking remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "break this issue into smaller pieces", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull request into dev following the repo's own branch policy.
+description: Work a GitHub issue from open to pull request — one opus subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one opus subagent implements it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.6.0
+version: 0.7.0
 ---
 
-# /issueflow — one open issue to a pull request, through four gated stages
+# /issueflow — one open issue to a pull request, driven by `next`
 
-You are running the **issueflow** skill. It turns "work an issue" into a pull
-request, by dispatching four subagents in turn and stopping at every one of them
-until the user has approved what it produced.
+You are running the **issueflow** skill. It turns "work an issue" into a
+reviewed pull request: a plan, a red team on the plan, one human stop, an
+implementation with its own proof, a draft pull request, and a review loop on
+that pull request that converges when only nits remain.
 
-**Announce at start:** "I'm using the issueflow skill — four gated stages, and I stop at each one."
+**Announce at start:** "I'm using the issueflow skill — plan, red team, implement, then a review loop on the pull request."
 
 > Commands below run from the directory containing this `SKILL.md` (`$SKILL_DIR`).
 > Resolve it once. Pass `--repo <path>` to work against the user's repo.
 
 ## The one rule
 
-**No stage runs on anything but its predecessor's artifact, approved by the user
-and written to disk — and a stage that was skipped is reported as skipped, never
+**No stage runs on anything but its predecessor's artifact, approved and
+written to disk — and a stage that was skipped is reported as skipped, never
 as done.**
 
 Everything here is downstream of that. The gate is not a habit the orchestrator
@@ -28,10 +29,9 @@ is trusted to keep; it is `blockers()` in `scripts/lib/run.mjs`, and `accept`,
 proceed without an approval, the answer is to ask for the approval — never to
 work around the refusal.
 
-On a run started with `--auto`, the user delegates the approvals once, at
-`start`: each stage is then approved by a registered, hash-bound **red-team
-review** instead of a human — see *Auto mode*, below. The one rule does not
-loosen; the gate just has a different holder.
+The plan's approval has a human in it by default: you read the red-teamed plan
+and say yes. With `--auto` the red team's registered pass is the approval. Code
+has no human gate either way — its gate is the review loop on the pull request.
 
 ## What is code and what is judgment
 
@@ -40,306 +40,189 @@ step whose command does not exist fails `skillfactory verify`.
 
 | Deterministic — the machine decides | Command |
 |---|---|
+| compute the one next action from the run's state, perform every deterministic step it reaches, and print a dispatch, a wait, or a stop | `node "$SKILL_DIR/scripts/issueflow.js" next` |
 | read the open issues and the repo's branch and pull request policy | `node "$SKILL_DIR/scripts/issueflow.js" board` |
-| fetch the chosen issue and its comments to disk and open the stage state machine | `node "$SKILL_DIR/scripts/issueflow.js" start` |
-| render each stage's dispatch prompt, model and subagent type from the approved artifacts | `node "$SKILL_DIR/scripts/issueflow.js" brief` |
-| enforce the gate — record an artifact, record the approval, advance only then | `node "$SKILL_DIR/scripts/issueflow.js" accept` |
-| register a completed red-team review — validate every citation, derive the verdict from the severities, bind it to the artifact's hash, record the round | `node "$SKILL_DIR/scripts/issueflow.js" review` |
-| expand an approved design's work items into stacked child lanes | `node "$SKILL_DIR/scripts/issueflow.js" split` |
+| fetch the chosen issue and its comments to disk and open the state machine | `node "$SKILL_DIR/scripts/issueflow.js" start` |
+| render a stage's or the red team's dispatch prompt, model and subagent type from the approved artifacts | `node "$SKILL_DIR/scripts/issueflow.js" brief` |
+| enforce the gate — required sections, the red-before-green evidence rule, a clean tree, a registered red-team round | `node "$SKILL_DIR/scripts/issueflow.js" accept` |
+| register a red-team review of the plan — validate every citation, derive the verdict from the severities, bind it to the plan's hash | `node "$SKILL_DIR/scripts/issueflow.js" review` |
+| expand an approved plan's work items into stacked lanes | `node "$SKILL_DIR/scripts/issueflow.js" split` |
+| push the branches and open the pull requests as drafts under the repo's own policy | `node "$SKILL_DIR/scripts/issueflow.js" ship` |
+| open a review round — the diff at the pushed head, the finder briefs sized to it | `node "$SKILL_DIR/scripts/issueflow.js" review-brief` |
+| pool the candidates, add every prior open finding, brief the verifiers | `node "$SKILL_DIR/scripts/issueflow.js" review-verify` |
+| the registrar — assign ids once, classify every citation against the diff's hunks, apply the convergence rules, bind the round to its head | `node "$SKILL_DIR/scripts/issueflow.js" review-register` |
+| post one GitHub review per round — a thread per inline finding, a reply and a resolve on every prior thread | `node "$SKILL_DIR/scripts/issueflow.js" review-post` |
+| brief the fixer on every open major, with the red CI checks | `node "$SKILL_DIR/scripts/issueflow.js" review-fix-brief` |
+| record the fixer's report and reply on the threads; a not-changed major is a dispute | `node "$SKILL_DIR/scripts/issueflow.js" review-fix-report` |
+| lift the draft once the loop has converged and CI is green | `node "$SKILL_DIR/scripts/issueflow.js" ready` |
 | report the state of an interrupted run so it resumes without guessing | `node "$SKILL_DIR/scripts/issueflow.js" status` |
-| list every run on this machine, so one can be found without remembering its path | `node "$SKILL_DIR/scripts/issueflow.js" runs` |
-| push the branch and open the pull request under the repo's own policy | `node "$SKILL_DIR/scripts/issueflow.js" ship` |
+| list every run on this machine | `node "$SKILL_DIR/scripts/issueflow.js" runs` |
 | verify each lane's pull request merged, remove its worktree, delete its local branch, and mark the run done | `node "$SKILL_DIR/scripts/issueflow.js" finish` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
-| what the issue actually asks for, and what its root cause is | an issue is a person's description of a symptom; nothing on disk says which code causes it or whether the reporter asked for the right fix |
-| the design — the approach chosen, and the approaches rejected | trade-offs between working designs are judgment; a file records the code that exists, never the one that should |
-| whether this issue is one change or several, and where the seams fall | size signals suggest a split, they never locate it — only reading the design tells you which parts can land and be reviewed alone |
-| the implementation itself, written to match the surrounding code | matching a codebase's idiom, naming and comment density is imitation, which no rule set encodes |
-| whether the tests actually prove the issue is fixed | a green suite proves the tests passed, not that they tested the reported behaviour — only reading the issue against the assertions answers that |
-| whether an artifact is good enough to approve | this is the user's call and the whole point of the gate; a skill that decides it has removed the thing it exists to provide — or, on an auto run, the red team's call, registered and hash-bound, with every round shown to the user |
-| what the stage missed — the adversarial hunt itself | the registrar can check that a finding cites something real; only a reviewer reading the work can find the alternate root cause nobody ruled out, the file the design forgot, or the assertion that passes without the fix |
+| what the issue actually asks for, its root cause, and the plan to fix it | an issue is a person's description of a symptom; nothing on disk says which code causes it, whether the reporter asked for the right fix, or which of two working approaches is the better one |
+| whether this issue is one change or several, and where the seams fall | size signals suggest a split, they never locate it — only reading the code tells you which parts can land and be reviewed alone |
+| the implementation, and the test that proves it | matching a codebase's idiom is imitation no rule set encodes, and only reading the issue against the assertions says whether they test the reported behaviour |
+| what the plan missed — the red team's hunt | the registrar checks that a finding cites something real; only a reviewer reading the plan finds the alternate root cause nobody ruled out or the file the plan forgot |
+| what the diff gets wrong — the finders' hunt | the registrar knows which lines are in a hunk; only a reader knows which one is off by one |
+| whether a candidate is real, and whether a fix fixed it — the verifier's ruling | CONFIRMED, PLAUSIBLE and REFUTED are judgments about behaviour; the code enforces only that each is made, quoted, and made about a line that exists |
+| how to change the work so a finding no longer holds — the fixer's change | the finding names the failure; the fix is the fixer's |
+| whether the plan is good enough to approve | this is the user's call and the whole point of the human stop — or, on an auto run, the red team's, registered and hash-bound |
 
-## The flow
-
-### 1. Board — never ask what you can read
+## The flow — run `next`, do what it prints, repeat
 
 ```bash
-node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
+node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>       # once: which issue
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> [--auto]
+node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>      # then this, every turn
 ```
 
-Every open issue, plus the repo's branch policy read from its own
+`board` shows every open issue and the repo's branch policy read from its own
 `.github/shipflow.json`. **Never ask about anything in it** — the base branch,
 the feature prefix and the merge method are facts, and a confirmation is not a
-question. Show the table and ask one thing: which issue.
+question. Show the table and ask one thing: which issue. If the user already
+named one ("fix issue 42"), skip straight to `start`.
 
-`Detail` says how much the issue text specifies, not how much work it is. `thin !`
-is a broad label over a thin body — the combination most likely to come back from
-design as several work items. Never present it as a size estimate.
+`start` freezes the issue to disk, opens the state machine, prints the issue,
+and posts the run's comment on the issue. **Never call `gh issue view` after
+it.** Pass `--auto` when the user asked for no approvals — it removes the one
+human stop; nothing else changes.
 
-If the user already named an issue ("fix issue 42"), skip straight to `start`.
+From there the loop is one command. `next` performs every deterministic step it
+can — a brief, the gate, a registration, the split, the ship, a post — and then
+prints exactly one of four things:
 
-### 2. Start
+```
+next: dispatch (brief)                 ← start the subagent(s) printed above it, in the background
+  …
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
+then: node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n>
+next: wait                             ← something is in flight; run the wait line, then next
+next: stop — human | exhausted | drift | dispute | stalled | unpushed | shipped | done
+next: run …                            ← (only mid-output: a step next performed itself)
 ```
 
-Freezes the issue and its comments to disk, opens the state machine, and posts
-the run's comment on the issue. It also prints the issue itself — title, labels,
-comment count, detail — so **never call `gh issue view` after it**.
+**On `dispatch`:** start exactly the subagents printed, on exactly the model
+named, with exactly the one-line prompt given — in the background, and in ONE
+message when there are several. Say one short lowercase line about what is
+running and the expectation `brief` printed ("this usually takes about N
+minutes here"). Then run the `wait:` line with background Bash. When it
+returns, run `next`. **Never dispatch a stage on a model other than the one
+`brief` names.** **Never do a stage's work yourself** — an orchestrator that
+investigates "quickly, to save a dispatch" has collapsed the isolated contexts
+into one and thrown away the only thing this shape buys.
 
-From here on the run directory is the state. An interrupted run resumes with
-`status`; a run whose directory you have forgotten is found with `runs`.
+**On `wait`:** run the wait line, then `next`. The wait is filesystem-observed —
+output newer than the brief that dispatched it — so a stage's `SendMessage` is
+information, never the signal. If the wait exits 124 the stage has stalled;
+`next` says so and prints the same prompt to re-dispatch.
 
-**Every state change is checkpointed.** `start`, `accept`, `split` and `ship`
-each push the lane's branch and rewrite one comment on the issue carrying the
-board, the lanes and every approved artifact. This is what makes the run
-survive losing the machine — and it is why the issue, not this conversation, is
-the record. If a checkpoint row says `failed`, say so plainly: the approval is
+**On `stop`:** read the reason. `human` is the plan gate — `Read` the plan and
+the review it names, show the user what matters (the root cause, the approach
+and what was rejected, the files, the proof, the work items, and every finding
+the red team left), then ask plainly whether to approve, and run the command
+`next` printed once they do. `exhausted` on a review loop names the open
+majors and the two commands only the user runs (a ruling, or one more round);
+show them the fixer's last commit and each thread, not a summary. `exhausted`
+on the plan, `dispute`, `unpushed`, `stalled` and
+`drift` each name what is unresolved; put it in front of the user and stop —
+**never advance over drift you have not shown the user**, and `--force` is for
+after they decide, never before. `shipped` means every pull request is ready
+for review; `done` means every lane landed.
+
+**On a refused gate** (`next` exits 2 and prints `gate refused: …`): the stage
+goes back. `next` has already re-rendered the brief; dispatch the prompt it
+printed with the refusal appended — **never edit an artifact to get past the
+gate.** Those refusals are the product: an artifact missing its sections, an
+evidence file with no red run before its green one, a tree with uncommitted
+work, a plan nobody has attacked.
+
+Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
+`3` infrastructure (`gh`, git) — retry · `4` a person must act.
+
+### What the loop does, so you can narrate it
+
+1. **Plan.** One opus subagent investigates and plans: root cause, evidence,
+   unknowns, approach, rejected alternatives, files, proof, work items.
+2. **Red team.** One opus subagent attacks the plan and writes JSON findings;
+   `review` registers them — every citation must resolve, the severities decide
+   the verdict, the verdict binds to the plan's hash. Critical and high block;
+   the plan goes back with the findings, up to three rounds. **In this stage
+   the red team is the gate, and it is a dispatched subagent — never you.**
+3. **The human stop** (unless `--auto`): you read the red-teamed plan and
+   approve it, or send it back. A plan with work items splits into stacked lanes
+   the moment it is approved.
+4. **Implement**, one opus subagent per lane, up the stack: the change, the
+   test seen red then green, the real output, the commits. `accept` reads the
+   whole evidence file and refuses a green-only run, a green-then-red run, and
+   a red that is only a load error.
+5. **Ship.** Every lane's pull request opens as a draft (or, where drafts are
+   unavailable, labelled `review-loop` and titled `[reviewing]`).
+6. **Review loop**, bottom lane first. Each round: 2–5 opus finders (one under
+   sixty changed lines), each dealt angles from `references/review-method.md`;
+   up to 8 opus verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the
+   candidates and fixed / still-open / withdrawn on every prior major and every
+   prior nit in a file the fix touched (a nit in an untouched file is still open
+   by construction, and costs no verifier); the
+   registrar; one GitHub review with a thread per inline finding; then a fixer
+   (sonnet, or opus once a major survived a fix) on every open major, one commit
+   per round, a push, a fix report. **Paste the round's findings table into the
+   conversation — not a summary of it.** The loop converges when no major is
+   open — nits may remain — and `ready` lifts the draft once CI is green. Four
+   rounds is the cap: the round-4 fix lands unverified and `next` stops
+   `exhausted`. The user reads that fix and each open thread, then rules per
+   major with `review-rule --finding <id> --fixed|--withdrawn --note "<what
+   they checked>"`, or buys round five with `review-brief --another-round
+   "<why>"`. Both are the user's commands — `next` never prints them as a
+   dispatch, and you never run them on your own judgment.
+7. **Finish**, once the pull requests merge: worktrees removed, branches
+   deleted, the issue closed with `--close-issue`.
+
+**Every state change is checkpointed.** `start`, `accept`, `review`, `split`,
+`ship`, `review-register` and `ready` rewrite one comment on the issue carrying
+the board, the lanes, the rounds and every approved artifact, and push the
+lane's branch. If a checkpoint row says `failed`, say so plainly: the state is
 recorded locally and the run is **not** backed up.
 
-### 3. For each stage: brief → dispatch → show → approve
+**Report the pull request URLs `ship` returned, and the review URL `review-post`
+returned. Never claim a result you did not observe** — a pull request URL comes
+from `ship`, a converged loop from `ready`, a merge from `finish`.
 
-This is the whole loop, and it repeats four times (more when the run splits).
+## Rules that are not negotiable
 
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" brief --run-dir <run>   # or --stage <id> [--lane <slug>]
-```
-
-It returns the stage, its **model**, its agent type, the artifact the stage must
-write and the directory it works in, then prints the exact dispatch prompt to
-use. **Dispatch exactly one subagent, on exactly the model it names** — `opus`
-for investigate and design, `sonnet` for implement and test. The models are the
-point: the two stages where a wrong answer is expensive to discover get the
-strongest model, and the two bounded by an approved document get the faster one.
-
-**Dispatch in the background and say what is running.** These stages take
-minutes — five for investigate, ten for implement on the run this was measured
-against — and a foreground dispatch is that long with nothing on screen.
-`brief` prints how long this stage has taken on this repo's own past runs
-right above the dispatch prompt, so say that expectation out loud too: "this
-usually takes about N minutes here" beats a bare "starting" the same way a
-known range beats silence. One short lowercase line as it starts, then the
-result.
-
-**While it runs, `status` answers "is it stuck" — do not guess.** The board's
-`Took` column reads live (`4m12s+`) instead of `—` for a stage that has not
-delivered yet, and a liveness block underneath surfaces the stage's own last
-reported milestone and its age, when the subagent wrote one — the brief asks
-every stage to append a short line to its own progress log as it reaches real
-milestones, but that log is scratch work, never quoted back to the subagent
-and never pasted into the transcript verbatim; `status` already shows the
-latest line. Re-run `status` instead of asking the user to wait blind, and if
-the elapsed time is well past what the expectation line said, say so plainly
-rather than continuing to wait in silence.
-
-**When more than one stage can run, run them together:**
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" brief --run-dir <run> --ready
-```
-
-`--ready` briefs every stage whose gate is open and prints them as one list.
-A split run reaches this constantly — a lane's test and the next lane's
-implement are independent, and each lane works in its own git worktree, so they
-genuinely can run at once. **Dispatch them as N subagents in ONE message.**
-Running them one at a time is how the measured run left its second lane
-untouched.
-
-The dispatch prompt is one line pointing at the rendered brief. **Pass it as
-given.** Do not summarise the brief, do not add context, do not attach your own
-opinion of the previous stage — the brief already carries everything that may
-cross, and anything you add is a second, unreviewed source of truth. See
-`references/dispatch.md`.
-
-When the subagent returns, **`Read` the artifact it wrote and show the user what
-matters** — the root cause, the approach and what it rejected, the files it
-changed, the test result. A one-line "the investigate stage is done" is not a
-gate; the user cannot approve what they have not seen. Then ask plainly whether
-to approve it.
-
-**A content-free idle notification is not a completion.** The brief tells every
-subagent to send a `SendMessage` naming its artifact path and its result before
-it goes idle; wait for that message and read the artifact it names, rather than
-treating "idle" alone as done.
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" accept --run-dir <run> --stage <id> [--lane <slug>]
-```
-
-`accept` refuses an empty artifact, an artifact whose required sections are not
-*headings*, and a `test` stage whose evidence holds no runner result at all.
-**Those refusals are the product.** Never edit an artifact yourself to get past
-one — send the stage back with what the gate said.
-
-It also asks GitHub whether the world moved: an issue that has been closed, or a
-lane whose pull request already merged, **stops the run**. Read what it found and
-tell the user before reaching for `--force`. On the run this was measured
-against, the change was merged and the issue closed while the run sat at this
-gate, and the run went on to dispatch a subagent against a branch that no longer
-mattered.
-
-`accept` reports the facts you would otherwise shell out for — branch, HEAD,
-commits over `origin/<base>`, whether the tree is clean, the parsed test result.
-**Never run `git status`, `git log` or `grep` over the evidence to get them.**
-
-To record a stage as deliberately not done:
-`accept --stage <id> --skip "<reason>"`. It never becomes approved, so `ship`
-keeps refusing and names it.
-
-### 4. If the design says the issue splits
-
-The design stage lists work items under `## Work items`. If it did, show them and
-ask before expanding — a split multiplies the gates, and that is the user's call.
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" split --run-dir <run>
-```
-
-It reads the items out of the **approved design itself**. Never hand-write an
-items JSON file: that is a second copy of a decision the user already signed off,
-and on the measured run the retyped copy differed from the artifact.
-
-Each item becomes a lane with its own branch, its own `implement` and `test`
-stages, and its own pull request stacked on the lane below it. The shared stages
-are not duplicated. See `references/decomposition.md`.
-
-### 5. Ship
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" ship --run-dir <run> [--dry-run]
-```
-
-Pushes each lane bottom-first and opens its pull request against the base the
-policy resolved. Run `--dry-run` first and show the plan: this is the
-irreversible step, and it is the last moment the user can stop it.
-
-Report the pull request URLs the command returned. **Nothing else counts as
-shipped** — not a pushed branch, not a green check.
-
-### 6. Finish
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" finish --run-dir <run> [--close-issue]
-```
-
-`ship` ends at pull request URLs. This is what happens after: once GitHub
-confirms a lane's pull request merged, `finish` removes that lane's worktree,
-deletes its local branch, and records the landing. A lane whose pull request
-has not merged is left **completely alone** — the mirror of `accept`'s drift
-refusal, and the only path to `git branch -D` is a merge GitHub confirmed.
-
-Run it any time after `ship`; it is safe to run again. It finishes whatever
-has merged and leaves the rest untouched, so a split run with one lane still
-under review finishes the lane that landed and completes on a later call once
-the other one does too. Pass `--close-issue` to close the issue once every
-lane has landed — GitHub's `Closes #<n>` keyword only fires on a merge into
-the repository's *default* branch, and issueflow targets the policy base,
-which is `dev` in a shipflow repo, so the issue does not close on its own.
-
-`finish` is a question about GitHub, so it refuses on an offline run rather
-than finishing on an assumption. Once every lane has landed, `runs` and
-`status` report the run `done` — never `ready to ship` again.
-
-## Auto mode — the red team replaces the human gate
-
-When the user asks for an autonomous run ("work this autonomously", "auto
-mode", "no approvals, just ship it"), start with:
-
-```bash
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --auto
-```
-
-In auto mode **the red team is the gate, and it is a dispatched subagent —
-never you.** Every stage still runs exactly as in the flow above; what changes
-is what happens when its artifact lands. Instead of showing the user and
-asking, you dispatch an adversarial reviewer, and the stage advances only on a
-registered passing review:
-
-1. **Brief and dispatch the stage** as usual — background, on the model `brief`
-   names, with the expectation said out loud. The user is watching an
-   autonomous run, so narrate more, not less: one lowercase line at every
-   dispatch, and the board after every gate.
-2. **When the artifact lands** (the stage's `SendMessage`, never a bare idle),
-   say so in one line, then brief the red team:
-
-   ```bash
-   node "$SKILL_DIR/scripts/issueflow.js" brief --review --run-dir <run> --stage <id> [--lane <slug>]
-   ```
-
-   Dispatch the reviewer it prints — **opus, always**; the red team is the
-   judgment an auto run pays for. Reviews of parallel lanes are independent:
-   dispatch them as N subagents in ONE message, exactly like `--ready` stages.
-3. **When the review lands, register it:**
-
-   ```bash
-   node "$SKILL_DIR/scripts/issueflow.js" review --run-dir <run> --stage <id> [--lane <slug>]
-   ```
-
-   It validates every citation against something that exists, derives the
-   verdict from the severities (critical and high block; medium and low are
-   notes), binds the verdict to the sha of the artifact it reviewed, and
-   prints the findings table. **Paste that table into the conversation — not a
-   summary of it.** A refused registration (a finding that cites nothing, a
-   verdict that disagrees with its own severities) goes back to the reviewer
-   with the refusal verbatim, the same way a gate-refused stage does.
-4. **Blocked?** Re-brief the stage — the brief now carries the blocking
-   findings and the path to the full review — and redispatch it on its own
-   model. Say which round this is: "round 2: sending implement back with 1
-   high, 2 notes." Then review again. **Never weaken a review to clear a
-   finding** — if a finding is wrong, the reviewer's next round is where that
-   gets decided, not your judgment and not an edit to anything.
-5. **Pass?** Approve on the verdict and show the board:
-
-   ```bash
-   node "$SKILL_DIR/scripts/issueflow.js" accept --auto --run-dir <run> --stage <id> [--lane <slug>]
-   ```
-
-   `accept --auto` runs every refusal the human path runs, then also refuses a
-   missing or blocked review, an artifact edited after its review, and a
-   branch that moved under a code review. Its refusals are the product, same
-   as ever.
-6. **A design that splits, splits.** In auto mode run `split` without asking —
-   but say so, and show the lane table.
-7. **Three blocked rounds on one stage stop the run.** `brief` and `review`
-   refuse a fourth round; when that happens, print the open blocking findings,
-   run `status`, and hand the run to the user with what is unresolved. **Never
-   auto-ship over an open blocking finding**, and never `--skip` past one.
-   If the user then directs another round, re-open the stage with
-   `brief --another-round "<what the user decided>"` — the reason is the
-   user's decision, recorded on the run and rendered into the brief verbatim,
-   and it is never yours to invent.
-8. **Ship without asking, but not blind:** run `ship --dry-run`, narrate the
-   plan in one line, then `ship`. Then `finish` once merges confirm, and close
-   with the run summary: one table, `Stage | Model | Rounds | Blocking found |
-   Took`, plus the pull request URLs.
-
-**Auto mode never touches `--force`.** Blocking drift — a closed issue, an
-already-merged lane — stops an unattended run exactly like an exhausted stage:
-report it and hand back to the user. `--force` is for a human who has re-read
-the drift and decided; an auto run has no such human by definition.
-
-The user sees every round: the findings tables, the board after every gate,
-the checkpoint comment carrying the review history. Autonomous never means
-silent — it means the user reads the run instead of driving it.
+- **No stage runs on anything but its predecessor's artifact, approved and written to disk — and a stage that was skipped is reported as skipped, never as done.**
+- **Every state change is checkpointed.** A run that exists only on this machine is a run one crash away from having produced nothing.
+- **Never advance over drift you have not shown the user.** If `next` stops on drift, that is the answer — `--force` is for after they decide, never before.
+- **Never dispatch a stage on a model other than the one `brief` names.**
+- **Never do a stage's work yourself.**
+- **Never edit an artifact to get past the gate.** Send the stage back.
+- **Never claim a result you did not observe.**
+- **In the plan stage the red team is the gate, and it is a dispatched subagent — never you.** A reviewer that shares your context has already been told the conclusion it was sent to attack. The same holds for every finder and verifier on the pull request.
+- **Never weaken a review to clear a finding.** Round 3 is exactly when fixing the reviewer becomes cheaper than fixing the work; the work is what gets fixed. The fixer disputes by saying why, once — it notes the skip rather than arguing with it — and the next verifier rules.
+- **Never ready a pull request over an open major.** `ready` refuses; so does `next`. Only "no majors open" converges a lane, and only a human decides what happens to a lane the cap stopped.
+- **Never auto-ship over an open blocking finding.** An exhausted plan surfaces its findings and the run stops there.
+- **A round never reviews code GitHub has not received.** `review-brief` refuses when the local head, the remote head and the pull request's head disagree.
+- **Auto mode never touches `--force`.** Drift stops an unattended run; the flag is for a human who has re-read what moved.
 
 ## Commands
 
 | Command | Returns |
 |---|---|
+| `next` | the one next action, having performed every deterministic step before it: a dispatch with its wait line, a wait, or a stop naming who must act |
 | `board` | every open issue as a pick-table, plus the repo's resolved branch policy |
-| `start --issue <n> [--auto]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` hands every gate to the red team |
-| `brief [--stage] [--lane]` | the next stage's model, agent, artifact, worktree and the exact dispatch prompt |
-| `brief --ready` | **every** stage whose gate is open, for dispatch in one message |
-| `brief --review --stage <id>` | the red-team reviewer's brief for a delivered artifact: opus, the citation grammar, and the exact dispatch prompt |
-| `review --stage <id> [--lane]` | registers a completed review: validates every citation, derives the verdict, hash-binds it, prints the findings table and what to do next |
-| `accept [--stage] [--lane] [--skip] [--force] [--auto]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint; `--auto` approves on a registered passing review instead of a human |
-| `split` | one lane per work item read from the approved design, each stacked on the one below |
-| `status` | the run board with a live elapsed time for any stage still running, its last reported progress, what has drifted on GitHub, and what can run now |
+| `start --issue <n> [--auto]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` removes the human stop after the plan |
+| `brief [--stage] [--lane] [--review]` | a stage's, or the red team's, model, agent, artifact, worktree and the exact dispatch prompt |
+| `review --stage investigate` | registers a red-team review of the plan: validates every citation, derives the verdict, hash-binds it, prints the findings table and the coverage gap |
+| `accept [--stage] [--lane] [--skip] [--force] [--auto]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
+| `split` | one lane per work item read from the approved plan, each stacked on the one below |
+| `ship [--dry-run] [--no-draft] [--force]` | a pushed branch and a draft pull request per lane |
+| `review-brief --lane` · `review-verify --lane` · `review-register --lane` · `review-post --lane` · `review-fix-brief --lane` · `review-fix-report --lane` | one review round, step by step — `next` runs them in order |
+| `ready --lane` | the draft lifted, the summary comment posted, the lane converged |
+| `rebase --lane` | a stacked lane rebased onto the lane below it, before its first round |
+| `status` | the run board with a live elapsed time for any stage still running, every lane's rounds and open findings, what has drifted on GitHub |
 | `runs` | every run on this machine, with what it is waiting on |
-| `ship [--dry-run] [--force]` | a pushed branch and an open pull request per lane, and the per-stage timings |
 | `finish [--close-issue]` | per lane: the merge verified, the worktree removed, the branch deleted, the landing recorded — and, once every lane has landed, the run marked `done` |
 
 `--offline` suppresses every network call and the checkpoint. It is for the
@@ -348,39 +231,38 @@ evals; a real run should never pass it.
 ## Requirements
 
 - **`gh`, authenticated**, with read access to the repo's issues and write access
-  to open a pull request.
+  to open pull requests and post reviews on them.
 - **A git repo with a GitHub remote.** Everything is resolved from it — the
   owner, the name, the default branch and the branch policy.
-- **Subagent dispatch.** Every stage runs as its own subagent; without that this
-  is a checklist, not a pipeline.
+- **Subagent dispatch.** Every stage, every reviewer and the fixer run as their
+  own subagent; without that this is a checklist, not a pipeline.
 
-## Rules that are not negotiable
+## What's here
 
-- **No stage runs on anything but its predecessor's artifact, approved by the user and written to disk — and a stage that was skipped is reported as skipped, never as done.**
-- **Every state change is checkpointed.** The branch is pushed and the issue's
-  comment is rewritten at every gate. A run that exists only on this machine is
-  a run one crash away from having produced nothing.
-- **Never advance over drift you have not shown the user.** If `accept` says the
-  work already merged, that is the answer — `--force` is for after they decide,
-  never before.
-- **Never dispatch a stage on a model other than the one `brief` names.**
-- **Never do a stage's work yourself.** An orchestrator that investigates the
-  issue "quickly, to save a dispatch" has collapsed four isolated contexts into
-  one and thrown away the only thing this shape buys.
-- **Never edit an artifact to get past the gate.** Send the stage back.
-- **Never claim a result you did not observe.** Say what you verified and what
-  you did not — a pull request URL comes from `ship`, never from having asked
-  for one.
-- **In auto mode the red team is the gate, and it is a dispatched subagent —
-  never you.** A reviewer that shares your context has already been told the
-  conclusion it was sent to attack.
-- **Never weaken a review to clear a finding.** Round 3 is exactly when fixing
-  the reviewer becomes cheaper than fixing the work; the work is what gets
-  fixed.
-- **Never auto-ship over an open blocking finding.** An exhausted stage
-  surfaces its findings and the run stops there.
-- **Auto mode never touches `--force`.** Drift stops an unattended run; the
-  flag is for a human who has re-read what moved.
+| Path | Is |
+|---|---|
+| `scripts/issueflow.js` | the CLI: `next`, `board`, `start`, `brief`, `accept`, `review`, `split`, `ship`, the six `review-*` commands, `ready`, `rebase`, `status`, `runs`, `finish` |
+| `scripts/lib/next.mjs` | the driver: state → one action; the wait lines; the stall threshold |
+| `scripts/lib/stages.mjs` | the two stages: model, agent, artifact, what each is asked and refused |
+| `scripts/lib/reviews.mjs` | the red team on the plan: the reviewer contract, the JSON finding shape, the citation resolver, the registrar that hash-binds a verdict |
+| `scripts/lib/prreview.mjs` | the pull request review loop: fleet sizing, hunk classification, immutable finding ids, transitions, the convergence rules, the pending-review payload, thread maintenance |
+| `scripts/lib/reviewbrief.mjs` | the finder, verifier and fixer briefs, spliced from `references/review-method.md` |
+| `scripts/lib/run.mjs` | the state machine and the gate — `dependencies()` and `blockers()` are the one rule as code |
+| `scripts/lib/evidence.mjs` | reading every runner result out of the evidence file, and the red-before-green rule |
+| `scripts/lib/brief.mjs` | the stage and red-team brief renderers |
+| `scripts/lib/checkpoint.mjs` | the push and the sticky issue comment — how a run survives this machine |
+| `scripts/lib/reconcile.mjs` | what has moved on GitHub since the run last looked |
+| `scripts/lib/worktree.mjs` | a checkout per lane, so two lanes never share a tree |
+| `references/review-method.md` | the angle catalogue, the verifier's contract, the severity definitions and the fixer's rule — the source every review brief is rendered from |
+| `references/anatomy.md` | the run directory, the state machine, the review loop's record |
+| `references/dispatch.md` | the dispatch-prompt contract, and why the wait is a file rather than a message |
+| `references/decomposition.md` | when an issue splits, how work items become stacked pull request layers, and what a split may not do |
+
+## Maintainer reference — not part of a user run
+
+`skill-invariants.json` names what must not silently disappear, declares which
+half of this skill is code, and lists the baseline eval set. The baseline is
+pinned against real runs — see each entry's `update_command` to refresh it.
 
 <!-- press:agent-ui -->
 

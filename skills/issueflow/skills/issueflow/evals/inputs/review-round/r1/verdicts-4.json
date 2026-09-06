@@ -1,0 +1,49 @@
+{
+  "verdicts": [
+    {
+      "id": "c-2-6",
+      "verdict": "REFUTED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    threshold for five weeks. Anything else this day needs is computed in the\n    loop below, not in a pass of its own.",
+      "line": 1205,
+      "note": "The premise is false and the mitigation is already in the diff: at the base commit 7326f66 the helper's only src caller was `_workout_actuals` itself (`git grep _normalize_activity_types 7326f66 -- src/` returns exactly its own def at plans.py:227 and the call at plans.py:1240), so no consumer ever asked for classes standalone; and the docstring the candidate asks for is present at plans.py:1200-1206, naming the second-pass regression by PR and telling the next caller to compute in the loop rather than in a pass of its own."
+    },
+    {
+      "id": "c-2-7",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "        dp = _TEXT_HIGH_DP if key in _TEXT_HIGH_PRECISION_KEYS else _TEXT_DEFAULT_DP",
+      "line": 205,
+      "note": "The duplication is real but the count is off by one in the summary: the precision rule is written THREE times (tools.py:190, :197-198, :205), not four, and the scalar classification three times (:187-191, :196-200, :209-212), not twice — the failure_scenario's own citation list says three in both cases. Cleanup with no observable behaviour difference (the vendored-reference oracle at tests/test_perf_benchmarks.py:441 covers the fast path/fallback equivalence), so nit."
+    },
+    {
+      "id": "c-2-8",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "  AND `db.connect()`-open-count for the brief/plan hot paths",
+      "line": 161,
+      "note": "Verified at head: CLAUDE.md:160-161 still describes the gate as latency AND connection-open-count only, while the same diff rewrites tests/test_perf_benchmarks.py's docstring to \"Three axes are asserted\" and adds the work-COUNT axis — the canonical description in the file this diff edits is now one axis behind. Documentation-only, no runtime effect."
+    },
+    {
+      "id": "c-3-1",
+      "verdict": "CONFIRMED",
+      "severity": "major",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] <= 100",
+      "line": 297,
+      "note": "Reproduced exactly in this checkout at 776ccbd with only `tools.date`/`plans.date` faked: `_round_floats` calls for `get_training_plan_progress.handler({})` against the fixture built at today=2026-07-09 are 25 (2026-07-09), 79 (2026-09-01), 83 (2026-09-05), 99 (2026-09-21), 101 (2026-09-22 — first failing date), 109 (2026-09-30), plateauing at 115 from 2026-10-06; `_ran` is 87 at every one of those dates. Mechanism is as filed: tools.py:3851-3854 `anchor_fwd = max(frontier or today, today)` / `window_end = anchor_fwd + 7d`, so each extra wall-clock day sweeps another prescribed workout dict into the serialized payload. These tests are NOT benchmark-skipped — `uv run pytest tests/test_perf_benchmarks.py -k 'double_classify or without_a_call_per_node or evaluates_ran_once'` runs and passes all three today — so the assertion red-lines ordinary CI on 2026-09-22 with no code change, which is exactly issue #232's item-4 failure class the header comment at line 285 claims immunity from."
+    },
+    {
+      "id": "c-3-2",
+      "verdict": "CONFIRMED",
+      "severity": "nit",
+      "introduced_by_diff": true,
+      "quote": "    assert counts[\"n\"] <= 90",
+      "line": 284,
+      "note": "Measured 87 at head against the module-scoped perf fixture, and unlike c-3-1 it is date-stable (87 at every date from 2026-07-09 to 2026-11-30), so this is fixture fragility rather than a time bomb: 3 calls of headroom over a measurement whose stated signal band is 123 -> 87. The attribution checks out — the generator expressions are at plans.py:189, :201, :213 and `weekly_mileage`'s `dist_fn = _foot_distance if cfg.count_walks_mileage else _running_distance` at plans.py:532 would change the count if that flag were turned on. Nit: pinning the exact count (or widening the bound to the real signal band) removes the tripwire without weakening the assertion."
+    }
+  ]
+}
