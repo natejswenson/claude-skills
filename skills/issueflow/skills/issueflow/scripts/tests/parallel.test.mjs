@@ -20,8 +20,9 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { markerFor } from '../lib/checkpoint.mjs';
+import { FINISHED_MARKER, claimedIn, markerFor } from '../lib/checkpoint.mjs';
 import { HandBack, claimRunDir, createRun, saveRun } from '../lib/run.mjs';
+import { ensureWorktree } from '../lib/worktree.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -259,6 +260,127 @@ test('an offline replay of a payload whose real comment carries a marker still s
   assert.equal(r.code, 0, `an offline replay must still start, got ${r.code}: ${r.err}`);
   rmSync(repoPath, { recursive: true, force: true });
   rmSync(dirname(dir), { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// claimedIn — defended inputs, the finished exemption, and a real commentId.
+// ---------------------------------------------------------------------------
+
+test('claimedIn reads "no comments" off a count, the shape board.mjs already defends against, instead of throwing', () => {
+  // `board.mjs:80` already reads `comments` as either an array or a count —
+  // feeding the same shape to `claimedIn` must not crash `board`/`start`.
+  assert.equal(claimedIn(3, OWNER, NAME, NUMBER), null);
+  assert.equal(claimedIn('some string', OWNER, NAME, NUMBER), null);
+  assert.equal(claimedIn(undefined, OWNER, NAME, NUMBER), null);
+  // The green half: an actual array with the marker still matches.
+  assert.ok(claimedIn([claimComment()], OWNER, NAME, NUMBER));
+});
+
+test('claimedIn synthesizes commentId from the comment URL, the way gh.mjs already does for every other caller', () => {
+  const claim = claimedIn([claimComment()], OWNER, NAME, NUMBER);
+  assert.equal(claim.commentId, 999, `expected the id encoded in the fixture URL, got ${claim.commentId}`);
+});
+
+test('claimedIn skips a comment that also carries FINISHED_MARKER — a closed run\'s own note, not a live claim', () => {
+  const dead = {
+    body: `${markerFor(OWNER, NAME, NUMBER)}\n### issueflow\n\n${FINISHED_MARKER} **Finished** 2026-01-01T00:00:00.000Z — every lane landed.\n`,
+    url: `https://example.invalid/${OWNER}/${NAME}/issues/${NUMBER}#issuecomment-1`,
+  };
+  assert.equal(claimedIn([dead], OWNER, NAME, NUMBER), null);
+  // The green half: the same body without the finished marker still claims.
+  assert.ok(claimedIn([claimComment()], OWNER, NAME, NUMBER));
+});
+
+// ---------------------------------------------------------------------------
+// start on a finished, or taken-over, run (#251 findings f-e3b86bc0,
+// f-c17c24c8, f-b005fdf5, f-dfd22552).
+// ---------------------------------------------------------------------------
+
+test('a finished run\'s own dead marker comment does not block a later start once local state is gone', () => {
+  // The issue was worked to completion, `finish` ran, and the local run
+  // directory is gone (a wiped home, a different machine, a --run-dir under a
+  // temp dir) — nothing but the sticky comment remains. Reopening the issue
+  // (or working it a second time) must not read that comment as a stranger's
+  // live claim.
+  const finishedComment = {
+    body: `${markerFor(OWNER, NAME, NUMBER)}\n### issueflow\n\n${FINISHED_MARKER} **Finished** 2026-01-01T00:00:00.000Z — every lane landed.\n`,
+    url: `https://example.invalid/${OWNER}/${NAME}/issues/${NUMBER}#issuecomment-777`,
+  };
+  const f = online({ comments: [finishedComment] });
+  const r = f.start();
+  assert.equal(r.code, 0, `a finished run's own dead marker must not read as a live claim, got ${r.code}: ${r.err}`);
+  assert.equal(existsSync(join(f.runDir, 'run.json')), true);
+  f.cleanup();
+});
+
+test('start on a local run marked finished proceeds without --take-over, and resets its state', () => {
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.stages[0].state = 'approved';
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const second = f.start();
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  const fresh = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  assert.equal(fresh.stages[0].state, 'pending', 'the reopened issue gets a fresh state machine');
+  assert.equal(fresh.finished, null, 'a fresh run is not finished');
+  f.cleanup();
+});
+
+test('start on a finished run does not leak its old artifacts into the fresh run\'s delivered state', () => {
+  // The bug this closes: `--take-over` (explicit or implicit-via-finished)
+  // used to rewrite only run.json, so a stage artifact still on disk from the
+  // displaced run made the fresh, all-pending run instantly report that stage
+  // as already delivered.
+  const f = online();
+  assert.equal(f.start().code, 0);
+  writeFileSync(join(f.runDir, 'shared', 'investigate.md'), '## Root cause\n\nsomeone else\'s plan.\n');
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  assert.equal(f.start().code, 0);
+  assert.equal(
+    existsSync(join(f.runDir, 'shared', 'investigate.md')), false,
+    'the displaced session\'s artifact must not survive into the fresh run',
+  );
+  f.cleanup();
+});
+
+test('--take-over clears the previous run\'s artifacts, worktree and branch — not just run.json', () => {
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const run = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  const lane = run.lanes[0];
+
+  // Stand in for a session that reached implement: an artifact on disk and a
+  // worktree with a real commit on the lane's branch.
+  mkdirSync(join(f.runDir, 'shared'), { recursive: true });
+  writeFileSync(join(f.runDir, 'shared', 'investigate.md'), '## Root cause\n\nsession A\'s plan.\n');
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  writeFileSync(join(wt, 'work.txt'), 'session A\'s work\n');
+  git(['add', 'work.txt'], wt);
+  git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', 'session A commit'], wt);
+  assert.equal(
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], { cwd: f.repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim().length > 0,
+    true,
+    'the fixture must actually have session A\'s branch',
+  );
+
+  const second = f.start(['--take-over']);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(existsSync(join(f.runDir, 'shared', 'investigate.md')), false, 'the displaced artifact must be gone');
+  assert.equal(existsSync(wt), false, 'the displaced worktree must be gone');
+  let branchGone = false;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], { cwd: f.repoPath, stdio: 'ignore' });
+  } catch {
+    branchGone = true;
+  }
+  assert.equal(branchGone, true, 'the displaced branch must be deleted, not silently reused by the fresh run');
+  f.cleanup();
 });
 
 // ---------------------------------------------------------------------------

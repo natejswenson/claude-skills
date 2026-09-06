@@ -223,7 +223,10 @@ it safe, and all three are the CLI's job, not yours:
 - **`start` refuses an issue that is taken** and exits 4, rather than resetting
   a run somebody else is in the middle of and republishing an empty board over
   their checkpoint comment. `--take-over` is the one way past, and it is for a
-  human who has read that comment.
+  human who has read that comment. A **finished** run is the one exception:
+  `finish` already removed its worktrees and deleted its branches, so a
+  reopened (or twice-worked) issue starts fresh with no flag needed, and its
+  own dead marker comment is never read as a stranger's claim.
 - **A lane is cut from the base as it is now.** `brief` fetches the base before
   it creates a branch, so a lane started after another session's pull request
   merged contains that merge. A fetch that fails is exit 3 — infrastructure,

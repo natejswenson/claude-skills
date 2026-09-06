@@ -83,13 +83,19 @@ function startPoint(repoPath, lane) {
 /** Wait, synchronously — this whole module is `execFileSync`, and a promise here would infect the caller. */
 const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
 
-/** Whether this checkout has an `origin` at all. A fixture repo made by `git init` does not. */
-function originConfigured(repoPath) {
+/**
+ * Whether this checkout has an `origin` at all. A fixture repo made by `git init` does not —
+ * that is the one case this returns `false` for. Any other failure (lock contention, an
+ * unreadable `.git/config`, EMFILE) is not "no origin", and must not be read as one: silently
+ * skipping the fetch on a transient error is the exact stale-base defect this change exists to
+ * prevent, made invisible instead of fatal.
+ */
+export function originConfigured(repoPath) {
   try {
     return execFileSync('git', ['remote'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).includes('origin');
-  } catch {
-    return false;
+  } catch (err) {
+    throw new WorktreeError(`could not read the remotes of ${repoPath}: ${String(err.message ?? err)}`);
   }
 }
 
@@ -154,8 +160,14 @@ function fetchBase(repoPath, base) {
  * `offline` is the run's own, and it skips the fetch. An offline run makes no
  * network call by contract, and the evals replay frozen payloads against
  * fixture repositories that have no remote at all.
+ *
+ * `lanes` is the run's full lane list, used only to tell a stacked lane's base
+ * apart from the repo's own base: a stacked lane's base is a sibling lane's
+ * branch, which lives only locally until that lane is pushed, so origin has
+ * never heard of it and a `git fetch` for it fails every time, not just when
+ * stale. Fetching is only ever meant to refresh a *shared* base like `dev`.
  */
-export function ensureWorktree(repoPath, dir, lane, { offline = false } = {}) {
+export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [] } = {}) {
   const path = worktreePath(dir, lane);
   if (existsSync(path)) return { path, created: false };
 
@@ -173,8 +185,11 @@ export function ensureWorktree(repoPath, dir, lane, { offline = false } = {}) {
   } else {
     // Only on the path that creates a branch: an existing worktree returned
     // above, and a branch that already exists has nothing left to cut from a
-    // base, so re-briefing a stage still costs no network.
-    if (!offline && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
+    // base, so re-briefing a stage still costs no network. Also skipped when
+    // the base is a sibling lane's branch — a stacked lane's base is local-only
+    // until that lane ships, so origin has no ref for it to fetch.
+    const stacked = lanes.some((l) => l.branch === lane.base);
+    if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
     git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
   }
   return { path, created: true };

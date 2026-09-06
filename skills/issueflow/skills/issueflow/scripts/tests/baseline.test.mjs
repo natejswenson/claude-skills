@@ -94,6 +94,28 @@ test('the-real-run: the frozen board is a real board, not an empty one', () => {
   );
 });
 
+test('the Detail guard actually discriminates: a hand-built board whose Detail column holds one repeated value fails it', () => {
+  // The other half of the check above. Without this, `boardCell` could be
+  // changed to resolve the wrong column, a constant, or the header cell
+  // itself, and the frozen golden's own varied Detail values would keep the
+  // assertion passing anyway — a guard that stopped discriminating months ago
+  // and never told anyone.
+  const flat = [
+    '| #   | Issue | Labels | Comments | Updated | Detail | Run |',
+    '|-----|-------|--------|----------|---------|--------|-----|',
+    '| 1   | a     | —      | 0        | 2026-01-01 | some | — |',
+    '| 2   | b     | —      | 0        | 2026-01-01 | some | — |',
+    '| 3   | c     | —      | 0        | 2026-01-01 | some | — |',
+  ].join('\n');
+  const rows = flat.split('\n').filter((l) => /^\| \d+ /.test(l));
+  const details = new Set(rows.map((l) => boardCell(flat, l, 'Detail')));
+  assert.throws(
+    () => assert.ok(details.size >= 2, `every issue reported Detail "${[...details]}" — the signal has stopped discriminating`),
+    /stopped discriminating/,
+    'a board whose Detail column holds one repeated value must still fail the guard',
+  );
+});
+
 test('the-real-run: no padded table cell carries a path, so the golden survives another machine', () => {
   // `table()` pads cells to the widest value. A cell holding an absolute path is
   // therefore as wide as the machine's tmpdir — /var/folders/… on macOS,

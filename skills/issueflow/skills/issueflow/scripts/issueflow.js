@@ -7,7 +7,7 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
@@ -34,7 +34,7 @@ import {
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { FetchError, WorktreeError, ensureWorktree } from './lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, removeWorktree } from './lib/worktree.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 
@@ -318,23 +318,36 @@ async function cmdBoard(args) {
  *   on an offline run — an offline replay makes no claim and can clobber
  *   nothing, which is what keeps the frozen `issue-132.json` payload (whose
  *   real comment carries a real marker) replayable.
+ *
+ * A local run that has *finished* is the one local fact that does not refuse:
+ * `finish` already removed its worktrees and deleted its branches, `runState`
+ * already reports it as `done` on the board, and the checkpoint comment
+ * already carries `FINISHED_MARKER`. Nobody holds it. Refusing anyway would
+ * make a reopened (or twice-worked) issue recoverable only through
+ * `--take-over` — the destructive override SKILL.md reserves for a claim a
+ * human has actually read, and one auto mode must never pass. Returning
+ * `{ finished: true }` here is what tells `cmdStart` to reset the directory
+ * and take over without that flag.
  */
 function refuseClaimed(dir, info, issue, args) {
-  if (args.takeOver) return;
+  if (args.takeOver) return { finished: false };
 
   if (existsSync(join(dir, 'run.json'))) {
-    let reason = `a run already exists at ${dir}`;
-    let remedy = 'Resume it with `issueflow next --run-dir <dir>` — only if the session that started it is gone.';
     try {
-      loadRun(dir);
+      const existing = loadRun(dir);
+      if (existing.finished) return { finished: true };
     } catch (err) {
-      reason = String(err?.message ?? err);
-      remedy = 'Start over on top of it with `--take-over`, which overwrites it.';
+      throw new HandBack(
+        `${String(err?.message ?? err)}. Start over on top of it with \`--take-over\`, which overwrites it.`,
+      );
     }
-    throw new HandBack(`${reason}. ${remedy}`);
+    throw new HandBack(
+      `a run already exists at ${dir}. ` +
+        'Resume it with `issueflow next --run-dir <dir>` — only if the session that started it is gone.',
+    );
   }
 
-  if (isOffline(args)) return;
+  if (isOffline(args)) return { finished: false };
   const claim = claimedIn(issue.comments, info.owner, info.name, issue.number);
   if (claim) {
     throw new HandBack(
@@ -343,6 +356,60 @@ function refuseClaimed(dir, info, issue, args) {
         'Starting here would republish an empty board over it. Take it over with `--take-over` once you have.',
     );
   }
+  return { finished: false };
+}
+
+/**
+ * `--take-over`'s cleanup, and a finished run's implicit one.
+ *
+ * `claimRunDir({ takeOver: true })` only ever rewrote `run.json` — it left the
+ * displaced run's worktrees, its local branches, and every stage artifact
+ * already on disk untouched. Three different failures fell out of that:
+ *
+ * - `deliveredSince` and `hasContent` read those artifacts straight off disk,
+ *   so the fresh, all-pending run.json this writes next would instantly
+ *   report the previous session's plan and implementation as its own
+ *   delivered work.
+ * - An existing worktree directory makes `ensureWorktree` a no-op, so a taken
+ *   -over run's stages would silently keep running in the displaced session's
+ *   checkout, on top of its commits.
+ * - An existing branch means `ensureWorktree` never reaches the branch
+ *   -creating arm at all, so the fresh-base fetch this same change adds is
+ *   never even attempted on exactly the lane that most needs it.
+ *
+ * Read best-effort: a `run.json` `loadRun` refuses (the other reason
+ * `--take-over` exists) still names real lanes worth cleaning up, so this
+ * reads the raw JSON rather than going through the loader that would throw
+ * on it.
+ */
+function resetRunDir(dir, repoPath) {
+  let previous = null;
+  if (existsSync(join(dir, 'run.json'))) {
+    try {
+      previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+    } catch {
+      previous = null;
+    }
+  }
+  const oldRepoPath = previous?.repo?.path ?? repoPath;
+  for (const lane of previous?.lanes ?? []) {
+    try {
+      removeWorktree(oldRepoPath, dir, lane);
+    } catch {
+      // Already gone, or the repo path from a stale run no longer resolves.
+    }
+    try {
+      execFileSync('git', ['branch', '-D', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
+    } catch {
+      // Never pushed, already deleted by `finish`, or the repo is unreachable.
+    }
+  }
+  try {
+    pruneWorktrees(oldRepoPath);
+  } catch {
+    // No worktrees, or no repo to prune them from.
+  }
+  rmSync(dir, { recursive: true, force: true });
 }
 
 async function cmdStart(args) {
@@ -354,12 +421,14 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
-  refuseClaimed(dir, info, issue, args);
+  const claim = refuseClaimed(dir, info, issue, args);
+  const takeOver = Boolean(args.takeOver) || claim.finished;
+  if (takeOver) resetRunDir(dir, repo);
 
   const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
-  claimRunDir(dir, run, { takeOver: Boolean(args.takeOver) });
+  claimRunDir(dir, run, { takeOver });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 

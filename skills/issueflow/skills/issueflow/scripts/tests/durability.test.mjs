@@ -9,7 +9,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { checkpoint, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
 import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
-import { FetchError, WorktreeError, ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
 import { approvePlan, redTeamPass } from './helpers.mjs';
 
@@ -396,6 +396,84 @@ test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 inst
 
   rmSync(dir, { recursive: true, force: true });
   o.cleanup();
+});
+
+test('a stacked lane whose base is a sibling lane\'s local-only branch skips the fetch, and still cuts from it', () => {
+  // `split` gives a later lane a base that lives only locally until that lane
+  // is pushed — `ship` cannot run before every lane's implement is approved —
+  // so fetching it from origin fails every time, not just when stale. The
+  // fetch this change adds is only ever meant to refresh a SHARED base.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const laneA = { ...run.lanes[0], slug: 'a', branch: 'feature/issue-9-a' };
+  const laneB = { ...run.lanes[0], slug: 'b', branch: 'feature/issue-9-b', base: laneA.branch };
+  git(['branch', laneA.branch], o.path);
+
+  // Unaware of the sibling, this is exactly the defect: origin has never
+  // heard of a branch that lives only in this checkout.
+  assert.throws(() => ensureWorktree(o.path, dir, laneB), FetchError, 'without the sibling list this must still be the old failure');
+
+  const wt = ensureWorktree(o.path, dir, laneB, { lanes: [laneA, laneB] }).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), git(['rev-parse', laneA.branch], o.path), 'still cut from the sibling branch');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('originConfigured tells "no origin" apart from a git failure — only the first is silently false', () => {
+  const withOrigin = tempRepoWithOrigin();
+  assert.equal(originConfigured(withOrigin.path), true);
+  withOrigin.cleanup();
+
+  // `git init` only, no remote added — the one legitimate false case.
+  const bare = tempRepo();
+  assert.equal(originConfigured(bare), false);
+  rmSync(bare, { recursive: true, force: true });
+
+  // Not a git repository at all: `git remote` fails outright, and that must
+  // not be read as "no origin" and silently skipped — it is the exact
+  // stale-base defect the fetch exists to prevent, made invisible instead of
+  // fatal.
+  const notARepo = mkdtempSync(join(tmpdir(), 'issueflow-not-a-repo-'));
+  assert.throws(() => originConfigured(notARepo), WorktreeError, 'a git failure must surface, not read as "no origin"');
+  rmSync(notARepo, { recursive: true, force: true });
+});
+
+test('a WorktreeError that is not a FetchError still warns and `brief` continues — the survivable half of the fatal split', () => {
+  // The mirror of the FetchError case above: `repoPath` pointed at a
+  // subdirectory of a real repo is refused by `ensureWorktree`'s own
+  // toplevel check, which is a WorktreeError but never a FetchError.
+  const repoPath = tempRepo();
+  const sub = join(repoPath, 'subdir');
+  mkdirSync(sub);
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: sub, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  let err = null;
+  try {
+    ensureWorktree(sub, dir, run.lanes[0]);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof WorktreeError, `expected a WorktreeError, got ${err}`);
+  assert.equal(err instanceof FetchError, false, 'this must be the survivable kind, not the fatal one');
+
+  // `spawnCli`/`spawnSync` above discard stderr on a 0 exit — this is the one
+  // case that needs it captured either way, so it runs the child directly.
+  const brief = spawnSync(process.execPath, [CLI, 'brief', '--stage', 'implement', '--run-dir', dir], {
+    encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+  });
+  assert.equal(brief.status, 0, `a non-fetch WorktreeError must warn and continue, got ${brief.status}: ${brief.stderr}`);
+  assert.match(brief.stderr, /no worktree for root/);
+  assert.match(brief.stderr, /the stage will work in the repository itself/);
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(repoPath, { recursive: true, force: true });
 });
 
 // ---------------------------------------------------------------------------
