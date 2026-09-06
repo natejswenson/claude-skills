@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request — one opus subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one opus subagent implements it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.7.0
+version: 0.7.1
 ---
 
 # /issueflow — one open issue to a pull request, driven by `next`
@@ -62,7 +62,7 @@ step whose command does not exist fails `skillfactory verify`.
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
 | what the issue actually asks for, its root cause, and the plan to fix it | an issue is a person's description of a symptom; nothing on disk says which code causes it, whether the reporter asked for the right fix, or which of two working approaches is the better one |
-| whether this issue is one change or several, and where the seams fall | size signals suggest a split, they never locate it — only reading the code tells you which parts can land and be reviewed alone |
+| whether this issue is one change or several, and where the seams fall | **One pull request per issue is the default**; a split is for a change too large to review as one, and size signals suggest it without locating it — only reading the code tells you which layers a reviewer needs apart |
 | the implementation, and the test that proves it | matching a codebase's idiom is imitation no rule set encodes, and only reading the issue against the assertions says whether they test the reported behaviour |
 | what the plan missed — the red team's hunt | the registrar checks that a finding cites something real; only a reviewer reading the plan finds the alternate root cause nobody ruled out or the file the plan forgot |
 | what the diff gets wrong — the finders' hunt | the registrar knows which lines are in a hunk; only a reader knows which one is off by one |
@@ -153,7 +153,9 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
    the red team is the gate, and it is a dispatched subagent — never you.**
 3. **The human stop** (unless `--auto`): you read the red-teamed plan and
    approve it, or send it back. A plan with work items splits into stacked lanes
-   the moment it is approved.
+   the moment it is approved — and work items are the exception, for a change
+   too large to review as one; several small fixes in one issue are one pull
+   request with a commit each.
 4. **Implement**, one opus subagent per lane, up the stack: the change, the
    test seen red then green, the real output, the commits. `accept` reads the
    whole evidence file and refuses a green-only run, a green-then-red run, and
