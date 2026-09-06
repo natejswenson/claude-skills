@@ -347,15 +347,25 @@ export const findingId = (lane, f) =>
  * Refuses when the cap is spent, and when the head the loop would review is
  * not the head GitHub has — the caller passes what `gh pr view` reported.
  */
-export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, now = () => new Date().toISOString() }) {
+export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, anotherRound = null, now = () => new Date().toISOString() }) {
   if (!lane.pr) throw new RunError(`cannot review ${lane.slug}: no pull request — ship first`);
   const last = currentRound(lane);
   if (last && !last.registered) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it (or its finders never delivered) before starting another`);
   if (reviewExhausted(lane)) {
-    throw new HandBack(
-      `the review loop on ${lane.slug} has run ${MAX_REVIEW_ROUNDS} rounds and a major is still open — ` +
-        'stop, and put the open majors in front of the user; never ready a pull request over one',
-    );
+    // The cap hands the open majors to a person. Two answers exist, and both
+    // are typed by the person, never by `next`: rule on the majors
+    // (`review-rule`), or direct one more round with a reason, recorded here.
+    if (typeof anotherRound === 'string' && anotherRound.trim()) {
+      lane.review.overrides ??= [];
+      lane.review.overrides.push({ round: nextReviewRound(lane), reason: anotherRound.trim(), at: now() });
+    } else {
+      throw new HandBack(
+        `the review loop on ${lane.slug} has run ${MAX_REVIEW_ROUNDS} rounds and a major is still open — ` +
+          'stop, and put the open majors in front of the user; never ready a pull request over one. ' +
+          'The user rules with `review-rule --finding <id> --fixed|--withdrawn --note "<what they checked>"`, ' +
+          'or directs one more round with `review-brief --another-round "<why>"`',
+      );
+    }
   }
   if (remoteHead !== null && remoteHead !== head) {
     throw new RunError(`cannot review ${lane.slug}: local HEAD ${head.slice(0, 12)} is not on origin (${String(remoteHead).slice(0, 12)}) — push first; a round never reviews code GitHub has not received`);
@@ -831,6 +841,60 @@ export function converge(dir, run, lane, now = () => new Date().toISOString()) {
   lane.review.convergedAt = now();
   saveRun(dir, run);
   return last;
+}
+
+/** Re-derive a registered round's verdict and counts from the findings as they stand now. */
+function recount(lane, entry) {
+  const majors = openMajors(lane).length;
+  entry.verdict = majors === 0 ? 'converged' : 'open';
+  entry.counts = {
+    ...(entry.counts ?? {}),
+    open: openFindings(lane).length, majors,
+    nits: openFindings(lane).filter((f) => f.severity === 'nit').length,
+    preExisting: openFindings(lane).filter((f) => f.severity === 'pre-existing').length,
+  };
+  return entry;
+}
+
+/**
+ * A person's ruling on an open finding once the loop has spent its cap. The
+ * loop rules until the cap — code and verifiers, never the orchestrator — so
+ * this refuses while a round could still run. After the cap, the person reads
+ * the fixer's last commit and the thread, and says so: `fixed` with what they
+ * checked, or `withdrawn` with why the finding was wrong. The note is the
+ * record on the thread; a bare flag is refused for the same reason
+ * --another-round needs a reason. Never called by `next`.
+ */
+export function ruleFinding(dir, run, lane, { id, ruling, note, head = null, now = () => new Date().toISOString() }) {
+  const last = currentRound(lane);
+  if (!last?.registered) throw new RunError(`cannot rule on ${lane.slug}: no registered review round`);
+  const f = (lane.review?.findings ?? []).find((x) => x.id === id);
+  if (!f) throw new RunError(`no finding ${id} on ${lane.slug} — the ids are in ${registeredPath(dir, lane, last.round)}`);
+  if (f.status !== 'open') throw new RunError(`${id} is already ${f.status}`);
+  // "At the cap" is the round count, not the verdict: with two majors open the
+  // first ruling leaves the round open and the second must still be allowed.
+  if (lane.review.rounds.length < MAX_REVIEW_ROUNDS) {
+    throw new RunError(
+      `cannot rule on ${lane.slug}: the loop has run ${lane.review.rounds.length} of ${MAX_REVIEW_ROUNDS} rounds — ` +
+        'the verifiers rule until the cap; a person rules after it. Let the next round judge the fix',
+    );
+  }
+  if (!['fixed', 'withdrawn'].includes(ruling)) throw new RunError(`a ruling is --fixed or --withdrawn, not "${ruling}"`);
+  if (typeof note !== 'string' || !note.trim()) {
+    throw new RunError('a ruling needs --note "<what you checked>" — one sentence the thread can carry, never a bare flag');
+  }
+  f.status = ruling;
+  f.ruledBy = 'human';
+  f.ruledAt = now();
+  f.ruling = note.trim();
+  if (ruling === 'fixed' && head) f.fixedAt = head;
+  last.rulings = [...(last.rulings ?? []), { id, ruling, note: note.trim(), at: f.ruledAt }];
+  recount(lane, last);
+  saveRun(dir, run);
+  return {
+    finding: f,
+    body: `${ruling === 'fixed' ? '✅ Fixed' : 'Withdrawn'} — ruled by the author after round ${last.round} (the loop's cap): ${note.trim()}`,
+  };
 }
 
 /** Everything a round table needs, one row per round. */

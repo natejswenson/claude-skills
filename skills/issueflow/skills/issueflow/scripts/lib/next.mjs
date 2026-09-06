@@ -127,7 +127,7 @@ function decidePlan(dir, run, step, ctx) {
       return stop('human', 'the plan passed its red-team review — read it, then approve or send it back', {
         artifact, review: join(dir, latest.review),
         command: `accept --stage ${step.stage.id}`,
-        alternative: `brief --stage ${step.stage.id} --another-round "<your direction>" (after a blocked round) or edit nothing and re-review`,
+        alternative: `brief --stage ${step.stage.id} --another-round "<your direction>"`,
       });
     }
     // Edited after its pass: reviewed again before anyone approves it.
@@ -185,13 +185,23 @@ function allPresent(paths) {
   return paths.every((p) => existsSync(p));
 }
 
+/**
+ * The cap. The fixer's last commit is on the branch unverified; the person
+ * reads it and rules, or buys one more round. `next` never does either.
+ */
+const exhaustedStop = (lane) =>
+  stop('exhausted', `${lane.slug}: ${MAX_REVIEW_ROUNDS} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
+    command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
+    alternative: `review-brief --lane ${lane.slug} --another-round "<why one more round>"`,
+  });
+
 function decideLoop(dir, run, lane, ctx) {
   const entry = currentRound(lane);
   const tree = laneTree(dir, run, lane);
   const head = git(['rev-parse', 'HEAD'], tree);
 
   if (!entry) {
-    if (reviewExhausted(lane)) return stop('exhausted', `${lane.slug}: ${MAX_REVIEW_ROUNDS} rounds and a major still open`);
+    if (reviewExhausted(lane)) return exhaustedStop(lane);
     // A stacked lane's first round reviews it on top of the lane below AS IT
     // CONVERGED — every fix commit on the lane below changed the code this
     // lane was built on. Rebased once, before any thread exists; never after.
@@ -283,7 +293,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
       });
     }
   }
-  if (reviewExhausted(lane)) return stop('exhausted', `${lane.slug}: ${MAX_REVIEW_ROUNDS} rounds and a major still open`);
+  if (reviewExhausted(lane)) return exhaustedStop(lane);
   return act('review-brief', { lane: lane.slug }, `${lane.slug}: fix pushed — opening round ${entry.round + 1}`);
 }
 
@@ -365,6 +375,7 @@ export function renderAction(action, { skillCommand, runDir }) {
     if (action.review) lines.push(`  review:  ${action.review}`);
     if (action.items) for (const it of action.items) lines.push(`  [${it.model}] ${it.prompt}`);
     if (action.command) lines.push(`  command: ${skillCommand} ${action.command} --run-dir ${runDir}`);
+    if (action.alternative) lines.push(`  or:      ${skillCommand} ${action.alternative} --run-dir ${runDir}`);
   } else if (action.kind === 'run') {
     lines.push(`  ${action.command}`);
   }

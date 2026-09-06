@@ -47,7 +47,12 @@ named unreadable by `runs`, with the remedy.
   plus round-1 nits with a complete suggestion, one commit per round, a push,
   a fix report whose not-changed majors become disputes the next verifier rules
   on. Severity is `major | nit | pre-existing`; only majors block. Four rounds
-  is the cap.
+  is the cap; at it the round-4 fix lands unverified and the user rules on each
+  open major (`review-rule --finding <id> --fixed|--withdrawn --note "<what
+  they checked>"`, refused before the cap and never issued by `next`) or buys
+  round five with `review-brief --another-round "<why>"`. The first real loop
+  reached the cap with two majors open in prose the round-2 fix had added, and
+  had no way out.
 - **Convergence as code.** Ids are assigned once and matched by id thereafter.
   Citations are classified against the diff's hunks including context lines:
   an outside-hunk major is body-only but still blocks. No new nit posts after

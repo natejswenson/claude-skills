@@ -123,7 +123,10 @@ information, never the signal. If the wait exits 124 the stage has stalled;
 the review it names, show the user what matters (the root cause, the approach
 and what was rejected, the files, the proof, the work items, and every finding
 the red team left), then ask plainly whether to approve, and run the command
-`next` printed once they do. `exhausted`, `dispute`, `unpushed`, `stalled` and
+`next` printed once they do. `exhausted` on a review loop names the open
+majors and the two commands only the user runs (a ruling, or one more round);
+show them the fixer's last commit and each thread, not a summary. `exhausted`
+on the plan, `dispute`, `unpushed`, `stalled` and
 `drift` each name what is unresolved; put it in front of the user and stop —
 **never advance over drift you have not shown the user**, and `--force` is for
 after they decide, never before. `shipped` means every pull request is ready
@@ -168,7 +171,12 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
    per round, a push, a fix report. **Paste the round's findings table into the
    conversation — not a summary of it.** The loop converges when no major is
    open — nits may remain — and `ready` lifts the draft once CI is green. Four
-   rounds is the cap.
+   rounds is the cap: the round-4 fix lands unverified and `next` stops
+   `exhausted`. The user reads that fix and each open thread, then rules per
+   major with `review-rule --finding <id> --fixed|--withdrawn --note "<what
+   they checked>"`, or buys round five with `review-brief --another-round
+   "<why>"`. Both are the user's commands — `next` never prints them as a
+   dispatch, and you never run them on your own judgment.
 7. **Finish**, once the pull requests merge: worktrees removed, branches
    deleted, the issue closed with `--close-issue`.
 

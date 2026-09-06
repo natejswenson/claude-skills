@@ -31,7 +31,11 @@ remain" is the definition of done, not a to-do list.
 lines the last fix did not touch, a new candidate posts as a major only if
 CONFIRMED — PLAUSIBLE on unchanged code is a note in the body, because fresh
 finders each round will otherwise manufacture a new plausible major forever.
-Four rounds is the cap; the open majors are handed to a human.
+Four rounds is the cap; the round-4 fix lands unverified and the open majors are
+handed to a human, who rules on each (`review-rule --fixed|--withdrawn --note`)
+or directs a fifth round (`review-brief --another-round "<why>"`). The
+verifiers rule until the cap; a person rules after it — `review-rule` refuses
+before the cap, and the driver never issues either command.
 
 ## The anti-self-censorship rule
 

@@ -21,7 +21,7 @@ import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, findingId, fixItems, fixerModel, fleetPlan, headOf,
   inlineEligible, laneDiff, openFindings, openMajors, openRound, parseDiff, payloadPath, planVerification, postRound,
-  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, threadBody, touched, validateCandidates,
+  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, ruleFinding, threadBody, touched, validateCandidates,
   validateVerdicts, verdictsPath, fixReportPath,
 } from '../lib/prreview.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief, methodSection } from '../lib/reviewbrief.mjs';
@@ -418,6 +418,80 @@ test('the cap: a fifth round is refused as a hand-back, and converge refuses whi
   assert.throws(() => open(dir, run, lane, repoPath), HandBack);
   assert.throws(() => converge(dir, run, lane), /never ready a pull request over an open major/);
   assert.equal(lane.review.converged, false);
+  cleanup();
+});
+
+test('the cap: a person rules on the open major — never before the cap, never without a note — and the lane converges', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  const spend = (upTo) => {
+    for (let round = lane.review.rounds.length + 1; round <= upTo; round += 1) {
+      open(dir, run, lane, repoPath);
+      if (round === 1) {
+        writeCandidates(dir, lane, 1, 1, [cand()]);
+        planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+        writeVerdicts(dir, lane, 1, 1, [{ id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'x' }]);
+      } else {
+        writeCandidates(dir, lane, round, 1, []);
+        planVerification(dir, run, lane, round, readCandidates(dir, lane, round).candidates);
+        writeVerdicts(dir, lane, round, 1, [{ id: openMajors(lane)[0].id, verdict: 'still-open', quote: 'still there' }]);
+      }
+      registerRound(dir, run, lane, round, { tree: repoPath });
+    }
+  };
+  spend(MAX_REVIEW_ROUNDS - 1);
+  const major = openMajors(lane)[0];
+  // Before the cap the verifiers rule, not a person — even a well-noted ruling is refused.
+  assert.throws(() => ruleFinding(dir, run, lane, { id: major.id, ruling: 'fixed', note: 'I read it' }), /a person rules after it/);
+  assert.equal(major.status, 'open');
+  spend(MAX_REVIEW_ROUNDS);
+  assert.equal(reviewExhausted(lane), true);
+  // A bare ruling is refused, like a bare --another-round.
+  assert.throws(() => ruleFinding(dir, run, lane, { id: major.id, ruling: 'fixed', note: '' }), /needs --note/);
+  assert.throws(() => ruleFinding(dir, run, lane, { id: major.id, ruling: 'maybe', note: 'x' }), /--fixed or --withdrawn/);
+  assert.throws(() => ruleFinding(dir, run, lane, { id: 'f-nope', ruling: 'fixed', note: 'x' }), /no finding f-nope/);
+  assert.equal(major.status, 'open', 'a refused ruling changes nothing');
+  // Two majors open: ruling the first leaves the round open, and the second ruling must still be allowed.
+  lane.review.findings.push({ ...major, id: 'f-second00', status: 'open', threadId: null });
+  assert.equal(openMajors(lane).length, 2);
+  ruleFinding(dir, run, lane, { id: 'f-second00', ruling: 'withdrawn', note: 'the constant is 0, the branch is dead' });
+  assert.equal(currentRound(lane).verdict, 'open', 'one major still open');
+  const { finding, body } = ruleFinding(dir, run, lane, { id: major.id, ruling: 'fixed', note: 'the guard is on line 4 of the last commit', head: headOf(repoPath) });
+  assert.equal(finding.status, 'fixed');
+  assert.equal(finding.ruledBy, 'human');
+  assert.match(body, /ruled by the author after round 4/);
+  const last = currentRound(lane);
+  assert.equal(last.verdict, 'converged', 'a ruling re-derives the round verdict');
+  assert.equal(last.counts.majors, 0);
+  assert.deepEqual(last.rulings.map((r) => r.id), ['f-second00', major.id], 'both rulings are on the round record');
+  assert.equal(reviewExhausted(lane), false);
+  assert.throws(() => ruleFinding(dir, run, lane, { id: major.id, ruling: 'withdrawn', note: 'again' }), /already fixed/);
+  converge(dir, run, lane);
+  assert.equal(lane.review.converged, true);
+  cleanup();
+});
+
+test('the cap: --another-round with a reason opens round five and records the direction; a bare one is still the hand-back', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  for (let round = 1; round <= MAX_REVIEW_ROUNDS; round += 1) {
+    open(dir, run, lane, repoPath);
+    if (round === 1) {
+      writeCandidates(dir, lane, 1, 1, [cand()]);
+      planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+      writeVerdicts(dir, lane, 1, 1, [{ id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'x' }]);
+    } else {
+      writeCandidates(dir, lane, round, 1, []);
+      planVerification(dir, run, lane, round, readCandidates(dir, lane, round).candidates);
+      writeVerdicts(dir, lane, round, 1, [{ id: openMajors(lane)[0].id, verdict: 'still-open', quote: 'still there' }]);
+    }
+    registerRound(dir, run, lane, round, { tree: repoPath });
+  }
+  const head = headOf(repoPath);
+  const diffText = laneDiff(repoPath, lane.base);
+  assert.throws(() => openRound(dir, run, lane, { head, diffText }), HandBack);
+  assert.throws(() => openRound(dir, run, lane, { head, diffText, anotherRound: '   ' }), HandBack, 'whitespace is a bare flag');
+  const { round } = openRound(dir, run, lane, { head, diffText, anotherRound: 'the fix is in; verify it rather than trust it' });
+  assert.equal(round, MAX_REVIEW_ROUNDS + 1);
+  assert.deepEqual(lane.review.overrides.map((o) => [o.round, o.reason]), [[5, 'the fix is in; verify it rather than trust it']]);
   cleanup();
 });
 

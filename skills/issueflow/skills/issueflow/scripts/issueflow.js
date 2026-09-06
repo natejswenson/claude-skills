@@ -16,11 +16,11 @@ import { decide, renderAction } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
-import { GhError, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
+import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
   MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixItems, fixerModel, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
-  rebaseLane, registerRound, reviewExhausted, roundRows,
+  rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
 import { landings } from './lib/reconcile.mjs';
 import { writeFinderBriefs, writeFixBrief, writeVerifierBriefs } from './lib/reviewbrief.mjs';
@@ -44,7 +44,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version']);
+const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
 
 function argv(args) {
   const out = { _: [] };
@@ -803,7 +803,7 @@ async function cmdReviewBrief(args) {
     prHead = prIdentity(run, lane, offline).headRefOid;
   }
   const diffText = laneDiff(tree, lane.base);
-  const { round, plan, lines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText });
+  const { round, plan, lines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, anotherRound: args.anotherRound });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
@@ -924,7 +924,42 @@ async function cmdReviewFixReport(args) {
   }
   const rows = offline ? replies.map((r) => ({ id: r.id, state: 'offline', detail: 'nothing sent' })) : postFixReplies(dir, run, lane, entry.round, replies);
   print(['Finding', 'Reply', 'Detail'], rows.map((r) => [r.id, r.state, r.detail ?? '—']));
-  console.log(`\nNext: \`issueflow review-brief --lane ${lane.slug}\` — round ${entry.round + 1} reviews the pushed fix.`);
+  if (reviewExhausted(lane)) {
+    console.log(`\nRound ${entry.round} was the cap: no round verifies this fix. Read the fixer's commit and each open thread, then rule —`);
+    console.log(`\`issueflow review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"\` per major,`);
+    console.log(`or \`issueflow review-brief --lane ${lane.slug} --another-round "<why>"\` to have round ${entry.round + 1} verify it instead.`);
+  } else {
+    console.log(`\nNext: \`issueflow review-brief --lane ${lane.slug}\` — round ${entry.round + 1} reviews the pushed fix.`);
+  }
+}
+
+async function cmdReviewRule(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const offline = isOffline(args);
+  const { lane, tree } = reviewLane(run, dir, args);
+  if (typeof args.finding !== 'string' || !args.finding.trim()) throw new RunError('review-rule needs --finding <id>');
+  if (Boolean(args.fixed) === Boolean(args.withdrawn)) throw new RunError('review-rule needs exactly one of --fixed or --withdrawn');
+  const ruling = args.fixed ? 'fixed' : 'withdrawn';
+  const { finding, body } = ruleFinding(dir, run, lane, { id: args.finding.trim(), ruling, note: args.note, head: headOf(tree) });
+  const rows = [];
+  if (!offline && finding.threadId) {
+    const input = join(reviewDir(dir, lane, currentRound(lane).round), 'graphql.json');
+    try {
+      graphql(run.repo.path, input, { query: GQL.reply, variables: { thread: finding.threadId, body } });
+      graphql(run.repo.path, input, { query: GQL.resolve, variables: { thread: finding.threadId } });
+      rows.push(['thread', 'replied and resolved']);
+    } catch (err) {
+      rows.push(['thread', `failed: ${String(err.message).split('\n')[0]}`]);
+    }
+  } else if (!offline) {
+    rows.push(['thread', 'none — the finding was body-only']);
+  }
+  const last = currentRound(lane);
+  print(['Lane', 'Finding', 'Ruling', 'Majors open', 'Round verdict'], [[lane.slug, finding.id, ruling, String(openMajors(lane).length), last.verdict]]);
+  if (rows.length > 0) { console.log(''); print(['Action', 'Result'], rows); }
+  nextLine(run);
+  reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }
 
 async function cmdReady(args) {
@@ -1096,6 +1131,8 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow review-post       --lane <slug>     one GitHub review: threads, replies, resolves
   issueflow review-fix-brief  --lane <slug>     brief the fixer on every open major
   issueflow review-fix-report --lane <slug>     record the fixer's report, reply on the threads
+  issueflow review-rule       --lane <slug> --finding <id> --fixed|--withdrawn --note "<what you checked>"
+                                                the user's ruling on a major once the loop has spent its cap
   issueflow ready             --lane <slug>     lift the draft once the loop has converged and CI is green
   issueflow rebase            --lane <slug>     rebase a stacked lane onto the lane below, before its first round
   issueflow finish [--issue <n>] [--close-issue]
@@ -1106,7 +1143,7 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   --auto               on start: no human stop after the red-teamed plan;
                        on accept: approve on a registered, hash-bound passing review
   --review             brief the red-team reviewer of the delivered plan
-  --another-round "<reason>"  re-open a rounds-capped stage on the user's direction
+  --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
   --offline            make no network call and no checkpoint
@@ -1140,6 +1177,7 @@ async function main() {
       case 'review-post': return await cmdReviewPost(args);
       case 'review-fix-brief': return await cmdReviewFixBrief(args);
       case 'review-fix-report': return await cmdReviewFixReport(args);
+      case 'review-rule': return await cmdReviewRule(args);
       case 'ready': return await cmdReady(args);
       case 'rebase': return await cmdRebase(args);
       case 'next': return await cmdNext(args);
