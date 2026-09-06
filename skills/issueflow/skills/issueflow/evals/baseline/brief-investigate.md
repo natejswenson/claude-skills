@@ -98,10 +98,16 @@ idea wearing a design doc.
 List every file that will be touched and what happens to it.
 State how the change will be proven: the specific behaviour a test must
 assert, phrased so a reader can tell it maps to the issue.
-Decide whether this is ONE change or SEVERAL. If several, list the work
-items in landing order under a `## Work items` heading, one per line as
-`- <slug>: <what lands in this layer>`. Each item must be reviewable and
-mergeable ALONE. If one change, say so and write no work items.
+ONE pull request is the default, even when the issue bundles several
+independent fixes — those are one pull request with one commit each, and
+you say so under Approach. Write a `## Work items` heading ONLY when the
+whole change is too large to review as one (more than about five hundred
+changed lines, or a shared layer other layers build on that a reviewer
+must read alone). Then the first line under the heading is
+`Why split: <the size or the layer, in numbers>`, and the items follow in
+landing order, one per line as `- <slug>: <what lands in this layer>`,
+each reviewable and mergeable ALONE. Every item costs its own pull
+request and its own review loop of up to four rounds.
 
 ## You must not
 
