@@ -721,8 +721,20 @@ export function workItemsFromPlan(text) {
   const end = /^\s{0,3}#{1,6}\s+/m.exec(rest);
   const body = end ? rest.slice(0, end.index) : rest;
 
+  // A split is the exception, and the heading carries its own reason. The
+  // first 0.7.0 run fanned four small unrelated fixes into four lanes because
+  // nothing asked why; a plan that cannot say so in numbers has not earned it.
+  const why = /^[ \t]*(?:[-*][ \t]+)?\**why split\**[ \t]*:[ \t]*\**[ \t]*(\S.*)$/im.exec(body); // [ \t], not \s: an empty reason must not slurp the next line
+  if (!why) {
+    throw new RunError(
+      'the plan has a `## Work items` heading but no `Why split: <the size or the layer, in numbers>` line under it — ' +
+        'one pull request per issue is the default; a split has to say what makes this change too large to review as one',
+    );
+  }
+
   const items = [];
   for (const line of body.split('\n')) {
+    if (/^\s*(?:[-*]\s+)?\**why split\**\s*:/i.test(line)) continue; // the reason line is never a lane
     const m = /^\s*[-*]\s+`?([A-Za-z0-9][A-Za-z0-9 _-]*?)`?\s*:\s*(\S.*)$/.exec(line);
     // A work item's description is often a full paragraph, and the title ends
     // up in a branch's pull request title and every board row. Keep the first

@@ -5,6 +5,28 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-09-05
+
+One pull request per issue is now the default. The first 0.7.0 run split
+local-fitness#232 — four unrelated follow-ups of 180–520 lines — into four
+stacked pull requests, because the only test a split had to pass was "each item
+lands alone", and every small fix passes that. The maintainer folded them back
+into one before merging.
+
+### Changed
+
+- The plan's ask: `## Work items` only when the whole change is too large to
+  review as one (about five hundred changed lines, or a shared layer a reviewer
+  must read alone), and its first line is `Why split: <the size or the layer,
+  in numbers>`. Several small independent fixes are one pull request with one
+  commit each, said so under Approach.
+- `split` refuses a `## Work items` heading with no `Why split:` line, so a
+  plan cannot fan out into lanes without stating why.
+- The red team attacks the split before the items: small independent fixes
+  split into lanes is a high finding.
+- `references/decomposition.md` says which — nearly always not — with the #232
+  numbers; SKILL.md carries the rule as a prose guardrail.
+
 ## [0.7.0] - 2026-09-04
 
 The 0.6.0 dogfood ran 24 red-team rounds across 4 stages × 6 lanes and never

@@ -73,6 +73,11 @@
       "id": "the-fixer-notes-the-skip",
       "pattern": "notes the skip rather than arguing with it",
       "rationale": "The anti-oscillation rule from Claude Code's own review methodology. A fixer that argues with a finding inside the pull request turns a round into a thread war; a fixer that says why, once, hands the disagreement to the next verifier, and the second dispute hands it to a human."
+    },
+    {
+      "id": "one-pull-request-per-issue",
+      "pattern": "One pull request per issue is the default",
+      "rationale": "The first 0.7.0 run split one issue of four small unrelated follow-ups into four stacked pull requests, each owed a review loop of up to four rounds, because the only test a split had to pass was 'lands alone'. A split is a cost multiplier that has to be earned by size; this line keeps the default where the maintainer put it after folding those four back into one."
     }
   ],
   "split": {
