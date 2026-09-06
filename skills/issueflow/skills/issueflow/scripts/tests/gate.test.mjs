@@ -446,7 +446,7 @@ test('slugify truncates on a word boundary, never mid-word', () => {
 
 test('work items are read from the approved plan`s own Work items section', () => {
   const items = workItemsFromPlan(
-    '## Approach\n\nsomething\n\n## Work items\n\nThree of them.\n\n' +
+    '## Approach\n\nsomething\n\n## Work items\n\nWhy split: ~900 changed lines, and the descriptions layer is one the other two build on.\n\nThree of them.\n\n' +
       '- `descriptions`: the eight description-string rewrites. Nothing else.\n' +
       '- `query-workouts-honesty`: `source` added to the SELECT\n' +
       '- dead-notes-param: the unread parameter removed\n\n## Proof\n\n- not: an item\n',
@@ -461,7 +461,15 @@ test('a plan that decided the issue is ONE change yields no work items, and says
 });
 
 test('a Work items heading with nothing parseable under it is refused, not read as zero items', () => {
-  assert.throws(() => workItemsFromPlan('## Work items\n\nI decided not to split after all.\n'), /nothing there names a lane/);
+  assert.throws(() => workItemsFromPlan('## Work items\n\nWhy split: two layers\n\nI decided not to split after all.\n'), /nothing there names a lane/);
+});
+
+test('a Work items heading with no `Why split:` line is refused — one pull request per issue is the default', () => {
+  const items = '- first: the first layer\n- second: the second layer\n';
+  assert.throws(() => workItemsFromPlan(`## Work items\n\n${items}`), /no `Why split:/);
+  assert.throws(() => workItemsFromPlan(`## Work items\n\nWhy split:\n\n${items}`), /no `Why split:/, 'an empty reason is no reason');
+  assert.equal(workItemsFromPlan(`## Work items\n\n**Why split:** ~1,200 lines across a schema and two consumers\n\n${items}`).length, 2, 'bold or bulleted, the line still counts');
+  assert.equal(workItemsFromPlan(`## Work items\n\n- Why split: 700 changed lines\n${items}`).length, 2, 'the reason line is never read as a lane');
 });
 
 // ---------------------------------------------------------------------------

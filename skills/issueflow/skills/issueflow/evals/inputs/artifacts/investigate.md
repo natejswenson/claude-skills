@@ -352,6 +352,8 @@ decision rather than a gap.
 
 ## Work items
 
+Why split: carried into the 0.7.1 contract, which this plan predates — the plan's own reasoning follows, unchanged.
+
 Four. Each is reviewable and mergeable alone, and item 1 is deliberately first:
 it is the largest diff and the only one with zero behaviour change, and it
 installs the gate that items 2 and 3 then have to satisfy. Landing them as one

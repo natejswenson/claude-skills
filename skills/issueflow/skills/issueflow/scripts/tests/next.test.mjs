@@ -183,7 +183,7 @@ test('decide: an approved plan with work items splits once; then the bottom lane
   const { dir, run, cleanup } = freshRun({ auto: true });
   const step = findStep(run, 'investigate');
   const declared = readFileSync(join(SKILL, 'scripts', 'lib', 'stages.mjs'), 'utf8') && ['Root cause', 'Evidence', 'Unknowns', 'Approach', 'Rejected', 'Files', 'Proof'];
-  writeFileSync(artifactPath(dir, step), `${declared.map((r) => `## ${r}\n\nx\n`).join('\n')}\n## Work items\n\n- first: the first layer\n- second: the second layer\n`);
+  writeFileSync(artifactPath(dir, step), `${declared.map((r) => `## ${r}\n\nx\n`).join('\n')}\n## Work items\n\nWhy split: two layers a reviewer needs apart\n\n- first: the first layer\n- second: the second layer\n`);
   markBriefed(dir, run, step, () => at(-60));
   redTeamPass(dir, run, step);
   accept(dir, run, step, { auto: true });
