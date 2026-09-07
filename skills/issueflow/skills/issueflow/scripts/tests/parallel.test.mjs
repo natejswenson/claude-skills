@@ -550,6 +550,169 @@ test('--take-over on a --run-dir that holds a DIFFERENT issue refuses, and touch
   f.cleanup();
 });
 
+test('--take-over on a --run-dir that holds a run for the SAME issue number in a DIFFERENT repository refuses, and touches nothing in it', () => {
+  // The mismatch guard above only ever compared the issue number, never the
+  // owner or the repository name — a `--run-dir` naming a live run for the
+  // same number in an unrelated repository (mistyped, tab-completed, or
+  // copied from another session's notes, the exact cases the guard's own
+  // comment names) passed it and was force-cleaned under the wrong
+  // repository's name (f-acd1d8b8).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const before = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+  const lane = JSON.parse(before).lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+
+  const otherRepoPath = join(dirname(f.runDir), 'other-repo.json');
+  writeFileSync(otherRepoPath, JSON.stringify({ owner: 'other-owner', name: 'other-repo', defaultBranch: 'main' }));
+
+  const r = cli(
+    ['start', '--repo', f.repoPath, '--repo-json', otherRepoPath, '--issue', String(NUMBER), '--run-dir', f.runDir, '--take-over'],
+    { PATH: `${dirname(f.log)}:${process.env.PATH}` },
+  );
+  assert.equal(r.code, 4, `expected a hand-back, got ${r.code}: ${r.err || r.out}`);
+  assert.match(r.err, new RegExp(`${OWNER}/${NAME}#${NUMBER}`), 'the refusal must name the repository the run at --run-dir actually belongs to');
+  assert.equal(existsSync(wt), true, 'the other repository\'s worktree must survive untouched');
+  assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'run.json must be untouched');
+  rmSync(otherRepoPath, { force: true });
+  f.cleanup();
+});
+
+test('--take-over cleans a lane git still has registered from BEFORE a split even though run.lanes no longer names it', () => {
+  // `split` replaces `run.lanes` wholesale, so a run briefed on the `root`
+  // lane and then split keeps a real worktree and branch the new lane list
+  // never mentions. Reading lanes only from `previous.lanes` (or only from
+  // git's registration as a fallback) can never see both at once — the union
+  // is what makes take-over find the pre-split lane too (f-26098252).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  const rootLane = state.lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, rootLane).path;
+  writeFileSync(join(wt, 'work.txt'), 'pre-split work\n');
+  git(['add', 'work.txt'], wt);
+  git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', 'pre-split commit'], wt);
+
+  // Simulate `split`: run.lanes is replaced by two lanes that never name
+  // `rootLane`, exactly as run.mjs's own split does.
+  state.split = true;
+  state.lanes = [
+    { ...rootLane, id: 'a', slug: 'a', branch: 'feature/issue-42-a' },
+    { ...rootLane, id: 'b', slug: 'b', branch: 'feature/issue-42-b' },
+  ];
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const second = f.start(['--take-over']);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(existsSync(wt), false, 'the pre-split worktree must be gone, not left for the fresh run to collide with');
+  let branchGone = false;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${rootLane.branch}`], { cwd: f.repoPath, stdio: 'ignore' });
+  } catch {
+    branchGone = true;
+  }
+  assert.equal(branchGone, true, 'the pre-split branch must be deleted, not silently reused by a post-split lane');
+  f.cleanup();
+});
+
+test('a claim on the issue outranks a local run `loadRun` cannot resume at all — the message names the claim, not just --take-over', () => {
+  // The finished branch already makes a live claim outrank a finished local
+  // run; the catch branch for a run that cannot be resumed at all (a schema
+  // mismatch, or a run.json truncated mid-write) skipped that check
+  // entirely and offered `--take-over` as the fix without ever saying a
+  // claim exists (f-04525741).
+  const f = online({ comments: [claimComment()] });
+  assert.equal(f.start(['--take-over']).code, 0, 'the fixture needs a local run first');
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.schema = 99;
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+  const before = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+
+  const broken = f.start();
+  assert.equal(broken.code, 4, `a live claim outranks an unresumable local run, got ${broken.code}: ${broken.err}`);
+  assert.match(broken.err, /already claimed by an issueflow run on another machine/);
+  assert.match(broken.err, /issuecomment-999/, 'the refusal must name the comment to read, not just offer --take-over blind');
+  assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'a refused start must rewrite no state');
+  f.cleanup();
+});
+
+test('--take-over falls back to the checkout it was actually pointed at when the recorded repo path no longer resolves', () => {
+  // `previous.repo.path` can go stale — the checkout was renamed or
+  // re-cloned, and runs live under ~/.claude and outlive checkouts. Before
+  // this fix every cleanup below threw into an empty catch when that path
+  // stopped resolving, `--take-over` still reported success, and the fresh
+  // run then cut its lane from the displaced session's unpushed commits
+  // (f-090ad77e).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const run = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  const lane = run.lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  writeFileSync(join(wt, 'work.txt'), 'session A\'s unpushed work\n');
+  git(['add', 'work.txt'], wt);
+  git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', 'session A commit'], wt);
+
+  // The recorded checkout goes stale — a moved or re-cloned working copy —
+  // while `--repo` (this very invocation) still names the real one.
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.repo.path = join(dirname(f.repoPath), 'a-checkout-that-was-moved-away');
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const second = f.start(['--take-over']);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(existsSync(wt), false, 'the displaced worktree must be gone, not left behind by the stale path\'s empty catch');
+  let branchGone = false;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], { cwd: f.repoPath, stdio: 'ignore' });
+  } catch {
+    branchGone = true;
+  }
+  assert.equal(branchGone, true, 'the displaced branch must be deleted from the checkout the run is actually pointed at');
+  // And the fresh run's own lane must provision cleanly, not collide with a
+  // worktree registration the stale-path cleanup silently failed to clear.
+  const fresh = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  assert.equal(ensureWorktree(f.repoPath, f.runDir, fresh.lanes[0]).created, true);
+  f.cleanup();
+});
+
+test('a plain start on a finished run does not force-delete a branch recreated afterward with commits this run never made', () => {
+  // `finish` already deletes a landed lane's branch, so the only branch a
+  // finished run's own cleanup should ever still find is one recreated by
+  // hand after `finish` ran. SKILL.md scopes a force-delete of unverified
+  // work to an EXPLICIT `--take-over`, not to the no-flag finished-run
+  // shortcut a reopened issue reaches on its own (f-9eb3c38c).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const run = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  const lane = run.lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  // Stand in for `finish`: the lane's own worktree and branch are gone, as
+  // `finish` leaves them for a landed lane.
+  git(['worktree', 'remove', '--force', wt], f.repoPath);
+  execFileSync('git', ['branch', '-D', lane.branch], { cwd: f.repoPath, stdio: 'ignore' });
+
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  // The maintainer recreates the SAME branch name by hand afterward and
+  // commits follow-up work to it, unrelated to issueflow.
+  git(['branch', lane.branch], f.repoPath);
+  const manualWt = join(dirname(f.runDir), 'manual-checkout');
+  git(['worktree', 'add', manualWt, lane.branch], f.repoPath);
+  writeFileSync(join(manualWt, 'manual.txt'), 'hand-recreated follow-up work\n');
+  git(['add', 'manual.txt'], manualWt);
+  git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', 'manual follow-up'], manualWt);
+  git(['worktree', 'remove', manualWt], f.repoPath);
+  const manualTip = git(['rev-parse', lane.branch], f.repoPath);
+
+  const second = f.start();
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  const stillThere = git(['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], f.repoPath);
+  assert.equal(stillThere, manualTip, 'a plain start with no flag must never force-delete a branch carrying commits this run never made');
+  f.cleanup();
+});
+
 test('a finished local run does not take over a claim somebody posted after it ended', () => {
   // Machine 1 finishes #42. The issue is reopened, machine 2 starts a fresh run
   // on it, and machine 2's checkpoint rewrites the sticky comment — which now

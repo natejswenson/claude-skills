@@ -148,7 +148,7 @@ function fetchBase(repoPath, base) {
   const refspec = `+${base}:refs/remotes/origin/${base}`;
   for (const attempt of [0, 1]) {
     try {
-      execFileSync('git', ['fetch', 'origin', refspec], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      execFileSync('git', ['fetch', 'origin', refspec], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, LC_ALL: 'C' } });
       return;
     } catch (err) {
       const stderr = String(err.stderr ?? err.message ?? '');

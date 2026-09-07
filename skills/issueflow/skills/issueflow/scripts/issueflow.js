@@ -353,7 +353,8 @@ function refuseClaimed(dir, info, issue, args) {
       } catch {
         previous = null;
       }
-      if (previous?.issue?.number != null && previous.issue.number !== issue.number) {
+      const sameRepo = (previous?.repo?.owner ?? info.owner) === info.owner && (previous?.repo?.name ?? info.name) === info.name;
+      if (previous?.issue?.number != null && (!sameRepo || previous.issue.number !== issue.number)) {
         throw new HandBack(
           `${dir} holds a run for ${previous.repo?.owner ?? '?'}/${previous.repo?.name ?? '?'}#${previous.issue.number}, ` +
             `not ${info.owner}/${info.name}#${issue.number}. ` +
@@ -385,6 +386,13 @@ function refuseClaimed(dir, info, issue, args) {
       if (existing.finished) return { finished: true };
     } catch (err) {
       if (err instanceof HandBack) throw err;
+      // A run this cannot resume is exactly the state `--take-over` is the
+      // remedy for — but the same outranking above (a live claim beats a
+      // finished local run) has to apply here too, or this message hands out
+      // `--take-over` as the fix without ever saying a claim exists, and a
+      // user who follows it republishes an empty board over another
+      // machine's checkpoint.
+      if (claim) refuseClaim();
       throw new HandBack(
         `${String(err?.message ?? err)}. Start over on top of it with \`--take-over\`, which overwrites it.`,
       );
@@ -446,7 +454,7 @@ function archiveRunDir(dir) {
   return to;
 }
 
-function resetRunDir(dir, repoPath) {
+function resetRunDir(dir, repoPath, { force = false } = {}) {
   // `dir` on the `--take-over` path is whatever `--run-dir` names, and a
   // mistyped or tab-completed path must cost nothing: with no `run.json` there
   // is no run here to displace, and nothing below should touch the directory.
@@ -458,15 +466,34 @@ function resetRunDir(dir, repoPath) {
   } catch {
     previous = null;
   }
-  const oldRepoPath = previous?.repo?.path ?? repoPath;
+  // `previous.repo.path` is the displaced run's OWN recorded checkout, which
+  // is where its worktrees and branches are actually registered — needed
+  // whenever the current invocation is a second clone with no registration
+  // of its own. But that recorded path can stop resolving (the checkout was
+  // renamed or moved; runs live under `~/.claude` and outlive checkouts), and
+  // when it does, every cleanup below throws into an empty catch and reports
+  // nothing while `--take-over` still exits 0 — leaving a live branch and
+  // worktree registration for the fresh run to collide with or silently
+  // reuse. `repoPath` — the checkout this very invocation was pointed at —
+  // is the best fallback: the common way the recorded path goes stale is
+  // exactly a rename or re-clone of the same repository, which is what the
+  // current `--repo` now names.
+  const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
   // `previous?.lanes` is empty in exactly the state this cleanup exists for —
   // `run.json` truncated by a crash or caught mid-write, one of the two
   // documented reasons `--take-over` exists — and a run that broken cannot
-  // name its own lanes. Fall back to what git itself has registered under
-  // this run's `worktrees/`, which survives a corrupt `run.json` and even a
-  // corrupt linked `.git` file, because the registration lives in the main
-  // repository, not in either of those.
-  const lanes = previous?.lanes?.length ? previous.lanes : registeredLanesUnder(oldRepoPath, dir);
+  // name its own lanes. Always union in what git itself has registered under
+  // this run's `worktrees/`, not just as a fallback when `run.json` names
+  // none: `split` replaces `run.lanes` wholesale, so a worktree and branch
+  // git registered under an earlier lane list (e.g. the pre-split `root`
+  // lane) can survive under this run directory even while `previous.lanes`
+  // is non-empty and names only the lanes that replaced it. Reading git's
+  // registration also survives a corrupt `run.json` and even a corrupt linked
+  // `.git` file, because the registration lives in the main repository, not
+  // in either of those.
+  const registered = registeredLanesUnder(oldRepoPath, dir);
+  const declared = previous?.lanes ?? [];
+  const lanes = [...declared, ...registered.filter((r) => !declared.some((d) => d.slug === r.slug))];
   for (const lane of lanes) {
     try {
       removeWorktree(oldRepoPath, dir, lane);
@@ -491,8 +518,28 @@ function resetRunDir(dir, repoPath) {
   // above ran. Deleting first meant the one path where `removeWorktree`
   // fails is also the one path where the displaced branch survived and the
   // fresh run silently reused it.
+  //
+  // `force` is true only for an EXPLICIT `--take-over` — never for the
+  // finished-run shortcut, which reaches this function with no flag at all.
+  // A genuinely finished lane's branch is normally already gone (`finish`
+  // deletes it), so the only branch this loop typically still finds under a
+  // finished run is one recreated by hand after `finish` ran, carrying
+  // commits this run never made — SKILL.md scopes that destructive cost to
+  // `--take-over`, a flag a human read a claim before passing, not to a
+  // no-flag `start` on a reopened issue. Try a safe delete first: git
+  // refuses `-d` outright when the branch is not fully merged anywhere, so
+  // it costs nothing on the common (already-gone) case and never silently
+  // discards real work. Only an explicit `--take-over` falls through to the
+  // forced delete when the safe one is refused.
   for (const lane of lanes) {
     if (!lane.branch) continue;
+    try {
+      execFileSync('git', ['branch', '-d', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
+      continue;
+    } catch {
+      // Not fully merged, already gone, or the repo is unreachable.
+    }
+    if (!force) continue;
     try {
       execFileSync('git', ['branch', '-D', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
     } catch {
@@ -513,7 +560,7 @@ async function cmdStart(args) {
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
   const claim = refuseClaimed(dir, info, issue, args);
   const takeOver = Boolean(args.takeOver) || claim.finished;
-  const archived = takeOver ? resetRunDir(dir, repo) : null;
+  const archived = takeOver ? resetRunDir(dir, repo, { force: Boolean(args.takeOver) }) : null;
 
   const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one

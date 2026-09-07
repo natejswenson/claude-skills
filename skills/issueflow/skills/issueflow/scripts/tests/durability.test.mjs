@@ -30,10 +30,10 @@ const POLICY = { base: 'main', featurePrefix: 'feature/', mergeMethod: 'squash',
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 /** The CLI as a child process, for the assertions that are about its exit code. */
-const spawnCli = (args) => {
+const spawnCli = (args, extraEnv = {}) => {
   try {
     return { code: 0, out: execFileSync(process.execPath, [CLI, ...args], {
-      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined, ...extraEnv },
     }), err: '' };
   } catch (e) {
     return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') };
@@ -506,6 +506,60 @@ test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 inst
   assert.match(brief.err, /stale base/);
 
   rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('the benign-fetch-failure check is not fooled by a git that localizes "couldn\'t find remote ref" (fetchBase pins LC_ALL=C)', () => {
+  // git ships gettext catalogs and can translate this exact message. Without
+  // pinning the locale on the fetch, a base that exists only locally —
+  // resolvePolicy's own documented case, the one this benign-failure branch
+  // exists for — turns into a hard FetchError on any machine whose LANG/
+  // LC_ALL triggers translation (f-ad1c9a15). This drives a stub `git` that
+  // answers the fetch however ITS OWN env says to, so the assertion is
+  // deterministic and does not depend on a French locale actually being
+  // installed on the machine running this test.
+  const o = tempRepoWithOrigin();
+  git(['branch', 'onlylocal'], o.path);
+  const local = git(['rev-parse', 'onlylocal'], o.path);
+
+  const realGit = execFileSync('which', ['git'], { encoding: 'utf8' }).trim();
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-git-locale-'));
+  const script = [
+    '#!/usr/bin/env node',
+    "const { spawnSync } = require('node:child_process');",
+    `const REAL_GIT = ${JSON.stringify(realGit)};`,
+    'const args = process.argv.slice(2);',
+    "if (args[0] === 'fetch' && args[1] === 'origin' && String(args[2] ?? '').includes('onlylocal')) {",
+    "  if (process.env.LC_ALL === 'C') {",
+    "    process.stderr.write(\"fatal: couldn't find remote ref onlylocal\\n\");",
+    '  } else {',
+    "    // What a French git actually prints for this failure — never matched",
+    '    // by the English-only regex, which is exactly the bug this drives.',
+    "    process.stderr.write(\"fatal: la référence distante « onlylocal » est introuvable\\n\");",
+    '  }',
+    '  process.exit(1);',
+    '}',
+    'const r = spawnSync(REAL_GIT, args, { cwd: process.cwd(), stdio: "inherit" });',
+    'process.exit(r.status ?? 1);',
+  ].join('\n');
+  writeFileSync(join(bin, 'git'), script);
+  chmodSync(join(bin, 'git'), 0o755);
+
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: { ...POLICY, base: 'onlylocal' } });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  const brief = spawnCli(['brief', '--stage', 'implement', '--run-dir', dir], { PATH: `${bin}:${process.env.PATH}` });
+  assert.equal(brief.code, 0, `a base that exists only locally must still provision cleanly under a localizing git, got ${brief.code}: ${brief.err}`);
+
+  const wt = worktreePath(dir, run.lanes[0]);
+  assert.equal(git(['rev-parse', 'HEAD'], wt), local, 'the lane must be cut from the local-only base, not fail on a false-fatal fetch');
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bin, { recursive: true, force: true });
   o.cleanup();
 });
 
