@@ -25,7 +25,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { addIssueComment, issueComments, updateIssueComment } from './gh.mjs';
+import { addIssueComment, commentIdFromUrl, issueComments, updateIssueComment } from './gh.mjs';
 import { artifactPath, board, gateSteps, saveRun } from './run.mjs';
 
 /** How much artifact prose the sticky comment may carry, in characters. */
@@ -38,7 +38,104 @@ const ARTIFACT_BUDGET = 20000;
  * comment and the issue would grow one per machine. With it, the comment is
  * found and adopted.
  */
-export const marker = (run) => `<!-- issueflow:run ${run.repo.owner}/${run.repo.name}#${run.issue.number} -->`;
+export const markerFor = (owner, name, number) => `<!-- issueflow:run ${owner}/${name}#${number} -->`;
+
+export const marker = (run) => markerFor(run.repo.owner, run.repo.name, run.issue.number);
+
+/**
+ * A second marker, inside the same comment, saying the run it belongs to is
+ * over. Without it the sticky comment outlives the run that wrote it — nothing
+ * ever removes it — so `claimedIn` would keep matching a dead marker forever:
+ * work an issue to a merged pull request, lose the local `run.json` (a wiped
+ * home, a different machine, a `--run-dir` under a temp dir), and a later
+ * `start` on the same, possibly-reopened issue finds its own old comment and
+ * refuses as if a stranger held it.
+ */
+export const FINISHED_MARKER = '<!-- issueflow:finished -->';
+
+const escapeRe = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
+/**
+ * The part of a sticky comment the run itself wrote.
+ *
+ * `renderComment` splices up to 20000 characters of approved-artifact prose
+ * into the same body, verbatim, inside `<details>` blocks — and an artifact can
+ * say anything, including the markers this module matches on. The investigate
+ * plan for #251 quotes `<!-- issueflow:finished -->` while describing this very
+ * design; approve it and a live run's own comment carries the literal finished
+ * marker. Everything from the first `<details>` on is somebody else's prose and
+ * must never be read as this module's own bookkeeping.
+ */
+const runRegion = (body) => String(body ?? '').split(/\n<details>/)[0];
+
+/**
+ * Whether a comment says its run is over.
+ *
+ * Anchored to a whole line, and only in the run's own region: a substring
+ * search anywhere in the body makes an artifact that merely mentions the marker
+ * enough to hide a live run's claim, which is the failure the claim check
+ * exists to prevent, turned invisible. The pattern is built from
+ * `FINISHED_MARKER` and the exact shape `renderComment` emits, so a producer
+ * that stops emitting it is a consumer that stops matching it, not two
+ * spellings that quietly drift apart.
+ */
+const FINISHED_LINE = new RegExp(`^${escapeRe(FINISHED_MARKER)} \\*\\*Finished\\*\\*`, 'm');
+
+/**
+ * The finished line as every issueflow release before 0.8.0 wrote it — no
+ * `FINISHED_MARKER` in front, because the marker did not exist yet.
+ * `renderComment` only ever emitted this exact prefix for a finished run
+ * (`${FINISHED_MARKER} **Finished** …` is additive, not a rename), so a
+ * comment carrying an unmarked `**Finished**` line was written by that older
+ * code and means exactly what the marked line means now. Without this,
+ * `finishedIn` on a pre-0.8.0 comment returns false, `claimedIn` reads it as
+ * a live claim, and a run this repo already finished (natejswenson/local
+ * -fitness#132 and #133 among them) becomes an unrecoverable claim a plain
+ * `start` refuses forever, and `--take-over` then adopts and PATCHes over as
+ * if it were live — the CHANGELOG's "a finished run's comment is never
+ * adopted" and "a reopened or twice-worked issue is not refused forever"
+ * both depended on the marker existing, and neither held for a comment
+ * written before this file did (f-9d600850).
+ */
+const LEGACY_FINISHED_LINE = /^\*\*Finished\*\*/m;
+
+export const finishedIn = (body) => {
+  const region = runRegion(body);
+  return FINISHED_LINE.test(region) || LEGACY_FINISHED_LINE.test(region);
+};
+
+/**
+ * The comment on an issue that already claims this run, or null.
+ *
+ * Takes the comments a caller already has rather than fetching them: both
+ * callers — `start`'s refusal and `board`'s Run column — are handed every
+ * comment body by the payload they already fetched, so a claim costs no extra
+ * `gh` call. It goes through `markerFor` for the reason `marker` now does too:
+ * two spellings of the marker is exactly how a claim check silently stops
+ * matching the comment it is supposed to find.
+ *
+ * `comments` is defended the same way `board.mjs` already defends it: a
+ * hand-written or older `--issues-json` payload, or a `gh` build whose
+ * `--json comments` answers with a count instead of an array, must read as
+ * "no comments", never throw. A comment that also carries `FINISHED_MARKER` is
+ * a closed run's own sticky note and is skipped rather than matched — it
+ * proves the issue was worked, not that it is claimed.
+ *
+ * `commentId` is synthesized from the URL, the same way `gh.mjs` already
+ * builds it for the payload shapes that carry one — neither caller's raw
+ * `gh` payload has a `commentId` field of its own, so reading one off `c`
+ * directly always returned null.
+ */
+export function claimedIn(comments, owner, name, number) {
+  const mine = markerFor(owner, name, number);
+  for (const c of Array.isArray(comments) ? comments : []) {
+    const body = String(c?.body ?? '');
+    if (!body.includes(mine)) continue;
+    if (finishedIn(body)) continue;
+    return { url: c.url ?? null, commentId: c.url ? commentIdFromUrl(c.url) : null };
+  }
+  return null;
+}
 
 const git = (args, cwd) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -153,7 +250,8 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
   if (run.finished) {
     lines.push(
       '',
-      `**Finished** ${run.finished.at} — every lane landed${run.finished.issueClosed ? ', issue closed' : ''}.`,
+      `${FINISHED_MARKER} **Finished** ${run.finished.at} — every lane landed` +
+        `${run.finished.issueClosed ? ', issue closed' : ''}.`,
     );
   }
 
@@ -194,11 +292,19 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
  *
  * This is what makes a run resumable from a machine that never saw it: the
  * marker is the identity, not the local state file.
+ *
+ * A comment that carries the finished marker is skipped, for the same reason
+ * `claimedIn` skips it and with the same predicate: it is a *completed* run's
+ * record — its pull request links, merge times and approved artifacts — and
+ * adopting it means PATCHing a fresh all-pending board over the only account of
+ * a change that already landed. A reopened issue gets a new comment instead,
+ * which costs one comment and preserves an irreplaceable one.
  */
 function adoptComment(repoPath, run) {
   const mine = marker(run);
   for (const c of issueComments(repoPath, run.issue.number)) {
-    if (String(c.body ?? '').includes(mine) && c.commentId) return { commentId: c.commentId, url: c.url };
+    const body = String(c.body ?? '');
+    if (body.includes(mine) && !finishedIn(body) && c.commentId) return { commentId: c.commentId, url: c.url };
   }
   return null;
 }

@@ -9,17 +9,17 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkpoint, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
+import { FINISHED_MARKER, checkpoint, claimedIn, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
 import { finish, FinishError } from '../lib/finish.mjs';
-import { accept, artifactPath, createRun, findStep, saveRun, worktreePath } from '../lib/run.mjs';
-import { ensureWorktree, removeWorktree } from '../lib/worktree.mjs';
+import { accept, artifactPath, createRun, findStep, loadRun, saveRun, split, worktreePath } from '../lib/run.mjs';
+import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
-import { approvePlan, redTeamPass } from './helpers.mjs';
+import { approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'issueflow.js');
@@ -28,6 +28,17 @@ const ISSUE = { number: 9, title: 'Checkpoint the run', url: 'https://example.in
 const POLICY = { base: 'main', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: true };
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+
+/** The CLI as a child process, for the assertions that are about its exit code. */
+const spawnCli = (args, extraEnv = {}) => {
+  try {
+    return { code: 0, out: execFileSync(process.execPath, [CLI, ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined, ...extraEnv },
+    }), err: '' };
+  } catch (e) {
+    return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') };
+  }
+};
 
 /** A real git repository with one commit — enough for a branch, a worktree and a tip. */
 function tempRepo() {
@@ -162,12 +173,58 @@ test('a finished run\'s comment carries a Landed table and a finished line; an u
     'an unfinished run must not grow either section — this is the other half of the frozen checkpoint-comment.md pin',
   );
 
+  // The unfinished comment is a LIVE claim, and must read as one. This is the
+  // green half of the pair below: without it the consumer assertion could pass
+  // by `claimedIn` having stopped matching anything at all.
+  const asComment = (body) => [{ body, url: 'https://example.invalid/c#issuecomment-5' }];
+  const who = [run.repo.owner, run.repo.name, run.issue.number];
+  assert.ok(claimedIn(asComment(before), ...who), 'a live run\'s own comment must read as a claim');
+
   run.lanes[0].landed = { pr: 42, url: 'https://example.invalid/pull/42', mergedAt: '2026-08-12T00:00:00Z', at: '2026-08-12T00:00:01Z' };
   run.finished = { at: '2026-08-12T00:00:02Z', issueClosed: true };
   const after = renderComment(dir, run);
   assert.match(after, /#42/);
-  assert.match(after, /\*\*Finished\*\*/);
   assert.match(after, /issue closed/);
+  // Anchored to the marker, not just to the prose beside it. `claimedIn` and
+  // `adoptComment` both decide a run is over by finding `FINISHED_MARKER` on
+  // its own line; asserting only on `**Finished**` lets the marker be dropped
+  // as noise with every test still green, and the finished exemption then
+  // silently stops working in production.
+  assert.match(
+    after,
+    new RegExp(`^${FINISHED_MARKER.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')} \\*\\*Finished\\*\\*`, 'm'),
+    'the marker its own consumers key on must actually be emitted, on its own line',
+  );
+  // And the consumer, driven on the real rendered body rather than one the
+  // test builds by hand: this is the only assertion that fails if the producer
+  // and the consumer ever stop agreeing on the spelling.
+  assert.equal(claimedIn(asComment(after), ...who), null, 'a finished run\'s comment must not read as a live claim');
+  cleanup();
+});
+
+test('an artifact that merely quotes the finished marker does not hide a live run\'s claim', () => {
+  // `renderComment` splices approved artifacts into the same comment body,
+  // verbatim. Working issueflow on its own repository is the concrete case:
+  // the plan for #251 quotes `<!-- issueflow:finished -->` while describing
+  // this design. A substring search anywhere in the body would read that live
+  // run's own comment as a dead one, `board` would print `—` for a claimed
+  // issue, and a second session's `start` would republish over it.
+  const { dir, run, cleanup } = fixture();
+  const step = findStep(run, 'investigate');
+  mkdirSync(join(dir, 'shared'), { recursive: true });
+  writeFileSync(
+    artifactPath(dir, step),
+    STAGES.find((s) => s.id === 'investigate').requires.map((r) => `## ${r}\n\nthe run publishes ${FINISHED_MARKER} when it ends.\n`).join('\n'),
+  );
+  redTeamPass(dir, run, step);
+  accept(dir, run, step);
+
+  const body = renderComment(dir, run);
+  assert.ok(body.includes(FINISHED_MARKER), 'the fixture must actually carry the marker inside the artifact');
+  assert.ok(
+    claimedIn([{ body, url: 'https://example.invalid/c#issuecomment-6' }], run.repo.owner, run.repo.name, run.issue.number),
+    'a live run whose artifact quotes the marker still holds the issue',
+  );
   cleanup();
 });
 
@@ -254,6 +311,420 @@ test('a repo path that is not a repository root is refused, never worked around'
   // and nothing was created in the enclosing repository
   assert.equal(tipOf(repoPath, run.lanes[0].branch), null);
   cleanup();
+});
+
+// ---------------------------------------------------------------------------
+// The base a lane is cut from (#251). Every test above runs against a repo with
+// no `origin` at all, which is exactly the regression floor: an unconditional
+// fetch would break all of them. These need a real bare origin instead.
+// ---------------------------------------------------------------------------
+
+/**
+ * A bare origin, a clone of it, and a second clone that can land work on the
+ * base behind the first clone's back — which is what session A merging while
+ * session B is still working looks like from inside session B's checkout.
+ */
+function tempRepoWithOrigin() {
+  const home = mkdtempSync(join(tmpdir(), 'issueflow-origin-'));
+  const origin = join(home, 'origin.git');
+  const seed = join(home, 'seed');
+  const path = join(home, 'clone');
+  const other = join(home, 'other');
+
+  git(['init', '-q', '--bare', '-b', 'main', origin], home);
+  git(['init', '-q', '-b', 'main', seed], home);
+  const commit = (cwd, file, message) => {
+    writeFileSync(join(cwd, file), `${message}\n`);
+    git(['add', file], cwd);
+    git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', message], cwd);
+  };
+  commit(seed, 'README.md', 'initial');
+  git(['remote', 'add', 'origin', origin], seed);
+  git(['push', '-q', '-u', 'origin', 'main'], seed);
+
+  git(['clone', '-q', origin, path], home);
+  git(['clone', '-q', origin, other], home);
+  return { home, origin, path, other, commit, cleanup: () => rmSync(home, { recursive: true, force: true }) };
+}
+
+test('a lane is cut from the base as it is NOW, not as this checkout last saw it', () => {
+  // Session A's pull request merges into the base; session B starts an hour
+  // later. Before 0.8.0 B's branch was cut from whatever `origin/<base>` B's
+  // checkout last happened to fetch, so it did not contain A's work.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const lane = run.lanes[0];
+
+  const stale = git(['rev-parse', 'origin/main'], o.path);
+  o.commit(o.other, 'landed.txt', 'session A landed');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  const current = git(['rev-parse', 'HEAD'], o.other);
+  assert.notEqual(current, stale, 'the fixture must actually move origin');
+
+  const wt = ensureWorktree(o.path, dir, lane).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), current, 'the lane was cut from a stale base');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a base that was force-pushed still cuts a lane, because the refspec is forced', () => {
+  // `dev` is unprotected in this repo's own policy, so a force-push of the base
+  // is permitted. An unforced refspec exits 1 with `! [rejected] …
+  // (non-fast-forward)`, which — paired with a fatal exit 3 — would hard-block
+  // every new lane after one rewind.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+
+  o.commit(o.other, 'a.txt', 'first');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  // `o.path` — the clone `ensureWorktree` will actually fetch into — must see
+  // commit A before it is rewound, or the fetch below is a plain fast-forward
+  // (this fixture's own clone never having seen A) and passes byte-for-byte
+  // with the `+` dropped from the refspec, which is exactly the gap f-e877ef1a
+  // found: measured by rebuilding this fixture with an unforced refspec and
+  // watching it fetch A -> B clean, because `o.path` had never fetched A.
+  git(['fetch', 'origin', 'main'], o.path);
+  const seen = git(['rev-parse', 'origin/main'], o.path);
+
+  git(['reset', '-q', '--hard', 'HEAD~1'], o.other);
+  o.commit(o.other, 'b.txt', 'rewritten');
+  git(['push', '-q', '--force', 'origin', 'main'], o.other);
+  const rewound = git(['rev-parse', 'HEAD'], o.other);
+  assert.notEqual(seen, rewound, 'the fixture must actually rewrite history away from what the clone already saw');
+
+  const wt = ensureWorktree(o.path, dir, run.lanes[0]).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), rewound, 'a rewound base must still be reachable');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('the fetch refspec is explicit, because a single-branch clone`s default fetch spec does not cover every base', () => {
+  // `tempRepoWithOrigin`'s plain `git clone` already covers every branch via
+  // its default `+refs/heads/*:refs/remotes/origin/*`, so a bare `git fetch
+  // origin <base>` would still update `refs/remotes/origin/<base>` there and
+  // every other fetch test in this file would stay green with the explicit
+  // half of the refspec dropped — f-dc008f9c found exactly that gap. A
+  // `--single-branch` clone (the shape CI runners' shallow clones have) is
+  // the one fixture where a bare fetch answers exit 0 while leaving
+  // `refs/remotes/origin/<base>` absent, because its `remote.origin.fetch`
+  // covers only the branch it was cloned for.
+  const home = mkdtempSync(join(tmpdir(), 'issueflow-repo-'));
+  const origin = join(home, 'origin.git');
+  const seed = join(home, 'seed');
+  git(['init', '-q', '--bare', '-b', 'main', origin], home);
+  git(['init', '-q', '-b', 'main', seed], home);
+  const commit = (cwd, file, message) => {
+    writeFileSync(join(cwd, file), `${message}\n`);
+    git(['add', file], cwd);
+    git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', message], cwd);
+  };
+  commit(seed, 'README.md', 'initial');
+  git(['remote', 'add', 'origin', origin], seed);
+  git(['push', '-q', '-u', 'origin', 'main'], seed);
+  git(['checkout', '-q', '-b', 'dev'], seed);
+  commit(seed, 'dev.txt', 'dev work');
+  git(['push', '-q', 'origin', 'dev'], seed);
+
+  const path = join(home, 'clone');
+  git(['clone', '-q', '--single-branch', '--branch', 'main', origin, path], home);
+  let sawDev = true;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', 'refs/remotes/origin/dev'], { cwd: path, stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    sawDev = false;
+  }
+  assert.equal(sawDev, false, 'the fixture must actually be a single-branch clone that has never heard of `dev`');
+
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({
+    repo: { owner: 'acme', name: 'widgets', path, defaultBranch: 'main' },
+    issue: ISSUE,
+    policy: { ...POLICY, base: 'dev' },
+  });
+
+  const wt = ensureWorktree(path, dir, run.lanes[0]).path;
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', 'dev'], seed),
+    'a single-branch clone must still see the base — the explicit half of the refspec is what makes that so',
+  );
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(home, { recursive: true, force: true });
+});
+
+test('an offline run cuts its lane without a fetch, even when origin is unreachable', () => {
+  // The other half: cases above cannot pass without a real fetch, and this one
+  // cannot pass if the fetch fires when the run says it is offline.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+
+  const stale = git(['rev-parse', 'origin/main'], o.path);
+  o.commit(o.other, 'landed.txt', 'session A landed');
+  git(['push', '-q', 'origin', 'main'], o.other);
+  rmSync(o.origin, { recursive: true, force: true });
+
+  const wt = ensureWorktree(o.path, dir, run.lanes[0], { offline: true }).path;
+  assert.equal(git(['rev-parse', 'HEAD'], wt), stale, 'an offline lane is cut from what the checkout already had');
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 instead of warning past it', () => {
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  // `implement` is the stage that gets a checkout, so it is the one whose
+  // brief has to stop; opening its gate is what makes the case reachable.
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+  rmSync(o.origin, { recursive: true, force: true });
+
+  let err = null;
+  try {
+    ensureWorktree(o.path, dir, run.lanes[0]);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof FetchError, `expected a FetchError, got ${err}`);
+  assert.match(String(err.message), /must not be cut from a stale base/);
+  assert.equal(err instanceof WorktreeError, true, 'a FetchError is still a WorktreeError, so `next` still classifies it');
+
+  // And the caller stops rather than warning past it. Every OTHER
+  // `WorktreeError` is survivable — the stage can run in the repository — but
+  // a stage briefed after a failed fetch would work on a stale base.
+  const brief = spawnCli(['brief', '--stage', 'implement', '--run-dir', dir]);
+  assert.equal(brief.code, 3, `expected infrastructure exit 3, got ${brief.code}: ${brief.err}`);
+  assert.match(brief.err, /stale base/);
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('the benign-fetch-failure check is not fooled by a git that localizes "couldn\'t find remote ref" (fetchBase pins LC_ALL=C)', () => {
+  // git ships gettext catalogs and can translate this exact message. Without
+  // pinning the locale on the fetch, a base that exists only locally —
+  // resolvePolicy's own documented case, the one this benign-failure branch
+  // exists for — turns into a hard FetchError on any machine whose LANG/
+  // LC_ALL triggers translation (f-ad1c9a15). This drives a stub `git` that
+  // answers the fetch however ITS OWN env says to, so the assertion is
+  // deterministic and does not depend on a French locale actually being
+  // installed on the machine running this test.
+  const o = tempRepoWithOrigin();
+  git(['branch', 'onlylocal'], o.path);
+  const local = git(['rev-parse', 'onlylocal'], o.path);
+
+  const realGit = execFileSync('which', ['git'], { encoding: 'utf8' }).trim();
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-git-locale-'));
+  const script = [
+    '#!/usr/bin/env node',
+    "const { spawnSync } = require('node:child_process');",
+    `const REAL_GIT = ${JSON.stringify(realGit)};`,
+    'const args = process.argv.slice(2);',
+    "if (args[0] === 'fetch' && args[1] === 'origin' && String(args[2] ?? '').includes('onlylocal')) {",
+    "  if (process.env.LC_ALL === 'C') {",
+    "    process.stderr.write(\"fatal: couldn't find remote ref onlylocal\\n\");",
+    '  } else {',
+    "    // What a French git actually prints for this failure — never matched",
+    '    // by the English-only regex, which is exactly the bug this drives.',
+    "    process.stderr.write(\"fatal: la référence distante « onlylocal » est introuvable\\n\");",
+    '  }',
+    '  process.exit(1);',
+    '}',
+    'const r = spawnSync(REAL_GIT, args, { cwd: process.cwd(), stdio: "inherit" });',
+    'process.exit(r.status ?? 1);',
+  ].join('\n');
+  writeFileSync(join(bin, 'git'), script);
+  chmodSync(join(bin, 'git'), 0o755);
+
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: { ...POLICY, base: 'onlylocal' } });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  const brief = spawnCli(['brief', '--stage', 'implement', '--run-dir', dir], { PATH: `${bin}:${process.env.PATH}` });
+  assert.equal(brief.code, 0, `a base that exists only locally must still provision cleanly under a localizing git, got ${brief.code}: ${brief.err}`);
+
+  const wt = worktreePath(dir, run.lanes[0]);
+  assert.equal(git(['rev-parse', 'HEAD'], wt), local, 'the lane must be cut from the local-only base, not fail on a false-fatal fetch');
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(bin, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a stacked lane whose base is a sibling lane\'s local-only branch is still cut from it, even though the fetch fires and finds nothing there', () => {
+  // `split` gives a later lane a base that lives only locally until that lane
+  // is pushed. Unaware of the sibling (no `lanes` passed), `stacked` reads
+  // false and the fetch still fires — but origin has genuinely never heard of
+  // `feature/issue-9-a`, which is the same shape `resolvePolicy` can hand back
+  // for a declared-but-never-pushed SHARED base too (f-d1d5b257). Before that
+  // fix this was a FetchError — a hard stop — where the pre-fetch code cut the
+  // lane from the local branch just fine; the fix is what makes it do that
+  // again instead of failing.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const laneA = { ...run.lanes[0], slug: 'a', branch: 'feature/issue-9-a' };
+  const laneB = { ...run.lanes[0], slug: 'b', branch: 'feature/issue-9-b', base: laneA.branch };
+  git(['branch', laneA.branch], o.path);
+
+  const wt = ensureWorktree(o.path, dir, laneB).path;
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', laneA.branch], o.path),
+    'still cut from the sibling branch even though the fetch was attempted and found nothing',
+  );
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a stacked lane whose base is a sibling lane\'s local-only branch skips the fetch entirely when the sibling list says so', () => {
+  // The optimization proper. Told which lanes are siblings, `ensureWorktree`
+  // never attempts the fetch at all — proved by deleting origin outright,
+  // which a real fetch attempt reports as a hard FetchError (unreachable),
+  // never the benign "no such ref" the test above tolerates. If the stacked
+  // check stopped skipping the fetch, this test would fail on the deleted
+  // origin rather than on a wrong tip.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const laneA = { ...run.lanes[0], slug: 'a', branch: 'feature/issue-9-a' };
+  const laneB = { ...run.lanes[0], slug: 'b', branch: 'feature/issue-9-b', base: laneA.branch };
+  git(['branch', laneA.branch], o.path);
+  rmSync(o.origin, { recursive: true, force: true });
+
+  const wt = ensureWorktree(o.path, dir, laneB, { lanes: [laneA, laneB] }).path;
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', laneA.branch], o.path),
+    'still cut from the sibling branch, with origin gone and no fetch attempted at all',
+  );
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('originConfigured tells "no origin" apart from a git failure — only the first is silently false', () => {
+  const withOrigin = tempRepoWithOrigin();
+  assert.equal(originConfigured(withOrigin.path), true);
+  withOrigin.cleanup();
+
+  // `git init` only, no remote added — the one legitimate false case.
+  const bare = tempRepo();
+  assert.equal(originConfigured(bare), false);
+  rmSync(bare, { recursive: true, force: true });
+
+  // Not a git repository at all: `git remote` fails outright, and that must
+  // not be read as "no origin" and silently skipped — it is the exact
+  // stale-base defect the fetch exists to prevent, made invisible instead of
+  // fatal.
+  const notARepo = mkdtempSync(join(tmpdir(), 'issueflow-not-a-repo-'));
+  let err = null;
+  try {
+    originConfigured(notARepo);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof WorktreeError, 'a git failure must surface, not read as "no origin"');
+  // And it must surface as the FATAL kind. `briefOne` re-throws a `FetchError`
+  // and swallows every other `WorktreeError` into a warning that briefs the
+  // stage against the user's LIVE checkout — so a transient `git remote`
+  // failure (two parallel sessions contending for `.git/config.lock`, EMFILE)
+  // classified as survivable silently drops a lane out of its own worktree,
+  // which is the hazard the worktree exists to remove.
+  assert.ok(err instanceof FetchError, `not knowing whether there is an origin is not knowing whether the base is stale; got ${err?.constructor?.name}`);
+  rmSync(notARepo, { recursive: true, force: true });
+});
+
+test('`brief` provisions a stacked lane over a repo that HAS an origin — the production call, not the library one', () => {
+  // The library skips the fetch for a stacked lane only when it is handed the
+  // run's sibling lanes. `briefOne` is the only production caller, so a test
+  // that passes `lanes` in by hand proves nothing about whether a split run
+  // works: every one of them hard-stopped at exit 3 on its second lane with
+  // that test green. This drives the CLI, which is what a split run runs.
+  const o = tempRepoWithOrigin();
+  // Nested one level below the temp root on purpose: this is the only case here
+  // that APPROVES an implement stage, and `readTimings` reads every sibling of a
+  // run directory for past stage durations. A run directory sitting directly in
+  // the temp root is a sibling of every other test's, including the frozen
+  // baseline replay, whose golden says "no past timings on this repo".
+  const dir = join(mkdtempSync(join(tmpdir(), 'issueflow-stacked-')), 'run');
+  mkdirSync(dir, { recursive: true });
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  split(dir, run, [{ title: 'the first half', slug: 'a' }, { title: 'the second half', slug: 'b' }]);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  // Lane a first, because lane b's base IS lane a's branch and nothing creates
+  // it until lane a is provisioned. Its base is the repo's own, so it fetches.
+  const a = spawnCli(['brief', '--stage', 'implement', '--lane', 'a', '--run-dir', dir]);
+  assert.equal(a.code, 0, `lane a must brief, got ${a.code}: ${a.err}`);
+  // Lane b's gate is lane a's approved implement — the same order a real split
+  // run walks, and the reason lane b is where every split run stopped.
+  const briefed = loadRun(dir);
+  approveImplement(dir, briefed, 'a');
+
+  const b = spawnCli(['brief', '--stage', 'implement', '--lane', 'b', '--run-dir', dir]);
+  assert.equal(b.code, 0, `lane b must brief, got ${b.code}: ${b.err}`);
+  assert.doesNotMatch(b.err, /could not fetch/, 'a stacked lane must not fetch a branch origin has never had');
+  assert.equal(
+    git(['rev-parse', 'HEAD'], worktreePath(dir, run.lanes[1])),
+    git(['rev-parse', run.lanes[0].branch], o.path),
+    'the stacked lane is still cut from the sibling branch below it',
+  );
+
+  rmSync(dirname(dir), { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a WorktreeError that is not a FetchError still warns and `brief` continues — the survivable half of the fatal split', () => {
+  // The mirror of the FetchError case above: `repoPath` pointed at a
+  // subdirectory of a real repo is refused by `ensureWorktree`'s own
+  // toplevel check, which is a WorktreeError but never a FetchError.
+  const repoPath = tempRepo();
+  const sub = join(repoPath, 'subdir');
+  mkdirSync(sub);
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: sub, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  saveRun(dir, run);
+  approvePlan(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
+
+  let err = null;
+  try {
+    ensureWorktree(sub, dir, run.lanes[0]);
+  } catch (e) {
+    err = e;
+  }
+  assert.ok(err instanceof WorktreeError, `expected a WorktreeError, got ${err}`);
+  assert.equal(err instanceof FetchError, false, 'this must be the survivable kind, not the fatal one');
+
+  // `spawnCli`/`spawnSync` above discard stderr on a 0 exit — this is the one
+  // case that needs it captured either way, so it runs the child directly.
+  const brief = spawnSync(process.execPath, [CLI, 'brief', '--stage', 'implement', '--run-dir', dir], {
+    encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+  });
+  assert.equal(brief.status, 0, `a non-fetch WorktreeError must warn and continue, got ${brief.status}: ${brief.stderr}`);
+  assert.match(brief.stderr, /no worktree for root/);
+  assert.match(brief.stderr, /the stage will work in the repository itself/);
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(repoPath, { recursive: true, force: true });
 });
 
 // ---------------------------------------------------------------------------

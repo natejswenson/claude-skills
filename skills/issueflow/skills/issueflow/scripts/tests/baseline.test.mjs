@@ -33,6 +33,14 @@ const REFRESH = 'node evals/baseline/update.mjs';
 
 const frozen = (name) => readFileSync(join(BASELINE, name), 'utf8');
 
+/** One cell of a rendered board row, resolved by column NAME off the table's own header. */
+function boardCell(board, line, column) {
+  const header = board.split('\n').find((l) => l.startsWith('| # ')).split('|').map((c) => c.trim());
+  const at = header.indexOf(column);
+  assert.notEqual(at, -1, `the frozen board has no ${column} column`);
+  return line.split('|').map((c) => c.trim())[at];
+}
+
 test('a real run has been frozen as the baseline', () => {
   assert.ok(existsSync(join(BASELINE, 'MANIFEST.json')), `no baseline frozen — run \`${REFRESH}\``);
   const manifest = JSON.parse(frozen('MANIFEST.json'));
@@ -68,8 +76,44 @@ test('the-real-run: the frozen board is a real board, not an empty one', () => {
   assert.match(board, /natejswenson\/local-fitness/);
   // and the Detail column must still discriminate: a signal that collapsed to
   // one value for every issue is a column that has stopped meaning anything.
-  const details = new Set(rows.map((l) => l.split('|').at(-2).trim()));
+  //
+  // Resolved by NAME, not by counting from the end. This read `.at(-2)` until
+  // `Run` was appended in 0.8.0, which silently retargeted it at a column that
+  // is `—` in every hermetic row — failing the assertion for a reason with
+  // nothing to do with Detail. By name it survives the next column too.
+  const details = new Set(rows.map((l) => boardCell(board, l, 'Detail')));
   assert.ok(details.size >= 2, `every issue reported Detail "${[...details]}" — the signal has stopped discriminating`);
+  // And Run must be `—` in every row. This machine really does hold a run for
+  // issue 132, which is one of these rows, so a board regenerated
+  // non-hermetically would freeze WHO regenerated it — and fail here, at
+  // regeneration time, rather than later in CI as an unexplained byte diff.
+  const runs = new Set(rows.map((l) => boardCell(board, l, 'Run')));
+  assert.deepEqual(
+    [...runs], ['—'],
+    `the frozen board reports ${[...runs].join(', ')} under Run — it was regenerated non-hermetically`,
+  );
+});
+
+test('the Detail guard actually discriminates: a hand-built board whose Detail column holds one repeated value fails it', () => {
+  // The other half of the check above. Without this, `boardCell` could be
+  // changed to resolve the wrong column, a constant, or the header cell
+  // itself, and the frozen golden's own varied Detail values would keep the
+  // assertion passing anyway — a guard that stopped discriminating months ago
+  // and never told anyone.
+  const flat = [
+    '| #   | Issue | Labels | Comments | Updated | Detail | Run |',
+    '|-----|-------|--------|----------|---------|--------|-----|',
+    '| 1   | a     | —      | 0        | 2026-01-01 | some | — |',
+    '| 2   | b     | —      | 0        | 2026-01-01 | some | — |',
+    '| 3   | c     | —      | 0        | 2026-01-01 | some | — |',
+  ].join('\n');
+  const rows = flat.split('\n').filter((l) => /^\| \d+ /.test(l));
+  const details = new Set(rows.map((l) => boardCell(flat, l, 'Detail')));
+  assert.throws(
+    () => assert.ok(details.size >= 2, `every issue reported Detail "${[...details]}" — the signal has stopped discriminating`),
+    /stopped discriminating/,
+    'a board whose Detail column holds one repeated value must still fail the guard',
+  );
 });
 
 test('the-real-run: no padded table cell carries a path, so the golden survives another machine', () => {

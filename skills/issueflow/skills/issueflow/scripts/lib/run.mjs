@@ -107,6 +107,41 @@ export function saveRun(dir, run) {
   return run;
 }
 
+/**
+ * The FIRST write of a run's state — `start`'s write, and only that one.
+ *
+ * A run's identity is `owner/name#N`, and two sessions on one machine resolve
+ * that to the same directory. `start` used to `saveRun` unconditionally, so
+ * the second session silently reset the first's state machine. Reading before
+ * writing narrows that; it does not close it, because two `start` invocations
+ * milliseconds apart both read "no run.json" and both write one. The exclusive
+ * `wx` create is what closes it: the loser gets `EEXIST` from the filesystem
+ * rather than a stranger's run.
+ *
+ * `takeOver` is the human's override, and it writes plainly — a flag that was
+ * inert on the one case it exists for would be worse than no flag.
+ * `saveRun` is untouched: every LATER write is a run rewriting its own state.
+ */
+export function claimRunDir(dir, run, { takeOver = false } = {}) {
+  mkdirSync(join(dir, SHARED_DIR), { recursive: true });
+  for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
+  const body = `${JSON.stringify(run, null, 2)}\n`;
+  if (takeOver) {
+    writeFileSync(statePath(dir), body);
+    return run;
+  }
+  try {
+    writeFileSync(statePath(dir), body, { flag: 'wx' });
+  } catch (err) {
+    if (err?.code !== 'EEXIST') throw err;
+    throw new HandBack(
+      `a run already exists at ${dir} — another session claimed this issue while this one was starting. ` +
+        'Resume it with `issueflow next --run-dir <dir>`, or start over on top of it with `--take-over`.',
+    );
+  }
+  return run;
+}
+
 export function loadRun(dir) {
   if (!existsSync(statePath(dir))) {
     throw new RunError(`no run at ${dir} — start one with \`issueflow start --issue <number>\``);

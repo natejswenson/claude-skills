@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request — one opus subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one opus subagent implements it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.7.1
+version: 0.8.0
 ---
 
 # /issueflow — one open issue to a pull request, driven by `next`
@@ -207,14 +207,41 @@ from `ship`, a converged loop from `ready`, a merge from `finish`.
 - **Never auto-ship over an open blocking finding.** An exhausted plan surfaces its findings and the run stops there.
 - **A round never reviews code GitHub has not received.** `review-brief` refuses when the local head, the remote head and the pull request's head disagree.
 - **Auto mode never touches `--force`.** Drift stops an unattended run; the flag is for a human who has re-read what moved.
+- **Never `--take-over` a claim you have not read.** It republishes an empty board over that run's comment on the issue, removes the displaced run's worktrees, force-deletes its local branches with `git branch -D` — so any commit that lane never pushed goes with them — and moves every artifact that run wrote into `superseded/<timestamp>/` inside the run directory. Auto mode never passes `--take-over`.
+
+## Parallel sessions
+
+One session per issue, all on one machine, all against one checkout, is a
+supported way to work — every run has its own directory, every lane its own
+worktree and branch, and every issue its own sticky comment. Three things make
+it safe, and all three are the CLI's job, not yours:
+
+- **`board` says who already has an issue.** The `Run` column reads a run's
+  state when that run is on this machine, `claimed` when only a marker comment
+  on the issue says another machine has it, and `—` when nothing has it. Pick a
+  free one, or resume the run it names with `next --run-dir <path>`.
+- **`start` refuses an issue that is taken** and exits 4, rather than resetting
+  a run somebody else is in the middle of and republishing an empty board over
+  their checkpoint comment. `--take-over` is the one way past, and it is for a
+  human who has read that comment. A **finished** run is the one exception:
+  `finish` already removed its worktrees and deleted its branches, so a
+  reopened (or twice-worked) issue starts fresh with no flag needed, and its
+  own dead marker comment is never read as a stranger's claim — unless a live
+  claim is on the issue now, which outranks it and refuses like any other.
+  Either way the displaced run's artifacts move to `superseded/<timestamp>/`
+  rather than being deleted, and `start` prints where they went.
+- **A lane is cut from the base as it is now.** `brief` fetches the base before
+  it creates a branch, so a lane started after another session's pull request
+  merged contains that merge. A fetch that fails is exit 3 — infrastructure,
+  retry — never a lane quietly built on last week's tree.
 
 ## Commands
 
 | Command | Returns |
 |---|---|
 | `next` | the one next action, having performed every deterministic step before it: a dispatch with its wait line, a wait, or a stop naming who must act |
-| `board` | every open issue as a pick-table, plus the repo's resolved branch policy |
-| `start --issue <n> [--auto]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` removes the human stop after the plan |
+| `board` | every open issue as a pick-table, plus the repo's resolved branch policy — the `Run` column says who already has each issue |
+| `start --issue <n> [--auto] [--take-over]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` removes the human stop after the plan; `--take-over` is the only way past a claim |
 | `brief [--stage] [--lane] [--review]` | a stage's, or the red team's, model, agent, artifact, worktree and the exact dispatch prompt |
 | `review --stage investigate` | registers a red-team review of the plan: validates every citation, derives the verdict, hash-binds it, prints the findings table and the coverage gap |
 | `accept [--stage] [--lane] [--skip] [--force] [--auto]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
