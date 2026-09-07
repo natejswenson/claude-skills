@@ -75,10 +75,10 @@ Ask for it in words — the skill drives the commands:
 > **work an issue in this repo**
 
 ```
-| # | Issue                                     | Labels | Comments | Updated    | Detail |
-|---|-------------------------------------------|--------|----------|------------|--------|
-| 3 | Security: rotate leaked credentials and … | —      | 0        | 2026-07-24 | some   |
-| 4 | Phase 4: port the admin CMS to the Worke… | epic   | 0        | 2026-07-24 | thin ! |
+| # | Issue                                     | Labels | Comments | Updated    | Detail | Run         |
+|---|-------------------------------------------|--------|----------|------------|--------|-------------|
+| 3 | Security: rotate leaked credentials and … | —      | 0        | 2026-07-24 | some   | —           |
+| 4 | Phase 4: port the admin CMS to the Worke… | epic   | 0        | 2026-07-24 | thin ! | in progress |
 ```
 
 > **3**
@@ -100,6 +100,12 @@ for the next one. `Took` is the stage's own time, briefed until it delivered, so
 the model is not billed for how long you spent reading. `Detail` is how much the
 issue text specifies — never a size estimate, because nothing readable from
 issue prose knows how big "port the admin CMS" is.
+`Run` is who already has the issue — a state means a run in another session on
+this machine, `claimed` means a marker comment says another machine has it.
+Sessions run in parallel safely: one run directory and one worktree per issue,
+`start` refuses an issue that is taken rather than resetting somebody else's
+run, and a lane is cut from the base as it is now rather than as this checkout
+last happened to fetch it.
 
 Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
 for work matching the triggers below.

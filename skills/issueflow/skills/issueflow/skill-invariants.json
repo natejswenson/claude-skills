@@ -70,6 +70,11 @@
       "rationale": "`--force` exists so a human who has re-read the drift can overrule it. An unattended run has nobody who re-read anything: blocking drift, like an exhausted stage, stops the run and surfaces — the flag is the one gate bypass in the CLI, and auto mode is exactly the caller that must never hold it."
     },
     {
+      "id": "auto-never-takes-over",
+      "pattern": "Auto mode never passes `--take-over`",
+      "rationale": "`--take-over` is strictly more destructive than `--force`: it republishes an empty board over another session's checkpoint comment (the one artifact of a run that leaves the machine), removes that run's worktrees, and force-deletes its local branches with `git branch -D`, so a lane's unpushed commits go with them. Its artifacts are moved to `superseded/<timestamp>/` rather than deleted — the one part of the cost that stays recoverable, and the reason the documented cost has to name the other parts. `--force` already has `auto-never-forces`; without a matching entry the guardrail on the worse flag could be reworded or deleted with nothing failing."
+    },
+    {
       "id": "the-fixer-notes-the-skip",
       "pattern": "notes the skip rather than arguing with it",
       "rationale": "The anti-oscillation rule from Claude Code's own review methodology. A fixer that argues with a finding inside the pull request turns a round into a thread war; a fixer that says why, once, hands the disagreement to the next verifier, and the second dispute hands it to a human."
@@ -262,7 +267,15 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the two-sided proof's revert-and-rerun is only safe for the same reason — before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo."
+      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the two-sided proof's revert-and-rerun is only safe for the same reason — before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo. Since 0.8.0 it also covers the base a lane is cut from (#251), against a real bare origin: a lane created after a commit lands on origin's base contains that commit, a base that was force-pushed still cuts a lane (the forced refspec), an offline run cuts from what the checkout already had with origin unreachable, and a failed fetch is a `FetchError` that `brief` surfaces as exit 3 rather than warning past. The seven origin-less cases above are the regression floor — an unconditional fetch would break all of them."
+    },
+    {
+      "id": "parallel-sessions",
+      "kind": "trap",
+      "test": "scripts/tests/parallel.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/parallel.test.mjs\"",
+      "rationale": "A second session must not be able to reset or republish over a run it does not own, and the board must say an issue is taken before anyone picks it (#251). Driven ONLINE against a recording `gh` stub, because `checkpoint()` returns before any `gh` call on an offline run — an assertion about a missing PATCH under `--issue-json` would pass with the bug fully present. Two-sided throughout: a claimed issue refuses and posts nothing, an unclaimed one still starts and still posts, `--take-over` proceeds and does republish, a second `start` leaves `run.json` byte-identical, a run `loadRun` refuses is given `--take-over` while a loadable one is given `next --run-dir`, and `claimRunDir` loses the race a read-then-write check cannot close. The board half pins `claimed`, a run's state, `unreadable` and `—`, plus the hermeticity pair that proves a `--issues-json` board reads no run root at all — this machine holds a run for issue 132, which is a row in the frozen board."
     },
     {
       "id": "stage-contract-corpus",

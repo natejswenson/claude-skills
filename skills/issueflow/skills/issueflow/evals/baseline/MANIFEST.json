@@ -2,7 +2,7 @@
   "comment": "Frozen from a real issueflow run against natejswenson/local-fitness#133. Regenerate with `node evals/baseline/update.mjs`.",
   "source": "natejswenson/local-fitness#133",
   "artifacts": {
-    "board.txt": "8525996d8949254f",
+    "board.txt": "bb2ce1fb42fd7874",
     "start.txt": "4cb6a9a7a56bc5ce",
     "next-1-fresh.txt": "3acefe11662f2b19",
     "brief-investigate.md": "603ef6d6f833c6c1",

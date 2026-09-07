@@ -65,8 +65,13 @@ const labelNames = (issue) =>
  * `thin !` marks a broad label over a thin body — the combination that most
  * often comes back from the design stage as several work items. It is a flag on
  * two facts, not an estimate.
+ *
+ * `runCells` is who already has this issue, keyed by issue number, and it is
+ * handed in rather than looked up: a run directory is read off the filesystem
+ * and a claim off the comments, and a column that reached for either from here
+ * would make this table unfreezable — the same rule that keeps `now` out of it.
  */
-export function issueRows(issues) {
+export function issueRows(issues, runCells = new Map()) {
   return issues.map((issue) => {
     const { detail, broadLabel } = detailOf(issue);
     return [
@@ -76,11 +81,12 @@ export function issueRows(issues) {
       String(Array.isArray(issue.comments) ? issue.comments.length : (issue.comments ?? 0)),
       String(issue.updatedAt ?? '').slice(0, 10) || '—',
       broadLabel && detail === 'thin' ? 'thin !' : detail,
+      runCells.get(issue.number) ?? '—',
     ];
   });
 }
 
-export const ISSUE_COLUMNS = ['#', 'Issue', 'Labels', 'Comments', 'Updated', 'Detail'];
+export const ISSUE_COLUMNS = ['#', 'Issue', 'Labels', 'Comments', 'Updated', 'Detail', 'Run'];
 export const BOARD_COLUMNS = ['Step', 'Model', 'State', 'Took', 'Gate'];
 
 /**
