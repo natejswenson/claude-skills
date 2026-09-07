@@ -7,14 +7,14 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
-import { checkpoint } from './lib/checkpoint.mjs';
+import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
@@ -27,13 +27,14 @@ import { writeFinderBriefs, writeFixBrief, writeVerifierBriefs } from './lib/rev
 import { branchFor, resolvePolicy } from './lib/policy.mjs';
 import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
-  HandBack, RunError, accept, artifactPath, blockers, board, createRun, dependencies, durationOf, findLane, findStep,
-  formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence, readySteps,
-  recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan, worktreePath,
+  HandBack, RunError, accept, artifactPath, blockers, board, claimRunDir, createRun, dependencies, durationOf, findLane,
+  findStep, formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence,
+  readySteps, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
+  worktreePath,
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { WorktreeError, ensureWorktree } from './lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 
@@ -44,7 +45,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
 
 function argv(args) {
   const out = { _: [] };
@@ -227,6 +228,37 @@ function reportDrift(rows) {
   print(['Reality check', 'State', 'Detail'], rows.map((r) => [r.check, r.state, r.detail]));
 }
 
+/**
+ * Who already has each issue, keyed by issue number, for the `Run` column.
+ *
+ * Precedence is deliberate: a run directory on this machine outranks a marker
+ * comment, because it is the one you can actually resume. `unreadable` is its
+ * own cell and never degrades to `—` — a broken run reading as a free issue is
+ * the single misreading this column exists to prevent.
+ *
+ * `root` is null when nothing is to be scanned, and then no filesystem read
+ * happens at all. That is what keeps the frozen `board.txt` hermetic: this
+ * machine really does hold a run for issue 132, which is a row in that golden,
+ * so a board that scanned `homedir()` would freeze as `in progress` here and
+ * `—` everywhere else.
+ */
+function runCellsFor(issues, info, root) {
+  const cells = new Map();
+  for (const issue of issues) {
+    const dir = root ? runDir(root, info.owner, info.name, issue.number) : null;
+    if (dir && existsSync(join(dir, 'run.json'))) {
+      try {
+        cells.set(issue.number, runState(loadRun(dir)));
+      } catch {
+        cells.set(issue.number, 'unreadable');
+      }
+      continue;
+    }
+    if (claimedIn(issue.comments, info.owner, info.name, issue.number)) cells.set(issue.number, 'claimed');
+  }
+  return cells;
+}
+
 async function cmdBoard(args) {
   const repo = resolve(args.repo ?? '.');
   const info = identify(repo, args);
@@ -234,12 +266,18 @@ async function cmdBoard(args) {
   // An offline run reads nothing from git it was not handed: the frozen
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
+  // Keyed on `--issues-json`, NOT on `isOffline(args)`: this command still
+  // calls `listIssues` over the network whenever `--issues-json` is absent, so
+  // keying the scan on offlineness would blank the column on an invocation that
+  // had just dialled out. `--issues-json` is the flag that makes the golden
+  // hermetic, so it is the flag the rule names.
+  const root = args.runRoot ? resolve(args.runRoot) : (args.issuesJson ? null : runRoot());
 
   if (issues.length === 0) {
     console.log(`No open issues in ${info.owner}/${info.name}.`);
     return;
   }
-  print(ISSUE_COLUMNS, issueRows(issues));
+  print(ISSUE_COLUMNS, issueRows(issues, runCellsFor(issues, info, root)));
   console.log('');
   print(
     ['Repo', 'Base branch', 'Feature prefix', 'Merge', 'Policy from'],
@@ -249,6 +287,286 @@ async function cmdBoard(args) {
     '\nDetail is how much the issue text specifies, not how much work it is — a thin issue\n' +
       'under a broad title is the one most likely to come back from design as several work items.',
   );
+  console.log(
+    'Run says who already has it: a state means a run on this machine, `claimed` means a run\n' +
+      'on another one. Pick a different issue, or resume that run with `next --run-dir <path>`.',
+  );
+}
+
+/**
+ * Refuse to `start` an issue somebody else is already working.
+ *
+ * A run's identity is `owner/name#N`, and until 0.8.0 nothing ever asked
+ * whether that identity was taken: two sessions that both said "fix issue 42"
+ * resolved to the same directory, and the second reset the first's state
+ * machine to all-pending. Worse, the checkpoint that follows adopts the run's
+ * sticky comment BY MARKER and rewrites it in place, so the second session
+ * also published an empty board over the first's only artifact that leaves
+ * this machine.
+ *
+ * Two claims, and they are not the same fact:
+ *
+ * - A local `run.json` is a local fact and refuses either way. What it tells
+ *   you to do next depends on whether that run still loads: a loadable run
+ *   gets the resume command, and one `loadRun` refuses gets `loadRun`'s own
+ *   reason plus `--take-over` — printing `next --run-dir` there would send the
+ *   reader to a command that fails for the same reason, which is a dead end
+ *   rather than a guardrail.
+ * - A marker comment with no local run means another machine has it, and that
+ *   one is scoped to ONLINE invocations. The harm is `checkpoint()` PATCHing
+ *   over a stranger's comment, and `checkpoint()` returns before any `gh` call
+ *   on an offline run — an offline replay makes no claim and can clobber
+ *   nothing, which is what keeps the frozen `issue-132.json` payload (whose
+ *   real comment carries a real marker) replayable.
+ *
+ * A local run that has *finished* is the one local fact that does not refuse:
+ * `finish` already removed its worktrees and deleted its branches, `runState`
+ * already reports it as `done` on the board, and the checkpoint comment
+ * already carries `FINISHED_MARKER`. Nobody holds it. Refusing anyway would
+ * make a reopened (or twice-worked) issue recoverable only through
+ * `--take-over` — the destructive override SKILL.md reserves for a claim a
+ * human has actually read, and one auto mode must never pass. Returning
+ * `{ finished: true }` here is what tells `cmdStart` to reset the directory
+ * and take over without that flag.
+ *
+ * That exemption is itself conditional on the issue being unclaimed *now*. A
+ * run finishing here says nothing about who holds the issue today: machine 1
+ * finishes #42, the issue is reopened, machine 2 starts a live run on it and
+ * its checkpoint rewrites the sticky comment — which now carries machine 2's
+ * live board and no finished marker. Machine 1 running a plain `start` must
+ * refuse that, exactly as any other session would, or the finished-run
+ * shortcut becomes a way to clobber a live claim with no flag at all.
+ */
+function refuseClaimed(dir, info, issue, args) {
+  if (args.takeOver) {
+    // `--take-over` short-circuits every claim check above, which is also
+    // the one place nothing ever compared `dir` against the issue being
+    // started. A `--run-dir` that names another issue's run — mistyped,
+    // tab-completed, or copied from an earlier session's notes — must not
+    // be force-cleaned and archived under this issue's name; read best
+    // effort, the same way `resetRunDir` does, so a run.json this cannot
+    // fully parse still names the issue it belongs to when it can.
+    if (existsSync(join(dir, 'run.json'))) {
+      let previous = null;
+      try {
+        previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+      } catch {
+        previous = null;
+      }
+      const sameRepo = (previous?.repo?.owner ?? info.owner) === info.owner && (previous?.repo?.name ?? info.name) === info.name;
+      if (previous?.issue?.number != null && (!sameRepo || previous.issue.number !== issue.number)) {
+        throw new HandBack(
+          `${dir} holds a run for ${previous.repo?.owner ?? '?'}/${previous.repo?.name ?? '?'}#${previous.issue.number}, ` +
+            `not ${info.owner}/${info.name}#${issue.number}. ` +
+            '`--take-over` only overwrites a run for the issue you are starting — pass the right `--run-dir`, ' +
+            'or drop it to use this issue\'s default run directory.',
+        );
+      }
+    }
+    return { finished: false };
+  }
+  // Scoped to ONLINE invocations for the reason above: an offline replay makes
+  // no `gh` call, so it can clobber no comment and reads no claim off one.
+  const claim = isOffline(args) ? null : claimedIn(issue.comments, info.owner, info.name, issue.number);
+  const refuseClaim = () => {
+    throw new HandBack(
+      `${info.owner}/${info.name}#${issue.number} is already claimed by an issueflow run on another machine — ` +
+        `read its comment first: ${claim.url ?? issue.url}. ` +
+        'Starting here would republish an empty board over it. Take it over with `--take-over` once you have.',
+    );
+  };
+
+  if (existsSync(join(dir, 'run.json'))) {
+    try {
+      const existing = loadRun(dir);
+      // A live claim outranks a finished local run: the comment carrying it is
+      // somebody else's board, published after this run ended, and the
+      // finished-run shortcut must not be a no-flag way to overwrite it.
+      if (existing.finished && claim) refuseClaim();
+      if (existing.finished) {
+        // The same ownership check the `--take-over` branch above applies
+        // before it ever resets a directory, applied here too: a `--run-dir`
+        // that names a DIFFERENT, finished issue — mistyped, tab-completed,
+        // or copied from an earlier session's notes — must not be folded
+        // into `takeOver` at the call site with no check at all. Without
+        // this, `cmdStart` reaches the identical destructive reset
+        // (archive-and-wipe, worktree removal, branch deletion) that
+        // `--take-over` gates on a match, but with no flag and no ownership
+        // check whatsoever (f-2aef04ce).
+        const sameRepo = existing.repo?.owner === info.owner && existing.repo?.name === info.name;
+        if (!sameRepo || existing.issue?.number !== issue.number) {
+          throw new HandBack(
+            `${dir} holds a finished run for ${existing.repo?.owner ?? '?'}/${existing.repo?.name ?? '?'}#${existing.issue?.number}, ` +
+              `not ${info.owner}/${info.name}#${issue.number}. ` +
+              'The finished-run shortcut only resets a run for the issue you are starting — pass the right `--run-dir`, ' +
+              'or drop it to use this issue\'s default run directory.',
+          );
+        }
+        return { finished: true };
+      }
+    } catch (err) {
+      if (err instanceof HandBack) throw err;
+      // A run this cannot resume is exactly the state `--take-over` is the
+      // remedy for — but the same outranking above (a live claim beats a
+      // finished local run) has to apply here too, or this message hands out
+      // `--take-over` as the fix without ever saying a claim exists, and a
+      // user who follows it republishes an empty board over another
+      // machine's checkpoint.
+      if (claim) refuseClaim();
+      throw new HandBack(
+        `${String(err?.message ?? err)}. Start over on top of it with \`--take-over\`, which overwrites it.`,
+      );
+    }
+    throw new HandBack(
+      `a run already exists at ${dir}. ` +
+        'Resume it with `issueflow next --run-dir <dir>` — only if the session that started it is gone.',
+    );
+  }
+
+  if (claim) refuseClaim();
+  return { finished: false };
+}
+
+/**
+ * `--take-over`'s cleanup, and a finished run's implicit one.
+ *
+ * `claimRunDir({ takeOver: true })` only ever rewrote `run.json` — it left the
+ * displaced run's worktrees, its local branches, and every stage artifact
+ * already on disk untouched. Three different failures fell out of that:
+ *
+ * - `deliveredSince` and `hasContent` read those artifacts straight off disk,
+ *   so the fresh, all-pending run.json this writes next would instantly
+ *   report the previous session's plan and implementation as its own
+ *   delivered work.
+ * - An existing worktree directory makes `ensureWorktree` a no-op, so a taken
+ *   -over run's stages would silently keep running in the displaced session's
+ *   checkout, on top of its commits.
+ * - An existing branch means `ensureWorktree` never reaches the branch
+ *   -creating arm at all, so the fresh-base fetch this same change adds is
+ *   never even attempted on exactly the lane that most needs it.
+ *
+ * Read best-effort: a `run.json` `loadRun` refuses (the other reason
+ * `--take-over` exists) still names real lanes worth cleaning up, so this
+ * reads the raw JSON rather than going through the loader that would throw
+ * on it.
+ *
+ * What it does NOT do is delete anything a person wrote. The displaced run's
+ * plan, implementation artifact, evidence files, registered review rounds and
+ * progress logs are the only local account of how a change was designed and
+ * proved, and a recursive delete of them is irrecoverable — reached, on the
+ * finished-run path, by a plain `start` with no flag at all. They move to
+ * `superseded/<timestamp>/` inside the same run directory instead: out of the
+ * way of `deliveredSince` and `hasContent`, which read fixed paths and so never
+ * see them, out of the way of `runs` and `readTimings`, which scan one level of
+ * run directories and not inside one, and still on disk.
+ */
+function archiveRunDir(dir) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  let to = join(dir, 'superseded', stamp);
+  for (let n = 2; existsSync(to); n += 1) to = join(dir, 'superseded', `${stamp}-${n}`);
+  mkdirSync(to, { recursive: true });
+  for (const name of readdirSync(dir)) {
+    // The archive itself, and every earlier one under it, stays where it is —
+    // a second take-over must not bury the first one's record inside its own.
+    if (name === 'superseded') continue;
+    renameSync(join(dir, name), join(to, name));
+  }
+  return to;
+}
+
+function resetRunDir(dir, repoPath, { force = false } = {}) {
+  // `dir` on the `--take-over` path is whatever `--run-dir` names, and a
+  // mistyped or tab-completed path must cost nothing: with no `run.json` there
+  // is no run here to displace, and nothing below should touch the directory.
+  if (!existsSync(join(dir, 'run.json'))) return null;
+
+  let previous = null;
+  try {
+    previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+  } catch {
+    previous = null;
+  }
+  // `previous.repo.path` is the displaced run's OWN recorded checkout, which
+  // is where its worktrees and branches are actually registered — needed
+  // whenever the current invocation is a second clone with no registration
+  // of its own. But that recorded path can stop resolving (the checkout was
+  // renamed or moved; runs live under `~/.claude` and outlive checkouts), and
+  // when it does, every cleanup below throws into an empty catch and reports
+  // nothing while `--take-over` still exits 0 — leaving a live branch and
+  // worktree registration for the fresh run to collide with or silently
+  // reuse. `repoPath` — the checkout this very invocation was pointed at —
+  // is the best fallback: the common way the recorded path goes stale is
+  // exactly a rename or re-clone of the same repository, which is what the
+  // current `--repo` now names.
+  const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
+  // `previous?.lanes` is empty in exactly the state this cleanup exists for —
+  // `run.json` truncated by a crash or caught mid-write, one of the two
+  // documented reasons `--take-over` exists — and a run that broken cannot
+  // name its own lanes. Always union in what git itself has registered under
+  // this run's `worktrees/`, not just as a fallback when `run.json` names
+  // none: `split` replaces `run.lanes` wholesale, so a worktree and branch
+  // git registered under an earlier lane list (e.g. the pre-split `root`
+  // lane) can survive under this run directory even while `previous.lanes`
+  // is non-empty and names only the lanes that replaced it. Reading git's
+  // registration also survives a corrupt `run.json` and even a corrupt linked
+  // `.git` file, because the registration lives in the main repository, not
+  // in either of those.
+  const registered = registeredLanesUnder(oldRepoPath, dir);
+  const declared = previous?.lanes ?? [];
+  const lanes = [...declared, ...registered.filter((r) => !declared.some((d) => d.slug === r.slug))];
+  for (const lane of lanes) {
+    try {
+      removeWorktree(oldRepoPath, dir, lane);
+    } catch {
+      // Already gone, or the repo path from a stale run no longer resolves.
+    }
+  }
+  const archived = archiveRunDir(dir);
+  // After the directories are gone from the paths git has registered, never
+  // before: a worktree `removeWorktree` failed on is still registered AND still
+  // present, so a prune run first prunes nothing, and the next run's
+  // `git worktree add <same path>` fails with "already registered".
+  try {
+    pruneWorktrees(oldRepoPath);
+  } catch {
+    // No worktrees, or no repo to prune them from.
+  }
+  // Branch deletion runs LAST, after the worktree is unregistered, never
+  // before: `git branch -D` refuses a branch still checked out in a
+  // registered worktree, and a `removeWorktree` that failed (the corrupt
+  // `.git` fixture) left the worktree registered right up until the prune
+  // above ran. Deleting first meant the one path where `removeWorktree`
+  // fails is also the one path where the displaced branch survived and the
+  // fresh run silently reused it.
+  //
+  // `force` is true only for an EXPLICIT `--take-over` — never for the
+  // finished-run shortcut, which reaches this function with no flag at all.
+  // A genuinely finished lane's branch is normally already gone (`finish`
+  // deletes it), so the only branch this loop typically still finds under a
+  // finished run is one recreated by hand after `finish` ran, carrying
+  // commits this run never made — SKILL.md scopes that destructive cost to
+  // `--take-over`, a flag a human read a claim before passing, not to a
+  // no-flag `start` on a reopened issue. Try a safe delete first: git
+  // refuses `-d` outright when the branch is not fully merged anywhere, so
+  // it costs nothing on the common (already-gone) case and never silently
+  // discards real work. Only an explicit `--take-over` falls through to the
+  // forced delete when the safe one is refused.
+  for (const lane of lanes) {
+    if (!lane.branch) continue;
+    try {
+      execFileSync('git', ['branch', '-d', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
+      continue;
+    } catch {
+      // Not fully merged, already gone, or the repo is unreachable.
+    }
+    if (!force) continue;
+    try {
+      execFileSync('git', ['branch', '-D', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
+    } catch {
+      // Never pushed, already deleted by `finish`, or the repo is unreachable.
+    }
+  }
+  return archived;
 }
 
 async function cmdStart(args) {
@@ -260,9 +578,14 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  const claim = refuseClaimed(dir, info, issue, args);
+  const takeOver = Boolean(args.takeOver) || claim.finished;
+  const archived = takeOver ? resetRunDir(dir, repo, { force: Boolean(args.takeOver) }) : null;
 
   const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
-  saveRun(dir, run);
+  // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
+  // that must lose to a run already there rather than overwrite it.
+  claimRunDir(dir, run, { takeOver });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 
@@ -287,6 +610,11 @@ async function cmdStart(args) {
   // is both long enough to blow the table's width out and machine-dependent, so
   // a table containing one cannot be compared across two machines.
   console.log(`\nRun: ${dir}\n`);
+  // Only when a run was actually displaced, so an ordinary `start` stays
+  // byte-identical to the frozen golden. Printed because a displaced run's
+  // artifacts are the one thing here nothing else can reconstruct, and a person
+  // who takes a run over is owed the path to what they took it from.
+  if (archived) console.log(`The previous run's artifacts moved to ${archived}\n`);
   runBoard(run);
   // Conditional so a gated run's `start` output stays byte-identical to the
   // frozen golden — the same rule every review-aware rendering follows.
@@ -433,8 +761,18 @@ function briefOne(dir, run, step, args) {
   let warning = null;
   if (step.lane && !args.noWorktree) {
     try {
-      workdir = ensureWorktree(run.repo.path, dir, step.lane).path;
+      // `lanes` is not optional here, despite its `[]` default: it is the only
+      // thing that tells a stacked lane's base — a sibling lane's branch, which
+      // lives only locally until that lane ships — apart from a shared base
+      // like `dev`. Omitting it makes every split run's second lane fetch a ref
+      // origin has never heard of, and hard-stop at exit 3.
+      workdir = ensureWorktree(run.repo.path, dir, step.lane, { offline: run.offline, lanes: run.lanes }).path;
     } catch (err) {
+      // A `FetchError` is the one provisioning failure that is not survivable:
+      // continuing would cut the lane from whatever `origin/<base>` this
+      // checkout last saw, which is the stale base the fetch exists to refuse.
+      // Every other `WorktreeError` still warns and runs in the repository.
+      if (err instanceof FetchError) throw err;
       warning = String(err.message ?? err).split('\n')[0];
     }
   }
@@ -1116,8 +1454,8 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
 
   issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
                                                  prints ONE thing to do — a dispatch, a wait, or a stop
-  issueflow board  [--repo <path>]
-  issueflow start  --issue <n> [--repo <path>] [--auto]
+  issueflow board  [--repo <path>] [--run-root <path>]
+  issueflow start  --issue <n> [--repo <path>] [--auto] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
@@ -1146,6 +1484,11 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
+  --take-over          on start: displace a run another session owns — republishes over its
+                       checkpoint comment, removes its worktrees, force-deletes its local
+                       branches (git branch -D, so unpushed commits are gone), and moves its
+                       artifacts to superseded/<timestamp>/ inside the run directory.
+                       Only for a human who has READ that comment
   --offline            make no network call and no checkpoint
   --no-worktree        run stages in the repository itself instead of a per-lane checkout
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow

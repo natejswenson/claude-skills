@@ -5,6 +5,84 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-06
+
+Parallel sessions on one repo. Working every open issue at once — one session
+per issue, all on one machine, all against one checkout — had three ways for
+one session to corrupt another: `start` overwrote a run another session owned
+and then republished an empty board over that run's checkpoint comment, `board`
+had no way to say an issue was taken, and a fresh lane was cut from whatever
+`origin/<base>` the checkout last happened to fetch. All three were the same
+missing idea: a run's identity is `owner/name#N`, and nothing ever asked whether
+that identity was already claimed.
+
+### Added
+
+- `board` grows a `Run` column: a run's state when the run is on this machine,
+  `claimed` when only a marker comment on the issue says another machine has it,
+  `unreadable` when a run directory is there but `loadRun` refuses it, and `—`
+  when nothing has it. It costs no extra `gh` call — the issue list already
+  carries every comment body. A `--issues-json` board with no `--run-root` scans
+  no run root at all, which is what keeps the frozen board hermetic.
+- `start --take-over`, the one way past either refusal, for a human who has read
+  the claim. Its own flag rather than a second meaning for `--force`; auto mode
+  never passes it.
+- `board --run-root <path>`, so the run scan can be pointed somewhere else.
+- A finished run publishes `<!-- issueflow:finished -->` on its own line in its
+  sticky comment. It is what tells a later `start` that the comment is a
+  completed run's record rather than a live claim — so a reopened or
+  twice-worked issue is not refused by its own old comment forever, and that
+  record is never adopted and rewritten by the next run.
+- `superseded/<timestamp>/` inside the run directory. A displaced run's plan,
+  implementation artifact, evidence, review rounds and progress logs move there
+  rather than being deleted, and `start` prints the path.
+
+### Changed
+
+- `--take-over` now costs more than a rewritten comment, and says so in
+  `SKILL.md` and `--help`: it also removes the displaced run's worktrees and
+  force-deletes its local branches with `git branch -D`, so a lane's unpushed
+  commits go with them. That cleanup is what stops a taken-over run from
+  reporting the displaced session's artifacts as its own delivered work, or
+  silently continuing in its checkout, on top of its commits. A worktree
+  `git worktree remove` refuses stays unregistered once its directory has
+  moved aside, so the fresh run's `git worktree add` on the same path never
+  meets "already registered". A `git remote` call that fails outright (lock
+  contention, EMFILE) is fatal like a failed fetch, never silently tolerated
+  as a warning that briefs the stage against the user's live checkout.
+
+### Fixed
+
+- `start` on an issue that already has a local run refuses (exit 4) instead of
+  resetting it, and names the resume command. A run `loadRun` cannot read is
+  refused with `loadRun`'s own reason and `--take-over`, never a `next
+  --run-dir` that would fail for the same reason.
+- `start` on an issue whose comments carry this repo's issueflow marker, with no
+  local run, refuses and names the comment to read. Scoped to online
+  invocations: an offline replay makes no `gh` call, so it can clobber nothing.
+- The first write of `run.json` is an exclusive create, so two `start`
+  invocations milliseconds apart cannot both write one — a read-then-write check
+  is advisory, and the loser now loses to the filesystem.
+- `brief` fetches the base before it cuts a lane's branch, with an explicit and
+  forced refspec (`+<base>:refs/remotes/origin/<base>`) and one unconditional
+  retry. A lane started after another session's pull request merged now contains
+  that merge. A fetch that fails twice is exit 3 — infrastructure — while every
+  other provisioning failure keeps its tolerated warning. Offline runs and
+  checkouts with no `origin` skip it. So does a **stacked** lane: its base is
+  the lane below it, a branch that lives only locally until that lane ships, so
+  fetching it fails every time rather than only when stale.
+- `start` on a local run marked finished starts fresh with no flag — `finish`
+  already removed its worktrees and deleted its branches, so nobody holds it —
+  **unless** a live claim is on the issue now, which outranks it and refuses
+  like any other claim. A finished run's own dead comment is likewise never
+  read as a stranger's claim.
+- A finished run's comment is never adopted. A reopened issue's fresh run posts
+  its own, so the completed run's pull request links, merge times and artifacts
+  survive on the issue.
+- The finished/claimed decision is anchored to the marker on its own line and
+  read only outside the artifacts the comment splices in — an approved artifact
+  that merely quotes the marker no longer hides a live run's claim.
+
 ## [0.7.1] - 2026-09-05
 
 One pull request per issue is now the default. The first 0.7.0 run split
