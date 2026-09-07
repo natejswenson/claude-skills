@@ -459,9 +459,94 @@ test('a worktree git refused to remove is still unregistered, so the fresh run c
     new RegExp(wt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
     'a worktree whose directory has moved must not stay registered',
   );
+  // `created` is true on BOTH arms of `ensureWorktree` — the branch-exists arm
+  // (`git worktree add path branch`) returns it just like the branch-creating
+  // one does — so on its own this proves only that a checkout exists again,
+  // not that it is a FRESH one. The branch-deletion guarantee this whole test
+  // is named for is only proved by checking the branch itself is gone
+  // (f-2505ede1): without it, this passes whether `git branch -D` succeeded
+  // or was silently swallowed while the branch was still checked out.
+  let branchGone = false;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], { cwd: f.repoPath, stdio: 'ignore' });
+  } catch {
+    branchGone = true;
+  }
+  assert.equal(branchGone, true, 'the displaced branch must be deleted, not silently reused by the fresh run');
   // The consequence, driven rather than argued: the fresh run provisions the
   // same path, which is what "already registered" would have refused.
   assert.equal(ensureWorktree(f.repoPath, f.runDir, lane).created, true);
+  f.cleanup();
+});
+
+test('--take-over still clears the worktree and branch when run.json cannot be parsed at all', () => {
+  // The state `timings.mjs` already tolerates elsewhere: a run.json truncated
+  // by a crash or caught mid-write, one of the two documented reasons
+  // `--take-over` exists (the other is a schema mismatch, which still
+  // parses). A run this broken cannot report its own lanes, so the cleanup
+  // has to find them another way — reading what git itself has registered
+  // under this run's `worktrees/` — rather than silently skip them
+  // (f-aa170334, f-719043d6).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const run = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  const lane = run.lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  writeFileSync(join(wt, 'work.txt'), 'session A\'s work\n');
+  git(['add', 'work.txt'], wt);
+  git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', 'session A commit'], wt);
+
+  // Genuinely unparseable — truncated mid-object, not merely an unknown
+  // schema number (which still parses and takes a different code path).
+  const raw = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+  writeFileSync(join(f.runDir, 'run.json'), raw.slice(0, Math.floor(raw.length / 2)));
+
+  const second = f.start(['--take-over']);
+  assert.equal(second.code, 0, `--take-over must proceed even over unparseable state, got ${second.code}: ${second.err}`);
+  assert.equal(existsSync(wt), false, 'the displaced worktree must be gone');
+  let branchGone = false;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], { cwd: f.repoPath, stdio: 'ignore' });
+  } catch {
+    branchGone = true;
+  }
+  assert.equal(branchGone, true, 'the displaced branch must be deleted even when run.json could not be read at all');
+  f.cleanup();
+});
+
+test('--take-over on a --run-dir that holds a DIFFERENT issue refuses, and touches nothing in it', () => {
+  // `dir` on this path is whatever `--run-dir` names — a mistyped or
+  // tab-completed path, or a stale path copied from an earlier session's
+  // notes. `--take-over` must not force-clean and archive a live issue's run
+  // just because it was passed for some OTHER issue (f-6d1c2ac7).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const before = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+  const lane = JSON.parse(before).lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+
+  const otherIssuePath = join(dirname(f.runDir), 'other-issue.json');
+  writeFileSync(otherIssuePath, JSON.stringify({
+    number: 999,
+    title: 'A completely different issue',
+    body: 'x',
+    labels: [],
+    comments: [],
+    url: 'https://example.invalid/acme/widgets/issues/999',
+    state: 'OPEN',
+    author: { login: 'someone' },
+  }));
+
+  const r = cli(
+    ['start', '--repo', f.repoPath, '--issue', '999', '--issue-json', otherIssuePath, '--run-dir', f.runDir, '--take-over'],
+    { PATH: `${dirname(f.log)}:${process.env.PATH}` },
+  );
+  assert.equal(r.code, 4, `expected a hand-back, got ${r.code}: ${r.err || r.out}`);
+  assert.match(r.err, /#999/, 'the refusal must name the mismatched issue being started');
+  assert.match(r.err, /42/, 'and the issue the run at --run-dir actually belongs to');
+  assert.equal(existsSync(wt), true, 'the wrong issue\'s worktree must survive untouched');
+  assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'run.json must be untouched');
+  rmSync(otherIssuePath, { force: true });
   f.cleanup();
 });
 

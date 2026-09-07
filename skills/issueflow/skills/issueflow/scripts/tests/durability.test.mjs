@@ -380,16 +380,81 @@ test('a base that was force-pushed still cuts a lane, because the refspec is for
 
   o.commit(o.other, 'a.txt', 'first');
   git(['push', '-q', 'origin', 'main'], o.other);
+  // `o.path` — the clone `ensureWorktree` will actually fetch into — must see
+  // commit A before it is rewound, or the fetch below is a plain fast-forward
+  // (this fixture's own clone never having seen A) and passes byte-for-byte
+  // with the `+` dropped from the refspec, which is exactly the gap f-e877ef1a
+  // found: measured by rebuilding this fixture with an unforced refspec and
+  // watching it fetch A -> B clean, because `o.path` had never fetched A.
+  git(['fetch', 'origin', 'main'], o.path);
+  const seen = git(['rev-parse', 'origin/main'], o.path);
+
   git(['reset', '-q', '--hard', 'HEAD~1'], o.other);
   o.commit(o.other, 'b.txt', 'rewritten');
   git(['push', '-q', '--force', 'origin', 'main'], o.other);
   const rewound = git(['rev-parse', 'HEAD'], o.other);
+  assert.notEqual(seen, rewound, 'the fixture must actually rewrite history away from what the clone already saw');
 
   const wt = ensureWorktree(o.path, dir, run.lanes[0]).path;
   assert.equal(git(['rev-parse', 'HEAD'], wt), rewound, 'a rewound base must still be reachable');
 
   rmSync(dir, { recursive: true, force: true });
   o.cleanup();
+});
+
+test('the fetch refspec is explicit, because a single-branch clone`s default fetch spec does not cover every base', () => {
+  // `tempRepoWithOrigin`'s plain `git clone` already covers every branch via
+  // its default `+refs/heads/*:refs/remotes/origin/*`, so a bare `git fetch
+  // origin <base>` would still update `refs/remotes/origin/<base>` there and
+  // every other fetch test in this file would stay green with the explicit
+  // half of the refspec dropped — f-dc008f9c found exactly that gap. A
+  // `--single-branch` clone (the shape CI runners' shallow clones have) is
+  // the one fixture where a bare fetch answers exit 0 while leaving
+  // `refs/remotes/origin/<base>` absent, because its `remote.origin.fetch`
+  // covers only the branch it was cloned for.
+  const home = mkdtempSync(join(tmpdir(), 'issueflow-repo-'));
+  const origin = join(home, 'origin.git');
+  const seed = join(home, 'seed');
+  git(['init', '-q', '--bare', '-b', 'main', origin], home);
+  git(['init', '-q', '-b', 'main', seed], home);
+  const commit = (cwd, file, message) => {
+    writeFileSync(join(cwd, file), `${message}\n`);
+    git(['add', file], cwd);
+    git(['-c', 'user.email=test@example.invalid', '-c', 'user.name=issueflow tests', 'commit', '-qm', message], cwd);
+  };
+  commit(seed, 'README.md', 'initial');
+  git(['remote', 'add', 'origin', origin], seed);
+  git(['push', '-q', '-u', 'origin', 'main'], seed);
+  git(['checkout', '-q', '-b', 'dev'], seed);
+  commit(seed, 'dev.txt', 'dev work');
+  git(['push', '-q', 'origin', 'dev'], seed);
+
+  const path = join(home, 'clone');
+  git(['clone', '-q', '--single-branch', '--branch', 'main', origin, path], home);
+  let sawDev = true;
+  try {
+    execFileSync('git', ['rev-parse', '--verify', '--quiet', 'refs/remotes/origin/dev'], { cwd: path, stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    sawDev = false;
+  }
+  assert.equal(sawDev, false, 'the fixture must actually be a single-branch clone that has never heard of `dev`');
+
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({
+    repo: { owner: 'acme', name: 'widgets', path, defaultBranch: 'main' },
+    issue: ISSUE,
+    policy: { ...POLICY, base: 'dev' },
+  });
+
+  const wt = ensureWorktree(path, dir, run.lanes[0]).path;
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', 'dev'], seed),
+    'a single-branch clone must still see the base — the explicit half of the refspec is what makes that so',
+  );
+
+  rmSync(dir, { recursive: true, force: true });
+  rmSync(home, { recursive: true, force: true });
 });
 
 test('an offline run cuts its lane without a fetch, even when origin is unreachable', () => {
@@ -444,11 +509,15 @@ test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 inst
   o.cleanup();
 });
 
-test('a stacked lane whose base is a sibling lane\'s local-only branch skips the fetch, and still cuts from it', () => {
+test('a stacked lane whose base is a sibling lane\'s local-only branch is still cut from it, even though the fetch fires and finds nothing there', () => {
   // `split` gives a later lane a base that lives only locally until that lane
-  // is pushed — `ship` cannot run before every lane's implement is approved —
-  // so fetching it from origin fails every time, not just when stale. The
-  // fetch this change adds is only ever meant to refresh a SHARED base.
+  // is pushed. Unaware of the sibling (no `lanes` passed), `stacked` reads
+  // false and the fetch still fires — but origin has genuinely never heard of
+  // `feature/issue-9-a`, which is the same shape `resolvePolicy` can hand back
+  // for a declared-but-never-pushed SHARED base too (f-d1d5b257). Before that
+  // fix this was a FetchError — a hard stop — where the pre-fetch code cut the
+  // lane from the local branch just fine; the fix is what makes it do that
+  // again instead of failing.
   const o = tempRepoWithOrigin();
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
   const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
@@ -456,12 +525,38 @@ test('a stacked lane whose base is a sibling lane\'s local-only branch skips the
   const laneB = { ...run.lanes[0], slug: 'b', branch: 'feature/issue-9-b', base: laneA.branch };
   git(['branch', laneA.branch], o.path);
 
-  // Unaware of the sibling, this is exactly the defect: origin has never
-  // heard of a branch that lives only in this checkout.
-  assert.throws(() => ensureWorktree(o.path, dir, laneB), FetchError, 'without the sibling list this must still be the old failure');
+  const wt = ensureWorktree(o.path, dir, laneB).path;
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', laneA.branch], o.path),
+    'still cut from the sibling branch even though the fetch was attempted and found nothing',
+  );
+
+  rmSync(dir, { recursive: true, force: true });
+  o.cleanup();
+});
+
+test('a stacked lane whose base is a sibling lane\'s local-only branch skips the fetch entirely when the sibling list says so', () => {
+  // The optimization proper. Told which lanes are siblings, `ensureWorktree`
+  // never attempts the fetch at all — proved by deleting origin outright,
+  // which a real fetch attempt reports as a hard FetchError (unreachable),
+  // never the benign "no such ref" the test above tolerates. If the stacked
+  // check stopped skipping the fetch, this test would fail on the deleted
+  // origin rather than on a wrong tip.
+  const o = tempRepoWithOrigin();
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-run-'));
+  const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: o.path, defaultBranch: 'main' }, issue: ISSUE, policy: POLICY });
+  const laneA = { ...run.lanes[0], slug: 'a', branch: 'feature/issue-9-a' };
+  const laneB = { ...run.lanes[0], slug: 'b', branch: 'feature/issue-9-b', base: laneA.branch };
+  git(['branch', laneA.branch], o.path);
+  rmSync(o.origin, { recursive: true, force: true });
 
   const wt = ensureWorktree(o.path, dir, laneB, { lanes: [laneA, laneB] }).path;
-  assert.equal(git(['rev-parse', 'HEAD'], wt), git(['rev-parse', laneA.branch], o.path), 'still cut from the sibling branch');
+  assert.equal(
+    git(['rev-parse', 'HEAD'], wt),
+    git(['rev-parse', laneA.branch], o.path),
+    'still cut from the sibling branch, with origin gone and no fetch attempted at all',
+  );
 
   rmSync(dir, { recursive: true, force: true });
   o.cleanup();

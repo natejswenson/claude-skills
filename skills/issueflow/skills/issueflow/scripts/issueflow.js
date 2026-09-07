@@ -34,7 +34,7 @@ import {
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, removeWorktree } from './lib/worktree.mjs';
+import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 
@@ -338,7 +338,32 @@ async function cmdBoard(args) {
  * shortcut becomes a way to clobber a live claim with no flag at all.
  */
 function refuseClaimed(dir, info, issue, args) {
-  if (args.takeOver) return { finished: false };
+  if (args.takeOver) {
+    // `--take-over` short-circuits every claim check above, which is also
+    // the one place nothing ever compared `dir` against the issue being
+    // started. A `--run-dir` that names another issue's run — mistyped,
+    // tab-completed, or copied from an earlier session's notes — must not
+    // be force-cleaned and archived under this issue's name; read best
+    // effort, the same way `resetRunDir` does, so a run.json this cannot
+    // fully parse still names the issue it belongs to when it can.
+    if (existsSync(join(dir, 'run.json'))) {
+      let previous = null;
+      try {
+        previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+      } catch {
+        previous = null;
+      }
+      if (previous?.issue?.number != null && previous.issue.number !== issue.number) {
+        throw new HandBack(
+          `${dir} holds a run for ${previous.repo?.owner ?? '?'}/${previous.repo?.name ?? '?'}#${previous.issue.number}, ` +
+            `not ${info.owner}/${info.name}#${issue.number}. ` +
+            '`--take-over` only overwrites a run for the issue you are starting — pass the right `--run-dir`, ' +
+            'or drop it to use this issue\'s default run directory.',
+        );
+      }
+    }
+    return { finished: false };
+  }
   // Scoped to ONLINE invocations for the reason above: an offline replay makes
   // no `gh` call, so it can clobber no comment and reads no claim off one.
   const claim = isOffline(args) ? null : claimedIn(issue.comments, info.owner, info.name, issue.number);
@@ -434,16 +459,19 @@ function resetRunDir(dir, repoPath) {
     previous = null;
   }
   const oldRepoPath = previous?.repo?.path ?? repoPath;
-  for (const lane of previous?.lanes ?? []) {
+  // `previous?.lanes` is empty in exactly the state this cleanup exists for —
+  // `run.json` truncated by a crash or caught mid-write, one of the two
+  // documented reasons `--take-over` exists — and a run that broken cannot
+  // name its own lanes. Fall back to what git itself has registered under
+  // this run's `worktrees/`, which survives a corrupt `run.json` and even a
+  // corrupt linked `.git` file, because the registration lives in the main
+  // repository, not in either of those.
+  const lanes = previous?.lanes?.length ? previous.lanes : registeredLanesUnder(oldRepoPath, dir);
+  for (const lane of lanes) {
     try {
       removeWorktree(oldRepoPath, dir, lane);
     } catch {
       // Already gone, or the repo path from a stale run no longer resolves.
-    }
-    try {
-      execFileSync('git', ['branch', '-D', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
-    } catch {
-      // Never pushed, already deleted by `finish`, or the repo is unreachable.
     }
   }
   const archived = archiveRunDir(dir);
@@ -455,6 +483,21 @@ function resetRunDir(dir, repoPath) {
     pruneWorktrees(oldRepoPath);
   } catch {
     // No worktrees, or no repo to prune them from.
+  }
+  // Branch deletion runs LAST, after the worktree is unregistered, never
+  // before: `git branch -D` refuses a branch still checked out in a
+  // registered worktree, and a `removeWorktree` that failed (the corrupt
+  // `.git` fixture) left the worktree registered right up until the prune
+  // above ran. Deleting first meant the one path where `removeWorktree`
+  // fails is also the one path where the displaced branch survived and the
+  // fresh run silently reused it.
+  for (const lane of lanes) {
+    if (!lane.branch) continue;
+    try {
+      execFileSync('git', ['branch', '-D', lane.branch], { cwd: oldRepoPath, stdio: 'ignore' });
+    } catch {
+      // Never pushed, already deleted by `finish`, or the repo is unreachable.
+    }
   }
   return archived;
 }

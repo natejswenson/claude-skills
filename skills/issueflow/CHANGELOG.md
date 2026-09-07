@@ -44,7 +44,12 @@ that identity was already claimed.
   force-deletes its local branches with `git branch -D`, so a lane's unpushed
   commits go with them. That cleanup is what stops a taken-over run from
   reporting the displaced session's artifacts as its own delivered work, or
-  silently continuing in its checkout, on top of its commits.
+  silently continuing in its checkout, on top of its commits. A worktree
+  `git worktree remove` refuses stays unregistered once its directory has
+  moved aside, so the fresh run's `git worktree add` on the same path never
+  meets "already registered". A `git remote` call that fails outright (lock
+  contention, EMFILE) is fatal like a failed fetch, never silently tolerated
+  as a warning that briefs the stage against the user's live checkout.
 
 ### Fixed
 
@@ -77,15 +82,6 @@ that identity was already claimed.
 - The finished/claimed decision is anchored to the marker on its own line and
   read only outside the artifacts the comment splices in — an approved artifact
   that merely quotes the marker no longer hides a live run's claim.
-- `--take-over` on a `--run-dir` that holds no run does nothing to that
-  directory. It used to reach an unguarded recursive delete of whatever path was
-  named.
-- A worktree `git worktree remove` refuses is no longer left registered against
-  a path that is gone, which made the next run's `git worktree add` fail with
-  "already registered" and silently drop that lane's checkout.
-- A `git remote` that fails (lock contention, EMFILE) is fatal like a failed
-  fetch, instead of being tolerated as a warning that briefs the stage against
-  the user's live checkout.
 
 ## [0.7.1] - 2026-09-05
 
