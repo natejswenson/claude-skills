@@ -383,7 +383,27 @@ function refuseClaimed(dir, info, issue, args) {
       // somebody else's board, published after this run ended, and the
       // finished-run shortcut must not be a no-flag way to overwrite it.
       if (existing.finished && claim) refuseClaim();
-      if (existing.finished) return { finished: true };
+      if (existing.finished) {
+        // The same ownership check the `--take-over` branch above applies
+        // before it ever resets a directory, applied here too: a `--run-dir`
+        // that names a DIFFERENT, finished issue — mistyped, tab-completed,
+        // or copied from an earlier session's notes — must not be folded
+        // into `takeOver` at the call site with no check at all. Without
+        // this, `cmdStart` reaches the identical destructive reset
+        // (archive-and-wipe, worktree removal, branch deletion) that
+        // `--take-over` gates on a match, but with no flag and no ownership
+        // check whatsoever (f-2aef04ce).
+        const sameRepo = existing.repo?.owner === info.owner && existing.repo?.name === info.name;
+        if (!sameRepo || existing.issue?.number !== issue.number) {
+          throw new HandBack(
+            `${dir} holds a finished run for ${existing.repo?.owner ?? '?'}/${existing.repo?.name ?? '?'}#${existing.issue?.number}, ` +
+              `not ${info.owner}/${info.name}#${issue.number}. ` +
+              'The finished-run shortcut only resets a run for the issue you are starting — pass the right `--run-dir`, ' +
+              'or drop it to use this issue\'s default run directory.',
+          );
+        }
+        return { finished: true };
+      }
     } catch (err) {
       if (err instanceof HandBack) throw err;
       // A run this cannot resume is exactly the state `--take-over` is the

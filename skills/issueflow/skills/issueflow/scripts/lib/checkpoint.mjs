@@ -81,7 +81,28 @@ const runRegion = (body) => String(body ?? '').split(/\n<details>/)[0];
  */
 const FINISHED_LINE = new RegExp(`^${escapeRe(FINISHED_MARKER)} \\*\\*Finished\\*\\*`, 'm');
 
-export const finishedIn = (body) => FINISHED_LINE.test(runRegion(body));
+/**
+ * The finished line as every issueflow release before 0.8.0 wrote it — no
+ * `FINISHED_MARKER` in front, because the marker did not exist yet.
+ * `renderComment` only ever emitted this exact prefix for a finished run
+ * (`${FINISHED_MARKER} **Finished** …` is additive, not a rename), so a
+ * comment carrying an unmarked `**Finished**` line was written by that older
+ * code and means exactly what the marked line means now. Without this,
+ * `finishedIn` on a pre-0.8.0 comment returns false, `claimedIn` reads it as
+ * a live claim, and a run this repo already finished (natejswenson/local
+ * -fitness#132 and #133 among them) becomes an unrecoverable claim a plain
+ * `start` refuses forever, and `--take-over` then adopts and PATCHes over as
+ * if it were live — the CHANGELOG's "a finished run's comment is never
+ * adopted" and "a reopened or twice-worked issue is not refused forever"
+ * both depended on the marker existing, and neither held for a comment
+ * written before this file did (f-9d600850).
+ */
+const LEGACY_FINISHED_LINE = /^\*\*Finished\*\*/m;
+
+export const finishedIn = (body) => {
+  const region = runRegion(body);
+  return FINISHED_LINE.test(region) || LEGACY_FINISHED_LINE.test(region);
+};
 
 /**
  * The comment on an issue that already claims this run, or null.

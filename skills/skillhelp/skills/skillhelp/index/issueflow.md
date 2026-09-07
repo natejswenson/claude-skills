@@ -16,6 +16,7 @@
 - **A git repo with a GitHub remote.** Everything is resolved from it — the owner, the name, the default branch and the branch policy. `skills/issueflow/skills/issueflow/SKILL.md:264`
 - **Subagent dispatch.** Every stage, every reviewer and the fixer run as their own subagent; without that this is a checklist, not a pipeline. `skills/issueflow/skills/issueflow/SKILL.md:266`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:33`
+- Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:533`
 - Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:101`
 
 ## Usage

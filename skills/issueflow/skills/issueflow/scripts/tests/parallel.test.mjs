@@ -20,7 +20,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FINISHED_MARKER, claimedIn, markerFor } from '../lib/checkpoint.mjs';
+import { FINISHED_MARKER, claimedIn, finishedIn, markerFor } from '../lib/checkpoint.mjs';
 import { HandBack, claimRunDir, createRun, saveRun } from '../lib/run.mjs';
 import { ensureWorktree } from '../lib/worktree.mjs';
 
@@ -291,6 +291,34 @@ test('claimedIn skips a comment that also carries FINISHED_MARKER — a closed r
   assert.ok(claimedIn([claimComment()], OWNER, NAME, NUMBER));
 });
 
+test('finishedIn recognizes a pre-0.8.0 comment that never carried FINISHED_MARKER at all', () => {
+  // Every issueflow release before 0.8.0 wrote the finished line with no
+  // marker in front of it — the marker did not exist yet. A comment written
+  // by that code (natejswenson/local-fitness#132 and #133, worked to
+  // completion before this version) must still read as finished, or
+  // `claimedIn` treats it as a live claim on an issue nobody holds, and
+  // `--take-over` then adopts and PATCHes over it as if it were live
+  // (f-9d600850).
+  const legacyBody = `${markerFor(OWNER, NAME, NUMBER)}\n### issueflow\n\n**Finished** 2026-01-01T00:00:00.000Z — every lane landed.\n`;
+  assert.equal(finishedIn(legacyBody), true, 'an unmarked pre-0.8.0 Finished line must still count as finished');
+  assert.equal(claimedIn([{ body: legacyBody, url: `https://example.invalid/${OWNER}/${NAME}/issues/${NUMBER}#issuecomment-1` }], OWNER, NAME, NUMBER), null,
+    'and claimedIn must skip it, exactly as it skips the marked line');
+  // The green half: a comment with no Finished line of any kind still claims.
+  assert.ok(claimedIn([claimComment()], OWNER, NAME, NUMBER));
+});
+
+test('start reads a pre-0.8.0 finished comment as done, not as a stranger\'s live claim, with no local run at all', () => {
+  const legacyFinished = {
+    body: `${markerFor(OWNER, NAME, NUMBER)}\n### issueflow\n\n**Finished** 2026-01-01T00:00:00.000Z — every lane landed.\n`,
+    url: `https://example.invalid/${OWNER}/${NAME}/issues/${NUMBER}#issuecomment-778`,
+  };
+  const f = online({ comments: [legacyFinished] });
+  const r = f.start();
+  assert.equal(r.code, 0, `a pre-0.8.0 finished comment must not read as a live claim, got ${r.code}: ${r.err}`);
+  assert.equal(existsSync(join(f.runDir, 'run.json')), true);
+  f.cleanup();
+});
+
 // ---------------------------------------------------------------------------
 // start on a finished, or taken-over, run (#251 findings f-e3b86bc0,
 // f-c17c24c8, f-b005fdf5, f-dfd22552).
@@ -326,6 +354,48 @@ test('start on a local run marked finished proceeds without --take-over, and res
   const fresh = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
   assert.equal(fresh.stages[0].state, 'pending', 'the reopened issue gets a fresh state machine');
   assert.equal(fresh.finished, null, 'a fresh run is not finished');
+  f.cleanup();
+});
+
+test('the no-flag finished-run shortcut refuses a --run-dir that holds a DIFFERENT issue\'s finished run, and touches nothing in it', () => {
+  // `refuseClaimed`\'s `--take-over` branch checks the run at `dir` belongs to
+  // the issue being started before it ever returns; the finished-run
+  // shortcut reached the identical destructive reset (`takeOver` at the
+  // `cmdStart` call site folds `claim.finished` in unconditionally) with NO
+  // such check — a `--run-dir` copied from an earlier session\'s notes, naming
+  // a finished run for some other issue, was archived and wiped with no flag
+  // at all (f-2aef04ce).
+  const f = online();
+  assert.equal(f.start().code, 0);
+  const lane = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8')).lanes[0];
+  const wt = ensureWorktree(f.repoPath, f.runDir, lane).path;
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  state.finished = { at: '2026-01-01T00:00:00.000Z', issueClosed: false };
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+  const before = readFileSync(join(f.runDir, 'run.json'), 'utf8');
+
+  const otherIssuePath = join(dirname(f.runDir), 'other-issue-finished.json');
+  writeFileSync(otherIssuePath, JSON.stringify({
+    number: 999,
+    title: 'A completely different issue',
+    body: 'x',
+    labels: [],
+    comments: [],
+    url: 'https://example.invalid/acme/widgets/issues/999',
+    state: 'OPEN',
+    author: { login: 'someone' },
+  }));
+
+  const r = cli(
+    ['start', '--repo', f.repoPath, '--issue', '999', '--issue-json', otherIssuePath, '--run-dir', f.runDir],
+    { PATH: `${dirname(f.log)}:${process.env.PATH}` },
+  );
+  assert.equal(r.code, 4, `expected a hand-back, got ${r.code}: ${r.err || r.out}`);
+  assert.match(r.err, /#999/, 'the refusal must name the mismatched issue being started');
+  assert.match(r.err, /42/, 'and the issue the finished run at --run-dir actually belongs to');
+  assert.equal(existsSync(wt), true, 'the wrong issue\'s worktree must survive untouched');
+  assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'run.json must be untouched');
+  rmSync(otherIssuePath, { force: true });
   f.cleanup();
 });
 
