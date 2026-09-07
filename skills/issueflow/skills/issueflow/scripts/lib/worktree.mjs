@@ -24,6 +24,17 @@ import { worktreePath } from './run.mjs';
 
 export class WorktreeError extends Error {}
 
+/**
+ * A failed fetch, told apart from every other provisioning failure.
+ *
+ * `brief` tolerates a `WorktreeError` — a stage can still run in the repository
+ * itself, so a missing checkout is a warning. A failed fetch is not that: the
+ * branch would be cut anyway, from whatever `origin/<base>` this checkout last
+ * happened to see, which is the stale base this class exists to refuse. Its own
+ * class is what lets the caller re-throw this one and keep warning on the rest.
+ */
+export class FetchError extends WorktreeError {}
+
 const real = (path) => {
   try {
     return realpathSync(resolve(path));
@@ -69,6 +80,90 @@ function startPoint(repoPath, lane) {
   throw new WorktreeError(`base branch ${lane.base} exists neither locally nor on origin`);
 }
 
+/** Wait, synchronously — this whole module is `execFileSync`, and a promise here would infect the caller. */
+const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+
+/**
+ * Whether this checkout has an `origin` at all. A fixture repo made by `git init` does not —
+ * that is the one case this returns `false` for. Any other failure (lock contention, an
+ * unreadable `.git/config`, EMFILE) is not "no origin", and must not be read as one: silently
+ * skipping the fetch on a transient error is the exact stale-base defect this change exists to
+ * prevent, made invisible instead of fatal.
+ *
+ * It fails as a `FetchError`, not a plain `WorktreeError`, because of what the
+ * caller does with each: `brief` tolerates a `WorktreeError` by briefing the
+ * stage against the user's live checkout, and a transient `git remote` failure
+ * — two parallel sessions contending for `.git/config.lock`, which is the
+ * scenario this whole change is for — must not be the thing that silently
+ * downgrades a lane out of its own worktree. Not knowing whether there is an
+ * origin is not knowing whether the base is stale, which is exactly what
+ * `FetchError` means everywhere else in this file.
+ */
+export function originConfigured(repoPath) {
+  try {
+    return execFileSync('git', ['remote'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').map((l) => l.trim()).includes('origin');
+  } catch (err) {
+    throw new FetchError(`could not read the remotes of ${repoPath}: ${String(err.message ?? err)}`);
+  }
+}
+
+/**
+ * Refresh what `origin/<base>` means, right before a branch is cut from it.
+ *
+ * Without this a lane is cut from whatever this checkout last happened to
+ * fetch: session A's pull request merges into `dev`, session B starts an hour
+ * later, and B's branch does not contain A's work. In serial use that is last
+ * week's base at worst; in parallel use it is a merge conflict by design.
+ *
+ * The refspec is explicit AND forced, and both halves were measured against a
+ * throwaway bare origin:
+ *
+ * - Explicit, because a clone whose `remote.origin.fetch` does not cover the
+ *   base (`--single-branch`) answers a plain `git fetch origin <base>` with
+ *   exit 0, writes `FETCH_HEAD`, and leaves `refs/remotes/origin/<base>`
+ *   absent — which is the ref `startPoint` reads, so the fetch would report
+ *   success and buy nothing.
+ * - Forced, because a base rewound on origin is not a fast-forward: git exits 1
+ *   with `! [rejected] … (non-fast-forward)`. This repo's own policy permits
+ *   force-pushing `dev`, and without the `+` one force-push would hard-block
+ *   every new lane.
+ *
+ * Retried once, unconditionally, rather than on lock-shaped stderr: a fetch is
+ * idempotent and cheap, and matching git's message text is how a retry quietly
+ * stops firing on the failure it was written for. Two concurrent sessions
+ * contend for the same `refs/remotes/origin/<base>` lock, so the retry is the
+ * common case, not a rare one.
+ *
+ * One failure is not retried and not fatal: `couldn't find remote ref` means
+ * origin was reached and answered — it simply has never heard of this branch.
+ * `resolvePolicy` can name a base that exists only locally (a repo that
+ * adopted a policy before ever pushing the branch it names), and before this
+ * fetch existed `startPoint` already handled that by falling back to the
+ * local ref. Treating "origin doesn't have it" as the same failure as "origin
+ * could not be reached" would turn that fallback into a hard stop for every
+ * such repo, which is a regression this fetch must not cause.
+ */
+function fetchBase(repoPath, base) {
+  const refspec = `+${base}:refs/remotes/origin/${base}`;
+  for (const attempt of [0, 1]) {
+    try {
+      execFileSync('git', ['fetch', 'origin', refspec], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, LC_ALL: 'C' } });
+      return;
+    } catch (err) {
+      const stderr = String(err.stderr ?? err.message ?? '');
+      if (/couldn't find remote ref/i.test(stderr)) return;
+      if (attempt === 1) {
+        throw new FetchError(
+          `could not fetch ${base} from origin — a lane must not be cut from a stale base: ` +
+            (stderr.trim().split('\n').filter(Boolean).pop() ?? 'git fetch failed'),
+        );
+      }
+      sleep(700);
+    }
+  }
+}
+
 /**
  * The lane's own checkout, created if it is not there yet.
  *
@@ -81,8 +176,18 @@ function startPoint(repoPath, lane) {
  * worktree in the enclosing repo instead. That is not theoretical: the first
  * offline eval run of this feature created a stray `feature/issue-133` branch
  * in this very repository, because its fixture repo lives under `evals/`.
+ *
+ * `offline` is the run's own, and it skips the fetch. An offline run makes no
+ * network call by contract, and the evals replay frozen payloads against
+ * fixture repositories that have no remote at all.
+ *
+ * `lanes` is the run's full lane list, used only to tell a stacked lane's base
+ * apart from the repo's own base: a stacked lane's base is a sibling lane's
+ * branch, which lives only locally until that lane is pushed, so origin has
+ * never heard of it and a `git fetch` for it fails every time, not just when
+ * stale. Fetching is only ever meant to refresh a *shared* base like `dev`.
  */
-export function ensureWorktree(repoPath, dir, lane) {
+export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [] } = {}) {
   const path = worktreePath(dir, lane);
   if (existsSync(path)) return { path, created: false };
 
@@ -98,6 +203,13 @@ export function ensureWorktree(repoPath, dir, lane) {
   if (exists(repoPath, `refs/heads/${lane.branch}`)) {
     git(['worktree', 'add', path, lane.branch], repoPath);
   } else {
+    // Only on the path that creates a branch: an existing worktree returned
+    // above, and a branch that already exists has nothing left to cut from a
+    // base, so re-briefing a stage still costs no network. Also skipped when
+    // the base is a sibling lane's branch — a stacked lane's base is local-only
+    // until that lane ships, so origin has no ref for it to fetch.
+    const stacked = lanes.some((l) => l.branch === lane.base);
+    if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
     git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
   }
   return { path, created: true };
@@ -114,4 +226,38 @@ export function removeWorktree(repoPath, dir, lane) {
 /** Forget worktrees whose directories are gone, so `git worktree list` stays truthful. */
 export function pruneWorktrees(repoPath) {
   git(['worktree', 'prune'], repoPath);
+}
+
+/**
+ * Every worktree git still has registered under `dir/worktrees/`, read
+ * straight from git's own registration rather than from `run.json`.
+ *
+ * This is the one source of lane identity that survives a `run.json`
+ * truncated mid-write — `--take-over`'s documented remedy for a run
+ * `loadRun` refuses — because a linked worktree's registration lives in the
+ * main repository's `.git/worktrees/<name>`, independent of both the run's
+ * own state file and the linked worktree's own (possibly unreadable) `.git`
+ * file. `lane.branch` comes back `null` for a detached worktree; callers
+ * that force-delete a branch must guard for that.
+ */
+export function registeredLanesUnder(repoPath, dir) {
+  let out;
+  try {
+    out = execFileSync('git', ['worktree', 'list', '--porcelain'], {
+      cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return [];
+  }
+  const prefix = `${real(resolve(dir, 'worktrees'))}/`;
+  const lanes = [];
+  for (const block of out.split('\n\n')) {
+    const pathMatch = block.match(/^worktree (.+)$/m);
+    if (!pathMatch) continue;
+    const path = real(pathMatch[1]);
+    if (!`${path}/`.startsWith(prefix)) continue;
+    const branchMatch = block.match(/^branch refs\/heads\/(.+)$/m);
+    lanes.push({ slug: path.slice(prefix.length), branch: branchMatch ? branchMatch[1] : null });
+  }
+  return lanes;
 }
