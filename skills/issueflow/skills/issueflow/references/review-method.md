@@ -14,12 +14,27 @@ cleanup angles run in round one only and yield nits only.
 ## The shape of a round
 
 ```
-finders (2–5, opus, one angle set each) ──▶ candidates
-    ──▶ verifiers (≤8, opus, ≤3 items each; every prior MAJOR is a mandatory item, and every prior nit whose file the fix touched — a nit in an untouched file is still open by construction) ──▶ verdicts
-    ──▶ registrar (code) ──▶ one GitHub review, inline threads, transitions on prior threads
-    ──▶ fixer (sonnet; opus once a major is still-open) ──▶ one commit, a push, a fix report
+round 1   finders (2–5, opus, one angle set each, over the whole change) ──▶ candidates
+    ──▶ verifiers (≤8, opus, ≤3 items each) ──▶ verdicts
+    ──▶ registrar (code) ──▶ one GitHub review, inline threads
+    ──▶ fixer (sonnet) ──▶ one commit, a push, a fix report
+round 2+  finders (1–3, opus, over the FIX — the diff since the last round's head) ──▶ candidates proposed as major
+    ──▶ verifiers (≤4, opus; every prior MAJOR is a mandatory item; a prior nit is never re-verified) ──▶ verdicts
+    ──▶ registrar (code) ──▶ one GitHub review, transitions on prior threads
+    ──▶ fixer (sonnet; opus once a major is still-open) on majors only ──▶ one commit, a push, a fix report
     ──▶ next round, until open majors = 0 (nits may remain) or the cap
 ```
+
+**Round 1 reviews the change; every later round reviews the fix.** The two
+runs this was measured on (local-fitness #241 and #242) spent 83–94% of their
+tokens in this loop, most of it re-reviewing a whole diff that grew 1286 →
+3993 lines with five finders and eight verifiers a round, in rounds whose
+only job was to check a fix — and the fixes manufactured the next round's
+majors (11 → 13 → 7 → 13). So from round 2 the fleet is sized to the fix, the
+finders read the fix first and the whole diff only as reference, a candidate
+its finder proposes as a nit is recorded and never verified, a prior nit is
+never re-verified (a nit the fixer reported fixed closes on the fixer's word),
+and the fixer is briefed on majors only.
 
 **Severity is three-valued.** `major` — CONFIRMED wrong behaviour, data
 loss, a security hole, or a test that does not prove the fix; or PLAUSIBLE on
@@ -153,7 +168,8 @@ the diff introduced it (`introduced_by_diff`). Cleanup angles are nits. A
 test that would pass without the fix is a major.
 
 For each PRIOR finding handed to you (it has an `f-` id and the line it was
-filed on at the previous head), return exactly one of:
+filed on at the previous head — after round 1 only open majors are handed
+over; a nit is never re-verified), return exactly one of:
 
 - **fixed** — the failure scenario can no longer occur. Quote the guard, the
   changed line, or the new test at the current head. **A moved line is not a
@@ -173,6 +189,16 @@ Fix each open finding by changing the work — the code, the test, the
 evidence — never by arguing with the finding. If a finding is wrong, mark it
 `not-changed` with one sentence saying why, and move on: **note the skip
 rather than arguing with it.** The next round's verifier rules on the dispute;
-you do not. Never weaken or delete a test to clear a finding. Run the suite,
-append the real output to the evidence file, and make ONE commit for the
-round whose message lists the finding ids it addresses.
+you do not. Never weaken or delete a test to clear a finding.
+
+**Make the smallest change that removes each mechanism.** Every line a fix
+adds is a line the next round reviews, and the measured runs grew a
+1286-line change to 3993 over four fix rounds, each fix seeding the next
+round's majors. So: change only what a listed finding requires; add no file,
+test or documentation a finding does not name; do not refactor around the
+finding; never re-capture a benchmark or baseline unless a finding says the
+baseline is wrong. Run the tests a finding names as you fix it, and the whole
+suite once at the end.
+
+Append the suite's real output to the evidence file, and make ONE commit for
+the round whose message lists the finding ids it addresses.

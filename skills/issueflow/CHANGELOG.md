@@ -5,6 +5,78 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-09-07
+
+Round 1 reviews the change; every later round reviews the fix. Measured on
+the two runs that prompted this (local-fitness #241 → PR #247 and #242 →
+PR #248, both driven from one session): 102 subagent dispatches, about 1.1
+billion context tokens, 83–94% of them in the pull request review loop. The
+loop re-reviewed the whole pull request every round with five finders and
+eight verifiers while the fixer grew it from 1286 to 3993 lines, the fixes
+seeded the next round's majors (11 → 13 → 7 → 13), open nits piled up to 83
+and were re-ruled every round by verifiers who refuted 5% of what they saw,
+and #241's 477-line change spent forty dispatches over three rounds to find
+one major a round. The instrument is checked in as `evals/measure-run.mjs`.
+
+### Changed
+
+- **Round 2 and after review the fix, not the pull request.** `review-brief`
+  hands `openRound` the diff since the previous round's head; the fleet is
+  sized to it — `clamp(ceil(lines/300), 1, 3)` finders, at most four
+  verifiers, one finder under sixty lines — and the finders read it first from
+  a new `fix.patch` beside `diff.patch`. The whole diff stays on disk and in
+  the brief as reference for the cross-file and intent angles; round 1 already
+  read it line by line. `diff.patch` still decides inline eligibility: GitHub
+  anchors a thread on the pull request's hunks, not the fix's. A round whose
+  delta is empty is refused — there is no fix to review. The round record
+  carries `fixLines`, and the round table (`status`, the checkpoint comment)
+  gains a `Fix Δ` column so the growth the loop pays to re-review is visible.
+- **A prior nit is never re-verified.** After round 1 only open majors are
+  verifier items; nits and pre-existing findings are still open by
+  construction, whether or not the fix touched their file — the touched-file
+  rule from 0.7.0 sent 51 priors to eight verifiers in round 4 of #242 and got
+  41 "still-open" back. A nit the fixer reported fixed closes on the fixer's
+  word at the next registration and its thread resolves: it never blocked, so
+  a verdict on it buys nothing. A verdict, when one exists, still outranks the
+  fixer's word.
+- **A finder proposes a severity, and after round 1 only a proposed major is
+  verified.** Candidates carry `proposed_severity: "major" | "nit"`; absent
+  means major, so an unrated candidate is verified rather than dropped, and
+  every candidate filed before this version still validates. A proposed nit in
+  round 2+ is recorded on the round as `unverifiedNits` — never a verifier
+  item, never registered, never posted. Round 1 verifies everything. The
+  finder brief's "never rate severity" line is gone: the finder says what
+  fails and whether it would call it a major; the verifier still rates what
+  posts.
+- **The fixer is briefed on majors only after round 1** (round 1 keeps nits
+  with a one-line suggestion), and its rule now says to make the smallest
+  change that removes each mechanism: nothing a finding does not name, no
+  refactor around it, no re-captured benchmark or baseline unless a finding
+  says the baseline is wrong, the named tests per fix and the whole suite
+  once. The round-3 fixer on #242 ran 304 turns and 42 minutes.
+- **`review-register` prints the majors and the transitions, not the ledger.**
+  Nits, pre-existing and unverified-nit counts are one line; the full table
+  is in the review body and `registered.json` as before. Printing eighty rows
+  put ten kilobytes into the orchestrator's context every round. Round 1
+  still prints every finding. SKILL.md's "paste the table" rule keeps its
+  meaning. The finder's "Already open" block likewise lists the open majors
+  and counts the rest.
+
+### Added
+
+- `evals/measure-run.mjs`: per-agent turns, context tokens, minutes and
+  session-limit kills out of a Claude Code session transcript, with per-run
+  and per-kind totals — the comparison for the next real run.
+
+### Unchanged on purpose
+
+- Round 1. A full review of the change is the product; it is the re-reviews
+  that were paying for nothing.
+- The frozen review-round golden. The replay opens its rounds without a fix
+  delta and drives verification from the live plan, so the registrar's record
+  and payload still reproduce byte for byte — the new rules are pinned
+  two-sided in `prreview.test.mjs` instead.
+
 ## [0.8.0] - 2026-09-06
 
 Parallel sessions on one repo. Working every open issue at once — one session
