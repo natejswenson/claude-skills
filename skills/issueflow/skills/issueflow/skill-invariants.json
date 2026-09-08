@@ -120,11 +120,11 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" ship"
       },
       {
-        "step": "open a review round — the diff at the pushed head, the finder briefs sized to it",
+        "step": "open a review round — the diff at the pushed head (from round 2, the fix since the last round), the finder briefs sized to it",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-brief"
       },
       {
-        "step": "pool the candidates, add every prior open finding, brief the verifiers",
+        "step": "pool the candidates, add every prior open major, brief the verifiers",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-verify"
       },
       {
@@ -349,7 +349,7 @@
       "test": "scripts/tests/prreview.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/prreview.test.mjs\"",
-      "rationale": "Every rule the pull request registrar enforces, paired with the shape it refuses, over a real git repository: a finding on a hunk's context line posts inline beside one outside every hunk that is body-only but KEEPS its severity; a nit posts in round 1 beside one suppressed in round 2 and one over the cap; a fixed prior finding resolves beside a moved line that stays open and escalates the fixer to opus; a PLAUSIBLE major on a line the fix did not touch becomes a note beside a PLAUSIBLE major on a line it did touch that stays a major; a cleanup angle cannot be a major; ids are content-addressed and stable across rewording; a prior finding with no verdict, a citation past EOF, and a branch that moved each refuse the round; the fifth round is a hand-back; converge refuses over an open major; a not-changed major is a dispute and the second dispute hands the run back. Posting is driven against a stubbed gh: exactly one pending review per round, one thread per inline finding, submitted as COMMENT, a refused anchor costing one thread and landing in the body, the fixed finding's thread resolved."
+      "rationale": "Every rule the pull request registrar enforces, paired with the shape it refuses, over a real git repository: a finding on a hunk's context line posts inline beside one outside every hunk that is body-only but KEEPS its severity; a nit posts in round 1 beside one suppressed in round 2 and one over the cap; a fixed prior finding resolves beside a moved line that stays open and escalates the fixer to opus; a PLAUSIBLE major on a line the fix did not touch becomes a note beside a PLAUSIBLE major on a line it did touch that stays a major; a cleanup angle cannot be a major; ids are content-addressed and stable across rewording; a prior finding with no verdict, a citation past EOF, and a branch that moved each refuse the round; the fifth round is a hand-back; converge refuses over an open major; a not-changed major is a dispute and the second dispute hands the run back. Posting is driven against a stubbed gh: exactly one pending review per round, one thread per inline finding, submitted as COMMENT, a refused anchor costing one thread and landing in the body, the fixed finding's thread resolved. Since 0.9.0, the cost rules are pinned the same way, because they were written against two measured runs (local-fitness #241, #242) that spent 83–94% of 1.1B context tokens in this loop: a round handed the fix delta is sized to it (1–3 finders, ≤4 verifiers), writes fix.patch and records fixLines, beside the same lines over the whole change getting the round-1 fleet, and an empty delta refused; a prior nit is never a verifier item — touched file or not — beside a prior major that always is; a nit the fixer reported fixed closes on its word at the next registration beside a major that waits for a verdict; a candidate proposed as a nit after round 1 is recorded and never verified, registered or posted, beside a proposed major that is and an unrated one that is; the fixer gets suggestion-nits in round 1 only; and the round-2 finder brief names fix.patch before diff.patch, lists the open majors and counts the rest. The CLI path is driven too: review-brief --offline on a real round 2 sizes it to the one-line fix."
     },
     {
       "id": "review-round-golden",

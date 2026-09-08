@@ -19,9 +19,9 @@ import { join } from 'node:path';
 import { HandBack, createRun, saveRun } from '../lib/run.mjs';
 import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
-  changedLines, converge, currentRound, dedupCandidates, findingId, fixItems, fixerModel, fleetPlan, headOf,
+  changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
   inlineEligible, laneDiff, openFindings, openMajors, openRound, parseDiff, payloadPath, planVerification, postRound,
-  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, ruleFinding, threadBody, touched, validateCandidates,
+  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, roundRows, ruleFinding, threadBody, touched, validateCandidates,
   validateVerdicts, verdictsPath, fixReportPath,
 } from '../lib/prreview.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief, methodSection } from '../lib/reviewbrief.mjs';
@@ -150,6 +150,58 @@ test('fleetPlan: sized to the diff, cleanup angles in round 1 only, a small diff
   assert.equal(batchItems(Array.from({ length: 30 }, (_, i) => i), { per: 3, maxBatches: 8 }).length, 8, 'batches grow rather than exceed the verifier cap');
 });
 
+test('fleetPlan: a round sized to the fix gets 1–3 finders and at most 4 verifiers; the same lines over the whole change get the round-1 fleet', () => {
+  // two-sided: the same line count, sized two ways
+  assert.deepEqual([fleetPlan(500, 2, { ofFix: true }).finders, fleetPlan(500, 2, { ofFix: true }).maxVerifiers], [2, 4]);
+  assert.deepEqual([fleetPlan(500, 2).finders, fleetPlan(500, 2).maxVerifiers], [4, 8], 'a round 2 over the whole change (the golden replay) keeps the round-1 fleet');
+  assert.equal(fleetPlan(2000, 3, { ofFix: true }).finders, 3, 'three is the cap for a fix');
+  assert.equal(fleetPlan(61, 2, { ofFix: true }).finders, 1);
+  assert.deepEqual(fleetPlan(20, 2, { ofFix: true }), { finders: 1, maxVerifiers: 2, angles: [[...CORE_ANGLES]] }, 'a small fix is still one finder, no cleanup angle');
+  assert.deepEqual([...new Set(fleetPlan(900, 2, { ofFix: true }).angles.flat())].sort(), [...CORE_ANGLES].sort(), 'every core angle is dealt to someone');
+});
+
+test('openRound: handed the fix delta, a round is sized to it, writes fix.patch and records fixLines; without it, sized to the whole diff', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  const r1 = open(dir, run, lane, repoPath);
+  assert.equal(r1.fixLines, null);
+  assert.equal(currentRound(lane).fixLines, null);
+  assert.ok(!existsSync(fixPatchPath(dir, lane, 1)), 'round 1 has no fix');
+  writeCandidates(dir, lane, 1, 1, []);
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  // a one-line fix on top of a two-line change
+  const before = headOf(repoPath);
+  writeFileSync(join(repoPath, 'widget.js'), WIDGET_V2.replace('  if (cache.size > 100) cache.clear();\n', '  // evict when full\n  if (cache.size > 100) cache.clear();\n'));
+  git(['commit', '-qam', 'fix'], repoPath);
+  const head = headOf(repoPath);
+  const r2 = openRound(dir, run, lane, { head, diffText: laneDiff(repoPath, lane.base), deltaText: fixDiff(repoPath, before, head) });
+  assert.equal(r2.round, 2);
+  assert.equal(r2.fixLines, 1);
+  assert.ok(r2.lines > r2.fixLines, 'the whole diff is bigger than the fix');
+  assert.equal(currentRound(lane).fixLines, 1);
+  assert.equal(currentRound(lane).finders, 1, 'sized to the fix');
+  assert.equal(currentRound(lane).maxVerifiers, 2);
+  assert.match(readFileSync(fixPatchPath(dir, lane, 2), 'utf8'), /\+  \/\/ evict when full/);
+  assert.match(readFileSync(join(dir, lane.slug, 'review', 'r2', 'diff.patch'), 'utf8'), /cache\.clear\(\)/, 'diff.patch still holds the whole change');
+  assert.equal(roundRows(lane)[1][3], '1', 'the round table shows the fix delta');
+  assert.equal(roundRows(lane)[0][3], '—');
+  // two-sided: an empty delta is refused — there is no fix to review
+  writeCandidates(dir, lane, 2, 1, []);
+  planVerification(dir, run, lane, 2, []);
+  registerRound(dir, run, lane, 2, { tree: repoPath });
+  assert.throws(() => openRound(dir, run, lane, { head, diffText: laneDiff(repoPath, lane.base), deltaText: fixDiff(repoPath, head, head) }), /no fix to review/);
+  // The CLI does the same for a real round 2: the delta since the last registered head, offline.
+  lane.review.rounds.pop();
+  saveRun(dir, run);
+  rmSync(join(dir, lane.slug, 'review', 'r2'), { recursive: true, force: true });
+  const cli = execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'issueflow.js'), 'review-brief', '--run-dir', dir, '--lane', lane.slug, '--offline'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
+  assert.match(cli, /Fix lines/);
+  assert.match(cli, /\| 2 of 4 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
+  assert.ok(existsSync(fixPatchPath(dir, lane, 2)));
+  assert.match(readFileSync(finderBriefPath(dir, lane, 2, 1), 'utf8'), /## The fix under review/);
+  cleanup();
+});
+
 test('validateCandidates and validateVerdicts refuse every shape the registrar will not guess about', () => {
   assert.match(validateCandidates('nope', 1).error, /not valid JSON/);
   assert.match(validateCandidates(JSON.stringify({ candidates: [] }), 1).error, /notExamined/);
@@ -159,6 +211,9 @@ test('validateCandidates and validateVerdicts refuse every shape the registrar w
   assert.match(validateCandidates(JSON.stringify({ candidates: [cand({ failure_scenario: '' })], notExamined: [] }), 1).error, /failure_scenario/);
   const ok = validateCandidates(JSON.stringify({ candidates: [cand()], notExamined: ['x'] }), 2);
   assert.equal(ok.candidates[0].id, 'c-2-1');
+  assert.equal(ok.candidates[0].proposed_severity, 'major', 'an unrated candidate is a proposed major — verified, never dropped');
+  assert.equal(validateCandidates(JSON.stringify({ candidates: [cand({ proposed_severity: 'nit' })], notExamined: [] }), 1).candidates[0].proposed_severity, 'nit');
+  assert.match(validateCandidates(JSON.stringify({ candidates: [cand({ proposed_severity: 'blocker' })], notExamined: [] }), 1).error, /proposed_severity must be one of major\|nit/);
 
   const expected = new Set(['c-1-1', 'f-abcd1234']);
   assert.match(validateVerdicts(JSON.stringify({ verdicts: [{ id: 'c-9-9', verdict: 'CONFIRMED', quote: 'x' }] }), expected).error, /nobody filed/);
@@ -321,39 +376,96 @@ test('round 2: every prior finding needs a verdict; fixed resolves, a moved line
   cleanup();
 });
 
-test('round 2: a prior nit in a file the fix never touched is still open by construction — no verifier item; a prior major always gets one', () => {
+test('round 2: a prior nit is never a verifier item — touched file or not — and a prior major always is; a fixer-reported nit closes on its word, a fixer-reported major waits for a verdict', () => {
   const { dir, run, lane, repoPath, cleanup } = fixture();
   open(dir, run, lane, repoPath);
   writeCandidates(dir, lane, 1, 1, [
     cand(),                                                                                                                     // major, widget.js
-    cand({ file: 'README.md', line: 1, category: 'conventions', short_summary: 'README never mentions eviction', summary: 'docs', failure_scenario: 'cost: the README lies' }), // nit, README.md
+    cand({ file: 'README.md', line: 1, category: 'conventions', short_summary: 'README never mentions eviction', summary: 'docs', failure_scenario: 'cost: the README lies' }), // nit, README.md — untouched by the fix
+    cand({ line: 13, category: 'simplification', short_summary: 'size() could be a getter', summary: 'style', failure_scenario: 'cost: two ways to read one number', suggestion: 'export const size = () => cache.size;' }), // nit with a suggestion, widget.js — touched by the fix
   ]);
   planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
   writeVerdicts(dir, lane, 1, 1, [
     { id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'return cache.get(key);' },
     { id: 'c-1-2', verdict: 'CONFIRMED', severity: 'nit', quote: '# widgets' },
+    { id: 'c-1-3', verdict: 'CONFIRMED', severity: 'nit', quote: 'return cache.size;' },
   ]);
   const r1 = registerRound(dir, run, lane, 1, { tree: repoPath });
-  const [major, readme] = r1.findings;
+  const [major, readme, getter] = r1.findings;
+  assert.deepEqual(fixItems(lane).map((f) => f.id), [major.id, getter.id], 'round 1: the major and the suggestion-nit go to the fixer');
+  // The round-1 fixer reports both fixed. The major waits for a verdict; the nit does not.
+  writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ [major.id]: { status: 'fixed' }, [getter.id]: { status: 'fixed', note: 'made it a getter' }, _summary: 'abc' }));
+  const replies = applyFixReport(dir, run, lane, 1);
+  assert.match(replies.find((r) => r.id === major.id).body, /the next round verifies it/);
+  assert.match(replies.find((r) => r.id === getter.id).body, /taken as fixed \(a nit is not re-verified\)/);
+  assert.equal(lane.review.findings.find((f) => f.id === getter.id).status, 'open', 'not closed until the round registers');
   // the fix touches widget.js only
   writeFileSync(join(repoPath, 'widget.js'), WIDGET_V2.replace('export function get(key) {\n', 'export function get(key) {\n  if (!cache.has(key)) return undefined;\n'));
   git(['commit', '-qam', 'fix'], repoPath);
   open(dir, run, lane, repoPath);
   writeCandidates(dir, lane, 2, 1, []);
-  const { prior, auto } = planVerification(dir, run, lane, 2, [], { tree: repoPath });
+  const { prior, auto, autoFixed } = planVerification(dir, run, lane, 2, [], { tree: repoPath });
   assert.deepEqual(prior.map((p) => p.id), [major.id], 'only the major is a verifier item');
-  assert.deepEqual(auto, [readme.id], 'the README nit is still open by construction');
+  assert.deepEqual(auto.sort(), [readme.id, getter.id].sort(), 'neither nit is — the one in the touched file included');
+  assert.deepEqual(autoFixed, [getter.id], 'the fixer-reported nit will close on its word');
+  assert.deepEqual(currentRound(lane).autoStillOpen, [readme.id]);
   writeVerdicts(dir, lane, 2, 1, [{ id: major.id, verdict: 'fixed', quote: 'if (!cache.has(key)) return undefined;' }]);
   const r2 = registerRound(dir, run, lane, 2, { tree: repoPath });
-  assert.deepEqual(r2.transitions.fixed, [major.id]);
+  assert.deepEqual(r2.transitions.fixed.sort(), [major.id, getter.id].sort());
   assert.deepEqual(r2.transitions.stillOpen, [readme.id]);
   const nit = lane.review.findings.find((f) => f.id === readme.id);
   assert.equal(nit.status, 'open');
   assert.equal(nit.stillOpenRounds, 1);
-  assert.match(nit.history.at(-1).note, /auto: file byte-identical/);
+  assert.match(nit.history.at(-1).note, /auto: nits are not re-verified after round 1/);
+  const closed = lane.review.findings.find((f) => f.id === getter.id);
+  assert.equal(closed.status, 'fixed');
+  assert.equal(closed.fixedAt, r2.head);
+  assert.match(closed.history.at(-1).note, /closed on the fixer's word/);
   assert.equal(r2.verdict, 'converged');
-  // two-sided: a nit in a file the fix DID touch is re-judged like any other
-  git(['commit', '-q', '--allow-empty', '-m', 'noop'], repoPath);
+  assert.deepEqual(fixItems(lane), [], 'nothing left for a fixer');
+  cleanup();
+});
+
+test('round 2: a candidate proposed as a nit is recorded and never verified; a proposed major is; an unrated one is verified; the fixer gets majors only', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  open(dir, run, lane, repoPath);
+  writeCandidates(dir, lane, 1, 1, [
+    cand(),
+    cand({ line: 13, category: 'simplification', proposed_severity: 'nit', short_summary: 'size() could be a getter', summary: 'style', failure_scenario: 'cost: two ways to read one number' }),
+  ]);
+  const r1plan = planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+  assert.equal(r1plan.fresh.length, 2, 'round 1 verifies everything, a proposed nit included');
+  assert.deepEqual(r1plan.unverified, []);
+  writeVerdicts(dir, lane, 1, 1, [
+    { id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'return cache.get(key);' },
+    { id: 'c-1-2', verdict: 'CONFIRMED', severity: 'nit', quote: 'return cache.size;' },
+  ]);
+  const r1 = registerRound(dir, run, lane, 1, { tree: repoPath });
+  const major = r1.findings[0];
+  git(['commit', '-q', '--allow-empty', '-m', 'fix (empty)'], repoPath);
+  open(dir, run, lane, repoPath);
+  writeCandidates(dir, lane, 2, 1, [
+    cand({ line: 9, category: 'removed-behaviour', proposed_severity: 'major', short_summary: 'eviction clears the whole cache', summary: 'clear() drops every entry', failure_scenario: 'the 101st set() empties the cache' }),
+    cand({ line: 12, category: 'line-by-line', proposed_severity: 'nit', short_summary: 'todo comment left in', summary: 'a TODO shipped', failure_scenario: 'cost: an open question in production code' }),
+    cand({ line: 13, category: 'cross-file', short_summary: 'size() semantics changed silently', summary: 'size() now shrinks', failure_scenario: 'a consumer indexes by size()' }), // unrated
+  ]);
+  const { candidates } = readCandidates(dir, lane, 2);
+  const { batches, fresh, unverified, prior } = planVerification(dir, run, lane, 2, candidates, { tree: repoPath });
+  assert.deepEqual(fresh.map((c) => c.short_summary), ['eviction clears the whole cache', 'size() semantics changed silently'], 'the proposed major and the unrated candidate are verified');
+  assert.deepEqual(unverified.map((c) => c.short_summary), ['todo comment left in']);
+  assert.deepEqual(currentRound(lane).unverifiedNits.map((c) => c.short_summary), ['todo comment left in']);
+  assert.deepEqual(prior.map((p) => p.id), [major.id]);
+  assert.ok(!batches.flat().some((i) => i.short_summary === 'todo comment left in'), 'no verifier sees the proposed nit');
+  writeAllVerdicts(dir, lane, 2, batches, [
+    { id: major.id, verdict: 'still-open', quote: 'return cache.get(key);' },
+    { id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'cache.clear();' },
+    { id: 'c-1-3', verdict: 'CONFIRMED', severity: 'nit', quote: 'return cache.size;' },
+  ]);
+  const r2 = registerRound(dir, run, lane, 2, { tree: repoPath });
+  assert.ok(!r2.findings.some((f) => f.short_summary === 'todo comment left in'), 'the proposed nit is never registered');
+  assert.equal(r2.counts.majors, 2);
+  assert.equal(fixerModel(lane), 'opus', 'a still-open major escalates the fixer');
+  assert.deepEqual(fixItems(lane).map((f) => f.severity), ['major', 'major'], 'round 2: majors only, whatever a nit carries');
   cleanup();
 });
 
@@ -554,8 +666,30 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   assert.match(finder, /diff\.patch/);
   assert.match(finder, /shared\/investigate\.md/, 'the finder is pointed at the approved plan');
   assert.match(finder, /addressed to `main`/);
-  assert.match(finder, /Never rate severity/);
+  assert.match(finder, /"proposed_severity": "major"/);
+  assert.match(finder, /after round 1 only a proposed major reaches one/);
+  assert.match(finder, /## The change under review/);
+  assert.doesNotMatch(finder, /fix\.patch/, 'round 1 has no fix to read');
   assert.doesNotMatch(finder, /Already open/, 'no prior findings, no prior table');
+
+  // Round 2, sized to a fix: the fix is read first, the whole diff is reference, open majors are listed and nits counted.
+  const fixEntry = { ...entry, round: 2, prevHead: entry.head, fixLines: 1 };
+  const prior = [
+    { id: 'f-aaaaaaaa', file: 'widget.js', line: 4, severity: 'major', short_summary: 'get() lost its has() guard' },
+    { id: 'f-bbbbbbbb', file: 'README.md', line: 1, severity: 'nit', short_summary: 'README never mentions eviction' },
+    { id: 'f-cccccccc', file: 'widget.js', line: 13, severity: 'pre-existing', short_summary: 'size() was always racy' },
+  ];
+  const round2 = renderFinderBrief(dir, run, lane, fixEntry, 1, { angles: CORE_ANGLES, issue: ISSUE, files, prior });
+  assert.match(round2, /## The fix under review/);
+  assert.match(round2, /This round reviews a \*\*fix\*\*, not the whole change/);
+  assert.ok(round2.indexOf('fix.patch') < round2.indexOf('diff.patch'), 'the fix is named before the whole diff');
+  assert.match(round2, /round 1 already reviewed it line by line, and this round does not/);
+  assert.match(round2, /\| `f-aaaaaaaa` \| `widget\.js:4` \| get\(\) lost its has\(\) guard \|/, 'the open major is listed');
+  assert.doesNotMatch(round2, /f-bbbbbbbb|f-cccccccc/, 'nits and pre-existing findings are not listed');
+  assert.match(round2, /Plus 2 open nits and pre-existing findings, not listed/);
+
+  const noMajors = renderFinderBrief(dir, run, lane, fixEntry, 1, { angles: CORE_ANGLES, issue: ISSUE, files, prior: prior.slice(1) });
+  assert.match(noMajors, /_No major is open\._/);
 
   entry.verifiers = 1;
   const items = [{ ...cand(), id: 'c-1-1', prior: false }, { id: 'f-deadbeef', prior: true, file: 'widget.js', line: 9, side: 'RIGHT', severity: 'major', category: 'x', short_summary: 's', summary: 's', failure_scenario: 'f', dispute: 'the fixer says no', filedAtHead: 'abc' }];
@@ -564,8 +698,13 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   assert.match(verifier, /REFUTED only when\nconstructible from the code/);
   assert.match(verifier, /A moved line is not a\s+fix/);
   assert.match(verifier, /the fixer says no/, 'a dispute crosses to the verifier');
+  assert.match(verifier, /### Prior open majors \(1\)/);
   assert.match(verifier, /"verdicts"/);
   assert.match(verifier, /addressed to `main`/);
+  const verifier2 = renderVerifierBrief(dir, run, lane, { ...fixEntry, verifiers: 1 }, 1, { items, issue: ISSUE });
+  assert.match(verifier2, /## The fix under review/);
+  assert.match(verifier2, /fix\.patch/);
+  assert.doesNotMatch(verifier2, /git diff [0-9a-f]{40} [0-9a-f]{40}/, 'the fix is a file now, not a command');
 
   const fix = renderFixBrief(dir, run, lane, entry, { items: [{ ...cand(), id: 'f-1', severity: 'major', stillOpenRounds: 1, quote: 'q' }], checks: [{ name: 'ci / widgets', bucket: 'fail', link: 'https://example.invalid/run' }], model: 'opus', issue: ISSUE });
   assert.match(fix, /You are the \*\*fixer\*\*/);
@@ -574,6 +713,8 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   assert.match(fix, /ci \/ widgets/);
   assert.match(fix, /survived 1 fix round/);
   assert.match(fix, /Never weaken, skip or delete a test/);
+  assert.match(fix, /Make the smallest change that removes each mechanism/);
+  assert.match(fix, /never re-capture a benchmark or baseline/);
   assert.match(fix, /git push origin feature\/issue-5/);
   assert.match(fix, /"not-changed"/);
   assert.match(fix, /addressed to `main`/);

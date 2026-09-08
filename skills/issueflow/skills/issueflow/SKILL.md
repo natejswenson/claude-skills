@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request — one opus subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one opus subagent implements it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.8.0
+version: 0.9.0
 ---
 
 # /issueflow — one open issue to a pull request, driven by `next`
@@ -48,8 +48,8 @@ step whose command does not exist fails `skillfactory verify`.
 | register a red-team review of the plan — validate every citation, derive the verdict from the severities, bind it to the plan's hash | `node "$SKILL_DIR/scripts/issueflow.js" review` |
 | expand an approved plan's work items into stacked lanes | `node "$SKILL_DIR/scripts/issueflow.js" split` |
 | push the branches and open the pull requests as drafts under the repo's own policy | `node "$SKILL_DIR/scripts/issueflow.js" ship` |
-| open a review round — the diff at the pushed head, the finder briefs sized to it | `node "$SKILL_DIR/scripts/issueflow.js" review-brief` |
-| pool the candidates, add every prior open finding, brief the verifiers | `node "$SKILL_DIR/scripts/issueflow.js" review-verify` |
+| open a review round — the diff at the pushed head (from round 2, the fix since the last round), the finder briefs sized to it | `node "$SKILL_DIR/scripts/issueflow.js" review-brief` |
+| pool the candidates, add every prior open major, brief the verifiers | `node "$SKILL_DIR/scripts/issueflow.js" review-verify` |
 | the registrar — assign ids once, classify every citation against the diff's hunks, apply the convergence rules, bind the round to its head | `node "$SKILL_DIR/scripts/issueflow.js" review-register` |
 | post one GitHub review per round — a thread per inline finding, a reply and a resolve on every prior thread | `node "$SKILL_DIR/scripts/issueflow.js" review-post` |
 | brief the fixer on every open major, with the red CI checks | `node "$SKILL_DIR/scripts/issueflow.js" review-fix-brief` |
@@ -162,16 +162,24 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
    a red that is only a load error.
 5. **Ship.** Every lane's pull request opens as a draft (or, where drafts are
    unavailable, labelled `review-loop` and titled `[reviewing]`).
-6. **Review loop**, bottom lane first. Each round: 2–5 opus finders (one under
-   sixty changed lines), each dealt angles from `references/review-method.md`;
-   up to 8 opus verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the
-   candidates and fixed / still-open / withdrawn on every prior major and every
-   prior nit in a file the fix touched (a nit in an untouched file is still open
-   by construction, and costs no verifier); the
-   registrar; one GitHub review with a thread per inline finding; then a fixer
-   (sonnet, or opus once a major survived a fix) on every open major, one commit
-   per round, a push, a fix report. **Paste the round's findings table into the
-   conversation — not a summary of it.** The loop converges when no major is
+6. **Review loop**, bottom lane first. **Round 1 reviews the change; every
+   later round reviews the fix.** Round 1: 2–5 opus finders (one under sixty
+   changed lines), each dealt angles from `references/review-method.md`; up to
+   8 opus verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the candidates.
+   Round 2 and after: 1–3 opus finders sized to the diff since the last round's
+   head, which they read first (the whole change is reference); up to 4 opus
+   verifiers ruling on the candidates the finders proposed as majors and
+   fixed / still-open / withdrawn on every prior **major** — a prior nit is
+   never re-verified (still open by construction; one the fixer reported fixed
+   closes on its word), and a candidate proposed as a nit is recorded, never
+   verified or posted. Then the registrar; one GitHub review with a thread per
+   inline finding; then a fixer (sonnet, or opus once a major survived a fix)
+   on every open major — and, in round 1 only, nits with a one-line
+   suggestion — the smallest change that removes each mechanism, one commit
+   per round, a push, a fix report. **Paste the round's table
+   `review-register` prints into the conversation — the open majors and this
+   round's transitions, not a summary of it**; the nits are counted, and live
+   in the review body. The loop converges when no major is
    open — nits may remain — and `ready` lifts the draft once CI is green. Four
    rounds is the cap: the round-4 fix lands unverified and `next` stops
    `exhausted`. The user reads that fix and each open thread, then rules per
