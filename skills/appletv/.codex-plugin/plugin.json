@@ -1,0 +1,22 @@
+{
+  "name": "appletv",
+  "version": "0.1.1",
+  "description": "Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the TV's own state says so.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/appletv",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "appletv",
+    "shortDescription": "Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the T",
+    "longDescription": "Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the TV's own state says so.",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $appletv to help me."
+    ]
+  }
+}

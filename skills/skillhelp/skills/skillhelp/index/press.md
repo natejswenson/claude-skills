@@ -30,16 +30,16 @@
 
 ## Commands
 
-- node bin/press.js tokens --format css # a :root block `skills/press/skills/press/SKILL.md:53`
-- node bin/press.js tokens --format json # raw values `skills/press/skills/press/SKILL.md:54`
-- node bin/press.js tokens --format md # the palette as prose `skills/press/skills/press/SKILL.md:55`
-- node bin/press.js lint <file…> [--accent-cap 2] `skills/press/skills/press/SKILL.md:59`
-- node bin/press.js check # this repo `skills/press/skills/press/SKILL.md:69`
-- node bin/press.js check --repo ../budget `skills/press/skills/press/SKILL.md:70`
-- node bin/press.js doctor # the whole registry, present or not `skills/press/skills/press/SKILL.md:71`
-- node bin/press.js propagate --repo ../budget --dry-run # is it behind? `skills/press/skills/press/SKILL.md:102`
-- node bin/press.js propagate --repo ../budget # re-emit + bump its pin `skills/press/skills/press/SKILL.md:103`
-- node bin/press.js propagate --repo ../budget --dry-run `skills/press/skills/press/SKILL.md:150`
+- node bin/press.js tokens --format css # a :root block `skills/press/skills/press/SKILL.md:66`
+- node bin/press.js tokens --format json # raw values `skills/press/skills/press/SKILL.md:67`
+- node bin/press.js tokens --format md # the palette as prose `skills/press/skills/press/SKILL.md:68`
+- node bin/press.js lint <file…> [--accent-cap 2] `skills/press/skills/press/SKILL.md:72`
+- node bin/press.js check # this repo `skills/press/skills/press/SKILL.md:82`
+- node bin/press.js check --repo ../budget `skills/press/skills/press/SKILL.md:83`
+- node bin/press.js doctor # the whole registry, present or not `skills/press/skills/press/SKILL.md:84`
+- node bin/press.js propagate --repo ../budget --dry-run # is it behind? `skills/press/skills/press/SKILL.md:115`
+- node bin/press.js propagate --repo ../budget # re-emit + bump its pin `skills/press/skills/press/SKILL.md:116`
+- node bin/press.js propagate --repo ../budget --dry-run `skills/press/skills/press/SKILL.md:163`
 - npx -y @natjswenson/press@latest check --repo . # is this repo in sync? `skills/press/README.md:56`
 - npx -y @natjswenson/press@latest emit --repo . # make it so `skills/press/README.md:57`
 - npx -y @natjswenson/press@latest lint theme.css # mechanical brand law `skills/press/README.md:58`
@@ -53,12 +53,12 @@
 
 ## Architecture
 
-- brand/tokens.json — **The** source of truth: colors, font stacks, identity, limits `skills/press/skills/press/SKILL.md:36`
-- brand/laws.md — Why there are so few values: the accent law, structure, the three voices, the tracking ceiling `skills/press/skills/press/SKILL.md:37`
-- brand/components.md — The shared component vocabulary — masthead, standfirst, big stat, ledger, duel, terminal, table `skills/press/skills/press/SKILL.md:38`
-- brand/agent-ui.md — How a skill's run should read in the chat transcript `skills/press/skills/press/SKILL.md:39`
-- brand/voice-core.md — The copy rules that hold for every artifact `skills/press/skills/press/SKILL.md:40`
-- targets.json — Every place the brand is written down `skills/press/skills/press/SKILL.md:41`
+- brand/tokens.json — **The** source of truth: colors, font stacks, identity, limits `skills/press/skills/press/SKILL.md:49`
+- brand/laws.md — Why there are so few values: the accent law, structure, the three voices, the tracking ceiling `skills/press/skills/press/SKILL.md:50`
+- brand/components.md — The shared component vocabulary — masthead, standfirst, big stat, ledger, duel, terminal, table `skills/press/skills/press/SKILL.md:51`
+- brand/agent-ui.md — How a skill's run should read in the chat transcript `skills/press/skills/press/SKILL.md:52`
+- brand/voice-core.md — The copy rules that hold for every artifact `skills/press/skills/press/SKILL.md:53`
+- targets.json — Every place the brand is written down `skills/press/skills/press/SKILL.md:54`
 
 ## Troubleshooting
 
@@ -72,6 +72,6 @@
 - Re-render one real artifact per affected medium and **look at it** — A token change is the one edit that touches every product at once, and no test asserts taste. The visual confirmation step is the… `skills/press/skills/press/skill-invariants.json:1`
 - pinned check can never answer — The propagation design rests on these being separate questions: a pinned check proves the region is intact, never that it is current. natejswenson.io sat two releases… `skills/press/skills/press/skill-invariants.json:46`
 - must say fontconfig — WeasyPrint walks the fallback chain for real, so the browser-tuned stack resolved local-fitness headlines to Helvetica Neue Heavy Condensed. A new consumer onboarded without che… `skills/press/skills/press/skill-invariants.json:51`
-- **Never write a brand value into a file by hand.** Not a hex, not a font stack, `skills/press/skills/press/SKILL.md:23`
-- **Never generate a whole file.** The region owns the token block; the consumer `skills/press/skills/press/SKILL.md:208`
+- **Never write a brand value into a file by hand.** Not a hex, not a font stack, `skills/press/skills/press/SKILL.md:36`
+- **Never generate a whole file.** The region owns the token block; the consumer `skills/press/skills/press/SKILL.md:221`
 - Previously fixed: Goldens pin the **shape** of each emitter's output using a fixed placeholder `skills/press/CHANGELOG.md:149`

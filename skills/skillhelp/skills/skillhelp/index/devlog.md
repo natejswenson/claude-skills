@@ -19,7 +19,7 @@
 - githubUser — string — Your GitHub username. `skills/devlog/README.md:220`
 - voicePath — string (optional) — Directory holding voice-profile.md (and optionally voice-notes.md). A leading ~ is expanded. Read only, never shell-interpolated. `skills/devlog/README.md:221`
 - projects — array — One entry per project you want dev logs for. `skills/devlog/README.md:222`
-- Map the user's request onto the CLI — never hand-edit config.json: `skills/devlog/skills/devlog/SKILL.md:37`
+- Map the user's request onto the CLI — never hand-edit config.json: `skills/devlog/skills/devlog/SKILL.md:50`
 
 ## Usage
 
@@ -48,9 +48,9 @@
 - devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:100`
 - devlog publish-entry ... — Copy a drafted entry into a clone and update the manifest; never overwrites `skills/devlog/README.md:101`
 - devlog preview — Run a local preview at http://localhost:5173 `skills/devlog/README.md:102`
-- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:93`
-- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:94`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:399`
+- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:106`
+- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:107`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:412`
 - npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:47`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:48`
 - npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:295`

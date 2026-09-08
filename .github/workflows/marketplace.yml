@@ -1,6 +1,6 @@
 name: marketplace
 
-# Validates .claude-plugin/marketplace.json and every skill's plugin.json wiring.
+# Validates both Claude and Codex catalogs and every skill's release metadata.
 # Deliberately UNFILTERED and UNCONDITIONAL (no dorny/paths-filter short-circuit,
 # unlike the four per-skill callers): the lint is sub-second, and short-circuiting
 # would let a PR adding/removing marketplace coverage slip through green without
@@ -35,7 +35,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20"
-      - run: python tools/lint_marketplace.py
+      - run: python tools/check_compatibility.py
+      - run: python -m unittest discover -s tools/tests -p test_sync_codex.py
       # Every skill must declare a baseline eval set whose test the runner
       # actually discovers and whose fixtures/corpus really exist. Lives here
       # rather than in the per-skill callers for the same reason as the

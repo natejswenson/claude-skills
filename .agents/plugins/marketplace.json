@@ -1,0 +1,248 @@
+{
+  "name": "claude-skills",
+  "interface": {
+    "displayName": "Nate Swenson Skills"
+  },
+  "plugins": [
+    {
+      "name": "devlog",
+      "source": {
+        "source": "local",
+        "path": "./skills/devlog"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "ghostwriter",
+      "source": {
+        "source": "local",
+        "path": "./skills/ghostwriter"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "ghostwriter-x",
+      "source": {
+        "source": "local",
+        "path": "./skills/ghostwriter-x"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "resume",
+      "source": {
+        "source": "local",
+        "path": "./skills/resume"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "github-stats",
+      "source": {
+        "source": "local",
+        "path": "./skills/github-stats"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "shipflow",
+      "source": {
+        "source": "local",
+        "path": "./skills/shipflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "city-report",
+      "source": {
+        "source": "local",
+        "path": "./skills/city-report"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "press",
+      "source": {
+        "source": "local",
+        "path": "./skills/press"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "ghfactory",
+      "source": {
+        "source": "local",
+        "path": "./skills/ghfactory"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "skillfactory",
+      "source": {
+        "source": "local",
+        "path": "./skills/skillfactory"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "eval",
+      "source": {
+        "source": "local",
+        "path": "./skills/eval"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "release",
+      "source": {
+        "source": "local",
+        "path": "./skills/release"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "pluginsync",
+      "source": {
+        "source": "local",
+        "path": "./skills/pluginsync"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "issueflow",
+      "source": {
+        "source": "local",
+        "path": "./skills/issueflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "shipreport",
+      "source": {
+        "source": "local",
+        "path": "./skills/shipreport"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "gmailtriage",
+      "source": {
+        "source": "local",
+        "path": "./skills/gmailtriage"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "skillhelp",
+      "source": {
+        "source": "local",
+        "path": "./skills/skillhelp"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "brandreport",
+      "source": {
+        "source": "local",
+        "path": "./skills/brandreport"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "netwatch",
+      "source": {
+        "source": "local",
+        "path": "./skills/netwatch"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "appletv",
+      "source": {
+        "source": "local",
+        "path": "./skills/appletv"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

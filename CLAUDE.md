@@ -233,6 +233,22 @@ does **not** cut a release tag on its own. Cutting a tag is a separate, delibera
 >   Removing the gate without also removing `release-cut`'s dispatch would double-release; removing
 >   the dispatch without the gate brings back publish-on-merge.
 
+## Claude and Codex compatibility
+
+Both runtimes are supported. Keep Claude's catalog, manifests, slash invocation,
+and personal-data paths working alongside Codex's catalog and `$name` invocation.
+Shared scripts must preserve existing Claude behavior when adding Codex paths;
+transcript parsing changes must be tested against both formats.
+
+Codex uses the same skill folders and release versions. After a manifest/version
+change or a new plugin, run `python3 tools/sync_codex.py` and commit the generated
+`skills/*/.codex-plugin/plugin.json` files and `.agents/plugins/marketplace.json`.
+The unconditional marketplace CI job runs `python3 tools/check_compatibility.py`
+and the metadata generator tests. This checks both catalogs, all shared release
+versions, missing/stale/orphan Codex manifests, and unsupported Claude components
+that need a deliberate Codex adapter. Existing Claude lint and tests stay active.
+See `AGENTS.md` and `docs/codex-migration.md` for Codex runtime details.
+
 ## CI architecture (how the gate works)
 
 - One reusable **`_release.yml`** (`workflow_call`) + one caller **`<skill>.yml`** per skill +

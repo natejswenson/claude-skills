@@ -15,14 +15,10 @@ export const defaultTranscriptRoot = () => join(homedir(), '.claude', 'projects'
 export function listTranscripts(root = defaultTranscriptRoot()) {
   if (!existsSync(root)) return [];
   const out = [];
-  for (const dir of readdirSync(root)) {
-    const full = join(root, dir);
-    let st;
-    try { st = statSync(full); } catch { continue; }
-    if (!st.isDirectory()) continue;
-    for (const f of readdirSync(full)) {
-      if (f.endsWith('.jsonl')) out.push(join(full, f));
-    }
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const full = join(root, entry.name);
+    if (entry.isDirectory()) out.push(...listTranscripts(full));
+    else if (entry.isFile() && entry.name.endsWith('.jsonl')) out.push(full);
   }
   return out.sort();
 }
@@ -61,6 +57,33 @@ export function digestTranscript(file, counts = newCounts(), home = homedir()) {
     if (!line) continue;
     let d;
     try { d = JSON.parse(line); } catch { continue; }
+
+    if (d.type === 'session_meta') {
+      sessionId = d.payload?.id ?? sessionId;
+      cwd = d.payload?.cwd ?? cwd;
+      if (d.payload?.git?.branch) branches.add(d.payload.git.branch);
+      continue;
+    }
+    if (d.type === 'turn_context') {
+      cwd = d.payload?.cwd ?? cwd;
+      continue;
+    }
+    if (d.type === 'event_msg') continue; // duplicates response_item messages
+    if (d.type === 'response_item') {
+      const p = d.payload ?? {};
+      if (p.type === 'message' && ['user', 'assistant'].includes(p.role)) {
+        const text = (p.content ?? []).filter(b => ['input_text', 'output_text', 'text'].includes(b.type))
+          .map(b => b.text ?? '').join('\n');
+        if (p.role === 'user' && text.trim().startsWith('<')) continue;
+        d = { ...d, type: p.role, message: { content: text } };
+      } else if (['function_call', 'custom_tool_call'].includes(p.type)) {
+        if (p.name) {
+          tools[p.name] = (tools[p.name] ?? 0) + 1;
+          if (p.name.endsWith('apply_patch')) edits += 1;
+        }
+        continue;
+      } else continue;
+    }
 
     if (d.sessionId && !sessionId) sessionId = d.sessionId;
     if (d.cwd) cwd = d.cwd;

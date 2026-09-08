@@ -23,7 +23,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -146,8 +146,12 @@ test('live-stage-clock: a pending step shows — in both State-adjacent columns,
 test('live-stage-clock: observe() is pure and predicts what accept() later persists', () => {
   const { dir, run, cleanup } = freshRun();
   const step = findStep(run, 'investigate');
-  markBriefed(dir, run, step);
+  // Filesystem mtimes and Date.now() need not advance at the same resolution.
+  // Establish the ordering this test needs without racing two real clocks.
+  markBriefed(dir, run, step, () => '2026-01-01T12:00:00.000Z');
   writeInvestigate(dir, run);
+  const delivered = new Date('2026-01-01T12:01:00.000Z');
+  utimesSync(artifactPath(dir, step), delivered, delivered);
   const before = readFileSync(join(dir, 'run.json'), 'utf8');
 
   const observed = observe(dir, run);
@@ -157,7 +161,7 @@ test('live-stage-clock: observe() is pure and predicts what accept() later persi
     'observe() must not mutate the run object it was handed, either');
 
   const predicted = findStep(observed, 'investigate').stage.at.delivered;
-  assert.ok(predicted, 'observe() found no delivered timestamp for a step with an artifact on disk');
+  assert.equal(predicted, delivered.toISOString(), 'observe() must report the artifact timestamp');
 
   redTeamPass(dir, run, findStep(run, 'investigate'));
   const accepted = accept(dir, run, findStep(run, 'investigate'));

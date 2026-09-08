@@ -5,6 +5,19 @@ user_invocable: true
 description: Show GitHub profile statistics for a user — total commits, followers/following, stars, pull requests, and issues — as a clean summary table, plus a repository browser and per-repo detail. Use when the user asks for "github stats", "github-stats", a GitHub profile summary, "how many stars/followers/commits does <user> have", repo stats for a GitHub account, or wants to create a repo while looking at stats. Powered by the gh CLI.
 ---
 
+## Codex runtime
+
+When running in Codex, invoke this skill as `$github-stats`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # GitHub Stats
 
 Show GitHub profile statistics for any username using the `gh` CLI. This is a

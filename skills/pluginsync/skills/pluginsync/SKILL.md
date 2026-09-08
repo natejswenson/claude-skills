@@ -5,6 +5,42 @@ user_invocable: true
 version: 0.1.0
 ---
 
+## Codex runtime
+
+When running in Codex, invoke this skill as `$pluginsync`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
+## Codex plugin updates
+
+In Codex, use this route instead of the Claude CLI workflow below. The bundled
+`scripts/pluginsync.js` manages Claude installations only.
+
+1. Run `codex plugin marketplace list --json` and
+   `codex plugin list --available --json --marketplace claude-skills`.
+   Inspect the returned schema and report available and installed versions
+   separately. Do not infer installation from marketplace membership.
+2. For a Git marketplace, run `codex plugin marketplace upgrade claude-skills`
+   when refreshing is requested. For this local checkout, run
+   `python3 tools/sync_codex.py` from the repository root after source changes.
+3. Install or refresh requested plugins with
+   `codex plugin add <name>@claude-skills --json`, then re-read the list and
+   installed manifest. If the version/content did not move, report it as stalled.
+   Consult `codex plugin --help` if the installed CLI differs. Never fall back to
+   `claude plugin` or edit Codex's internal cache/registry by hand.
+4. Report what is on disk and ask the user to start a new Codex session to verify
+   loading. A successful install does not prove the current session reloaded.
+
+A refresh removes no plugins or personal skills. Inspect duplicate skill
+entrypoints in `~/.agents/skills` and `~/.codex/skills` without deleting user data.
+
 # /pluginsync — the marketplace on disk, not the one you assume
 
 You are running the **pluginsync** skill. It reconciles the plugins installed on
