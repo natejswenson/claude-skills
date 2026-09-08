@@ -112,6 +112,38 @@ export function normalizeTranscript(jsonl) {
     }
     const line = i + 1;
 
+    // Codex rollouts contain response items plus duplicate UI event messages.
+    // Read response_item only so each message/tool call is counted once.
+    if (rec.type === 'response_item') {
+      const p = rec.payload ?? {};
+      if (p.type === 'reasoning') {
+        dropped.thinking += 1;
+      } else if (p.type === 'message' && ['user', 'assistant'].includes(p.role)) {
+        const text = (p.content ?? []).filter(b => ['input_text', 'output_text', 'text'].includes(b.type))
+          .map(b => b.text ?? '').join('\n');
+        const said = stripInjected(text);
+        if (said && !(p.role === 'user' && /^\s*<(environment_context|permissions instructions|collaboration_mode)>/.test(said))) {
+          push(line, { kind: p.role, text: clip(said, CAP[p.role]) });
+        } else dropped.bookkeeping += 1;
+      } else if (['function_call', 'custom_tool_call'].includes(p.type)) {
+        let input = {};
+        try { input = JSON.parse(p.arguments ?? '{}'); } catch { /* raw custom tool input */ }
+        const name = String(p.name ?? '?');
+        const command = input.cmd ?? input.command;
+        push(line, {
+          kind: 'tool-use', name,
+          ...(p.call_id ? { callId: p.call_id } : {}),
+          ...(command ? { command: clip(command, CAP.command) } : {}),
+          ...(name.endsWith('exec') && typeof p.input === 'string' ? { command: clip(p.input, CAP.command) } : {}),
+        });
+      } else if (['function_call_output', 'custom_tool_call_output'].includes(p.type)) {
+        const output = typeof p.output === 'string' ? p.output : JSON.stringify(p.output ?? '');
+        push(line, { kind: 'tool-result', text: clip(output, CAP.result),
+          ...(p.call_id ? { callId: p.call_id } : {}) });
+      } else dropped.bookkeeping += 1;
+      continue;
+    }
+
     if (rec.type !== 'user' && rec.type !== 'assistant') {
       dropped.bookkeeping += 1;
       continue;
@@ -162,7 +194,7 @@ export function traceFile(path) {
   const trace = normalizeTranscript(readFileSync(path, 'utf8'));
   return {
     $comment:
-      'A real Claude Code session, normalized. Thinking blocks, injected reminders and harness bookkeeping are dropped; secrets and home paths are masked. Event ids are positional and only stable for a frozen file.',
+      'A coding session, normalized. Thinking blocks, injected reminders and harness bookkeeping are dropped; secrets and home paths are masked. Event ids are positional and only stable for a frozen file.',
     ...trace,
   };
 }

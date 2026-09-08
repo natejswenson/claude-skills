@@ -1,0 +1,22 @@
+{
+  "name": "release",
+  "version": "0.2.0",
+  "description": "Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/release",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "release",
+    "shortDescription": "Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the",
+    "longDescription": "Release one named thing — read what changed on main since its last tag, agree a version and notes, then drive it all the way to a tag that is proven to exist.",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $release to help me."
+    ]
+  }
+}

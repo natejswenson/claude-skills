@@ -1,0 +1,22 @@
+{
+  "name": "devlog",
+  "version": "0.13.0",
+  "description": "Turn each new version release (git tag) into a polished, researched how-to guide with real gotchas, written in your voice and published to GitHub",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/devlog",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "devlog",
+    "shortDescription": "Turn each new version release (git tag) into a polished, researched how-to guide with real gotchas, written in your voic",
+    "longDescription": "Turn each new version release (git tag) into a polished, researched how-to guide with real gotchas, written in your voice and published to GitHub",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $devlog to help me."
+    ]
+  }
+}

@@ -5,6 +5,19 @@ user_invocable: true
 version: 0.3.0
 ---
 
+## Codex runtime
+
+When running in Codex, invoke this skill as `$eval`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # /eval — grade the run, not the intention
 
 You are running the **eval** skill. It takes a run that actually happened,
@@ -55,7 +68,13 @@ step whose command does not exist fails `skillfactory verify`.
 
 ### 1. Find the run — never ask what you can read
 
-Claude Code writes every session to
+In Codex, find the relevant `rollout-*.jsonl` under
+`${CODEX_HOME:-$HOME/.codex}/sessions/` (or `archived_sessions/`). Match the
+session metadata's working directory and timestamp to the requested run; do not
+assume the newest file belongs to this project. The trace command accepts Codex
+rollouts as well as Claude transcripts. Never substitute a summary for a log.
+
+For Claude runs, Claude Code writes every session to
 `~/.claude/projects/<slug>/<session-id>.jsonl`, where `<slug>` is the project
 path with `/` replaced by `-`. The current session's id is in the scratchpad
 path. **Never ask the user to paste a transcript** — it is already on disk, and

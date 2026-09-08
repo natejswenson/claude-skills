@@ -4,7 +4,7 @@
       "name": "appletv",
       "version": "0.1.1",
       "stack": "node",
-      "cardHash": "ea189ecc491fa7cd",
+      "cardHash": "e83c072fe759bdbe",
       "facts": 74,
       "sections": {
         "setup": 10,
@@ -20,7 +20,7 @@
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "fca35b70d8ddadf1",
+      "cardHash": "6ce575a7627d2fc8",
       "facts": 48,
       "sections": {
         "setup": 2,
@@ -36,7 +36,7 @@
       "name": "city-report",
       "version": "0.4.0",
       "stack": "python",
-      "cardHash": "ca8360c2edcee369",
+      "cardHash": "a56b3ced5e8f227e",
       "facts": 55,
       "sections": {
         "setup": 1,
@@ -52,7 +52,7 @@
       "name": "devlog",
       "version": "0.13.0",
       "stack": "node",
-      "cardHash": "7dc298bf9c202152",
+      "cardHash": "66ab3dddf1151ccb",
       "facts": 61,
       "sections": {
         "setup": 12,
@@ -68,7 +68,7 @@
       "name": "eval",
       "version": "0.3.0",
       "stack": "node",
-      "cardHash": "e25af634b098ecd2",
+      "cardHash": "febf1cdfca78a082",
       "facts": 64,
       "sections": {
         "setup": 4,
@@ -84,7 +84,7 @@
       "name": "ghfactory",
       "version": "0.2.1",
       "stack": "node",
-      "cardHash": "2e3ee8510afa6402",
+      "cardHash": "07098f9b634d16f0",
       "facts": 49,
       "sections": {
         "setup": 3,
@@ -116,7 +116,7 @@
       "name": "ghostwriter-x",
       "version": "0.2.1",
       "stack": "python",
-      "cardHash": "5713acc927e07467",
+      "cardHash": "452cada98de865a2",
       "facts": 47,
       "sections": {
         "setup": 3,
@@ -132,7 +132,7 @@
       "name": "github-stats",
       "version": "0.1.1",
       "stack": "python",
-      "cardHash": "38f6c364065af8bc",
+      "cardHash": "1d2ccbbc46b2a0d8",
       "facts": 26,
       "sections": {
         "setup": 5,
@@ -148,7 +148,7 @@
       "name": "gmailtriage",
       "version": "0.7.0",
       "stack": "node",
-      "cardHash": "a90fb5b6b17d39f3",
+      "cardHash": "0a1149285b35f8de",
       "facts": 66,
       "sections": {
         "setup": 2,
@@ -164,7 +164,7 @@
       "name": "issueflow",
       "version": "0.9.0",
       "stack": "node",
-      "cardHash": "488338ace071a6d9",
+      "cardHash": "82600541d112eebe",
       "facts": 71,
       "sections": {
         "setup": 9,
@@ -180,7 +180,7 @@
       "name": "netwatch",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "a44acfb1a3c3ef95",
+      "cardHash": "d50b346f67abb9d1",
       "facts": 59,
       "sections": {
         "setup": 2,
@@ -196,7 +196,7 @@
       "name": "pluginsync",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "48cf385bbb1758ca",
+      "cardHash": "0e2e7bcee2456f59",
       "facts": 50,
       "sections": {
         "setup": 2,
@@ -212,7 +212,7 @@
       "name": "press",
       "version": "0.9.0",
       "stack": "node",
-      "cardHash": "f3b68e94ce1a89ed",
+      "cardHash": "4658ef27705e169a",
       "facts": 54,
       "sections": {
         "setup": 3,
@@ -228,7 +228,7 @@
       "name": "release",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "bdf380da5b733afa",
+      "cardHash": "807d7c5ddcfe6a8d",
       "facts": 56,
       "sections": {
         "setup": 8,
@@ -244,7 +244,7 @@
       "name": "resume",
       "version": "2.0.0",
       "stack": "node",
-      "cardHash": "eea4efc715d27d73",
+      "cardHash": "eb6d1caecf8e982b",
       "facts": 51,
       "sections": {
         "setup": 12,
@@ -260,7 +260,7 @@
       "name": "shipflow",
       "version": "0.6.0",
       "stack": "node",
-      "cardHash": "06bcc76166887a97",
+      "cardHash": "e4ed478c8cca4ae9",
       "facts": 68,
       "sections": {
         "setup": 9,
@@ -276,7 +276,7 @@
       "name": "shipreport",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "bb8481129636deed",
+      "cardHash": "04b041de1b12675a",
       "facts": 64,
       "sections": {
         "setup": 2,
@@ -292,7 +292,7 @@
       "name": "skillfactory",
       "version": "0.4.0",
       "stack": "node",
-      "cardHash": "71ce3d3962efc3e5",
+      "cardHash": "ea5ee9bc32da37a1",
       "facts": 60,
       "sections": {
         "setup": 4,
@@ -308,7 +308,7 @@
       "name": "skillhelp",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "ce655968f6f04eb0",
+      "cardHash": "873ec84b409c2d5e",
       "facts": 53,
       "sections": {
         "setup": 3,

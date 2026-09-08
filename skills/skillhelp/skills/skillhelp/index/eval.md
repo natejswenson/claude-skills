@@ -31,17 +31,17 @@
 
 ## Commands
 
-- Command — Returns `skills/eval/skills/eval/SKILL.md:138`
-- eval contract — every rule a skill committed to, as numbered citable clauses with source file:line — from SKILL.md, skill-invariants.json prose, spliced press regions and the repo's own golden rules `skills/eval/skills/eval/SKILL.md:140`
-- eval trace — one session transcript normalized into ordered, anchored events — tool calls with their commands, tool results, assistant claims — each addressable by a stable id `skills/eval/skills/eval/SKILL.md:141`
-- eval probe — the mechanically decidable violations, each already carrying the clause id it breaks and the event id that breaks it; refuses to emit a finding whose citation does not resolve `skills/eval/skills/eval/SKILL.md:142`
-- eval report — the scored report: clauses covered, violations by severity, and the coverage gap — which clauses no probe and no judgment ever examined `skills/eval/skills/eval/SKILL.md:143`
-- eval case — a confirmed finding turned into a permanent eval case for the target skill, run against that skill and kept only if it is observed to fail `skills/eval/skills/eval/SKILL.md:144`
-- node scripts/eval.js contract --skill <name> --repo <path> --out <file> `skills/eval/skills/eval/SKILL.md:70`
-- node scripts/eval.js trace --run <session.jsonl> --out <file> `skills/eval/skills/eval/SKILL.md:81`
-- node scripts/eval.js probe --contract <file> --trace <file> --out <file> `skills/eval/skills/eval/SKILL.md:90`
-- node scripts/eval.js report --contract <file> --trace <file> \ `skills/eval/skills/eval/SKILL.md:109`
-- node scripts/eval.js case --skill <name> --in <file> --prove \ `skills/eval/skills/eval/SKILL.md:123`
+- Command — Returns `skills/eval/skills/eval/SKILL.md:157`
+- eval contract — every rule a skill committed to, as numbered citable clauses with source file:line — from SKILL.md, skill-invariants.json prose, spliced press regions and the repo's own golden rules `skills/eval/skills/eval/SKILL.md:159`
+- eval trace — one session transcript normalized into ordered, anchored events — tool calls with their commands, tool results, assistant claims — each addressable by a stable id `skills/eval/skills/eval/SKILL.md:160`
+- eval probe — the mechanically decidable violations, each already carrying the clause id it breaks and the event id that breaks it; refuses to emit a finding whose citation does not resolve `skills/eval/skills/eval/SKILL.md:161`
+- eval report — the scored report: clauses covered, violations by severity, and the coverage gap — which clauses no probe and no judgment ever examined `skills/eval/skills/eval/SKILL.md:162`
+- eval case — a confirmed finding turned into a permanent eval case for the target skill, run against that skill and kept only if it is observed to fail `skills/eval/skills/eval/SKILL.md:163`
+- node scripts/eval.js contract --skill <name> --repo <path> --out <file> `skills/eval/skills/eval/SKILL.md:89`
+- node scripts/eval.js trace --run <session.jsonl> --out <file> `skills/eval/skills/eval/SKILL.md:100`
+- node scripts/eval.js probe --contract <file> --trace <file> --out <file> `skills/eval/skills/eval/SKILL.md:109`
+- node scripts/eval.js report --contract <file> --trace <file> \ `skills/eval/skills/eval/SKILL.md:128`
+- node scripts/eval.js case --skill <name> --in <file> --prove \ `skills/eval/skills/eval/SKILL.md:142`
 - npm run audit — npm audit --audit-level=moderate `skills/eval/skills/eval/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/eval/skills/eval/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/eval/skills/eval/package.json:39`
@@ -50,16 +50,16 @@
 
 ## Architecture
 
-- scripts/eval.js — the CLI: contract, trace, probe, report, case `skills/eval/skills/eval/SKILL.md:167`
-- scripts/lib/contract.mjs — clause extraction — the rubric, lifted from committed files `skills/eval/skills/eval/SKILL.md:168`
-- scripts/lib/trace.mjs — a session JSONL turned into citable events, redacted `skills/eval/skills/eval/SKILL.md:169`
-- scripts/lib/probes.mjs — the eight probes, and the citation rule they all obey `skills/eval/skills/eval/SKILL.md:170`
-- scripts/lib/report.mjs — findings beside the coverage gap, never without it `skills/eval/skills/eval/SKILL.md:171`
-- scripts/lib/cases.mjs — a finding turned into a test, kept only if observed red `skills/eval/skills/eval/SKILL.md:172`
-- references/rubric.md — where a clause comes from, what makes it citable, and which committed files are contract versus commentary `skills/eval/skills/eval/SKILL.md:173`
-- references/probes.md — the deterministic probe catalogue — what each probe decides, and explicitly what it cannot decide and must hand to judgment `skills/eval/skills/eval/SKILL.md:174`
-- references/cases.md — what makes a generated eval case real instead of decorative, and why a case that passes on arrival is refused `skills/eval/skills/eval/SKILL.md:175`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/eval/skills/eval/SKILL.md:179`
+- scripts/eval.js — the CLI: contract, trace, probe, report, case `skills/eval/skills/eval/SKILL.md:186`
+- scripts/lib/contract.mjs — clause extraction — the rubric, lifted from committed files `skills/eval/skills/eval/SKILL.md:187`
+- scripts/lib/trace.mjs — a session JSONL turned into citable events, redacted `skills/eval/skills/eval/SKILL.md:188`
+- scripts/lib/probes.mjs — the eight probes, and the citation rule they all obey `skills/eval/skills/eval/SKILL.md:189`
+- scripts/lib/report.mjs — findings beside the coverage gap, never without it `skills/eval/skills/eval/SKILL.md:190`
+- scripts/lib/cases.mjs — a finding turned into a test, kept only if observed red `skills/eval/skills/eval/SKILL.md:191`
+- references/rubric.md — where a clause comes from, what makes it citable, and which committed files are contract versus commentary `skills/eval/skills/eval/SKILL.md:192`
+- references/probes.md — the deterministic probe catalogue — what each probe decides, and explicitly what it cannot decide and must hand to judgment `skills/eval/skills/eval/SKILL.md:193`
+- references/cases.md — what makes a generated eval case real instead of decorative, and why a case that passes on arrival is refused `skills/eval/skills/eval/SKILL.md:194`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/eval/skills/eval/SKILL.md:198`
 - Deterministic: extract every committed clause with a stable id and a source anchor — node scripts/eval.js contract --skill <name> `skills/eval/skills/eval/skill-invariants.json:41`
 - Deterministic: normalize a session transcript into anchored, citable events — node scripts/eval.js trace --run <file> `skills/eval/skills/eval/skill-invariants.json:45`
 - Deterministic: decide the mechanically checkable violations and resolve every citation — node scripts/eval.js probe --skill <name> --run <file> `skills/eval/skills/eval/skill-invariants.json:49`
@@ -75,13 +75,13 @@
 - Never keep an eval case that passed on arrival — A case never observed failing could be asserting nothing at all. Generating cases automatically is the fastest known way to manufacture a folder of de… `skills/eval/skills/eval/skill-invariants.json:24`
 - Never grade from a summary — Grading an account of a run instead of the run is how a grader starts hallucinating politely. The transcript is on disk; there is never a reason to accept a retelling of… `skills/eval/skills/eval/skill-invariants.json:29`
 - Never weaken a probe to remove a finding — The cheapest way to make a report look good is to stop it detecting things. Narrowing what a probe decides is legitimate; deleting the finding leaves the de… `skills/eval/skills/eval/skill-invariants.json:34`
-- **Never assert what it did not observe: every finding must cite one exact transcript event and one exact contract clause, and a generated eval case is kept only if it is run and observed to fail agai… `skills/eval/skills/eval/SKILL.md:148`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/eval/skills/eval/SKILL.md:149`
-- **Never present a finding count without its coverage gap.** The two numbers are one fact and splitting them misleads by construction. `skills/eval/skills/eval/SKILL.md:151`
-- **Never weaken a probe to remove a finding.** If a probe fires wrongly, the probe is too broad — narrow what it decides and widen its cannot. Deleting the finding leaves the defect and loses the evid… `skills/eval/skills/eval/SKILL.md:153`
-- **Never keep an eval case that passed on arrival.** It has never been observed failing, so it is decoration with a filename. `skills/eval/skills/eval/SKILL.md:156`
-- **Never grade a skill against anything but its own committed contract.** Not your taste, not another skill's rules, not what the contract should have said. `skills/eval/skills/eval/SKILL.md:158`
-- **Never grade from a summary.** Not the user's account of the run, not your `skills/eval/skills/eval/SKILL.md:25`
-- **Never report a finding count as a verdict on a run.** 0 findings means the `skills/eval/skills/eval/SKILL.md:28`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/eval/skills/eval/SKILL.md:149`
-- **Never present a finding count without its coverage gap.** The two numbers `skills/eval/skills/eval/SKILL.md:151`
+- **Never assert what it did not observe: every finding must cite one exact transcript event and one exact contract clause, and a generated eval case is kept only if it is run and observed to fail agai… `skills/eval/skills/eval/SKILL.md:167`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/eval/skills/eval/SKILL.md:168`
+- **Never present a finding count without its coverage gap.** The two numbers are one fact and splitting them misleads by construction. `skills/eval/skills/eval/SKILL.md:170`
+- **Never weaken a probe to remove a finding.** If a probe fires wrongly, the probe is too broad — narrow what it decides and widen its cannot. Deleting the finding leaves the defect and loses the evid… `skills/eval/skills/eval/SKILL.md:172`
+- **Never keep an eval case that passed on arrival.** It has never been observed failing, so it is decoration with a filename. `skills/eval/skills/eval/SKILL.md:175`
+- **Never grade a skill against anything but its own committed contract.** Not your taste, not another skill's rules, not what the contract should have said. `skills/eval/skills/eval/SKILL.md:177`
+- **Never grade from a summary.** Not the user's account of the run, not your `skills/eval/skills/eval/SKILL.md:38`
+- **Never report a finding count as a verdict on a run.** 0 findings means the `skills/eval/skills/eval/SKILL.md:41`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/eval/skills/eval/SKILL.md:168`
+- **Never present a finding count without its coverage gap.** The two numbers `skills/eval/skills/eval/SKILL.md:170`

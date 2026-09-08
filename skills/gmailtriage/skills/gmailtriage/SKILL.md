@@ -5,6 +5,19 @@ user_invocable: true
 version: 0.7.0
 ---
 
+## Codex runtime
+
+When running in Codex, invoke this skill as `$gmailtriage`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
 
 You are running the **gmailtriage** skill.

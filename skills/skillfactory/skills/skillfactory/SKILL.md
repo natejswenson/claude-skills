@@ -5,6 +5,25 @@ user_invocable: true
 version: 0.4.0
 ---
 
+## Codex runtime
+
+When creating a plugin in this repository, run `python3 tools/sync_codex.py`
+after scaffolding and version changes, then `python3 tools/sync_codex.py --check`.
+This creates the Codex manifest and catalog entry alongside the existing release
+metadata. For a different repository, use its Codex plugin conventions or the
+available plugin-creator skill; this repo's scaffold alone creates Claude metadata.
+
+When running in Codex, invoke this skill as `$skillfactory`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # /skillfactory — skills that are finished, not just written
 
 You are running the **skillfactory** skill. It turns an idea into a skill that is
