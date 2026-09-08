@@ -18,7 +18,7 @@ import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
-  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixItems, fixerModel, headOf,
+  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixDiff, fixItems, fixerModel, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
@@ -1141,16 +1141,22 @@ async function cmdReviewBrief(args) {
     prHead = prIdentity(run, lane, offline).headRefOid;
   }
   const diffText = laneDiff(tree, lane.base);
-  const { round, plan, lines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, anotherRound: args.anotherRound });
+  // Round 2+ reviews the fix: the delta since the last round's head sizes the
+  // fleet and is what the finders read first. Round 1 has no previous head.
+  const last = currentRound(lane);
+  const deltaText = last?.registered ? fixDiff(tree, last.head, head) : null;
+  const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
-  print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Finders', 'Verifiers (max)'],
-    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), String(plan.finders), String(plan.maxVerifiers)]]);
+  print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
+    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
   print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
-  const prior = openFindings(lane);
-  if (prior.length > 0) console.log(`\n${prior.length} finding(s) still open from earlier rounds will be re-judged this round.`);
+  const majors = openMajors(lane).length;
+  const rest = openFindings(lane).length - majors;
+  if (majors > 0) console.log(`\n${majors} major(s) still open from earlier rounds will be re-judged this round.`);
+  if (rest > 0) console.log(`${rest} open nit/pre-existing finding(s) are not re-verified after round 1 — still open by construction.`);
   printDispatch(briefs, 'finders');
   console.log(`Then: \`issueflow review-verify --lane ${lane.slug}\` once every candidates file has landed.`);
 }
@@ -1163,10 +1169,11 @@ async function cmdReviewVerify(args) {
   if (!entry || entry.registered) throw new RunError(`no open review round on ${lane.slug} — \`issueflow review-brief\` starts one`);
   if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
-  const { batches, prior, fresh, auto } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
-  print(['Lane', 'Round', 'Candidates', 'Prior re-judged', 'Prior unchanged', 'Verifiers', 'Not examined'],
-    [[lane.slug, String(entry.round), String(fresh.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
-  if (auto.length > 0) console.log(`\n${auto.length} prior nit/pre-existing finding(s) sit in files the fix did not touch — still open by construction, not sent to a verifier.`);
+  const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
+  print(['Lane', 'Round', 'Candidates', 'Unverified nits', 'Prior majors', 'Prior nits', 'Verifiers', 'Not examined'],
+    [[lane.slug, String(entry.round), String(fresh.length), String(unverified.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
+  if (unverified.length > 0) console.log(`\n${unverified.length} candidate(s) the finders proposed as nits are recorded and not verified — after round 1 a nit is neither posted nor fixed.`);
+  if (auto.length > 0) console.log(`${auto.length} prior nit/pre-existing finding(s) are not sent to a verifier${autoFixed.length > 0 ? `; ${autoFixed.length} the fixer reported fixed will close on its word` : ''}.`);
   if (batches.length === 0) {
     console.log('\nNothing to verify: no candidates and no prior open findings. Register the round to record a clean pass:');
     console.log(`  issueflow review-register --lane ${lane.slug}`);
@@ -1194,10 +1201,20 @@ async function cmdReviewRegister(args) {
   const record = registerRound(dir, run, lane, entry.round, { tree });
   const t = record.transitions;
   console.log(`Round ${record.round} of ${MAX_REVIEW_ROUNDS} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
-    `${record.counts.majors} major open, ${record.counts.nits} nit, ${record.counts.preExisting} pre-existing`);
+    `${record.counts.majors} major open, ${record.counts.nits} nit, ${record.counts.preExisting} pre-existing` +
+    `${(entry.unverifiedNits?.length ?? 0) > 0 ? `, ${entry.unverifiedNits.length} proposed nit(s) unverified` : ''}`);
   if (record.round > 1) console.log(`Transitions: ${t.fixed.length} fixed, ${t.stillOpen.length} still open, ${t.withdrawn.length} withdrawn, ${t.new.length} new, ${t.suppressed.length} suppressed, ${t.dropped.length} refuted`);
-  const rows = record.findings.map((f) => [f.severity, `${f.file}:${f.line}`, truncate(f.short_summary, 60), f.status === 'open' ? (f.firstRound === record.round ? 'new' : 'still open') : f.status, f.inline ? 'inline' : 'body']);
+  // The table the orchestrator pastes: what blocks, and what moved this round.
+  // Every nit is in the review body and registered.json; printing eighty of
+  // them here put ten kilobytes into the orchestrator's context per round.
+  const status = (f) => (f.status === 'open' ? (f.firstRound === record.round ? 'new' : 'still open') : f.status);
+  const shown = record.round === 1
+    ? record.findings
+    : record.findings.filter((f) => f.severity === 'major' || f.status !== 'open' || t.notes.includes(f.id));
+  const rows = shown.map((f) => [f.severity, `${f.file}:${f.line}`, truncate(f.short_summary, 60), status(f), f.inline ? 'inline' : 'body']);
   if (rows.length > 0) { console.log(''); print(['Severity', 'Where', 'Finding', 'Status', 'Posts'], rows); }
+  const hidden = record.findings.length - shown.length;
+  if (hidden > 0) console.log(`\n${hidden} open nit/pre-existing finding(s) not listed — in the review body and registered.json.`);
   console.log(`\nNot examined (${record.notExamined.length}):`);
   for (const item of record.notExamined) console.log(`  - ${truncate(item, 110)}`);
   const offline = isOffline(args);
