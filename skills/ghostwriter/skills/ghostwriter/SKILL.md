@@ -80,6 +80,16 @@ label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
 `ghostwriter · visual`, or `ghostwriter · publish`. Under it, show only the result
 that advances the run and the one decision currently needed.
 
+- **Selectable controls first.** Whenever the client exposes a question tool with
+  selectable responses, use it for every menu, approval, and format choice. Do not make
+  the user type a number that the UI can present as a button. If selectable controls are
+  unavailable, use one compact Markdown table with `Choice` and `What you get` columns,
+  followed by one short reply instruction. Never render the same choices once in prose
+  and again in a dialog.
+- **Tables for comparison, prose for conclusions.** When the user must compare three or
+  more ideas, formats, outcomes, or candidates, use a compact table or the selection
+  tool's option previews. Keep each preview to the hook/result, the angle, and the signal;
+  do not turn choices into mini-essays. Status updates remain one sentence.
 - **Never forward raw command output, file contents, stack traces, or shell commands.**
   Parse tool results privately and translate them into one short status line or a
   compact table with named columns. A failure is one plain-language line with its
@@ -190,11 +200,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    ideas."** Never go back to asking one question per lane: that forced paging past unrelated
    cards even after the user had already picked, which is exactly backwards. Rules of the
    question:
-   - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
-     hook (the post's first ~2 lines as they'd actually read), the suggested angle in one
-     sentence, and a source-freshness line prefixed with its lane (e.g. `Trending · HN 612 pts /
-     340 comments · Jul 18`, `Radar · Jul 17 · anthropic.com`). A user should be able to pick on
-     the preview alone.
+   - **Every idea option carries a compact `preview`** (target 3 lines, hard cap ~5 so the pane
+     never clips): the working hook, the suggested angle, and one source-freshness line prefixed
+     with its lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`,
+     `Radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview alone.
    - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
      or dismiss.** The auto "Other" on the question takes a typed topic directly (same
      short-circuit as step 1).
@@ -427,11 +436,13 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    recommend another image, and say why.** During reach recovery, cap generated images and cards
    together at roughly 1 in 4 posts.
 
-   Give every option a preview of what **this** post would get: the Codex card option names its
-   exact headline and the diagram, ledger, duel, or figure that supplements the post; the Claude card option sketches its
-   actual PRESS components; the carousel names its slide strip; the screenshot names the exact
-   artifact; text-only shows the opening above the fold. Only after the pick do you build it;
-   never render a form the user didn't choose.
+   Give every option a concise preview of what **this** post would get: the Codex card option
+   names its exact headline, proof-bearing hero, and (for architecture/flow) the repository
+   evidence that will ground it; the Claude card option sketches its actual PRESS components;
+   the carousel names its slide strip; the screenshot names the exact artifact; text-only shows
+   the opening above the fold. Use selectable responses when available; otherwise use one compact
+   comparison table. Only after the pick do you build it; never render a form the user didn't
+   choose.
    **If the post is about the user's own agent, CLI, or code** — any visual that would show
    its output — settle the output source in the
    SAME single question, via the option descriptions: you capture it live (run their CLI /
