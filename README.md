@@ -8,7 +8,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
-A monorepo of self-contained, independently-released [Claude Code](https://claude.com/claude-code) productivity skills.
+A monorepo of self-contained, independently-released productivity skills for Codex and Claude Code.
 
 Each skill under `skills/` is versioned, tested, and released **on its own cadence** — consolidated into one repo for convenience, with the same independence as separate repos. Namespaced release tags (`<skill>-vX.Y.Z`) and path-filtered CI mean a change to one skill only tests and releases that skill.
 
@@ -39,7 +39,31 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
-## Install
+## Install in Codex
+
+From this checkout, register the marketplace and install the plugins you want:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add devlog@claude-skills
+codex plugin add github-stats@claude-skills
+```
+
+All 20 plugins are available; substitute any name from the table. In Codex,
+invoke skills with `$devlog`, `$github-stats`, etc. The table's slash invocations
+are for Claude Code. Start a new Codex session after installing.
+
+This uses the local checkout, so it works before these changes are published.
+After publication, `codex plugin marketplace add natejswenson/claude-skills`
+can install the Git marketplace instead.
+
+Existing personal configuration under `~/.claude/` is reused by the scripts.
+Installing a plugin does not install Node/Python dependencies, authenticate
+external accounts, or copy Claude's MCP connections into Codex. Each plugin's
+README lists its setup requirements. See [Codex migration notes](docs/codex-migration.md)
+for session support, external judges, and maintenance commands.
+
+## Install in Claude Code
 
 This repo is a self-hosted Claude Code plugin marketplace — add it once, then install whichever skills you want:
 
@@ -68,6 +92,15 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
+
+## Maintaining both runtimes
+
+Claude Code and Codex are both supported. They share skill files and release
+versions, with separate plugin manifests and marketplace catalogs. After changing
+release metadata, run `python3 tools/sync_codex.py`, then
+`python3 tools/check_compatibility.py`. The marketplace CI job checks both formats
+on every pull request. New Claude-specific plugin components require a deliberate
+Codex adapter; the generator refuses to silently copy unsupported fields.
 
 <details>
 <summary><strong>Manual install (symlink fallback)</strong></summary>
@@ -115,6 +148,8 @@ Full step-by-step process: [`CLAUDE.md`](CLAUDE.md). Always invoke shipflow pinn
 
 | Path | Purpose |
 |---|---|
+| `.agents/plugins/marketplace.json` | Generated Codex marketplace catalog |
+| `skills/<name>/.codex-plugin/plugin.json` | Generated Codex plugin manifest |
 | `.claude-plugin/marketplace.json` | Marketplace manifest listing every skill as a plugin |
 | `skills/<name>/` | Plugin root — one self-contained skill, history preserved via git subtree |
 | `skills/<name>/.claude-plugin/plugin.json` | Per-skill plugin manifest (name/version/description) |

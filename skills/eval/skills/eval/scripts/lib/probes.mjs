@@ -31,7 +31,8 @@ const mostSpecific = (clauses) =>
       (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   )[0];
 
-const bash = (events) => events.filter((e) => e.kind === 'tool-use' && e.name === 'Bash');
+const bash = (events) => events.filter((e) => e.kind === 'tool-use' &&
+  (e.name === 'Bash' || /(^|[._])exec_command$/.test(e.name)));
 const said = (events) => events.filter((e) => e.kind === 'assistant');
 const tool = (events, name) => events.filter((e) => e.kind === 'tool-use' && e.name === name);
 const ranAny = (events, re) => bash(events).some((e) => re.test(e.command ?? ''));

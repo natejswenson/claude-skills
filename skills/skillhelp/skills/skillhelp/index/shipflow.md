@@ -10,12 +10,12 @@
 
 - [gh](https://cli.github.com/), authenticated with admin rights on the target repo — branch protection cannot be read or written without them. `skills/shipflow/README.md:64`
 - A GitHub repo. Deletion rulesets need GitHub Pro or a public repo; on a private free-tier repo that call returns 403 and shipflow reports it rather than pretending it applied. `skills/shipflow/README.md:66`
-- **This whole section is a mandatory interactive interview, not a narrate-and-proceed pass.** Steps 2–4 below must end with the agent presenting a plain-language summary of what was detected and what'… `skills/shipflow/skills/shipflow/SKILL.md:39`
-- 1. **Detect.** Run: `skills/shipflow/skills/shipflow/SKILL.md:41`
-- (Use whatever branch names the user has, or main/dev as a starting guess — you'll confirm them next.) This prints a RepoState plus a protectionOwnerClassification of "external", "shipflow", or "ambig… `skills/shipflow/skills/shipflow/SKILL.md:45`
-- 2. **Resolve workflowPattern before anything else** — a github-flow repo never asks about a dev branch name at all, so this has to happen before step 3 below. Classify rankedPatterns per these rules:… `skills/shipflow/skills/shipflow/SKILL.md:47`
-- **Confident:** state what was detected and why (the top entry's evidence array) — *"I detected this repo is using **<pattern-id>** because: <evidence bullets>. I'll set workflowPattern to this — conf… `skills/shipflow/skills/shipflow/SKILL.md:48`
-- **Ambiguous or greenfield:** present all 3 patterns and ask the user to choose. Do not silently pick one: `skills/shipflow/skills/shipflow/SKILL.md:49`
+- **This whole section is a mandatory interactive interview, not a narrate-and-proceed pass.** Steps 2–4 below must end with the agent presenting a plain-language summary of what was detected and what'… `skills/shipflow/skills/shipflow/SKILL.md:52`
+- 1. **Detect.** Run: `skills/shipflow/skills/shipflow/SKILL.md:54`
+- (Use whatever branch names the user has, or main/dev as a starting guess — you'll confirm them next.) This prints a RepoState plus a protectionOwnerClassification of "external", "shipflow", or "ambig… `skills/shipflow/skills/shipflow/SKILL.md:58`
+- 2. **Resolve workflowPattern before anything else** — a github-flow repo never asks about a dev branch name at all, so this has to happen before step 3 below. Classify rankedPatterns per these rules:… `skills/shipflow/skills/shipflow/SKILL.md:60`
+- **Confident:** state what was detected and why (the top entry's evidence array) — *"I detected this repo is using **<pattern-id>** because: <evidence bullets>. I'll set workflowPattern to this — conf… `skills/shipflow/skills/shipflow/SKILL.md:61`
+- **Ambiguous or greenfield:** present all 3 patterns and ask the user to choose. Do not silently pick one: `skills/shipflow/skills/shipflow/SKILL.md:62`
 - Requires Node >=18 (package.json engines). `skills/shipflow/skills/shipflow/package.json:39`
 
 ## Usage
@@ -43,16 +43,16 @@
 - release-dispatch --repo <path> --pr <n> --workflow-file <f>... --ref <ref> — Dispatch each changed skill's release workflow; clear the label on success `skills/shipflow/README.md:105`
 - rename-default-branch --repo <path> --branch <old> --to <new> — One-time bootstrap: rename a repo's default branch `skills/shipflow/README.md:106`
 - Every command prints JSON to stdout. `skills/shipflow/README.md:108`
-- npx -y @natjswenson/shipflow@latest detect --repo <path> --main main --dev dev `skills/shipflow/skills/shipflow/SKILL.md:43`
-- npx -y @natjswenson/shipflow@latest rename-default-branch --repo <path> --branch <old-default> --to main `skills/shipflow/skills/shipflow/SKILL.md:60`
-- npx -y @natjswenson/shipflow@latest plan --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:103`
-- npx -y @natjswenson/shipflow@latest apply --repo <path> --dry-run `skills/shipflow/skills/shipflow/SKILL.md:109`
-- npx -y @natjswenson/shipflow@latest apply --repo <path> --expect-state-hash <hash-from-step-8> `skills/shipflow/skills/shipflow/SKILL.md:114`
-- npx -y @natjswenson/shipflow@latest releases --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:130`
-- npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main `skills/shipflow/skills/shipflow/SKILL.md:138`
-- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:159`
-- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:189`
-- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:200`
+- npx -y @natjswenson/shipflow@latest detect --repo <path> --main main --dev dev `skills/shipflow/skills/shipflow/SKILL.md:56`
+- npx -y @natjswenson/shipflow@latest rename-default-branch --repo <path> --branch <old-default> --to main `skills/shipflow/skills/shipflow/SKILL.md:73`
+- npx -y @natjswenson/shipflow@latest plan --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:116`
+- npx -y @natjswenson/shipflow@latest apply --repo <path> --dry-run `skills/shipflow/skills/shipflow/SKILL.md:122`
+- npx -y @natjswenson/shipflow@latest apply --repo <path> --expect-state-hash <hash-from-step-8> `skills/shipflow/skills/shipflow/SKILL.md:127`
+- npx -y @natjswenson/shipflow@latest releases --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:143`
+- npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main `skills/shipflow/skills/shipflow/SKILL.md:151`
+- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:172`
+- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:202`
+- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:213`
 - npx -y @natjswenson/shipflow@latest detect --repo . --main main --dev dev `skills/shipflow/README.md:43`
 - npm run audit — npm audit --audit-level=moderate `skills/shipflow/skills/shipflow/package.json:44`
 

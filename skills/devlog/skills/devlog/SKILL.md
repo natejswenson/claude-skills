@@ -4,6 +4,19 @@ description: Turn each new version release (git tag) into a polished, researched
 user_invocable: true
 ---
 
+## Codex runtime
+
+When running in Codex, invoke this skill as `$devlog`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # /devlog — Release How-To Generator
 
 You turn each **new version release** (a semver git tag) in the user's projects into a

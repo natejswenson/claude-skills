@@ -1,9 +1,22 @@
 ---
 name: appletv
-description: Interact with and control the Apple TVs on the local network from the Mac you are on — scan for them, pair with one, and drive it: play, pause, skip, turn on or off, open an app or a deep link, type into the on-screen keyboard, navigate the menu, set the volume, and say what is playing — reading the device's state back after every command. Use when the user says "appletv", "control my apple tv", "connect to my apple tv", "find my apple tvs", "pair with the apple tv", "pause the apple tv", "turn off the tv", "what's playing on the apple tv", "open netflix on the living room tv", "skip the intro", "type stranger things into the tv", or wants to drive an Apple TV without picking up the remote. Built on pyatv over the Companion and AirPlay protocols.
+description: "Interact with and control the Apple TVs on the local network from the Mac you are on — scan for them, pair with one, and drive it: play, pause, skip, turn on or off, open an app or a deep link, type into the on-screen keyboard, navigate the menu, set the volume, and say what is playing — reading the device's state back after every command. Use when the user says \"appletv\", \"control my apple tv\", \"connect to my apple tv\", \"find my apple tvs\", \"pair with the apple tv\", \"pause the apple tv\", \"turn off the tv\", \"what's playing on the apple tv\", \"open netflix on the living room tv\", \"skip the intro\", \"type stranger things into the tv\", or wants to drive an Apple TV without picking up the remote. Built on pyatv over the Companion and AirPlay protocols."
 user_invocable: true
 version: 0.1.1
 ---
+
+## Codex runtime
+
+When running in Codex, invoke this skill as `$appletv`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
 
 # /appletv — control the Apple TVs on your network from chat
 

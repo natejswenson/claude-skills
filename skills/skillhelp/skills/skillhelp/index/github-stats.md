@@ -11,9 +11,9 @@
 
 - [gh](https://cli.github.com/), authenticated (gh auth login). The skill uses your existing auth; there is no separate token to manage. `skills/github-stats/README.md:61`
 - [jq](https://jqlang.github.io/jq/) for JSON aggregation. `skills/github-stats/README.md:63`
-- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:19`
-- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:21`
-- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:23`
+- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:32`
+- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:34`
+- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:36`
 
 ## Usage
 
