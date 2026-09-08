@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.19.0
+version: 0.20.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -24,6 +24,13 @@ available question tool or a concise chat question; wait for answers that gate
 action. Use Codex's delegation tools for required subagents when available;
 otherwise disclose that independent execution is unavailable. Discover connected
 apps by capability rather than assuming Claude MCP tool names exist.
+
+Codex has a native generated-card path that Claude Code does not. At the visual
+stage, read `references/codex-images.md` and use the built-in image-generation tool
+for an original PRESS card that supplements the post. Do not author an HTML card or fill a
+card template in Codex unless the user explicitly asks for the legacy deterministic
+renderer. If native image generation is unavailable, offer the user a text-only,
+native-screenshot, or explicit legacy-renderer choice; never switch silently.
 
 # LinkedIn Ghostwriter
 
@@ -63,9 +70,28 @@ freshness, directory orientation) in as few, terse tool calls as possible: one c
 existence/content check, not a parade of separate `Bash` calls with printed section headers.
 Skip exploratory commands that don't feed an immediate decision (a bare `pwd`, an `ls` "just to
 look around"). The first thing the user should see is your one-sentence status line, not a
-scroll of raw command output. This doesn't apply to the real research in Generate step 2 (the
-HN check, radar read, `recent_projects.py`) — that work produces content the user actually sees
-reflected in the menu.
+scroll of raw command output. The real research in Generate step 2 still follows this rule: its
+results appear as the idea menu and one provenance line, never as raw collector output.
+
+## Run presentation
+
+The transcript is part of the product. Keep the user oriented with one stable stage
+label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
+`ghostwriter · visual`, or `ghostwriter · publish`. Under it, show only the result
+that advances the run and the one decision currently needed.
+
+- **Never forward raw command output, file contents, stack traces, or shell commands.**
+  Parse tool results privately and translate them into one short status line or a
+  compact table with named columns. A failure is one plain-language line with its
+  recovery action, not the underlying stderr dump.
+- **One screen, one decision.** Keep choices numbered and stable. Once the user picks,
+  remove the menu from the active flow, echo `Locked in: ...`, and advance. Never make
+  them navigate back through lanes or dismiss already-rejected choices.
+- **Paths are actions, not decoration.** Show a path only when the user can open, edit,
+  or publish that artifact. Do not repeat setup state or provenance in later stages.
+- **Narrate only slow gates.** Source checks, image generation, rendering, and publishing
+  get one lowercase progress line when they start and one concise completion line.
+  Quiet bookkeeping stays quiet.
 
 ---
 
@@ -384,37 +410,35 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
    to repeat it next session.
 8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
-   ask a single `AskUserQuestion`: **text-only** / **native screenshot** (a real terminal, chart,
-   or photo the user already has or you can capture live) / **single card** (name the Press hero
-   component you'd compose around) / **carousel** — with your recommendation first, chosen from
-   the post's shape and the outcome history: **text-only or a native screenshot is the default
-   recommendation** (dwell comes from information, and a real artifact reads as a human, not a
-   content pipeline — see `voice/algorithm.md`); a genuine multi-step how-to → **carousel**; a
-   composed Press card **only when the composition itself carries real information** (a real
-   diagram, real output), never as decoration. **Card fatigue check: read the `format` field of
-   the last 3 records in `published.jsonl` — if 2+ of them shipped an image, do not recommend a
-   card, and say why.** The identical Press branding on every post is feed-level repetition (the
-   "automation posting at scale" pattern LinkedIn explicitly targets); while the recovery
-   protocol is in force, cap cards at ~1 in 4 posts — brand consistency is deliberately traded
-   down for reach recovery. **Give every option an ASCII
-   `preview` sketch of what THIS post would get:** the card option sketches the actual proposed
-   Press composition as labeled blocks (masthead / hero / colophon, with this post's real
-   headline and hero named, e.g. `[ DUEL: cron vs launchd ]`); the carousel option sketches the
-   slide strip (`cover → 5 steps → recap → CTA`, using this post's slide titles); the native
-   screenshot option names the specific real artifact it would show (which terminal output,
-   which chart); text-only
-   previews the draft's first ~2 lines above the fold marker. Sketches are text in the question,
-   not builds — authoring still waits for the pick. Only after
-   the pick do you author and render (see **Visuals**); never render a form the user didn't
-   choose. Cards are **composed, not templated**: read `assets/card-language.md`, check
-   `images/card-history.jsonl`, and differ from the last 3 cards on ≥2 variation axes.
+   ask a single `AskUserQuestion`. The options depend on the host:
+   - **Codex:** **generated PRESS card** / **native screenshot** / **text-only** /
+     **carousel** when the post genuinely needs multiple slides. A generated card replaces the
+     old template-filling path; name the card's headline and proof-bearing hero in its preview,
+     not a generic layout. After the pick, follow `references/codex-images.md`.
+   - **Claude Code:** **text-only** / **native screenshot** / **single composed card** /
+     **carousel**, using the local renderer documented under **Claude/local deterministic
+     visuals** below.
+
+   Put the recommendation first, chosen from the post's shape and outcome history. A real
+   terminal, chart, or photo beats a generated approximation; a genuine multi-step how-to can
+   earn a carousel; otherwise Codex should prefer an original generated card when the post has
+   a concrete visual explanation, and text-only when it does not. **Image fatigue check: read the
+   `format` field of the last 3 records in `published.jsonl` — if 2+ shipped an image, do not
+   recommend another image, and say why.** During reach recovery, cap generated images and cards
+   together at roughly 1 in 4 posts.
+
+   Give every option a preview of what **this** post would get: the Codex card option names its
+   exact headline and the diagram, ledger, duel, or figure that supplements the post; the Claude card option sketches its
+   actual PRESS components; the carousel names its slide strip; the screenshot names the exact
+   artifact; text-only shows the opening above the fold. Only after the pick do you build it;
+   never render a form the user didn't choose.
    **If the post is about the user's own agent, CLI, or code** — any visual that would show
-   its output (a hero `term`, `code`, or `claude` card) — settle the output source in the
+   its output — settle the output source in the
    SAME single question, via the option descriptions: you capture it live (run their CLI /
    call their MCP tool from this session), they paste or screenshot a real session, or —
    only if neither is possible — compose from facts already in the draft. One question
-   total, never a second round-trip. See **Real-output cards** below for what to do with
-   the capture.
+   total, never a second round-trip. In Codex, exact output stays a native screenshot; never ask
+   an image model to recreate terminal text or data. In Claude, see **Real-output cards** below.
 
 ### How-to posts (technical, from AI releases)
 
@@ -435,14 +459,17 @@ outcome history put build stories first — but when a release pick happens, thi
   haven't — write the steps generically ("map which jobs call X"), not as a first-person story.
 - **Default visual: text-only, or a carousel when the steps genuinely need slides** (step 8).
   A real how-to earns dwell with its content; a decorative wrapper adds nothing and repeated
-  identical branding across the feed is the pattern LinkedIn suppresses. A single composed
-  Press card is the exception, not the default — only when the composition itself carries
-  information the text can't (a real diagram, real captured output), and only within the
-  ~1-in-4 card cap while the recovery protocol is in force.
+  identical branding across the feed is the pattern LinkedIn suppresses. In Codex, an original
+  generated PRESS card is the exception when it carries a concrete visual explanation; in Claude
+  Code, a single composed Press card is the exception when the composition carries information
+  the text cannot. Both remain inside the shared ~1-in-4 image cap during reach recovery.
 
-### Visuals (optional — diagrams & cards)
+### Claude/local deterministic visuals (optional — diagrams & cards)
 
-Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
+This section is the Claude Code path, or an explicit Codex legacy-renderer choice. Codex's
+default generated-image path is `references/codex-images.md`; do not use the templates below
+merely because they are present. Only when the user opts in. Requires the diagram dependency
+(see README; if `render_image.py`
 reports Playwright/Chromium is missing, point them at the install step and stop).
 
 **Brand guide (per-user).** Styling + byline live in `~/.claude/ghostwriter/assets/diagram.css` —

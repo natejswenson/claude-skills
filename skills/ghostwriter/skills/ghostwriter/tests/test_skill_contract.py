@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+import struct
 from pathlib import Path
 
 import pytest
@@ -57,6 +58,29 @@ def test_referenced_card_templates_exist():
     assert refs, "expected SKILL.md to reference at least one card template"
     missing = [r for r in refs if not (ROOT / "assets" / r).exists()]
     assert not missing, f"SKILL.md references missing card templates: {missing}"
+
+
+def test_codex_image_reference_exists():
+    """The host route must not point installed Codex sessions at a missing guide."""
+    assert "references/codex-images.md" in SKILL_MD
+    assert (ROOT / "references/codex-images.md").is_file()
+
+
+def test_codex_image_seed_manifest_resolves():
+    """Every declared style seed ships with its bitmap and generation receipt."""
+    seed_root = ROOT / "assets/image-seeds"
+    manifest = json.loads((seed_root / "manifest.json").read_text(encoding="utf-8"))
+    assert len(manifest["seeds"]) >= 2
+    for seed in manifest["seeds"]:
+        image = seed_root / seed["file"]
+        receipt = image.with_suffix(".prompt.md")
+        assert image.is_file(), f"missing Codex image seed: {image}"
+        assert image.stat().st_size > 100_000, f"empty/truncated Codex image seed: {image}"
+        payload = image.read_bytes()
+        assert payload[:8] == b"\x89PNG\r\n\x1a\n"
+        width, height = struct.unpack(">II", payload[16:24])
+        assert abs(width / height - 0.8) < 0.01, f"Codex image seed is not 4:5: {image}"
+        assert receipt.is_file(), f"missing Codex image seed receipt: {receipt}"
 
 
 def test_compliance_doc_exists():

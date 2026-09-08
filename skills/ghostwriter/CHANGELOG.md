@@ -4,6 +4,31 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-09-08
+
+### Added
+
+- **Codex-native generated cards.** After text approval, Codex can create an original
+  portrait PRESS card with its built-in image generator. The card must supplement the post
+  with a proof-bearing diagram, comparison, sequence, method, or figure; the result is
+  inspected, opened full-size, saved beside the post, and separately approved.
+- **`references/codex-images.md`.** The host-specific image contract bans template-card
+  filling, invented terminal output, silent CLI/model fallback, and unbounded retry loops. It
+  requires exact-text review, a saved prompt receipt, seed selection, and variation history.
+- **Two forward-tested PRESS seeds.** `system-map` and `source-flow` preserve the brand while
+  giving future generated cards distinct information shapes and composition starting points.
+- **Stable run navigation.** Every session moves through `ideas`, `draft`, `visual`, and
+  `publish` labels with one active decision at a time. Raw command output, file dumps, shell
+  commands, and stack traces stay out of the user-facing transcript.
+
+### Changed
+
+- The visual-choice dialog is host-aware. Codex offers a generated PRESS card, native
+  screenshot, text-only, and carousel where appropriate; Claude Code retains the existing
+  local composed-card and carousel renderer.
+- Image fatigue now covers both generated images and legacy cards, preserving the existing
+  recovery cap instead of swapping one repetitive visual treatment for another.
+
 ## [0.19.0] - 2026-09-01
 
 ### Added

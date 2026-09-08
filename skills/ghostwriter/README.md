@@ -31,13 +31,15 @@ one.
 
 | Path | What it provides |
 |---|---|
-| `skills/ghostwriter/SKILL.md` | The flow Claude follows, and where it must stop and ask. |
+| `skills/ghostwriter/SKILL.md` | The shared Claude/Codex flow, and where it must stop and ask. |
 | `skills/ghostwriter/scripts/extract_posts.py` | Turns your `Shares.csv` export into clean text for voice analysis. |
 | `skills/ghostwriter/scripts/linkedin_auth.py` | One-time OAuth; writes the token and person URN to `.env`. |
 | `skills/ghostwriter/scripts/linkedin_post.py` | Publishes a post (`--dry-run` previews the API payload). |
 | `skills/ghostwriter/scripts/release_radar.sh` | Optional research run that builds a digest of recent developments. |
-| `skills/ghostwriter/scripts/render_image.py` | Optional: renders a Mermaid diagram or a PRESS card to a PNG. |
-| `skills/ghostwriter/assets/` | Card and diagram templates, plus the brand-guide example. |
+| `skills/ghostwriter/references/codex-images.md` | Codex-native generated-card, seed, and approval contract. |
+| `skills/ghostwriter/assets/image-seeds/` | Forward-tested PRESS cards used as style references, with prompt receipts. |
+| `skills/ghostwriter/scripts/render_image.py` | Optional legacy path: locally renders a Mermaid diagram or PRESS card. |
+| `skills/ghostwriter/assets/` | Legacy card/diagram assets plus the shared brand-guide example. |
 | `skills/ghostwriter/voice/*.example.md` | Templates to copy into your own (gitignored) voice files. |
 | [`COMPLIANCE.md`](COMPLIANCE.md) | Why review-then-publish is permanent, against LinkedIn's API Terms. |
 
@@ -127,10 +129,13 @@ The conversational flow is built around the fewest possible round trips:
   "…see more" fold marked, plus a word count and the "save" — the thing a reader
   keeps. You answer with a tap: Publish / Edit / Scrap. After an edit, the re-show
   leads with a one-line `Changed:` summary.
-- **One question settles the visual.** Text-only, a composed PRESS card, or a
-  carousel — each previewed as an ASCII sketch of what *this* post would get,
-  before anything is rendered. Cards showing your own agent or CLI are
-  transcribed from a real captured session, never invented.
+- **One question settles the visual.** In Codex, choose an original generated PRESS
+  card, a native screenshot, text-only, or a carousel when the post needs
+  multiple slides. Claude Code keeps the local composed-card path. Nothing is built before
+  the choice, and every finished visual is shown and approved before publishing.
+- **Clean run navigation.** The transcript stays on one of four stages: ideas, draft,
+  visual, or publish. Raw commands and tool output stay hidden; each screen presents one
+  result and one next decision.
 - **Corrections stick.** Any voice or style feedback is appended to your
   `voice-notes.md` in the same turn, before the redraft, so you never repeat a
   correction in a later session.
@@ -154,12 +159,17 @@ old path otherwise, and the radar dies silently (exit 127 in
 > prohibit *automated posting*, not automated research. A human still picks an
 > item, reviews the draft, and approves it.
 
-## Optional: diagrams and cards
+## Optional: visuals
 
-Attach a visual to any post — off by default. Technical diagrams (Mermaid flows,
-architecture, sequence) or designed PRESS cards. Both render to a high-DPI PNG
-using your own brand guide: copy `assets/diagram.css.example` to
-`assets/diagram.css` (gitignored) and set your byline and palette.
+Codex uses its built-in image generator for original 4:5 PRESS cards, directed by the
+same brand source as the rest of the repo and seeded from approved examples. Each card
+must add a diagram, comparison, sequence, method, or key figure beyond the post body. It
+does not fill a fixed HTML template, and exact terminal output remains a native screenshot.
+
+Claude Code retains the deterministic local path for Mermaid diagrams, composed PRESS
+cards, and carousels. That legacy renderer is also available in Codex only when you choose
+it explicitly. Copy `assets/diagram.css.example` to the personal brand location described
+by the skill, then install its optional dependencies:
 
 ```bash
 python3 -m venv .venv
@@ -167,9 +177,9 @@ python3 -m venv .venv
 .venv/bin/playwright install chromium
 ```
 
-Rendering is fully local — nothing is sent to a third party. Output is
-1200–2400px, sized for the feed, and opens in your image viewer automatically.
-Visuals must not misrepresent facts, and always get alt text.
+The legacy renderer is fully local. Codex-generated cards use Codex's native image
+service. Every output is inspected, shown to you, saved with the post, and given alt text;
+none may misrepresent facts or experience.
 
 ## Security
 
