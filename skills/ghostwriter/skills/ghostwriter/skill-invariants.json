@@ -126,6 +126,54 @@
    "file": "SKILL.md",
    "pattern": "post_outcome\\.py --stats",
    "rationale": "Outcome-driven ranking used to be the model re-reading the raw jsonl and freestyling a conclusion each session; --stats is the computed rollup. Dropping the reference reverts ranking to unauditable vibes."
+  },
+  {
+   "id": "clean-run-output",
+   "file": "SKILL.md",
+   "pattern": "never forward raw command output",
+   "rationale": "The Codex run transcript is part of the product. Forwarding stdout, shell commands, file dumps or stack traces makes the interaction unreadable and exposes machinery the user cannot act on."
+  },
+  {
+   "id": "stable-stage-navigation",
+   "file": "SKILL.md",
+   "pattern": "ghostwriter · ideas[\\s\\S]{0,160}ghostwriter · publish",
+   "rationale": "Four stable stage labels give the user a reliable sense of place while the skill moves through a long multi-gate workflow."
+  },
+  {
+   "id": "codex-generated-image-route",
+   "file": "SKILL.md",
+   "pattern": "generated card replaces the\\s+old template-filling path",
+   "rationale": "Codex has native image generation. Without an explicit host route it falls back to the old HTML card templates and misses the requested generated-card experience."
+  },
+  {
+   "id": "generated-image-no-silent-legacy-fallback",
+   "file": "references/codex-images.md",
+   "pattern": "legacy renderer is never an automatic fallback",
+   "rationale": "A failed native image call must not silently change the visual form the user selected."
+  },
+  {
+   "id": "generated-card-separate-approval",
+   "file": "references/codex-images.md",
+   "pattern": "show the actual image[\\s\\S]{0,160}approve card",
+   "rationale": "The LinkedIn payload must never gain an unseen generated card after the user approved only the text."
+  },
+  {
+   "id": "generated-card-supplements-post",
+   "file": "references/codex-images.md",
+   "pattern": "decorated restatement of the opening line fails",
+   "rationale": "The generated asset is a LinkedIn information card. Abstract art or a decorated copy of the opening line does not add value beside the post."
+  },
+  {
+   "id": "generated-card-prompt-receipt",
+   "file": "references/codex-images.md",
+   "pattern": "save `images/<slug>\\.image\\.json`",
+   "rationale": "Without a saved seed, palette, exact-copy list, and prompt, a successful native generation cannot be reproduced or edited reliably in a later session."
+  },
+  {
+   "id": "generated-card-open-every-candidate",
+   "file": "references/codex-images.md",
+   "pattern": "after every generated or edited candidate, open the PNG",
+   "rationale": "The user explicitly asked to see generated cards full-size; inline thumbnails alone are not an adequate approval view."
   }
  ],
  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
