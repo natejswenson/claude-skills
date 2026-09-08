@@ -4,6 +4,23 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.1] - 2026-09-08
+
+### Changed
+
+- **Selection-first UX keeps Ghostwriter runs crisp.** Menus, approvals, and format
+  choices now use native selectable controls when available, with compact comparison
+  tables as the fallback. Idea previews are capped at five lines and choices are never
+  repeated across chat and dialogs.
+
+### Fixed
+
+- **Generated architecture cards must match the system they depict.** Nodes, edges,
+  containment, and exception paths now require evidence from code, manifests,
+  configuration, tests, or maintained documentation. Every rendered relationship is
+  reconciled against that model before the image is shown, and the entire graph is
+  rechecked after edits.
+
 ## [0.20.0] - 2026-09-08
 
 ### Added
