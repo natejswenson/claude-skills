@@ -1,0 +1,22 @@
+{
+  "name": "issueflow",
+  "version": "0.9.0",
+  "description": "Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus implementation with its own proof, and a review loop of finders, verifiers and a fixer on the pull request until no major remains.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/issueflow",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "issueflow",
+    "shortDescription": "Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus im",
+    "longDescription": "Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus implementation with its own proof, and a review loop of finders, verifiers and a fixer on the pull request until no major remains.",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $issueflow to help me."
+    ]
+  }
+}

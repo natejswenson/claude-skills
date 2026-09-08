@@ -31,13 +31,13 @@
 
 ## Commands
 
-- node scripts/skillfactory.js verify --skill <name> `skills/skillfactory/skills/skillfactory/SKILL.md:41`
-- node scripts/skillfactory.js detect --repo <path> `skills/skillfactory/skills/skillfactory/SKILL.md:87`
-- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:111`
-- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:112`
-- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:137`
-- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:151`
-- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:186`
+- node scripts/skillfactory.js verify --skill <name> `skills/skillfactory/skills/skillfactory/SKILL.md:60`
+- node scripts/skillfactory.js detect --repo <path> `skills/skillfactory/skills/skillfactory/SKILL.md:106`
+- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:130`
+- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:131`
+- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:156`
+- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:170`
+- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:205`
 - npm run audit — npm audit --audit-level=moderate `skills/skillfactory/skills/skillfactory/package.json:41`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillfactory/skills/skillfactory/package.json:43`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillfactory/skills/skillfactory/package.json:42`
@@ -46,19 +46,19 @@
 
 ## Architecture
 
-- scripts/skillfactory.js — the CLI: detect, spec, check-spec, scaffold, freeze, verify `skills/skillfactory/skills/skillfactory/SKILL.md:242`
-- scripts/lib/house.mjs — every registry, read from disk — the question budget `skills/skillfactory/skills/skillfactory/SKILL.md:243`
-- scripts/lib/conform.mjs — the two-tier check list: house, then skillfactory `skills/skillfactory/skills/skillfactory/SKILL.md:244`
-- scripts/lib/readme.mjs — the README house style, as a check `skills/skillfactory/skills/skillfactory/SKILL.md:245`
-- scripts/lib/spec.mjs — the spec contract, graded harder than CI `skills/skillfactory/skills/skillfactory/SKILL.md:246`
-- scripts/lib/scaffold.mjs — the ten-step checklist as one pure plan `skills/skillfactory/skills/skillfactory/SKILL.md:247`
-- scripts/lib/apply.mjs — all-or-nothing application of that plan `skills/skillfactory/skills/skillfactory/SKILL.md:248`
-- scripts/lib/templates.mjs — every byte a new skill starts life with `skills/skillfactory/skills/skillfactory/SKILL.md:249`
-- scripts/lib/freeze.mjs — a real run turned into a reproducible eval `skills/skillfactory/skills/skillfactory/SKILL.md:250`
-- references/anatomy.md — the fixed shape of a generated skill `skills/skillfactory/skills/skillfactory/SKILL.md:251`
-- references/readme.md — the README house style: fixed head, free tail, fixed foot `skills/skillfactory/skills/skillfactory/SKILL.md:252`
-- references/wiring.md — the eight registries, and what breaks when one is missed `skills/skillfactory/skills/skillfactory/SKILL.md:253`
-- skill-invariants.json names what must not silently disappear. The baseline is pinned against a real scaffold run of the repocount demo spec and re-runs it on every test; scripts/tests/conformance.tes… `skills/skillfactory/skills/skillfactory/SKILL.md:258`
+- scripts/skillfactory.js — the CLI: detect, spec, check-spec, scaffold, freeze, verify `skills/skillfactory/skills/skillfactory/SKILL.md:261`
+- scripts/lib/house.mjs — every registry, read from disk — the question budget `skills/skillfactory/skills/skillfactory/SKILL.md:262`
+- scripts/lib/conform.mjs — the two-tier check list: house, then skillfactory `skills/skillfactory/skills/skillfactory/SKILL.md:263`
+- scripts/lib/readme.mjs — the README house style, as a check `skills/skillfactory/skills/skillfactory/SKILL.md:264`
+- scripts/lib/spec.mjs — the spec contract, graded harder than CI `skills/skillfactory/skills/skillfactory/SKILL.md:265`
+- scripts/lib/scaffold.mjs — the ten-step checklist as one pure plan `skills/skillfactory/skills/skillfactory/SKILL.md:266`
+- scripts/lib/apply.mjs — all-or-nothing application of that plan `skills/skillfactory/skills/skillfactory/SKILL.md:267`
+- scripts/lib/templates.mjs — every byte a new skill starts life with `skills/skillfactory/skills/skillfactory/SKILL.md:268`
+- scripts/lib/freeze.mjs — a real run turned into a reproducible eval `skills/skillfactory/skills/skillfactory/SKILL.md:269`
+- references/anatomy.md — the fixed shape of a generated skill `skills/skillfactory/skills/skillfactory/SKILL.md:270`
+- references/readme.md — the README house style: fixed head, free tail, fixed foot `skills/skillfactory/skills/skillfactory/SKILL.md:271`
+- references/wiring.md — the eight registries, and what breaks when one is missed `skills/skillfactory/skills/skillfactory/SKILL.md:272`
+- skill-invariants.json names what must not silently disappear. The baseline is pinned against a real scaffold run of the repocount demo spec and re-runs it on every test; scripts/tests/conformance.tes… `skills/skillfactory/skills/skillfactory/SKILL.md:277`
 - Deterministic: read every registry the house keeps — node scripts/skillfactory.js detect `skills/skillfactory/skills/skillfactory/skill-invariants.json:86`
 - Deterministic: grade a spec before it costs anything — node scripts/skillfactory.js check-spec `skills/skillfactory/skills/skillfactory/skill-invariants.json:90`
 - Deterministic: emit the tree and all eight wiring points — node scripts/skillfactory.js scaffold `skills/skillfactory/skills/skillfactory/skill-invariants.json:94`
@@ -80,4 +80,4 @@
 - an unresolvable anchor aborts before the first byte is written — A half-applied wiring is worse than none, because the half that landed makes the rest look done. ci / shipflow sat un-required from th… `skills/skillfactory/skills/skillfactory/skill-invariants.json:69`
 - only takes effect when an admin runs it — Editing the contexts array in repo-settings.sh changes a file, not GitHub. A skill whose check is written down but never applied goes green on every PR and g… `skills/skillfactory/skills/skillfactory/skill-invariants.json:74`
 - Name the skill after the job, never a metaphor — A name is the only thing a user sees before deciding whether the skill is for them, and a metaphor tells them nothing. This repo shipped three of them… `skills/skillfactory/skills/skillfactory/skill-invariants.json:79`
-- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:224`
+- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:243`

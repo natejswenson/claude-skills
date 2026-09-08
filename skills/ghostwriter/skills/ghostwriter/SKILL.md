@@ -5,6 +5,26 @@ user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
 
+## Codex runtime
+
+The bundled recent-project collector reads Claude history. In Codex, use the
+current repository's git history and projects named by the user when it finds
+nothing; do not interpret absent Claude history as no recent work. Optional
+`claude -p`/Anthropic judge scripts still require their own CLI or API credentials.
+When unavailable, run deterministic checks and review the rubric in this session,
+and report that the external judge was not run. Never claim an external score.
+
+When running in Codex, invoke this skill as `$ghostwriter`. Resolve scripts, assets,
+and references from the directory containing this SKILL.md, regardless of the
+current working directory. Existing `~/.claude/` personal-data paths remain valid
+and are still used by the bundled scripts; they do not require Claude to run.
+Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
+available question tool or a concise chat question; wait for answers that gate
+action. Use Codex's delegation tools for required subagents when available;
+otherwise disclose that independent execution is unavailable. Discover connected
+apps by capability rather than assuming Claude MCP tool names exist.
+
 # LinkedIn Ghostwriter
 
 Draft LinkedIn posts that sound like the user, then publish to their own profile via

@@ -30,14 +30,14 @@
 
 ## Commands
 
-- Command — Returns `skills/skillhelp/skills/skillhelp/SKILL.md:90`
-- skillhelp build — one card per skill — Setup, Usage, Commands, Architecture, Troubleshooting — every fact carrying its file:line, secret-shaped lines refused, plus a manifest hashed on the rendered c… `skills/skillhelp/skills/skillhelp/SKILL.md:92`
-- skillhelp check — re-extracts and byte-compares against the committed cards. Non-zero on would-change, missing, incomplete, ungrounded or orphaned, and prints the one rebuild command `skills/skillhelp/skills/skillhelp/SKILL.md:93`
-- skillhelp ask — grounded facts inline with sources, ranked, stating how many it withheld — or the not-documented block naming every skill and section searched `skills/skillhelp/skills/skillhelp/SKILL.md:94`
-- skillhelp list — the catalogue: skill, version, facts, trigger phrases `skills/skillhelp/skills/skillhelp/SKILL.md:95`
-- node scripts/skillhelp.js ask "how do I set up ghostwriter" `skills/skillhelp/skills/skillhelp/SKILL.md:54`
-- node scripts/skillhelp.js check # what drifted, and why `skills/skillhelp/skills/skillhelp/SKILL.md:76`
-- node scripts/skillhelp.js build # rewrite the cards `skills/skillhelp/skills/skillhelp/SKILL.md:77`
+- Command — Returns `skills/skillhelp/skills/skillhelp/SKILL.md:104`
+- skillhelp build — one card per skill — Setup, Usage, Commands, Architecture, Troubleshooting — every fact carrying its file:line, secret-shaped lines refused, plus a manifest hashed on the rendered c… `skills/skillhelp/skills/skillhelp/SKILL.md:106`
+- skillhelp check — re-extracts and byte-compares against the committed cards. Non-zero on would-change, missing, incomplete, ungrounded or orphaned, and prints the one rebuild command `skills/skillhelp/skills/skillhelp/SKILL.md:107`
+- skillhelp ask — grounded facts inline with sources, ranked, stating how many it withheld — or the not-documented block naming every skill and section searched `skills/skillhelp/skills/skillhelp/SKILL.md:108`
+- skillhelp list — the catalogue: skill, version, facts, trigger phrases `skills/skillhelp/skills/skillhelp/SKILL.md:109`
+- node scripts/skillhelp.js ask "how do I set up ghostwriter" `skills/skillhelp/skills/skillhelp/SKILL.md:68`
+- node scripts/skillhelp.js check # what drifted, and why `skills/skillhelp/skills/skillhelp/SKILL.md:90`
+- node scripts/skillhelp.js build # rewrite the cards `skills/skillhelp/skills/skillhelp/SKILL.md:91`
 - npm run audit — npm audit --audit-level=moderate `skills/skillhelp/skills/skillhelp/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillhelp/skills/skillhelp/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillhelp/skills/skillhelp/package.json:39`
@@ -46,11 +46,11 @@
 
 ## Architecture
 
-- scripts/skillhelp.js — the CLI: build, check, ask, list `skills/skillhelp/skills/skillhelp/SKILL.md:115`
-- references/anatomy.md — the fixed shape of a card — the five sections, what each is extracted from, and the file:line grounding every fact must carry `skills/skillhelp/skills/skillhelp/SKILL.md:116`
-- references/answering.md — how to answer from retrieved facts: citation form, when to relay the not-documented block verbatim, and the refusal to fill a gap with plausible prose `skills/skillhelp/skills/skillhelp/SKILL.md:117`
-- references/extraction.md — which file each section is read out of per stack, why Troubleshooting weights the invariants prose and the non-negotiable rules over changelog lines, the secret-shaped-line… `skills/skillhelp/skills/skillhelp/SKILL.md:118`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/skillhelp/skills/skillhelp/SKILL.md:122`
+- scripts/skillhelp.js — the CLI: build, check, ask, list `skills/skillhelp/skills/skillhelp/SKILL.md:129`
+- references/anatomy.md — the fixed shape of a card — the five sections, what each is extracted from, and the file:line grounding every fact must carry `skills/skillhelp/skills/skillhelp/SKILL.md:130`
+- references/answering.md — how to answer from retrieved facts: citation form, when to relay the not-documented block verbatim, and the refusal to fill a gap with plausible prose `skills/skillhelp/skills/skillhelp/SKILL.md:131`
+- references/extraction.md — which file each section is read out of per stack, why Troubleshooting weights the invariants prose and the non-negotiable rules over changelog lines, the secret-shaped-line… `skills/skillhelp/skills/skillhelp/SKILL.md:132`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/skillhelp/skills/skillhelp/SKILL.md:136`
 - Deterministic: extract the five sections and their file:line sources from every skill's own files, refusing secret-shaped lines — node scripts/skillhelp.js build `skills/skillhelp/skills/skillhelp/skill-invariants.json:26`
 - Deterministic: prove no card would change, no skill is uncovered, and no fact has lost its source — node scripts/skillhelp.js check `skills/skillhelp/skills/skillhelp/skill-invariants.json:30`
 - Deterministic: route a question to grounded facts, or emit the not-documented block naming what was searched — node scripts/skillhelp.js ask `skills/skillhelp/skills/skillhelp/skill-invariants.json:34`
@@ -64,13 +64,13 @@
 - Never answer ungrounded: every fact this skill emits carries — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extr… `skills/skillhelp/skills/skillhelp/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/skillhelp/skills/skillhelp/skill-invariants.json:14`
 - never ask about anything in it — Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like… `skills/skillhelp/skills/skillhelp/skill-invariants.json:19`
-- **Never answer ungrounded: every fact this skill emits carries the file and line it was read from, a fact that loses its source is dropped rather than shown, and a question the cards cannot ground is… `skills/skillhelp/skills/skillhelp/SKILL.md:99`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/skillhelp/skills/skillhelp/SKILL.md:100`
-- **Run the commands and never ask about anything in it** — the catalogue, the versions and the drift verdicts are facts on disk. A confirmation is not a question. `skills/skillhelp/skills/skillhelp/SKILL.md:102`
-- **Never present a section listing as a targeted answer.** How a result was found changes how much it should be trusted. `skills/skillhelp/skills/skillhelp/SKILL.md:105`
-- **Never hand-edit a card.** They are generated; edit the skill, then rebuild. `skills/skillhelp/skills/skillhelp/SKILL.md:107`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/skillhelp/skills/skillhelp/SKILL.md:100`
-- **Never present a section listing as a targeted answer.** How a result was `skills/skillhelp/skills/skillhelp/SKILL.md:105`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/skillhelp/skills/skillhelp/SKILL.md:135`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/skillhelp/skills/skillhelp/SKILL.md:151`
+- **Never answer ungrounded: every fact this skill emits carries the file and line it was read from, a fact that loses its source is dropped rather than shown, and a question the cards cannot ground is… `skills/skillhelp/skills/skillhelp/SKILL.md:113`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/skillhelp/skills/skillhelp/SKILL.md:114`
+- **Run the commands and never ask about anything in it** — the catalogue, the versions and the drift verdicts are facts on disk. A confirmation is not a question. `skills/skillhelp/skills/skillhelp/SKILL.md:116`
+- **Never present a section listing as a targeted answer.** How a result was found changes how much it should be trusted. `skills/skillhelp/skills/skillhelp/SKILL.md:119`
+- **Never hand-edit a card.** They are generated; edit the skill, then rebuild. `skills/skillhelp/skills/skillhelp/SKILL.md:121`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/skillhelp/skills/skillhelp/SKILL.md:114`
+- **Never present a section listing as a targeted answer.** How a result was `skills/skillhelp/skills/skillhelp/SKILL.md:119`
+- **Never print file contents into the conversation.** Not a fetched page, not a `skills/skillhelp/skills/skillhelp/SKILL.md:149`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/skillhelp/skills/skillhelp/SKILL.md:165`
 - Previously fixed: build writes one card per skill with five fixed sections, every fact carrying `skills/skillhelp/CHANGELOG.md:15`

@@ -29,12 +29,12 @@
 
 ## Commands
 
-- Command — Returns `skills/pluginsync/skills/pluginsync/SKILL.md:105`
-- pluginsync check — one row per plugin — Plugin, Installed, Available, Action (ok/update/install/orphan/disabled/error) — plus a warning per shadowing personal skill, and a footer counting what would… `skills/pluginsync/skills/pluginsync/SKILL.md:107`
-- pluginsync apply — the same rows re-read after every write — Plugin, Was, Now, Outcome (installed/updated/stalled/failed) — where stalled means the command exited 0 and the version on disk did not mo… `skills/pluginsync/skills/pluginsync/SKILL.md:108`
-- Both take --json for the structured payload, and --home / --installed-json so the evals can run offline. `skills/pluginsync/skills/pluginsync/SKILL.md:110`
-- node scripts/pluginsync.js check `skills/pluginsync/skills/pluginsync/SKILL.md:62`
-- node scripts/pluginsync.js apply `skills/pluginsync/skills/pluginsync/SKILL.md:91`
+- Command — Returns `skills/pluginsync/skills/pluginsync/SKILL.md:141`
+- pluginsync check — one row per plugin — Plugin, Installed, Available, Action (ok/update/install/orphan/disabled/error) — plus a warning per shadowing personal skill, and a footer counting what would… `skills/pluginsync/skills/pluginsync/SKILL.md:143`
+- pluginsync apply — the same rows re-read after every write — Plugin, Was, Now, Outcome (installed/updated/stalled/failed) — where stalled means the command exited 0 and the version on disk did not mo… `skills/pluginsync/skills/pluginsync/SKILL.md:144`
+- Both take --json for the structured payload, and --home / --installed-json so the evals can run offline. `skills/pluginsync/skills/pluginsync/SKILL.md:146`
+- node scripts/pluginsync.js check `skills/pluginsync/skills/pluginsync/SKILL.md:98`
+- node scripts/pluginsync.js apply `skills/pluginsync/skills/pluginsync/SKILL.md:127`
 - npm run audit — npm audit --audit-level=moderate `skills/pluginsync/skills/pluginsync/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/pluginsync/skills/pluginsync/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/pluginsync/skills/pluginsync/package.json:39`
@@ -43,12 +43,12 @@
 
 ## Architecture
 
-- scripts/pluginsync.js — the CLI: check, apply `skills/pluginsync/skills/pluginsync/SKILL.md:130`
-- scripts/lib/state.mjs — the four readers — and nothing that decides `skills/pluginsync/skills/pluginsync/SKILL.md:131`
-- scripts/lib/report.mjs — classification and rendering; the report shape is frozen `skills/pluginsync/skills/pluginsync/SKILL.md:132`
-- references/anatomy.md — the fixed shape of the report — the column set, the six actions, and the footer contract `skills/pluginsync/skills/pluginsync/SKILL.md:133`
-- references/sources.md — where every fact comes from: known_marketplaces.json, each marketplace.json, each plugin.json, and claude plugin list --json `skills/pluginsync/skills/pluginsync/SKILL.md:134`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/pluginsync/skills/pluginsync/SKILL.md:138`
+- scripts/pluginsync.js — the CLI: check, apply `skills/pluginsync/skills/pluginsync/SKILL.md:166`
+- scripts/lib/state.mjs — the four readers — and nothing that decides `skills/pluginsync/skills/pluginsync/SKILL.md:167`
+- scripts/lib/report.mjs — classification and rendering; the report shape is frozen `skills/pluginsync/skills/pluginsync/SKILL.md:168`
+- references/anatomy.md — the fixed shape of the report — the column set, the six actions, and the footer contract `skills/pluginsync/skills/pluginsync/SKILL.md:169`
+- references/sources.md — where every fact comes from: known_marketplaces.json, each marketplace.json, each plugin.json, and claude plugin list --json `skills/pluginsync/skills/pluginsync/SKILL.md:170`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/pluginsync/skills/pluginsync/SKILL.md:174`
 - Deterministic: resolve every marketplace's install location and each plugin's available version from plugin.json on disk — node scripts/pluginsync.js check --no-fetch `skills/pluginsync/skills/pluginsync/skill-invariants.json:26`
 - Deterministic: diff installed against available and classify each row — node scripts/pluginsync.js check `skills/pluginsync/skills/pluginsync/skill-invariants.json:30`
 - Deterministic: install/update each drifted plugin and read the resulting version back off disk — node scripts/pluginsync.js apply `skills/pluginsync/skills/pluginsync/skill-invariants.json:34`
@@ -61,13 +61,13 @@
 - A plugin is not refreshed until the new version is read back — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extr… `skills/pluginsync/skills/pluginsync/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/pluginsync/skills/pluginsync/skill-invariants.json:14`
 - never ask about anything in it — Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like… `skills/pluginsync/skills/pluginsync/skill-invariants.json:19`
-- **A plugin is not refreshed until the new version is read back off disk, and it is not live until Claude Code restarts — report those as three different states and never collapse them into one.** `skills/pluginsync/skills/pluginsync/SKILL.md:115`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/pluginsync/skills/pluginsync/SKILL.md:116`
-- **Never report a stalled row as updated.** The command exiting 0 is not evidence; the version on disk is the only evidence. `skills/pluginsync/skills/pluginsync/SKILL.md:118`
-- **Never uninstall an orphan without being asked.** A refresh removes nothing. `skills/pluginsync/skills/pluginsync/SKILL.md:120`
-- **An unreadable source is an error row, never a dropped one.** A plugin the tool could not read must never be summarised inside "everything matches". `skills/pluginsync/skills/pluginsync/SKILL.md:121`
-- **Never say a plugin is updated because a command succeeded.** Say it because `skills/pluginsync/skills/pluginsync/SKILL.md:36`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/pluginsync/skills/pluginsync/SKILL.md:116`
-- **Never report a stalled row as updated.** The command exiting 0 is not `skills/pluginsync/skills/pluginsync/SKILL.md:118`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/pluginsync/skills/pluginsync/SKILL.md:151`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/pluginsync/skills/pluginsync/SKILL.md:167`
+- **A plugin is not refreshed until the new version is read back off disk, and it is not live until Claude Code restarts — report those as three different states and never collapse them into one.** `skills/pluginsync/skills/pluginsync/SKILL.md:151`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/pluginsync/skills/pluginsync/SKILL.md:152`
+- **Never report a stalled row as updated.** The command exiting 0 is not evidence; the version on disk is the only evidence. `skills/pluginsync/skills/pluginsync/SKILL.md:154`
+- **Never uninstall an orphan without being asked.** A refresh removes nothing. `skills/pluginsync/skills/pluginsync/SKILL.md:156`
+- **An unreadable source is an error row, never a dropped one.** A plugin the tool could not read must never be summarised inside "everything matches". `skills/pluginsync/skills/pluginsync/SKILL.md:157`
+- **Never say a plugin is updated because a command succeeded.** Say it because `skills/pluginsync/skills/pluginsync/SKILL.md:72`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/pluginsync/skills/pluginsync/SKILL.md:152`
+- **Never report a stalled row as updated.** The command exiting 0 is not `skills/pluginsync/skills/pluginsync/SKILL.md:154`
+- **Never print file contents into the conversation.** Not a fetched page, not a `skills/pluginsync/skills/pluginsync/SKILL.md:187`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/pluginsync/skills/pluginsync/SKILL.md:203`

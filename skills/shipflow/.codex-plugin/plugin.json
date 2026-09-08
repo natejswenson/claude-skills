@@ -1,0 +1,22 @@
+{
+  "name": "shipflow",
+  "version": "0.6.0",
+  "description": "Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/shipflow",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "shipflow",
+    "shortDescription": "Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo",
+    "longDescription": "Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $shipflow to help me."
+    ]
+  }
+}
