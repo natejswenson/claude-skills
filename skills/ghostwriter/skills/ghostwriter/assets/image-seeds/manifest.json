@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "purpose": "PRESS style references for Codex-generated LinkedIn cards. Seeds control brand and craft, never subject copy or layout.",
+  "seeds": [
+    {
+      "id": "system-map",
+      "file": "press-system-map.png",
+      "use_for": ["one system serving multiple consumers", "shared implementation", "branching architecture"],
+      "hero": "system map",
+      "headline_treatment": "centered stacked",
+      "flow_direction": "top to branching bottom"
+    },
+    {
+      "id": "source-flow",
+      "file": "press-source-flow.png",
+      "use_for": ["source of truth", "generated artifacts", "adapter boundary", "pipeline"],
+      "hero": "source flow over shared foundation",
+      "headline_treatment": "left display with marginal numeral",
+      "flow_direction": "horizontal over vertical foundation"
+    }
+  ]
+}
