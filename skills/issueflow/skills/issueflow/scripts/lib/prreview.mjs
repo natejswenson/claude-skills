@@ -36,6 +36,9 @@ export const MAX_REVIEW_ROUNDS = 4;
 /** What a verified finding may be rated. Only `major` blocks. */
 export const SEVERITIES = ['major', 'nit', 'pre-existing'];
 
+/** What a finder may propose. After round 1 only a proposed major reaches a verifier. */
+export const PROPOSED_SEVERITIES = ['major', 'nit'];
+
 /** How many nits a round may post inline. The rest are counted in the body. */
 export const NIT_CAP = 5;
 
@@ -60,6 +63,8 @@ const VERDICTS_PRIOR = ['fixed', 'still-open', 'withdrawn'];
 // ---------------------------------------------------------------------------
 export const reviewDir = (dir, lane, round) => join(dir, lane.slug, 'review', `r${round}`);
 export const diffPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'diff.patch');
+/** Round 2+: what the last fix changed, with context — the finders' primary read. */
+export const fixPatchPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'fix.patch');
 export const candidatesPath = (dir, lane, round, n) => join(reviewDir(dir, lane, round), `candidates-${n}.json`);
 export const verdictsPath = (dir, lane, round, n) => join(reviewDir(dir, lane, round), `verdicts-${n}.json`);
 export const registeredPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'registered.json');
@@ -116,8 +121,11 @@ export function baseRef(tree, base) {
 /** The lane's whole diff over its base — three-dot, so a moved base does not bleed into it. */
 export const laneDiff = (tree, base) => git(['diff', '--unified=3', `${baseRef(tree, base)}...HEAD`], tree);
 
-/** The diff between two heads — what the last fix touched. */
+/** The diff between two heads — what the last fix touched. No context: the registrar's `touched` rule reads it. */
 export const deltaDiff = (tree, from, to) => git(['diff', '--unified=0', from, to], tree);
+
+/** The same delta with three lines of context — what a round-2+ finder reads first. */
+export const fixDiff = (tree, from, to) => git(['diff', '--unified=3', from, to], tree);
 
 // ---------------------------------------------------------------------------
 // Reading a unified diff. Enough of it to answer two questions: may a
@@ -209,19 +217,25 @@ export function lineCountAt(tree, head, path) {
 // ---------------------------------------------------------------------------
 
 /**
- * How many finders, and which angles each carries. Sized to the diff the way
- * Claude Code's own reviewer sizes its fleet — `clamp(ceil(lines/150), 2, 5)`
- * — with one degrade rule: a change under sixty lines gets one finder
- * carrying every angle and at most two verifiers, because two opus finders
- * on a twenty-line diff is ceremony.
+ * How many finders, and which angles each carries. Round 1 is sized to the
+ * whole diff the way Claude Code's own reviewer sizes its fleet —
+ * `clamp(ceil(lines/150), 2, 5)` — with one degrade rule: a change under
+ * sixty lines gets one finder carrying every angle and at most two verifiers,
+ * because two opus finders on a twenty-line diff is ceremony.
+ *
+ * Round 2+ is sized to the FIX, not the pull request: `clamp(ceil(lines/300),
+ * 1, 3)` finders and at most four verifiers. The two measured local-fitness
+ * runs (#241, #242) spent 83–94% of their tokens in the loop, and most of it
+ * re-reviewing a diff that grew 1286 → 3993 lines with five finders and eight
+ * verifiers every round — rounds whose only job was to check a fix.
  */
-export function fleetPlan(lines, round) {
+export function fleetPlan(lines, round, { ofFix = false } = {}) {
   const angles = round === 1 ? [...CORE_ANGLES, ...CLEANUP_ANGLES] : [...CORE_ANGLES];
   if (lines < SMALL_DIFF_LINES) return { finders: 1, maxVerifiers: 2, angles: [angles] };
-  const finders = Math.min(5, Math.max(2, Math.ceil(lines / 150)));
+  const finders = ofFix ? Math.min(3, Math.max(1, Math.ceil(lines / 300))) : Math.min(5, Math.max(2, Math.ceil(lines / 150)));
   const dealt = Array.from({ length: finders }, () => []);
   angles.forEach((a, i) => dealt[i % finders].push(a));
-  return { finders, maxVerifiers: 8, angles: dealt };
+  return { finders, maxVerifiers: ofFix ? 4 : 8, angles: dealt };
 }
 
 /** Split items into at most `maxBatches` batches of about `per` each. */
@@ -263,11 +277,17 @@ export function validateCandidates(text, finder) {
     // less. A cosmetic length is not a correctness property.
     if (!str(c.short_summary) || c.short_summary.length > SHORT_SUMMARY_CAP) return { error: `${where}.short_summary must be 1–${SHORT_SUMMARY_CAP} characters (aim for 60)` };
     if (!str(c.failure_scenario)) return { error: `${where}.failure_scenario is missing — a candidate with no nameable failure is not a candidate` };
+    // Absent means major: an unrated candidate is verified, never dropped.
+    // That is also what keeps candidates filed before 0.9.0 valid.
+    if (c.proposed_severity !== undefined && !PROPOSED_SEVERITIES.includes(c.proposed_severity)) {
+      return { error: `${where}.proposed_severity must be one of ${PROPOSED_SEVERITIES.join('|')}` };
+    }
     candidates.push({
       id: `c-${finder}-${i + 1}`,
       file: c.file.trim(), line: c.line, side: c.side === 'LEFT' ? 'LEFT' : 'RIGHT',
       category: c.category.trim(), summary: c.summary.trim(), short_summary: c.short_summary.trim(),
       failure_scenario: c.failure_scenario.trim(),
+      proposed_severity: c.proposed_severity ?? 'major',
       introduced_by_diff: c.introduced_by_diff !== false,
       same_as: str(c.same_as) ? c.same_as.trim() : null,
       suggestion: str(c.suggestion) ? c.suggestion : null,
@@ -347,7 +367,7 @@ export const findingId = (lane, f) =>
  * Refuses when the cap is spent, and when the head the loop would review is
  * not the head GitHub has — the caller passes what `gh pr view` reported.
  */
-export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, anotherRound = null, now = () => new Date().toISOString() }) {
+export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, deltaText = null, anotherRound = null, now = () => new Date().toISOString() }) {
   if (!lane.pr) throw new RunError(`cannot review ${lane.slug}: no pull request — ship first`);
   const last = currentRound(lane);
   if (last && !last.registered) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it (or its finders never delivered) before starting another`);
@@ -377,15 +397,23 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
   const files = parseDiff(diffText);
   const lines = changedLines(files);
   if (lines === 0) throw new RunError(`cannot review ${lane.slug}: the diff over ${lane.base} is empty — there is nothing to review`);
-  const plan = fleetPlan(lines, round);
+  // Round 2+ reviews the fix: when the caller hands over what changed since
+  // the previous round's head, the fleet is sized to that, and the finders
+  // read it first. `diff.patch` still holds the whole change — GitHub anchors
+  // a thread on the pull request's hunks, so inline eligibility is measured
+  // against it, never against the fix.
+  const fixLines = deltaText === null ? null : changedLines(parseDiff(deltaText));
+  if (deltaText !== null && fixLines === 0) throw new RunError(`cannot review ${lane.slug}: nothing changed since round ${last?.round ?? '?'} reviewed ${String(last?.head).slice(0, 12)} — there is no fix to review`);
+  const plan = fleetPlan(fixLines ?? lines, round, { ofFix: fixLines !== null });
   mkdirSync(reviewDir(dir, lane, round), { recursive: true });
   writeFileSync(diffPath(dir, lane, round), diffText);
+  if (deltaText !== null) writeFileSync(fixPatchPath(dir, lane, round), deltaText);
   lane.review.rounds.push({
-    round, head, prevHead: last?.head ?? null, lines, finders: plan.finders, maxVerifiers: plan.maxVerifiers,
+    round, head, prevHead: last?.head ?? null, lines, fixLines, finders: plan.finders, maxVerifiers: plan.maxVerifiers,
     angles: plan.angles, verifiers: null, at: { briefed: now() }, registered: null, verdict: null, posted: null, fix: null,
   });
   saveRun(dir, run);
-  return { round, plan, lines, files };
+  return { round, plan, lines, fixLines, files };
 }
 
 /** Every finder's candidates for the round, or the reason one is missing. */
@@ -405,40 +433,56 @@ export function readCandidates(dir, lane, round) {
 }
 
 /**
- * Plan the verifier batches: every deduped candidate, plus EVERY prior open
- * finding as a mandatory item — a finding nobody re-judged is a finding whose
- * status is a guess. Records the batches on the round so `readVerdicts` knows
- * what must come back.
+ * Plan the verifier batches. Round 1: every deduped candidate. Round 2+:
+ * every prior open MAJOR as a mandatory item — a major nobody re-judged is a
+ * major whose status is a guess — plus every candidate a finder proposed as
+ * a major. Records the batches on the round so `readVerdicts` knows what must
+ * come back.
+ *
+ * What is deliberately NOT an item after round 1, and why, measured on the
+ * two local-fitness runs this rewrote (#241, #242):
+ *
+ * - A prior nit or pre-existing finding. Nits do not block, the fixer is not
+ *   asked to touch them, and `ready` tolerates them — so re-ruling them buys
+ *   nothing, and it was most of the verifier bill: round 4 of #242 sent 51
+ *   priors to eight opus verifiers and got 41 "still-open" back. They are
+ *   still open by construction (`autoStillOpen`) — except one the fixer
+ *   reported fixed, which the registrar closes on the fixer's word
+ *   (`autoFixed`); the fixer's word is enough for a finding that never blocked.
+ * - A fresh candidate its finder proposed as a nit. After round 1 no new nit
+ *   posts and none is fixed, yet finders filed 37–57 candidates a round and
+ *   the verifiers rated most of them nits. Recorded on the round as
+ *   `unverifiedNits`, never registered, never posted.
  */
-export function planVerification(dir, run, lane, round, candidates, { tree = null } = {}) {
+// `tree` is accepted for the callers that pass it; nothing here reads the checkout any more.
+export function planVerification(dir, run, lane, round, candidates, _opts = {}) {
   const entry = lane.review.rounds.find((r) => r.round === round);
-  // A prior nit or pre-existing finding whose file is byte-identical to the
-  // head it was filed against cannot have been fixed, moved or refuted by the
-  // fix — it is still open by construction, and sending it to a verifier is
-  // what made round 3 of the first real loop re-judge 47 findings with eight
-  // opus verifiers, most of whom wrote "file unchanged since filing". Majors
-  // are always re-judged: a major is what the round exists to close.
-  const workdir = tree ?? laneTree(dir, run, lane);
+  const lastFix = new Set(lane.review.rounds.find((r) => r.round === round - 1)?.fix?.fixedNits ?? []);
   const auto = [];
+  const autoFixed = [];
   const prior = openFindings(lane).filter((f) => {
-    if (f.severity === 'major' || !f.head || !fileUnchanged(workdir, f.head, entry.head, f.file)) return true;
+    if (f.severity === 'major') return true;
     auto.push(f.id);
+    if (lastFix.has(f.id)) autoFixed.push(f.id);
     return false;
   }).map((f) => ({
     id: f.id, prior: true, file: f.file, line: f.line, side: f.side, severity: f.severity, category: f.category,
     short_summary: f.short_summary, summary: f.summary, failure_scenario: f.failure_scenario,
     dispute: f.dispute ?? null, filedAtHead: f.head,
   }));
-  const fresh = candidates.map((c) => ({ ...c, prior: false }));
+  const unverified = round > 1 ? candidates.filter((c) => c.proposed_severity === 'nit') : [];
+  const fresh = candidates.filter((c) => !unverified.includes(c)).map((c) => ({ ...c, prior: false }));
   const items = [...prior, ...fresh];
   const batches = batchItems(items, { per: 3, maxBatches: entry.maxVerifiers });
   entry.verifiers = batches.length;
   entry.candidateIds = fresh.map((c) => c.id);
   entry.priorIds = prior.map((p) => p.id);
-  entry.autoStillOpen = auto;
+  entry.autoStillOpen = auto.filter((id) => !autoFixed.includes(id));
+  entry.autoFixed = autoFixed;
+  entry.unverifiedNits = unverified.map(({ id, file, line, category, short_summary }) => ({ id, file, line, category, short_summary }));
   entry.candidates = fresh;
   saveRun(dir, run);
-  return { batches, prior, fresh, auto };
+  return { batches, prior, fresh, auto, autoFixed, unverified };
 }
 
 /** Every verifier's verdicts for the round, keyed by item id; refuses a missing batch or an unruled item. */
@@ -495,14 +539,28 @@ export function registerRound(dir, run, lane, round, { tree, now = () => new Dat
 
   const transitions = { fixed: [], stillOpen: [], withdrawn: [], new: [], notes: [], suppressed: [], dropped: [] };
 
-  // Findings in files the fix never touched: still open by construction.
+  // Prior nits and pre-existing findings: not re-verified after round 1.
+  // Still open by construction, unless the fixer reported one fixed — then it
+  // closes on the fixer's word, since it never blocked. A verdict outranks
+  // the fixer's word, so an id that is also a verifier item is left to the
+  // verdict loop below.
+  const ruled = new Set(entry.priorIds ?? []);
   for (const id of entry.autoStillOpen ?? []) {
     const f = lane.review.findings.find((x) => x.id === id);
-    if (!f || f.status !== 'open') continue;
+    if (!f || f.status !== 'open' || ruled.has(id)) continue;
     f.lastRound = round;
-    f.history = [...(f.history ?? []), { round, verdict: 'still-open', quote: `${f.file} unchanged since ${String(f.head).slice(0, 12)}`, note: 'auto: file byte-identical to the filing head' }];
+    f.history = [...(f.history ?? []), { round, verdict: 'still-open', quote: `${f.file}:${f.line} as filed at ${String(f.head).slice(0, 12)}`, note: 'auto: nits are not re-verified after round 1' }];
     f.stillOpenRounds = (f.stillOpenRounds ?? 0) + 1;
     transitions.stillOpen.push(id);
+  }
+  for (const id of entry.autoFixed ?? []) {
+    const f = lane.review.findings.find((x) => x.id === id);
+    if (!f || f.status !== 'open' || ruled.has(id)) continue;
+    f.lastRound = round;
+    f.history = [...(f.history ?? []), { round, verdict: 'fixed', quote: `${f.file}:${f.line} as filed at ${String(f.head).slice(0, 12)}`, note: 'auto: the fixer reported it fixed; a nit is closed on the fixer\'s word' }];
+    f.status = 'fixed';
+    f.fixedAt = head;
+    transitions.fixed.push(id);
   }
 
   // Prior findings first: their fate this round.
@@ -760,9 +818,16 @@ export function postRound(dir, run, lane, round, { prNodeId, now = () => new Dat
 // The fix report: what the fixer did with each open finding.
 // ---------------------------------------------------------------------------
 
-/** The findings a fix round is asked to address: every open major, plus round-1 nits that carry a complete suggestion. */
+/**
+ * The findings a fix round is asked to address: every open major — plus, in
+ * round 1 only, nits that carry a complete suggestion (a one-line replacement
+ * is cheap on the first pass). From round 2 the fixer touches majors only:
+ * every extra line a fix adds is a line the next round reviews, and the
+ * measured runs grew a 1286-line diff to 3993 over four fix rounds.
+ */
 export function fixItems(lane) {
-  return openFindings(lane).filter((f) => f.severity === 'major' || (f.severity === 'nit' && f.suggestion && !f.suppressed));
+  const first = (currentRound(lane)?.round ?? 1) === 1;
+  return openFindings(lane).filter((f) => f.severity === 'major' || (first && f.severity === 'nit' && f.suggestion && !f.suppressed));
 }
 
 /**
@@ -784,6 +849,7 @@ export function applyFixReport(dir, run, lane, round) {
   const asked = fixItems(lane);
   const replies = [];
   const disputed = [];
+  const fixedNits = [];
   for (const f of asked) {
     const r = data[f.id];
     if (!r || !['fixed', 'not-changed'].includes(r.status)) {
@@ -796,15 +862,21 @@ export function applyFixReport(dir, run, lane, round) {
         if ((f.disputes ?? 0) >= 1) disputed.push(f);
       }
       replies.push({ id: f.id, threadId: f.threadId, body: `Not changed — ${r.note.trim()}` });
-    } else {
+    } else if (f.severity === 'major') {
       replies.push({ id: f.id, threadId: f.threadId, body: `Addressed${str(r.note) ? ` — ${r.note.trim()}` : ''}; the next round verifies it.` });
+    } else {
+      // A nit never blocked; nobody re-verifies it. The next round's registrar
+      // closes it on this word and resolves its thread. Recorded on the round,
+      // not the finding: a finding's shape is what the frozen golden pins.
+      fixedNits.push(f.id);
+      replies.push({ id: f.id, threadId: f.threadId, body: `Addressed${str(r.note) ? ` — ${r.note.trim()}` : ''}; taken as fixed (a nit is not re-verified).` });
     }
   }
   // Merge, never replace: `briefed` and `model` were recorded when the fixer
   // was briefed, and losing them made `next` re-brief a fixer whose fix was
   // already pushed — a stale dispatch printed on every round of the first
   // real loop.
-  entry.fix = { ...(entry.fix ?? {}), reported: true, fixed: replies.filter((r) => r.body.startsWith('Addressed')).length, notChanged: replies.filter((r) => r.body.startsWith('Not changed')).length };
+  entry.fix = { ...(entry.fix ?? {}), reported: true, fixed: replies.filter((r) => r.body.startsWith('Addressed')).length, notChanged: replies.filter((r) => r.body.startsWith('Not changed')).length, fixedNits };
   saveRun(dir, run);
   if (disputed.length > 0) {
     throw new HandBack(
@@ -900,11 +972,12 @@ export function ruleFinding(dir, run, lane, { id, ruling, note, head = null, now
 /** Everything a round table needs, one row per round. */
 export const roundRows = (lane) =>
   (lane.review?.rounds ?? []).map((r) => [
-    String(r.round), r.head.slice(0, 12), String(r.lines), String(r.finders), String(r.verifiers ?? '—'),
+    String(r.round), r.head.slice(0, 12), String(r.lines), r.fixLines == null ? '—' : String(r.fixLines), String(r.finders), String(r.verifiers ?? '—'),
     r.registered ? `${r.counts.majors} major, ${r.counts.nits} nit` : '—', r.verdict ?? 'open',
   ]);
 
-export const ROUND_COLUMNS = ['Round', 'Head', 'Lines', 'Finders', 'Verifiers', 'Open', 'Verdict'];
+/** `Fix Δ` is the lines the last fix changed — the growth the loop is paying to re-review. */
+export const ROUND_COLUMNS = ['Round', 'Head', 'Lines', 'Fix Δ', 'Finders', 'Verifiers', 'Open', 'Verdict'];
 
 /** Is `parentBranch` already an ancestor of the lane's HEAD? False means the lane below moved under it. */
 export function stackedOn(tree, laneBranch, parentBranch) {

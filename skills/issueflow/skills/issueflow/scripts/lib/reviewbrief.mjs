@@ -13,7 +13,7 @@ import { PLAN_STAGE } from './stages.mjs';
 import { SHARED_DIR, evidencePath, findStep, laneTree } from './run.mjs';
 import {
   FINDER_MODEL, MAX_REVIEW_ROUNDS, NIT_CAP, VERIFIER_MODEL, candidatesPath, diffPath, finderBriefPath, fixBriefPath,
-  fixReportPath, verdictsPath, verifierBriefPath,
+  fixPatchPath, fixReportPath, verdictsPath, verifierBriefPath,
 } from './prreview.mjs';
 
 const METHOD_PATH = new URL('../../references/review-method.md', import.meta.url);
@@ -47,24 +47,38 @@ function issueBlock(issue) {
   return lines.join('\n');
 }
 
+/** True when the round has a fix to review rather than the whole change. */
+const fixRound = (entry) => entry.round > 1 && entry.fixLines != null;
+
 function changeBlock(dir, run, lane, entry, tree) {
-  return [
-    '## The change under review',
-    '',
-    bar(['Field', 'Value'], [
-      ['pull request', `${run.repo.owner}/${run.repo.name}#${lane.pr.number}`],
-      ['branch → base', `\`${lane.branch}\` → \`${lane.base}\``],
-      ['head', entry.head],
-      ['changed lines', String(entry.lines)],
-      ['work item', run.split ? `${lane.slug} — ${lane.title}` : 'the whole issue'],
-      ['checkout', tree],
-    ]),
-    '',
-    `The diff is at \`${diffPath(dir, lane, entry.round)}\` — the whole change over its base, three lines`,
-    'of context per hunk, at the head above. Read it first. Then read the enclosing functions in the',
-    'checkout named above, which is on that head; grep it for callers. The pull request page is not',
-    'your source — the diff file and the checkout are.',
-  ].join('\n');
+  const rows = [
+    ['pull request', `${run.repo.owner}/${run.repo.name}#${lane.pr.number}`],
+    ['branch → base', `\`${lane.branch}\` → \`${lane.base}\``],
+    ['head', entry.head],
+    ['changed lines', String(entry.lines)],
+  ];
+  if (fixRound(entry)) rows.push(['previous head', entry.prevHead], ['lines the fix changed', String(entry.fixLines)]);
+  rows.push(['work item', run.split ? `${lane.slug} — ${lane.title}` : 'the whole issue'], ['checkout', tree]);
+  const out = [fixRound(entry) ? '## The fix under review' : '## The change under review', '', bar(['Field', 'Value'], rows), ''];
+  if (fixRound(entry)) {
+    out.push(
+      `Round ${entry.round - 1} reviewed \`${String(entry.prevHead).slice(0, 12)}\`; a fixer then changed the work. What it`,
+      `changed is at \`${fixPatchPath(dir, lane, entry.round)}\` — the diff from that head to the head above, three lines of`,
+      'context per hunk. **Read it first, and read all of it.** The whole change over its base is at',
+      `\`${diffPath(dir, lane, entry.round)}\`; it is reference, for callers and for what the plan promised —`,
+      `round 1 already reviewed it line by line, and this round does not. Then read the enclosing`,
+      'functions in the checkout named above, which is on that head; grep it for callers. The pull',
+      'request page is not your source — the patch files and the checkout are.',
+    );
+  } else {
+    out.push(
+      `The diff is at \`${diffPath(dir, lane, entry.round)}\` — the whole change over its base, three lines`,
+      'of context per hunk, at the head above. Read it first. Then read the enclosing functions in the',
+      'checkout named above, which is on that head; grep it for callers. The pull request page is not',
+      'your source — the diff file and the checkout are.',
+    );
+  }
+  return out.join('\n');
 }
 
 function intentBlock(dir, run) {
@@ -104,17 +118,34 @@ function guidanceBlock(run, files) {
   return out.join('\n');
 }
 
+/**
+ * The open majors, in full — they are what the round exists to close, and
+ * what a finder must not re-file. Open nits are a count: nobody re-verifies,
+ * posts or fixes one after round 1, so listing eighty of them (round 4 of the
+ * measured #242 run) taught the finders nothing and cost every one of them
+ * seven kilobytes of context.
+ */
 function priorBlock(prior) {
   if (prior.length === 0) return null;
-  return [
+  const majors = prior.filter((f) => f.severity === 'major');
+  const rest = prior.length - majors.length;
+  const out = [
     '## Already open — hunt gaps, not repeats',
     '',
-    'These findings are already filed and will be re-judged by the verifiers this round. Do not',
+    'These majors are already filed and will be re-judged by the verifiers this round. Do not',
     'file them again. If you find the same defect in a second place, file it and set `same_as`',
     'to the id below it duplicates.',
     '',
-    bar(['Id', 'Where', 'Severity', 'Finding'], prior.map((f) => [`\`${f.id}\``, `\`${f.file}:${f.line}\``, f.severity, f.short_summary])),
-  ].join('\n');
+  ];
+  if (majors.length > 0) out.push(bar(['Id', 'Where', 'Finding'], majors.map((f) => [`\`${f.id}\``, `\`${f.file}:${f.line}\``, f.short_summary])), '');
+  else out.push('_No major is open._', '');
+  if (rest > 0) {
+    out.push(
+      `Plus ${rest} open nit${rest === 1 ? '' : 's'} and pre-existing finding${rest === 1 ? '' : 's'}, not listed: after round 1 a nit is`,
+      'neither re-verified, posted nor fixed, so re-filing one costs nothing and finds nothing.',
+    );
+  }
+  return out.join('\n');
 }
 
 const progressBlock = (path) => [
@@ -149,6 +180,13 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     `You are a **finder** in the review of pull request #${lane.pr.number} on \`${run.repo.owner}/${run.repo.name}\`,`,
     `lane \`${lane.slug}\`. Round ${entry.round} of at most ${MAX_REVIEW_ROUNDS}. Your job is recall: surface every`,
     'candidate defect your angles can reach. A separate verifier decides what is real; you do not.',
+    ...(fixRound(entry) ? [
+      '',
+      'This round reviews a **fix**, not the whole change: hunt what the fix broke, what it left',
+      'unfixed of the majors listed below, and nothing else. A nit you happen to see may be filed',
+      'as `proposed_severity: "nit"`; it is recorded, and it is neither verified, posted nor fixed.',
+      'Do not spend the round on it.',
+    ] : []),
     '',
     ...coldStart,
     '',
@@ -174,8 +212,10 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '',
     'Never edit any file in the checkout, and never post anything to GitHub — a finder that',
     'fixes what it found has destroyed the review it was sent to do, and the round posts once,',
-    'as one review, after the verifiers rule. Never rate severity: say what fails and how, and',
-    'let the verifier rate it. Never drop a candidate because you are only half sure.',
+    'as one review, after the verifiers rule. Say what fails and how, and propose whether it is a',
+    'major (wrong behaviour, data loss, a security hole, a test that does not prove the fix) or a',
+    'nit — the verifier rates what posts, and after round 1 only a proposed major reaches one.',
+    'Never drop a candidate because you are only half sure.',
     '',
     '## Deliver',
     '',
@@ -191,6 +231,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '          "summary": "<one sentence: what is wrong>",',
     '          "short_summary": "<the claim alone, at most 60 characters>",',
     '          "failure_scenario": "<concrete inputs or state → wrong output or crash>",',
+    '          "proposed_severity": "major",        // or "nit": cosmetic, style, cleanup — the verifier decides',
     '          "introduced_by_diff": true,          // false when the defect predates this change',
     '          "suggestion": "<optional: the replacement for that line, only when it fully fixes it>",',
     '          "same_as": "<optional: an already-open f- id this duplicates>"',
@@ -201,8 +242,9 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '',
     '`line` must exist at the head commit — cite the line the defect is on, in the file it is in.',
     'For cleanup angles, `failure_scenario` states the concrete cost (what is duplicated, wasted,',
-    'or harder to maintain) instead of a crash. `notExamined` is required even when empty-handed:',
-    'a clean pass that names nothing it skipped is indistinguishable from an unfinished one.',
+    'or harder to maintain) instead of a crash, and `proposed_severity` is `"nit"`. `notExamined` is',
+    'required even when empty-handed: a clean pass that names nothing it skipped is',
+    'indistinguishable from an unfinished one.',
     '',
     progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`)),
     '',
@@ -237,7 +279,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     '',
     `You are a **verifier** in the review of pull request #${lane.pr.number} on \`${run.repo.owner}/${run.repo.name}\`,`,
     `lane \`${lane.slug}\`. Round ${entry.round} of at most ${MAX_REVIEW_ROUNDS}. Finders have filed candidates; you`,
-    'decide which are real, and you decide what became of the findings still open from earlier',
+    'decide which are real, and you decide what became of the majors still open from earlier',
     'rounds. Nothing you pass is looked at again before it is posted, and nothing you refute is',
     'looked at again at all.',
     '',
@@ -246,7 +288,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     changeBlock(dir, run, lane, entry, tree),
     '',
   ];
-  if (entry.prevHead) {
+  if (entry.prevHead && !fixRound(entry)) {
     out.push(
       `The previous round reviewed \`${entry.prevHead}\`. What the fix changed since then is`,
       `\`git diff ${entry.prevHead} ${entry.head}\` in the checkout — read it before ruling on any prior finding.`,
@@ -259,7 +301,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
   }
   if (prior.length > 0) {
     out.push(
-      `### Prior open findings (${prior.length}) — each needs a ruling`,
+      `### Prior open majors (${prior.length}) — each needs a ruling`,
       '',
       '```json',
       JSON.stringify(prior.map(({ prior: _p, ...f }) => f), null, 2),
