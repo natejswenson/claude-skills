@@ -33,17 +33,20 @@ error, and the stage goes back. A tree with uncommitted work goes back too —
 the pull request is opened from the commits.
 
 **Then the review loop, on the pull request.** The pull request opens as a
-draft. Each round, two to five opus finders — each dealt angles from
-`references/review-method.md`: line-by-line, removed behaviour, cross-file,
-intent against the plan, conventions — file candidates; up to eight opus
-verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED, and rule every
-earlier finding fixed, still open, or withdrawn with a quote at the new head;
-the registrar assigns ids once, decides which lines may carry a thread, and
+draft. Round 1 reviews the change: two to five opus finders — each dealt
+angles from `references/review-method.md`: line-by-line, removed behaviour,
+cross-file, intent against the plan, conventions — file candidates; up to
+eight opus verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
+registrar assigns ids once, decides which lines may carry a thread, and
 applies the convergence rules as code; one GitHub review goes up with a thread
-per finding and a resolve on every fixed one; a fixer addresses every open
-major, commits once, pushes, and says what it did with each. It converges when
-no major is open — nits may remain — and `ready` lifts the draft once CI is
-green. Four rounds is the cap; a fifth is a conversation with you.
+per finding; a fixer addresses every open major, commits once, pushes, and
+says what it did with each. Every later round reviews the fix: one to three
+finders sized to what the fix changed, up to four verifiers ruling on the
+candidates proposed as majors and on every earlier major — fixed, still open,
+or withdrawn with a quote at the new head; a nit is never re-verified — and a
+resolve on every fixed thread. It converges when no major is open — nits may
+remain — and `ready` lifts the draft once CI is green. Four rounds is the cap;
+a fifth is a conversation with you.
 
 **One command drives all of it.** `next` performs every deterministic step it
 can and prints exactly one thing to do: a dispatch with the wait line that

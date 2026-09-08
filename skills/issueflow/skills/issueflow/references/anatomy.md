@@ -21,7 +21,8 @@ lives in the conversation, which is why an interrupted run resumes with
     test-output.txt         the real, unedited suite output: the red run, then the green
     pr-body.md              written at ship
     review/r<k>/            one directory per pull request review round
-      diff.patch            the change under review, at the round's head
+      diff.patch            the whole change over its base, at the round's head — what threads anchor on
+      fix.patch             round 2+: what the last fix changed — what the finders read first
       candidates-<n>.json   what finder n filed
       verdicts-<n>.json     what verifier n ruled
       registered.json       the registrar's record: ids, severities, transitions, verdict
@@ -116,10 +117,13 @@ has been marked over (`run.finished`, written by `finish`).
 once, at the round it was first registered, and every later round addresses
 it by that id — fixed, still-open (with its new line), withdrawn, disputed.
 `lane.review.rounds[]` records each round's head, fleet, transitions,
-counts and verdict, and whether it was posted. The registrar's rules —
-what may post inline, when a nit may post, when a plausible finding is a note,
-what "fixed" requires — are in `scripts/lib/prreview.mjs` and described in
-`references/review-method.md`.
+counts and verdict, and whether it was posted. From round 2 it also records
+`fixLines` (what the last fix changed — the number the fleet was sized to),
+`unverifiedNits` (candidates a finder proposed as nits, recorded and never
+verified) and `autoFixed` (nits the fixer reported fixed, closed on its word).
+The registrar's rules — what may post inline, when a nit may post, when a
+plausible finding is a note, what "fixed" requires — are in
+`scripts/lib/prreview.mjs` and described in `references/review-method.md`.
 
 ## Lanes and branches
 
