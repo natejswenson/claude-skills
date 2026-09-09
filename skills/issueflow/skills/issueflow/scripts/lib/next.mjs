@@ -318,6 +318,15 @@ export function decide(dir, run, ctx = {}) {
     remoteHead: ctx.remoteHead ?? (() => null),
     landings: ctx.landings ?? (() => []),
   };
+  const started = run.createdAt ?? null;
+  if (run.complexity?.budgetSeconds && started) {
+    const elapsed = (Date.parse(c.now()) - Date.parse(started)) / 1000;
+    if (elapsed > run.complexity.budgetSeconds && runState(run) !== 'done') {
+      return stop('exhausted', `${run.complexity.kind} budget expired after ${Math.round(elapsed / 60)} minutes`, {
+        command: 'finish the current artifact or restart with an explicit complexity override',
+      });
+    }
+  }
   const state = runState(run);
   if (state === 'done') return stop('done', 'every lane landed — this run is over');
 
