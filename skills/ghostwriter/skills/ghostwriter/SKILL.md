@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.20.1
+version: 0.21.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -244,8 +244,11 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      absent. No citable signal → the item doesn't go in the lane; fewer real trending items
      beat padded ones. **The angle gate (below) applies hardest here: every scored post ever
      sourced from this lane flopped when it shipped as reaction-to-news.**
-   - **Release radar — current through TODAY, not through the last digest.** Read the newest
-     `research/release-radar-*.md` and the tail of `research/.radar.log`, and state provenance in
+   - **Release radar — current through TODAY, not through the last digest.** Run
+     `python3 scripts/release_radar_runtime.py discover` and read its selected digest and log.
+     A configured Codex radar uses `~/.claude/ghostwriter/radar/data/digests/` and
+     `data/.radar.log`; otherwise discovery selects legacy `research/release-radar-*.md`
+     and `research/.radar.log`. State provenance in
      the board ("Jul 17 radar, job ran clean"). **If the digest is older than today, top the lane
      up**: one quick live search for AI releases since the digest date, so the lane is current
      through the day the user actually runs ghostwriter — label digest items `radar · <date>` and
@@ -256,7 +259,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      already published (check `published.jsonl`). **Radar stale (>4 days) or missing** → say so,
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
      (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
-     re-renders the launchd agent against the repo's current path.
+     preserves an installed Codex backend and durable digest root, copying updated trusted
+     assets from the loaded plugin. First-time Codex setup uses
+     `bash scripts/install_radar.sh --backend codex` and requires Codex authentication
+     plus `~/.claude/ghostwriter/voice/interests.md` (or explicit `--interests <path>`).
    **Build the list fast and honestly.** Gather all four lanes in parallel (the
    `trending.py` sweep, the radar read + top-up, interests, `recent_projects.py`) so the
    question is the first thing the user waits on. **The angle gate:** an idea enters the menu
