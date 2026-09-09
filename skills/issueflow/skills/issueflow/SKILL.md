@@ -99,6 +99,12 @@ finder/verifier/fixer rounds → ready when no major remains and CI is green.
 One pull request per issue is the default. Split only when the approved plan contains
 genuinely reviewable stacked work items.
 
+Before dispatch, issueflow persists a complexity profile from the frozen issue:
+plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
+tests, templates, generated files, manifests, or acceptance criteria use
+`standard` (two rounds, 30 minutes); code and operations use `deep`. Resuming
+does not change the profile; expiry hands the run back with its current artifact.
+
 Review fanout is sized by semantic change load: production behavior counts
 fully, tests are down-weighted, and generated indexes/baselines do not buy
 duplicate finders. Every file remains in the review brief. Sensitive workflow,
