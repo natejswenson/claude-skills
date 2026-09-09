@@ -171,6 +171,8 @@ test('the-real-run: the frozen `next` outputs carry the driver\'s contract at ev
   assert.match(approved, /next: dispatch \(brief\)/);
   for (const name of ['next-1-fresh.txt', 'next-2-plan-delivered.txt', 'next-3-reviewed.txt', 'next-4-approved.txt']) {
     assert.doesNotMatch(frozen(name), /\/(Users|home)\/[a-z]/i, `${name} carries a machine path`);
+    assert.match(frozen(name), /budget: elapsed <ELAPSED>s total; allowance \d+s; remaining <REMAINING>s; active/);
+    if (name !== 'next-3-reviewed.txt') assert.match(frozen(name), /Native agent completion: run next immediately.*fallback wait/);
   }
 });
 
