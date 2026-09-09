@@ -297,7 +297,7 @@ test('the-real-run: the frozen review brief names the artifact under attack and 
   assert.match(brief, /<RUN>\/shared\/investigate\.md/, 'the review brief lost the artifact under review');
   assert.match(brief, /"severity": "critical\|high\|medium\|low"/, 'the finding shape is gone');
   assert.match(brief, /"notExamined"/, 'the coverage-gap field is gone');
-  assert.match(brief, /critical and high block the stage; medium and low are notes/, 'the severity split is gone');
+  assert.match(brief, /Only critical\/high findings with `fixable` disposition block the stage/, 'the disposition gate is gone');
   assert.match(brief, /addressed to `main`/, 'the review brief lost the completion contract');
   assert.match(brief, /raw file line index/, 'the review brief lost the issue body');
   assert.doesNotMatch(brief, /- \[critical\|high\|medium\|low\] <citation>/, 'the 0.6.0 one-line grammar is back');

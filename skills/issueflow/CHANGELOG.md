@@ -5,6 +5,17 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-09-09
+
+### Added
+
+- Red-team findings now declare a disposition so implementation proofs and
+  environment-limited checks do not trigger repeated plan rewrites.
+- Repeated blocking mechanisms are detected and handed back for a decision
+  before the review cap is spent.
+- Scope-changing findings stop for a user decision instead of being
+  auto-rewritten.
+
 ## [0.10.0] - 2026-09-08
 
 ### Added

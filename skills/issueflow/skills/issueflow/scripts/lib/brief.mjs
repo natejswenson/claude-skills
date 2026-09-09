@@ -152,7 +152,8 @@ function feedbackSection(dir, run, step) {
   const rounds = step.stage.review?.rounds ?? [];
   const latest = rounds.at(-1);
   if (!step.stage.review?.feedback || latest?.verdict !== 'blocked') return null;
-  const blocking = (latest.items ?? []).filter((f) => BLOCKING.includes(f.severity));
+  const blocking = (latest.items ?? []).filter((f) => BLOCKING.includes(f.severity) && f.disposition === 'fixable');
+  const deferred = (latest.items ?? []).filter((f) => f.disposition && f.disposition !== 'fixable' && f.disposition !== 'note');
   const notes = (latest.items ?? []).length - blocking.length;
   // A round the user re-opened past the cap carries their direction verbatim —
   // it is the reason this round exists, and the stage must not have to guess it.
@@ -166,10 +167,11 @@ function feedbackSection(dir, run, step) {
     `A red-team review refused your round-${latest.round} artifact. Read`,
     `\`${join(dir, step.stage.review.feedback)}\` first — it is the full review.`,
     '',
-    bar(['Severity', 'Cite', 'Finding'], blocking.map((f) => [f.severity, f.cite, f.text])),
+    bar(['Severity', 'Disposition', 'Cite', 'Finding'], blocking.map((f) => [f.severity, f.disposition, f.cite, f.text])),
+    ...(deferred.length > 0 ? ['', 'The following findings are recorded for implementation or a user decision; do not expand the plan to prove an unavailable capability:', '', bar(['Severity', 'Disposition', 'Cite', 'Finding'], deferred.map((f) => [f.severity, f.disposition, f.cite, f.text]))] : []),
     ...(notes > 0 ? ['', `It also holds ${notes} non-blocking note${notes === 1 ? '' : 's'} — read them, fix what is cheap.`] : []),
     '',
-    'Fix each blocking finding by changing the work, and update your artifact in',
+    'Fix each `fixable` blocking finding by changing the work, and update your artifact in',
     'place. Do not argue with the review inside the artifact, and do not delete',
     'sections to make findings unciteable — the next round re-hunts everything',
     'from scratch.',
@@ -306,10 +308,10 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     '',
     '    {',
     '      "findings": [',
-    '        { "severity": "critical|high|medium|low", "cite": "<citation>", "text": "<one-sentence finding>" }',
+    '        { "severity": "critical|high|medium|low", "disposition": "fixable|implementation-proof|environment-blocked|scope-change|note", "cite": "<citation>", "text": "<one-sentence finding>" }',
     '      ],',
     '      "notExamined": ["<what you did not check, one entry each>"],',
-    '      "verdict": "pass|blocked"',
+    '      "verdict": "pass|blocked|decision"',
     '    }',
     '',
     'The citation must be one of:',
@@ -319,8 +321,11 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     '',
     'A citation that does not resolve refuses your whole review — cite what you can',
     'point at, and put what you cannot prove in `notExamined`. Severity is the gate:',
-    'critical and high block the stage; medium and low are notes. Rate what the',
-    'finding costs if shipped, not how strongly you feel about it.',
+    'Only critical/high findings with `fixable` disposition block the stage. Use',
+    '`implementation-proof` for evidence that belongs after implementation,',
+    '`environment-blocked` for credentials or host capabilities unavailable here,',
+    '`scope-change` when a user must decide, and `note` for everything else. Rate',
+    'what the finding costs if shipped, not how strongly you feel about it.',
     '',
     '## Deliver',
     '',
@@ -329,7 +334,9 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     '`notExamined` names what you did not check — a clean review that examined',
     'everything still says so there, and a review with no findings and an empty',
     '`notExamined` is refused. `verdict` must agree with your own severities: any',
-    'critical or high finding means `blocked`.',
+    'a critical/high `fixable` finding means `blocked`; a critical/high `scope-change`',
+    'finding means `decision`; deferred dispositions do not block the plan. The declared',
+    'verdict must match those rules exactly.',
     '',
     '## While you work',
     '',

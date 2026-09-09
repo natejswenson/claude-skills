@@ -132,12 +132,27 @@ test('decide: a blocked round sends the plan back, waits for the new delivery, t
   writeGood(dir, run, 'investigate'); // redelivered
   a = decide(dir, run);
   assert.deepEqual([a.kind, a.command, a.args], ['run', 'brief', { review: true, stage: 'investigate' }], 'redelivered → round 2');
-  redTeamBlock(dir, run, step);
-  redTeamBlock(dir, run, step);
+  redTeamBlock(dir, run, step, 'the second mechanism is wrong.', 'investigate.md § Approach');
+  redTeamBlock(dir, run, step, 'the third mechanism is wrong.', 'investigate.md § Rejected');
   a = decide(dir, run);
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'exhausted');
   assert.match(a.command, /--another-round/);
+  cleanup();
+});
+
+test('decide: a scope-change finding stops for a user decision instead of auto-rewriting', () => {
+  const { dir, run, cleanup } = freshRun({ auto: true });
+  const step = writeGood(dir, run, 'investigate');
+  markBriefed(dir, run, step, () => at(-120));
+  writeReview(dir, step, {
+    findings: [{ severity: 'critical', disposition: 'scope-change', cite: 'investigate.md § Approach', text: 'the requested behavior expands the issue scope.' }],
+  });
+  registerReview(dir, run, step);
+  const action = decide(dir, run);
+  assert.equal(action.kind, 'stop');
+  assert.equal(action.reason, 'human');
+  assert.match(action.detail, /scope change/);
   cleanup();
 });
 

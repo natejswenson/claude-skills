@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request — one high-capability subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one implementation subagent builds it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.10.0
+version: 0.11.0
 ---
 
 ## Codex runtime
@@ -183,10 +183,14 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
    investigates and plans: root cause, evidence,
    unknowns, approach, rejected alternatives, files, proof, work items.
 2. **Red team.** One high-capability subagent attacks the plan and writes JSON findings;
-   `review` registers them — every citation must resolve, the severities decide
-   the verdict, the verdict binds to the plan's hash. Critical and high block;
-   the plan goes back with the findings, up to three rounds. **In this stage
-   the red team is the gate, and it is a dispatched subagent — never you.**
+   `review` registers them — every citation must resolve, the verdict binds to the
+   plan's hash, and each finding declares a disposition: `fixable`,
+   `implementation-proof`, `environment-blocked`, `scope-change`, or `note`.
+   Only critical/high `fixable` findings block. A scope change stops for a user
+   decision; implementation and environment proof are carried into the later
+   evidence gate. Repeated blocking mechanisms stop early for a directed decision
+   instead of consuming the whole cap. **In this stage the red team is the gate,
+   and it is a dispatched subagent — never you.**
 3. **The human stop** (unless `--auto`): you read the red-teamed plan and
    approve it, or send it back. A plan with work items splits into stacked lanes
    the moment it is approved — and work items are the exception, for a change
@@ -247,7 +251,7 @@ from `ship`, a converged loop from `ready`, a merge from `finish`.
 - **Never edit an artifact to get past the gate.** Send the stage back.
 - **Never claim a result you did not observe.**
 - **In the plan stage the red team is the gate, and it is a dispatched subagent — never you.** A reviewer that shares your context has already been told the conclusion it was sent to attack. The same holds for every finder and verifier on the pull request.
-- **Never weaken a review to clear a finding.** Round 3 is exactly when fixing the reviewer becomes cheaper than fixing the work; the work is what gets fixed. The fixer disputes by saying why, once — it notes the skip rather than arguing with it — and the next verifier rules.
+- **Never weaken a review to clear a finding.** A reviewer must classify the finding's disposition honestly; it may not relabel a fixable defect as an environment blocker to make a round pass. Repeated blocking mechanisms stop for a user decision rather than being rewritten indefinitely. The fixer notes the skip rather than arguing with it, and the next verifier rules.
 - **Never ready a pull request over an open major.** `ready` refuses; so does `next`. Only "no majors open" converges a lane, and only a human decides what happens to a lane the cap stopped.
 - **Never auto-ship over an open blocking finding.** An exhausted plan surfaces its findings and the run stops there.
 - **A round never reviews code GitHub has not received.** `review-brief` refuses when the local head, the remote head and the pull request's head disagree.
