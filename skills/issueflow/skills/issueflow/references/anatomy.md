@@ -37,10 +37,10 @@ checking out a different branch.
 
 ## The two stages
 
-| Stage | Model | Owns | Artifact must contain |
-|---|---|---|---|
-| investigate | opus | the plan: root cause, evidence, unknowns, the approach and what was rejected, the files, the proof, the work items | Root cause, Evidence, Unknowns, Approach, Rejected, Files, Proof |
-| implement | opus | the change, its test seen red then green, its real output, its commits | Changed, Deviations, Command, Two-sided, Result |
+| Stage | Claude | Codex | Owns | Artifact must contain |
+|---|---|---|---|---|
+| investigate | opus | GPT-6 Astra · high · explorer | the plan: root cause, evidence, unknowns, the approach and what was rejected, the files, the proof, the work items | Root cause, Evidence, Unknowns, Approach, Rejected, Files, Proof |
+| implement | opus | GPT-6 Astra · high · worker | the change, its test seen red then green, its real output, its commits | Changed, Deviations, Command, Two-sided, Result |
 
 Two, not four. Until 0.7.0 investigate and design were separate dispatches,
 and so were implement and test. Measured across five real runs, a stage took
@@ -52,7 +52,8 @@ is one document now; the change is one dispatch that owes its own proof.
 decomposing an issue does not mean re-deciding what it is. `implement` is
 about a **change**, so every work item gets its own.
 
-Both run on opus. Investigation is where a wrong answer is cheapest to produce
+Claude runs both on opus; Codex runs both on GPT-6 Astra at high reasoning.
+Investigation is where a wrong answer is cheapest to produce
 and most expensive to discover. Implementation used to run on the faster
 model because it was bounded by an approved document; it moved to opus when
 the pull request review loop arrived, because a review round — finders,

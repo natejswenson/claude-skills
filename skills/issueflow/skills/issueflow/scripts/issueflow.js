@@ -18,7 +18,7 @@ import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
-  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixDiff, fixItems, fixerModel, headOf,
+  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
@@ -37,6 +37,7 @@ import { readTimings } from './lib/timings.mjs';
 import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
+import { assertRuntime, dispatchLabel } from './lib/runtime.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -582,7 +583,14 @@ async function cmdStart(args) {
   const takeOver = Boolean(args.takeOver) || claim.finished;
   const archived = takeOver ? resetRunDir(dir, repo, { force: Boolean(args.takeOver) }) : null;
 
-  const run = createRun({ repo: info, issue, policy, offline: isOffline(args), auto: Boolean(args.auto) });
+  const run = createRun({
+    repo: info,
+    issue,
+    policy,
+    offline: isOffline(args),
+    auto: Boolean(args.auto),
+    runtime: assertRuntime(args.runtime),
+  });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   claimRunDir(dir, run, { takeOver });
@@ -623,6 +631,9 @@ async function cmdStart(args) {
       '\nAuto run: every stage is gated by a red-team review instead of a human.\n' +
         `A stage advances only on a registered pass; ${MAX_ROUNDS} blocked rounds stop the run.`,
     );
+  }
+  if (run.runtime === 'codex') {
+    console.log('\nCodex run: dispatches include native model, reasoning effort and role fields.');
   }
   nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
@@ -673,11 +684,12 @@ async function cmdBrief(args) {
     const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
-    print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
+    if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.reasoning, info.agent]]);
+    else print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
     console.log(`\nIt must write: ${info.artifact}`);
     if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
     console.log(
-      `\nDispatch ONE subagent, model \`${info.model}\`, with exactly this prompt:\n\n` +
+      `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
         `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
     );
     return;
@@ -694,11 +706,15 @@ async function cmdBrief(args) {
     console.log(positionLine(run, ready));
     for (const step of ready) console.log(expectationLine(dir, run, step));
     console.log('');
-    print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+    if (briefed.some((b) => b.reasoning)) {
+      print(['Stage', 'Model', 'Reasoning', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.reasoning, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+    } else {
+      print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+    }
     console.log(
       `\nThese ${briefed.length} stages are independent. Dispatch them as ${briefed.length} subagents in ONE message:\n`,
     );
-    for (const b of briefed) console.log(`  [${b.model}] Read ${b.prompt} and follow it exactly. It is your complete brief.`);
+    for (const b of briefed) console.log(`  [${dispatchLabel(b, { compact: true })}] Read ${b.prompt} and follow it exactly. It is your complete brief.`);
     console.log('');
     return;
   }
@@ -716,14 +732,15 @@ async function cmdBrief(args) {
   console.log(expectationLine(dir, run, step));
   console.log('');
   // Paths stay out of padded cells — see the note in cmdStart.
-  print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
+  if (info.reasoning) print(['Stage', 'Model', 'Reasoning', 'Agent'], [[info.stage, info.model, info.reasoning, info.agent]]);
+  else print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
   console.log(`\nIt must write: ${info.artifact}`);
   if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
   // The brief is handed over as a path, not pasted: it is long, the user has no
   // reason to read it in the transcript, and a subagent can open a file. The
   // file is still the only channel — this is how it is delivered.
   console.log(
-    `\nDispatch ONE subagent, model \`${info.model}\`, with exactly this prompt:\n\n` +
+    `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
       `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
   );
 }
@@ -1113,11 +1130,11 @@ function prIdentity(run, lane, offline) {
 
 function printDispatch(items, kind) {
   if (items.length === 1) {
-    console.log(`\nDispatch ONE subagent, model \`${items[0].model}\`, with exactly this prompt:\n\n  Read ${items[0].prompt} and follow it exactly. It is your complete brief.\n`);
+    console.log(`\nDispatch ONE subagent, ${dispatchLabel(items[0])}, with exactly this prompt:\n\n  Read ${items[0].prompt} and follow it exactly. It is your complete brief.\n`);
     return;
   }
   console.log(`\nThese ${items.length} ${kind} are independent. Dispatch them as ${items.length} subagents in ONE message:\n`);
-  for (const it of items) console.log(`  [${it.model}] Read ${it.prompt} and follow it exactly. It is your complete brief.`);
+  for (const it of items) console.log(`  [${dispatchLabel(it, { compact: true })}] Read ${it.prompt} and follow it exactly. It is your complete brief.`);
   console.log('');
 }
 
@@ -1152,7 +1169,8 @@ async function cmdReviewBrief(args) {
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
     [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
-  print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
+  if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, b.angles.join(', ')]));
+  else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
   const majors = openMajors(lane).length;
   const rest = openFindings(lane).length - majors;
   if (majors > 0) console.log(`\n${majors} major(s) still open from earlier rounds will be re-judged this round.`);
@@ -1181,7 +1199,8 @@ async function cmdReviewVerify(args) {
   }
   const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
   console.log('');
-  print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
+  if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, String(b.items)]));
+  else print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
   printDispatch(briefs, 'verifiers');
   console.log(`Then: \`issueflow review-register --lane ${lane.slug}\` once every verdicts file has landed.`);
 }
@@ -1249,12 +1268,14 @@ async function cmdReviewFixBrief(args) {
   if (entry.verdict === 'converged') throw new RunError(`round ${entry.round} of ${lane.slug} converged — there is nothing to fix; \`issueflow ready\``);
   const items = fixItems(lane);
   const checks = offline ? [] : prChecks(run.repo.path, lane.pr.number).filter((c) => c.bucket === 'fail');
-  const model = fixerModel(lane);
-  const info = writeFixBrief(dir, run, lane, entry, { items, checks, model, issue: loadIssue(dir) });
-  entry.fix = { ...(entry.fix ?? {}), briefed: true, model, items: items.length, redChecks: checks.length };
+  const dispatch = fixerProfile(run, lane);
+  const model = dispatch.model;
+  const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
+  entry.fix = { ...(entry.fix ?? {}), briefed: true, ...dispatch, items: items.length, redChecks: checks.length };
   saveRun(dir, run);
-  print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
-  if (model === 'opus') console.log('\nOpus this round: a major survived the previous fix.');
+  if (dispatch.reasoning) print(['Lane', 'Round', 'Model', 'Reasoning', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, dispatch.reasoning, String(items.length), String(checks.length)]]);
+  else print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
+  if (openMajors(lane).some((f) => f.stillOpenRounds > 0)) console.log(`\n${model} this round: a major survived the previous fix.`);
   printDispatch([info], 'fixers');
   console.log(`Then: \`issueflow review-fix-report --lane ${lane.slug}\` once the fix report has landed.`);
 }
@@ -1472,7 +1493,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
                                                  prints ONE thing to do — a dispatch, a wait, or a stop
   issueflow board  [--repo <path>] [--run-root <path>]
-  issueflow start  --issue <n> [--repo <path>] [--auto] [--take-over]
+  issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--auto] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
@@ -1497,6 +1518,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
 
   --auto               on start: no human stop after the red-teamed plan;
                        on accept: approve on a registered, hash-bound passing review
+  --runtime <host>     on start: persist the dispatch contract for \`claude\` (default)
+                       or \`codex\`; Codex emits native model, reasoning and role fields
   --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --ready              brief EVERY stage whose gate is open, for parallel dispatch

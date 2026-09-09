@@ -6,7 +6,7 @@
 ---
 <!-- <<< press:masthead -->
 
-*Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus implementation with its own proof, and a review loop of finders, verifiers and a fixer on the pull request until no major remains.*
+*Takes one open GitHub issue to a reviewed pull request: a high-capability plan, a red team on the plan, one human stop, an implementation with its own proof, and a review loop of finders, verifiers and a fixer until no major remains — on Claude Code or Codex.*
 
 > **No stage runs on anything but its predecessor's artifact, approved and written to disk — and a stage that was skipped is reported as skipped, never as done.**
 
@@ -17,7 +17,7 @@ hard to trust: the stages run to completion, and the first thing a human sees is
 a diff nobody chose. issueflow inverts that, and since 0.7.0 it does it in the
 place a reviewer actually looks — the pull request.
 
-**The plan is attacked before any code exists.** One opus subagent investigates
+**The plan is attacked before any code exists.** One high-capability subagent investigates
 and plans in a single document: root cause, evidence, unknowns, the approach
 and what was rejected, the files, the proof, the work items. A red-team
 subagent then hunts it — the alternate root cause nobody ruled out, the file
@@ -26,17 +26,17 @@ findings only count once the registrar has checked every citation resolves.
 You read the red-teamed plan once and say yes. (`--auto` makes the registered
 pass the approval instead.)
 
-**The implementation proves itself, mechanically.** One opus subagent per lane
+**The implementation proves itself, mechanically.** One implementation subagent per lane
 makes the change and writes the test, and `accept` reads the whole evidence
 file: no failing run before the passing one, or a red that is only an import
 error, and the stage goes back. A tree with uncommitted work goes back too —
 the pull request is opened from the commits.
 
 **Then the review loop, on the pull request.** The pull request opens as a
-draft. Round 1 reviews the change: two to five opus finders — each dealt
+draft. Round 1 reviews the change: two to five finders — each dealt
 angles from `references/review-method.md`: line-by-line, removed behaviour,
 cross-file, intent against the plan, conventions — file candidates; up to
-eight opus verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
+eight high-capability verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
 registrar assigns ids once, decides which lines may carry a thread, and
 applies the convergence rules as code; one GitHub review goes up with a thread
 per finding; a fixer addresses every open major, commits once, pushes, and
@@ -77,6 +77,13 @@ Ask for it in words — the skill drives the commands:
 
 > **work an issue in this repo**
 
+Use `/issueflow` in Claude Code or `$issueflow` in Codex. The runtime is
+persisted when the run starts: Claude keeps its opus/sonnet dispatches; Codex
+uses GPT-6 Astra for plans, implementations and verification, and
+GPT-5.6 Terra for parallel read-heavy finders and the first bounded fix. Codex
+briefs also carry `reasoning_effort`, native agent roles and `AGENTS.md`
+discovery, and return completion through the subagent's final response.
+
 ```
 | # | Issue                                     | Labels | Comments | Updated    | Detail | Run         |
 |---|-------------------------------------------|--------|----------|------------|--------|-------------|
@@ -110,7 +117,7 @@ Sessions run in parallel safely: one run directory and one worktree per issue,
 run, and a lane is cut from the base as it is now rather than as this checkout
 last happened to fetch it.
 
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
+Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills) or its generated Codex catalog, then ask
 for work matching the triggers below.
 
 ## Triggers

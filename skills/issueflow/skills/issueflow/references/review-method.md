@@ -14,14 +14,14 @@ cleanup angles run in round one only and yield nits only.
 ## The shape of a round
 
 ```
-round 1   finders (2–5, opus, one angle set each, over the whole change) ──▶ candidates
-    ──▶ verifiers (≤8, opus, ≤3 items each) ──▶ verdicts
+round 1   finders (2–5, runtime finder profile, one angle set each, over the whole change) ──▶ candidates
+    ──▶ verifiers (≤8, runtime verifier profile, ≤3 items each) ──▶ verdicts
     ──▶ registrar (code) ──▶ one GitHub review, inline threads
-    ──▶ fixer (sonnet) ──▶ one commit, a push, a fix report
-round 2+  finders (1–3, opus, over the FIX — the diff since the last round's head) ──▶ candidates proposed as major
-    ──▶ verifiers (≤4, opus; every prior MAJOR is a mandatory item; a prior nit is never re-verified) ──▶ verdicts
+    ──▶ fixer (runtime efficient profile) ──▶ one commit, a push, a fix report
+round 2+  finders (1–3, runtime finder profile, over the FIX — the diff since the last round's head) ──▶ candidates proposed as major
+    ──▶ verifiers (≤4, runtime verifier profile; every prior MAJOR is mandatory; a prior nit is never re-verified) ──▶ verdicts
     ──▶ registrar (code) ──▶ one GitHub review, transitions on prior threads
-    ──▶ fixer (sonnet; opus once a major is still-open) on majors only ──▶ one commit, a push, a fix report
+    ──▶ fixer (efficient; strongest profile once a major is still-open) on majors only ──▶ one commit, a push, a fix report
     ──▶ next round, until open majors = 0 (nits may remain) or the cap
 ```
 
