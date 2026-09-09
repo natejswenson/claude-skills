@@ -19,6 +19,8 @@ archive. Autonomous mode never takes over.
 
 ## Plan exhaustion
 
+Time allowance expiry is a separate `budget` stop; it cannot buy review rounds.
+
 After three blocked red-team rounds, show every remaining critical/high finding
 and stop. Never approve or ship over it. The user may change scope or end the
 run; do not manufacture another pass.
@@ -53,6 +55,41 @@ never examines code GitHub has not received.
 A local state transition may have succeeded even when its GitHub checkpoint
 failed. Say plainly that the run is not backed up and stop. Retry the checkpoint
 through the same Issueflow command; never recreate the comment or state by hand.
+
+## Budget expiry
+
+`next` processes delivered artifacts through their existing acceptance and
+registration gates, even after the deadline. It saves newly observed delivery
+metadata and checkpoints before a `budget` stop (exit 4). An unreviewed or
+rejected artifact is preserved without approval. A failed checkpoint means
+incomplete backup: repair the reported failure and retry `next`; approvals
+remain recorded locally. Offline runs save locally and make no network calls.
+
+Budget stops prevent `brief`, `review-brief`, `review-verify`, and
+`review-fix-brief`, including `next`'s send-back after a gate refusal. Finder
+candidates remain intact when verification cannot yet dispatch. In-flight
+workers may finish and their delivered results can still be processed.
+
+Only on explicit user direction, run:
+
+```bash
+node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
+```
+
+Never auto-renew because `next` printed this command. The positive integer
+grants a full allowance from the renewal timestamp, even if the prior deadline
+expired hours ago. The original creation time, complexity, artifacts, evidence,
+commits, stage approvals, checkpoint identity and runtime remain intact; review
+limits stay unchanged. Active or completed runs refuse renewal, as do missing,
+boolean, zero, negative, fractional, nonnumeric, nonfinite, unsafe-integer or
+unrepresentable allowances. Resume appends a renewal and prints the exact
+`next` command; it dispatches nothing. Never edit `run.json` or use takeover as
+budget recovery. Fix disputes, review exhaustion and drift through their own
+gates; a time renewal does not resolve them.
+
+Dispatch/wait output shows total elapsed time since creation, the current
+allowance, remaining seconds and expiry. Native agent completion goes directly
+to `next`; the fallback filesystem wait retains its single stability check.
 
 ## Missing authority
 

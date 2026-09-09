@@ -12,6 +12,27 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Persisted complexity profiles with a fast documentation route, bounded review
   rounds, and a 15-minute budget for wording-only issues.
 
+## [0.11.1] - 2026-09-09
+
+### Fixed
+
+- Process delivered implementation, plan-review, verifier and fixer artifacts
+  through their existing gates before budget expiry blocks new dispatches.
+  Preserve delivery metadata and checkpoints, including on refused gates;
+  report checkpoint failures without rolling back approvals.
+- Guard direct briefing commands and gate send-backs before they mutate state.
+  Keep in-flight workers eligible to complete after expiry.
+- Show elapsed time, current allowance and remaining time in dispatch/wait
+  output. Native completion proceeds directly to `next`; filesystem fallback
+  waiting retains its freshness and stability checks.
+
+### Added
+
+- `resume --run-dir <run> --budget-seconds <positive-integer>` grants a fresh
+  window only on explicit direction. It preserves artifacts, commits, review
+  limits, runtime, gate state and checkpoint identity, validates its input,
+  refuses active/completed runs, and never dispatches work itself.
+
 ## [0.11.0] - 2026-09-08
 
 Issue #274 exposed a 50-minute run for an eight-line production change: six

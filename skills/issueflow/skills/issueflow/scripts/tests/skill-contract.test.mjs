@@ -9,6 +9,23 @@ const SKILL = join(HERE, '..', '..');
 const read = (p) => readFileSync(join(SKILL, p), 'utf8');
 const inv = JSON.parse(read('skill-invariants.json'));
 
+test('budget: help and operator guidance document explicit recovery without changing review limits', () => {
+  for (const file of ['SKILL.md', 'references/operator-stops.md', '../../README.md']) {
+    const text = read(file).replace(/\s+/g, ' ');
+    assert.match(text, /resume --run-dir.*--budget-seconds 1800/, file);
+    assert.match(text, /never auto-renew/i, file);
+    assert.match(text, /review (?:limits|rounds).*unchanged/i, file);
+  }
+});
+
+test('budget: completion guidance sends native completion straight to next with one fallback settle', () => {
+  const dispatch = read('references/dispatch.md').replace(/\s+/g, ' ');
+  assert.match(dispatch, /native.*completion.*next immediately/i);
+  assert.match(dispatch, /fallback.*twenty seconds/i);
+  assert.match(dispatch, /no second.*settle/i);
+  assert.match(read('SKILL.md'), /Do not add a second\s+20-second shell settle/);
+});
+
 test('the always-loaded entrypoint stays within its context budget', () => {
   const md = read('SKILL.md');
   const words = md.trim().split(/\s+/).length;

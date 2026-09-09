@@ -24,6 +24,7 @@ Next: `issueflow accept --auto --stage investigate`
 
 
 next: stop — human
+  budget: elapsed <ELAPSED>s total; allowance 900s; remaining <REMAINING>s; active
   the plan passed its red-team review — read it, then approve or send it back
   plan:    <RUN>/shared/investigate.md
   review:  <RUN>/reviews/investigate-r1.findings.json
