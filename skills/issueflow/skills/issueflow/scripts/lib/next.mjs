@@ -251,13 +251,16 @@ function decideLoop(dir, run, lane, ctx) {
   if (!entry.posted && !run.offline && !ctx.offline) return act('review-post', { lane: lane.slug }, `${lane.slug} round ${entry.round}: registered — posting the review`);
 
   if (entry.verdict === 'converged') {
+    // A CI-only fixer is still a real code change. Once dispatched, finish its
+    // report/push/re-review lifecycle before fresh check state can become
+    // pending or green and accidentally ready an unreviewed head.
+    if (entry.fix?.briefed) return afterFixBrief(dir, run, lane, entry, head, ctx);
     const checks = ctx.checks(lane);
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
     if (red.length > 0) {
       // Converged on findings, red on CI: a fix round for the checks.
-      if (!entry.fix?.briefed) return act('review-fix-brief', { lane: lane.slug }, `${lane.slug}: converged, but ${red.map((c) => c.name).join(', ')} red — briefing a fix`);
-      return afterFixBrief(dir, run, lane, entry, head, ctx);
+      return act('review-fix-brief', { lane: lane.slug }, `${lane.slug}: converged, but ${red.map((c) => c.name).join(', ')} red — briefing a fix`);
     }
     if (pending.length > 0) {
       return {
