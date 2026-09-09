@@ -50,9 +50,9 @@
     },
     {
       "name": "devlog",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "stack": "node",
-      "cardHash": "e06b8ff78de22300",
+      "cardHash": "a26e5f150aa352ca",
       "facts": 61,
       "sections": {
         "setup": 12,
