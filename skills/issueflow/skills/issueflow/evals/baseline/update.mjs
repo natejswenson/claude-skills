@@ -45,7 +45,8 @@ const cli = (args) =>
  * a byte-comparison meaningful instead of a machine-identity check.
  */
 const normalize = (text, runDir) =>
-  text.replaceAll(runDir, '<RUN>').replaceAll(REPO, '<REPO>').replaceAll(SKILL, '<SKILL>');
+  text.replaceAll(runDir, '<RUN>').replaceAll(REPO, '<REPO>').replaceAll(SKILL, '<SKILL>')
+    .replace(/budget: elapsed \d+s total; allowance (\d+)s; remaining \d+s;/g, 'budget: elapsed <ELAPSED>s total; allowance $1s; remaining <REMAINING>s;');
 
 const sha = (text) => createHash('sha256').update(text).digest('hex').slice(0, 16);
 

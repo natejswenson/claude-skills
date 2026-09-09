@@ -216,6 +216,16 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
     ),
   ];
 
+  // Persist renewal history in the remote comment, not only in run.json.
+  if (run.budgetRenewals?.length) {
+    lines.push('', bar(
+      ['Budget renewed at', 'Allowance (seconds)', 'Deadline'],
+      run.budgetRenewals.map((r) => [
+        r.at, r.budgetSeconds, new Date(Date.parse(r.at) + r.budgetSeconds * 1000).toISOString(),
+      ]),
+    ));
+  }
+
   // Conditional like every review-aware rendering: a run with no rounds
   // renders exactly as before reviews existed. Timestamp-free, so the frozen
   // comment's no-wall-clock rule holds here too.

@@ -39,6 +39,7 @@ import {
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
 import { dispatchLabel } from './runtime.mjs';
+import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
@@ -330,15 +331,13 @@ export function decide(dir, run, ctx = {}) {
     remoteHead: ctx.remoteHead ?? (() => null),
     landings: ctx.landings ?? (() => []),
   };
-  const started = run.createdAt ?? null;
-  if (run.complexity?.budgetSeconds && started) {
-    const elapsed = (Date.parse(c.now()) - Date.parse(started)) / 1000;
-    if (elapsed > run.complexity.budgetSeconds && runState(run) !== 'done') {
-      return stop('exhausted', `${run.complexity.kind} budget expired after ${Math.round(elapsed / 60)} minutes`, {
-        command: 'finish the current artifact or restart with an explicit complexity override',
-      });
-    }
-  }
+  const action = decideAction(dir, run, c);
+  const budget = budgetStatus(run, c.now());
+  if (budget?.expired && (action.kind === 'dispatch' || (action.kind === 'run' && DISPATCHES.has(action.command)))) return budgetStop(budget);
+  return budget ? { ...action, budget } : action;
+}
+
+function decideAction(dir, run, c) {
   const state = runState(run);
   if (state === 'done') return stop('done', 'every lane landed — this run is over');
 
@@ -384,6 +383,11 @@ export function renderAction(action, { skillCommand, runDir }) {
   runDir = sh(runDir);
   const then = `then: ${skillCommand} next --run-dir ${runDir}`;
   const lines = [`next: ${action.kind}${action.kind === 'stop' ? ` — ${action.reason}` : ''}`];
+  if (action.budget) {
+    const b = action.budget;
+    lines.push(`  budget: elapsed ${Math.floor(b.elapsedSeconds)}s total; allowance ${b.allowanceSeconds}s; remaining ${Math.ceil(b.remainingSeconds)}s; ${b.expired ? 'expired' : 'active'}`);
+    if (b.expired && action.kind === 'wait') lines.push('  Already dispatched work may finish; its successor dispatch requires explicit resume.');
+  }
   if (action.note) lines.push(`  ${action.note}`);
   if (action.kind === 'dispatch') {
     lines.push('');
@@ -392,9 +396,9 @@ export function renderAction(action, { skillCommand, runDir }) {
       lines.push(`  These ${action.items.length} are independent. Dispatch them as ${action.items.length} subagents in ONE message:`, '');
       for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
     }
-    lines.push('', `wait: ${action.wait}`, then);
+    lines.push('', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
   } else if (action.kind === 'wait') {
-    lines.push(`  ${action.what} is in flight.`, '', `wait: ${action.wait}`, then);
+    lines.push(`  ${action.what} is in flight.`, '', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
   } else if (action.kind === 'stop') {
     lines.push(`  ${action.detail}`);
     if (action.artifact) lines.push(`  plan:    ${action.artifact}`);

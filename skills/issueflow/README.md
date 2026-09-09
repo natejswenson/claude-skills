@@ -140,6 +140,26 @@ Sessions run in parallel safely: one run directory and one worktree per issue,
 run, and a lane is cut from the base as it is now rather than as this checkout
 last happened to fetch it.
 
+If the run's time allowance expires, `next` still processes delivered results
+through their gates and checkpoints them before blocking new worker dispatches.
+A rejected artifact stays intact; expiry also blocks its send-back dispatch.
+An in-flight worker may finish. Dispatch/wait output shows total elapsed time
+since creation, current allowance, remaining time and expiry.
+
+On explicit user direction to extend the budget:
+
+```bash
+node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
+```
+
+Never auto-renew. The command grants 1,800 seconds from resume time, preserves
+artifacts, commits, gates, runtime and checkpoint identity, and prints the next
+command without dispatching work. Review limits stay unchanged. It rejects
+invalid allowances and active or completed runs. A checkpoint failure leaves
+approvals recorded locally and reports incomplete backup; repair it and retry
+`next`. Native agent completion goes straight to `next`; hosts relying on file
+detection use the printed fallback stability wait once.
+
 ## Triggers
 
 - "work an issue"
