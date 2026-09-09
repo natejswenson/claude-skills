@@ -9,8 +9,12 @@
 
 ## Setup
 
-- Node 18+, no dependencies. `skills/press/README.md:79`
-- Nothing else. Every command is offline; propagate is the only one that talks to a network, and only when pointed at another checkout. `skills/press/README.md:80`
+- **Claude Code:** Allow local file and shell tools to inspect and generate registered regions. `skills/press/README.md:100`
+- **Codex:** Use available file and shell tools; Claude app connections are not imported and local brand commands need no connected app. `skills/press/README.md:101`
+- **Personal data:** Brand sources stay in the plugin and consumer repository; no private ~/.claude/press store is required. `skills/press/README.md:102`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/press/README.md:104`
+- Node 18+, no dependencies. `skills/press/README.md:106`
+- Nothing else. Every command is offline; propagate is the only one that talks to a network, and only when pointed at another checkout. `skills/press/README.md:107`
 - Requires Node >=18 (package.json engines). `skills/press/skills/press/package.json:38`
 
 ## Usage
@@ -40,12 +44,12 @@
 - node bin/press.js propagate --repo ../budget --dry-run # is it behind? `skills/press/skills/press/SKILL.md:115`
 - node bin/press.js propagate --repo ../budget # re-emit + bump its pin `skills/press/skills/press/SKILL.md:116`
 - node bin/press.js propagate --repo ../budget --dry-run `skills/press/skills/press/SKILL.md:163`
-- npx -y @natjswenson/press@latest check --repo . # is this repo in sync? `skills/press/README.md:56`
-- npx -y @natjswenson/press@latest emit --repo . # make it so `skills/press/README.md:57`
-- npx -y @natjswenson/press@latest lint theme.css # mechanical brand law `skills/press/README.md:58`
-- npx -y @natjswenson/press@latest doctor # the whole registry `skills/press/README.md:59`
-- npx -y @natjswenson/press@latest tokens --format css `skills/press/README.md:60`
-- npx -y @natjswenson/press@latest emit --target <id> --init `skills/press/README.md:124`
+- npx -y @natjswenson/press@latest check --repo . # is this repo in sync? `skills/press/README.md:77`
+- npx -y @natjswenson/press@latest emit --repo . # make it so `skills/press/README.md:78`
+- npx -y @natjswenson/press@latest lint theme.css # mechanical brand law `skills/press/README.md:79`
+- npx -y @natjswenson/press@latest doctor # the whole registry `skills/press/README.md:80`
+- npx -y @natjswenson/press@latest tokens --format css `skills/press/README.md:81`
+- npx -y @natjswenson/press@latest emit --target <id> --init `skills/press/README.md:151`
 - npm run audit — npm audit --audit-level=moderate `skills/press/skills/press/package.json:43`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/press/skills/press/package.json:45`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/press/skills/press/package.json:44`

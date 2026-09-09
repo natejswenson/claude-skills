@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/brandreport/README.md:57`
+- **Claude Code:** Enable web search and page-fetch tools for source discovery. `skills/brandreport/README.md:75`
+- **Codex:** Enable available web search and page-fetch tools; Claude web-tool connections are not imported. `skills/brandreport/README.md:76`
+- **Personal data:** Both hosts retain fetched sources and reports under ~/.claude/brandreport/<slug>. `skills/brandreport/README.md:77`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/brandreport/README.md:79`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/brandreport/README.md:81`
 - Requires Node >=18 (package.json engines). `skills/brandreport/skills/brandreport/package.json:33`
 
 ## Usage
@@ -24,8 +28,8 @@
 - skills/brandreport/references/discovery.md — How the blind search rounds work: seed queries from the bare name, widening rules, when to stop, and how corroboration is judged and recorded. `skills/brandreport/README.md:26`
 - skills/brandreport/references/report.md — The report's fixed sections — who was found where, the confirmed presence, the unconfirmed same-name residue, and the brand read. `skills/brandreport/README.md:27`
 - skills/brandreport/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/brandreport/README.md:28`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask for work matching the triggers below. `skills/brandreport/README.md:40`
-- "brand report" `skills/brandreport/README.md:45`
+- Claude Code — run in chat: `skills/brandreport/README.md:32`
+- Codex — run in a terminal from the root of this repository checkout: `skills/brandreport/README.md:40`
 
 ## Commands
 

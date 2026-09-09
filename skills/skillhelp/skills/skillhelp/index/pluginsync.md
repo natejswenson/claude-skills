@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/pluginsync/README.md:51`
+- **Claude Code:** Install the claude CLI; the bundled Node reconciler reads and updates Claude marketplaces. `skills/pluginsync/README.md:84`
+- **Codex:** Install the codex CLI and use its plugin commands; the bundled Node reconciler manages Claude installations only. Claude app connections are not imported. `skills/pluginsync/README.md:85`
+- **Personal data:** Claude state remains under ~/.claude/plugins/ and personal skills under ~/.claude/skills/; Codex manages its own plugin state. Neither route migrates personal data. `skills/pluginsync/README.md:86`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/pluginsync/README.md:88`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/pluginsync/README.md:90`
 - Requires Node >=18 (package.json engines). `skills/pluginsync/skills/pluginsync/package.json:33`
 
 ## Usage
@@ -23,9 +27,9 @@
 - skills/pluginsync/references/anatomy.md — The fixed shape of the report — the column set, the six actions, and the footer contract. `skills/pluginsync/README.md:25`
 - skills/pluginsync/references/sources.md — Where every fact comes from: known_marketplaces.json, each marketplace.json, each plugin.json, and claude plugin list --json. `skills/pluginsync/README.md:26`
 - skills/pluginsync/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/pluginsync/README.md:27`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask for work matching the triggers below. `skills/pluginsync/README.md:36`
-- "update my marketplace" `skills/pluginsync/README.md:41`
-- "refresh my skills" `skills/pluginsync/README.md:42`
+- Claude Code — run in chat: `skills/pluginsync/README.md:31`
+- Codex — run in a terminal from the root of this repository checkout: `skills/pluginsync/README.md:39`
+- Start a new Codex session, then invoke in chat: `skills/pluginsync/README.md:46`
 
 ## Commands
 

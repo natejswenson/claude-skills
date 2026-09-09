@@ -98,12 +98,30 @@ ${rows.map(([p, w]) => `| \`${p}\` | ${w} |`).join('\n')}
 
 ## Quick start
 
+Claude Code — run in chat:
+
+\`\`\`text
+/plugin marketplace add ${ORG}/${REPO}
+/plugin install ${spec.name}@${REPO}
+/${spec.name}
+\`\`\`
+
+Codex — run in a terminal from the root of this repository checkout:
+
+\`\`\`bash
+codex plugin marketplace add "$PWD"
+codex plugin add ${spec.name}@${REPO}
+\`\`\`
+
+Start a new Codex session, then invoke in chat:
+
+\`\`\`text
+$${spec.name}
+\`\`\`
+
 \`\`\`bash
 ${spec.commands.map((c) => `${spec.name} ${c.name.padEnd(Math.max(...spec.commands.map((x) => x.name.length)))}   # ${c.does}`).join('\n')}
 \`\`\`
-
-Install from the [${REPO} marketplace](https://github.com/${ORG}/${REPO}), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -111,6 +129,12 @@ ${(triggers.length ? triggers.map((t) => `- "${t}"`) : ['- see the `description:
 - Anything the method in \`SKILL.md\` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Allow the local file and shell tools needed by the bundled commands.
+- **Codex:** Use the same bundled scripts and runtimes; Claude app connections are not imported. Connect any service required by the implemented workflow in Codex separately.
+- **Personal data:** The scaffold adds no private configuration store. If the implementation uses an existing \`~/.claude/\` location, retain it for both hosts and document the exact path here.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 ${spec.stack === 'node' ? '- Node 18+ (the bundled scripts are ESM, no dependencies).' : '- Python 3.12+ (standard library only).'}
 

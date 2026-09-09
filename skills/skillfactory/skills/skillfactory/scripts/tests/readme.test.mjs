@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 
 import { readHouse } from '../lib/house.mjs';
 import { gradeReadme, HEAD, FOOT } from '../lib/readme.mjs';
+import { readme } from '../lib/templates.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..', '..', '..', '..', '..');
@@ -28,7 +29,7 @@ const REPO = join(HERE, '..', '..', '..', '..', '..', '..');
  * every assertion below would then iterate an empty list and report every
  * README as conforming.
  */
-const MIN_CORPUS = 11;
+const MIN_CORPUS = 20;
 
 const readmeOf = (name) => readFileSync(join(REPO, 'skills', name, 'README.md'), 'utf8');
 
@@ -123,3 +124,84 @@ test('the generated region cannot satisfy the contract on the author’s behalf'
   const withoutStand = smuggled.filter((l, i) => !(i > start + 1 && /^\*[^*].*\*$/.test(l))).join('\n');
   assert.ok(ids(withoutStand).includes('standfirst'), 'a line inside the generated region stood in for the author’s');
 });
+
+
+const hostCommands = (name) => [
+  ['dual-host-claude-marketplace', '/plugin marketplace add natejswenson/claude-skills'],
+  ['dual-host-claude-install', `/plugin install ${name}@claude-skills`],
+  ['dual-host-claude-invocation', `/${name}`],
+  ['dual-host-codex-marketplace', 'codex plugin marketplace add "$PWD"'],
+  ['dual-host-codex-install', `codex plugin add ${name}@claude-skills`],
+  ['dual-host-codex-invocation', `$${name}`],
+];
+
+for (const [id, command] of hostCommands(REFERENCE)) {
+  test(`${id}: removing the command is caught in a real README`, () => {
+    const text = readmeOf(REFERENCE);
+    assert.ok(text.includes(`\n${command}\n`), `reference lost ${command}`);
+    assert.ok(gradeReadme(text, REFERENCE).ok, 'the original README must pass');
+    const mutated = text.replace(`\n${command}\n`, '\n');
+    assert.ok(ids(mutated).includes(id), `removing ${command} did not report ${id}`);
+  });
+}
+
+for (const [label, id] of [
+  ['Claude Code', 'dual-host-claude-setup'],
+  ['Codex', 'dual-host-codex-setup'],
+  ['Personal data', 'dual-host-personal-data'],
+]) {
+  for (const [mutation, replacement] of [['removed', ''], ['empty', `- **${label}:**`]]) {
+    test(`${id}: the ${mutation} Gmail requirement is caught`, () => {
+      const text = readmeOf('gmailtriage');
+      const line = text.split('\n').find((l) => l.startsWith(`- **${label}:** `));
+      assert.ok(line, `reference lost ${label}`);
+      assert.ok(gradeReadme(text, 'gmailtriage').ok, 'the original README must pass');
+      assert.ok(ids(text.replace(line, replacement), 'gmailtriage').includes(id), `${label} requirement graded clean`);
+    });
+  }
+}
+
+test('retained personal-data paths cannot silently disappear', () => {
+  const text = readmeOf('ghostwriter');
+  assert.ok(text.includes('~/.claude/ghostwriter/'));
+  assert.ok(gradeReadme(text, 'ghostwriter').ok);
+  assert.ok(ids(text.replaceAll('~/.claude/ghostwriter/', '~/.codex/ghostwriter/'), 'ghostwriter')
+    .includes('dual-host-personal-data-path'), 'renaming the retained credential location graded clean');
+});
+
+test('a migration link is required alongside the host setup notes', () => {
+  const text = readmeOf(REFERENCE);
+  assert.ok(text.includes('../../docs/codex-migration.md'));
+  assert.ok(ids(text.replaceAll('../../docs/codex-migration.md', 'other.md'))
+    .includes('dual-host-migration'), 'removing the host migration guidance graded clean');
+});
+
+for (const [id, command] of hostCommands(REFERENCE).filter(([id]) => !id.endsWith('marketplace'))) {
+  test(`${id}: another skill name cannot satisfy the check`, () => {
+    const text = readmeOf(REFERENCE);
+    const mutated = text.replace(`\n${command}\n`, `\n${command.replaceAll(REFERENCE, `${REFERENCE}-extra`)}\n`);
+    assert.ok(ids(mutated).includes(id), `a prefix match satisfied ${id}`);
+  });
+}
+
+for (const [label, replacement] of [['shell comment', '# $ghfactory'], ['HTML comment', '<!-- $ghfactory -->'], ['prose', '']]) {
+  test(`a ${label} outside Quick start fences cannot satisfy invocation`, () => {
+    const text = readmeOf(REFERENCE);
+    const command = '$ghfactory';
+    const mutated = text.replace(`\n${command}\n`, `\n${replacement}\n`)
+      .replace('## Triggers', `${command}\n\n## Triggers`);
+    assert.ok(ids(mutated).includes('dual-host-codex-invocation'), 'prose or a comment stood in for invocation');
+  });
+}
+
+const demo = JSON.parse(readFileSync(join(HERE, '../../evals/inputs/demo.spec.json'), 'utf8'));
+for (const [id, command] of hostCommands(demo.name)) {
+  test(`the scaffold README emits ${id}`, () => {
+    assert.ok(readme(demo).includes(`\n${command}\n`), `scaffold omitted ${command}`);
+  });
+}
+for (const label of ['Claude Code', 'Codex', 'Personal data']) {
+  test(`the scaffold README emits the ${label} requirement`, () => {
+    assert.ok(readme(demo).includes(`- **${label}:** `), `scaffold omitted ${label} setup`);
+  });
+}

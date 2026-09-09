@@ -214,6 +214,58 @@ export function gradeReadme(text, name) {
     );
   }
 
+  // Host commands must be copyable examples in Quick start, never a mention
+  // elsewhere or bytes supplied by PRESS. Match the whole skill name.
+  const fencedLines = (body, inside) => {
+    let fenced = false;
+    return (body ?? []).join('\n').replace(/<!--[\s\S]*?-->/g, '').split('\n').filter((line) => {
+      if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return false; }
+      return fenced === inside;
+    });
+  };
+  const commands = fencedLines(quickstart, true).map((line) => line.trim());
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hostCommands = [
+    ['claude-marketplace', /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/],
+    ['claude-install', new RegExp(`^/plugin install ${escaped}@claude-skills(?:\\s|$)`)],
+    ['claude-invocation', new RegExp(`^/${escaped}(?:\\s|$)`)],
+    ['codex-marketplace', /^codex plugin marketplace add (?!#)\S+/],
+    ['codex-install', new RegExp(`^codex plugin add ${escaped}@claude-skills(?:\\s|$)`)],
+    ['codex-invocation', new RegExp(`^\\$${escaped}(?:\\s|$)`)],
+  ];
+  for (const [id, pattern] of hostCommands) {
+    if (!commands.some((line) => pattern.test(line))) {
+      problems.push(problem(`dual-host-${id}`, `## Quick start is missing ${id} for ${name}`,
+        'show both hosts’ marketplace, install and invocation commands in fenced blocks; use this skill’s exact name'));
+    }
+  }
+
+  const requirements = fencedLines(bodyOf('Requirements'), false);
+  for (const [label, id] of [['Claude Code', 'claude-setup'], ['Codex', 'codex-setup'], ['Personal data', 'personal-data']]) {
+    const prefix = `- **${label}:** `;
+    if (!requirements.some((line) => line.startsWith(prefix) && line.slice(prefix.length).trim())) {
+      problems.push(problem(`dual-host-${id}`, `## Requirements is missing a ${label} note`,
+        `add a non-empty "${prefix}" note with this skill’s tools, authentication or retained data location`));
+    }
+  }
+  const retained = {
+    brandreport: '~/.claude/brandreport/',
+    devlog: '~/.claude/skills/devlog/',
+    ghostwriter: '~/.claude/ghostwriter/',
+    'ghostwriter-x': '~/.claude/ghostwriter-x/',
+    issueflow: '~/.claude/issueflow/',
+    resume: '~/.claude/resume/',
+  }[name];
+  const personal = requirements.find((line) => line.startsWith('- **Personal data:** ')) ?? '';
+  if (retained && !personal.includes(retained)) {
+    problems.push(problem('dual-host-personal-data-path', `## Requirements omits retained ${retained}`,
+      'document the location the scripts actually use; Codex does not move personal data'));
+  }
+  if (!requirements.some((line) => /\]\(\.\.\/\.\.\/docs\/codex-migration\.md\)/.test(line))) {
+    problems.push(problem('dual-host-migration', '## Requirements omits the Codex migration link',
+      'link ../../docs/codex-migration.md for host tools, connections and retained data paths'));
+  }
+
   return { ok: problems.length === 0, problems };
 }
 

@@ -42,14 +42,32 @@ staleness is invisible to both.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install ghfactory@claude-skills
+/ghfactory
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add ghfactory@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$ghfactory
+```
+
 ```bash
 ghfactory detect --repo .                      # what this repo already tells us
 ghfactory verify .github/workflows/ci.yml      # the ladder, and the rung it reached
 ghfactory resolve actions/checkout@v5          # a ref, resolved to a pinned SHA
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills),
-then ask for the workflow you want.
 
 ## Triggers
 
@@ -63,6 +81,12 @@ then ask for the workflow you want.
   release or publish job, a deploy, a matrix build, a scheduled job.
 
 ## Requirements
+
+- **Claude Code:** Make `gh`, `actionlint` and `zizmor` available to shell tools.
+- **Codex:** Use the same CLI tools and `gh` authentication; Claude app connections are not imported.
+- **Personal data:** No private `~/.claude/ghfactory` store is required; GitHub credentials remain managed by `gh`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+.
 - [`gh`](https://cli.github.com/), authenticated. Rung 0 resolves refs through
