@@ -8,18 +8,18 @@
 
 ## Setup
 
-- **Node 18+** for the CLI and preview app. `skills/devlog/README.md:68`
-- **GitHub CLI** (gh), authenticated with gh auth login — used to create your dev-log repo and push entries. `skills/devlog/README.md:69`
-- **Claude Code** to run the /devlog skill. `skills/devlog/README.md:71`
-- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:213`
-- Field — Type — Description `skills/devlog/README.md:215`
-- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:217`
-- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:218`
-- gitAuthor — string — Your name. Retained for backward compatibility; **not** currently rendered on entries, but still **required** by config validation. Whitespace OK; no shell metacharacters. `skills/devlog/README.md:219`
-- githubUser — string — Your GitHub username. `skills/devlog/README.md:220`
-- voicePath — string (optional) — Directory holding voice-profile.md (and optionally voice-notes.md). A leading ~ is expanded. Read only, never shell-interpolated. `skills/devlog/README.md:221`
-- projects — array — One entry per project you want dev logs for. `skills/devlog/README.md:222`
-- Map the user's request onto the CLI — never hand-edit config.json: `skills/devlog/skills/devlog/SKILL.md:50`
+- **Claude Code:** Authenticate gh in the shell and allow web research for release guides. `skills/devlog/README.md:89`
+- **Codex:** Use the same authenticated gh CLI and available web tools. init still writes its legacy Claude skill copy; the Codex plugin is installed separately above. `skills/devlog/README.md:90`
+- **Personal data:** Both hosts retain config, voice fallback and image-style assets in ~/.claude/skills/devlog/; an existing ~/.claude/ghostwriter/voice can also supply the voice. `skills/devlog/README.md:91`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/devlog/README.md:93`
+- **Node 18+** for the CLI and preview app. `skills/devlog/README.md:95`
+- **GitHub CLI** (gh), authenticated with gh auth login — used to create your dev-log repo and push entries. `skills/devlog/README.md:96`
+- **Claude Code or Codex** to run the skill. `skills/devlog/README.md:98`
+- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:240`
+- Field — Type — Description `skills/devlog/README.md:242`
+- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:244`
+- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:245`
+- gitAuthor — string — Your name. Retained for backward compatibility; **not** currently rendered on entries, but still **required** by config validation. Whitespace OK; no shell metacharacters. `skills/devlog/README.md:246`
 
 ## Usage
 
@@ -38,24 +38,24 @@
 
 ## Commands
 
-- Command — What it does `skills/devlog/README.md:92`
-- devlog init — One-time setup: create dev-log repo, install skill, write config `skills/devlog/README.md:94`
-- devlog add-project — Register a project (interactive; --yes --path <p> for agent use) `skills/devlog/README.md:95`
-- devlog remove-project <key> --yes — Unregister a project (published entries stay) `skills/devlog/README.md:96`
-- devlog set <field> <value> — Update one config field `skills/devlog/README.md:97`
-- devlog config [--json] — Show current config with validation status `skills/devlog/README.md:98`
-- devlog scan [--project <key>] — JSON plan of new releases needing entries `skills/devlog/README.md:99`
-- devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:100`
-- devlog publish-entry ... — Copy a drafted entry into a clone and update the manifest; never overwrites `skills/devlog/README.md:101`
-- devlog preview — Run a local preview at http://localhost:5173 `skills/devlog/README.md:102`
+- Command — What it does `skills/devlog/README.md:119`
+- devlog init — One-time setup: create dev-log repo, install skill, write config `skills/devlog/README.md:121`
+- devlog add-project — Register a project (interactive; --yes --path <p> for agent use) `skills/devlog/README.md:122`
+- devlog remove-project <key> --yes — Unregister a project (published entries stay) `skills/devlog/README.md:123`
+- devlog set <field> <value> — Update one config field `skills/devlog/README.md:124`
+- devlog config [--json] — Show current config with validation status `skills/devlog/README.md:125`
+- devlog scan [--project <key>] — JSON plan of new releases needing entries `skills/devlog/README.md:126`
+- devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:127`
+- devlog publish-entry ... — Copy a drafted entry into a clone and update the manifest; never overwrites `skills/devlog/README.md:128`
+- devlog preview — Run a local preview at http://localhost:5173 `skills/devlog/README.md:129`
 - npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:106`
 - npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:107`
 - npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:412`
-- npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:47`
-- npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:48`
-- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:295`
-- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:296`
-- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:297`
+- npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:68`
+- npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
+- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:322`
+- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:323`
+- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:324`
 - npm run audit — npm audit --audit-level=moderate `skills/devlog/skills/devlog/package.json:49`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/devlog/skills/devlog/package.json:51`
 
