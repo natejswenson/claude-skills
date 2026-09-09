@@ -104,8 +104,10 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
   LinkedIn using OpenID Connect** products, and redirect URL
   `http://localhost:8765/callback`.
 - Optional, for visuals: Playwright + Chromium in a local `.venv`.
-- Optional, for the radar: the [`claude` CLI](https://docs.claude.com) on your
-  `PATH`. The desktop notification and launchd schedule are macOS-only.
+- Optional, for the radar: an authenticated Codex CLI for `--backend codex`,
+  or the [`claude` CLI](https://docs.claude.com) for the legacy default.
+  Codex radar needs no Claude CLI, Claude authentication, or LinkedIn credentials.
+  The launchd schedule is macOS-only.
 
 ## One-time setup
 
@@ -172,17 +174,79 @@ The conversational flow is built around the fewest possible round trips:
 ## Optional: the release radar
 
 If you post about a fast-moving field, the release radar keeps a running list of
-recent developments to react to. `scripts/release_radar.sh` runs a headless
+recent developments to react to. The legacy default `scripts/release_radar.sh` runs a headless
 Claude session that web-searches the sources in
 `scripts/release_radar_prompt.md` and writes a dated digest to `research/`, each
 item paired with a suggested, voice-aware angle. Then: *"Draft a post from item 2
 in the radar."*
 
-Run it by hand, or schedule it with `bash scripts/install_radar.sh`, which
+Run the legacy route by hand, or schedule it with `bash scripts/install_radar.sh`, which
 renders the launchd template against the repo's current absolute path and loads
 it. **Re-run the installer whenever the repo moves** — launchd keeps firing the
 old path otherwise, and the radar dies silently (exit 127 in
 `research/.radar.log`).
+
+For Codex, run these from the loaded skill folder:
+
+```sh
+bash scripts/install_radar.sh --backend codex
+bash scripts/release_radar.sh --backend codex
+python3 scripts/release_radar_runtime.py discover
+```
+
+The installer requires `~/.claude/ghostwriter/voice/interests.md`; pass
+`--interests /absolute/path/interests.md` to select another input. Use `--codex`
+for an explicit CLI path or `--codex-home` for an existing Codex authentication
+root. No model is selected from inherited settings: Codex uses its default model.
+Codex usage is billed by the selected account; the Claude route's dollar cap does
+not apply. The runtime limits a Codex invocation to ten minutes.
+
+Codex installs copied code, prompt, policy, and integrity expectations in
+`~/.claude/ghostwriter/radar/trusted/`. Its launchd agent names that durable
+runner. Future plugin-cache moves do not affect scheduled execution. Digests live
+in `radar/data/digests/`, logs in `radar/data/.radar.log`, and per-run source
+snapshots, receipts and transcripts in `radar/data/runs/`. Old legacy digests
+remain untouched. Discovery reports the configured backend's digest and health;
+a stale legacy digest cannot hide fresh Codex output.
+
+Re-run `bash scripts/install_radar.sh` from the updated plugin to repair or upgrade
+an installed Codex radar: it retains the Codex backend, inputs, authentication
+root, and durable digest location. Only its named agent is reloaded. With no
+Codex installation, the installer still takes the legacy default. An explicit
+`--backend claude` invocation runs the legacy route without changing the saved
+Codex selection. `--no-load` renders a Codex agent without loading it.
+
+The trusted fetch adapter retrieves the public OpenAI Codex release Atom feed
+on every run, refusing redirects, unavailable sources, empty/oversized responses,
+or invalid receipts. Receipts contain the requested and final URLs, UTC time,
+HTTP status, bounded response evidence, byte count and SHA-256 hash. Codex receives
+the source, interests and up to six prior digests explicitly. It runs read-only,
+with user config and exec-policy rules ignored and no native web search enabled.
+The runner captures its candidate outside the research workspace and checks
+source hashes and citations before promoting it. A cached digest cannot turn a
+failed retrieval into success.
+
+These are write/network restrictions, not a general host-read boundary. Staging
+inputs does not prevent other host reads, and read-only mode does not disable
+shell execution. See the [Codex sandbox documentation](https://learn.chatgpt.com/docs/security).
+The runtime never loads Ghostwriter's posting credentials. Personal stylesheet
+settings remain in their existing renderer path; the radar does not render cards.
+
+Reproduce the real isolation proof from the skill directory:
+
+```sh
+GHOSTWRITER_RADAR_INTEGRATION=1 python3 -m pytest tests/test_release_radar_integration.py --no-cov -s
+```
+
+This opt-in macOS test uses a disposable launchd agent and a copy of file-backed Codex
+authentication (removed afterwards). It validates hostile configuration under
+`--strict-config`, then requires real source receipts, observed denials when the
+model attempts to modify the configured runner/policy/plist, no egress or local
+posting-canary effect, and a subsequent normal launch through launchd. The test
+unloads its named agent afterwards. It changes only task prose
+for the adversarial session; executable code and policy stay the production
+adapter. Missing prerequisites or missing denial evidence fail the test. Set
+`GHOSTWRITER_RADAR_PROBE_DIR` to retain its non-credential evidence.
 
 > **The radar only researches. It never posts.** LinkedIn's API Terms (§3.1)
 > prohibit *automated posting*, not automated research. A human still picks an
