@@ -11,6 +11,10 @@
     3. launchctl load -w ~/Library/LaunchAgents/com.example.linkedin-release-radar.plist
 
   Requires the `claude` CLI on your PATH. Adjust the schedule as you like.
+  This template is the unchanged legacy Claude route. For Codex, run
+  bash scripts/install_radar.sh --backend codex; the runtime renders a plist
+  naming only the durable trusted runner and data log under
+  ~/.claude/ghostwriter/radar/, with no plugin-cache launch target.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
