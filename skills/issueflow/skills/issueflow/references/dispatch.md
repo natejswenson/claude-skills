@@ -26,7 +26,8 @@ carrying the plan gets caught by CI instead of by a confused subagent.
 | the branch, the base and the work item | it commits; it needs to know where |
 | the artifact path and the sections the gate reads for | a stage that writes the wrong file has done nothing |
 | for a review-loop brief: the diff file, the head, the checkout, and the findings already open by id | a reviewer reads the change, not the pull request page; a finder hunts gaps, not repeats |
-| how to report completion, and to whom | `main`, by `SendMessage`, the moment the output is written |
+| how to report completion | Claude sends `main` a `SendMessage`; Codex finishes its subagent turn and returns the summary to the parent automatically |
+| the runtime's model, reasoning and role | the dispatch must map to fields the host actually supports, and a run may not switch profiles halfway through |
 
 ## What never crosses
 
@@ -61,9 +62,10 @@ produced.
 Going idle is not a signal. Across a real two-run corpus, ten stage subagents
 ran and only four sent the orchestrator anything on completion; the other six
 went idle with a content-free notification, indistinguishable from a stalled
-agent. The brief still closes with a fixed instruction — send `main` the
-output's path and a short result before finishing — but since 0.7.0 the
-orchestrator does not wait on that message. `next` prints a wait line:
+agent. The brief still closes with a host-specific instruction — Claude sends
+`main` the output path and a short result, while Codex finishes with that
+summary and returns it to the parent automatically — but the orchestrator does
+not wait on either message. `next` prints a wait line:
 
 ```
 sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
@@ -82,9 +84,11 @@ orchestrator what happened, not whether it happened.
 
 ## The declarations are the contract
 
-`scripts/lib/stages.mjs` holds each stage's model, agent type, artifact name,
+`scripts/lib/stages.mjs` holds each stage's semantic declaration, artifact name,
 `asks`, `forbids` and `requires`. `scripts/lib/reviews.mjs` holds the red
-team's. `references/review-method.md` holds the review loop's angles, the
+team's. `scripts/lib/runtime.mjs` resolves those roles to host-native model,
+reasoning and agent fields and persists the resolved stage fields in `run.json`.
+`references/review-method.md` holds the review loop's angles, the
 verifier's contract and the fixer's rule, spliced into those briefs verbatim.
 Everything else reads them: the brief renderers, the gate, the run board. A
 stage cannot drift between what it is told to do and what it is checked for,
