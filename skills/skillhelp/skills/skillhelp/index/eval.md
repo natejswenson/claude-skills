@@ -9,9 +9,13 @@
 
 ## Setup
 
-- Node 18+, no dependencies. `skills/eval/README.md:71`
-- A skill with a committed SKILL.md — the contract is read from the skill's own file, never supplied separately, so there is nothing to keep in sync. `skills/eval/README.md:72`
-- A session transcript to grade. Everything is offline: eval never calls a model and cannot spend. `skills/eval/README.md:74`
+- **Claude Code:** Supply the Claude JSONL transcript, normally from ~/.claude/projects/. `skills/eval/README.md:89`
+- **Codex:** Supply a Codex rollout JSONL from ${CODEX_HOME:-$HOME/.codex}/sessions; the parser accepts both host formats. `skills/eval/README.md:90`
+- **Personal data:** Transcripts stay in their original host directories; contract, trace and report outputs go to the paths you choose. `skills/eval/README.md:91`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/eval/README.md:93`
+- Node 18+, no dependencies. `skills/eval/README.md:95`
+- A skill with a committed SKILL.md — the contract is read from the skill's own file, never supplied separately, so there is nothing to keep in sync. `skills/eval/README.md:96`
+- A session transcript to grade. Everything is offline: eval never calls a model and cannot spend. `skills/eval/README.md:98`
 - Requires Node >=18 (package.json engines). `skills/eval/skills/eval/package.json:33`
 
 ## Usage

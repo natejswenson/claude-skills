@@ -39,6 +39,30 @@ you see it*, so a draft that looks fine and would be rejected never reaches you.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install ghostwriter-x@claude-skills
+/ghostwriter-x
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add ghostwriter-x@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$ghostwriter-x
+```
+
+For the script examples below, run from `skills/ghostwriter-x/skills/ghostwriter-x` in
+this checkout, or the directory containing the installed `SKILL.md`.
+
 ```bash
 python3 scripts/typefully_post.py --connect     # one-time, stores your social set id
 python3 scripts/extract_tweets.py               # turn your archive into voice input
@@ -51,11 +75,10 @@ Then just ask:
 - *"Draft a thread on &lt;your topic&gt;."*
 - *"Turn my last devlog into an X thread."*
 
-Claude drafts in your voice, shows every tweet numbered with its live weighted
+The skill drafts in your voice, shows every tweet numbered with its live weighted
 character count (`[3/7 · 262/280]`), and on your OK publishes through Typefully.
 
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills),
-then say **"set up ghostwriter-x"**.
+For first-time setup, say **"set up ghostwriter-x"**.
 
 ## Triggers
 
@@ -66,6 +89,12 @@ then say **"set up ghostwriter-x"**.
 - Setting up X posting.
 
 ## Requirements
+
+- **Claude Code:** Run `typefully_post.py --connect` with the Typefully API key.
+- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthropic judges still need their own credentials.
+- **Personal data:** Both hosts retain the voice profile, brand overrides and `.env` credentials in `~/.claude/ghostwriter-x/`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Python 3 standard library only for the core — publishing and validation need no
   third-party packages.

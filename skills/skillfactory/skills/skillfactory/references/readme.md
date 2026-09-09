@@ -43,9 +43,9 @@ every pull request.
 | pull quote | `.pull` | **the one rule** — what this skill refuses to do | a `> **…**` blockquote |
 | `## Why install this` | — | the argument, for someone who has not decided | present, first |
 | `## What you get` | data table | the inventory: what is in the tree | contains a table |
-| `## Quick start` | `.term` | the commands, copyable | contains a code block |
+| `## Quick start` | `.term` | the commands, copyable | both hosts’ fenced install and invocation paths |
 | `## Triggers` | — | when the skill fires, in the user's words | present |
-| `## Requirements` | — | runtimes and credentials | present |
+| `## Requirements` | — | runtimes, credentials and retained data | both host notes, data note and migration link |
 | free tail | — | whatever this skill actually needs | not checked |
 | `## Development` `## Changelog` `## License` | colophon | where a maintainer looks | present, in order, last |
 
@@ -93,3 +93,42 @@ no throat-clearing, no hedges, no tacked-on closing line, real numbers only.
 - **Triggers** — the phrases from `SKILL.md`'s `description:`, because that is
   literally the text a request is matched against. Writing a separate list by
   hand lets the two disagree, and the README is the copy nobody notices is wrong.
+
+
+## Dual-host setup
+
+Quick start begins with two explicit paths. In Claude Code chat, show
+`/plugin marketplace add natejswenson/claude-skills` for this repository; for a
+non-default target repository, show `/plugin marketplace add .` from its checkout root.
+Then show `/plugin install <name>@claude-skills` for this repository, or
+`/plugin install <name>@<target-marketplace>` for a non-default target, then `/<name>`.
+In a terminal at the repository checkout root, show exactly `codex plugin marketplace add "$PWD"` and
+`codex plugin add <name>@<target-marketplace>`; then tell the reader to start a new
+Codex session and show `$<name>` in a separate chat example. Replace `<name>`
+with this skill’s actual name. Keep all six commands in fenced blocks in
+Quick start. A mention elsewhere, a comment, or another skill’s name does not
+satisfy the contract. PRESS owns only the masthead, not these setup instructions.
+
+Follow those paths with the skill’s own examples. Resolve bundled scripts from
+the directory containing the loaded `SKILL.md`, or give an explicit checkout
+working directory. Label Claude-only utilities (for example pluginsync’s Node
+reconciler) and show the Codex route. Do not imply that plugin installation
+installs Python/Node dependencies or authenticates an external service.
+
+Requirements contains three non-empty labeled bullets: `- **Claude Code:**`,
+`- **Codex:**`, and `- **Personal data:**`. Name the actual tools and account
+setup each host needs. Codex does not import Claude’s MCP connections: Gmail
+needs a connected Gmail tool surface; a publishing workflow using OAuth or an
+API key still needs that script’s credentials. Generic local skills should say
+that no app connection is needed and that Claude connections are not imported.
+Link to the local `[Codex migration notes](../../docs/codex-migration.md)` when the
+target provides it, or to the durable shared migration-guide URL when it does not.
+
+State the exact existing personal-data location when there is one, including
+retained `~/.claude/<skill>` directories; their names do not require Claude to
+run. Some skills instead use `~/.gmailtriage/`, `~/.shipreport/`, system temporary
+storage, or user-selected paths. Document the script’s real location, never
+invent a `~/.claude/` directory to satisfy a template. Update the scaffold’s
+generic note when the implementation introduces credentials or personal data.
+The checker pins known retained Claude paths and the presence of both host
+notes; reviewers still check the technical accuracy of each note.

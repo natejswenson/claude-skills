@@ -41,18 +41,29 @@ validation run as scripts.
 
 ## Quick start
 
-```
+Claude Code — run in chat:
+
+```text
 /plugin marketplace add natejswenson/claude-skills
 /plugin install resume@claude-skills
+/resume
 ```
 
-Then in any Claude Code session:
+Codex — run in a terminal from the root of this repository checkout:
 
-```
-/resume <resume-path> <job-url-or-text>     # first run: stores your résumé
-/resume <job-url>                            # every run after that
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add resume@claude-skills
 ```
 
+Start a new Codex session, then invoke in chat:
+
+```text
+$resume
+```
+
+In Claude Code, use `/resume <resume-path> <job-url-or-text>` on the first run
+and `/resume <job-url>` after that. In Codex, use `$resume` with the same arguments.
 Pass what you have; the skill asks for anything missing, one item at a time.
 After tailoring it opens the PDF and offers a theme picker, ending when you save
 your favourite.
@@ -69,11 +80,17 @@ your favourite.
 
 ## Requirements
 
+- **Claude Code:** Allow local file access and Chromium rendering; enable web tools for job URLs.
+- **Codex:** Use the same renderer and stored résumé, with available web tools for job URLs; Claude app connections are not imported.
+- **Personal data:** Both hosts retain the source résumé at `~/.claude/resume/source-resume.txt` and custom themes under `~/.claude/resume/themes/`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
+
 - **Node.js ≥ 22** (see `.nvmrc`).
 - **Chromium**, installed once via `npx playwright install chromium`. Rendering is
   headless Chromium, which is what lets a theme be plain CSS. The skill tells you
   if it is missing.
-- Claude Code itself. This skill has no standalone CLI; `render.mjs` and
+- Claude Code or Codex. This skill has no standalone CLI; `render.mjs` and
   `validate.mjs` are internal steps, not user-facing commands.
 
 ## What it does

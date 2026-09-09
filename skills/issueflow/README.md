@@ -74,6 +74,27 @@ independently reviewable work into stacked pull requests, reviewed bottom first.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install issueflow@claude-skills
+/issueflow
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add issueflow@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$issueflow
+```
+
 Ask for it in words — the skill drives the commands:
 
 > **work an issue in this repo**
@@ -119,9 +140,6 @@ Sessions run in parallel safely: one run directory and one worktree per issue,
 run, and a lane is cut from the base as it is now rather than as this checkout
 last happened to fetch it.
 
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills) or its generated Codex catalog, then ask
-for work matching the triggers below.
-
 ## Triggers
 
 - "work an issue"
@@ -146,6 +164,12 @@ repo's actual default branch, so a pull request never targets a `dev` that does
 not exist.
 
 ## Requirements
+
+- **Claude Code:** Enable the required independent subagents and authenticated `gh` access.
+- **Codex:** Enable Codex delegation tools for independent stages and the same `gh` access. If delegation is unavailable, the skill must disclose that independent execution cannot run.
+- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in `~/.claude/issueflow/`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - **Node 18+** (the bundled scripts are ESM, no dependencies).
 - **`gh`, authenticated**, with read access to issues and write access to open a

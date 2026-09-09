@@ -28,13 +28,46 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install pluginsync@claude-skills
+/pluginsync
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add pluginsync@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$pluginsync
+```
+
+The following Node commands manage Claude installations only:
+
 ```bash
 pluginsync check   # one row per marketplace plugin — plugin, installed, available, action (ok/update/install/orphan/disabled/error) — plus a shadow warning per stale personal copy, and a footer naming how many rows would change
 pluginsync apply   # the same table, re-read after every install/update, with the action column resolved to installed/updated/stalled/failed — stalled meaning the command exited 0 and the version on disk did not move
 ```
 
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
+For Codex refreshes, use its CLI and re-read the installed version:
+
+```bash
+codex plugin marketplace list --json
+codex plugin list --available --json --marketplace claude-skills
+# For a Git marketplace (local checkouts are updated at their source):
+codex plugin marketplace upgrade claude-skills
+codex plugin add pluginsync@claude-skills --json
+codex plugin list --json
+```
+
+Start a new Codex session to load the refreshed plugin.
 
 ## Triggers
 
@@ -47,6 +80,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Install the `claude` CLI; the bundled Node reconciler reads and updates Claude marketplaces.
+- **Codex:** Install the `codex` CLI and use its plugin commands; the bundled Node reconciler manages Claude installations only. Claude app connections are not imported.
+- **Personal data:** Claude state remains under `~/.claude/plugins/` and personal skills under `~/.claude/skills/`; Codex manages its own plugin state. Neither route migrates personal data.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

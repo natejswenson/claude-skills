@@ -195,7 +195,7 @@ export function conform(house, skill) {
    * against retroactive rules because they get waived — a rule applied *with*
    * the retrofit is the opposite case.
    */
-  const readmeGrade = gradeReadme(skill.readme, name);
+  const readmeGrade = gradeReadme(skill.readme, name, house.marketplaceName);
   out.push(
     check(
       'readme-structure',

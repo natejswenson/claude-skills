@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/skillhelp/README.md:80`
+- **Claude Code:** Allow file and shell access to the local skill repository. `skills/skillhelp/README.md:98`
+- **Codex:** Use the same local files and scripts; Claude app connections are not imported and no connected app is required. `skills/skillhelp/README.md:99`
+- **Personal data:** The generated index stays in the skill repository; no private ~/.claude/skillhelp store is required. `skills/skillhelp/README.md:100`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/skillhelp/README.md:102`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/skillhelp/README.md:104`
 - Requires Node >=18 (package.json engines). `skills/skillhelp/skills/skillhelp/package.json:33`
 - Reads environment variable DEMO_TOKEN. `skills/skillhelp/skills/skillhelp/scripts/tests/guards.test.mjs:116`
 

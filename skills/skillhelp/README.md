@@ -45,6 +45,27 @@ red check with one command to fix it.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install skillhelp@claude-skills
+/skillhelp
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add skillhelp@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$skillhelp
+```
+
 ```bash
 # ask a question — one command, sources included
 skillhelp ask "how do I set up ghostwriter"
@@ -55,9 +76,6 @@ skillhelp list    # the catalogue: every skill, version, trigger phrases
 skillhelp check   # fail if any card would change (this is the CI gate)
 skillhelp build   # rewrite the cards after a skill changes
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -76,6 +94,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Allow file and shell access to the local skill repository.
+- **Codex:** Use the same local files and scripts; Claude app connections are not imported and no connected app is required.
+- **Personal data:** The generated index stays in the skill repository; no private `~/.claude/skillhelp` store is required.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

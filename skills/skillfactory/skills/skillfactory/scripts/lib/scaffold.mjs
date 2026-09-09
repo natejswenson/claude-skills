@@ -20,12 +20,12 @@ import * as T from './templates.mjs';
 const file = (path, content) => ({ path, content });
 
 /** The files a new skill's tree consists of. Deterministic — this is the golden. */
-export function planFiles(spec, today) {
+export function planFiles(spec, today, marketplace) {
   const root = join('skills', spec.name);
   const inner = join(root, 'skills', spec.name);
   const files = [
     file(join(root, 'LICENSE'), T.license(today.slice(0, 4))),
-    file(join(root, 'README.md'), T.readme(spec)),
+    file(join(root, 'README.md'), T.readme(spec, { marketplace })),
     file(join(root, 'CHANGELOG.md'), T.changelog(spec, today)),
     file(join(root, '.claude-plugin', 'plugin.json'), T.pluginJson(spec)),
     file(join(inner, 'SKILL.md'), T.skillMd(spec)),
@@ -169,7 +169,7 @@ export function planEdits(spec, house) {
 
 export function planScaffold(spec, house, { today, pins }) {
   return {
-    files: [...planFiles(spec, today), file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins))],
+    files: [...planFiles(spec, today, house.marketplaceName), file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins))],
     edits: planEdits(spec, house),
   };
 }

@@ -21,13 +21,31 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install repocount@claude-skills
+/repocount
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add repocount@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$repocount
+```
+
 ```bash
 repocount detect   # the repo's remote, default branch and release convention, as one table
 repocount count    # open PRs, stale branches and unreleased commits, each with its age
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -37,6 +55,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Allow the local file and shell tools needed by the bundled commands.
+- **Codex:** Use the same bundled scripts and runtimes; Claude app connections are not imported. Connect any service required by the implemented workflow in Codex separately.
+- **Personal data:** The scaffold adds no private configuration store. If the implementation uses an existing `~/.claude/` location, retain it for both hosts and document the exact path here.
+
+See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

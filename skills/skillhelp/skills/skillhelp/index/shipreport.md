@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/shipreport/README.md:56`
+- **Claude Code:** Authenticate gh; transcript collection defaults to ~/.claude/projects/. `skills/shipreport/README.md:74`
+- **Codex:** Authenticate the same gh CLI. Index with --transcripts "${CODEX_HOME:-$HOME/.codex}/sessions"; add --full when switching an existing corpus to that transcript root so the old watermark doe… `skills/shipreport/README.md:75`
+- **Personal data:** Both hosts retain the contribution corpus and watermark under ~/.shipreport/; transcripts stay in their original host directories. `skills/shipreport/README.md:76`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/shipreport/README.md:78`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/shipreport/README.md:80`
 - Requires Node >=18 (package.json engines). `skills/shipreport/skills/shipreport/package.json:33`
 
 ## Usage
@@ -25,7 +29,7 @@
 - skills/shipreport/references/receipts.md — The citation contract — what counts as a resolvable receipt, and the drop rule that follows when one does not resolve. `skills/shipreport/README.md:27`
 - skills/shipreport/references/sources.md — Where the data comes from — the session transcript shape, the GitHub queries, the redaction classes, and the watermark model that makes the second run cheap. `skills/shipreport/README.md:28`
 - skills/shipreport/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/shipreport/README.md:29`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask for work matching the triggers below. `skills/shipreport/README.md:40`
+- Claude Code — run in chat: `skills/shipreport/README.md:33`
 
 ## Commands
 

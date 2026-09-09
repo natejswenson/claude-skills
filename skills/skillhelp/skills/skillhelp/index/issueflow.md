@@ -9,9 +9,13 @@
 
 ## Setup
 
-- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:150`
-- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:151`
-- **A git repo with a GitHub remote.** `skills/issueflow/README.md:153`
+- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:168`
+- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:169`
+- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:170`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:172`
+- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:174`
+- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:175`
+- **A git repo with a GitHub remote.** `skills/issueflow/README.md:177`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
 - Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:550`
 - Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:101`
