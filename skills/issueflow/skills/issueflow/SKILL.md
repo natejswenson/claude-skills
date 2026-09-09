@@ -136,8 +136,8 @@ verifier calls.
 | Editing or diagnosing PR review behavior | `references/review-method.md` |
 | Internal commands beyond `board`, `start`, and `next` | `node "$SKILL_DIR/scripts/issueflow.js" --help` |
 
-The CLI and `skill-invariants.json` are the canonical command and deterministic
-contract inventories. Do not duplicate them in this entrypoint.
+The CLI and `skill-invariants.json` are the canonical inventories. Do not
+duplicate them here.
 
 <!-- press:agent-ui -->
 
