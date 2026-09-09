@@ -16,10 +16,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FINISHED_MARKER, checkpoint, claimedIn, marker, renderComment, tipOf } from '../lib/checkpoint.mjs';
 import { finish, FinishError } from '../lib/finish.mjs';
-import { accept, artifactPath, createRun, findStep, loadRun, saveRun, split, worktreePath } from '../lib/run.mjs';
+import { accept, artifactPath, createRun, evidencePath, findStep, loadRun, markBriefed, saveRun, split, worktreePath } from '../lib/run.mjs';
 import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
-import { approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
+import { GOOD_EVIDENCE, approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'issueflow.js');
@@ -76,6 +76,70 @@ function writeGood(dir, run, stageId, lane = null) {
   mkdirSync(join(artifactPath(dir, step), '..'), { recursive: true });
   writeFileSync(artifactPath(dir, step), declared.requires.map((r) => `## ${r}\n\nreal content for ${r}.\n`).join('\n'));
   return step;
+}
+
+for (const delivered of ['plan', 'implementation']) {
+  for (const failure of ['none', 'push', 'comment']) {
+    test(`budget: ${delivered} checkpoint preserves identity and approval with ${failure} failure`, (t) => {
+      const { dir, run, repoPath, cleanup } = fixture();
+      t.after(cleanup);
+      const remote = join(dir, 'origin.git');
+      git(['init', '--bare', '-q', remote], repoPath);
+      git(['remote', 'add', 'origin', remote], repoPath);
+      git(['push', '-q', '-u', 'origin', 'main'], repoPath);
+      git(['checkout', '-qb', run.lanes[0].branch], repoPath);
+      if (failure === 'push') git(['remote', 'set-url', 'origin', join(dir, 'missing.git')], repoPath);
+      const bin = join(dir, 'bin');
+      mkdirSync(bin);
+      const calls = join(bin, 'calls.jsonl');
+      writeFileSync(join(bin, 'gh'), [
+        '#!/usr/bin/env node',
+        "const { appendFileSync } = require('node:fs');",
+        'const args = process.argv.slice(2);',
+        `appendFileSync(${JSON.stringify(calls)}, JSON.stringify(args) + '\\n');`,
+        "if (args[0] === 'issue') console.log(JSON.stringify({ state: 'OPEN' }));",
+        "else if (args[0] === 'pr') console.log('[]');",
+        `else if (args.includes('PATCH')) { ${failure === 'comment' ? "console.error('comment unavailable'); process.exit(1);" : "console.log('https://example.invalid/comment/123');"} }`,
+        'else process.exit(1);',
+      ].join('\n'));
+      chmodSync(join(bin, 'gh'), 0o755);
+      if (delivered === 'implementation') approvePlan(dir, run);
+      const step = writeGood(dir, run, delivered === 'plan' ? 'investigate' : 'implement');
+      markBriefed(dir, run, step, () => new Date(Date.now() - 60_000).toISOString());
+      if (delivered === 'implementation') writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
+      run.createdAt = new Date(Date.now() - 20_000_000).toISOString();
+      run.checkpoint.commentId = 123;
+      run.checkpoint.commentUrl = 'https://example.invalid/comment/123';
+      run.lanes[0].pr = { number: 1, url: 'https://example.invalid/pull/1', title: 'fix' };
+      saveRun(dir, run);
+      const head = git(['rev-parse', 'HEAD'], repoPath);
+      const result = spawnCli(['next', '--run-dir', dir], { PATH: `${bin}:${process.env.PATH}` });
+      const after = loadRun(dir);
+      assert.ok(findStep(after, step.stage.id).stage.at.delivered, result.out + result.err);
+      assert.equal(findStep(after, step.stage.id).stage.state, delivered === 'implementation' ? 'approved' : 'briefed');
+      assert.equal(after.checkpoint.commentId, 123);
+      assert.equal(git(['rev-parse', 'HEAD'], repoPath), head);
+      const ghCalls = readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.ok(ghCalls.some((args) => args.includes('PATCH') && args.includes('repos/acme/widgets/issues/comments/123')));
+      assert.doesNotMatch(result.out, /Dispatch ONE|next: dispatch/);
+      if (failure === 'none') {
+        assert.match(result.out, /updated/);
+        assert.equal(after.checkpoint.pushed.root, git(['rev-parse', '--short', 'HEAD'], repoPath));
+        assert.equal(git(['rev-parse', run.lanes[0].branch], remote), head);
+        assert.equal(result.code, 4);
+      } else {
+        assert.match(result.out, /NOT backed up|incomplete backup/);
+        assert.ok(result.code !== 0);
+        if (failure === 'push') assert.equal(after.checkpoint.pushed.root, undefined);
+      }
+      const checkpoint = structuredClone(after.checkpoint);
+      const callBytes = readFileSync(calls, 'utf8');
+      const resumed = spawnCli(['resume', '--run-dir', dir, '--budget-seconds', '1800'], { PATH: `${bin}:${process.env.PATH}` });
+      assert.equal(resumed.code, 0, resumed.err);
+      assert.deepEqual(loadRun(dir).checkpoint, checkpoint);
+      assert.equal(readFileSync(calls, 'utf8'), callBytes, 'resume must make no network calls');
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

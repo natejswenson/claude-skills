@@ -264,6 +264,111 @@ function loopFixture() {
 
 const CAND = { file: 'a.js', line: 1, side: 'RIGHT', category: 'line-by-line', summary: 'a is 2', short_summary: 'a is now 2', failure_scenario: 'callers expecting 1 break', introduced_by_diff: true };
 
+for (const delivery of ['finders', 'verifiers', 'fixer']) {
+  test(`budget: expired ${delivery} delivery follows its ordinary registration boundary`, (t) => {
+    const { dir, run, repoPath, cleanup } = loopFixture();
+    t.after(cleanup);
+    const lane = run.lanes[0];
+    openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+    writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [CAND], notExamined: [] }));
+    if (delivery !== 'finders') {
+      planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+      writeFileSync(verdictsPath(dir, lane, 1, 1), JSON.stringify({ verdicts: [{ id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'q' }] }));
+    }
+    if (delivery === 'fixer') {
+      registerRound(dir, run, lane, 1, { tree: repoPath });
+      currentRound(lane).fix = { briefed: true };
+      mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
+      writeFileSync(fixBriefPath(dir, lane, 1), '# fix\n');
+      writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed', [lane.review.findings[0].id]: { status: 'fixed', note: 'fixed in commit' } }));
+      git(['commit', '-q', '--allow-empty', '-m', 'fix'], repoPath);
+    }
+    run.createdAt = at(-20_000);
+    saveRun(dir, run);
+    const result = cli(['next', '--run-dir', dir, '--offline']);
+    if (delivery === 'verifiers') {
+      assert.match(result.out, /▶ review-register/);
+      assert.ok(currentRound(loadRun(dir).lanes[0]).registered);
+    } else if (delivery === 'fixer') {
+      assert.match(result.out, /▶ review-fix-report/);
+      assert.ok(currentRound(loadRun(dir).lanes[0]).fix.reported);
+    } else {
+      assert.match(result.out, /next: stop — budget/);
+      assert.equal(currentRound(loadRun(dir).lanes[0]).verifiers, null);
+      const direct = cli(['review-verify', '--lane', 'root', '--run-dir', dir, '--offline']);
+      assert.equal(direct.code, 4, direct.err);
+      assert.equal(currentRound(loadRun(dir).lanes[0]).verifiers, null);
+    }
+    assert.equal(result.code, 4, result.err);
+    assert.match(result.out, /next: stop — budget/);
+    assert.doesNotMatch(result.out, /Dispatch ONE|next: dispatch/);
+  });
+}
+
+for (const command of ['brief', 'review-brief', 'review-verify', 'review-fix-brief']) {
+  test(`budget: ${command} rechecks expiry immediately before mutation`, (t) => {
+    const { dir, run, repoPath, cleanup } = loopFixture();
+    t.after(cleanup);
+    const lane = run.lanes[0];
+    if (['review-verify', 'review-fix-brief'].includes(command)) {
+      openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+      writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [CAND], notExamined: [] }));
+      if (command === 'review-fix-brief') {
+        planVerification(dir, run, lane, 1, readCandidates(dir, lane, 1).candidates);
+        writeFileSync(verdictsPath(dir, lane, 1, 1), JSON.stringify({ verdicts: [{ id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'q' }] }));
+        registerRound(dir, run, lane, 1, { tree: repoPath });
+      }
+    }
+    const clock = join(dir, 'clock.mjs');
+    const now = Date.now();
+    run.createdAt = new Date(now).toISOString();
+    saveRun(dir, run);
+    writeFileSync(clock, `const RealDate = Date; let reads = 0; globalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [${now} + (++reads >= 2 ? 20000000 : 0)])); } };\n`);
+    const extra = command === 'brief' ? ['--stage', 'implement'] : [];
+    const result = spawnSync(process.execPath, ['--import', clock, CLI, command, ...extra, '--lane', 'root', '--run-dir', dir, '--offline'], {
+      encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+    });
+    assert.match(result.stdout, /next: stop — budget/);
+    assert.equal(result.status, 4, result.stderr);
+    assert.deepEqual(loadRun(dir), run);
+    assert.doesNotMatch(result.stdout, /Dispatch ONE/);
+  });
+}
+
+test('budget: renewed CI fixer still needs its report, pushed commit and another review', (t) => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  t.after(cleanup);
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: [] }));
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  const entry = currentRound(lane);
+  entry.fix = { briefed: true };
+  mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
+  writeFileSync(fixBriefPath(dir, lane, 1), '# fix CI\n');
+  run.createdAt = at(-20_000);
+  saveRun(dir, run);
+  assert.equal(decide(dir, run).kind, 'wait');
+  const result = cli(['resume', '--run-dir', dir, '--budget-seconds', '1800']);
+  assert.equal(result.code, 0, result.err);
+  let after = loadRun(dir);
+  assert.equal(decide(dir, after, { checks: () => [] }).kind, 'wait');
+  currentRound(after.lanes[0]).fix.reported = true;
+  saveRun(dir, after);
+  assert.equal(decide(dir, after).reason, 'unpushed');
+  git(['commit', '-q', '--allow-empty', '-m', 'fix CI'], repoPath);
+  after.offline = false;
+  currentRound(after.lanes[0]).posted = { url: 'posted' };
+  assert.equal(decide(dir, after, { offline: false, remoteHead: () => entry.head }).reason, 'unpushed');
+  after.offline = true;
+  assert.equal(decide(dir, after).command, 'review-brief');
+  const loop = after.lanes[0].review;
+  loop.findings = [{ id: 'f-open', severity: 'major', status: 'open' }];
+  loop.rounds = Array.from({ length: 4 }, (_, i) => ({ ...structuredClone(entry), verdict: 'blocked', round: i + 1, fix: { briefed: true, reported: true } }));
+  assert.equal(decide(dir, after).reason, 'exhausted');
+});
+
 test('decide: finders wait → verify → verifiers wait → register → fix brief → fixer wait → fix report → unpushed stop → next round; converged → ready', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];
