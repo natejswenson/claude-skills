@@ -346,7 +346,7 @@ function readmeMasthead(tokens, params, ctx) {
   const stamp = params.stamp ?? tokens.identity.stamp;
   const name = params.brand_line ?? tokens.identity.name;
   const byline = params.byline ?? tokens.identity.byline;
-  const kind = String(params.document_kind ?? 'Claude Code skill').toUpperCase();
+  const kind = String(params.document_kind ?? 'Claude Code + Codex skill').toUpperCase();
   if (!name) throw new EmitError('readme-masthead needs identity.name in tokens.json or params.brand_line');
 
   const eyebrow = [

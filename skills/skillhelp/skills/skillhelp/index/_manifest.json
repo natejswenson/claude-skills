@@ -20,14 +20,14 @@
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "6ce575a7627d2fc8",
-      "facts": 48,
+      "cardHash": "e5a0ca401084f3d6",
+      "facts": 47,
       "sections": {
         "setup": 2,
         "usage": 12,
         "commands": 12,
         "architecture": 14,
-        "troubleshooting": 8
+        "troubleshooting": 7
       },
       "emptySections": [],
       "secretsRefused": 0
@@ -84,7 +84,7 @@
       "name": "ghfactory",
       "version": "0.2.1",
       "stack": "node",
-      "cardHash": "07098f9b634d16f0",
+      "cardHash": "2658a2e018a7d547",
       "facts": 49,
       "sections": {
         "setup": 3,
@@ -180,14 +180,14 @@
       "name": "netwatch",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "d50b346f67abb9d1",
-      "facts": 59,
+      "cardHash": "c12ff5d7cc7f84ba",
+      "facts": 58,
       "sections": {
         "setup": 2,
         "usage": 12,
         "commands": 15,
         "architecture": 15,
-        "troubleshooting": 15
+        "troubleshooting": 14
       },
       "emptySections": [],
       "secretsRefused": 0
@@ -196,14 +196,14 @@
       "name": "pluginsync",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "0e2e7bcee2456f59",
-      "facts": 50,
+      "cardHash": "c9d644e3c8425d25",
+      "facts": 49,
       "sections": {
         "setup": 2,
         "usage": 12,
         "commands": 11,
         "architecture": 12,
-        "troubleshooting": 13
+        "troubleshooting": 12
       },
       "emptySections": [],
       "secretsRefused": 0
@@ -308,14 +308,14 @@
       "name": "skillhelp",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "873ec84b409c2d5e",
-      "facts": 53,
+      "cardHash": "bb5147ae5fd21cf1",
+      "facts": 52,
       "sections": {
         "setup": 3,
         "usage": 12,
         "commands": 13,
         "architecture": 12,
-        "troubleshooting": 13
+        "troubleshooting": 12
       },
       "emptySections": [],
       "secretsRefused": 0
