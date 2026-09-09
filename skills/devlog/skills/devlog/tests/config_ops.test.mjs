@@ -138,7 +138,7 @@ test('setField rejects unknown fields and invalid values', () => {
 
 test('SETTABLE_FIELDS enumerates exactly the supported fields', () => {
   assert.deepEqual(SETTABLE_FIELDS.sort(), [
-    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'gitAuthor', 'githubUser', 'siteUrl', 'targetDir', 'targetRepo', 'voicePath',
+    'branch', 'deepDive.minSources', 'deepDive.topicDomains', 'generationMode', 'gitAuthor', 'githubUser', 'siteUrl', 'targetDir', 'targetRepo', 'voicePath',
   ].sort());
 });
 
@@ -166,4 +166,23 @@ test('setField rejects a siteUrl that is not an http(s) URL', () => {
   for (const bad of ['example.com', 'ftp://example.com', 'https://exa mple.com', 'javascript:alert(1)']) {
     assert.throws(() => setField(baseConfig(), 'siteUrl', bad), /siteUrl must be an http\(s\) URL/, bad);
   }
+});
+
+
+test('generationMode is opt-in and preserves legacy validation shape', () => {
+  const config = baseConfig();
+  assert.equal(validateConfig(config), config);
+  assert.equal('generationMode' in config, false);
+  const concept = setField(config, 'generationMode', 'concept');
+  assert.equal(concept.generationMode, 'concept');
+  assert.equal('generationMode' in config, false);
+  assert.equal(setField(concept, 'generationMode', 'release').generationMode, 'release');
+  assert.ok(SETTABLE_FIELDS.includes('generationMode'));
+});
+
+test('generationMode rejects invalid persisted and set values', () => {
+  for (const value of [null, false, 1, [], {}, '', 'Concept', 'guide']) {
+    assert.throws(() => validateConfig({ ...baseConfig(), generationMode: value }), /generationMode/);
+  }
+  for (const value of ['', 'unknown', 'CONCEPT']) assert.throws(() => setField(baseConfig(), 'generationMode', value), /generationMode/);
 });
