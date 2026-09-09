@@ -12,11 +12,13 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { readHouse } from '../lib/house.mjs';
+import { readHouse, readSkill } from '../lib/house.mjs';
+import { conform } from '../lib/conform.mjs';
 import { gradeReadme, HEAD, FOOT } from '../lib/readme.mjs';
 import { planScaffold } from '../lib/scaffold.mjs';
 import { readme } from '../lib/templates.mjs';
@@ -184,10 +186,56 @@ test('the Codex marketplace command names the checkout root', () => {
 });
 
 test('README grading uses the target marketplace for both host install commands', () => {
-  const text = readmeOf(REFERENCE).replaceAll('@claude-skills', '@other-repo');
+  const text = readmeOf(REFERENCE).replaceAll('@claude-skills', '@other-repo')
+    .replace('/plugin marketplace add natejswenson/claude-skills', '/plugin marketplace add .');
   assert.ok(gradeReadme(text, REFERENCE, 'other-repo').ok, 'the target marketplace did not satisfy both host install checks');
   assert.ok(ids(text, REFERENCE).includes('dual-host-claude-install'), 'Claude Code accepted another marketplace');
   assert.ok(ids(text, REFERENCE).includes('dual-host-codex-install'), 'Codex accepted another marketplace');
+});
+
+test('conformance passes the configured marketplace to README grading', () => {
+  const house = { ...readHouse(REPO), marketplaceName: 'other-repo' };
+  const original = readSkill(REPO, REFERENCE);
+  const readme = original.readme.replaceAll('@claude-skills', '@other-repo')
+    .replace('/plugin marketplace add natejswenson/claude-skills', '/plugin marketplace add .');
+  const checkReadme = (text) => conform(house, { ...original, readme: text })
+    .find((check) => check.id === 'readme-structure');
+  assert.ok(checkReadme(readme).ok, 'conformance ignored the configured marketplace');
+  for (const [id, command] of [
+    ['dual-host-claude-marketplace', '/plugin marketplace add .'],
+    ['dual-host-claude-install', `/plugin install ${REFERENCE}@other-repo`],
+    ['dual-host-codex-install', `codex plugin add ${REFERENCE}@other-repo`],
+  ]) {
+    const wrong = command === '/plugin marketplace add .'
+      ? '/plugin marketplace add natejswenson/claude-skills'
+      : command.replace('@other-repo', '@claude-skills');
+    const result = checkReadme(readme.replace(command, wrong));
+    assert.equal(result.ok, false, `conformance accepted ${wrong}`);
+    assert.ok(result.detail.includes(id), `conformance did not report ${id}`);
+  }
+});
+
+for (const [label, content] of [['missing', null], ['malformed', '{']]) {
+  test(`a ${label} marketplace reports conformance failures without throwing`, (t) => {
+    const repo = mkdtempSync(join(tmpdir(), 'skillfactory-readme-'));
+    t.after(() => rmSync(repo, { recursive: true, force: true }));
+    if (content !== null) {
+      mkdirSync(join(repo, '.claude-plugin'));
+      writeFileSync(join(repo, '.claude-plugin/marketplace.json'), content);
+    }
+    const house = readHouse(repo);
+    assert.equal(house.marketplaceName, null);
+    const checks = conform(house, readSkill(REPO, REFERENCE));
+    assert.equal(checks.find((check) => check.id === 'marketplace-entry').ok, false);
+    const readmeCheck = checks.find((check) => check.id === 'readme-structure');
+    assert.equal(readmeCheck.ok, false);
+    assert.ok(readmeCheck.detail.includes('dual-host-marketplace-name'));
+  });
+}
+
+test('removing an HTML comment cannot assemble an invocation from fragments', () => {
+  const text = readmeOf(REFERENCE).replace('\n$ghfactory\n', '\n$ghfac<!-- hidden -->tory\n');
+  assert.ok(ids(text).includes('dual-host-codex-invocation'));
 });
 
 for (const [id, command] of hostCommands(REFERENCE).filter(([id]) => !id.endsWith('marketplace'))) {
@@ -223,6 +271,8 @@ for (const label of ['Claude Code', 'Codex', 'Personal data']) {
 test('the scaffold README uses the target marketplace and durable migration guide', () => {
   const plan = planScaffold(demo, { ...readHouse(REPO), marketplaceName: 'other-repo' }, { today: '2026-08-01', pins: {} });
   const text = plan.files.find((file) => file.path === `skills/${demo.name}/README.md`).content;
+  assert.ok(text.includes('\n/plugin marketplace add .\n'), 'Claude Code did not register the target checkout');
+  assert.ok(!text.includes('/plugin marketplace add natejswenson/claude-skills'), 'Claude Code registered this repository instead');
   assert.ok(text.includes(`/plugin install ${demo.name}@other-repo`), 'scaffold used the wrong marketplace for Claude Code');
   assert.ok(text.includes(`codex plugin add ${demo.name}@other-repo`), 'scaffold used this repository’s marketplace');
   assert.ok(text.includes('https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md'),

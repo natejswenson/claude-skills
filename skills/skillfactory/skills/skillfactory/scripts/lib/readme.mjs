@@ -218,16 +218,23 @@ export function gradeReadme(text, name, marketplace = 'claude-skills') {
   // elsewhere or bytes supplied by PRESS. Match the whole skill name.
   const fencedLines = (body, inside) => {
     let fenced = false;
-    return (body ?? []).join('\n').replace(/<!--[\s\S]*?-->/g, '').split('\n').filter((line) => {
+    return (body ?? []).join('\n').replace(/<!--[\s\S]*?-->/g, ' ').split('\n').filter((line) => {
       if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return false; }
       return fenced === inside;
     });
   };
   const commands = fencedLines(quickstart, true).map((line) => line.trim());
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (typeof marketplace !== 'string' || !marketplace.trim()) {
+    problems.push(problem('dual-host-marketplace-name', 'the target marketplace name is unavailable',
+      'set a non-empty name in .claude-plugin/marketplace.json before checking the host install commands'));
+    marketplace = '';
+  }
   const escapedMarketplace = marketplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hostCommands = [
-    ['claude-marketplace', /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/],
+    ['claude-marketplace', marketplace === 'claude-skills'
+      ? /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/
+      : /^\/plugin marketplace add \.$/],
     ['claude-install', new RegExp(`^/plugin install ${escaped}@${escapedMarketplace}(?:\\s|$)`)],
     ['claude-invocation', new RegExp(`^/${escaped}(?:\\s|$)`)],
     ['codex-marketplace', /^codex plugin marketplace add "\$PWD"$/],

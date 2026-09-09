@@ -99,10 +99,10 @@ ${rows.map(([p, w]) => `| \`${p}\` | ${w} |`).join('\n')}
 
 ## Quick start
 
-Claude Code — run in chat:
+${marketplace === REPO ? 'Claude Code — run in chat:' : 'Claude Code — start from the root of this repository checkout, then run in chat:'}
 
 \`\`\`text
-/plugin marketplace add ${ORG}/${REPO}
+/plugin marketplace add ${marketplace === REPO ? `${ORG}/${REPO}` : '.'}
 /plugin install ${spec.name}@${marketplace}
 /${spec.name}
 \`\`\`
