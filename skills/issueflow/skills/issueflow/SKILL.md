@@ -1,6 +1,6 @@
 ---
 name: issueflow
-description: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use for listing open issues, fixing a named issue, or taking an issue to a reviewed PR. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested.
+description: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "take this issue to a PR", or asks to list open issues. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested.
 user_invocable: true
 version: 0.11.0
 ---

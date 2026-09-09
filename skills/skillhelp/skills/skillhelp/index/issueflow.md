@@ -4,7 +4,8 @@
 
 - **version** — 0.11.0
 - **stack** — node
-- **summary** — Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use for listing open issues, fixing a named issue, or taking an issue to a reviewed PR. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested. `skills/issueflow/skills/issueflow/SKILL.md:3`
+- **summary** — Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "take this issue to a PR", or asks to list open issues. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested. `skills/issueflow/skills/issueflow/SKILL.md:3`
+- **triggers** — "fix issue 42", "take this issue to a PR", "work an issue"
 
 ## Setup
 
@@ -17,7 +18,7 @@
 
 ## Usage
 
-- Triggers on: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use for listing open issues, fixing a named issue, or taking… `skills/issueflow/skills/issueflow/SKILL.md:3`
+- Triggers on: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "tak… `skills/issueflow/skills/issueflow/SKILL.md:3`
 - An agent that takes an issue and hands back a pull request is easy to build and hard to trust: the stages run to completion, and the first thing a human sees is a diff nobody chose. issueflow inverts… `skills/issueflow/README.md:15`
 - **The plan is attacked before any code exists.** One high-capability subagent investigates and plans in a single document: root cause, evidence, unknowns, the approach and what was rejected, the file… `skills/issueflow/README.md:20`
 - **The implementation proves itself, mechanically.** One implementation subagent per lane makes the change and writes the test, and accept reads the whole evidence file: no failing run before the pass… `skills/issueflow/README.md:29`
