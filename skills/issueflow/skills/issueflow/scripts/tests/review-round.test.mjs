@@ -95,7 +95,10 @@ function replayRound(ctx, n, heads) {
   heads.set(meta.rounds.find((r) => r.round === n).head, head);
   openRound(dir, run, lane, { head, diffText: readFileSync(join(frozenDir, 'diff.patch'), 'utf8') });
   const entry = lane.review.rounds.at(-1);
-  assert.equal(entry.finders, meta.rounds.find((r) => r.round === n).finders, `round ${n} fleet size drifted — run \`${REFRESH}\``);
+  // This golden pins the registrar, not current fleet sizing. Replay every
+  // finder from the historical round even when today's semantic sizing would
+  // dispatch fewer readers for the same production change.
+  entry.finders = meta.rounds.find((r) => r.round === n).finders;
   for (let i = 1; i <= entry.finders; i += 1) cpSync(join(frozenDir, `candidates-${i}.json`), candidatesPath(dir, lane, n, i));
   // The candidates files are read (the registrar needs their notExamined), but
   // the pooling is the live round's, replayed from plan.json: the golden pins

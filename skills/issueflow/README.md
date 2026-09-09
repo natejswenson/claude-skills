@@ -6,7 +6,7 @@
 ---
 <!-- <<< press:masthead -->
 
-*Takes one open GitHub issue to a reviewed pull request: a high-capability plan, a red team on the plan, one human stop, an implementation with its own proof, and a review loop of finders, verifiers and a fixer until no major remains — on Claude Code or Codex.*
+*Takes one open GitHub issue to a reviewed pull request: a high-capability plan, a red team on the plan, an implementation with its own proof, and a review loop of finders, verifiers and a fixer until no major remains — on Claude Code or Codex.*
 
 > **No stage runs on anything but its predecessor's artifact, approved and written to disk — and a stage that was skipped is reported as skipped, never as done.**
 
@@ -23,8 +23,8 @@ and what was rejected, the files, the proof, the work items. A red-team
 subagent then hunts it — the alternate root cause nobody ruled out, the file
 the plan forgot, the proof that would pass without fixing the issue — and its
 findings only count once the registrar has checked every citation resolves.
-You read the red-teamed plan once and say yes. (`--auto` makes the registered
-pass the approval instead.)
+The registered, hash-bound red-team pass approves the plan automatically.
+Use `--review-plan` only when you explicitly want one human plan gate.
 
 **The implementation proves itself, mechanically.** One implementation subagent per lane
 makes the change and writes the test, and `accept` reads the whole evidence
@@ -33,7 +33,8 @@ error, and the stage goes back. A tree with uncommitted work goes back too —
 the pull request is opened from the commits.
 
 **Then the review loop, on the pull request.** The pull request opens as a
-draft. Round 1 reviews the change: two to five finders — each dealt
+draft. Round 1 reviews the change: one to five finders, sized by semantic
+review load — each dealt
 angles from `references/review-method.md`: line-by-line, removed behaviour,
 cross-file, intent against the plan, conventions — file candidates; up to
 eight high-capability verifiers rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
@@ -56,8 +57,8 @@ asks GitHub what is actually true: an issue that has been closed, or a lane
 whose pull request already merged, stops the run rather than being approved
 over.
 
-And when an issue turns out to be four changes, the plan says so — and it
-expands into four stacked pull requests, each reviewed alone, bottom first.
+One pull request per issue is the default. A plan may split genuinely large,
+independently reviewable work into stacked pull requests, reviewed bottom first.
 
 ## What you get
 
@@ -79,8 +80,8 @@ Ask for it in words — the skill drives the commands:
 
 Use `/issueflow` in Claude Code or `$issueflow` in Codex. The runtime is
 persisted when the run starts: Claude keeps its opus/sonnet dispatches; Codex
-uses GPT-6 Astra for plans, implementations and verification, and
-GPT-5.6 Terra for parallel read-heavy finders and the first bounded fix. Codex
+uses GPT-5.6 Terra for planning, parallel read-heavy finders and the first
+bounded fix, and GPT-6 Astra for red teams, implementations and verification. Codex
 briefs also carry `reasoning_effort`, native agent roles and `AGENTS.md`
 discovery, and return completion through the subagent's final response.
 
@@ -104,9 +105,10 @@ discovery, and return completion through the subagent's final response.
 | issue comment | updated | https://github.com/…/issues/3#issuecomment-… |
 ```
 
-Each stage is dispatched, its artifact is shown to you, and the run stops until
-you approve it — and every approval is pushed to the issue before you are asked
-for the next one. `Took` is the stage's own time, briefed until it delivered, so
+Each stage is dispatched and independently gated; routine edits and transitions
+continue autonomously. The run stops only for a real operator decision such as
+drift, takeover, exhausted review, or missing authority. Every transition is
+checkpointed to the issue. `Took` is the stage's own time, briefed until it delivered, so
 the model is not billed for how long you spent reading. `Detail` is how much the
 issue text specifies — never a size estimate, because nothing readable from
 issue prose knows how big "port the admin CMS" is.
