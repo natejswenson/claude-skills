@@ -100,8 +100,9 @@ no throat-clearing, no hedges, no tacked-on closing line, real numbers only.
 Quick start begins with two explicit paths. In Claude Code chat, show
 `/plugin marketplace add natejswenson/claude-skills` for this repository; for a
 non-default target repository, show `/plugin marketplace add .` from its checkout root.
-Then show `/plugin install <name>@claude-skills`, then `/<name>`. In a terminal at the
-repository checkout root, show exactly `codex plugin marketplace add "$PWD"` and
+Then show `/plugin install <name>@claude-skills` for this repository, or
+`/plugin install <name>@<target-marketplace>` for a non-default target, then `/<name>`.
+In a terminal at the repository checkout root, show exactly `codex plugin marketplace add "$PWD"` and
 `codex plugin add <name>@<target-marketplace>`; then tell the reader to start a new
 Codex session and show `$<name>` in a separate chat example. Replace `<name>`
 with this skill’s actual name. Keep all six commands in fenced blocks in
