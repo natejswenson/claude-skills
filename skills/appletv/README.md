@@ -31,6 +31,27 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install appletv@claude-skills
+/appletv
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add appletv@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$appletv
+```
+
 ```bash
 appletv doctor   # checks python and pyatv, creates the skill's own venv when missing, and reports version, credentials store and config path, as a table
 appletv scan     # discovers every Apple TV (multicast, or unicast with --hosts) and returns name, model, tvOS, address, identifier, which protocols are paired and the alias if any, as a table; an empty scan names the likely cause (firewall, VLAN, sleep) and the unicast fallback
@@ -42,9 +63,6 @@ appletv apps     # lists the installed apps with bundle ids and resolves an app 
 appletv type     # puts text into the focused on-screen field and verifies it by reading the field back; refuses when no field is focused
 appletv report   # renders a frozen capture of scan, state and a send with its read-backs as the run tables, for the baseline
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -62,6 +80,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Allow shell access to the local Mac for discovery and pairing.
+- **Codex:** Allow the same local-network and shell access; use `appletv pair` for device credentials, not an app connection.
+- **Personal data:** Both hosts retain pairing credentials in `~/.pyatv.conf` and aliases/preferences in `~/.config/appletv/config.json`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 - Python 3.9+ on the Mac; `appletv doctor` creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global.

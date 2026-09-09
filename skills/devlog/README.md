@@ -43,6 +43,27 @@ What you see on that page is exactly what `devlog preview` renders locally.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install devlog@claude-skills
+/devlog
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add devlog@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$devlog
+```
+
 ```sh
 npx @natjswenson/devlog init      # create the repo, install the skill, write config
 npx @natjswenson/devlog preview   # see it rendered at http://localhost:5173
@@ -65,10 +86,16 @@ lets you register one or more projects in a single run.
 
 ## Requirements
 
+- **Claude Code:** Authenticate `gh` in the shell and allow web research for release guides.
+- **Codex:** Use the same authenticated `gh` CLI and available web tools. `init` still writes its legacy Claude skill copy; the Codex plugin is installed separately above.
+- **Personal data:** Both hosts retain config, voice fallback and image-style assets in `~/.claude/skills/devlog/`; an existing `~/.claude/ghostwriter/voice` can also supply the voice.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
+
 - **Node 18+** for the CLI and preview app.
 - **GitHub CLI** (`gh`), authenticated with `gh auth login` — used to create your
   dev-log repo and push entries.
-- **Claude Code** to run the `/devlog` skill.
+- **Claude Code or Codex** to run the skill.
 
 ## How it works
 

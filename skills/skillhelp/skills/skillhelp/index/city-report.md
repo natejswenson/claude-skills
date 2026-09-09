@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Python 3.10+. **No third-party packages, no API key, no setup** — the runtime is stdlib only and the first command works immediately. requirements-dev.txt covers the test suite alone. `skills/city-report/README.md:81`
+- **Claude Code:** Allow Python and network access to the public Data USA API. `skills/city-report/README.md:93`
+- **Codex:** Allow the same Python and API access; no connected app or API key is required. `skills/city-report/README.md:94`
+- **Personal data:** Both hosts cache public data in the system temporary directory under city-report/; there is no private ~/.claude/ configuration. `skills/city-report/README.md:95`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/city-report/README.md:97`
+- Python 3.10+. **No third-party packages, no API key, no setup** — the runtime is stdlib only and the first command works immediately. requirements-dev.txt covers the test suite alone. `skills/city-report/README.md:99`
 
 ## Usage
 
@@ -42,12 +46,12 @@
 - python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" --section economy `skills/city-report/skills/city-report/SKILL.md:108`
 - pytest # offline, fixture-based, 100% coverage `skills/city-report/skills/city-report/SKILL.md:168`
 - pytest -m live # hits the real API; verifies every metric still returns data `skills/city-report/skills/city-report/SKILL.md:169`
-- python3 $S/scripts/load.py "Minneapolis, MN" # fetch + cache + digest `skills/city-report/README.md:56`
-- python3 $S/scripts/query.py # list metric keys `skills/city-report/README.md:57`
-- python3 $S/scripts/query.py poverty_rate --series `skills/city-report/README.md:58`
-- python3 $S/scripts/report.py # render + open `skills/city-report/README.md:59`
-- python3 $S/scripts/report.py --section housing `skills/city-report/README.md:60`
-- python3 $S/scripts/report.py "Hawley, MN" --vs "Fargo, ND" `skills/city-report/README.md:113`
+- python3 "$S"/scripts/load.py "Minneapolis, MN" # fetch + cache + digest `skills/city-report/README.md:77`
+- python3 "$S"/scripts/query.py # list metric keys `skills/city-report/README.md:78`
+- python3 "$S"/scripts/query.py poverty_rate --series `skills/city-report/README.md:79`
+- python3 "$S"/scripts/report.py # render + open `skills/city-report/README.md:80`
+- python3 "$S"/scripts/report.py --section housing `skills/city-report/README.md:81`
+- python3 "$S"/scripts/report.py "Hawley, MN" --vs "Fargo, ND" `skills/city-report/README.md:131`
 
 ## Architecture
 

@@ -29,15 +29,33 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install netwatch@claude-skills
+/netwatch
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add netwatch@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$netwatch
+```
+
 ```bash
 netwatch flows      # parse a captured snapshot (the raw nettop/lsof/netstat text the agent saved) into a normalized, deduplicated flow table — process, pid, protocol, remote host, remote port, bytes in/out — each flow carrying the source line it came from, and refuse an empty or malformed capture
 netwatch baseline   # read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline already covers
 netwatch report     # classify every flow in the snapshot as known or unrecognized strictly against the baseline, roll the flows up by process and by destination, and emit the report — with every reported flow traceable to a captured line and no flow ever labelled dangerous
 netwatch accept     # fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -53,6 +71,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Run on the local Mac with shell access to `lsof`, `nettop`, `netstat` and `ps`.
+- **Codex:** Allow the same local shell commands; a remote Codex environment observes its own machine, not your Mac.
+- **Personal data:** Captures, baseline and reports go to the paths chosen for the run; no private `~/.claude/netwatch` store is required.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

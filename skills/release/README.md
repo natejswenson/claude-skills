@@ -45,15 +45,33 @@ Two things it refuses to do quietly:
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install release@claude-skills
+/release
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add release@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$release
+```
+
 ```bash
 release preflight         # one table per named component: its state, the version on main, the last tag, how many commits are unreleased, every blocker, and every other component the same promotion would release
 release changelog-draft   # the commits since the last tag, grouped into Keep-a-Changelog sections, as a starting entry the model rewrites into prose
 release prepare           # the agreed version and notes written into every version file and the CHANGELOG, in one commit on a release branch
 release cut               # one bounded step of the path to the tag, reporting the stage it is parked at and whether the tag now exists on the remote
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -66,6 +84,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Allow `gh` and shipflow to access the target repository.
+- **Codex:** Use the same authenticated `gh` CLI and shipflow installation; Claude app connections are not imported.
+- **Personal data:** Release configuration remains in the target repository; no private `~/.claude/release` store is required.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 - [`shipflow`](../shipflow) **≥ 0.4.0** — every step that changes anything is one

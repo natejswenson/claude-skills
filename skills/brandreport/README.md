@@ -29,6 +29,27 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install brandreport@claude-skills
+/brandreport
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add brandreport@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$brandreport
+```
+
 ```bash
 brandreport init     # creates a run directory for a subject name and returns its layout as a table — snapshot dir, findings file, report path
 brandreport add      # files one fetched artifact into the snapshot with provenance — URL, fetched-at, kind, identity status (confirmed/unconfirmed) and the corroboration note — and returns the updated corpus row
@@ -36,9 +57,6 @@ brandreport status   # tables the whole corpus: every snapshot with its source, 
 brandreport gate     # enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item is cited by a confirmed-section claim
 brandreport report   # renders findings + snapshot into the press-styled HTML brand report, fully offline — refuses to render if gate fails
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -53,6 +71,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Enable web search and page-fetch tools for source discovery.
+- **Codex:** Enable available web search and page-fetch tools; Claude web-tool connections are not imported.
+- **Personal data:** Both hosts retain fetched sources and reports under `~/.claude/brandreport/<slug>`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

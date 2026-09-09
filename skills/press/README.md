@@ -52,6 +52,27 @@ ghostwriter's avatar footer once already, which is why regions exist.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install press@claude-skills
+/press
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add press@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$press
+```
+
 ```bash
 npx -y @natjswenson/press@latest check --repo .     # is this repo in sync?
 npx -y @natjswenson/press@latest emit  --repo .     # make it so
@@ -75,6 +96,12 @@ repo a release with a sibling skill.
   once.
 
 ## Requirements
+
+- **Claude Code:** Allow local file and shell tools to inspect and generate registered regions.
+- **Codex:** Use available file and shell tools; Claude app connections are not imported and local brand commands need no connected app.
+- **Personal data:** Brand sources stay in the plugin and consumer repository; no private `~/.claude/press` store is required.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+, no dependencies.
 - Nothing else. Every command is offline; `propagate` is the only one that talks

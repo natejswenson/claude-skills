@@ -30,15 +30,33 @@ Use it when the work needs a repeatable process and a result you can inspect.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install shipreport@claude-skills
+/shipreport
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add shipreport@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$shipreport
+```
+
 ```bash
 shipreport index      # build or refresh the local corpus, redacting secrets on the way in; first run backfills the past year of GitHub contributions plus every available session transcript, later runs read the stored watermark and collect only items newer than it. Returns a table of source, window covered, new items, total cached, redactions applied, and the new watermark.
 shipreport rank       # score every cached item that falls inside the requested time frame and return the cut as a table of rank, item, kind, score, the signals that produced the score, and above-or-below the line — so the reason an item did or did not make the report is visible before any prose is written.
 shipreport receipts   # check every citation in a drafted report against the corpus and return a table of claim, cited receipt, and resolved yes or no; exits non-zero when any citation does not resolve, which is how the one rule is enforced by code rather than by intention.
 shipreport render     # emit the press-styled HTML report from the approved item set and the written prose, and return the output path plus a table of section, items included, and receipts attached.
 ```
-
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask
-for work matching the triggers below.
 
 ## Triggers
 
@@ -52,6 +70,12 @@ for work matching the triggers below.
 - Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
 
 ## Requirements
+
+- **Claude Code:** Authenticate `gh`; transcript collection defaults to `~/.claude/projects/`.
+- **Codex:** Authenticate the same `gh` CLI. Index with `--transcripts "${CODEX_HOME:-$HOME/.codex}/sessions"`; add `--full` when switching an existing corpus to that transcript root so the old watermark does not skip history.
+- **Personal data:** Both hosts retain the contribution corpus and watermark under `~/.shipreport/`; transcripts stay in their original host directories.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

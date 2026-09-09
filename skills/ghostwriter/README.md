@@ -45,6 +45,30 @@ one.
 
 ## Quick start
 
+Claude Code — run in chat:
+
+```text
+/plugin marketplace add natejswenson/claude-skills
+/plugin install ghostwriter@claude-skills
+/ghostwriter
+```
+
+Codex — run in a terminal from the root of this repository checkout:
+
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add ghostwriter@claude-skills
+```
+
+Start a new Codex session, then invoke in chat:
+
+```text
+$ghostwriter
+```
+
+For the script examples below, run from `skills/ghostwriter/skills/ghostwriter` in
+this checkout, or the directory containing the installed `SKILL.md`.
+
 ```bash
 python3 scripts/linkedin_auth.py       # one-time OAuth, ~30 seconds
 python3 scripts/extract_posts.py       # turn your export into voice input
@@ -57,8 +81,7 @@ Then just ask:
 - *"Draft a post on &lt;your topic&gt;."*
 - *"Give me a post from my interests."*
 
-Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills),
-then say **"set up ghostwriter"** and it walks you through the rest.
+For first-time setup, say **"set up ghostwriter"**.
 
 ## Triggers
 
@@ -68,6 +91,12 @@ then say **"set up ghostwriter"** and it walks you through the rest.
 - Setting up or configuring LinkedIn posting.
 
 ## Requirements
+
+- **Claude Code:** Run `linkedin_auth.py` once with the developer app credentials.
+- **Codex:** Use the same LinkedIn OAuth scripts and credentials; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Native image generation is the Codex card route; see [Codex images](skills/ghostwriter/references/codex-images.md). Optional Claude/Anthropic judges still need their own credentials.
+- **Personal data:** Both hosts retain the voice profile, brand overrides and `.env` credentials in `~/.claude/ghostwriter/`.
+
+See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
 - Python 3 standard library only for the core — drafting and publishing need no
   third-party packages.
