@@ -2,7 +2,7 @@
 name: issueflow
 description: Work a GitHub issue from open to pull request — one high-capability subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one implementation subagent builds it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.10.0
+version: 0.11.0
 ---
 
 ## Codex runtime
@@ -101,6 +101,12 @@ step whose command does not exist fails `skillfactory verify`.
 | whether a candidate is real, and whether a fix fixed it — the verifier's ruling | CONFIRMED, PLAUSIBLE and REFUTED are judgments about behaviour; the code enforces only that each is made, quoted, and made about a line that exists |
 | how to change the work so a finding no longer holds — the fixer's change | the finding names the failure; the fix is the fixer's |
 | whether the plan is good enough to approve | this is the user's call and the whole point of the human stop — or, on an auto run, the red team's, registered and hash-bound |
+
+Before dispatch, issueflow persists a complexity profile from the frozen issue:
+plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
+tests, templates, generated files, manifests, or acceptance criteria use
+`standard` (two rounds, 30 minutes); code and operations use `deep`. Resuming
+does not change the profile; expiry hands the run back with its current artifact.
 
 ## The flow — run `next`, do what it prints, repeat
 

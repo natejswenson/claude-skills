@@ -85,7 +85,8 @@ export const nextReviewRound = (lane) => (lane.review?.rounds.length ?? 0) + 1;
 export const reviewExhausted = (lane) => {
   const rounds = lane.review?.rounds ?? [];
   const last = rounds.at(-1);
-  return rounds.length >= MAX_REVIEW_ROUNDS && Boolean(last?.registered) && last.verdict !== 'converged';
+  const cap = lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
+  return rounds.length >= cap && Boolean(last?.registered) && last.verdict !== 'converged';
 };
 
 /** Every finding still open on the lane, majors first. */
