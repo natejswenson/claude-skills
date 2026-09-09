@@ -92,11 +92,13 @@ for (const delivered of ['plan', 'implementation']) {
       const bin = join(dir, 'bin');
       mkdirSync(bin);
       const calls = join(bin, 'calls.jsonl');
+      const comments = join(bin, 'comments.jsonl');
       writeFileSync(join(bin, 'gh'), [
         '#!/usr/bin/env node',
-        "const { appendFileSync } = require('node:fs');",
+        "const { appendFileSync, readFileSync } = require('node:fs');",
         'const args = process.argv.slice(2);',
         `appendFileSync(${JSON.stringify(calls)}, JSON.stringify(args) + '\\n');`,
+        `if (args.includes('PATCH') && ${failure !== 'comment'}) appendFileSync(${JSON.stringify(comments)}, readFileSync(args[args.indexOf('--input') + 1], 'utf8'));`,
         "if (args[0] === 'issue') console.log(JSON.stringify({ state: 'OPEN' }));",
         "else if (args[0] === 'pr') console.log('[]');",
         `else if (args.includes('PATCH')) { ${failure === 'comment' ? "console.error('comment unavailable'); process.exit(1);" : "console.log('https://example.invalid/comment/123');"} }`,
@@ -108,6 +110,7 @@ for (const delivered of ['plan', 'implementation']) {
       markBriefed(dir, run, step, () => new Date(Date.now() - 60_000).toISOString());
       if (delivered === 'implementation') writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
       run.createdAt = new Date(Date.now() - 20_000_000).toISOString();
+      run.budgetRenewals = [{ at: new Date(Date.now() - 10_000_000).toISOString(), budgetSeconds: 600 }];
       run.checkpoint.commentId = 123;
       run.checkpoint.commentUrl = 'https://example.invalid/comment/123';
       run.lanes[0].pr = { number: 1, url: 'https://example.invalid/pull/1', title: 'fix' };
@@ -138,6 +141,17 @@ for (const delivered of ['plan', 'implementation']) {
       assert.equal(resumed.code, failure === 'none' ? 0 : 3, resumed.err);
       assert.deepEqual(loadRun(dir).checkpoint, checkpoint);
       assert.notEqual(readFileSync(calls, 'utf8'), callBytes, 'resume must checkpoint the renewed budget');
+      if (failure !== 'comment') {
+        const bodies = readFileSync(comments, 'utf8').trim().split('\n').map((line) => JSON.parse(line).body);
+        const renewals = loadRun(dir).budgetRenewals;
+        assert.equal(renewals.length, 2);
+        assert.ok(!bodies.at(-2).includes(renewals.at(-1).at), 'the previous checkpoint predates resume');
+        for (const renewal of renewals) {
+          const deadline = new Date(Date.parse(renewal.at) + renewal.budgetSeconds * 1000).toISOString();
+          assert.ok(bodies.at(-1).includes(`| ${renewal.at} | ${renewal.budgetSeconds} | ${deadline} |`),
+            'the submitted checkpoint must retain each renewal timestamp, allowance and deadline');
+        }
+      }
       if (failure !== 'none') assert.match(resumed.out, /incomplete backup/);
     });
   }

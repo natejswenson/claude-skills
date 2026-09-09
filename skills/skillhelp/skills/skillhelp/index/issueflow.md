@@ -17,8 +17,8 @@
 - **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:195`
 - **A git repo with a GitHub remote.** `skills/issueflow/README.md:197`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
-- Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:614`
-- Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:116`
+- Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:629`
+- Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:119`
 
 ## Usage
 
