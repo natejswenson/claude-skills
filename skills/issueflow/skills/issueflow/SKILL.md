@@ -1,8 +1,8 @@
 ---
 name: issueflow
-description: Work a GitHub issue from open to pull request — one opus subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one opus subagent implements it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
+description: Work a GitHub issue from open to pull request — one high-capability subagent plans it (root cause through work items), a red team attacks the plan, you approve it once (or never, with --auto), one implementation subagent builds it with a two-sided proof, the pull request opens as a draft, and a review loop of finders, verifiers and a fixer posts inline findings and re-reviews every fix until no major remains. Use when the user says "work an issue", "list open issues", "what issues are open", "pick an issue to work on", "fix issue 42", "take this issue to a PR", "review my PR until it's clean", "work this issue autonomously", "auto mode", or "no approvals, just ship it". Lists the open issues in the repo as a pick-table, splits an issue too big for one change into stacked work items, and opens the pull requests into dev following the repo's own branch policy.
 user_invocable: true
-version: 0.9.0
+version: 0.10.0
 ---
 
 ## Codex runtime
@@ -11,12 +11,31 @@ When running in Codex, invoke this skill as `$issueflow`. Resolve scripts, asset
 and references from the directory containing this SKILL.md, regardless of the
 current working directory. Existing `~/.claude/` personal-data paths remain valid
 and are still used by the bundled scripts; they do not require Claude to run.
-Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
-`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
-available question tool or a concise chat question; wait for answers that gate
-action. Use Codex's delegation tools for required subagents when available;
-otherwise disclose that independent execution is unavailable. Discover connected
-apps by capability rather than assuming Claude MCP tool names exist.
+
+Pass `--runtime codex` to `start`. The run persists that choice, and every later
+brief prints a Codex-native model, reasoning effort and role. Map them directly to
+the delegation call's `model` and `reasoning_effort`; use the role to choose the
+task name and describe its job. Codex dispatch profiles are:
+
+| Work | Model | Reasoning | Role |
+|---|---|---|---|
+| plan · red team · verifier | `gpt-6-astra` | `high` | `explorer` / `default` |
+| implementation | `gpt-6-astra` | `high` | `worker` |
+| finder · first fix | `gpt-5.6-terra` | `high` | `explorer` / `worker` |
+| fix after a major survives | `gpt-6-astra` | `xhigh` | `worker` |
+
+Use Codex's delegation tools for every required subagent. Give each a unique,
+short task name and the exact one-line prompt the CLI prints. When several are
+independent, spawn all of them without waiting between calls; Codex has no Claude
+multi-call message requirement. A Codex subagent's final response returns to its
+parent automatically, so its brief asks for a final summary instead of
+`SendMessage main`; the artifact on disk remains the state machine's signal.
+
+Run the printed `wait:` command as a yielded shell process, retain its session id,
+and poll it while keeping the user updated. Do not block the conversation in one
+long foreground call. For a human stop, ask the concise question in chat only
+after showing the plan and review. Discover connected apps by capability rather
+than assuming Claude MCP tool names exist.
 
 # /issueflow — one open issue to a pull request, driven by `next`
 
@@ -87,7 +106,7 @@ step whose command does not exist fails `skillfactory verify`.
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>       # once: which issue
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> [--auto]
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> [--runtime codex] [--auto]
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>      # then this, every turn
 ```
 
@@ -117,19 +136,22 @@ next: stop — human | exhausted | drift | dispute | stalled | unpushed | shippe
 next: run …                            ← (only mid-output: a step next performed itself)
 ```
 
-**On `dispatch`:** start exactly the subagents printed, on exactly the model
-named, with exactly the one-line prompt given — in the background, and in ONE
-message when there are several. Say one short lowercase line about what is
-running and the expectation `brief` printed ("this usually takes about N
-minutes here"). Then run the `wait:` line with background Bash. When it
-returns, run `next`. **Never dispatch a stage on a model other than the one
-`brief` names.** **Never do a stage's work yourself** — an orchestrator that
-investigates "quickly, to save a dispatch" has collapsed the isolated contexts
-into one and thrown away the only thing this shape buys.
+**On `dispatch`:** start exactly the subagents printed, on exactly the model and
+reasoning effort named, with exactly the one-line prompt given — in the
+background. In Claude, dispatch several in one message; in Codex, spawn them in
+immediate succession without waiting between calls. Say one short lowercase line
+about what is running and the expectation `brief` printed ("this usually takes
+about N minutes here"). Then run the `wait:` line with the host's yielded or
+background shell mechanism. When it returns, run `next`. **Never dispatch a
+stage on a model or reasoning effort other than the one `brief` names.** **Never
+do a stage's work yourself** — an orchestrator that investigates "quickly, to
+save a dispatch" has collapsed the isolated contexts into one and thrown away
+the only thing this shape buys.
 
 **On `wait`:** run the wait line, then `next`. The wait is filesystem-observed —
-output newer than the brief that dispatched it — so a stage's `SendMessage` is
-information, never the signal. If the wait exits 124 the stage has stalled;
+output newer than the brief that dispatched it — so a Claude stage's
+`SendMessage`, or a Codex subagent's returned final response, is information,
+never the signal. If the wait exits 124 the stage has stalled;
 `next` says so and prints the same prompt to re-dispatch.
 
 **On `stop`:** read the reason. `human` is the plan gate — `Read` the plan and
@@ -157,9 +179,10 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
 
 ### What the loop does, so you can narrate it
 
-1. **Plan.** One opus subagent investigates and plans: root cause, evidence,
+1. **Plan.** One high-capability subagent from the run's runtime profile
+   investigates and plans: root cause, evidence,
    unknowns, approach, rejected alternatives, files, proof, work items.
-2. **Red team.** One opus subagent attacks the plan and writes JSON findings;
+2. **Red team.** One high-capability subagent attacks the plan and writes JSON findings;
    `review` registers them — every citation must resolve, the severities decide
    the verdict, the verdict binds to the plan's hash. Critical and high block;
    the plan goes back with the findings, up to three rounds. **In this stage
@@ -169,24 +192,25 @@ Exit codes are a contract: `0` fine · `2` a gate refused, send the work back ·
    the moment it is approved — and work items are the exception, for a change
    too large to review as one; several small fixes in one issue are one pull
    request with a commit each.
-4. **Implement**, one opus subagent per lane, up the stack: the change, the
+4. **Implement**, one implementation subagent per lane, up the stack: the change, the
    test seen red then green, the real output, the commits. `accept` reads the
    whole evidence file and refuses a green-only run, a green-then-red run, and
    a red that is only a load error.
 5. **Ship.** Every lane's pull request opens as a draft (or, where drafts are
    unavailable, labelled `review-loop` and titled `[reviewing]`).
 6. **Review loop**, bottom lane first. **Round 1 reviews the change; every
-   later round reviews the fix.** Round 1: 2–5 opus finders (one under sixty
+   later round reviews the fix.** Round 1: 2–5 finder subagents (one under sixty
    changed lines), each dealt angles from `references/review-method.md`; up to
-   8 opus verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the candidates.
-   Round 2 and after: 1–3 opus finders sized to the diff since the last round's
-   head, which they read first (the whole change is reference); up to 4 opus
+   8 high-capability verifiers ruling CONFIRMED / PLAUSIBLE / REFUTED on the candidates.
+   Round 2 and after: 1–3 finders sized to the diff since the last round's
+   head, which they read first (the whole change is reference); up to 4
    verifiers ruling on the candidates the finders proposed as majors and
    fixed / still-open / withdrawn on every prior **major** — a prior nit is
    never re-verified (still open by construction; one the fixer reported fixed
    closes on its word), and a candidate proposed as a nit is recorded, never
    verified or posted. Then the registrar; one GitHub review with a thread per
-   inline finding; then a fixer (sonnet, or opus once a major survived a fix)
+   inline finding; then a fixer (the runtime's efficient profile, escalated to
+   its strongest profile once a major survived a fix)
    on every open major — and, in round 1 only, nits with a one-line
    suggestion — the smallest change that removes each mechanism, one commit
    per round, a push, a fix report. **Paste the round's table
@@ -262,7 +286,7 @@ it safe, and all three are the CLI's job, not yours:
 |---|---|
 | `next` | the one next action, having performed every deterministic step before it: a dispatch with its wait line, a wait, or a stop naming who must act |
 | `board` | every open issue as a pick-table, plus the repo's resolved branch policy — the `Run` column says who already has each issue |
-| `start --issue <n> [--auto] [--take-over]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — `--auto` removes the human stop after the plan; `--take-over` is the only way past a claim |
+| `start --issue <n> [--runtime claude\|codex] [--auto] [--take-over]` | the frozen issue on disk, the issue itself, the state machine, the run board, and the run's comment posted on the issue — runtime defaults to Claude and is persisted; `--auto` removes the human stop after the plan; `--take-over` is the only way past a claim |
 | `brief [--stage] [--lane] [--review]` | a stage's, or the red team's, model, agent, artifact, worktree and the exact dispatch prompt |
 | `review --stage investigate` | registers a red-team review of the plan: validates every citation, derives the verdict, hash-binds it, prints the findings table and the coverage gap |
 | `accept [--stage] [--lane] [--skip] [--force] [--auto]` | the gate: records an artifact and its approval, or refuses and says why — plus the verification table and a checkpoint |
@@ -294,6 +318,7 @@ evals; a real run should never pass it.
 | `scripts/issueflow.js` | the CLI: `next`, `board`, `start`, `brief`, `accept`, `review`, `split`, `ship`, the six `review-*` commands, `ready`, `rebase`, `status`, `runs`, `finish` |
 | `scripts/lib/next.mjs` | the driver: state → one action; the wait lines; the stall threshold |
 | `scripts/lib/stages.mjs` | the two stages: model, agent, artifact, what each is asked and refused |
+| `scripts/lib/runtime.mjs` | the persisted Claude/Codex dispatch profiles: model, reasoning effort, role and output labels |
 | `scripts/lib/reviews.mjs` | the red team on the plan: the reviewer contract, the JSON finding shape, the citation resolver, the registrar that hash-binds a verdict |
 | `scripts/lib/prreview.mjs` | the pull request review loop: fleet sizing, hunk classification, immutable finding ids, transitions, the convergence rules, the pending-review payload, thread maintenance |
 | `scripts/lib/reviewbrief.mjs` | the finder, verifier and fixer briefs, spliced from `references/review-method.md` |
@@ -321,7 +346,8 @@ pinned against real runs — see each entry's `update_command` to refresh it.
 | Path | Is |
 |---|---|
 | `scripts/issueflow.js` | the CLI: `board`, `start`, `brief`, `accept`, `review`, `split`, `status`, `runs`, `ship`, `finish` |
-| `scripts/lib/stages.mjs` | the four stages: model, agent, artifact, what each is asked and refused |
+| `scripts/lib/stages.mjs` | the two stages: model, agent, artifact, what each is asked and refused |
+| `scripts/lib/runtime.mjs` | the persisted Claude/Codex dispatch profiles: model, reasoning effort, role and output labels |
 | `scripts/lib/reviews.mjs` | the red team: one reviewer per stage, the finding grammar, the citation resolver, and the registrar that hash-binds a verdict |
 | `scripts/lib/run.mjs` | the state machine and the gate — `dependencies()` and `blockers()` are the one rule as code |
 | `scripts/lib/brief.mjs` | the dispatch-prompt renderer |

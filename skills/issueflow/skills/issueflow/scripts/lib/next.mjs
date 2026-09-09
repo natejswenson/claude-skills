@@ -33,10 +33,12 @@ import {
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
-  FINDER_MODEL, MAX_REVIEW_ROUNDS, VERIFIER_MODEL, candidatesPath, currentRound, finderBriefPath, fixBriefPath,
+  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath,
   fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
+import { dispatchLabel } from './runtime.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
@@ -106,7 +108,6 @@ const briefedSince = (step, iso) => Boolean(step.stage.at?.briefed) && (!iso || 
 // ---------------------------------------------------------------------------
 
 function decidePlan(dir, run, step, ctx) {
-  const model = step.stage.model;
   const brief = briefPath(dir, step);
   const artifact = artifactPath(dir, step);
   const latest = latestRound(step);
@@ -168,7 +169,7 @@ function decideImplement(dir, run, step, ctx) {
     const elapsed = (Date.parse(ctx.now()) - Date.parse(step.stage.at.briefed)) / 1000;
     if (elapsed > timeout) {
       return stop('stalled', `${step.key} has run ${Math.round(elapsed / 60)} minutes with nothing delivered — past ${Math.round(timeout / 60)} minutes, the stall threshold for this repo`, {
-        items: [{ model: step.stage.model, prompt: promptFor(brief) }],
+        items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(brief) }],
         command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
       });
     }
@@ -219,21 +220,21 @@ function decideLoop(dir, run, lane, ctx) {
     // at once, and a wait with no stall rule would have been printed forever.
     // Missing outputs whose briefs are older than the deadline stop the run
     // with exactly the prompts to re-dispatch — the same one-line prompts.
-    const stalled = (files, briefs, model, what) => {
+    const stalled = (files, briefs, profile, what) => {
       const missing = files.map((f, i) => [f, briefs[i]]).filter(([f]) => !existsSync(f));
       const oldest = Math.min(...missing.map(([, b]) => mtime(b) ?? Infinity));
       if (missing.length === 0 || !Number.isFinite(oldest)) return null;
       const elapsed = (Date.parse(ctx.now()) - oldest) / 1000;
       if (elapsed <= DEFAULT_TIMEOUT_S) return null;
       return stop('stalled', `${lane.slug} round ${round}: ${missing.length} ${what}(s) briefed ${Math.round(elapsed / 60)} minutes ago and never delivered — past the ${Math.round(DEFAULT_TIMEOUT_S / 60)}-minute threshold`, {
-        items: missing.map(([, b]) => ({ model, prompt: promptFor(b) })),
+        items: missing.map(([, b]) => ({ ...profile, prompt: promptFor(b) })),
       });
     };
     if (entry.verifiers === null) {
       const files = Array.from({ length: entry.finders }, (_, i) => candidatesPath(dir, lane, round, i + 1));
       const briefs = Array.from({ length: entry.finders }, (_, i) => finderBriefPath(dir, lane, round, i + 1));
       if (allPresent(files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
-      return stalled(files, briefs, FINDER_MODEL, 'finder') ?? wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
+      return stalled(files, briefs, finderProfile(run), 'finder') ?? wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
         pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
       });
     }
@@ -241,7 +242,7 @@ function decideLoop(dir, run, lane, ctx) {
     const files = Array.from({ length: entry.verifiers }, (_, i) => verdictsPath(dir, lane, round, i + 1));
     const briefs = Array.from({ length: entry.verifiers }, (_, i) => verifierBriefPath(dir, lane, round, i + 1));
     if (allPresent(files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
-    return stalled(files, briefs, VERIFIER_MODEL, 'verifier') ?? wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
+    return stalled(files, briefs, verifierProfile(run), 'verifier') ?? wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
       pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
     });
   }
@@ -361,10 +362,10 @@ export function renderAction(action, { skillCommand, runDir }) {
   if (action.note) lines.push(`  ${action.note}`);
   if (action.kind === 'dispatch') {
     lines.push('');
-    if (action.items.length === 1) lines.push(`  Dispatch ONE subagent, model \`${action.items[0].model}\`, with exactly this prompt:`, '', `  ${action.items[0].prompt}`);
+    if (action.items.length === 1) lines.push(`  Dispatch ONE subagent, ${dispatchLabel(action.items[0])}, with exactly this prompt:`, '', `  ${action.items[0].prompt}`);
     else {
       lines.push(`  These ${action.items.length} are independent. Dispatch them as ${action.items.length} subagents in ONE message:`, '');
-      for (const it of action.items) lines.push(`  [${it.model}] ${it.prompt}`);
+      for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
     }
     lines.push('', `wait: ${action.wait}`, then);
   } else if (action.kind === 'wait') {
@@ -373,7 +374,7 @@ export function renderAction(action, { skillCommand, runDir }) {
     lines.push(`  ${action.detail}`);
     if (action.artifact) lines.push(`  plan:    ${action.artifact}`);
     if (action.review) lines.push(`  review:  ${action.review}`);
-    if (action.items) for (const it of action.items) lines.push(`  [${it.model}] ${it.prompt}`);
+    if (action.items) for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
     if (action.command) lines.push(`  command: ${skillCommand} ${action.command} --run-dir ${runDir}`);
     if (action.alternative) lines.push(`  or:      ${skillCommand} ${action.alternative} --run-dir ${runDir}`);
   } else if (action.kind === 'run') {
