@@ -55,7 +55,9 @@ function argv(args) {
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a.startsWith('--')) {
-      const [k, inline] = a.slice(2).split('=');
+      const equal = a.indexOf('=');
+      const k = equal === -1 ? a.slice(2) : a.slice(2, equal);
+      const inline = equal === -1 ? undefined : a.slice(equal + 1);
       const key = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
       if (inline !== undefined) out[key] = inline;
       else if (BOOLEAN_FLAGS.has(key)) out[key] = true;
@@ -1486,11 +1488,16 @@ async function cmdNext(args) {
     finish: () => cmdFinish({ ...args }),
   };
   let dispatched = null;
+  let completed = false;
   for (let i = 0; i < 12; i += 1) {
     const run = observe(dir, loadRun(dir));
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
       if (action.kind === 'stop' && action.reason === 'budget') {
+        checkpointBudgetStop(dir, run, args, action);
+        return;
+      }
+      if (completed && action.kind === 'stop' && action.budget?.expired) {
         checkpointBudgetStop(dir, run, args, action);
         return;
       }
@@ -1508,6 +1515,7 @@ async function cmdNext(args) {
     console.log(`▶ ${action.command}${action.note ? ` — ${action.note}` : ''}\n`);
     try {
       const rows = await perform[action.command](action.args);
+      completed = true;
       if (Array.isArray(rows) && rows.some((r) => r.state === 'failed')) {
         console.log(`\n${renderAction({ kind: 'stop', reason: 'checkpoint', detail: 'Gate results are saved locally; incomplete backup. Repair the reported checkpoint failure, then retry next.', budget: budgetStatus(loadRun(dir)), command: 'next' }, { skillCommand, runDir: dir })}`);
         process.exitCode = 3;
