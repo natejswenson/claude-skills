@@ -5,6 +5,11 @@
   },
   "prose": [
     {
+      "id": "explicit-budget-renewal",
+      "pattern": "Never auto-renew",
+      "rationale": "A printed recovery command is not user authorization to grant another time window."
+    },
+    {
       "id": "the-one-rule",
       "pattern": "No stage runs on anything but its predecessor's artifact, ap",
       "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
@@ -92,6 +97,10 @@
   ],
   "split": {
     "deterministic": [
+      {
+        "step": "explicitly renew an expired time allowance while preserving artifacts, checkpoint identity, gates and review limits",
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" resume --run-dir <run> --budget-seconds 1800"
+      },
       {
         "step": "compute the one next action from the run's state, perform every deterministic step it reaches, and print a dispatch, a wait, or a stop",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" next"
@@ -202,6 +211,22 @@
   },
   "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and — see review-round-golden — a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
   "baseline": [
+    {
+      "id": "artifact-before-budget-and-recovery",
+      "kind": "trap",
+      "test": "scripts/tests/budget.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/budget.test.mjs",
+      "rationale": "A delivered artifact reaches its normal gate after expiry; dispatch boundaries refuse new work. Explicit resume grants a fresh window while preserving state, artifacts, runtime, checkpoint identity and review caps. Invalid allowances, active/completed runs, dirty trees and missing evidence remain refused."
+    },
+    {
+      "id": "budget-checkpoint-durability",
+      "kind": "trap",
+      "test": "scripts/tests/durability.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/durability.test.mjs",
+      "rationale": "Expiry persists delivery without approval, reuses the sticky comment, pushes committed work and reports incomplete backup on failure without undoing acceptance. Resume changes neither checkpoint identity nor commits and calls no network service."
+    },
     {
       "id": "the-real-run",
       "kind": "golden",

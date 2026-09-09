@@ -1585,6 +1585,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        or \`codex\`; Codex emits native model, reasoning and role fields
   --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
+  --budget-seconds <positive-integer>  on resume: grant seconds from now, preserving all gates and review limits;
+                       reject invalid allowances and active/completed runs. Never auto-renew.
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
   --take-over          on start: displace a run another session owns — republishes over its
@@ -1606,6 +1608,7 @@ async function main() {
   const args = argv(process.argv.slice(2));
   const cmd = args._[0];
   if (args.version) return console.log(VERSION);
+  if (args.help) return console.log(USAGE);
   try {
     switch (cmd) {
       case 'board': return await cmdBoard(args);
