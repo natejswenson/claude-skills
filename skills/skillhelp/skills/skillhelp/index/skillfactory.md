@@ -9,9 +9,13 @@
 
 ## Setup
 
-- Node 18+ for the CLI itself. `skills/skillfactory/README.md:67`
-- Python 3.12 to run the house lints at rung 1 (score_skill.py, lint_plugin.py, lint_baseline.py). `skills/skillfactory/README.md:68`
-- press and ghfactory for the brand and workflow steps. Both ship in this repo. `skills/skillfactory/README.md:70`
+- **Claude Code:** Expose the required local tools and sibling skills to the session. `skills/skillfactory/README.md:85`
+- **Codex:** Use the same tools and available delegation capabilities. After scaffolding in this repository, run python3 tools/sync_codex.py to generate the Codex catalog and manifest; Claude app conne… `skills/skillfactory/README.md:86`
+- **Personal data:** Scaffolds and baseline fixtures stay in the target repository; no private ~/.claude/skillfactory store is required. `skills/skillfactory/README.md:87`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/skillfactory/README.md:89`
+- Node 18+ for the CLI itself. `skills/skillfactory/README.md:91`
+- Python 3.12 to run the house lints at rung 1 (score_skill.py, lint_plugin.py, lint_baseline.py). `skills/skillfactory/README.md:92`
+- press and ghfactory for the brand and workflow steps. Both ship in this repo. `skills/skillfactory/README.md:94`
 - Requires Node >=18 (package.json engines). `skills/skillfactory/skills/skillfactory/package.json:36`
 
 ## Usage

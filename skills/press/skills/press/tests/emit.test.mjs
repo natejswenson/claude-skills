@@ -258,7 +258,7 @@ test('readme-masthead carries the full masthead: stamp, name, kind, issue, bylin
   const body = emitBody(tokens, 'readme-masthead', {}, { version: '9.9.9' });
   assert.ok(body.includes(`**${tokens.identity.stamp}**`), 'no stamp');
   assert.ok(body.includes(tokens.identity.name.toUpperCase()), 'no brand line');
-  assert.ok(body.includes('CLAUDE CODE SKILL'), 'no document kind');
+  assert.ok(body.includes('CLAUDE CODE + CODEX SKILL'), 'no dual-host document kind');
   assert.match(body, /PRESS v9\.9\.9/, 'no issue');
   assert.ok(body.includes(tokens.identity.byline), 'no byline');
 });

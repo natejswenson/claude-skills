@@ -9,6 +9,13 @@ const SKILL = join(HERE, '..', '..');
 const read = (p) => readFileSync(join(SKILL, p), 'utf8');
 const inv = JSON.parse(read('skill-invariants.json'));
 
+test('the always-loaded entrypoint stays within its context budget', () => {
+  const md = read('SKILL.md');
+  const words = md.trim().split(/\s+/).length;
+  assert.ok(words <= 1500, `SKILL.md grew to ${words} words; route conditional detail to references`);
+  assert.ok(Buffer.byteLength(md) <= 12_000, 'SKILL.md exceeded the 12 KB runtime budget');
+});
+
 test('every prose guardrail is still in SKILL.md', () => {
   // Whitespace-normalised: a guardrail that survives intact but got re-wrapped
   // by an editor is not a lost guardrail, and a test that says otherwise

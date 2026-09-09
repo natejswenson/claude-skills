@@ -182,3 +182,35 @@ test('every brand contract document referenced by the skill exists and is non-tr
     assert.ok(body.length > 500, `${doc}.md is suspiciously short`);
   }
 });
+
+// --- dual-host presentation -----------------------------------------------
+
+const PRESENTATION_ROUTES = [
+  ['focused file reads', /In Claude Code, prefer `Read`; in Codex, use focused file or shell reads\./],
+  ['rendered image inspection', /In Claude Code, prefer `Read`; in Codex, use `view_image` when available\./],
+];
+
+for (const [capability, route] of PRESENTATION_ROUTES) {
+  test(`the presentation contract provides both hosts' ${capability}`, () => {
+    const body = emitBody(tokens, 'markdown-block', { doc: 'agent-ui' });
+    assert.match(body, route, `missing host-appropriate ${capability}`);
+  });
+
+  test(`removing the ${capability} route breaks the dual-host contract`, () => {
+    const body = emitBody(tokens, 'markdown-block', { doc: 'agent-ui' });
+    assert.match(body, route, 'the mutation must remove a real route');
+    assert.throws(() => assert.match(body.replace(route, 'Use `Read`.'), route),
+      assert.AssertionError);
+  });
+}
+
+test('every registered presentation consumer receives the dual-host routes', () => {
+  const consumers = targets.filter((t) => t.emitter === 'markdown-block' && t.params.doc === 'agent-ui');
+  assert.ok(consumers.length >= 12, 'the presentation corpus shrank');
+  for (const target of consumers) {
+    const body = emitBody(tokens, target.emitter, target.params);
+    for (const [capability, route] of PRESENTATION_ROUTES) {
+      assert.match(body, route, `${target.id}: missing ${capability}`);
+    }
+  }
+});

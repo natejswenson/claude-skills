@@ -81,6 +81,7 @@ export function readHouse(repo) {
   return {
     repo,
     skills,
+    marketplaceName: marketplace?.name ?? null,
     marketplaceNames: (marketplace?.plugins ?? []).map((p) => p.name),
     marketplaceSources: Object.fromEntries((marketplace?.plugins ?? []).map((p) => [p.name, p.source])),
     contexts,

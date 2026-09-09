@@ -9,8 +9,12 @@
 
 ## Setup
 
-- [gh](https://cli.github.com/), authenticated (gh auth login). The skill uses your existing auth; there is no separate token to manage. `skills/github-stats/README.md:61`
-- [jq](https://jqlang.github.io/jq/) for JSON aggregation. `skills/github-stats/README.md:63`
+- **Claude Code:** Expose the authenticated gh CLI and jq to shell tools. `skills/github-stats/README.md:82`
+- **Codex:** Use the same gh authentication and jq; Claude app connections are not imported. `skills/github-stats/README.md:83`
+- **Personal data:** No private ~/.claude/github-stats store is required; GitHub credentials remain managed by gh. `skills/github-stats/README.md:84`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/github-stats/README.md:86`
+- [gh](https://cli.github.com/), authenticated (gh auth login). The skill uses your existing auth; there is no separate token to manage. `skills/github-stats/README.md:88`
+- [jq](https://jqlang.github.io/jq/) for JSON aggregation. `skills/github-stats/README.md:90`
 - gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:32`
 - jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:34`
 - The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:36`
@@ -26,14 +30,14 @@
 - skills/github-stats/reference/commands.md — The full command catalog, including the confirmation-gated repo-creation flow. `skills/github-stats/README.md:30`
 - skills/github-stats/tests/ — Network-free unit tests plus a gated live smoke test. `skills/github-stats/README.md:31`
 - skills/github-stats/eval/ — Numeric parity against the original CLI. `skills/github-stats/README.md:32`
-- Subcommands: overview, commits, followers, stars, prs, issues, repos, repo. Read-only commands accept a trailing --json. `skills/github-stats/README.md:44`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), or just ask. `skills/github-stats/README.md:47`
-- "github stats" `skills/github-stats/README.md:52`
+- Claude Code — run in chat: `skills/github-stats/README.md:36`
+- Codex — run in a terminal from the root of this repository checkout: `skills/github-stats/README.md:44`
+- Start a new Codex session, then invoke in chat: `skills/github-stats/README.md:51`
 
 ## Commands
 
-- pytest tests/ -v # network-free unit tests `skills/github-stats/README.md:70`
-- python eval/run_eval.py # parity vs the original CLI (needs gh auth + that repo) `skills/github-stats/README.md:71`
+- pytest tests/ -v # network-free unit tests `skills/github-stats/README.md:97`
+- python eval/run_eval.py # parity vs the original CLI (needs gh auth + that repo) `skills/github-stats/README.md:98`
 
 ## Architecture
 

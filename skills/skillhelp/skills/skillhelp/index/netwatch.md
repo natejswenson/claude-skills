@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/netwatch/README.md:57`
+- **Claude Code:** Run on the local Mac with shell access to lsof, nettop, netstat and ps. `skills/netwatch/README.md:75`
+- **Codex:** Allow the same local shell commands; a remote Codex environment observes its own machine, not your Mac. `skills/netwatch/README.md:76`
+- **Personal data:** Captures, baseline and reports go to the paths chosen for the run; no private ~/.claude/netwatch store is required. `skills/netwatch/README.md:77`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/netwatch/README.md:79`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/netwatch/README.md:81`
 - Requires Node >=18 (package.json engines). `skills/netwatch/skills/netwatch/package.json:33`
 
 ## Usage
@@ -24,8 +28,8 @@
 - skills/netwatch/references/capture.md — How a live snapshot is taken agent-side (nettop, lsof -i, netstat), why the skill reads connections and not packet payloads, and why no command here needs sudo. `skills/netwatch/README.md:26`
 - skills/netwatch/references/baseline.md — The baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous'. `skills/netwatch/README.md:27`
 - skills/netwatch/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/netwatch/README.md:28`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask for work matching the triggers below. `skills/netwatch/README.md:39`
-- "analyze my network traffic" `skills/netwatch/README.md:45`
+- Claude Code — run in chat: `skills/netwatch/README.md:32`
+- Codex — run in a terminal from the root of this repository checkout: `skills/netwatch/README.md:40`
 
 ## Commands
 
@@ -78,5 +82,4 @@
 - **A zero-match warning is never narrated into a success.** accept --snapshot warns by name when a just-added entry matches nothing in the current snapshot — exit stays 0, because pre-seeding a range… `skills/netwatch/skills/netwatch/SKILL.md:180`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/netwatch/skills/netwatch/SKILL.md:166`
 - **Never accept a flow the user did not choose.** accept writes to the `skills/netwatch/skills/netwatch/SKILL.md:177`
-- **Never print file contents into the conversation.** Not a fetched page, not a `skills/netwatch/skills/netwatch/SKILL.md:213`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:229`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:232`

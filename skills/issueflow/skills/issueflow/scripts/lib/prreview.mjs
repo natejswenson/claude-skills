@@ -187,6 +187,34 @@ export function parseDiff(text) {
 
 export const changedLines = (files) => files.reduce((n, f) => n + f.added + f.deleted, 0);
 
+/** A converged code review can still require a fixer when CI is red. */
+export function assertFixRequired(entry, checks, laneSlug = null) {
+  if (entry.verdict === 'converged' && checks.length === 0) {
+    const lane = laneSlug ? ` of ${laneSlug}` : '';
+    throw new RunError(`round ${entry.round}${lane} converged and CI has no failing checks — there is nothing to fix; \`issueflow ready\``);
+  }
+}
+
+/**
+ * Size reviewer fanout by semantic review load, not generated/test bulk. Every
+ * file remains in the brief and diff; this only prevents fixtures and indexes
+ * from buying duplicate readers of the same small production change.
+ */
+export function semanticChangedLines(files) {
+  return Math.ceil(files.reduce((n, f) => {
+    const lines = f.added + f.deleted;
+    if (/(^|\/)(evals\/baseline|scripts\/tests\/generated)\//.test(f.path)) return n;
+    if (/^skills\/skillhelp\/skills\/skillhelp\/index\//.test(f.path)) return n;
+    if (/(^|\/)(CHANGELOG\.md|package-lock\.json|MANIFEST\.json)$/.test(f.path)) return n;
+    if (/(^|\/)(tests?|__tests__)\//.test(f.path) || /\.(test|spec)\.[cm]?[jt]sx?$/.test(f.path)) return n + (lines * 0.25);
+    return n + lines;
+  }, 0));
+}
+
+export const riskSensitiveChange = (files) => files.some((f) =>
+  /(^|\/)(\.github\/workflows|auth|security|migrations?|permissions?)(\/|$)/i.test(f.path)
+  || /(^|\/)(package\.json|plugin\.json|skill-invariants\.json)$/.test(f.path));
+
 /** May a thread sit on `path:line`? Inside any hunk's range on that side, context lines included. */
 export function inlineEligible(files, path, line, side = 'RIGHT') {
   const file = files.find((f) => (side === 'LEFT' ? f.oldPath : f.path) === path);
@@ -240,10 +268,11 @@ export function lineCountAt(tree, head, path) {
  * re-reviewing a diff that grew 1286 → 3993 lines with five finders and eight
  * verifiers every round — rounds whose only job was to check a fix.
  */
-export function fleetPlan(lines, round, { ofFix = false } = {}) {
+export function fleetPlan(lines, round, { ofFix = false, risk = false } = {}) {
   const angles = round === 1 ? [...CORE_ANGLES, ...CLEANUP_ANGLES] : [...CORE_ANGLES];
-  if (lines < SMALL_DIFF_LINES) return { finders: 1, maxVerifiers: 2, angles: [angles] };
-  const finders = ofFix ? Math.min(3, Math.max(1, Math.ceil(lines / 300))) : Math.min(5, Math.max(2, Math.ceil(lines / 150)));
+  if (lines < SMALL_DIFF_LINES && !risk) return { finders: 1, maxVerifiers: 2, angles: [angles] };
+  const floor = risk ? 2 : (ofFix ? 1 : 2);
+  const finders = ofFix ? Math.min(3, Math.max(floor, Math.ceil(lines / 300))) : Math.min(5, Math.max(floor, Math.ceil(lines / 150)));
   const dealt = Array.from({ length: finders }, () => []);
   angles.forEach((a, i) => dealt[i % finders].push(a));
   return { finders, maxVerifiers: ofFix ? 4 : 8, angles: dealt };
@@ -413,14 +442,17 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
   // read it first. `diff.patch` still holds the whole change — GitHub anchors
   // a thread on the pull request's hunks, so inline eligibility is measured
   // against it, never against the fix.
-  const fixLines = deltaText === null ? null : changedLines(parseDiff(deltaText));
+  const fixFiles = deltaText === null ? null : parseDiff(deltaText);
+  const fixLines = fixFiles === null ? null : changedLines(fixFiles);
   if (deltaText !== null && fixLines === 0) throw new RunError(`cannot review ${lane.slug}: nothing changed since round ${last?.round ?? '?'} reviewed ${String(last?.head).slice(0, 12)} — there is no fix to review`);
-  const plan = fleetPlan(fixLines ?? lines, round, { ofFix: fixLines !== null });
+  const sizingFiles = fixFiles ?? files;
+  const reviewLines = semanticChangedLines(sizingFiles);
+  const plan = fleetPlan(reviewLines, round, { ofFix: fixLines !== null, risk: riskSensitiveChange(sizingFiles) });
   mkdirSync(reviewDir(dir, lane, round), { recursive: true });
   writeFileSync(diffPath(dir, lane, round), diffText);
   if (deltaText !== null) writeFileSync(fixPatchPath(dir, lane, round), deltaText);
   lane.review.rounds.push({
-    round, head, prevHead: last?.head ?? null, lines, fixLines, finders: plan.finders, maxVerifiers: plan.maxVerifiers,
+    round, head, prevHead: last?.head ?? null, lines, fixLines, reviewLines, finders: plan.finders, maxVerifiers: plan.maxVerifiers,
     angles: plan.angles, verifiers: null, at: { briefed: now() }, registered: null, verdict: null, posted: null, fix: null,
   });
   saveRun(dir, run);

@@ -5,12 +5,49 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.11.0] - 2026-09-09
+## [Unreleased]
+
+## [0.11.0] - 2026-09-08
+
+Issue #274 exposed a 50-minute run for an eight-line production change: six
+subagents, repeated sandbox prompts for optional progress writes, and a
+converged review that deadlocked when CI was red. This release turns that run
+into permanent regressions and removes the avoidable work without weakening
+the proof gates.
 
 ### Added
 
-- Persisted complexity profiles with a fast documentation route, bounded review
-  rounds, and a 15-minute budget for wording-only issues.
+- `--review-plan` explicitly opts into the single human plan gate. Autoflow is
+  autonomous by default; `--auto` remains a backward-compatible alias.
+- Semantic review sizing discounts tests and generated artifacts while keeping
+  every file visible to reviewers. Small behavior changes use one finder;
+  workflow, auth, security, migration, permission, and manifest changes retain
+  a two-finder floor.
+- A permanent judgment eval reproduces the issue #274 converged-review/red-CI
+  deadlock, and the always-loaded skill contract now has a 1,500-word/12 KB
+  budget.
+
+### Changed
+
+- Codex planning uses GPT-5.6 Terra at high reasoning; Astra remains the
+  independent red team and implementation model.
+- Codex briefs no longer ask subagents to append optional progress files under
+  `~/.claude`. Completion comes through native agent state, eliminating those
+  repeated filesystem approval prompts.
+- The 5,000-word entrypoint is now a compact operating contract; conditional
+  recovery detail moved to `references/operator-stops.md`.
+- The frozen baseline now isolates timing discovery from leaked temporary test
+  runs, so interrupted suites cannot change later golden output.
+
+### Fixed
+
+- A converged review with failing CI now dispatches and accepts a bounded fixer
+  instead of issuing an impossible fix brief and deadlocking the state machine.
+  Once dispatched, its report, push, and follow-up review complete before a
+  pending or green CI refresh can ready the changed head.
+- `next` follow-up commands resolve the running CLI and shell-quote its path
+  and the run directory. Printed commands now execute in fresh Claude or Codex
+  shells without `SKILL_DIR`, including paths with spaces or shell characters.
 
 ## [0.10.0] - 2026-09-08
 
