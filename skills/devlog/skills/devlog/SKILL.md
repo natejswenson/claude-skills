@@ -1,6 +1,6 @@
 ---
 name: devlog
-description: Turn each new version release (git tag) into a polished, researched how-to guide with real gotchas, written in your voice and published to GitHub. Also manages devlog configuration conversationally — add/remove tracked repos, change settings, show status.
+description: Turn releases into researched how-to posts, or explicitly draft one complete concept guide readers can implement with their own coding agent. Supports Codex AI cover drafts and conversational devlog configuration.
 user_invocable: true
 ---
 
@@ -19,7 +19,7 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # /devlog — Release How-To Generator
 
-You turn each **new version release** (a semver git tag) in the user's projects into a
+In the default Generate mode, you turn each **new version release** (a semver git tag) in the user's projects into a
 published blog post, written in **the user's own voice**, and pushed to the GitHub repo
 configured in `~/.claude/skills/devlog/config.json`.
 
@@ -34,6 +34,34 @@ Every agent-facing command prints JSON.
 
 ## Decide which mode you're in
 
+Explicit draft requests take precedence over the default Generate routing:
+
+- **Concept guide draft** — "draft one concept guide", "use the agent-friendly guide
+  method", or "consolidate these posts into one guide". Read
+  [references/concept-guides.md](references/concept-guides.md). Select at most one
+  transferable reader outcome and finish its implementation, handoff and independent
+  trial. This mode is draft-only; never fall through to Generate or publish-entry.
+- **AI cover draft** — "create an AI cover draft for this article". Read
+  [references/codex-cover-art.md](references/codex-cover-art.md). Work from the supplied
+  article, without scanning releases or publishing. Codex native image generation is
+  capability-checked; Claude retains its existing local renderer. No implicit API fallback.
+
+New helpers are `lint-guide`, `prepare-guide`, `compose-art-cover`, and `publish-guide`.
+Only `publish-guide` writes prepared content to a clone; it requires matching local
+execution, adaptation and review evidence. It does not push or deploy.
+The draft helpers do not change persistent configuration or the content repository.
+Use bundled `bin/devlog.js` relative to this loaded SKILL.md only when its runtime
+dependencies resolve: check `node <absolute-skill-root>/bin/devlog.js --version` first.
+A Git-installed plugin can contain the script without node_modules. If the script or
+dependencies are missing, use `npx -y @natjswenson/devlog@0.14.0 <helper>`; do not install
+dependencies into an internal plugin cache. A standalone SKILL.md installed by `init`
+uses that same exact-version fallback. For a missing Chromium binary, install the
+matching browser with `npx -y --package=@natjswenson/devlog@0.14.0 playwright install chromium`
+and retry the render; do not silently change dependency versions. References are bundled beside
+both host entrypoints and copied with standalone skill installation.
+
+Otherwise use the existing modes:
+
 1. **Configure** — the user wants to change what devlog tracks or how it behaves:
    "add this repo to devlog", "stop tracking X", "set min sources to 4", "show my
    devlog config". → **Configure mode**.
@@ -41,7 +69,15 @@ Every agent-facing command prints JSON.
    "any new releases?". → **Status mode**.
 3. **Generate** (default) — `/devlog` or `/devlog <project-key>`. → **Generate mode**.
 
-An entry corresponds to a **release**, not a day. Re-running Generate only produces
+For a normal Generate request, read validated config first. If the user explicitly
+selected `generationMode: "concept"`, follow
+[references/guide-publishing.md](references/guide-publishing.md): select at most one
+complete guide, finish its draft/trial/review, then publish after all checks. Missing
+`generationMode` or `"release"` retains the existing Generate workflow below. Explicit
+draft requests above always remain draft-only, even with this preference. Set the
+preference only when the user asks; an update must not silently opt existing users in.
+
+In Generate mode, an entry corresponds to a **release**, not a day. Re-running Generate only produces
 entries for tags that don't already have one — it is idempotent, and a published entry is
 **immutable: never overwrite it** (`publish-entry` refuses; don't work around it).
 
@@ -55,6 +91,7 @@ Map the user's request onto the CLI — never hand-edit `config.json`:
 | Add a project | `npx -y @natjswenson/devlog@latest add-project --yes --path <abs-path> [--key K] [--remote O/R] [--label L] [--tag-prefix P] [--path-filter F] [--private]` |
 | Remove a project | `npx -y @natjswenson/devlog@latest remove-project <key> --yes` |
 | Change a setting | `npx -y @natjswenson/devlog@latest set <field> <value>` (settable: `targetRepo`, `branch`, `targetDir`, `gitAuthor`, `githubUser`, `siteUrl`, `voicePath`, `deepDive.minSources`, `deepDive.topicDomains`) |
+| Adopt one-guide generation for future normal runs | `npx -y @natjswenson/devlog@latest set generationMode concept` (use `release` to restore legacy generation) |
 
 `targetDir` is the subdirectory of `targetRepo` that holds the devlog content tree
 (e.g. `content/devlog` when the target is the site repo itself); unset/empty means the
@@ -355,7 +392,7 @@ The `--clone` flag always points at the CONTENT ROOT: `<abs-tmp>/<repo-name>` wh
 `targetDir` is empty, `<abs-tmp>/<repo-name>/<targetDir>` when it's set. Git commands
 always run against the clone root `<abs-tmp>/<repo-name>` regardless.
 
-Each release also gets a cover image, composed inline in this same loop right before that
+In this legacy Generate path, each release also gets a cover image, composed inline in this same loop right before that
 release's own `publish-entry` call — a self-contained HTML/CSS (or inline SVG) document,
 rasterized locally, never sent to any external service:
 

@@ -393,6 +393,16 @@ async function cmdInit() {
   }
 
   if (await confirmOverwrite('SKILL.md', SKILL_DEST)) {
+    // These are versioned instructions, not personal config/voice/style files.
+    // Install references with the entrypoint so standalone hosts can resolve them.
+    const references = join(PACKAGE_ROOT, 'references');
+    const referenceDest = join(CONFIG_DIR, 'references');
+    mkdirSync(referenceDest, { recursive: true, mode: 0o700 });
+    for (const name of readdirSync(references)) {
+      if (name.endsWith('.md') && statSync(join(references, name)).isFile()) {
+        copyFileSync(join(references, name), join(referenceDest, name));
+      }
+    }
     copyFileSync(SKILL_SRC, SKILL_DEST);
     log.ok(`Installed SKILL.md → ${SKILL_DEST}`);
   } else {
@@ -786,6 +796,79 @@ function cmdAssemblePost(rest) {
     emitJSON({ ok: true, ...result });
   } catch (e) {
     emitJSON({ error: 'assemble-failed', message: e.message }, 1);
+  }
+}
+
+// Additive local draft helpers. No config reads, generation, or content writes.
+async function cmdLintGuide(rest) {
+  const { values, positionals } = safeParseArgs({
+    args: rest, options: { voice: { type: 'boolean', default: false } }, allowPositionals: true,
+  });
+  if (positionals.length !== 1) emitJSON({ error: 'missing-arg', message: 'Usage: devlog lint-guide <article> [--voice]' }, 2);
+  try {
+    const { lintGuide } = await import('../lib/guide_draft.mjs');
+    const result = lintGuide(readFileSync(expandHome(positionals[0]), 'utf8'), { voice: values.voice });
+    emitJSON(result, result.ok ? 0 : 1);
+  } catch (e) {
+    emitJSON({ error: e.code || 'guide-lint-failed', message: e.message }, 1);
+  }
+}
+
+async function cmdPrepareGuide(rest) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: { article: { type: 'string' }, brand: { type: 'string' }, out: { type: 'string' }, cover: { type: 'string' } },
+    allowPositionals: false,
+  });
+  for (const flag of ['article', 'brand', 'out']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `prepare-guide requires --${flag}` }, 2);
+  }
+  try {
+    const { prepareGuidePreview } = await import('../lib/guide_draft.mjs');
+    const result = await prepareGuidePreview({
+      articlePath: expandHome(values.article), brandPath: expandHome(values.brand),
+      outDir: expandHome(values.out), coverPath: values.cover ? expandHome(values.cover) : undefined,
+    });
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: e.code || 'guide-preview-failed', message: e.message, ...(e.findings ? { findings: e.findings } : {}) }, 1);
+  }
+}
+
+async function cmdComposeArtCover(rest) {
+  const { values } = safeParseArgs({
+    args: rest, options: { spec: { type: 'string' }, out: { type: 'string' } }, allowPositionals: false,
+  });
+  for (const flag of ['spec', 'out']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `compose-art-cover requires --${flag}` }, 2);
+  }
+  try {
+    const { composeArtCover } = await import('../lib/compose_art_cover.mjs');
+    const result = await composeArtCover(expandHome(values.spec), expandHome(values.out));
+    emitJSON({ ok: true, ...result });
+  } catch (e) {
+    emitJSON({ error: e.code || 'art-compose-failed', message: e.message }, 1);
+  }
+}
+
+async function cmdPublishGuide(rest) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: { clone: { type: 'string' }, article: { type: 'string' }, evidence: { type: 'string' }, cover: { type: 'string' } },
+    allowPositionals: false,
+  });
+  for (const flag of ['clone', 'article', 'evidence']) {
+    if (!values[flag]) emitJSON({ error: 'missing-flag', message: `publish-guide requires --${flag}` }, 2);
+  }
+  try {
+    const { publishGuide } = await import('../lib/publish_guide.mjs');
+    const result = await publishGuide({
+      cloneDir: expandHome(values.clone), articlePath: expandHome(values.article),
+      evidencePath: expandHome(values.evidence), coverPath: values.cover ? expandHome(values.cover) : undefined,
+    });
+    emitJSON(result);
+  } catch (e) {
+    emitJSON({ error: e.code || 'guide-publish-failed', message: e.message, ...(e.findings ? { findings: e.findings } : {}) }, 1);
   }
 }
 
@@ -1257,6 +1340,10 @@ Used by the /devlog skill:
   ${kleur.cyan('npx @natjswenson/devlog scan [--project <key>] [--summary]')}   JSON plan of new releases needing entries
   ${kleur.cyan('npx @natjswenson/devlog lint-post <file> [--voice]')}  Deterministic post-contract check (+ voice rules)
   ${kleur.cyan('npx @natjswenson/devlog assemble-post <draft> --out <dir>')}  Extract the draft's code blocks for the run-it check
+  ${kleur.cyan('devlog lint-guide <article> [--voice]')}  Check a concept draft and its top-of-post handoff
+  ${kleur.cyan('devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>]')}  Local reading preview with complete agent payload
+  ${kleur.cyan('devlog compose-art-cover --spec <json> --out <new-dir>')}  Compose local raster art and typography; no AI call or publishing
+  ${kleur.cyan('devlog publish-guide --clone <content-root> --article <md> --evidence <json> [--cover <png>]')}  Validate evidence and publish into clone; no push
   ${kleur.cyan('npx @natjswenson/devlog publish-entry ...')}        Copy a drafted entry into the clone + update manifest (never overwrites)
   ${kleur.cyan('npx @natjswenson/devlog cover-context <project> <slug> --clone <dir>')}  Style guide + reference-image paths for cover composition
   ${kleur.cyan('npx @natjswenson/devlog render-cover <html> --project <key> --slug <s> --out <dir>')}  Rasterize a composed cover to PNG
@@ -1326,6 +1413,18 @@ if (isMain) {
       break;
     case 'assemble-post':
       cmdAssemblePost(rest);
+      break;
+    case 'lint-guide':
+      cmdLintGuide(rest);
+      break;
+    case 'prepare-guide':
+      cmdPrepareGuide(rest);
+      break;
+    case 'publish-guide':
+      await cmdPublishGuide(rest);
+      break;
+    case 'compose-art-cover':
+      cmdComposeArtCover(rest);
       break;
     case 'backfill-covers':
       cmdBackfillCovers(rest);
