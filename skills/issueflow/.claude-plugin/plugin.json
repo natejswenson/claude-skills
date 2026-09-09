@@ -1,7 +1,7 @@
 {
   "name": "issueflow",
-  "version": "0.9.0",
-  "description": "Takes one open GitHub issue to a reviewed pull request: an opus plan, a red team on the plan, one human stop, an opus implementation with its own proof, and a review loop of finders, verifiers and a fixer on the pull request until no major remains.",
+  "version": "0.10.0",
+  "description": "Takes one open GitHub issue to a reviewed pull request with a red-teamed plan, proven implementation, and converging review loop on Claude Code or Codex.",
   "author": {
     "name": "Nate Swenson"
   },

@@ -18,6 +18,7 @@ import { artifactPath, briefPath, evidencePath, gateSteps, progressPath } from '
 import {
   BLOCKING, MAX_ROUNDS, REVIEW_FORBIDS, review, reviewBriefPath, reviewPath, reviewProgressPath,
 } from './reviews.mjs';
+import { dispatchProfile, runtimeOf } from './runtime.mjs';
 
 const bar = (headers, rows) =>
   [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
@@ -92,7 +93,51 @@ function contextSection(dir, run, step, workdir) {
       'touch it.',
     );
   }
+  if (runtimeOf(run) === 'codex') {
+    out.push(
+      '',
+      'Before acting, read every applicable `AGENTS.md` from the repository root',
+      'down to the files you touch. Those instructions are part of the task.',
+    );
+  }
   return out.join('\n');
+}
+
+function completionSection(run, what, path) {
+  if (runtimeOf(run) === 'codex') {
+    return [
+      '## When you are done',
+      '',
+      `The moment ${what} is written, finish your subagent turn with the path`,
+      `\`${path}\` and two or three sentences stating the result. Codex returns that`,
+      'final response to the parent automatically. The file is the completion signal,',
+      'so do not wait for a reply and do not send a separate orchestration message.',
+    ].join('\n');
+  }
+  if (what === 'the review') {
+    return [
+      '## When you are done',
+      '',
+      'The moment the review is written, send the orchestrator a message with',
+      '`SendMessage`, addressed to `main` — the agent that dispatched you. The message',
+      "is the review's path, then two or three sentences of result: your verdict and",
+      'the worst thing you found. Send it before you finish your turn. An agent that',
+      'goes idle without sending one leaves the orchestrator unable to tell a finished',
+      'review from a stalled one. If your harness names the dispatching agent something',
+      'other than `main`, send it to that name instead.',
+    ].join('\n');
+  }
+  return [
+    '## When you are done',
+    '',
+    `The moment ${what} is written, send the orchestrator a message with`,
+    '`SendMessage`, addressed to `main` — the agent that dispatched you. The message',
+    "is the artifact's path, then two or three sentences of result: what you found,",
+    'decided, or changed. Send it before you finish your turn. An agent that goes',
+    'idle without sending one leaves the orchestrator unable to tell a finished',
+    "stage from a stalled one. If your harness names the dispatching agent something",
+    'other than `main`, send it to that name instead.',
+  ].join('\n');
 }
 
 /**
@@ -184,15 +229,7 @@ export function renderBrief(dir, run, step, issue, workdir = null) {
     'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
     'genuinely have nothing to report yet; do not pad it to look busy.',
     '',
-    '## When you are done',
-    '',
-    'The moment the artifact is written, send the orchestrator a message with',
-    '`SendMessage`, addressed to `main` — the agent that dispatched you. The message',
-    "is the artifact's path, then two or three sentences of result: what you found,",
-    'decided, or changed. Send it before you finish your turn. An agent that goes',
-    'idle without sending one leaves the orchestrator unable to tell a finished',
-    "stage from a stalled one. If your harness names the dispatching agent something",
-    'other than `main`, send it to that name instead.',
+    completionSection(run, 'the artifact', artifactPath(dir, step)),
     '',
   );
   return out.join('\n');
@@ -207,6 +244,7 @@ export function writeBrief(dir, run, step, issue, workdir = null) {
     step: step.key,
     stage: step.stage.id,
     model: step.stage.model,
+    reasoning: step.stage.reasoning,
     agent: step.stage.agent,
     prompt: path,
     artifact: artifactPath(dir, step),
@@ -301,15 +339,7 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
     'genuinely have nothing to report yet; do not pad it to look busy.',
     '',
-    '## When you are done',
-    '',
-    'The moment the review is written, send the orchestrator a message with',
-    '`SendMessage`, addressed to `main` — the agent that dispatched you. The message',
-    "is the review's path, then two or three sentences of result: your verdict and",
-    'the worst thing you found. Send it before you finish your turn. An agent that',
-    'goes idle without sending one leaves the orchestrator unable to tell a finished',
-    'review from a stalled one. If your harness names the dispatching agent something',
-    'other than `main`, send it to that name instead.',
+    completionSection(run, 'the review', reviewPath(dir, step, round)),
     '',
   );
   return out.join('\n');
@@ -318,6 +348,7 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
 /** Write the review brief and return everything the orchestrator needs to dispatch it. */
 export function writeReviewBrief(dir, run, step, issue, round, workdir = null) {
   const declared = review(step.stage.id);
+  const dispatch = dispatchProfile(runtimeOf(run), 'redTeam');
   const path = reviewBriefPath(dir, step, round);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderReviewBrief(dir, run, step, issue, round, workdir));
@@ -325,8 +356,7 @@ export function writeReviewBrief(dir, run, step, issue, round, workdir = null) {
     step: step.key,
     stage: step.stage.id,
     round,
-    model: declared.model,
-    agent: declared.agent,
+    ...dispatch,
     prompt: path,
     artifact: reviewPath(dir, step, round),
     progress: reviewProgressPath(dir, step, round),
