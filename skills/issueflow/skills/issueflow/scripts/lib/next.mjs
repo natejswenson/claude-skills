@@ -58,7 +58,7 @@ export function timeoutFor(dir, stageId) {
   return median ? Math.max(300, median * STALL_FACTOR) : DEFAULT_TIMEOUT_S;
 }
 
-const sh = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
+export const sh = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
 /**
  * A background-Bash wait: exit 0 when every output is newer than its brief,
@@ -357,6 +357,7 @@ export function decide(dir, run, ctx = {}) {
 
 /** The lines `next` prints for an action. Fixed shape: the orchestrator copies them, it does not read them. */
 export function renderAction(action, { skillCommand, runDir }) {
+  runDir = sh(runDir);
   const then = `then: ${skillCommand} next --run-dir ${runDir}`;
   const lines = [`next: ${action.kind}${action.kind === 'stop' ? ` — ${action.reason}` : ''}`];
   if (action.note) lines.push(`  ${action.note}`);
