@@ -186,7 +186,45 @@ test('parseFindings tolerates a notExamined string and lower-cases the verdict, 
   assert.deepEqual(ok, { findings: [], notExamined: ['the whole config path'], verdict: 'pass' });
   assert.match(parseFindings('[]').error, /must be a JSON object/);
   assert.match(parseFindings('{}').error, /no `findings` array/);
-  assert.match(parseFindings(JSON.stringify({ findings: [], notExamined: ['x'], verdict: 'meh' })).error, /"pass" or "blocked"/);
+  assert.match(parseFindings(JSON.stringify({ findings: [], notExamined: ['x'], verdict: 'meh' })).error, /"pass", "blocked" or "decision"/);
+});
+
+test('review dispositions: deferred high findings do not block, while fixable high findings do', () => {
+  const { dir, run, step, cleanup } = autoRun();
+  writeReview(dir, step, {
+    findings: [{ severity: 'high', disposition: 'implementation-proof', cite: 'investigate.md § Proof', text: 'the real runtime must prove this after implementation.' }],
+  });
+  const deferred = registerReview(dir, run, step);
+  assert.equal(deferred.verdict, 'pass');
+  assert.equal(deferred.dispositions['implementation-proof'], 1);
+
+  const next = writeGood(dir, run, 'investigate');
+  writeReview(dir, next, {
+    findings: [{ severity: 'high', disposition: 'fixable', cite: 'investigate.md § Approach', text: 'the plan omits a required file.' }],
+  });
+  assert.equal(registerReview(dir, run, next).verdict, 'blocked');
+  cleanup();
+});
+
+test('review dispositions: scope changes produce a decision stop instead of an autonomous rewrite', () => {
+  const { dir, run, step, cleanup } = autoRun();
+  writeReview(dir, step, {
+    findings: [{ severity: 'critical', disposition: 'scope-change', cite: 'investigate.md § Approach', text: 'this requires expanding the issue beyond its stated user decision.' }],
+  });
+  assert.equal(registerReview(dir, run, step).verdict, 'decision');
+  cleanup();
+});
+
+test('review dispositions: repeated fixable blockers are marked without waiting for the full cap', () => {
+  const { dir, run, step, cleanup } = autoRun();
+  writeReview(dir, step, { findings: [{ severity: 'high', cite: 'investigate.md § Evidence', text: 'the proof does not exercise the real boundary.' }] });
+  registerReview(dir, run, step);
+  writeGood(dir, run, 'investigate');
+  writeReview(dir, step, { findings: [{ severity: 'high', cite: 'investigate.md § Evidence', text: 'the proof still does not exercise the real boundary.' }] });
+  const result = registerReview(dir, run, step);
+  assert.equal(result.verdict, 'blocked');
+  assert.equal(result.repeated, true);
+  cleanup();
 });
 
 // ---------------------------------------------------------------------------
@@ -391,7 +429,7 @@ test('review-brief: carries the artifact under attack, the JSON shape, the sever
   assert.ok(text.includes(artifactPath(dir, step)), 'the brief must name the artifact under review');
   assert.match(text, /"severity": "critical\|high\|medium\|low"/);
   assert.match(text, /"notExamined"/);
-  assert.match(text, /critical and high block the stage; medium and low are notes/);
+  assert.match(text, /Only critical\/high findings with `fixable` disposition block the stage/);
   assert.match(text, /investigate-r1\.findings\.json/);
   assert.match(text, /`SendMessage`/);
   assert.match(text, /addressed to `main`/);

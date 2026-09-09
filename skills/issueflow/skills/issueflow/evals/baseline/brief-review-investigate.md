@@ -465,7 +465,10 @@ Hunt for files the change must touch that the Files section misses — open
 the code and trace the call sites yourself.
 Check the Proof maps to the behaviour the issue reports, not merely to the
 code being changed. A proof that would pass without fixing the issue is a
-critical finding.
+critical finding. If a concern is real but can only be proven after code exists, use
+`implementation-proof`; if it needs credentials, a host capability or an external
+service unavailable here, use `environment-blocked`; if it changes the issue scope,
+use `scope-change`. Only `fixable` critical/high findings send the plan back.
 Check the Rejected alternative is real. A strawman nobody would have built
 is a plan with no rejected alternative.
 If there are Work items, attack the split before the items: `Why split:`
@@ -496,10 +499,10 @@ Your review is ONE JSON file, exactly this shape:
 
     {
       "findings": [
-        { "severity": "critical|high|medium|low", "cite": "<citation>", "text": "<one-sentence finding>" }
+        { "severity": "critical|high|medium|low", "disposition": "fixable|implementation-proof|environment-blocked|scope-change|note", "cite": "<citation>", "text": "<one-sentence finding>" }
       ],
       "notExamined": ["<what you did not check, one entry each>"],
-      "verdict": "pass|blocked"
+      "verdict": "pass|blocked|decision"
     }
 
 The citation must be one of:
@@ -509,8 +512,11 @@ The citation must be one of:
 
 A citation that does not resolve refuses your whole review — cite what you can
 point at, and put what you cannot prove in `notExamined`. Severity is the gate:
-critical and high block the stage; medium and low are notes. Rate what the
-finding costs if shipped, not how strongly you feel about it.
+Only critical/high findings with `fixable` disposition block the stage. Use
+`implementation-proof` for evidence that belongs after implementation,
+`environment-blocked` for credentials or host capabilities unavailable here,
+`scope-change` when a user must decide, and `note` for everything else. Rate
+what the finding costs if shipped, not how strongly you feel about it.
 
 ## Deliver
 
@@ -519,7 +525,9 @@ Write your review to `<RUN>/reviews/investigate-r1.findings.json`.
 `notExamined` names what you did not check — a clean review that examined
 everything still says so there, and a review with no findings and an empty
 `notExamined` is refused. `verdict` must agree with your own severities: any
-critical or high finding means `blocked`.
+a critical/high `fixable` finding means `blocked`; a critical/high `scope-change`
+finding means `decision`; deferred dispositions do not block the plan. The declared
+verdict must match those rules exactly.
 
 ## While you work
 

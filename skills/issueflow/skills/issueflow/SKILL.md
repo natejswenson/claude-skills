@@ -112,7 +112,8 @@ Verifiers are candidate-driven.
 - The run persists that choice of runtime. The red team is the gate, and it is
   a dispatched subagent — never you. Never do a stage's work yourself.
 - Never dispatch a stage on a model other than the one the brief names.
-- Never weaken a review to clear a finding. Never auto-ship over an open
+- Never weaken a review to clear a finding. Classify dispositions honestly;
+  repeated blockers stop for a user decision. Never auto-ship over an open
   blocking finding. Never ready a pull request over an open major.
 - A round never reviews code GitHub has not received; local, remote, and PR
   heads must agree.
