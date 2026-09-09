@@ -64,7 +64,8 @@ SOFTWARE.
  * with thin content, never a file of TODO markers: a placeholder heading reads
  * as done to every checker and to most humans.
  */
-export const readme = (spec) => {
+export const readme = (spec, { marketplace } = {}) => {
+  if (!marketplace) throw new Error('a target marketplace name is required for the Codex install command');
   const kind = spec.stack === 'node' ? 'Node' : 'Python';
   const rows = [
     [`skills/${spec.name}/SKILL.md`, 'What the agent reads: triggers, the flow, and the one rule.'],
@@ -110,7 +111,7 @@ Codex — run in a terminal from the root of this repository checkout:
 
 \`\`\`bash
 codex plugin marketplace add "$PWD"
-codex plugin add ${spec.name}@${REPO}
+codex plugin add ${spec.name}@${marketplace}
 \`\`\`
 
 Start a new Codex session, then invoke in chat:
@@ -134,7 +135,7 @@ ${(triggers.length ? triggers.map((t) => `- "${t}"`) : ['- see the `description:
 - **Codex:** Use the same bundled scripts and runtimes; Claude app connections are not imported. Connect any service required by the implemented workflow in Codex separately.
 - **Personal data:** The scaffold adds no private configuration store. If the implementation uses an existing \`~/.claude/\` location, retain it for both hosts and document the exact path here.
 
-See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
+See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host tools and retained data paths.
 
 ${spec.stack === 'node' ? '- Node 18+ (the bundled scripts are ESM, no dependencies).' : '- Python 3.12+ (standard library only).'}
 

@@ -60,7 +60,7 @@ repocount count    # open PRs, stale branches and unreleased commits, each with 
 - **Codex:** Use the same bundled scripts and runtimes; Claude app connections are not imported. Connect any service required by the implemented workflow in Codex separately.
 - **Personal data:** The scaffold adds no private configuration store. If the implementation uses an existing `~/.claude/` location, retain it for both hosts and document the exact path here.
 
-See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
+See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host tools and retained data paths.
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 

@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 
 import { readHouse } from '../lib/house.mjs';
 import { gradeReadme, HEAD, FOOT } from '../lib/readme.mjs';
+import { planScaffold } from '../lib/scaffold.mjs';
 import { readme } from '../lib/templates.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -176,6 +177,12 @@ test('a migration link is required alongside the host setup notes', () => {
     .includes('dual-host-migration'), 'removing the host migration guidance graded clean');
 });
 
+test('the Codex marketplace command names the checkout root', () => {
+  const text = readmeOf(REFERENCE);
+  assert.ok(ids(text.replace('codex plugin marketplace add "$PWD"', 'codex plugin marketplace add /tmp/unrelated-marketplace'))
+    .includes('dual-host-codex-marketplace'), 'an unrelated marketplace satisfied the checkout-root command');
+});
+
 for (const [id, command] of hostCommands(REFERENCE).filter(([id]) => !id.endsWith('marketplace'))) {
   test(`${id}: another skill name cannot satisfy the check`, () => {
     const text = readmeOf(REFERENCE);
@@ -197,11 +204,23 @@ for (const [label, replacement] of [['shell comment', '# $ghfactory'], ['HTML co
 const demo = JSON.parse(readFileSync(join(HERE, '../../evals/inputs/demo.spec.json'), 'utf8'));
 for (const [id, command] of hostCommands(demo.name)) {
   test(`the scaffold README emits ${id}`, () => {
-    assert.ok(readme(demo).includes(`\n${command}\n`), `scaffold omitted ${command}`);
+    assert.ok(readme(demo, { marketplace: 'claude-skills' }).includes(`\n${command}\n`), `scaffold omitted ${command}`);
   });
 }
 for (const label of ['Claude Code', 'Codex', 'Personal data']) {
   test(`the scaffold README emits the ${label} requirement`, () => {
-    assert.ok(readme(demo).includes(`- **${label}:** `), `scaffold omitted ${label} setup`);
+    assert.ok(readme(demo, { marketplace: 'claude-skills' }).includes(`- **${label}:** `), `scaffold omitted ${label} setup`);
   });
 }
+
+test('the scaffold README uses the target marketplace and durable migration guide', () => {
+  const plan = planScaffold(demo, { ...readHouse(REPO), marketplaceName: 'other-repo' }, { today: '2026-08-01', pins: {} });
+  const text = plan.files.find((file) => file.path === `skills/${demo.name}/README.md`).content;
+  assert.ok(text.includes(`codex plugin add ${demo.name}@other-repo`), 'scaffold used this repository’s marketplace');
+  assert.ok(text.includes('https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md'),
+    'scaffold linked to a migration guide unavailable in the target repository');
+});
+
+test('the scaffold refuses to document a Codex install without a target marketplace', () => {
+  assert.throws(() => readme(demo), /target marketplace name/, 'scaffold documented an unknown marketplace');
+});

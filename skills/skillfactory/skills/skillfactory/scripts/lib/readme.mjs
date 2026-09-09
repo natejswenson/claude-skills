@@ -229,7 +229,7 @@ export function gradeReadme(text, name) {
     ['claude-marketplace', /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/],
     ['claude-install', new RegExp(`^/plugin install ${escaped}@claude-skills(?:\\s|$)`)],
     ['claude-invocation', new RegExp(`^/${escaped}(?:\\s|$)`)],
-    ['codex-marketplace', /^codex plugin marketplace add (?!#)\S+/],
+    ['codex-marketplace', /^codex plugin marketplace add "\$PWD"$/],
     ['codex-install', new RegExp(`^codex plugin add ${escaped}@claude-skills(?:\\s|$)`)],
     ['codex-invocation', new RegExp(`^\\$${escaped}(?:\\s|$)`)],
   ];
@@ -261,9 +261,9 @@ export function gradeReadme(text, name) {
     problems.push(problem('dual-host-personal-data-path', `## Requirements omits retained ${retained}`,
       'document the location the scripts actually use; Codex does not move personal data'));
   }
-  if (!requirements.some((line) => /\]\(\.\.\/\.\.\/docs\/codex-migration\.md\)/.test(line))) {
+  if (!requirements.some((line) => /\]\((?:\.\.\/\.\.\/docs\/codex-migration\.md|https:\/\/github\.com\/natejswenson\/claude-skills\/blob\/main\/docs\/codex-migration\.md)\)/.test(line))) {
     problems.push(problem('dual-host-migration', '## Requirements omits the Codex migration link',
-      'link ../../docs/codex-migration.md for host tools, connections and retained data paths'));
+      'link the local or durable Codex migration notes for host tools, connections and retained data paths'));
   }
 
   return { ok: problems.length === 0, problems };

@@ -100,8 +100,8 @@ no throat-clearing, no hedges, no tacked-on closing line, real numbers only.
 Quick start begins with two explicit paths. In Claude Code chat, show
 `/plugin marketplace add natejswenson/claude-skills`,
 `/plugin install <name>@claude-skills`, then `/<name>`. In a terminal at the
-repository checkout root, show `codex plugin marketplace add "$PWD"` and
-`codex plugin add <name>@claude-skills`; then tell the reader to start a new
+repository checkout root, show exactly `codex plugin marketplace add "$PWD"` and
+`codex plugin add <name>@<target-marketplace>`; then tell the reader to start a new
 Codex session and show `$<name>` in a separate chat example. Replace `<name>`
 with this skill’s actual name. Keep all six commands in fenced blocks in
 Quick start. A mention elsewhere, a comment, or another skill’s name does not
@@ -119,7 +119,8 @@ setup each host needs. Codex does not import Claude’s MCP connections: Gmail
 needs a connected Gmail tool surface; a publishing workflow using OAuth or an
 API key still needs that script’s credentials. Generic local skills should say
 that no app connection is needed and that Claude connections are not imported.
-Link to `[Codex migration notes](../../docs/codex-migration.md)` in Requirements.
+Link to the local `[Codex migration notes](../../docs/codex-migration.md)` when the
+target provides it, or to the durable shared migration-guide URL when it does not.
 
 State the exact existing personal-data location when there is one, including
 retained `~/.claude/<skill>` directories; their names do not require Claude to
