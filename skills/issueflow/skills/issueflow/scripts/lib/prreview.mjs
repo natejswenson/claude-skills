@@ -23,6 +23,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path';
 import { HandBack, RunError, laneTree, saveRun } from './run.mjs';
 import { GQL, graphql } from './gh.mjs';
+import { dispatchProfile, runtimeOf } from './runtime.mjs';
 
 /**
  * Four rounds. A round costs two to five opus finders, up to eight opus
@@ -54,6 +55,9 @@ export const CLEANUP_ANGLES = ['reuse', 'simplification', 'efficiency', 'altitud
 
 export const FINDER_MODEL = 'opus';
 export const VERIFIER_MODEL = 'opus';
+
+export const finderProfile = (run) => dispatchProfile(runtimeOf(run), 'finder');
+export const verifierProfile = (run) => dispatchProfile(runtimeOf(run), 'verifier');
 
 const VERDICTS_NEW = ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'];
 const VERDICTS_PRIOR = ['fixed', 'still-open', 'withdrawn'];
@@ -96,7 +100,13 @@ export const openMajors = (lane) => openFindings(lane).filter((f) => f.severity 
  * fix did not fix, and repeating the model that already missed the mechanism
  * is the expensive branch.
  */
-export const fixerModel = (lane) => (openMajors(lane).some((f) => f.stillOpenRounds > 0) ? 'opus' : 'sonnet');
+export const fixerProfile = (run, lane) => dispatchProfile(
+  runtimeOf(run),
+  openMajors(lane).some((f) => f.stillOpenRounds > 0) ? 'fixerEscalated' : 'fixer',
+);
+
+/** Claude-compatible convenience retained for callers that only need the model string. */
+export const fixerModel = (lane, run = null) => fixerProfile(run, lane).model;
 
 const git = (args, cwd) => {
   try {

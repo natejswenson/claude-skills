@@ -5,6 +5,32 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-09-08
+
+### Added
+
+- **A persisted Codex runtime profile.** `start --runtime codex` records the
+  host on the run and resolves every stage, red-team pass, finder, verifier and
+  fixer to a Codex-native model, reasoning effort and role. Plans,
+  implementations and verification use GPT-6 Astra; parallel read-heavy
+  finders and first fixes use GPT-5.6 Terra; a fixer escalates to Astra at
+  `xhigh` when a major survives a round. Existing and default runs remain
+  Claude-shaped.
+- **Codex-native briefs and dispatch output.** Codex briefs read the applicable
+  `AGENTS.md` hierarchy and finish through the subagent's returned final
+  response instead of addressing Claude's `SendMessage main`. Dispatch tables
+  and `next` now carry `reasoning_effort` and agent role when the runtime
+  supports them. The skill tells Codex to spawn parallel workers without
+  serial waits and to run the filesystem wait through a yielded shell session.
+- A two-sided runtime test freezes the Codex profiles and completion contract,
+  rejects unknown runtimes, and confirms the default Claude contract still
+  emits its original `SendMessage main` behavior.
+
+### Changed
+
+- Runtime-neutral public metadata and documentation now describe both Claude
+  Code and Codex without promising Claude model aliases to Codex users.
+
 ## [0.9.0] - 2026-09-07
 
 Round 1 reviews the change; every later round reviews the fix. Measured on

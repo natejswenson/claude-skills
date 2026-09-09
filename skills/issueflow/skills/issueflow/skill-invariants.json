@@ -22,7 +22,12 @@
     {
       "id": "the-model-is-not-a-suggestion",
       "pattern": "Never dispatch a stage on a model other than the one",
-      "rationale": "The per-stage model is the whole reason this is separate subagents rather than one loop. An orchestrator that quietly runs everything on one model has kept the ceremony and thrown away the design — and a reviewer on a cheaper model than the work it reviews is a gate that rubber-stamps."
+      "rationale": "The per-stage model and reasoning effort are the whole reason this is separate subagents rather than one loop. An orchestrator that quietly runs everything on one profile has kept the ceremony and thrown away the design — and a reviewer on a cheaper model than the work it reviews is a gate that rubber-stamps."
+    },
+    {
+      "id": "runtime-is-persisted",
+      "pattern": "The run persists that choice",
+      "rationale": "Claude and Codex accept different model, reasoning, role and completion contracts. Persisting the runtime at start keeps a resumed run from switching those contracts halfway through because a different host opened it."
     },
     {
       "id": "every-gate-checkpoints",
@@ -100,7 +105,7 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" start"
       },
       {
-        "step": "render a stage's or the red team's dispatch prompt, model and subagent type from the approved artifacts",
+        "step": "render a stage's or the red team's dispatch prompt, host-native model, reasoning effort and subagent role from the approved artifacts",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
@@ -382,6 +387,14 @@
       ],
       "update_command": "node --test \"scripts/tests/next.test.mjs\"",
       "rationale": "Every reachable state yields exactly one action, and the CLI's exit codes are a contract. decide() is driven over real run directories with CI state and the remote head injected: a fresh run briefs the plan, a briefed plan waits on its artifact NEWER than its brief, a delivered plan briefs the red team, a blocked round sends the plan back and waits for a NEW delivery before reviewing again, a pass stops for the human or accepts on an auto run, a plan edited after its pass is reviewed again, an approved plan with work items splits once, a stalled stage stops with a re-dispatch, every state of the review loop yields its step, an unpushed fix is a stop rather than a wasted round, a stacked lane is rebased before its first round, and the bottom lane is active until it converges. The CLI cases run the real binary offline: a gated brief exits 2, an exhausted stage exits 4, `next` drives a fresh run to its first dispatch with a wait line and a then line, and a refused gate is a send-back that resets the stage's clock."
+    },
+    {
+      "id": "codex-runtime-two-sided",
+      "kind": "trap",
+      "test": "scripts/tests/runtime.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test \"scripts/tests/runtime.test.mjs\"",
+      "rationale": "A Codex run resolves every worker to a model, reasoning effort and role the host can dispatch, reads AGENTS.md and returns completion through the subagent final response; the paired Claude run retains SendMessage main and an unknown runtime refuses. This catches a compatibility shim that only changes prose while the executable dispatch still says opus."
     },
     {
       "id": "stage-timings-corpus",

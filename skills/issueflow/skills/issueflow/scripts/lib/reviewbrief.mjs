@@ -12,9 +12,11 @@ import { dirname, join } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import { SHARED_DIR, evidencePath, findStep, laneTree } from './run.mjs';
 import {
-  FINDER_MODEL, MAX_REVIEW_ROUNDS, NIT_CAP, VERIFIER_MODEL, candidatesPath, diffPath, finderBriefPath, fixBriefPath,
+  MAX_REVIEW_ROUNDS, NIT_CAP, candidatesPath, diffPath, finderBriefPath, finderProfile, fixBriefPath,
   fixPatchPath, fixReportPath, verdictsPath, verifierBriefPath,
+  verifierProfile,
 } from './prreview.mjs';
+import { runtimeOf } from './runtime.mjs';
 
 const METHOD_PATH = new URL('../../references/review-method.md', import.meta.url);
 const METHOD = readFileSync(METHOD_PATH, 'utf8');
@@ -29,7 +31,11 @@ export function methodSection(heading) {
   return (end ? rest.slice(0, end.index) : rest).trim();
 }
 
-export const angleText = (id) => methodSection(`angle: ${id}`);
+export const angleText = (id, run = null) => {
+  const text = methodSection(`angle: ${id}`);
+  if (id !== 'conventions' || runtimeOf(run) !== 'codex') return text;
+  return text.replaceAll('CLAUDE.md', 'AGENTS.md');
+};
 
 const bar = (headers, rows) =>
   [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
@@ -92,11 +98,12 @@ function intentBlock(dir, run) {
   ].join('\n');
 }
 
-/** The repository's own review instructions, when it has them. REVIEW.md is spliced; CLAUDE.md is named. */
+/** The repository's own review instructions, when it has them. REVIEW.md is spliced; the host's instruction file is named. */
 function guidanceBlock(run, files) {
   const out = ['## Repository guidance', ''];
   const reviewMd = join(run.repo.path, 'REVIEW.md');
-  const claudeMd = join(run.repo.path, 'CLAUDE.md');
+  const instructionName = runtimeOf(run) === 'codex' ? 'AGENTS.md' : 'CLAUDE.md';
+  const instructionFile = join(run.repo.path, instructionName);
   if (existsSync(reviewMd)) {
     out.push('The repository\'s own `REVIEW.md`, verbatim — it says what this repository wants flagged and at what severity:', '', readFileSync(reviewMd, 'utf8').trim(), '');
   } else {
@@ -107,13 +114,13 @@ function guidanceBlock(run, files) {
     let d = dirname(f.path);
     while (d && d !== '.') { dirs.add(d); d = dirname(d); }
   }
-  const nested = [...dirs].filter((d) => existsSync(join(run.repo.path, d, 'CLAUDE.md'))).map((d) => `\`${d}/CLAUDE.md\``);
-  if (existsSync(claudeMd)) {
+  const nested = [...dirs].filter((d) => existsSync(join(run.repo.path, d, instructionName))).map((d) => `\`${d}/${instructionName}\``);
+  if (existsSync(instructionFile)) {
     // Named repo-relative on purpose: a finder that copies the absolute path
     // into a finding puts the maintainer's home directory on the pull request.
-    out.push(`For the conventions angle, read \`CLAUDE.md\` at the repository root${nested.length > 0 ? ` and ${nested.join(', ')}` : ''} — quote the exact rule when you cite one, and cite files by their repository-relative path.`);
+    out.push(`For the conventions angle, read \`${instructionName}\` at the repository root${nested.length > 0 ? ` and ${nested.join(', ')}` : ''} — quote the exact rule when you cite one, and cite files by their repository-relative path.`);
   } else {
-    out.push('The repository has no `CLAUDE.md`; the conventions angle returns nothing unless `REVIEW.md` above states a rule.');
+    out.push(`The repository has no \`${instructionName}\`; the conventions angle returns nothing unless \`REVIEW.md\` above states a rule.`);
   }
   return out.join('\n');
 }
@@ -157,7 +164,14 @@ const progressBlock = (path) => [
   'never quoted back to you. Skip it if you genuinely have nothing to report yet.',
 ].join('\n');
 
-const doneBlock = (what) => [
+const doneBlock = (run, what, path) => runtimeOf(run) === 'codex' ? [
+  '## When you are done',
+  '',
+  `The moment ${what} is written, finish your subagent turn with the path`,
+  `\`${path}\` and two or three sentences stating the result. Codex returns that final`,
+  'response to the parent automatically. The file is the completion signal, so do not',
+  'wait for a reply and do not send a separate orchestration message.',
+].join('\n') : [
   '## When you are done',
   '',
   `The moment ${what} is written, send the orchestrator a message with`,
@@ -200,7 +214,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
   const priorText = priorBlock(prior);
   if (priorText) out.push(priorText, '');
   out.push('## Your angles', '');
-  for (const id of angles) out.push(`### ${id}`, '', angleText(id), '');
+  for (const id of angles) out.push(`### ${id}`, '', angleText(id, run), '');
   out.push(
     '## The rule',
     '',
@@ -248,7 +262,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '',
     progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`)),
     '',
-    doneBlock('the candidates file'),
+    doneBlock(run, 'the candidates file', candidatesPath(dir, lane, entry.round, n)),
     '',
   );
   return out.join('\n');
@@ -256,12 +270,13 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
 
 export function writeFinderBriefs(dir, run, lane, entry, { issue, files, prior }) {
   const out = [];
+  const dispatch = finderProfile(run);
   entry.angles.forEach((angles, i) => {
     const n = i + 1;
     const path = finderBriefPath(dir, lane, entry.round, n);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderFinderBrief(dir, run, lane, entry, n, { angles, issue, files, prior }));
-    out.push({ n, model: FINDER_MODEL, agent: 'general-purpose', prompt: path, writes: candidatesPath(dir, lane, entry.round, n), angles });
+    out.push({ n, ...dispatch, prompt: path, writes: candidatesPath(dir, lane, entry.round, n), angles });
   });
   return out;
 }
@@ -340,19 +355,20 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     '',
     progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`)),
     '',
-    doneBlock('the verdicts file'),
+    doneBlock(run, 'the verdicts file', verdictsPath(dir, lane, entry.round, n)),
     '',
   );
   return out.join('\n');
 }
 
 export function writeVerifierBriefs(dir, run, lane, entry, { batches, issue }) {
+  const dispatch = verifierProfile(run);
   return batches.map((items, i) => {
     const n = i + 1;
     const path = verifierBriefPath(dir, lane, entry.round, n);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderVerifierBrief(dir, run, lane, entry, n, { items, issue }));
-    return { n, model: VERIFIER_MODEL, agent: 'general-purpose', prompt: path, writes: verdictsPath(dir, lane, entry.round, n), items: items.length };
+    return { n, ...dispatch, prompt: path, writes: verdictsPath(dir, lane, entry.round, n), items: items.length };
   });
 }
 
@@ -447,17 +463,17 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     '',
     progressBlock(join(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`)),
     '',
-    doneBlock('the fix report'),
+    doneBlock(run, 'the fix report', fixReportPath(dir, lane, entry.round)),
     '',
   );
   return out.join('\n');
 }
 
-export function writeFixBrief(dir, run, lane, entry, { items, checks, model, issue }) {
+export function writeFixBrief(dir, run, lane, entry, { items, checks, model, reasoning, agent, issue }) {
   const path = fixBriefPath(dir, lane, entry.round);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderFixBrief(dir, run, lane, entry, { items, checks, model, issue }));
-  return { model, agent: 'general-purpose', prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
+  return { model, reasoning, agent, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
 }
 
 export { NIT_CAP };

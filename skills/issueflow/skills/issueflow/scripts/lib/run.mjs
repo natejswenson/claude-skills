@@ -18,6 +18,7 @@ import { join } from 'node:path';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
+import { assertRuntime, dispatchProfile } from './runtime.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -50,10 +51,11 @@ export const runDir = (root, owner, name, number) => join(root, `${owner}__${nam
 const statePath = (dir) => join(dir, 'run.json');
 
 /** A stage entry, built from the declaration so the two can never disagree. */
-const stageEntry = (id) => {
+const stageEntry = (id, runtime = 'claude') => {
   const s = stage(id);
+  const dispatch = dispatchProfile(runtime, id);
   return {
-    id: s.id, model: s.model, agent: s.agent, artifact: s.artifact, state: 'pending', at: {},
+    id: s.id, ...dispatch, artifact: s.artifact, state: 'pending', at: {},
     review: { rounds: [], feedback: null },
   };
 };
@@ -61,7 +63,7 @@ const stageEntry = (id) => {
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
 const laneReviewEntry = () => ({ rounds: [], converged: false, draft: null });
 
-const laneEntry = (policy, issue, { slug, title, base }) => ({
+const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude') => ({
   id: slug,
   slug,
   title,
@@ -70,16 +72,18 @@ const laneEntry = (policy, issue, { slug, title, base }) => ({
   pr: null,
   landed: null,
   review: laneReviewEntry(),
-  stages: PER_ITEM_STAGES.map(stageEntry),
+  stages: PER_ITEM_STAGES.map((id) => stageEntry(id, runtime)),
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude' }) {
+  const resolvedRuntime = assertRuntime(runtime);
   return {
     schema: SCHEMA,
     repo,
     issue: { number: issue.number, title: issue.title, url: issue.url },
     policy,
+    runtime: resolvedRuntime,
     // A run started from frozen `gh` payloads must never dial out later, no
     // matter which flags the next command carries. Recording it on the run is
     // what makes that a property of the run rather than of the invocation.
@@ -95,8 +99,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false }
     // when a run is resumed on a machine that has no run.json.
     checkpoint: { commentId: null, commentUrl: null, pushed: {} },
     finished: null,
-    stages: SHARED_STAGES.map(stageEntry),
-    lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base })],
+    stages: SHARED_STAGES.map((id) => stageEntry(id, resolvedRuntime)),
+    lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base }, resolvedRuntime)],
   };
 }
 
@@ -692,7 +696,7 @@ export function split(dir, run, items) {
     const base = i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
-    return laneEntry(run.policy, issue, { slug, title: item.title, base });
+    return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude');
   });
   run.split = true;
   saveRun(dir, run);
