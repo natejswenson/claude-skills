@@ -114,7 +114,19 @@ function decidePlan(dir, run, step, ctx) {
   const timeout = timeoutFor(dir, step.stage.id);
 
   // A blocked round: the stage goes back, then delivers again, then is reviewed again.
+  if (latest?.verdict === 'decision') {
+    return stop('human', `the red team identified a scope change — read ${join(dir, latest.review)} and decide whether to narrow the issue or authorize it`, {
+      artifact, review: join(dir, latest.review),
+      command: `brief --stage ${step.stage.id} --another-round "<the user's scope decision>"`,
+    });
+  }
   if (latest?.verdict === 'blocked') {
+    if (latest.repeated) {
+      return stop('dispute', `the same blocking mechanism survived two plan rounds — read ${join(dir, latest.review)} and direct the next round`, {
+        artifact, review: join(dir, latest.review),
+        command: `brief --stage ${step.stage.id} --another-round "<how the repeated blocker should be resolved>"`,
+      });
+    }
     if (roundsExhausted(step)) {
       return stop('exhausted', `the red team refused the plan ${latest.round} times — the open findings are in ${join(dir, latest.review)}`, {
         command: `brief --stage ${step.stage.id} --another-round "<what the user decided>"`,
