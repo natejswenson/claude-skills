@@ -22,7 +22,7 @@ test('codex runtime resolves every worker to a native model, reasoning effort an
 
   assert.deepEqual(
     [plan.stage.model, plan.stage.reasoning, plan.stage.agent],
-    ['gpt-6-astra', 'high', 'explorer'],
+    ['gpt-5.6-terra', 'high', 'explorer'],
   );
   assert.deepEqual(
     [implement.stage.model, implement.stage.reasoning, implement.stage.agent],
@@ -42,14 +42,17 @@ test('codex briefs use AGENTS.md and native completion; Claude defaults stay Cla
   assert.match(codexText, /read every applicable `AGENTS\.md`/);
   assert.match(codexText, /Codex returns that\s+final response to the parent automatically/);
   assert.doesNotMatch(codexText, /`SendMessage`/);
+  assert.doesNotMatch(codexText, /progress\//, 'Codex briefs do not trigger optional out-of-sandbox progress writes');
   const reviewText = renderReviewBrief('/tmp/run', codex, findStep(codex, 'investigate'), ISSUE, 1);
   assert.match(reviewText, /Codex returns that\s+final response to the parent automatically/);
   assert.doesNotMatch(reviewText, /`SendMessage`/);
+  assert.doesNotMatch(reviewText, /progress\//);
 
   const claude = createRun({ repo: REPO, issue: ISSUE, policy: POLICY });
   const claudeText = renderBrief('/tmp/run', claude, findStep(claude, 'investigate'), ISSUE);
   assert.match(claudeText, /`SendMessage`, addressed to `main`/);
   assert.doesNotMatch(claudeText, /read every applicable `AGENTS\.md`/);
+  assert.match(claudeText, /progress\//, 'Claude keeps its existing file-based progress channel');
 });
 
 test('start --runtime codex persists the host contract; an invalid host writes no run', () => {
@@ -63,10 +66,17 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   const output = execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.runtime, 'codex');
+  assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
+  assert.match(output, /Auto run: every stage is gated by a red-team review instead of a human/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
   const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline'], { encoding: 'utf8' });
-  assert.match(next, /model `gpt-6-astra`, reasoning_effort `high`, role `explorer`/);
+  assert.match(next, /model `gpt-5\.6-terra`, reasoning_effort `high`, role `explorer`/);
   assert.match(next, /next: dispatch \(brief\)/);
+
+  const reviewDir = join(root, 'review-plan');
+  execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '43', '--runtime', 'codex', '--review-plan', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', reviewDir]);
+  const reviewPlan = JSON.parse(readFileSync(join(reviewDir, 'run.json'), 'utf8'));
+  assert.equal(reviewPlan.auto, false, '--review-plan is the explicit human-gate mode');
 
   const badDir = join(root, 'bad');
   assert.throws(

@@ -162,14 +162,14 @@
     },
     {
       "name": "issueflow",
-      "version": "0.10.0",
+      "version": "0.11.0",
       "stack": "node",
-      "cardHash": "a63fd4d5331b207c",
-      "facts": 71,
+      "cardHash": "dd7647d1708a4d0f",
+      "facts": 58,
       "sections": {
-        "setup": 9,
+        "setup": 6,
         "usage": 12,
-        "commands": 18,
+        "commands": 8,
         "architecture": 16,
         "troubleshooting": 16
       },
