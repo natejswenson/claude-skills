@@ -187,12 +187,12 @@ def test_real_codex_policy_tamper_receipts_and_next_launch(tmp_path):
             time.sleep(1)
         (base / "normal-launchd-list.txt").write_text(next_launch.stdout + next_launch.stderr)
         assert '"LastExitStatus" = 0;' in next_launch.stdout, next_launch.stdout
-        assert "OK:" in (trusted.parent / "data/.radar.log").read_text()
+        assert " OK\n" in (trusted.parent / "data/.radar.log").read_text()
         assert before == {str(p): sources.sha256(p.read_bytes()) for p in targets[:-1]}
         assert not canary.exists() and server_calls == []
         found = radar.discover(home, bundle.parent)
         assert found["backend"] == "codex" and Path(found["digest"]).is_file()
-        assert "OK:" in found["health"]
+        assert " OK\n" in found["health"]
         workspaces = list((trusted.parent / "data/runs").glob("*/workspace"))
         assert len(workspaces) == 2
         for workspace in workspaces:

@@ -240,16 +240,17 @@ def main(argv=None) -> int:
             log = safe_path(trusted.parent / "data/.radar.log")
             try:
                 digest = run(trusted)
-                message = f"{datetime.now(timezone.utc).isoformat()} OK: {digest}"
+                # Never put user-controlled paths or backend output in the durable log.
+                message = f"{datetime.now(timezone.utc).isoformat()} OK"
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
                 with log.open("a") as stream:
-                    stream.write(f"{datetime.now(timezone.utc).isoformat()} ERROR: {exc}\n")
+                    stream.write(f"{datetime.now(timezone.utc).isoformat()} ERROR: {type(exc).__name__}\n")
                 raise
             with log.open("a") as stream:
                 stream.write(message + "\n")
-            print(message)
+            print("OK")
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print(f"ERROR: {type(exc).__name__}", file=sys.stderr)
         return 1
     return 0
 

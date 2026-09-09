@@ -345,7 +345,7 @@ def test_discovery_prefers_configured_durable_digest(installed, tmp_path, legacy
     digest = trusted.parent / "data/digests" / f"release-radar-{date.today()}.md"
     digest.write_text("Fresh durable digest")
     log = trusted.parent / "data/.radar.log"
-    log.write_text("OK: " + str(digest))
+    log.write_text("OK\n")
     found = radar.discover(Path(config["home"]), legacy)
     assert found["digest"] == str(digest)
     assert found["backend"] == "codex"
@@ -400,12 +400,14 @@ def test_main_install_discover_run_and_failures(installed, monkeypatch, capsys):
     assert json.loads(capsys.readouterr().out)["backend"] == "codex"
     monkeypatch.setattr(radar, "run", lambda path: path.parent / "data/digests/digest.md")
     assert radar.main(["run"]) == 0
-    assert "OK:" in capsys.readouterr().out
+    assert capsys.readouterr().out.strip() == "OK"
     monkeypatch.setattr(radar, "__file__", str(trusted / "release_radar_runtime.py"))
     assert radar.main(["run"]) == 0
     def fail(path):
         raise ValueError("bad receipt")
     monkeypatch.setattr(radar, "run", fail)
     assert radar.main(["run"]) == 1
-    assert "bad receipt" in capsys.readouterr().err
-    assert "ERROR: bad receipt" in (trusted.parent / "data/.radar.log").read_text()
+    error = capsys.readouterr().err
+    assert error.strip() == "ERROR: ValueError"
+    assert "bad receipt" not in error
+    assert "ERROR: ValueError" in (trusted.parent / "data/.radar.log").read_text()
