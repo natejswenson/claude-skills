@@ -1,6 +1,7 @@
 {
   "targetRepo": "yourusername/daily-dev-log",
   "branch": "main",
+  "generationMode": "release",
   "gitAuthor": "Your Name",
   "githubUser": "yourusername",
   "voicePath": "~/.claude/ghostwriter/voice",

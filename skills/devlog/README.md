@@ -83,6 +83,10 @@ lets you register one or more projects in a single run.
 - A release you just tagged that should become a post.
 - Managing devlog config conversationally: "add this repo to devlog", "stop
   tracking X", "set min sources to 4", "/devlog status".
+- "Draft one concept guide using the agent-friendly method" or "consolidate these
+  posts into one guide" selects the new local draft workflow.
+- "Create an AI cover draft for this article" selects the Codex artwork workflow
+  without scanning or publishing.
 
 ## Requirements
 
@@ -95,7 +99,10 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
 - **Node 18+** for the CLI and preview app.
 - **GitHub CLI** (`gh`), authenticated with `gh auth login` — used to create your
   dev-log repo and push entries.
-- **Claude Code or Codex** to run the skill.
+- **Claude Code** (`/devlog`) or **Codex** (`$devlog`) to run the skill.
+- Concept drafts use independent agents for review/adaptation when available;
+  missing capabilities retain the draft with explicit uncompleted checks.
+- AI artwork requires the session's native image tool. No implicit API fallback.
 
 ## How it works
 
@@ -125,8 +132,40 @@ not apply to a dev log.
 | `devlog config [--json]` | Show current config with validation status |
 | `devlog scan [--project <key>]` | JSON plan of new releases needing entries |
 | `devlog lint-post <file>` | Deterministic post-contract check |
+| `devlog lint-guide <file> [--voice]` | Post checks plus a unique top-of-post implementation handoff |
+| `devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>]` | Standalone local preview and complete copyable prompt/reference |
+| `devlog compose-art-cover --spec <json> --out <new-dir>` | Offline raster artwork composition and hashed result; no image-service call |
 | `devlog publish-entry ...` | Copy a drafted entry into a clone and update the manifest; never overwrites |
 | `devlog preview` | Run a local preview at `http://localhost:5173` |
+
+## Concept guides and cover drafts
+
+Explicit concept requests produce at most one complete guide teaching implementation
+in the reader's project. The draft includes the full code, verification commands and
+a prompt that preserves the reader's APIs, saved state and supported runtimes. The
+preview's **Copy prompt + guide** button includes the full Markdown reference; denied
+clipboard access provides a manual selection fallback.
+
+The [concept workflow](skills/devlog/references/concept-guides.md) separates mechanical
+lint from executed examples and independent adaptation evidence. The
+[art workflow](skills/devlog/references/codex-cover-art.md) uses native Codex generation
+followed by local typography. [Composition specs](skills/devlog/references/cover-spec.md)
+consume generated/adopted brand JSON and local artwork; no installed PRESS dependency
+is required. Sources remain intact, output directories must be new, and result markers
+are written last. Review hashes identify artifacts, not proof of beautiful or correct art.
+
+Default `/devlog` and `$devlog` retain release generation. Opt in with
+`devlog set generationMode concept` to produce at most one complete concept guide
+per normal run, including executed examples, an independent adaptation trial,
+reviewed art and deployment verification. `devlog set generationMode release`
+restores the legacy workflow. Explicit draft requests remain local.
+
+The [publishing workflow](skills/devlog/references/guide-publishing.md) uses
+`publish-guide --clone <content-root> --article <md> --evidence <json> [--cover <png>]`
+to validate matching evidence before writing an unoccupied release identity.
+It never pushes by itself. Installation does not change user configuration,
+rewrite old posts or add a suppression ledger. Existing-post consolidation and
+backfill remain separate explicitly scoped work.
 
 ## What you end up with
 

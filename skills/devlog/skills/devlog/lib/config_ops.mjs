@@ -29,6 +29,7 @@ export function removeProject(config, key) {
 // Fields settable via `devlog set <field> <value>`. Everything funnels through
 // validateConfig, so a bad value can never be persisted.
 const SETTERS = {
+  generationMode: (c, v) => ({ ...c, generationMode: v }),
   targetRepo: (c, v) => ({ ...c, targetRepo: v }),
   branch: (c, v) => ({ ...c, branch: v }),
   targetDir: (c, v) => (v === '' ? omit(c, 'targetDir') : { ...c, targetDir: v }),
