@@ -75,7 +75,7 @@ function withoutMasthead(text) {
  * Grade one README. Returns `{ok, problems}` — never throws, because an absent
  * or malformed README is a finding to report, not an exception to crash on.
  */
-export function gradeReadme(text, name) {
+export function gradeReadme(text, name, marketplace = 'claude-skills') {
   const problems = [];
   if (!text) {
     return { ok: false, problems: [problem('missing', 'no README.md', 'every plugin root ships one')] };
@@ -225,12 +225,13 @@ export function gradeReadme(text, name) {
   };
   const commands = fencedLines(quickstart, true).map((line) => line.trim());
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedMarketplace = marketplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const hostCommands = [
     ['claude-marketplace', /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/],
-    ['claude-install', new RegExp(`^/plugin install ${escaped}@claude-skills(?:\\s|$)`)],
+    ['claude-install', new RegExp(`^/plugin install ${escaped}@${escapedMarketplace}(?:\\s|$)`)],
     ['claude-invocation', new RegExp(`^/${escaped}(?:\\s|$)`)],
     ['codex-marketplace', /^codex plugin marketplace add "\$PWD"$/],
-    ['codex-install', new RegExp(`^codex plugin add ${escaped}@claude-skills(?:\\s|$)`)],
+    ['codex-install', new RegExp(`^codex plugin add ${escaped}@${escapedMarketplace}(?:\\s|$)`)],
     ['codex-invocation', new RegExp(`^\\$${escaped}(?:\\s|$)`)],
   ];
   for (const [id, pattern] of hostCommands) {

@@ -60,7 +60,7 @@ test('every shipped README satisfies the house style', () => {
 // long tail.
 
 const REFERENCE = 'ghfactory';
-const ids = (text, name = REFERENCE) => gradeReadme(text, name).problems.map((p) => p.id);
+const ids = (text, name = REFERENCE, marketplace) => gradeReadme(text, name, marketplace).problems.map((p) => p.id);
 
 test('a decorated H1 is caught — it silently detaches the press anchor', () => {
   const mutated = readmeOf(REFERENCE).replace(/^# ghfactory$/m, '# ghfactory (Claude Code skill)');
@@ -183,6 +183,13 @@ test('the Codex marketplace command names the checkout root', () => {
     .includes('dual-host-codex-marketplace'), 'an unrelated marketplace satisfied the checkout-root command');
 });
 
+test('README grading uses the target marketplace for both host install commands', () => {
+  const text = readmeOf(REFERENCE).replaceAll('@claude-skills', '@other-repo');
+  assert.ok(gradeReadme(text, REFERENCE, 'other-repo').ok, 'the target marketplace did not satisfy both host install checks');
+  assert.ok(ids(text, REFERENCE).includes('dual-host-claude-install'), 'Claude Code accepted another marketplace');
+  assert.ok(ids(text, REFERENCE).includes('dual-host-codex-install'), 'Codex accepted another marketplace');
+});
+
 for (const [id, command] of hostCommands(REFERENCE).filter(([id]) => !id.endsWith('marketplace'))) {
   test(`${id}: another skill name cannot satisfy the check`, () => {
     const text = readmeOf(REFERENCE);
@@ -216,6 +223,7 @@ for (const label of ['Claude Code', 'Codex', 'Personal data']) {
 test('the scaffold README uses the target marketplace and durable migration guide', () => {
   const plan = planScaffold(demo, { ...readHouse(REPO), marketplaceName: 'other-repo' }, { today: '2026-08-01', pins: {} });
   const text = plan.files.find((file) => file.path === `skills/${demo.name}/README.md`).content;
+  assert.ok(text.includes(`/plugin install ${demo.name}@other-repo`), 'scaffold used the wrong marketplace for Claude Code');
   assert.ok(text.includes(`codex plugin add ${demo.name}@other-repo`), 'scaffold used this repository’s marketplace');
   assert.ok(text.includes('https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md'),
     'scaffold linked to a migration guide unavailable in the target repository');

@@ -103,7 +103,7 @@ Claude Code — run in chat:
 
 \`\`\`text
 /plugin marketplace add ${ORG}/${REPO}
-/plugin install ${spec.name}@${REPO}
+/plugin install ${spec.name}@${marketplace}
 /${spec.name}
 \`\`\`
 
