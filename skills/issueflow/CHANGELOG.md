@@ -22,6 +22,13 @@ the proof gates.
 
 ### Added
 
+- Red-team findings now declare a disposition so implementation proofs and
+  environment-limited checks do not trigger repeated plan rewrites.
+- Repeated blocking mechanisms are detected and handed back for a decision
+  before the review cap is spent.
+- Scope-changing findings stop for a user decision instead of being
+  auto-rewritten.
+
 - `--review-plan` explicitly opts into the single human plan gate. Autoflow is
   autonomous by default; `--auto` remains a backward-compatible alias.
 - Semantic review sizing discounts tests and generated artifacts while keeping

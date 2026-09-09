@@ -24,7 +24,7 @@ export function writeGood(dir, run, stageId, lane = null) {
 
 /** Write a red-team review for the step's next round, in the registrar's JSON shape. */
 export function writeReview(dir, step, { findings = [], notExamined = ['the frobnicator path'], verdict } = {}) {
-  const derived = findings.some((f) => f.severity === 'critical' || f.severity === 'high') ? 'blocked' : 'pass';
+  const derived = findings.some((f) => (f.disposition ?? 'fixable') === 'fixable' && (f.severity === 'critical' || f.severity === 'high')) ? 'blocked' : findings.some((f) => f.disposition === 'scope-change' && (f.severity === 'critical' || f.severity === 'high')) ? 'decision' : 'pass';
   mkdirSync(join(dir, 'reviews'), { recursive: true });
   writeFileSync(reviewPath(dir, step, nextRound(step)), `${JSON.stringify({ findings, notExamined, verdict: verdict ?? derived }, null, 2)}\n`);
 }
@@ -36,8 +36,8 @@ export function redTeamPass(dir, run, step) {
 }
 
 /** A blocked round, registered — the plan has an open blocking finding. */
-export function redTeamBlock(dir, run, step, text = 'the evidence never reproduces the report.') {
-  writeReview(dir, step, { findings: [{ severity: 'high', cite: 'investigate.md § Evidence', text }] });
+export function redTeamBlock(dir, run, step, text = 'the evidence never reproduces the report.', cite = 'investigate.md § Evidence') {
+  writeReview(dir, step, { findings: [{ severity: 'high', cite, text }] });
   return registerReview(dir, run, step);
 }
 

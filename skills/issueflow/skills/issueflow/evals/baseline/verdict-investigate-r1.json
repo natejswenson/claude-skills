@@ -8,6 +8,14 @@
     "medium": 1,
     "low": 5
   },
+  "dispositions": {
+    "fixable": 0,
+    "implementation-proof": 0,
+    "environment-blocked": 0,
+    "scope-change": 0,
+    "note": 6
+  },
+  "repeated": false,
   "artifactSha": "5f8ff8fdd3bcf6e102668469d4cedbb525f2b2375693a80c54cbd6c37346f447",
   "review": "reviews/investigate-r1.findings.json"
 }

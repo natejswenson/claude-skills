@@ -38,6 +38,11 @@ export const MAX_ROUNDS = 3;
 
 export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
 
+// Severity describes impact. Disposition describes who can close the finding.
+// Keeping those axes separate prevents an unavailable external capability from
+// turning into three rounds of plan rewrites.
+export const DISPOSITIONS = ['fixable', 'implementation-proof', 'environment-blocked', 'scope-change', 'note'];
+
 /**
  * What blocks. Medium and low are notes — recorded, surfaced, never a reason
  * to send a stage back. A red team allowed to block on nitpicks is a loop
@@ -45,6 +50,8 @@ export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
  * to turn the red team off.
  */
 export const BLOCKING = ['critical', 'high'];
+
+export const BLOCKING_DISPOSITIONS = ['fixable'];
 
 /**
  * The one reviewer, on opus: the red team is the judgment the run pays for —
@@ -72,7 +79,10 @@ export const REVIEWS = [
       'the code and trace the call sites yourself.',
       'Check the Proof maps to the behaviour the issue reports, not merely to the',
       'code being changed. A proof that would pass without fixing the issue is a',
-      'critical finding.',
+      'critical finding. If a concern is real but can only be proven after code exists, use',
+      '`implementation-proof`; if it needs credentials, a host capability or an external',
+      'service unavailable here, use `environment-blocked`; if it changes the issue scope,',
+      'use `scope-change`. Only `fixable` critical/high findings send the plan back.',
       'Check the Rejected alternative is real. A strawman nobody would have built',
       'is a plan with no rejected alternative.',
       'If there are Work items, attack the split before the items: `Why split:`',
@@ -159,9 +169,11 @@ export function parseFindings(text) {
     const where = `findings[${i}]`;
     if (!f || typeof f !== 'object') return { error: `${where} is not an object` };
     if (!SEVERITIES.includes(f.severity)) return { error: `${where}.severity must be one of ${SEVERITIES.join('|')}` };
+    const disposition = f.disposition ?? (BLOCKING.includes(f.severity) ? 'fixable' : 'note');
+    if (!DISPOSITIONS.includes(disposition)) return { error: `${where}.disposition must be one of ${DISPOSITIONS.join('|')}` };
     if (typeof f.cite !== 'string' || !f.cite.trim()) return { error: `${where}.cite is missing — a finding that cites nothing is an opinion` };
     if (typeof f.text !== 'string' || !f.text.trim()) return { error: `${where}.text is missing` };
-    findings.push({ severity: f.severity, cite: f.cite.trim().replace(/^`+|`+$/g, ''), text: f.text.trim() });
+    findings.push({ severity: f.severity, disposition, cite: f.cite.trim().replace(/^`+|`+$/g, ''), text: f.text.trim() });
   }
   const notExamined = Array.isArray(data.notExamined)
     ? data.notExamined.map((s) => String(s).trim()).filter(Boolean)
@@ -170,7 +182,7 @@ export function parseFindings(text) {
       : null;
   if (notExamined === null) return { error: 'has no `notExamined` list — a review names what nobody looked at' };
   const verdict = typeof data.verdict === 'string' ? data.verdict.trim().toLowerCase() : null;
-  if (verdict !== 'pass' && verdict !== 'blocked') return { error: '`verdict` must be "pass" or "blocked"' };
+  if (verdict !== 'pass' && verdict !== 'blocked' && verdict !== 'decision') return { error: '`verdict` must be "pass", "blocked" or "decision"' };
   return { findings, notExamined, verdict };
 }
 
@@ -219,7 +231,34 @@ const countsOf = (findings) => {
 
 /** Blocking findings decide; the declared verdict only gets to agree. */
 export const deriveVerdict = (findings) =>
-  findings.some((f) => BLOCKING.includes(f.severity)) ? 'blocked' : 'pass';
+  findings.some((f) => BLOCKING.includes(f.severity) && BLOCKING_DISPOSITIONS.includes(f.disposition))
+    ? 'blocked'
+    : findings.some((f) => BLOCKING.includes(f.severity) && f.disposition === 'scope-change')
+      ? 'decision'
+      : 'pass';
+
+const words = (text) => new Set((text.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []).filter((word) => !['that', 'this', 'with', 'from', 'because', 'must', 'only', 'does', 'doesn'].includes(word)));
+
+const overlap = (a, b) => {
+  const left = words(a);
+  const right = words(b);
+  if (left.size === 0 || right.size === 0) return 0;
+  let common = 0;
+  for (const word of left) if (right.has(word)) common += 1;
+  return common / Math.min(left.size, right.size);
+};
+
+/** True when the latest blocked round repeats the same unresolved mechanism. */
+export const repeatedBlocking = (step, findings) => {
+  const previousRound = step.stage.review?.rounds.at(-1);
+  if (previousRound?.verdict !== 'blocked') return false;
+  const previous = previousRound.items ?? [];
+  const current = findings.filter((f) => BLOCKING.includes(f.severity) && BLOCKING_DISPOSITIONS.includes(f.disposition));
+  const prior = previous.filter((f) => BLOCKING.includes(f.severity) && BLOCKING_DISPOSITIONS.includes(f.disposition));
+  return current.length > 0 && prior.length > 0 && current.every((f) => prior.some((p) =>
+    p.disposition === f.disposition && p.cite === f.cite && overlap(p.text, f.text) >= 0.45,
+  ));
+};
 
 /**
  * Register a completed review: validate it, derive its verdict, bind it to the
@@ -291,16 +330,19 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
   if (declared !== derived) {
     throw new RunError(
       `cannot register the review of ${step.key}: the review declares ${declared} but its own findings ` +
-        `derive ${derived} — the severities decide, and a review that disagrees with itself registers nothing`,
+      `derive ${derived} — the severity and disposition fields decide, and a review that disagrees with itself registers nothing`,
     );
   }
 
   const counts = countsOf(findings);
+  const repeated = derived === 'blocked' && repeatedBlocking(step, findings);
   const verdict = {
     step: step.key,
     round,
     verdict: derived,
     findings: counts,
+    dispositions: Object.fromEntries(DISPOSITIONS.map((d) => [d, findings.filter((f) => f.disposition === d).length])),
+    repeated,
     artifactSha: sha256OfFile(artifact),
     review: `reviews/${keyOf(step)}-r${round}.findings.json`,
   };
