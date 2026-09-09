@@ -129,15 +129,16 @@ for (const delivered of ['plan', 'implementation']) {
         assert.equal(result.code, 4);
       } else {
         assert.match(result.out, /NOT backed up|incomplete backup/);
-        assert.ok(result.code !== 0);
+        assert.equal(result.code, 3, 'a failed budget-stop checkpoint is retryable infrastructure failure');
         if (failure === 'push') assert.equal(after.checkpoint.pushed.root, undefined);
       }
       const checkpoint = structuredClone(after.checkpoint);
       const callBytes = readFileSync(calls, 'utf8');
       const resumed = spawnCli(['resume', '--run-dir', dir, '--budget-seconds', '1800'], { PATH: `${bin}:${process.env.PATH}` });
-      assert.equal(resumed.code, 0, resumed.err);
+      assert.equal(resumed.code, failure === 'none' ? 0 : 3, resumed.err);
       assert.deepEqual(loadRun(dir).checkpoint, checkpoint);
-      assert.equal(readFileSync(calls, 'utf8'), callBytes, 'resume must make no network calls');
+      assert.notEqual(readFileSync(calls, 'utf8'), callBytes, 'resume must checkpoint the renewed budget');
+      if (failure !== 'none') assert.match(resumed.out, /incomplete backup/);
     });
   }
 }
