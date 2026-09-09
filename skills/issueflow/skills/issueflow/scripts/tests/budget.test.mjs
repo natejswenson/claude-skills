@@ -212,7 +212,7 @@ for (const runtime of ['claude', 'codex']) {
   });
 }
 
-for (const value of [undefined, true, '0', '-1', '0.5', 'abc', 'NaN', 'Infinity', '9007199254740992', '8640000000000', '']) {
+for (const value of [undefined, true, '0', '-1', '0.5', 'abc', 'NaN', 'Infinity', '9007199254740992', '8640000000000', '1800=typo', '']) {
   test(`budget: resume rejects ${String(value)} before writing`, (t) => {
     const { dir } = fixture(t);
     const original = readFileSync(join(dir, 'run.json'), 'utf8');

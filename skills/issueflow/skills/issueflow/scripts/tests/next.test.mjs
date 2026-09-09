@@ -277,6 +277,7 @@ for (const delivery of ['finders', 'verifiers', 'fixer']) {
     }
     if (delivery === 'fixer') {
       registerRound(dir, run, lane, 1, { tree: repoPath });
+      lane.review.maxRounds = 1;
       currentRound(lane).fix = { briefed: true };
       mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
       writeFileSync(fixBriefPath(dir, lane, 1), '# fix\n');
@@ -300,7 +301,10 @@ for (const delivery of ['finders', 'verifiers', 'fixer']) {
       assert.equal(currentRound(loadRun(dir).lanes[0]).verifiers, null);
     }
     assert.equal(result.code, 4, result.err);
-    assert.match(result.out, /next: stop — budget/);
+    if (delivery === 'fixer') {
+      assert.match(result.out, /next: stop — exhausted/);
+      assert.match(result.out, /Offline: saved locally; no remote checkpoint attempted/);
+    } else assert.match(result.out, /next: stop — budget/);
     assert.doesNotMatch(result.out, /Dispatch ONE|next: dispatch/);
   });
 }
