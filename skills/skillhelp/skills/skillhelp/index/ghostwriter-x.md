@@ -9,9 +9,13 @@
 
 ## Setup
 
-- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:70`
-- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:72`
-- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:74`
+- **Claude Code:** Run typefully_post.py --connect with the Typefully API key. `skills/ghostwriter-x/README.md:93`
+- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthr… `skills/ghostwriter-x/README.md:94`
+- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter-x/. `skills/ghostwriter-x/README.md:95`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter-x/README.md:97`
+- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:99`
+- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:101`
+- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:103`
 
 ## Usage
 
@@ -30,10 +34,10 @@
 
 ## Commands
 
-- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:43`
-- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:44`
-- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:45`
-- python3 -m venv .venv `skills/ghostwriter-x/README.md:143`
+- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:67`
+- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:68`
+- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:69`
+- python3 -m venv .venv `skills/ghostwriter-x/README.md:172`
 
 ## Architecture
 

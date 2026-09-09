@@ -9,10 +9,14 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/release/README.md:70`
-- [shipflow](../shipflow) **≥ 0.4.0** — every step that changes anything is one of its release-* commands. This skill resolves it, gates its version, and shapes its output; it reimplements none of it. `skills/release/README.md:71`
-- gh, authenticated with write access to the repo being released. `skills/release/README.md:74`
-- A repo with .github/shipflow.json. One with no release.components block gets a single component inferred from its root, so a single-project repo needs no extra configuration. `skills/release/README.md:75`
+- **Claude Code:** Allow gh and shipflow to access the target repository. `skills/release/README.md:88`
+- **Codex:** Use the same authenticated gh CLI and shipflow installation; Claude app connections are not imported. `skills/release/README.md:89`
+- **Personal data:** Release configuration remains in the target repository; no private ~/.claude/release store is required. `skills/release/README.md:90`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/release/README.md:92`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/release/README.md:94`
+- [shipflow](../shipflow) **≥ 0.4.0** — every step that changes anything is one of its release-* commands. This skill resolves it, gates its version, and shapes its output; it reimplements none of it. `skills/release/README.md:95`
+- gh, authenticated with write access to the repo being released. `skills/release/README.md:98`
+- A repo with .github/shipflow.json. One with no release.components block gets a single component inferred from its root, so a single-project repo needs no extra configuration. `skills/release/README.md:99`
 - **shipflow ≥ 0.4.0.** Every mutating step is one of its release-* commands, which did not exist before then. release.js checks this at startup and stops with a plain message rather than failing obscu… `skills/release/skills/release/SKILL.md:176`
 - **gh, authenticated** with repo write access. Every check is a gh API call. `skills/release/skills/release/SKILL.md:179`
 - **A repo with .github/shipflow.json.** A repo with no release.components block gets one component inferred from its root, so a single-project repo needs no extra config. `skills/release/skills/release/SKILL.md:180`

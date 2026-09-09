@@ -9,16 +9,18 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/appletv/README.md:66`
-- Python 3.9+ on the Mac; appletv doctor creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global. `skills/appletv/README.md:67`
-- The Mac on the same network as the Apple TV (Bonjour), and someone in the room to read two PINs off the screen the first time. `skills/appletv/README.md:68`
-- Optional, for in-app navigation (Netflix has no deep links since Sept 2025): appletv screen takes real screenshots over Apple's developer tunnel — one-time screen --pair with the TV on *Remote App an… `skills/appletv/README.md:69`
+- **Claude Code:** Allow shell access to the local Mac for discovery and pairing. `skills/appletv/README.md:84`
+- **Codex:** Allow the same local-network and shell access; use appletv pair for device credentials, not an app connection. `skills/appletv/README.md:85`
+- **Personal data:** Both hosts retain pairing credentials in ~/.pyatv.conf and aliases/preferences in ~/.config/appletv/config.json. `skills/appletv/README.md:86`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/appletv/README.md:88`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/appletv/README.md:90`
+- Python 3.9+ on the Mac; appletv doctor creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global. `skills/appletv/README.md:91`
+- The Mac on the same network as the Apple TV (Bonjour), and someone in the room to read two PINs off the screen the first time. `skills/appletv/README.md:92`
+- Optional, for in-app navigation (Netflix has no deep links since Sept 2025): appletv screen takes real screenshots over Apple's developer tunnel — one-time screen --pair with the TV on *Remote App an… `skills/appletv/README.md:93`
 - Requires Node >=18 (package.json engines). `skills/appletv/skills/appletv/package.json:33`
 - Reads environment variable APPLETV_CONFIG. `skills/appletv/skills/appletv/scripts/lib/config.mjs:13`
 - Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:64`
 - Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:31`
-- Reads environment variable APPLETV_VENV. `skills/appletv/skills/appletv/scripts/lib/driver.mjs:13`
-- Reads environment variable TMPDIR. `skills/appletv/skills/appletv/scripts/appletv.js:575`
 
 ## Usage
 
@@ -33,7 +35,7 @@
 - skills/appletv/references/apps.md — The verified bundle-id table and how deep links open a specific title in Netflix, Disney+, Max, YouTube and Apple TV+. `skills/appletv/README.md:27`
 - skills/appletv/references/errors.md — The error taxonomy — each failure the network, the TV or tvOS produces, mapped to the message and the fix the skill gives. `skills/appletv/README.md:28`
 - skills/appletv/references/intents.md — The twenty things people actually ask a TV to do, each mapped to a command sequence and its confirmation policy. `skills/appletv/README.md:29`
-- Install from the [claude-skills marketplace](https://github.com/natejswenson/claude-skills), then ask for work matching the triggers below. `skills/appletv/README.md:46`
+- Claude Code — run in chat: `skills/appletv/README.md:34`
 
 ## Commands
 
