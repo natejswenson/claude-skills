@@ -150,6 +150,9 @@ export function validateConfig(config) {
       throw new Error(`voicePath must be a path with no shell metacharacters and no leading dash: got ${JSON.stringify(config.voicePath)}`);
     }
   }
+  if ('generationMode' in config && !['release', 'concept'].includes(config.generationMode)) {
+    throw new Error('generationMode must be release or concept');
+  }
   if ('deepDive' in config) {
     const d = config.deepDive;
     if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('deepDive must be an object');

@@ -2,6 +2,29 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.14.0 (2026-09-09) — verified concept guides and AI cover composition
+
+- Add an explicit concept-guide draft workflow: select one transferable reader
+  outcome, include a copyable implementation prompt and complete reference, exercise
+  the build, and independently test adaptation in an existing project.
+- Add `lint-guide` and `prepare-guide` for strict handoff structure and a standalone
+  local reading preview with exact full-guide clipboard and manual fallback.
+- Add `compose-art-cover` for offline composition of local raster artwork with
+  adopted brand tokens, true-color PNG output, bounded typography and hashed receipts.
+  Codex native image generation remains session orchestration; no new credentials,
+  image API calls or paid fallback are introduced in the CLI.
+- Package the workflow references for both hosts and install them beside standalone
+  SKILL.md copies. Existing Claude generation uses its local cover renderer.
+- Update Sharp from 0.35.3 to 0.35.4 to resolve the dependency audit's
+  [libheif advisory](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c).
+- Add optional `generationMode: concept` for at most one complete guide per normal
+  run, with `release` and missing settings preserving existing generation behavior.
+- Add `publish-guide` to bind the article, full agent payload, executed output,
+  independent adaptation and review records before writing a new entry. Reviewed
+  cover hashes and decoded geometry are checked when art is provided.
+- Keep legacy scanning, assembly, rendering, publication identities and existing
+  content unchanged. Explicit drafts remain local; catalog backfill is separate.
+
 ## 0.13.0 (2026-07-29) — a publish run now proves the entry is live
 
 Publishing reported success on a post that was never reachable. The content, cover
