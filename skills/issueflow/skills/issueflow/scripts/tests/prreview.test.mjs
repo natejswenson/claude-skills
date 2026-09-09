@@ -21,7 +21,7 @@ import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
   inlineEligible, laneDiff, openFindings, openMajors, openRound, parseDiff, payloadPath, planVerification, postRound,
-  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, roundRows, ruleFinding, threadBody, touched, validateCandidates,
+  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, riskSensitiveChange, roundRows, ruleFinding, semanticChangedLines, threadBody, touched, validateCandidates,
   validateVerdicts, verdictsPath, fixReportPath,
 } from '../lib/prreview.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief, methodSection } from '../lib/reviewbrief.mjs';
@@ -148,6 +148,23 @@ test('fleetPlan: sized to the diff, cleanup angles in round 1 only, a small diff
   assert.ok(r2.angles.flat().every((a) => CORE_ANGLES.includes(a)), 'no cleanup angle after round 1');
   assert.deepEqual([...new Set(fleetPlan(600, 1).angles.flat())].sort(), [...CORE_ANGLES, ...CLEANUP_ANGLES].sort(), 'every angle is dealt to someone');
   assert.equal(batchItems(Array.from({ length: 30 }, (_, i) => i), { per: 3, maxBatches: 8 }).length, 8, 'batches grow rather than exceed the verifier cap');
+});
+
+test('semantic review sizing: generated and test bulk does not duplicate a small review; sensitive paths retain a two-finder floor', () => {
+  const files = [
+    { path: 'src/command.js', added: 5, deleted: 3 },
+    { path: 'scripts/tests/command.test.mjs', added: 50, deleted: 12 },
+    { path: 'evals/baseline/next.txt', added: 80, deleted: 80 },
+    { path: 'CHANGELOG.md', added: 3, deleted: 0 },
+  ];
+  assert.equal(semanticChangedLines(files), 24);
+  assert.equal(fleetPlan(semanticChangedLines(files), 1).finders, 1);
+  const sensitive = [{ path: '.github/workflows/release.yml', added: 2, deleted: 2 }];
+  assert.equal(riskSensitiveChange(sensitive), true);
+  assert.equal(fleetPlan(semanticChangedLines(sensitive), 1, { risk: true }).finders, 2);
+  assert.equal(fleetPlan(semanticChangedLines(sensitive), 2, { ofFix: true, risk: true }).finders, 2, 'a sensitive fix keeps independent review');
+  assert.equal(semanticChangedLines([{ path: 'src/index/query.js', added: 80, deleted: 20 }]), 100, 'a production directory named index is not generated');
+  assert.equal(semanticChangedLines([{ path: 'skills/skillhelp/skills/skillhelp/index/issueflow.md', added: 80, deleted: 20 }]), 0);
 });
 
 test('fleetPlan: a round sized to the fix gets 1–3 finders and at most 4 verifiers; the same lines over the whole change get the round-1 fleet', () => {

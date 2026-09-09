@@ -75,7 +75,7 @@ function withoutMasthead(text) {
  * Grade one README. Returns `{ok, problems}` — never throws, because an absent
  * or malformed README is a finding to report, not an exception to crash on.
  */
-export function gradeReadme(text, name) {
+export function gradeReadme(text, name, marketplace = 'claude-skills') {
   const problems = [];
   if (!text) {
     return { ok: false, problems: [problem('missing', 'no README.md', 'every plugin root ships one')] };
@@ -212,6 +212,66 @@ export function gradeReadme(text, name) {
         'PRESS `.term` — real commands, copyable; prose describing a command is not a quick start',
       ),
     );
+  }
+
+  // Host commands must be copyable examples in Quick start, never a mention
+  // elsewhere or bytes supplied by PRESS. Match the whole skill name.
+  const fencedLines = (body, inside) => {
+    let fenced = false;
+    return (body ?? []).join('\n').replace(/<!--[\s\S]*?-->/g, ' ').split('\n').filter((line) => {
+      if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return false; }
+      return fenced === inside;
+    });
+  };
+  const commands = fencedLines(quickstart, true).map((line) => line.trim());
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (typeof marketplace !== 'string' || !marketplace.trim()) {
+    problems.push(problem('dual-host-marketplace-name', 'the target marketplace name is unavailable',
+      'set a non-empty name in .claude-plugin/marketplace.json before checking the host install commands'));
+    marketplace = '';
+  }
+  const escapedMarketplace = marketplace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const hostCommands = [
+    ['claude-marketplace', marketplace === 'claude-skills'
+      ? /^\/plugin marketplace add natejswenson\/claude-skills(?:\s|$)/
+      : /^\/plugin marketplace add \.$/],
+    ['claude-install', new RegExp(`^/plugin install ${escaped}@${escapedMarketplace}(?:\\s|$)`)],
+    ['claude-invocation', new RegExp(`^/${escaped}(?:\\s|$)`)],
+    ['codex-marketplace', /^codex plugin marketplace add "\$PWD"$/],
+    ['codex-install', new RegExp(`^codex plugin add ${escaped}@${escapedMarketplace}(?:\\s|$)`)],
+    ['codex-invocation', new RegExp(`^\\$${escaped}(?:\\s|$)`)],
+  ];
+  for (const [id, pattern] of hostCommands) {
+    if (!commands.some((line) => pattern.test(line))) {
+      problems.push(problem(`dual-host-${id}`, `## Quick start is missing ${id} for ${name}`,
+        'show both hosts’ marketplace, install and invocation commands in fenced blocks; use this skill’s exact name'));
+    }
+  }
+
+  const requirements = fencedLines(bodyOf('Requirements'), false);
+  for (const [label, id] of [['Claude Code', 'claude-setup'], ['Codex', 'codex-setup'], ['Personal data', 'personal-data']]) {
+    const prefix = `- **${label}:** `;
+    if (!requirements.some((line) => line.startsWith(prefix) && line.slice(prefix.length).trim())) {
+      problems.push(problem(`dual-host-${id}`, `## Requirements is missing a ${label} note`,
+        `add a non-empty "${prefix}" note with this skill’s tools, authentication or retained data location`));
+    }
+  }
+  const retained = {
+    brandreport: '~/.claude/brandreport/',
+    devlog: '~/.claude/skills/devlog/',
+    ghostwriter: '~/.claude/ghostwriter/',
+    'ghostwriter-x': '~/.claude/ghostwriter-x/',
+    issueflow: '~/.claude/issueflow/',
+    resume: '~/.claude/resume/',
+  }[name];
+  const personal = requirements.find((line) => line.startsWith('- **Personal data:** ')) ?? '';
+  if (retained && !personal.includes(retained)) {
+    problems.push(problem('dual-host-personal-data-path', `## Requirements omits retained ${retained}`,
+      'document the location the scripts actually use; Codex does not move personal data'));
+  }
+  if (!requirements.some((line) => /\]\((?:\.\.\/\.\.\/docs\/codex-migration\.md|https:\/\/github\.com\/natejswenson\/claude-skills\/blob\/main\/docs\/codex-migration\.md)\)/.test(line))) {
+    problems.push(problem('dual-host-migration', '## Requirements omits the Codex migration link',
+      'link the local or durable Codex migration notes for host tools, connections and retained data paths'));
   }
 
   return { ok: problems.length === 0, problems };

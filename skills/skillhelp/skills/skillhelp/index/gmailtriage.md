@@ -9,7 +9,11 @@
 
 ## Setup
 
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/gmailtriage/README.md:95`
+- **Claude Code:** Connect Gmail tools for thread search, label listing/creation, label/unlabel, trash and untrash. `skills/gmailtriage/README.md:113`
+- **Codex:** Connect and authenticate Gmail in Codex with those read and write capabilities; Claude Gmail connections are not imported. The bundled CLI processes saved tool results and never authentica… `skills/gmailtriage/README.md:114`
+- **Personal data:** Both hosts retain rules, backups and receipts in ~/.gmailtriage/; mailbox snapshots stay in the run scratchpad. `skills/gmailtriage/README.md:115`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/gmailtriage/README.md:117`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/gmailtriage/README.md:119`
 - Requires Node >=18 (package.json engines). `skills/gmailtriage/skills/gmailtriage/package.json:33`
 
 ## Usage

@@ -9,18 +9,18 @@
 
 ## Setup
 
-- **Node.js ≥ 22** (see .nvmrc). `skills/resume/README.md:72`
-- **Chromium**, installed once via npx playwright install chromium. Rendering is headless Chromium, which is what lets a theme be plain CSS. The skill tells you if it is missing. `skills/resume/README.md:73`
-- Claude Code itself. This skill has no standalone CLI; render.mjs and validate.mjs are internal steps, not user-facing commands. `skills/resume/README.md:76`
+- **Claude Code:** Allow local file access and Chromium rendering; enable web tools for job URLs. `skills/resume/README.md:83`
+- **Codex:** Use the same renderer and stored résumé, with available web tools for job URLs; Claude app connections are not imported. `skills/resume/README.md:84`
+- **Personal data:** Both hosts retain the source résumé at ~/.claude/resume/source-resume.txt and custom themes under ~/.claude/resume/themes/. `skills/resume/README.md:85`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/resume/README.md:87`
+- **Node.js ≥ 22** (see .nvmrc). `skills/resume/README.md:89`
+- **Chromium**, installed once via npx playwright install chromium. Rendering is headless Chromium, which is what lets a theme be plain CSS. The skill tells you if it is missing. `skills/resume/README.md:90`
+- Claude Code or Codex. This skill has no standalone CLI; render.mjs and validate.mjs are internal steps, not user-facing commands. `skills/resume/README.md:93`
 - Requires Node >=22 (package.json engines). `skills/resume/skills/resume/package.json:27`
 - Reads environment variable ANTHROPIC_API_KEY. `skills/resume/skills/resume/scripts/evals/judge.mjs:47`
 - Reads environment variable BENCHMARK_CLAUDE_BIN. `skills/resume/skills/resume/scripts/judge-cli.test.mjs:32`
 - Reads environment variable BENCHMARK_JUDGE_MODEL. `skills/resume/skills/resume/scripts/scorer/judge-cli.mjs:26`
 - Reads environment variable BENCHMARK_JUDGE_TIMEOUT_MS. `skills/resume/skills/resume/scripts/scorer/judge-cli.mjs:27`
-- Reads environment variable EVAL_CLAUDE_BIN. `skills/resume/skills/resume/scripts/evals/run.mjs:124`
-- Reads environment variable FIRECRAWL_API_KEY. `skills/resume/skills/resume/scripts/job.mjs:284`
-- Reads environment variable HOME. `skills/resume/skills/resume/scripts/profile.test.mjs:22`
-- Reads environment variable MAX_COST_PER_RUN_USD. `skills/resume/skills/resume/scripts/prompt-injection.test.mjs:46`
 
 ## Usage
 
@@ -39,13 +39,13 @@
 
 ## Commands
 
-- node scripts/profile.mjs --status # is one stored, and how old? `skills/resume/README.md:105`
-- node scripts/profile.mjs --show # print it `skills/resume/README.md:106`
-- node scripts/profile.mjs --save <file> # store (--force to replace) `skills/resume/README.md:107`
-- node scripts/profile.mjs --clear --force # delete it `skills/resume/README.md:108`
-- npx playwright install chromium `skills/resume/README.md:174`
-- npm test # offline unit suite (launches Chromium, no network, no LLM) `skills/resume/README.md:181`
-- node scripts/evals/run.mjs # tailoring-quality eval — real cost and wall-clock time `skills/resume/README.md:182`
+- node scripts/profile.mjs --status # is one stored, and how old? `skills/resume/README.md:122`
+- node scripts/profile.mjs --show # print it `skills/resume/README.md:123`
+- node scripts/profile.mjs --save <file> # store (--force to replace) `skills/resume/README.md:124`
+- node scripts/profile.mjs --clear --force # delete it `skills/resume/README.md:125`
+- npx playwright install chromium `skills/resume/README.md:191`
+- npm test # offline unit suite (launches Chromium, no network, no LLM) `skills/resume/README.md:198`
+- node scripts/evals/run.mjs # tailoring-quality eval — real cost and wall-clock time `skills/resume/README.md:199`
 - npm run eval — node scripts/evals/run.mjs `skills/resume/skills/resume/package.json:32`
 - npm run render — node scripts/render.mjs `skills/resume/skills/resume/package.json:33`
 - npm run test — node scripts/run-tests.mjs `skills/resume/skills/resume/package.json:31`

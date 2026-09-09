@@ -10,8 +10,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -329,6 +329,72 @@ test('decide: finders wait → verify → verifiers wait → register → fix br
   cleanup();
 });
 
+test('next (CLI): a converged review with red CI briefs a fixer and accepts its report', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: [] }));
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  assert.equal(currentRound(lane).verdict, 'converged');
+  saveRun(dir, run);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-red-ci-bin-'));
+  const gh = join(bin, 'gh');
+  writeFileSync(gh, '#!/bin/sh\nprintf \'%s\\n\' \'[{"name":"ci / skillhelp","bucket":"fail","state":"FAILURE","link":"https://example.invalid/check"}]\'\n');
+  chmodSync(gh, 0o755);
+
+  try {
+    const result = spawnSync(process.execPath, [CLI, 'next', '--run-dir', dir], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, NODE_TEST_CONTEXT: undefined },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /▶ review-fix-brief/);
+    assert.match(result.stdout, /\| root \| 1\s+\| sonnet \| 0\s+\| 1\s+\|/);
+    assert.match(result.stdout, /next: dispatch \(review-fix-brief\)/);
+    assert.match(readFileSync(fixBriefPath(dir, lane, 1), 'utf8'), /ci \/ skillhelp/);
+
+    writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed CI in the next commit' }));
+    const report = cli(['review-fix-report', '--lane', lane.slug, '--run-dir', dir, '--offline']);
+    assert.equal(report.code, 0, report.err);
+    assert.equal(currentRound(loadRun(dir).lanes[0]).fix.reported, true);
+  } finally {
+    rmSync(bin, { recursive: true, force: true });
+    cleanup();
+  }
+});
+
+test('decide: an in-flight CI-only fix is reported and re-reviewed before pending or green CI can ready it', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: ['none'] }));
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  const entry = currentRound(lane);
+  entry.fix = { briefed: true, model: 'sonnet' };
+  mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
+  writeFileSync(fixBriefPath(dir, lane, 1), '# fix CI\n');
+  saveRun(dir, run);
+
+  let action = decide(dir, run, { checks: () => [{ name: 'ci', bucket: 'pending' }] });
+  assert.equal(action.kind, 'wait');
+  assert.match(action.what, /fixer/, 'pending checks cannot hide the in-flight fixer');
+
+  writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed CI' }));
+  action = decide(dir, run, { checks: () => [] });
+  assert.deepEqual([action.kind, action.command], ['run', 'review-fix-report'], 'green checks cannot skip the delivered report');
+
+  entry.fix.reported = true;
+  writeFileSync(join(repoPath, 'a.js'), 'export const a = 2;\nexport const b = 4;\n');
+  git(['commit', '-qam', 'fix CI'], repoPath);
+  saveRun(dir, run);
+  action = decide(dir, run, { checks: () => [] });
+  assert.deepEqual([action.kind, action.command], ['run', 'review-brief'], 'the pushed CI fix is reviewed before ready');
+  cleanup();
+});
+
 test('decide: a finder fleet that never delivers is a stall with the prompts to re-dispatch, not a wait forever', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];
@@ -400,10 +466,52 @@ test('decide: a lane above waits for the lane below — the bottom lane is the a
 test('renderAction: a fixed shape — the first line is `next: <kind>`, a wait carries `wait:` and `then:`', () => {
   const text = renderAction({ kind: 'wait', what: 'the plan', wait: "timeout 60s sh -c 'x'", note: null }, { skillCommand: 'issueflow', runDir: '/r' });
   assert.match(text, /^next: wait\n/);
-  assert.match(text, /\nwait: timeout 60s sh -c 'x'\nthen: issueflow next --run-dir \/r$/);
+  assert.match(text, /\nwait: timeout 60s sh -c 'x'\nthen: issueflow next --run-dir '\/r'$/);
   const stopText = renderAction({ kind: 'stop', reason: 'human', detail: 'read it', command: 'accept --stage investigate' }, { skillCommand: 'issueflow', runDir: '/r' });
-  assert.match(stopText, /^next: stop — human\n  read it\n  command: issueflow accept --stage investigate --run-dir \/r$/);
+  assert.match(stopText, /^next: stop — human\n  read it\n  command: issueflow accept --stage investigate --run-dir '\/r'$/);
 });
+
+for (const [label, subcommand] of [['command', 'accept --stage investigate'], ['or', 'brief --stage investigate']]) {
+  test(`renderAction: executable ${label} preserves the run-directory argument`, () => {
+    const runDir = "/tmp/run 'quote' $HOME $(printf expanded) `printf expanded`";
+    const rendered = renderAction({ kind: 'stop', reason: 'human', detail: 'read it', command: subcommand, alternative: subcommand }, { skillCommand: 'issueflow', runDir });
+    const command = rendered.match(new RegExp(`^  ${label}: +(.+)$`, 'm'))[1];
+    const result = spawnSync('/bin/sh', ['-c', `issueflow() { printf '%s\\n' "$@"; }; ${command}`], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(result.stdout.trimEnd().split('\n'), [...subcommand.split(' '), '--run-dir', runDir]);
+  });
+}
+
+for (const runtime of ['claude', 'codex']) {
+  for (const suffix of ['plain', 'with spaces', "with 'quote' $HOME $(printf expanded) `printf expanded`"]) {
+    test(`next (CLI): executable follow-up in a fresh shell — ${runtime}, ${suffix}`, (t) => {
+      const root = mkdtempSync(join(tmpdir(), 'issueflow-follow-up-'));
+      t.after(() => rmSync(root, { recursive: true, force: true }));
+      const plugin = join(root, `plugin-${suffix}`);
+      const dir = join(root, `run-${suffix}`);
+      const cwd = join(root, 'unrelated');
+      mkdirSync(cwd);
+      cpSync(SKILL, plugin, { recursive: true });
+      const run = createRun({ repo: { owner: 'acme', name: 'w', path: join(INPUTS, 'repo'), defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
+      saveRun(dir, run);
+      mkdirSync(join(dir, 'inputs'), { recursive: true });
+      writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
+      const env = { ...process.env };
+      delete env.SKILL_DIR;
+      delete env.NODE_TEST_CONTEXT;
+      const dispatch = spawnSync(process.execPath, [join(plugin, 'scripts', 'issueflow.js'), 'next', '--run-dir', dir], { cwd, env, encoding: 'utf8' });
+      assert.equal(dispatch.status, 0, dispatch.stderr);
+      assert.match(dispatch.stdout, /next: dispatch/);
+      const command = dispatch.stdout.match(/^then: (.+)$/m)[1];
+      const result = spawnSync('/bin/sh', ['-c', command], { cwd, env, encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /^next: wait/m);
+      assert.equal(result.stdout.match(/^wait: (.+)$/m)[1], waitLine({
+        pairs: [[artifactPath(dir, findStep(run, 'investigate')), join(dir, 'briefs', 'investigate.md')]], timeout: 1800,
+      }));
+    });
+  }
+}
 
 test('waitLine quotes paths and uses -nt against the brief; timeoutFor is 3× the repo median, else 30 minutes', () => {
   assert.equal(
@@ -459,10 +567,10 @@ test('exit codes: a gate refusal is 2, a hand-back is 4, an unknown command is 2
   cleanup();
 });
 
-test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the red team, registers, and stops at the human — one call per turn', () => {
+test('next (CLI): --review-plan drives a fresh run through review and stops once at the human — one call per turn', () => {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-cli-'));
   const repoPath = join(INPUTS, 'repo');
-  cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json')]);
+  cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json'), '--review-plan']);
 
   let r = cli(['next', '--run-dir', dir]);
   assert.equal(r.code, 0, r.err);
@@ -470,7 +578,7 @@ test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the re
   assert.match(r.out, /next: dispatch \(brief\)/);
   assert.match(r.out, /Dispatch ONE subagent, model `opus`/);
   assert.match(r.out, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*investigate\.md.* -nt .*briefs\/investigate\.md/);
-  assert.match(r.out, /then: node "\$SKILL_DIR\/scripts\/issueflow\.js" next --run-dir/);
+  assert.ok(r.out.includes(`then: node '${CLI}' next --run-dir '${dir}'`));
 
   r = cli(['next', '--run-dir', dir]);
   assert.match(r.out, /^next: wait/m, 'nothing delivered yet → wait, no new brief');
@@ -489,7 +597,7 @@ test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the re
   assert.match(r.out, /▶ review/);
   assert.match(r.out, /Round 1 of 3 on investigate: PASS/);
   assert.match(r.out, /next: stop — human/);
-  assert.match(r.out, /command: node "\$SKILL_DIR\/scripts\/issueflow\.js" accept --stage investigate/);
+  assert.ok(r.out.includes(`command: node '${CLI}' accept --stage investigate --run-dir '${dir}'`));
   assert.equal(r.code, 0, 'the human stop is not an error');
 
   // the human approves; the plan has work items → split → brief the first lane

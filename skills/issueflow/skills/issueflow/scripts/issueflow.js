@@ -9,16 +9,17 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
-import { decide, renderAction } from './lib/next.mjs';
+import { decide, renderAction, sh } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
-  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
+  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
@@ -46,7 +47,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
 
 function argv(args) {
   const out = { _: [] };
@@ -571,6 +572,7 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
 }
 
 async function cmdStart(args) {
+  if (args.auto && args.reviewPlan) throw new Error('choose either autonomous mode or --review-plan, not both');
   const repo = resolve(args.repo ?? '.');
   const info = identify(repo, args);
   const number = readIssueNumber(args);
@@ -588,7 +590,9 @@ async function cmdStart(args) {
     issue,
     policy,
     offline: isOffline(args),
-    auto: Boolean(args.auto),
+    // Autoflow is autonomous by default. The red team's hash-bound pass is the
+    // approval; a human plan gate is an explicit diagnostic/review mode.
+    auto: !Boolean(args.reviewPlan),
     runtime: assertRuntime(args.runtime),
   });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
@@ -1265,9 +1269,9 @@ async function cmdReviewFixBrief(args) {
   const { lane } = reviewLane(run, dir, args);
   const entry = currentRound(lane);
   if (!entry?.registered) throw new RunError(`round ${entry?.round ?? '?'} of ${lane.slug} is not registered — nothing to fix yet`);
-  if (entry.verdict === 'converged') throw new RunError(`round ${entry.round} of ${lane.slug} converged — there is nothing to fix; \`issueflow ready\``);
   const items = fixItems(lane);
   const checks = offline ? [] : prChecks(run.repo.path, lane.pr.number).filter((c) => c.bucket === 'fail');
+  assertFixRequired(entry, checks, lane.slug);
   const dispatch = fixerProfile(run, lane);
   const model = dispatch.model;
   const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
@@ -1402,7 +1406,7 @@ async function cmdRebase(args) {
 async function cmdNext(args) {
   const { dir } = locate(args);
   const offline = isOffline(args);
-  const skillCommand = 'node "$SKILL_DIR/scripts/issueflow.js"';
+  const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
   const ctx = {
     offline,
     checks: (lane) => (offline ? [] : prChecks(loadRun(dir).repo.path, lane.pr.number)),
@@ -1493,7 +1497,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
                                                  prints ONE thing to do — a dispatch, a wait, or a stop
   issueflow board  [--repo <path>] [--run-root <path>]
-  issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--auto] [--take-over]
+  issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--review-plan] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
@@ -1516,7 +1520,8 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
 Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (gh/git — retry) ·
 4 hand back to the user (a cap, drift, a dispute, the human stop).
 
-  --auto               on start: no human stop after the red-teamed plan;
+  --review-plan        opt in to one human stop after the red-teamed plan
+  --auto               backward-compatible alias for the autonomous default;
                        on accept: approve on a registered, hash-bound passing review
   --runtime <host>     on start: persist the dispatch contract for \`claude\` (default)
                        or \`codex\`; Codex emits native model, reasoning and role fields
