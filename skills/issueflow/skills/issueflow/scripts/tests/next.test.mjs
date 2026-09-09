@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -314,6 +314,72 @@ test('decide: finders wait → verify → verifiers wait → register → fix br
   cleanup();
 });
 
+test('next (CLI): a converged review with red CI briefs a fixer and accepts its report', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: [] }));
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  assert.equal(currentRound(lane).verdict, 'converged');
+  saveRun(dir, run);
+
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-red-ci-bin-'));
+  const gh = join(bin, 'gh');
+  writeFileSync(gh, '#!/bin/sh\nprintf \'%s\\n\' \'[{"name":"ci / skillhelp","bucket":"fail","state":"FAILURE","link":"https://example.invalid/check"}]\'\n');
+  chmodSync(gh, 0o755);
+
+  try {
+    const result = spawnSync(process.execPath, [CLI, 'next', '--run-dir', dir], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, NODE_TEST_CONTEXT: undefined },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /▶ review-fix-brief/);
+    assert.match(result.stdout, /\| root \| 1\s+\| sonnet \| 0\s+\| 1\s+\|/);
+    assert.match(result.stdout, /next: dispatch \(review-fix-brief\)/);
+    assert.match(readFileSync(fixBriefPath(dir, lane, 1), 'utf8'), /ci \/ skillhelp/);
+
+    writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed CI in the next commit' }));
+    const report = cli(['review-fix-report', '--lane', lane.slug, '--run-dir', dir, '--offline']);
+    assert.equal(report.code, 0, report.err);
+    assert.equal(currentRound(loadRun(dir).lanes[0]).fix.reported, true);
+  } finally {
+    rmSync(bin, { recursive: true, force: true });
+    cleanup();
+  }
+});
+
+test('decide: an in-flight CI-only fix is reported and re-reviewed before pending or green CI can ready it', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: ['none'] }));
+  planVerification(dir, run, lane, 1, []);
+  registerRound(dir, run, lane, 1, { tree: repoPath });
+  const entry = currentRound(lane);
+  entry.fix = { briefed: true, model: 'sonnet' };
+  mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
+  writeFileSync(fixBriefPath(dir, lane, 1), '# fix CI\n');
+  saveRun(dir, run);
+
+  let action = decide(dir, run, { checks: () => [{ name: 'ci', bucket: 'pending' }] });
+  assert.equal(action.kind, 'wait');
+  assert.match(action.what, /fixer/, 'pending checks cannot hide the in-flight fixer');
+
+  writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed CI' }));
+  action = decide(dir, run, { checks: () => [] });
+  assert.deepEqual([action.kind, action.command], ['run', 'review-fix-report'], 'green checks cannot skip the delivered report');
+
+  entry.fix.reported = true;
+  writeFileSync(join(repoPath, 'a.js'), 'export const a = 2;\nexport const b = 4;\n');
+  git(['commit', '-qam', 'fix CI'], repoPath);
+  saveRun(dir, run);
+  action = decide(dir, run, { checks: () => [] });
+  assert.deepEqual([action.kind, action.command], ['run', 'review-brief'], 'the pushed CI fix is reviewed before ready');
+  cleanup();
+});
+
 test('decide: a finder fleet that never delivers is a stall with the prompts to re-dispatch, not a wait forever', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];
@@ -486,10 +552,10 @@ test('exit codes: a gate refusal is 2, a hand-back is 4, an unknown command is 2
   cleanup();
 });
 
-test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the red team, registers, and stops at the human — one call per turn', () => {
+test('next (CLI): --review-plan drives a fresh run through review and stops once at the human — one call per turn', () => {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-cli-'));
   const repoPath = join(INPUTS, 'repo');
-  cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json')]);
+  cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json'), '--review-plan']);
 
   let r = cli(['next', '--run-dir', dir]);
   assert.equal(r.code, 0, r.err);
