@@ -37,9 +37,9 @@
 
 ## Commands
 
-- node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:51`
-- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex `skills/issueflow/skills/issueflow/SKILL.md:52`
-- node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:53`
+- node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:46`
+- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex `skills/issueflow/skills/issueflow/SKILL.md:47`
+- node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:48`
 - npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:40`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:42`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issueflow/skills/issueflow/package.json:41`
