@@ -37,9 +37,11 @@ A missing required agent, execution or art capability leaves a local draft with 
 specific blocker; it does not authorize bypassing the evidence gate. Do not adopt
 legacy Generate's optional-cover fallback for a requested concept cover.
 
-Use the CLI bundled relative to the loaded SKILL.md. The commands below show that
-form. If the installation is standalone, use the exact version fallback specified
-in SKILL.md in place of `node '<skill-root>/bin/devlog.js'`. Replace every placeholder
+Use the CLI bundled relative to the loaded SKILL.md only after its read-only
+`--version` invocation succeeds with available runtime dependencies. The commands
+below show that form. If the script or dependencies are missing (including a Git
+plugin install without node_modules), or the installation is standalone, use the
+exact version fallback specified in SKILL.md in place of `node '<skill-root>/bin/devlog.js'`. Replace every placeholder
 with recorded paths or validated config values and quote each shell argument.
 
 ```bash

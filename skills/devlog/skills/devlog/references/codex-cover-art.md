@@ -25,10 +25,13 @@ await writeFile(output, bytes, { flag: 'wx' });
 JS
 ```
 
-Inspect and hash that final output, not the original palette file. In a standalone
-installation, resolve the actual installed package/dependency location; do not assume
-the copied SKILL.md has node_modules beside it. If unavailable, retain the draft and
-report the missing conversion capability rather than guessing a tool path.
+Inspect and hash that final output, not the original palette file. A Git-installed plugin or standalone SKILL.md may have no dependencies beside it.
+In that case use the exact-version published package runtime described in SKILL.md;
+resolve its actual package/dependency location for this conversion instead of writing
+into an internal plugin cache or assuming node_modules exists. If unavailable, retain
+the draft and report the missing conversion capability rather than guessing a tool
+path. The normal Codex native-art compositor uses the same exact-version helper
+fallback when bundled dependencies are absent.
 
 ## Capability and brief
 

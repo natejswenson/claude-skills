@@ -49,10 +49,15 @@ Explicit draft requests take precedence over the default Generate routing:
 New helpers are `lint-guide`, `prepare-guide`, `compose-art-cover`, and `publish-guide`.
 Only `publish-guide` writes prepared content to a clone; it requires matching local
 execution, adaptation and review evidence. It does not push or deploy.
-The draft helpers do not change persistent configuration or the content repository. When bundled
-`bin/devlog.js` exists, invoke it with Node relative to this loaded SKILL.md so the
-helper version matches these instructions. A standalone SKILL.md installed by `init`
-uses `npx -y @natjswenson/devlog@0.14.0 <helper>` instead. References are bundled beside
+The draft helpers do not change persistent configuration or the content repository.
+Use bundled `bin/devlog.js` relative to this loaded SKILL.md only when its runtime
+dependencies resolve: check `node <absolute-skill-root>/bin/devlog.js --version` first.
+A Git-installed plugin can contain the script without node_modules. If the script or
+dependencies are missing, use `npx -y @natjswenson/devlog@0.14.0 <helper>`; do not install
+dependencies into an internal plugin cache. A standalone SKILL.md installed by `init`
+uses that same exact-version fallback. For a missing Chromium binary, install the
+matching browser with `npx -y --package=@natjswenson/devlog@0.14.0 playwright install chromium`
+and retry the render; do not silently change dependency versions. References are bundled beside
 both host entrypoints and copied with standalone skill installation.
 
 Otherwise use the existing modes:

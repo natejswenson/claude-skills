@@ -48,9 +48,9 @@
 - devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:134`
 - devlog lint-guide <file> [--voice] — Post checks plus a unique top-of-post implementation handoff `skills/devlog/README.md:135`
 - devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:136`
-- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:138`
-- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:139`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:444`
+- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:143`
+- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:144`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:449`
 - npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:68`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
 - npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:361`
