@@ -14,6 +14,7 @@ import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionL
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction, sh } from './lib/next.mjs';
+import { DISPATCHES, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -185,12 +186,49 @@ function expectationLine(dir, run, step) {
 /** Print a checkpoint's result. Silent only when there was genuinely nothing to send. */
 function reportCheckpoint(rows) {
   const real = rows.filter((r) => r.state !== 'offline' && r.state !== 'nothing to send');
-  if (real.length === 0) return;
+  if (real.length === 0) return rows;
   console.log('');
   print(['Checkpoint', 'State', 'Detail'], real.map((r) => [r.action, r.state, r.detail]));
   if (real.some((r) => r.state === 'failed')) {
-    console.log('\nA checkpoint failed. The approval above is recorded locally; this run is NOT backed up to GitHub.');
+    console.log('\nA checkpoint failed. Local gate results are retained; this run is NOT backed up to GitHub.');
   }
+  return rows;
+}
+
+class BudgetStop extends HandBack {}
+
+const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
+
+/** Preserve observations before refusing more work, without approving them. */
+function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(run))) {
+  const observed = observe(dir, run);
+  saveRun(dir, observed);
+  const rows = reportCheckpoint(checkpoint(dir, observed, { offline: isOffline(args) }));
+  const pending = gateSteps(observed).filter((s) => s.stage.at.delivered && s.stage.state !== 'approved' && s.stage.state !== 'skipped');
+  const note = [
+    pending.length ? `Delivery metadata saved for ${pending.map((s) => s.key).join(', ')}; no approval granted by the budget stop.` : 'Existing artifacts and gate results saved.',
+    rows.some((r) => r.state === 'failed') ? 'Checkpoint failed: incomplete backup; retry next after fixing the reported failure.'
+      : rows.some((r) => r.state === 'offline') ? 'Offline: saved locally; no remote checkpoint attempted.' : 'Existing run checkpointed.',
+  ].join(' ');
+  console.log(`\n${renderAction({ ...action, note }, { skillCommand, runDir: dir })}`);
+  process.exitCode = 4;
+}
+
+function guardDispatch(dir, run, args) {
+  const budget = budgetStatus(run);
+  if (!budget?.expired) return;
+  checkpointBudgetStop(dir, run, args, budgetStop(budget));
+  throw new BudgetStop('budget expired — explicitly resume before dispatching another worker');
+}
+
+async function cmdResume(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const budget = renewBudget(run, args.budgetSeconds);
+  saveRun(dir, run);
+  console.log(`Budget resumed: ${budget.allowanceSeconds} seconds from ${run.budgetRenewals.at(-1).at}; deadline ${budget.deadline}.`);
+  console.log('Existing artifacts, gates, review limits and checkpoint identity retained. No worker dispatched.');
+  console.log(`then: ${skillCommand} next --run-dir ${sh(dir)}`);
 }
 
 /**
@@ -656,6 +694,7 @@ async function cmdBrief(args) {
   // dispatched earlier than the one named here) shows as delivered rather than
   // briefed the moment anything downstream renders it — see `run.observe()`.
   const run = observe(dir, loadRun(dir));
+  guardDispatch(dir, run, args);
 
   // `--review` briefs the red team on a delivered artifact instead of briefing
   // the stage itself. It never provisions anything: the worktree, if the stage
@@ -686,6 +725,7 @@ async function cmdBrief(args) {
     }
     const round = nextRound(step);
     const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+    guardDispatch(dir, run, args);
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
     if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.reasoning, info.agent]]);
@@ -751,6 +791,7 @@ async function cmdBrief(args) {
 
 /** Render one step's brief, refusing a closed gate and provisioning its worktree. */
 function briefOne(dir, run, step, args) {
+  guardDispatch(dir, run, args);
   const blocked = blockers(run, step);
   if (blocked.length > 0) {
     throw new RunError(
@@ -798,6 +839,7 @@ function briefOne(dir, run, step, args) {
     }
   }
 
+  guardDispatch(dir, run, args);
   const info = writeBrief(dir, run, step, loadIssue(dir), workdir);
   markBriefed(dir, run, step);
   if (warning) console.error(`issueflow: no worktree for ${step.laneSlug} (${warning}) — the stage will work in the repository itself`);
@@ -838,7 +880,7 @@ async function cmdAccept(args) {
   }
   reportDrift(drift);
   nextLine(run);
-  reportCheckpoint(checkpoint(dir, run, { offline }));
+  return reportCheckpoint(checkpoint(dir, run, { offline }));
 }
 
 /**
@@ -879,7 +921,7 @@ async function cmdReview(args) {
   } else {
     console.log(`\nNext: \`issueflow brief ${stageArgs(step)}\` — the re-brief carries this review's findings.`);
   }
-  reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
+  return reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
 }
 
 async function cmdSplit(args) {
@@ -1145,6 +1187,7 @@ function printDispatch(items, kind) {
 async function cmdReviewBrief(args) {
   const { dir } = locate(args);
   const run = loadRun(dir);
+  guardDispatch(dir, run, args);
   const offline = isOffline(args);
   const { lane, tree } = reviewLane(run, dir, args);
   const head = headOf(tree);
@@ -1166,6 +1209,7 @@ async function cmdReviewBrief(args) {
   // fleet and is what the finders read first. Round 1 has no previous head.
   const last = currentRound(lane);
   const deltaText = last?.registered ? fixDiff(tree, last.head, head) : null;
+  guardDispatch(dir, run, args);
   const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
@@ -1186,11 +1230,13 @@ async function cmdReviewBrief(args) {
 async function cmdReviewVerify(args) {
   const { dir } = locate(args);
   const run = loadRun(dir);
+  guardDispatch(dir, run, args);
   const { lane } = reviewLane(run, dir, args);
   const entry = currentRound(lane);
   if (!entry || entry.registered) throw new RunError(`no open review round on ${lane.slug} — \`issueflow review-brief\` starts one`);
   if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
+  guardDispatch(dir, run, args);
   const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
   print(['Lane', 'Round', 'Candidates', 'Unverified nits', 'Prior majors', 'Prior nits', 'Verifiers', 'Not examined'],
     [[lane.slug, String(entry.round), String(fresh.length), String(unverified.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
@@ -1243,7 +1289,7 @@ async function cmdReviewRegister(args) {
   const offline = isOffline(args);
   if (offline) console.log('\nOffline run: the review payload is written beside the round; nothing is posted.');
   else console.log(`\nNext: \`issueflow review-post --lane ${lane.slug}\``);
-  reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
+  return reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }
 
 async function cmdReviewPost(args) {
@@ -1265,6 +1311,7 @@ async function cmdReviewPost(args) {
 async function cmdReviewFixBrief(args) {
   const { dir } = locate(args);
   const run = loadRun(dir);
+  guardDispatch(dir, run, args);
   const offline = isOffline(args);
   const { lane } = reviewLane(run, dir, args);
   const entry = currentRound(lane);
@@ -1274,6 +1321,7 @@ async function cmdReviewFixBrief(args) {
   assertFixRequired(entry, checks, lane.slug);
   const dispatch = fixerProfile(run, lane);
   const model = dispatch.model;
+  guardDispatch(dir, run, args);
   const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
   entry.fix = { ...(entry.fix ?? {}), briefed: true, ...dispatch, items: items.length, redChecks: checks.length };
   saveRun(dir, run);
@@ -1406,7 +1454,6 @@ async function cmdRebase(args) {
 async function cmdNext(args) {
   const { dir } = locate(args);
   const offline = isOffline(args);
-  const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
   const ctx = {
     offline,
     checks: (lane) => (offline ? [] : prChecks(loadRun(dir).repo.path, lane.pr.number)),
@@ -1438,12 +1485,15 @@ async function cmdNext(args) {
     ready: (a) => cmdReady({ ...args, lane: a.lane }),
     finish: () => cmdFinish({ ...args }),
   };
-  const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief']);
   let dispatched = null;
   for (let i = 0; i < 12; i += 1) {
     const run = observe(dir, loadRun(dir));
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
+      if (action.kind === 'stop' && action.reason === 'budget') {
+        checkpointBudgetStop(dir, run, args, action);
+        return;
+      }
       if (dispatched && action.kind === 'wait') {
         // The brief just rendered above is the thing in flight: report it as a dispatch.
         console.log(`\n${renderAction({ ...action, kind: 'dispatch', items: [], note: action.note }, { skillCommand, runDir: dir })
@@ -1457,13 +1507,19 @@ async function cmdNext(args) {
     }
     console.log(`▶ ${action.command}${action.note ? ` — ${action.note}` : ''}\n`);
     try {
-      await perform[action.command](action.args);
+      const rows = await perform[action.command](action.args);
+      if (Array.isArray(rows) && rows.some((r) => r.state === 'failed')) {
+        console.log(`\n${renderAction({ kind: 'stop', reason: 'checkpoint', detail: 'Gate results are saved locally; incomplete backup. Repair the reported checkpoint failure, then retry next.', budget: budgetStatus(loadRun(dir)), command: 'next' }, { skillCommand, runDir: dir })}`);
+        process.exitCode = 3;
+        return;
+      }
     } catch (err) {
       if (action.command === 'accept' && err instanceof RunError) {
         // The gate refused a delivery: say why, re-render the brief (which
         // resets the stage's clock), and hand the same prompt back with the
         // refusal. The stage goes back; nobody edits the artifact.
         console.log(`gate refused: ${err.message}\n`);
+        guardDispatch(dir, observe(dir, loadRun(dir)), args);
         await cmdBrief({ ...args, stage: action.args.stage, lane: action.args.lane, review: false, ready: false });
         const run2 = observe(dir, loadRun(dir));
         const again = decide(dir, run2, ctx);
@@ -1496,6 +1552,8 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
 
   issueflow next   [--issue <n>]                 the driver: performs every deterministic step it can, then
                                                  prints ONE thing to do — a dispatch, a wait, or a stop
+  issueflow resume --run-dir <path> --budget-seconds <positive-integer>
+                                                explicitly grant a fresh time window on an expired run; no dispatch
   issueflow board  [--repo <path>] [--run-root <path>]
   issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--review-plan] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
@@ -1569,13 +1627,14 @@ async function main() {
       case 'ready': return await cmdReady(args);
       case 'rebase': return await cmdRebase(args);
       case 'next': return await cmdNext(args);
+      case 'resume': return await cmdResume(args);
       case 'finish': return await cmdFinish(args);
       default:
         console.log(USAGE);
         process.exitCode = cmd ? 2 : 0;
     }
   } catch (err) {
-    console.error(`issueflow: ${err.message}`);
+    if (!(err instanceof BudgetStop)) console.error(`issueflow: ${err.message}`);
     process.exitCode = exitCodeFor(err);
   }
 }
