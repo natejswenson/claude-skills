@@ -198,6 +198,7 @@ function reportCheckpoint(rows) {
 }
 
 class BudgetStop extends HandBack {}
+class CheckpointFailure extends Error {}
 
 const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
 
@@ -213,13 +214,17 @@ function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(r
       : rows.some((r) => r.state === 'offline') ? 'Offline: saved locally; no remote checkpoint attempted.' : 'Existing run checkpointed.',
   ].join(' ');
   console.log(`\n${renderAction({ ...action, note }, { skillCommand, runDir: dir })}`);
-  process.exitCode = 4;
+  const failed = rows.some((r) => r.state === 'failed');
+  process.exitCode = failed ? 3 : 4;
+  return failed;
 }
 
 function guardDispatch(dir, run, args) {
   const budget = budgetStatus(run);
   if (!budget?.expired) return;
-  checkpointBudgetStop(dir, run, args, budgetStop(budget));
+  if (checkpointBudgetStop(dir, run, args, budgetStop(budget))) {
+    throw new CheckpointFailure('checkpoint failed while saving the budget stop');
+  }
   throw new BudgetStop('budget expired — explicitly resume before dispatching another worker');
 }
 
@@ -228,8 +233,14 @@ async function cmdResume(args) {
   const run = loadRun(dir);
   const budget = renewBudget(run, args.budgetSeconds);
   saveRun(dir, run);
+  const rows = reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
   console.log(`Budget resumed: ${budget.allowanceSeconds} seconds from ${run.budgetRenewals.at(-1).at}; deadline ${budget.deadline}.`);
   console.log('Existing artifacts, gates, review limits and checkpoint identity retained. No worker dispatched.');
+  if (rows.some((r) => r.state === 'failed')) {
+    console.log('Checkpoint failed: incomplete backup; retry next after fixing the reported failure.');
+    process.exitCode = 3;
+    return;
+  }
   console.log(`then: ${skillCommand} next --run-dir ${sh(dir)}`);
 }
 
@@ -1645,7 +1656,7 @@ async function main() {
         process.exitCode = cmd ? 2 : 0;
     }
   } catch (err) {
-    if (!(err instanceof BudgetStop)) console.error(`issueflow: ${err.message}`);
+    if (!(err instanceof BudgetStop || err instanceof CheckpointFailure)) console.error(`issueflow: ${err.message}`);
     process.exitCode = exitCodeFor(err);
   }
 }
@@ -1656,6 +1667,7 @@ async function main() {
  * refusal, 3 is infrastructure, 4 is a hand-back, 1 is a bug in this tool.
  */
 export function exitCodeFor(err) {
+  if (err instanceof CheckpointFailure) return 3;
   if (err instanceof HandBack) return 4;
   if (err instanceof RunError || err instanceof ShipError || err instanceof FinishError) return 2;
   if (err instanceof GhError || err instanceof WorktreeError) return 3;
