@@ -129,6 +129,23 @@ test('the comment carries the marker that lets another machine adopt it', () => 
   cleanup();
 });
 
+test('the comment excludes local executable follow-up paths emitted by next', (t) => {
+  const { dir, run, cleanup } = fixture();
+  t.after(cleanup);
+  run.offline = true;
+  saveRun(dir, run);
+  mkdirSync(join(dir, 'inputs'), { recursive: true });
+  writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
+  const result = spawnCli(['next', '--run-dir', dir]);
+  assert.equal(result.code, 0, result.err);
+  const command = result.out.match(/^then: (.+)$/m)[1];
+  const body = renderComment(dir, loadRun(dir));
+  assert.ok(!body.includes(dirname(dirname(CLI))), 'the plugin path reached the checkpoint');
+  assert.ok(!body.includes(dir), 'the run directory reached the checkpoint');
+  assert.ok(!body.includes(command), 'the executable command reached the checkpoint');
+  assert.ok(command.includes(CLI), 'next must emit its resolved local executable');
+});
+
 test('the comment carries every approved artifact, and nothing that is not approved', () => {
   const { dir, run, cleanup } = fixture();
   approvePlan(dir, run);

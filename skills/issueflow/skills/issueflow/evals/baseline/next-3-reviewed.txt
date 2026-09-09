@@ -27,5 +27,5 @@ next: stop — human
   the plan passed its red-team review — read it, then approve or send it back
   plan:    <RUN>/shared/investigate.md
   review:  <RUN>/reviews/investigate-r1.findings.json
-  command: node "$SKILL_DIR/scripts/issueflow.js" accept --stage investigate --run-dir <RUN>
-  or:      node "$SKILL_DIR/scripts/issueflow.js" brief --stage investigate --another-round "<your direction>" --run-dir <RUN>
+  command: node '<SKILL>/scripts/issueflow.js' accept --stage investigate --run-dir '<RUN>'
+  or:      node '<SKILL>/scripts/issueflow.js' brief --stage investigate --another-round "<your direction>" --run-dir '<RUN>'

@@ -10,8 +10,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -385,10 +385,52 @@ test('decide: a lane above waits for the lane below — the bottom lane is the a
 test('renderAction: a fixed shape — the first line is `next: <kind>`, a wait carries `wait:` and `then:`', () => {
   const text = renderAction({ kind: 'wait', what: 'the plan', wait: "timeout 60s sh -c 'x'", note: null }, { skillCommand: 'issueflow', runDir: '/r' });
   assert.match(text, /^next: wait\n/);
-  assert.match(text, /\nwait: timeout 60s sh -c 'x'\nthen: issueflow next --run-dir \/r$/);
+  assert.match(text, /\nwait: timeout 60s sh -c 'x'\nthen: issueflow next --run-dir '\/r'$/);
   const stopText = renderAction({ kind: 'stop', reason: 'human', detail: 'read it', command: 'accept --stage investigate' }, { skillCommand: 'issueflow', runDir: '/r' });
-  assert.match(stopText, /^next: stop — human\n  read it\n  command: issueflow accept --stage investigate --run-dir \/r$/);
+  assert.match(stopText, /^next: stop — human\n  read it\n  command: issueflow accept --stage investigate --run-dir '\/r'$/);
 });
+
+for (const [label, subcommand] of [['command', 'accept --stage investigate'], ['or', 'brief --stage investigate']]) {
+  test(`renderAction: executable ${label} preserves the run-directory argument`, () => {
+    const runDir = "/tmp/run 'quote' $HOME $(printf expanded) `printf expanded`";
+    const rendered = renderAction({ kind: 'stop', reason: 'human', detail: 'read it', command: subcommand, alternative: subcommand }, { skillCommand: 'issueflow', runDir });
+    const command = rendered.match(new RegExp(`^  ${label}: +(.+)$`, 'm'))[1];
+    const result = spawnSync('/bin/sh', ['-c', `issueflow() { printf '%s\\n' "$@"; }; ${command}`], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(result.stdout.trimEnd().split('\n'), [...subcommand.split(' '), '--run-dir', runDir]);
+  });
+}
+
+for (const runtime of ['claude', 'codex']) {
+  for (const suffix of ['plain', 'with spaces', "with 'quote' $HOME $(printf expanded) `printf expanded`"]) {
+    test(`next (CLI): executable follow-up in a fresh shell — ${runtime}, ${suffix}`, (t) => {
+      const root = mkdtempSync(join(tmpdir(), 'issueflow-follow-up-'));
+      t.after(() => rmSync(root, { recursive: true, force: true }));
+      const plugin = join(root, `plugin-${suffix}`);
+      const dir = join(root, `run-${suffix}`);
+      const cwd = join(root, 'unrelated');
+      mkdirSync(cwd);
+      cpSync(SKILL, plugin, { recursive: true });
+      const run = createRun({ repo: { owner: 'acme', name: 'w', path: join(INPUTS, 'repo'), defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
+      saveRun(dir, run);
+      mkdirSync(join(dir, 'inputs'), { recursive: true });
+      writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
+      const env = { ...process.env };
+      delete env.SKILL_DIR;
+      delete env.NODE_TEST_CONTEXT;
+      const dispatch = spawnSync(process.execPath, [join(plugin, 'scripts', 'issueflow.js'), 'next', '--run-dir', dir], { cwd, env, encoding: 'utf8' });
+      assert.equal(dispatch.status, 0, dispatch.stderr);
+      assert.match(dispatch.stdout, /next: dispatch/);
+      const command = dispatch.stdout.match(/^then: (.+)$/m)[1];
+      const result = spawnSync('/bin/sh', ['-c', command], { cwd, env, encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /^next: wait/m);
+      assert.equal(result.stdout.match(/^wait: (.+)$/m)[1], waitLine({
+        pairs: [[artifactPath(dir, findStep(run, 'investigate')), join(dir, 'briefs', 'investigate.md')]], timeout: 1800,
+      }));
+    });
+  }
+}
 
 test('waitLine quotes paths and uses -nt against the brief; timeoutFor is 3× the repo median, else 30 minutes', () => {
   assert.equal(
@@ -455,7 +497,7 @@ test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the re
   assert.match(r.out, /next: dispatch \(brief\)/);
   assert.match(r.out, /Dispatch ONE subagent, model `opus`/);
   assert.match(r.out, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*investigate\.md.* -nt .*briefs\/investigate\.md/);
-  assert.match(r.out, /then: node "\$SKILL_DIR\/scripts\/issueflow\.js" next --run-dir/);
+  assert.ok(r.out.includes(`then: node '${CLI}' next --run-dir '${dir}'`));
 
   r = cli(['next', '--run-dir', dir]);
   assert.match(r.out, /^next: wait/m, 'nothing delivered yet → wait, no new brief');
@@ -474,7 +516,7 @@ test('next (CLI): drives a fresh run to its first dispatch, waits, briefs the re
   assert.match(r.out, /▶ review/);
   assert.match(r.out, /Round 1 of 3 on investigate: PASS/);
   assert.match(r.out, /next: stop — human/);
-  assert.match(r.out, /command: node "\$SKILL_DIR\/scripts\/issueflow\.js" accept --stage investigate/);
+  assert.ok(r.out.includes(`command: node '${CLI}' accept --stage investigate --run-dir '${dir}'`));
   assert.equal(r.code, 0, 'the human stop is not an error');
 
   // the human approves; the plan has work items → split → brief the first lane
