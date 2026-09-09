@@ -11,6 +11,17 @@
 #
 set -uo pipefail
 
+RADAR_TRUSTED="$HOME/.claude/ghostwriter/radar/trusted"
+if [[ "${1:-}" == "--backend" && "${2:-}" == "claude" ]]; then
+  shift 2
+elif [[ "${1:-}" == "--backend" || -f "$RADAR_TRUSTED/install.json" ]]; then
+  if [[ $# -gt 0 && ( "${1:-}" != "--backend" || "${2:-}" != "codex" ) ]]; then
+    echo "ERROR: expected --backend claude|codex" >&2
+    exit 2
+  fi
+  exec python3 -I "$RADAR_TRUSTED/release_radar_runtime.py" run
+fi
+
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO" || exit 1
 

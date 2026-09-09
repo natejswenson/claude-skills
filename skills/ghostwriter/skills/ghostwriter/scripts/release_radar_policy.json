@@ -1,0 +1,6 @@
+{
+  "backend": "codex",
+  "sources": [
+    "https://github.com/openai/codex/releases.atom"
+  ]
+}

@@ -64,14 +64,16 @@ ran and only four sent the orchestrator anything on completion; the other six
 went idle with a content-free notification, indistinguishable from a stalled
 agent. The brief still closes with a host-specific instruction — Claude sends
 `main` the output path and a short result, while Codex finishes with that
-summary and returns it to the parent automatically — but the orchestrator does
-not wait on either message. `next` prints a wait line:
+summary and returns it to the parent automatically. With native agent waiting,
+completion means run next immediately; no second shell settle is needed.
+`next` still checks artifact freshness and completeness. Hosts without native
+completion use the fallback wait line once:
 
 ```
 sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
 ```
 
-Output *newer than the brief that dispatched it*, and then *unchanged in size
+The fallback requires output *newer than the brief that dispatched it*, then *unchanged in size
 for twenty seconds* — a subagent writes its artifact in passes, and the first
 real 0.7.0 run briefed the red team on a plan that was 409 of its 823 lines
 long. A re-dispatch over an existing artifact does not fire instantly, no sentinel the subagent could
@@ -81,6 +83,12 @@ step, else thirty minutes — plain POSIX `sh` and `date +%s`, because GNU
 `timeout` is not on a stock Mac, which the first real run of 0.7.0 found
 within a second of arming its first wait. The message remains the enrichment: it tells the
 orchestrator what happened, not whether it happened.
+
+The wait's stall threshold and the run's time allowance are separate clocks.
+Dispatch/wait output shows elapsed, allowance, remaining time and expiry. A
+worker already in flight may complete after budget expiry; `next` processes
+the result through its normal gate and checkpoint before refusing a successor
+dispatch. Only explicit `resume --budget-seconds` grants a new time window.
 
 ## The declarations are the contract
 
