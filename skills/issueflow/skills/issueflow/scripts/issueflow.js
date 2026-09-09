@@ -9,10 +9,11 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
-import { decide, renderAction } from './lib/next.mjs';
+import { decide, renderAction, sh } from './lib/next.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -1402,7 +1403,7 @@ async function cmdRebase(args) {
 async function cmdNext(args) {
   const { dir } = locate(args);
   const offline = isOffline(args);
-  const skillCommand = 'node "$SKILL_DIR/scripts/issueflow.js"';
+  const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
   const ctx = {
     offline,
     checks: (lane) => (offline ? [] : prChecks(loadRun(dir).repo.path, lane.pr.number)),
