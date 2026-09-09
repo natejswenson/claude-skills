@@ -7,20 +7,15 @@ version: 0.11.0
 
 ## Runtime
 
-Resolve bundled paths from the directory containing this `SKILL.md`; pass the
-user's repository separately with `--repo`. Existing `~/.claude/issueflow` run
-paths remain canonical for Claude and Codex.
+Resolve bundled paths beside this `SKILL.md`; pass the repository with `--repo`.
+`~/.claude/issueflow` remains canonical for both hosts.
 
-In Codex, invoke this skill as `$issueflow` and pass `--runtime codex` to
-`start`. Dispatch every required subagent with Codex's delegation tools using
-the exact model, reasoning effort, role, and one-line prompt printed by the CLI.
-Do not substitute a model. Codex briefs omit optional progress-file writes;
-subagent completion returns to the parent automatically.
+In Codex, invoke `$issueflow` with `--runtime codex`. Dispatch each printed
+subagent with its exact model, reasoning, role, and prompt; completion returns
+automatically.
 
-On the first lifecycle command that needs sandbox escalation, request one
-reusable approval for the absolute `node <SKILL_DIR>/scripts/issueflow.js`
-prefix when scoped approvals are supported. Never request one approval per
-subcommand, and never imply the skill can bypass a host security prompt.
+Request one reusable approval for the absolute CLI prefix when sandbox
+escalation is needed; never imply host prompts can be bypassed.
 
 **Announce once:** "I'm using the issueflow skill — plan, red team, implement,
 then a review loop on the pull request."
@@ -105,12 +100,10 @@ tests, templates, generated files, manifests, or acceptance criteria use
 `standard` (two rounds, 30 minutes); code and operations use `deep`. Resuming
 does not change the profile; expiry hands the run back with its current artifact.
 
-Review fanout is sized by semantic change load: production behavior counts
-fully, tests are down-weighted, and generated indexes/baselines do not buy
-duplicate finders. Every file remains in the review brief. Sensitive workflow,
-security, auth, migration, permission, and manifest changes retain a
-multi-finder floor. Verifiers are candidate-driven; zero candidates means zero
-verifier calls.
+Review fanout follows semantic change load. Tests and generated indexes are
+down-weighted; sensitive workflow, security, auth, migration, permission, and
+manifest changes keep a multi-finder floor. Every file remains in the brief.
+Verifiers are candidate-driven.
 
 ## Safety invariants
 
