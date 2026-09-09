@@ -34,7 +34,9 @@ const CLAUDE = {
 // read-heavy finder fleet and the first bounded fix; a surviving major moves
 // the fixer to Astra at xhigh instead of repeating the cheaper attempt.
 const CODEX = {
-  investigate: { model: 'gpt-6-astra', reasoning: 'high', agent: 'explorer' },
+  // Planning is independently red-teamed by Astra before it can approve
+  // itself, so the exploratory pass can use the faster balanced model.
+  investigate: { model: 'gpt-5.6-terra', reasoning: 'high', agent: 'explorer' },
   implement: { model: 'gpt-6-astra', reasoning: 'high', agent: 'worker' },
   redTeam: { model: 'gpt-6-astra', reasoning: 'high', agent: 'explorer' },
   finder: { model: 'gpt-5.6-terra', reasoning: 'high', agent: 'explorer' },

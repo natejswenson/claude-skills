@@ -140,6 +140,23 @@ function completionSection(run, what, path) {
   ].join('\n');
 }
 
+// Codex subagents already return lifecycle updates through the host. Writing
+// optional progress files under the durable ~/.claude run root causes a fresh
+// sandbox approval for every shell append, without contributing to any gate.
+function progressSection(run, path, next) {
+  if (runtimeOf(run) === 'codex') return [];
+  return [
+    '## While you work',
+    '',
+    `Append one short lowercase line to \`${path}\` whenever you`,
+    `reach a real milestone — ${next}.`,
+    'This is scratch work for whoever is watching the run, not part of your answer:',
+    'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
+    'genuinely have nothing to report yet; do not pad it to look busy.',
+    '',
+  ];
+}
+
 /**
  * The red team's refusal, carried back into the stage's re-brief.
  *
@@ -221,14 +238,7 @@ export function renderBrief(dir, run, step, issue, workdir = null) {
     `It must contain a section for each of: **${declared.requires.join('**, **')}**. The gate`,
     'reads for those names and refuses the stage without them.',
     '',
-    '## While you work',
-    '',
-    `Append one short lowercase line to \`${progressPath(dir, step)}\` whenever you`,
-    'reach a real milestone — what you just found, or what you are about to do next.',
-    'This is scratch work for whoever is watching the run, not part of your answer:',
-    'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
-    'genuinely have nothing to report yet; do not pad it to look busy.',
-    '',
+    ...progressSection(run, progressPath(dir, step), 'what you just found, or what you are about to do next'),
     completionSection(run, 'the artifact', artifactPath(dir, step)),
     '',
   );
@@ -331,14 +341,7 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
     '`notExamined` is refused. `verdict` must agree with your own severities: any',
     'critical or high finding means `blocked`.',
     '',
-    '## While you work',
-    '',
-    `Append one short lowercase line to \`${reviewProgressPath(dir, step, round)}\` whenever you`,
-    'reach a real milestone — what you just found, or what you are about to check next.',
-    'This is scratch work for whoever is watching the run, not part of your answer:',
-    'nobody reads it as prose, and it is never quoted back to you. Skip it if you',
-    'genuinely have nothing to report yet; do not pad it to look busy.',
-    '',
+    ...progressSection(run, reviewProgressPath(dir, step, round), 'what you just found, or what you are about to check next'),
     completionSection(run, 'the review', reviewPath(dir, step, round)),
     '',
   );

@@ -50,14 +50,19 @@ const normalize = (text, runDir) =>
 const sha = (text) => createHash('sha256').update(text).digest('hex').slice(0, 16);
 
 export function generate() {
-  const runDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-'));
+  // Give the run a unique parent so timing discovery cannot see leaked temp
+  // runs from an interrupted earlier test and make this offline golden vary.
+  const sandboxDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-'));
+  const runDir = join(sandboxDir, 'issue-133');
   const artifacts = {};
   const at = (...p) => join(INPUTS, ...p);
 
   const common = ['--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', runDir];
 
   artifacts['board.txt'] = cli(['board', '--repo', REPO, '--repo-json', at('repo.json'), '--issues-json', at('issues.json')]);
-  artifacts['start.txt'] = cli(['start', ...common, '--issue', '133', '--issue-json', at('issue-133.json')]);
+  // This historical fixture exercises the optional human plan gate. New runs
+  // are autonomous unless the operator explicitly asks for `--review-plan`.
+  artifacts['start.txt'] = cli(['start', ...common, '--issue', '133', '--issue-json', at('issue-133.json'), '--review-plan']);
 
   // `next` at each state of the plan gate. Frozen because the driver's output
   // is what the orchestrator copies: a wait line that stopped naming the
@@ -136,7 +141,8 @@ export function generate() {
   // The review here still drives the real CLI — brief the reviewer, drop in the
   // reviewer's findings, and let `review` validate, derive and hash-bind it.
   {
-    const reviewDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
+    const reviewSandbox = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
+    const reviewDir = join(reviewSandbox, 'issue-132');
     cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json'), '--auto']);
     cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
     cpSync(at('artifacts', 'investigate-132.md'), join(reviewDir, 'shared', 'investigate.md'));
@@ -150,11 +156,11 @@ export function generate() {
     artifacts['verdict-investigate-r1.json'] = normalize(
       readFileSync(join(reviewDir, 'reviews', 'investigate-r1.verdict.json'), 'utf8'), reviewDir,
     );
-    rmSync(reviewDir, { recursive: true, force: true });
+    rmSync(reviewSandbox, { recursive: true, force: true });
   }
 
   for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key], runDir);
-  rmSync(runDir, { recursive: true, force: true });
+  rmSync(sandboxDir, { recursive: true, force: true });
   return artifacts;
 
   function readBrief(_stdout, dir, name) {

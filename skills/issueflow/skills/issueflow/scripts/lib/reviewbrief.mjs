@@ -155,7 +155,7 @@ function priorBlock(prior) {
   return out.join('\n');
 }
 
-const progressBlock = (path) => [
+const progressBlock = (path, run) => runtimeOf(run) === 'codex' ? '' : [
   '## While you work',
   '',
   `Append one short lowercase line to \`${path}\` whenever you reach a real milestone —`,
@@ -260,7 +260,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     'required even when empty-handed: a clean pass that names nothing it skipped is',
     'indistinguishable from an unfinished one.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`)),
+    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`), run),
     '',
     doneBlock(run, 'the candidates file', candidatesPath(dir, lane, entry.round, n)),
     '',
@@ -353,7 +353,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     'One entry per item, every item. `severity` is required for a CONFIRMED or PLAUSIBLE candidate',
     'and ignored for a REFUTED one. `quote` is required on every entry.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`)),
+    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`), run),
     '',
     doneBlock(run, 'the verdicts file', verdictsPath(dir, lane, entry.round, n)),
     '',
@@ -461,7 +461,7 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     '',
     `Also report, in the same file under the key \`"_summary"\`, one sentence naming the commit sha you pushed.`,
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`)),
+    progressBlock(join(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`), run),
     '',
     doneBlock(run, 'the fix report', fixReportPath(dir, lane, entry.round)),
     '',
