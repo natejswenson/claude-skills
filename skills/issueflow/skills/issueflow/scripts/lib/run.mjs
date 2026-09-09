@@ -61,9 +61,18 @@ const stageEntry = (id, runtime = 'claude') => {
 };
 
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
-const laneReviewEntry = () => ({ rounds: [], converged: false, draft: null });
+const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds < 4 ? { maxRounds: complexity.reviewRounds } : {}) });
 
-const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude') => ({
+export function classifyIssue(issue) {
+  const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
+  const docs = /\b(doc|docs|documentation|readme|copy|wording|typo|guide|changelog)\b/i.test(text);
+  const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
+  if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
+  if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
+  return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
+}
+
+const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', complexity = null) => ({
   id: slug,
   slug,
   title,
@@ -71,13 +80,14 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude') => 
   base,
   pr: null,
   landed: null,
-  review: laneReviewEntry(),
+  review: laneReviewEntry(complexity),
   stages: PER_ITEM_STAGES.map((id) => stageEntry(id, runtime)),
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude' }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude', now = () => new Date().toISOString() }) {
   const resolvedRuntime = assertRuntime(runtime);
+  const complexity = classifyIssue(issue);
   return {
     schema: SCHEMA,
     repo,
@@ -94,13 +104,15 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // whether an approval needs a human is a property of the run, not of
     // whoever types the next command.
     auto,
+    complexity,
+    createdAt: now(),
     split: false,
     // The sticky issue comment this run keeps up to date. Adopted by marker
     // when a run is resumed on a machine that has no run.json.
     checkpoint: { commentId: null, commentUrl: null, pushed: {} },
     finished: null,
     stages: SHARED_STAGES.map((id) => stageEntry(id, resolvedRuntime)),
-    lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base }, resolvedRuntime)],
+    lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base }, resolvedRuntime, complexity)],
   };
 }
 
@@ -163,11 +175,13 @@ export function loadRun(dir) {
   run.checkpoint ??= { commentId: null, commentUrl: null, pushed: {} };
   run.offline ??= false;
   run.auto ??= false;
+  run.complexity ??= classifyIssue(run.issue);
   run.finished ??= null;
   for (const lane of run.lanes) {
     lane.landed ??= null;
     lane.pr ??= null;
-    lane.review ??= laneReviewEntry();
+    lane.review ??= laneReviewEntry(run.complexity);
+    if (run.complexity.reviewRounds < 4) lane.review.maxRounds ??= run.complexity.reviewRounds;
   }
   for (const s of [...run.stages, ...run.lanes.flatMap((l) => l.stages)]) {
     s.review ??= { rounds: [], feedback: null };
@@ -696,7 +710,7 @@ export function split(dir, run, items) {
     const base = i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
-    return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude');
+    return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);
   });
   run.split = true;
   saveRun(dir, run);
