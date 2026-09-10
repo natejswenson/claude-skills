@@ -9,6 +9,16 @@ const SKILL = join(HERE, '..', '..');
 const read = (p) => readFileSync(join(SKILL, p), 'utf8');
 const inv = JSON.parse(read('skill-invariants.json'));
 
+test('execution guidance requires an approved root and parent archival', () => {
+  for (const file of ['SKILL.md', 'references/dispatch.md', '../../README.md']) {
+    const text = read(file).replace(/\s+/g, ' ');
+    assert.match(text, /--workspace-root/, file);
+    assert.match(text, /parent.*archiv|parent.*import/i, file);
+  }
+  assert.match(read('references/anatomy.md'), /git-store/);
+  assert.match(read('references/dispatch.md'), /TMPDIR/);
+});
+
 test('checkout guidance requires explicit source mode and fatal worktree failures', () => {
   for (const file of ['SKILL.md', 'references/dispatch.md', '../../README.md']) {
     const text = read(file).replace(/\s+/g, ' ');

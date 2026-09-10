@@ -67,6 +67,14 @@ Those directory names do not require Claude to run. Moving them without changing
 the scripts would hide credentials, resumes, voice profiles, and configuration.
 No personal data is bundled or migrated by the metadata generator.
 
+Issueflow retains canonical state at `~/.claude/issueflow` and separates child
+execution from it. Pass `--workspace-root <approved-root>` at start/preparation;
+the host must already permit children to write there. Each run owns a generation
+with outputs, lane checkouts, an independent Git store and temporary storage.
+The parent archives outputs and history before saving canonical state. Clean
+legacy Codex runs migrate at a quiescent boundary; dirty or in-flight work stops
+for recovery. Claude's artifact paths and source-linked worktrees are retained.
+
 Some optional model-judged eval harnesses still invoke Claude or Anthropic APIs.
 They require those tools/credentials separately; using a skill in Codex does not
 convert their backend. Use deterministic checks and an explicitly identified

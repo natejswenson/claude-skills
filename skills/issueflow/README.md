@@ -153,6 +153,20 @@ takeover releases only its owner. Legacy runs without a mode must restore their
 validated worktree or explicitly select source mode when their checkout is missing.
 Claude and Codex retain their existing durable state paths.
 
+Codex setup also requires `--workspace-root <approved-root>`, selected from the
+host's actual writable roots. Supply it to `start`, the first `next`, or
+`prepare --run-dir "<run>" --workspace-root "<approved-root>"`. Naming a directory
+does not grant permission. Each run gets its own generation, artifacts and bare
+Git store under that root; child subprocesses use the prepared `TMPDIR`.
+The parent archives outputs and Git history before persisting state. A failed
+import stops advancement with the recoverable local output path.
+
+Resume reuses the recorded layout. Clean legacy Codex runs can migrate without
+changing approved artifact bytes; dirty or in-flight work must be recovered first.
+Missing staging restores a quiescent snapshot or reports missing work explicitly.
+Cleanup preserves archived history and refuses unprovable Codex ownership.
+Claude keeps its existing home-directory artifacts and source-linked worktrees.
+
 If the run's time allowance expires, `next` still processes delivered results
 through their gates and checkpoints them before blocking new worker dispatches.
 A rejected artifact stays intact; expiry also blocks its send-back dispatch.
