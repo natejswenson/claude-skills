@@ -11,6 +11,9 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Persisted complexity profiles with a fast documentation route, bounded review
   rounds, and a 15-minute budget for wording-only issues.
+- Implementation validation now runs targeted proof before the full suite,
+  runs the full suite once after targeted green, and directs workers to deliver
+  immediately afterward to avoid repeated broad failing runs.
 
 ## [0.11.1] - 2026-09-09
 

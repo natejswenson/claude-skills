@@ -33,43 +33,9 @@ conversation.
 > skill's install dir, referred to as `$SKILL_DIR`). Resolve it once and `cd`
 > there before running anything.
 
-## Presentation — how a run should look
-
-This skill is watched, not just run. Everything below assumes the user is
-reading the conversation, so **the transcript is part of the product.**
-
-**Keep the machinery invisible.** The user should see a short status line and a
-table, not a scroll of raw command output. Concretely:
-
-- **Never print file contents into the conversation.** Not the job description,
-  not the résumé, not a script's source. Scripts hand each other *paths*; when
-  you need a file's text in context, use the `Read` tool rather than `cat`,
-  `sed`, `head`, or a `--show` flag. A posting pasted into chat is a wall of
-  text the user already has open in a browser tab.
-- **One script call, not a pipeline.** Every step below is a single command
-  that returns everything you need. If you find yourself chaining `sed`/`grep`/
-  `python3 -` to reshape output, the script should have given it to you — say
-  so rather than working around it.
-- **Report in tables, with these columns.** Ad-hoc prose summaries are why runs
-  read inconsistently:
-
-  | Stage | Columns |
-  |---|---|
-  | Target | Company · Role · Location · Req · Source |
-  | Tailoring | Role · Company · Bullets · Optimized · Kept |
-  | Output | Theme · Pages · File · Best for |
-
-  Omit noise: don't list unchanged fields, don't repeat the résumé's contents
-  back, don't show paths the user can't act on.
-- **Show, don't describe.** After rendering, `Read` the preview PNG so the user
-  sees the résumé instead of a paragraph about it.
-
-**The exception — narrate the slow parts.** Fetching a posting and rendering
-take a few seconds each. Emit one short line as each starts (`fetching the
-posting…`, `rendering press + ats-plain…`) so the user sees progress rather
-than dead air. One line each, not a table.
-
-## Step 1 — One-time setup check
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
 
 If `$SKILL_DIR/node_modules` does not exist, install dependencies quietly —
 npm's default output is hundreds of lines:

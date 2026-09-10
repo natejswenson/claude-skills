@@ -54,22 +54,14 @@
 
 ## Architecture
 
-- scripts/shipreport.js — the CLI: index, rank, show, receipts, render `skills/shipreport/skills/shipreport/SKILL.md:261`
-- scripts/lib/redact.mjs — the redaction classes, applied at ingest and nowhere else `skills/shipreport/skills/shipreport/SKILL.md:262`
-- scripts/lib/sessions.mjs — a Claude Code transcript reduced to a citable digest `skills/shipreport/skills/shipreport/SKILL.md:263`
-- scripts/lib/github.mjs — the only networked code — gh searches and release lookups `skills/shipreport/skills/shipreport/SKILL.md:264`
-- scripts/lib/corpus.mjs — the cache, the watermark, and receipt resolution `skills/shipreport/skills/shipreport/SKILL.md:265`
-- scripts/lib/rank.mjs — scoring, squash folding, release-series collapse, the line `skills/shipreport/skills/shipreport/SKILL.md:266`
-- scripts/lib/receipts.mjs — the one rule as code: receipt, resolution, no raw ids in prose `skills/shipreport/skills/shipreport/SKILL.md:267`
-- scripts/lib/render.mjs — the press-styled sheet, composed from press's named components `skills/shipreport/skills/shipreport/SKILL.md:268`
-- scripts/lib/art.mjs — the card-art contract — validated, never generated. art is the one field render splices unescaped, so this file is the whole boundary between a drawing and the sheet `skills/shipreport/skills/shipreport/SKILL.md:269`
-- assets/report.css — the sheet's stylesheet — its :root is a press region `skills/shipreport/skills/shipreport/SKILL.md:270`
-- references/anatomy.md — the fixed shape of the report — its sections, the receipt appendix, and what is never allowed in the body `skills/shipreport/skills/shipreport/SKILL.md:271`
-- references/ranking.md — the scoring function, why each signal is weighted the way it is, and what drawing the line means `skills/shipreport/skills/shipreport/SKILL.md:272`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/shipreport/skills/shipreport/SKILL.md:279`
 - Deterministic: collect GitHub contributions and Claude session transcripts, redact secrets and absolute paths at ingest so nothing unsafe is ever cached, and record a watermark so the second run is c… `skills/shipreport/skills/shipreport/skill-invariants.json:41`
 - Deterministic: score and order every candidate in the requested window, draw the line between what appears in the report and what does not, and say when that line was a tiebreak rather than a ranking… `skills/shipreport/skills/shipreport/skill-invariants.json:45`
 - Deterministic: read the artifact behind a receipt — a release's changelog, a pull request's body, a session's shape — from the corpus rather than from the network — node scripts/shipreport.js show `skills/shipreport/skills/shipreport/skill-invariants.json:49`
+- Deterministic: resolve every citation in the drafted report back to a real artifact, failing the run when one does not resolve — node scripts/shipreport.js receipts `skills/shipreport/skills/shipreport/skill-invariants.json:53`
+- Deterministic: render the ranked items and approved prose into the press-styled HTML report — node scripts/shipreport.js render `skills/shipreport/skills/shipreport/skill-invariants.json:57`
+- Model judgment: merge several ranked items into the one outcome a stakeholder would recognise, and choose the headline the time frame was actually about — the score orders candidates but cannot tell… `skills/shipreport/skills/shipreport/skill-invariants.json:63`
+- Model judgment: write the prose for a reader with no context on the code — plain outcomes, no repository names or commit hashes in the body — translating a diff into why it mattered is judgment, and… `skills/shipreport/skills/shipreport/skill-invariants.json:1`
+- Model judgment: decide what an ambiguous session actually accomplished when its commits and its transcript disagree — a session that ends without a commit may have been abandoned or may have been the… `skills/shipreport/skills/shipreport/skill-invariants.json:71`
 
 ## Troubleshooting
 

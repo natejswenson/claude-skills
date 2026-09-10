@@ -19,6 +19,10 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # /devlog — Release How-To Generator
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 In the default Generate mode, you turn each **new version release** (a semver git tag) in the user's projects into a
 published blog post, written in **the user's own voice**, and pushed to the GitHub repo
 configured in `~/.claude/skills/devlog/config.json`.
@@ -392,9 +396,12 @@ The `--clone` flag always points at the CONTENT ROOT: `<abs-tmp>/<repo-name>` wh
 `targetDir` is empty, `<abs-tmp>/<repo-name>/<targetDir>` when it's set. Git commands
 always run against the clone root `<abs-tmp>/<repo-name>` regardless.
 
-In this legacy Generate path, each release also gets a cover image, composed inline in this same loop right before that
-release's own `publish-entry` call — a self-contained HTML/CSS (or inline SVG) document,
-rasterized locally, never sent to any external service:
+In this Generate path, each release also gets a cover image, created inline in this same loop right before that
+release's own `publish-entry` call. In Codex, the dominant artwork MUST come from the native
+image-generation tool as a persisted raster source; wireframes, hand-authored SVG, CSS drawings,
+and title-only placeholders are not covers. The deterministic compositor may add PRESS typography
+around that generated artwork, but it must never substitute for native image generation.
+The cover must carry a custom illustration or other meaningful visual material; a cover that just re-renders the title in large text is a failure.
 
 ```bash
 mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
@@ -415,24 +422,17 @@ Per release:
    returns the style guide, icon catalog, and up to 3 reference cover paths. **Read
    only the single most recent reference image** (image reads are the expensive part;
    open another only if you're genuinely unsure the new cover is distinct). On
-   `{"error": "style-guide-missing"}`: skip cover composition for this release entirely
-   and proceed straight to publish-entry with no `--cover` flag.
-   Never block publish on a missing style guide.
-2. **Compose** using ONLY this release's title/tags/summary/`## Shipped` text
-   (never the raw draft file, never `## Changelog`) plus the style guide and icon catalog. A
-   cover that just re-renders the title in large text is a failure — find the one
-   concrete mechanism this release is actually about (not the project name, not "a bug
-   fix") and draw ONE custom inline-SVG illustration of it as the dominant visual
-   element; title/kicker stay secondary; two releases should never produce visually
-   similar covers. Follow the style guide's hero-zone grid contract: the illustration
-   lives in a `#hero-zone` container at exactly `x:150 y:425 width:1300 height:400`
-   (render-cover mechanically enforces this), one of two slots (single centered hero,
-   or two-node before/after), interior points snapped to a 25px grid; catalog icons
-   never go inside `#hero-zone` (optional small accent glyph near the kicker only,
-   bottom edge above y:400). Write the document with the Write tool to
-   `'<abs-scratch>/<key>/<version>.html'` — full `<!DOCTYPE html>` document, sized
-   `html, body { margin:0; width:1600px; height:900px; }`, font referenced only as
-   `font-family: 'DevlogCoverFont', sans-serif`.
+   `{"error": "style-guide-missing"}`: stop this release and report that publication is
+   blocked. A release entry is not publishable without a cover and agent handoff.
+2. **Generate and compose.** Use ONLY this release's title/tags/summary/`## Shipped` text
+   (never the raw draft file, never `## Changelog`) plus the style guide and icon catalog to
+   brief the native image-generation tool. Request artwork only: one concrete mechanism,
+   no lettering, labels, numbers, logos, fake code, UI, wireframe, gradients, or watermark.
+   Persist and inspect the exact returned raster, then use `compose-art-cover` to add local
+   PRESS typography. Do not draw the dominant art as inline SVG or CSS. A cover that just
+   re-renders the title in large text is a failure. Match the established backfill look:
+   flat cream paper, monochrome technical engraving, black/gray ink, restrained crosshatching,
+   a quiet left field for the headline, and at most one small orange accent.
 3. **Rasterize.**
    `npx -y @natjswenson/devlog@latest render-cover '<abs-scratch>/<key>/<version>.html' --project '<key>' --slug '<version>' --out '<abs-scratch>'`
    The HTML is the source of truth and **survives the render**: to fix a visual

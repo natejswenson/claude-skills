@@ -40,5 +40,5 @@ next: dispatch (brief)
   The prompt(s) to dispatch are printed above.
 
   Native agent completion: run next immediately. Otherwise use the fallback wait below once.
-wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ '\''<RUN>/descriptions/implement.md'\'' -nt '\''<RUN>/briefs/descriptions-implement.md'\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); sleep 20; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); while [ "$a" != "$b" ]; do a=$b; sleep 20; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); done'
+wait: sh -c 'end=$(( $(date +%s) + 1800 )); until [ '\''<RUN>/descriptions/implement.md'\'' -nt '\''<RUN>/briefs/descriptions-implement.md'\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 1; done; a=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); sleep 2; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); while [ "$a" != "$b" ]; do a=$b; sleep 2; b=$(wc -c < '\''<RUN>/descriptions/implement.md'\'' 2>/dev/null); done'
 then: node '<SKILL>/scripts/issueflow.js' next --run-dir '<RUN>'

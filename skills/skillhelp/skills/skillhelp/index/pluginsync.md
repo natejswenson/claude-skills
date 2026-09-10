@@ -47,12 +47,6 @@
 
 ## Architecture
 
-- scripts/pluginsync.js — the CLI: check, apply `skills/pluginsync/skills/pluginsync/SKILL.md:166`
-- scripts/lib/state.mjs — the four readers — and nothing that decides `skills/pluginsync/skills/pluginsync/SKILL.md:167`
-- scripts/lib/report.mjs — classification and rendering; the report shape is frozen `skills/pluginsync/skills/pluginsync/SKILL.md:168`
-- references/anatomy.md — the fixed shape of the report — the column set, the six actions, and the footer contract `skills/pluginsync/skills/pluginsync/SKILL.md:169`
-- references/sources.md — where every fact comes from: known_marketplaces.json, each marketplace.json, each plugin.json, and claude plugin list --json `skills/pluginsync/skills/pluginsync/SKILL.md:170`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/pluginsync/skills/pluginsync/SKILL.md:174`
 - Deterministic: resolve every marketplace's install location and each plugin's available version from plugin.json on disk — node scripts/pluginsync.js check --no-fetch `skills/pluginsync/skills/pluginsync/skill-invariants.json:26`
 - Deterministic: diff installed against available and classify each row — node scripts/pluginsync.js check `skills/pluginsync/skills/pluginsync/skill-invariants.json:30`
 - Deterministic: install/update each drifted plugin and read the resulting version back off disk — node scripts/pluginsync.js apply `skills/pluginsync/skills/pluginsync/skill-invariants.json:34`
@@ -73,4 +67,3 @@
 - **Never say a plugin is updated because a command succeeded.** Say it because `skills/pluginsync/skills/pluginsync/SKILL.md:72`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/pluginsync/skills/pluginsync/SKILL.md:152`
 - **Never report a stalled row as updated.** The command exiting 0 is not `skills/pluginsync/skills/pluginsync/SKILL.md:154`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/pluginsync/skills/pluginsync/SKILL.md:206`

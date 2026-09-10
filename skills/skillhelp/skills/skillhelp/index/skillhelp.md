@@ -50,11 +50,6 @@
 
 ## Architecture
 
-- scripts/skillhelp.js — the CLI: build, check, ask, list `skills/skillhelp/skills/skillhelp/SKILL.md:129`
-- references/anatomy.md — the fixed shape of a card — the five sections, what each is extracted from, and the file:line grounding every fact must carry `skills/skillhelp/skills/skillhelp/SKILL.md:130`
-- references/answering.md — how to answer from retrieved facts: citation form, when to relay the not-documented block verbatim, and the refusal to fill a gap with plausible prose `skills/skillhelp/skills/skillhelp/SKILL.md:131`
-- references/extraction.md — which file each section is read out of per stack, why Troubleshooting weights the invariants prose and the non-negotiable rules over changelog lines, the secret-shaped-line… `skills/skillhelp/skills/skillhelp/SKILL.md:132`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/skillhelp/skills/skillhelp/SKILL.md:136`
 - Deterministic: extract the five sections and their file:line sources from every skill's own files, refusing secret-shaped lines — node scripts/skillhelp.js build `skills/skillhelp/skills/skillhelp/skill-invariants.json:26`
 - Deterministic: prove no card would change, no skill is uncovered, and no fact has lost its source — node scripts/skillhelp.js check `skills/skillhelp/skills/skillhelp/skill-invariants.json:30`
 - Deterministic: route a question to grounded facts, or emit the not-documented block naming what was searched — node scripts/skillhelp.js ask `skills/skillhelp/skills/skillhelp/skill-invariants.json:34`
@@ -75,5 +70,4 @@
 - **Never hand-edit a card.** They are generated; edit the skill, then rebuild. `skills/skillhelp/skills/skillhelp/SKILL.md:121`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/skillhelp/skills/skillhelp/SKILL.md:114`
 - **Never present a section listing as a targeted answer.** How a result was `skills/skillhelp/skills/skillhelp/SKILL.md:119`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/skillhelp/skills/skillhelp/SKILL.md:168`
 - Previously fixed: build writes one card per skill with five fixed sections, every fact carrying `skills/skillhelp/CHANGELOG.md:15`

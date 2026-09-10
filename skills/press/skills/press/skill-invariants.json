@@ -22,9 +22,9 @@
       "rationale": "Whole-file generation clobbered ghostwriter's personal avatar footer once already. Region splicing is the load-bearing design decision, not a style preference."
     },
     {
-      "id": "prose-contracts-spliced-not-referenced",
-      "pattern": "spliced \\*\\*into\\*\\* a consuming SKILL\\.md",
-      "rationale": "A consuming skill is a separately installed plugin and cannot read this skill's files at runtime. If this degrades into 'reference the press docs', the agent-UI and voice contracts silently stop applying."
+      "id": "prose-contracts-runtime-shared",
+      "pattern": "runtime presentation contract",
+      "rationale": "The terminal and transcript rules are shared behavior, not consumer-owned prose. Keeping one runtime contract prevents every skill from drifting when the interface changes."
     },
     {
       "id": "medium-voice-wins-on-conflict",

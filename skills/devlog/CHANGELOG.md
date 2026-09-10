@@ -2,6 +2,13 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## 0.14.1 (2026-09-10) — native branded cover generation
+
+- Require Codex covers to use native generated raster artwork in the established
+  monochrome technical-engraving PRESS style; reject wireframes and SVG substitutes.
+- Require copyable agent handoffs and validated covers before publication.
+- Fix cover backfills when the target repository stores entries below `targetDir`.
+
 ## 0.14.0 (2026-09-09) — verified concept guides and AI cover composition
 
 - Add an explicit concept-guide draft workflow: select one transferable reader

@@ -20,6 +20,10 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # City Report
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 Load any US city's Census data once, answer questions about it from memory, and
 render a PRESS-branded HTML report on request.
 
