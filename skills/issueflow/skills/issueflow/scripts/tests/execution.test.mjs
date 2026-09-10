@@ -24,8 +24,9 @@ import { decide, renderAction, sh } from '../lib/next.mjs';
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 function codexChild(workspaceRoot, source, tree, paths) {
   const [artifact, evidence, progress] = paths;
-  const prompt = [
-    'Run the exact shell operations below, then finish.',
+  const script = join(workspaceRoot, 'codex-child.sh');
+  writeFileSync(script, [
+    'set -eu',
     `export TMPDIR=${JSON.stringify(workspaceRoot)}`,
     `printf 'child output\\n' > ${JSON.stringify(artifact)}`,
     `printf 'child output\\n' > ${JSON.stringify(evidence)}`,
@@ -33,7 +34,9 @@ function codexChild(workspaceRoot, source, tree, paths) {
     `printf 'child commit\\n' > ${JSON.stringify(join(tree, 'child.txt'))}`,
     `git -C ${JSON.stringify(tree)} add child.txt`,
     `git -C ${JSON.stringify(tree)} commit -m child`,
-  ].join('\n');
+  ].join('\n'));
+  chmodSync(script, 0o700);
+  const prompt = `Run exactly this command, then finish:\n/bin/sh ${JSON.stringify(script)}`;
   const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
     '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
   assert.equal(result.status, 0, result.stderr || result.stdout);
