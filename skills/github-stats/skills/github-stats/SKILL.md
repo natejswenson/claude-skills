@@ -20,6 +20,10 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # GitHub Stats
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 Show GitHub profile statistics for any username using the `gh` CLI. This is a
 conversational re-make of the `github-stats-cli` app: instead of an interactive
 prompt loop, the user just asks and you respond, then handle follow-ups.

@@ -56,14 +56,6 @@
 
 ## Architecture
 
-- scripts/gmailtriage.js — the CLI: setup, ingest, audit, merge, propose, subdivide, rules, labels, plan, apply, undo `skills/gmailtriage/skills/gmailtriage/SKILL.md:489`
-- references/rules.md — the rule format, what each field means, and the checks a rule must survive before it can move anything `skills/gmailtriage/skills/gmailtriage/SKILL.md:490`
-- references/sorting.md — what a "folder" actually is in Gmail, how a move is performed and reversed, and why the destination is the user's word and not the skill's `skills/gmailtriage/skills/gmailtriage/SKILL.md:491`
-- references/safety.md — why nothing here is permanent deletion, what the receipt records, and how an unwanted run is undone `skills/gmailtriage/skills/gmailtriage/SKILL.md:492`
-- references/gmail.md — the Gmail tool surface this skill is built on — the query syntax, the page limits, and the operations that do not exist `skills/gmailtriage/skills/gmailtriage/SKILL.md:493`
-- references/hygiene.md — what makes a label system maintainable rather than merely present — every folder having a rule, no folder spelled two ways, and why coverage is the number to watch `skills/gmailtriage/skills/gmailtriage/SKILL.md:494`
-- references/proposing.md — how a first run turns a real inbox into candidate rules, and the clusters it deliberately never proposes `skills/gmailtriage/skills/gmailtriage/SKILL.md:495`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/gmailtriage/skills/gmailtriage/SKILL.md:499`
 - Deterministic: report whether this mailbox has any rules yet, and the single next thing to do — the only command safe to run before anything is configured — node scripts/gmailtriage.js setup `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:81`
 - Deterministic: normalize raw search_threads and list_labels tool output, written to files verbatim, into the thread and label snapshots every other command reads — deduping threads across fetches, un… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:85`
 - Deterministic: report whether the label system is still coherent — folders no rule manages, split into ones holding mail and empty scaffolding; rules that file into a folder that no longer exists; pa… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:89`
@@ -72,6 +64,14 @@
 - Deterministic: cluster a folder that already has mail in it by sender domain, match each cluster against the sub-labels that folder already has, flag the senders that host mail for many organisations… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:101`
 - Deterministic: validate, store and remove rules — compiling each to a Gmail query, refusing one that is malformed, matches everything, matches nothing, files into a label Gmail owns, or stands in fro… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:105`
 - Deterministic: reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists — node scripts/gmailtriage.js labels `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:109`
+- Deterministic: evaluate the stored rules against a named slice of the mailbox — the inbox by default, or a folder already filed — and enumerate exactly which threads each rule would take, every label… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:113`
+- Deterministic: authorise exactly the threads the plan named, per action, refuse anything it did not, and write a receipt of every move — node scripts/gmailtriage.js apply `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:117`
+- Deterministic: reverse every move listed in a previous run's receipt — untrash, unlabel, and put back in the inbox — node scripts/gmailtriage.js undo `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:121`
+- Model judgment: decide which proposed rules are actually safe to accept, and which cluster is a newsletter the user genuinely reads — a sender sending fifty near-identical bulk messages looks the sam… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:127`
+- Model judgment: name a folder for a cluster that has no existing home — a folder name is a decision about how the user already thinks — whether their word is "Shopping" or "Retail", whether the bank… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:131`
+- Model judgment: decide whether an unmanaged folder should be adopted with a rule or deleted — a folder holding real mail with no rule behind it wants a rule and an empty one is scaffolding, the remed… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:135`
+- Model judgment: decide which of two spellings of one folder is the right one — the skill can prove two labels are one folder; nothing on disk says whether the user's word is "Receipts" or "Reciepts",… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:139`
+- Model judgment: name the organisation behind a sender that hosts mail for many of them — an applicant tracking system, a signing service and an invoicing platform all send on behalf of whoever bought… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:143`
 
 ## Troubleshooting
 

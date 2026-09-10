@@ -79,7 +79,7 @@ test('decide: a fresh run briefs the plan; a briefed plan waits on its artifact;
   markBriefed(dir, run, step, () => at(-60));
   a = decide(dir, run);
   assert.equal(a.kind, 'wait');
-  assert.match(a.wait, /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 5; done; a=\$\(wc -c < .*\); sleep 20; b=.*; while \[ "\$a" != "\$b" \]; do a=\$b; sleep 20; b=.*; done'$/);
+  assert.match(a.wait, /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*shared\/investigate\.md.* -nt .*briefs\/investigate\.md.* \]; do \[ \$\(date \+%s\) -ge \$end \] && exit 124; sleep 1; done; a=\$\(wc -c < .*\); sleep 2; b=.*; while \[ "\$a" != "\$b" \]; do a=\$b; sleep 2; b=.*; done'$/);
   assert.doesNotMatch(a.wait, /^timeout /, 'GNU timeout is not on a stock Mac — the deadline is shell arithmetic');
   writeGood(dir, run, 'investigate');
   a = decide(dir, run);
@@ -625,7 +625,7 @@ for (const runtime of ['claude', 'codex']) {
 test('waitLine quotes paths and uses -nt against the brief; timeoutFor is 3× the repo median, else 30 minutes', () => {
   assert.equal(
     waitLine({ pairs: [['/a b/out.md', '/a b/brief.md']], timeout: 10, settle: 1 }),
-    "sh -c 'end=$(( $(date +%s) + 10 )); until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); while [ \"$a\" != \"$b\" ]; do a=$b; sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); done'",
+"sh -c 'end=$(( $(date +%s) + 10 )); until [ '\\''/a b/out.md'\\'' -nt '\\''/a b/brief.md'\\'' ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 1; done; a=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); while [ \"$a\" != \"$b\" ]; do a=$b; sleep 1; b=$(wc -c < '\\''/a b/out.md'\\'' 2>/dev/null); done'",
   );
   assert.match(waitLine({ pairs: [['/x', null]], timeout: 5 }), /^sh -c 'end=\$\(\( \$\(date \+%s\) \+ 5 \)\); until \[ -f '\\''\/x'\\'' \]; do/);
   // and it actually runs on this machine's sh: a settled pair returns 0, a file still growing holds the wait, a missing one hits the deadline with 124

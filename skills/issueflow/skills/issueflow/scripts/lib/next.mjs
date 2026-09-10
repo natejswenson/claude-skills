@@ -29,7 +29,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import {
-  artifactPath, briefPath, deliveredSince, findStep, laneTree, readySteps, remainingSteps, runState, sha256OfFile,
+  artifactPath, briefPath, deliveredSince, evidencePath, findStep, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
@@ -44,7 +44,9 @@ import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
 /** How long an output's size must hold still before the wait believes it is finished. */
-export const SETTLE_S = 20;
+export const SETTLE_S = 2;
+export const POLL_S = 1;
+export const HEARTBEAT_TIMEOUT_S = 300;
 
 const spanToSeconds = (span) => {
   const m = /^(?:(\d+)m)?(\d+)s$/.exec(span);
@@ -74,7 +76,7 @@ export function waitLine({ pairs, timeout, settle = SETTLE_S }) {
   // team on a plan that was still being written (409 of 823 lines). So the
   // wait only returns once every output's size has held still for a while.
   const sizes = pairs.map(([output]) => `$(wc -c < ${sh(output)} 2>/dev/null)`).join(':');
-  const script = `end=$(( $(date +%s) + ${timeout} )); until ${conds}; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; a=${sizes}; sleep ${settle}; b=${sizes}; while [ "$a" != "$b" ]; do a=$b; sleep ${settle}; b=${sizes}; done`;
+  const script = `end=$(( $(date +%s) + ${timeout} )); until ${conds}; do [ $(date +%s) -ge $end ] && exit 124; sleep ${POLL_S}; done; a=${sizes}; sleep ${settle}; b=${sizes}; while [ "$a" != "$b" ]; do a=$b; sleep ${settle}; b=${sizes}; done`;
   return `sh -c '${script.replace(/'/g, `'\\''`)}'`;
 }
 
@@ -94,6 +96,30 @@ const git = (args, cwd) => {
 };
 
 const mtime = (path) => (existsSync(path) ? statSync(path).mtimeMs : null);
+const activityMtime = (dir, run, step) => {
+  let latest = Math.max(mtime(progressPath(dir, step)) ?? 0, mtime(evidencePath(dir, step)) ?? 0) || null;
+  if (!step.lane) return latest;
+  const tree = laneTree(dir, run, step.lane);
+  const changed = git(['status', '--short', '--untracked-files=all'], tree);
+  for (const line of (changed ?? '').split('\n').filter(Boolean)) {
+    const relative = line.slice(3).split(' -> ').at(-1);
+    const changedAt = mtime(join(tree, relative));
+    if (changedAt != null && (latest == null || changedAt > latest)) latest = changedAt;
+  }
+  return latest;
+};
+const heartbeatAge = (dir, run, step, now) => {
+  const last = activityMtime(dir, run, step);
+  return last == null ? null : Math.max(0, Date.parse(now) - last) / 1000;
+};
+const silentStop = (dir, run, step, now) => {
+  const age = heartbeatAge(dir, run, step, now);
+  if (age == null || age < HEARTBEAT_TIMEOUT_S) return null;
+  return stop('stalled', `${step.key} has reported no progress, evidence, or worktree activity for ${Math.round(age / 60)} minutes — re-dispatch the worker instead of waiting for the full budget`, {
+    items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(briefPath(dir, step)) }],
+    command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
+  });
+};
 const newerThan = (output, brief) => existsSync(output) && (!existsSync(brief) || mtime(output) >= mtime(brief));
 
 /**
@@ -179,8 +205,11 @@ function decideImplement(dir, run, step, ctx) {
   const timeout = timeoutFor(dir, step.stage.id);
   if (!step.stage.at?.briefed) return act('brief', { stage: step.stage.id, lane: step.laneSlug }, `${step.key} is ready to be briefed`);
   if (!deliveredSince(dir, step)) {
+    const silent = silentStop(dir, run, step, ctx.now());
+    if (silent) return silent;
     const elapsed = (Date.parse(ctx.now()) - Date.parse(step.stage.at.briefed)) / 1000;
-    if (elapsed > timeout) {
+    const activityAge = heartbeatAge(dir, run, step, ctx.now());
+    if (elapsed > timeout && (activityAge == null || activityAge >= HEARTBEAT_TIMEOUT_S)) {
       return stop('stalled', `${step.key} has run ${Math.round(elapsed / 60)} minutes with nothing delivered — past ${Math.round(timeout / 60)} minutes, the stall threshold for this repo`, {
         items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(brief) }],
         command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,

@@ -46,15 +46,15 @@
 
 ## Architecture
 
-- bin/ghfactory.js — the CLI: detect, resolve, verify, header, check `skills/ghfactory/skills/ghfactory/SKILL.md:222`
-- lib/resolve.mjs — ref → SHA, action.yml inputs, staleness — rung 0 `skills/ghfactory/skills/ghfactory/SKILL.md:223`
-- lib/verify.mjs — the ladder, with graceful degradation `skills/ghfactory/skills/ghfactory/SKILL.md:224`
-- lib/detect.mjs — the question budget `skills/ghfactory/skills/ghfactory/SKILL.md:225`
-- lib/header.mjs — the press masthead, via press's own emitter `skills/ghfactory/skills/ghfactory/SKILL.md:226`
-- references/anatomy.md — the fixed shape of a generated workflow `skills/ghfactory/skills/ghfactory/SKILL.md:227`
-- references/recipes.md — per-ecosystem recipes, versions resolved live `skills/ghfactory/skills/ghfactory/SKILL.md:228`
-- references/security.md — the rules linters do not catch `skills/ghfactory/skills/ghfactory/SKILL.md:229`
-- The baseline eval (tests/baseline.test.mjs) pins the emitted masthead byte-exactly and asserts the ladder is two-sided: a known-good workflow passes and a known-bad one fails on each rung it should.… `skills/ghfactory/skills/ghfactory/SKILL.md:233`
+- bin/ghfactory.js — the CLI: detect, resolve, verify, header, check `skills/ghfactory/skills/ghfactory/SKILL.md:187`
+- lib/resolve.mjs — ref → SHA, action.yml inputs, staleness — rung 0 `skills/ghfactory/skills/ghfactory/SKILL.md:188`
+- lib/verify.mjs — the ladder, with graceful degradation `skills/ghfactory/skills/ghfactory/SKILL.md:189`
+- lib/detect.mjs — the question budget `skills/ghfactory/skills/ghfactory/SKILL.md:190`
+- lib/header.mjs — the press masthead, via press's own emitter `skills/ghfactory/skills/ghfactory/SKILL.md:191`
+- references/anatomy.md — the fixed shape of a generated workflow `skills/ghfactory/skills/ghfactory/SKILL.md:192`
+- references/recipes.md — per-ecosystem recipes, versions resolved live `skills/ghfactory/skills/ghfactory/SKILL.md:193`
+- references/security.md — the rules linters do not catch `skills/ghfactory/skills/ghfactory/SKILL.md:194`
+- The baseline eval (tests/baseline.test.mjs) pins the emitted masthead byte-exactly and asserts the ladder is two-sided: a known-good workflow passes and a known-bad one fails on each rung it should.… `skills/ghfactory/skills/ghfactory/SKILL.md:198`
 
 ## Troubleshooting
 

@@ -19,6 +19,10 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # /shipflow — branching + release-automation setup
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 All deterministic work is delegated to the CLI. Invoke it as
 `npx -y @natjswenson/shipflow@latest <command>` — **always with the explicit
 `@latest` tag, never bare `@natjswenson/shipflow`.** Without a version/tag,

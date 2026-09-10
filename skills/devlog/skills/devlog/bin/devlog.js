@@ -1126,15 +1126,18 @@ async function cmdCommitCovers(rest) {
   // routinely runs well after the backfill/review session that produced the staging dir,
   // and reusing an hours-or-days-old clone would risk mutating a manifest that's since
   // moved on.
-  const cloneDir = mkdtempSync(join(tmpdir(), 'devlog-commit-covers-'));
+  const repoDir = mkdtempSync(join(tmpdir(), 'devlog-commit-covers-'));
   const branch = config.branch || 'main';
   const cloneUrl = `https://github.com/${config.targetRepo}.git`;
-  const cloneResult = spawnSync('git', ['clone', '--depth=1', '--branch', branch, cloneUrl, cloneDir], { encoding: 'utf8' });
+  const cloneResult = spawnSync('git', ['clone', '--depth=1', '--branch', branch, cloneUrl, repoDir], { encoding: 'utf8' });
   if (cloneResult.status !== 0) {
-    rmSync(cloneDir, { recursive: true, force: true });
+    rmSync(repoDir, { recursive: true, force: true });
     emitJSON({ error: 'clone-failed', message: cloneResult.stderr || 'git clone failed' }, 1);
     return;
   }
+  // Manifests live under the configured content root; git operations still run
+  // from the repository root.
+  const cloneDir = join(repoDir, config.targetDir || '');
 
   const summary = { written: [], skipped: [], failed: [], missingManifest: [] };
   let bulkForceOverwriteCount = 0;
@@ -1199,20 +1202,20 @@ async function cmdCommitCovers(rest) {
       ['commit', '-m', `chore(devlog): add ${summary.written.length} cover image(s)`],
     ];
     for (const args of steps) {
-      const r = spawnSync('git', ['-C', cloneDir, ...args], { encoding: 'utf8' });
+      const r = spawnSync('git', ['-C', repoDir, ...args], { encoding: 'utf8' });
       if (r.status !== 0) {
         emitJSON({ ok: false, ...summary, bulkForceOverwriteCount, error: 'git-commit-failed', message: r.stderr }, 1);
         return;
       }
     }
-    const push = spawnSync('git', ['-C', cloneDir, 'push', '--no-tags', 'origin', branch], { encoding: 'utf8' });
+    const push = spawnSync('git', ['-C', repoDir, 'push', '--no-tags', 'origin', branch], { encoding: 'utf8' });
     if (push.status !== 0) {
       emitJSON({ ok: false, ...summary, bulkForceOverwriteCount, error: 'git-push-failed', message: push.stderr }, 1);
       return;
     }
   }
 
-  rmSync(cloneDir, { recursive: true, force: true });
+  rmSync(repoDir, { recursive: true, force: true });
   emitJSON({ ok: summary.failed.length === 0, ...summary, bulkForceOverwriteCount });
 }
 

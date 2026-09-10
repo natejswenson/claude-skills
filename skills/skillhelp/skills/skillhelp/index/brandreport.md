@@ -48,11 +48,6 @@
 
 ## Architecture
 
-- scripts/brandreport.js — the CLI: init, add, status, gate, report `skills/brandreport/skills/brandreport/SKILL.md:130`
-- references/anatomy.md — the run layout: snapshot dir with provenance sidecars, findings.json, and the report — and what each field means `skills/brandreport/skills/brandreport/SKILL.md:131`
-- references/discovery.md — how the blind search rounds work: seed queries from the bare name, widening rules, when to stop, and how corroboration is judged and recorded `skills/brandreport/skills/brandreport/SKILL.md:132`
-- references/report.md — the report's fixed sections — who was found where, the confirmed presence, the unconfirmed same-name residue, and the brand read `skills/brandreport/skills/brandreport/SKILL.md:133`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/brandreport/skills/brandreport/SKILL.md:137`
 - Deterministic: create the run layout for a subject — node scripts/brandreport.js init `skills/brandreport/skills/brandreport/skill-invariants.json:26`
 - Deterministic: emit the per-platform handle-sweep checklist — node scripts/brandreport.js sweep `skills/brandreport/skills/brandreport/skill-invariants.json:30`
 - Deterministic: file each fetched artifact with provenance and identity status — node scripts/brandreport.js add `skills/brandreport/skills/brandreport/skill-invariants.json:34`
@@ -71,4 +66,3 @@
 - **Never attribute unverified content: nothing reaches the report unless it is tied to the actual person by a recorded corroborating signal (cross-links, shared handles, bio matches) — same-name findi… `skills/brandreport/skills/brandreport/SKILL.md:120`
 - **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/brandreport/skills/brandreport/SKILL.md:121`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/brandreport/skills/brandreport/SKILL.md:121`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/brandreport/skills/brandreport/SKILL.md:169`

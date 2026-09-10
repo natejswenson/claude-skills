@@ -34,6 +34,10 @@ native-screenshot, or explicit legacy-renderer choice; never switch silently.
 
 # LinkedIn Ghostwriter
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 Draft LinkedIn posts that sound like the user, then publish to their own profile via
 LinkedIn's official API — **only after they approve the draft**. Never auto-publish.
 

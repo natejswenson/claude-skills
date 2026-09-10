@@ -72,9 +72,9 @@
       "rationale": "Cover composition must draw only from title/tags/summary/## Shipped \u2014 never the raw draft or Changelog \u2014 losing this line reopens off-scope content leaking into an auto-composed image."
     },
     {
-      "id": "cover-never-blocks-publish",
-      "pattern": "[Nn]ever block[\\s\\S]{0,10}publish on a missing style guide",
-      "rationale": "A missing/uninstalled style guide must degrade gracefully (no cover this run), never abort the whole publish."
+      "id": "cover-required-before-publish",
+      "pattern": "publication is[\\s\\S]{0,5}blocked",
+      "rationale": "A missing/uninstalled style guide must stop the release so Generate mode cannot publish an entry without its required cover."
     },
     {
       "id": "cover-review-gate",

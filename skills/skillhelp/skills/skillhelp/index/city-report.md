@@ -32,20 +32,20 @@
 
 ## Commands
 
-- Run them **by path, from wherever the user is**. Do not cd into the skill directory: report.py writes to ./reports relative to the current directory, so a cd would bury the user's report inside the p… `skills/city-report/skills/city-report/SKILL.md:31`
-- <skill-dir> is the directory holding this SKILL.md. Use its absolute path. `skills/city-report/skills/city-report/SKILL.md:39`
-- python3 <skill-dir>/scripts/load.py "Minneapolis, MN" `skills/city-report/skills/city-report/SKILL.md:36`
-- python3 <skill-dir>/scripts/query.py poverty_rate # detail + benchmarks `skills/city-report/skills/city-report/SKILL.md:72`
-- python3 <skill-dir>/scripts/query.py commute_means --top 5 `skills/city-report/skills/city-report/SKILL.md:73`
-- python3 <skill-dir>/scripts/query.py median_household_income --series `skills/city-report/skills/city-report/SKILL.md:74`
-- python3 <skill-dir>/scripts/query.py --cities # what's loaded `skills/city-report/skills/city-report/SKILL.md:75`
-- python3 <skill-dir>/scripts/report.py `skills/city-report/skills/city-report/SKILL.md:85`
-- python3 <skill-dir>/scripts/report.py --section housing `skills/city-report/skills/city-report/SKILL.md:86`
-- python3 <skill-dir>/scripts/report.py "Duluth, MN" --section commute --section economy `skills/city-report/skills/city-report/SKILL.md:87`
-- python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" `skills/city-report/skills/city-report/SKILL.md:107`
-- python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" --section economy `skills/city-report/skills/city-report/SKILL.md:108`
-- pytest # offline, fixture-based, 100% coverage `skills/city-report/skills/city-report/SKILL.md:168`
-- pytest -m live # hits the real API; verifies every metric still returns data `skills/city-report/skills/city-report/SKILL.md:169`
+- Run them **by path, from wherever the user is**. Do not cd into the skill directory: report.py writes to ./reports relative to the current directory, so a cd would bury the user's report inside the p… `skills/city-report/skills/city-report/SKILL.md:35`
+- <skill-dir> is the directory holding this SKILL.md. Use its absolute path. `skills/city-report/skills/city-report/SKILL.md:43`
+- python3 <skill-dir>/scripts/load.py "Minneapolis, MN" `skills/city-report/skills/city-report/SKILL.md:40`
+- python3 <skill-dir>/scripts/query.py poverty_rate # detail + benchmarks `skills/city-report/skills/city-report/SKILL.md:76`
+- python3 <skill-dir>/scripts/query.py commute_means --top 5 `skills/city-report/skills/city-report/SKILL.md:77`
+- python3 <skill-dir>/scripts/query.py median_household_income --series `skills/city-report/skills/city-report/SKILL.md:78`
+- python3 <skill-dir>/scripts/query.py --cities # what's loaded `skills/city-report/skills/city-report/SKILL.md:79`
+- python3 <skill-dir>/scripts/report.py `skills/city-report/skills/city-report/SKILL.md:89`
+- python3 <skill-dir>/scripts/report.py --section housing `skills/city-report/skills/city-report/SKILL.md:90`
+- python3 <skill-dir>/scripts/report.py "Duluth, MN" --section commute --section economy `skills/city-report/skills/city-report/SKILL.md:91`
+- python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" `skills/city-report/skills/city-report/SKILL.md:111`
+- python3 <skill-dir>/scripts/report.py "Hawley, MN" --vs "Fargo, ND" --section economy `skills/city-report/skills/city-report/SKILL.md:112`
+- pytest # offline, fixture-based, 100% coverage `skills/city-report/skills/city-report/SKILL.md:172`
+- pytest -m live # hits the real API; verifies every metric still returns data `skills/city-report/skills/city-report/SKILL.md:173`
 - python3 "$S"/scripts/load.py "Minneapolis, MN" # fetch + cache + digest `skills/city-report/README.md:77`
 - python3 "$S"/scripts/query.py # list metric keys `skills/city-report/README.md:78`
 - python3 "$S"/scripts/query.py poverty_rate --series `skills/city-report/README.md:79`
@@ -55,14 +55,14 @@
 
 ## Architecture
 
-- Path — What it is `skills/city-report/skills/city-report/SKILL.md:156`
-- scripts/manifest.py — The 22 verified metric definitions — the accuracy asset `skills/city-report/skills/city-report/SKILL.md:158`
-- scripts/datausa.py — API client: place resolution, parallel fan-out, caching `skills/city-report/skills/city-report/SKILL.md:159`
-- scripts/bundle.py — Turns raw API payloads into reportable series + margins `skills/city-report/skills/city-report/SKILL.md:160`
-- scripts/load.py / query.py / report.py — The three commands `skills/city-report/skills/city-report/SKILL.md:161`
-- scripts/brand.py / charts.py — PRESS theme and inline-SVG chart primitives `skills/city-report/skills/city-report/SKILL.md:162`
-- references/api-gotchas.md — Field notes on the API's failure modes `skills/city-report/skills/city-report/SKILL.md:163`
-- The live contract test is what catches Data USA retiring a cube — it has already happened to two of them. `skills/city-report/skills/city-report/SKILL.md:172`
+- Path — What it is `skills/city-report/skills/city-report/SKILL.md:160`
+- scripts/manifest.py — The 22 verified metric definitions — the accuracy asset `skills/city-report/skills/city-report/SKILL.md:162`
+- scripts/datausa.py — API client: place resolution, parallel fan-out, caching `skills/city-report/skills/city-report/SKILL.md:163`
+- scripts/bundle.py — Turns raw API payloads into reportable series + margins `skills/city-report/skills/city-report/SKILL.md:164`
+- scripts/load.py / query.py / report.py — The three commands `skills/city-report/skills/city-report/SKILL.md:165`
+- scripts/brand.py / charts.py — PRESS theme and inline-SVG chart primitives `skills/city-report/skills/city-report/SKILL.md:166`
+- references/api-gotchas.md — Field notes on the API's failure modes `skills/city-report/skills/city-report/SKILL.md:167`
+- The live contract test is what catches Data USA retiring a cube — it has already happened to two of them. `skills/city-report/skills/city-report/SKILL.md:176`
 
 ## Troubleshooting
 
@@ -75,8 +75,8 @@
 - Do not cd into the skill — report.py writes to ./reports relative to the working directory. A cd into the skill directory buries the user's report inside the plugin install where they will not find i… `skills/city-report/skills/city-report/skill-invariants.json:43`
 - query.py never touches the network — The load-once/answer-from-cache split is the skill's core UX claim ('answer questions about it instantly'). If query.py started fetching, every answer would pay f… `skills/city-report/skills/city-report/skill-invariants.json:1`
 - Never pass --no-open in an interactive session — The user must see the report open on their own screen rather than being told it was written. Matches the same rule learned for ghostwriter card render… `skills/city-report/skills/city-report/skill-invariants.json:55`
-- Do **not** write ad-hoc Data USA queries. The API returns HTTP 200 with zero rows for dead cubes, and silently sums a measure across every dimension you didn't drill down on — so a wrong query return… `skills/city-report/skills/city-report/SKILL.md:140`
-- Every number comes from a verified entry in scripts/manifest.py. To add a metric, add a manifest entry and let the guard test check it — never bypass it with a one-off fetch. `skills/city-report/skills/city-report/SKILL.md:147`
-- references/api-gotchas.md documents all eight traps with the evidence for each. Read it before touching the manifest. `skills/city-report/skills/city-report/SKILL.md:151`
-- **Never quote a wide-margin figure as fact.** Anything the digest marks `skills/city-report/skills/city-report/SKILL.md:124`
-- **Never invent a metric.** If it isn't in the manifest, the answer is "Data `skills/city-report/skills/city-report/SKILL.md:134`
+- Do **not** write ad-hoc Data USA queries. The API returns HTTP 200 with zero rows for dead cubes, and silently sums a measure across every dimension you didn't drill down on — so a wrong query return… `skills/city-report/skills/city-report/SKILL.md:144`
+- Every number comes from a verified entry in scripts/manifest.py. To add a metric, add a manifest entry and let the guard test check it — never bypass it with a one-off fetch. `skills/city-report/skills/city-report/SKILL.md:151`
+- references/api-gotchas.md documents all eight traps with the evidence for each. Read it before touching the manifest. `skills/city-report/skills/city-report/SKILL.md:155`
+- **Never quote a wide-margin figure as fact.** Anything the digest marks `skills/city-report/skills/city-report/SKILL.md:128`
+- **Never invent a metric.** If it isn't in the manifest, the answer is "Data `skills/city-report/skills/city-report/SKILL.md:138`

@@ -27,6 +27,10 @@ apps by capability rather than assuming Claude MCP tool names exist.
 
 # X Ghostwriter
 
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load `$press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
+
 Draft X posts and threads that sound like the user, then publish to their own account
 through the Typefully API (free plan — X's own API has no free tier anymore) — **only
 after they approve the draft**. Never auto-publish.
