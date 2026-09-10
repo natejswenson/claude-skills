@@ -20,7 +20,7 @@
       "name": "brandreport",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "4bd353b34b4468dd",
+      "cardHash": "76eb98b6cf9bb72c",
       "facts": 51,
       "sections": {
         "setup": 6,
@@ -36,23 +36,23 @@
       "name": "city-report",
       "version": "0.4.0",
       "stack": "python",
-      "cardHash": "575e1953a526c9d8",
-      "facts": 59,
+      "cardHash": "f74ade9f403106f1",
+      "facts": 60,
       "sections": {
         "setup": 5,
         "usage": 12,
         "commands": 20,
         "architecture": 8,
-        "troubleshooting": 14
+        "troubleshooting": 15
       },
       "emptySections": [],
       "secretsRefused": 0
     },
     {
       "name": "devlog",
-      "version": "0.14.0",
+      "version": "0.14.1",
       "stack": "node",
-      "cardHash": "c0a9f71c333d8466",
+      "cardHash": "4df8416b23bc7c02",
       "facts": 61,
       "sections": {
         "setup": 12,
@@ -84,7 +84,7 @@
       "name": "ghfactory",
       "version": "0.2.1",
       "stack": "node",
-      "cardHash": "cc3d999674aa9f46",
+      "cardHash": "70ed084ab1029707",
       "facts": 53,
       "sections": {
         "setup": 7,
@@ -116,7 +116,7 @@
       "name": "ghostwriter-x",
       "version": "0.2.1",
       "stack": "python",
-      "cardHash": "826c45a7cec15f42",
+      "cardHash": "a240b85df6ae2e00",
       "facts": 51,
       "sections": {
         "setup": 7,
@@ -132,14 +132,14 @@
       "name": "github-stats",
       "version": "0.1.1",
       "stack": "python",
-      "cardHash": "851551fce6a10826",
-      "facts": 30,
+      "cardHash": "97be25d6e77d5d2f",
+      "facts": 31,
       "sections": {
         "setup": 9,
         "usage": 12,
         "commands": 2,
         "architecture": 1,
-        "troubleshooting": 6
+        "troubleshooting": 7
       },
       "emptySections": [],
       "secretsRefused": 0
@@ -164,12 +164,12 @@
       "name": "issueflow",
       "version": "0.11.1",
       "stack": "node",
-      "cardHash": "3d33f843ab001386",
-      "facts": 63,
+      "cardHash": "fcf795b946d4718e",
+      "facts": 60,
       "sections": {
         "setup": 10,
         "usage": 12,
-        "commands": 9,
+        "commands": 6,
         "architecture": 16,
         "troubleshooting": 16
       },
@@ -180,7 +180,7 @@
       "name": "netwatch",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "eba1970446d72970",
+      "cardHash": "c8625202a578ba16",
       "facts": 62,
       "sections": {
         "setup": 6,
@@ -196,7 +196,7 @@
       "name": "pluginsync",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "996ddc8bb69116fe",
+      "cardHash": "83895d64f58fea07",
       "facts": 53,
       "sections": {
         "setup": 6,
@@ -210,9 +210,9 @@
     },
     {
       "name": "press",
-      "version": "0.9.0",
+      "version": "0.10.0",
       "stack": "node",
-      "cardHash": "6e9117766a52f430",
+      "cardHash": "981df9d074339e8c",
       "facts": 58,
       "sections": {
         "setup": 7,
@@ -244,7 +244,7 @@
       "name": "resume",
       "version": "2.0.0",
       "stack": "node",
-      "cardHash": "82f33f628aaff3d9",
+      "cardHash": "18bf24a82c504a4f",
       "facts": 51,
       "sections": {
         "setup": 12,
@@ -260,7 +260,7 @@
       "name": "shipflow",
       "version": "0.6.0",
       "stack": "node",
-      "cardHash": "fd784bc5416c1040",
+      "cardHash": "b50804947055e13d",
       "facts": 71,
       "sections": {
         "setup": 12,
@@ -308,7 +308,7 @@
       "name": "skillhelp",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "ee1360dcf80c4e03",
+      "cardHash": "5d2e2c5f0eddc4b1",
       "facts": 56,
       "sections": {
         "setup": 7,

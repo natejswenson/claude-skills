@@ -82,4 +82,4 @@
 - **A zero-match warning is never narrated into a success.** accept --snapshot warns by name when a just-added entry matches nothing in the current snapshot — exit stays 0, because pre-seeding a range… `skills/netwatch/skills/netwatch/SKILL.md:180`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/netwatch/skills/netwatch/SKILL.md:166`
 - **Never accept a flow the user did not choose.** accept writes to the `skills/netwatch/skills/netwatch/SKILL.md:177`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:232`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:233`

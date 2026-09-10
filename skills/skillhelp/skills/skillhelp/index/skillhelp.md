@@ -75,5 +75,5 @@
 - **Never hand-edit a card.** They are generated; edit the skill, then rebuild. `skills/skillhelp/skills/skillhelp/SKILL.md:121`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/skillhelp/skills/skillhelp/SKILL.md:114`
 - **Never present a section listing as a targeted answer.** How a result was `skills/skillhelp/skills/skillhelp/SKILL.md:119`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/skillhelp/skills/skillhelp/SKILL.md:168`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/skillhelp/skills/skillhelp/SKILL.md:169`
 - Previously fixed: build writes one card per skill with five fixed sections, every fact carrying `skills/skillhelp/CHANGELOG.md:15`

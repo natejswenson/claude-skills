@@ -71,4 +71,4 @@
 - **Never attribute unverified content: nothing reaches the report unless it is tied to the actual person by a recorded corroborating signal (cross-links, shared handles, bio matches) — same-name findi… `skills/brandreport/skills/brandreport/SKILL.md:120`
 - **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/brandreport/skills/brandreport/SKILL.md:121`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/brandreport/skills/brandreport/SKILL.md:121`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/brandreport/skills/brandreport/SKILL.md:169`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/brandreport/skills/brandreport/SKILL.md:170`
