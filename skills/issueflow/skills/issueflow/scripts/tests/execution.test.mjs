@@ -22,7 +22,7 @@ import { GOOD_EVIDENCE } from './helpers.mjs';
 import { decide, renderAction, sh } from '../lib/next.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-function codexChild(workspaceRoot, tree, paths) {
+function codexChild(workspaceRoot, source, tree, paths) {
   const [artifact, evidence, progress] = paths;
   const prompt = [
     'Run the exact shell operations below, then finish.',
@@ -37,6 +37,10 @@ function codexChild(workspaceRoot, tree, paths) {
   const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
     '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
   assert.equal(result.status, 0, result.stderr || result.stdout);
+  for (const path of paths) assert.equal(readFileSync(path, 'utf8'), 'child output\n');
+  assert.equal(git(['show', 'HEAD:child.txt'], tree), 'child commit');
+  assert.equal(git(['log', '-1', '--format=%s'], tree), 'child');
+  assert.throws(() => git(['show', 'HEAD:child.txt'], source));
 }
 function fixture(number = 273) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "issueflow execution's workspace ")));
@@ -85,7 +89,7 @@ test('approved-root execution gives a constrained child writable outputs and Git
   for (const path of paths) assert.ok(path.startsWith(workspaceRoot + '/'), path);
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555); chmodSync(join(source, '.git'), 0o555);
-  try { codexChild(workspaceRoot, tree, paths); }
+  try { codexChild(workspaceRoot, source, tree, paths); }
   finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); chmodSync(join(source, '.git'), 0o755); }
   for (const args of [['--absolute-git-dir'], ['--path-format=absolute', '--git-common-dir'], ['--path-format=absolute', '--git-path', 'index'], ['--path-format=absolute', '--git-path', 'objects'], ['--path-format=absolute', '--git-path', 'refs']]) {
     assert.ok(git(['rev-parse', ...args], tree).startsWith(workspaceRoot + '/'), args.join(' '));
@@ -145,7 +149,7 @@ test('symlink outputs stop archival before state advances and retain the child r
 
 test('a read-only durable root does not prevent child output or Git writes; failed parent import stops state', () => {
   assert.notEqual(process.getuid?.(), 0, 'permission proof must not run as root');
-  const { dir, workspaceRoot, run } = fixture();
+  const { source, dir, workspaceRoot, run } = fixture();
   prepareExecution(dir, run, { workspaceRoot });
   const step = findStep(run, 'implement');
   const tree = prepareCheckout(dir, run, step.lane);
@@ -155,7 +159,7 @@ test('a read-only durable root does not prevent child output or Git writes; fail
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555);
   try {
-    codexChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
+    codexChild(workspaceRoot, source, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
     assert.throws(() => saveRun(dir, run), /could not persist.*|could not archive/);
     assert.equal(readFileSync(join(dir, 'run.json'), 'utf8'), before);
   } finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); }
