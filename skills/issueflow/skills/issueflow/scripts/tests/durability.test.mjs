@@ -19,7 +19,7 @@ import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, evidencePath, findStep, loadRun, markBriefed, saveRun, split, worktreePath } from '../lib/run.mjs';
 import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
-import { prepareCheckout } from '../lib/execution.mjs';
+import { prepareCheckout, releaseSourceLease, sourceTree } from '../lib/execution.mjs';
 import { GOOD_EVIDENCE, approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -1055,4 +1055,64 @@ test('a run that never provisioned a worktree finishes cleanly — the --no-work
 
   rmSync(bin, { recursive: true, force: true });
   cleanup();
+});
+
+test('a source lease transfers between unlanded split lanes and from a removed pre-split lane', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const root = run.lanes[0];
+  prepareCheckout(dir, run, root, { noWorktree: true });
+  const a = { ...structuredClone(root), id: 'a', slug: 'a', branch: 'feature/a' };
+  const b = { ...structuredClone(root), id: 'b', slug: 'b', branch: 'feature/b' };
+  run.lanes = [a, b];
+
+  assert.equal(prepareCheckout(dir, run, a, { noWorktree: true }), repoPath);
+  a.stages.find((stage) => stage.id === 'implement').state = 'approved';
+  assert.equal(prepareCheckout(dir, run, b, { noWorktree: true }), repoPath);
+  assert.equal(sourceTree(dir, run, b), repoPath, 'the new active lane owns the transferred lease');
+  releaseSourceLease(dir, run);
+});
+
+test('legacy source migration refuses when any lane already has a validated worktree', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const a = run.lanes[0];
+  const b = { ...structuredClone(a), id: 'b', slug: 'b', branch: 'feature/b' };
+  a.stages[0].state = 'briefed';
+  run.lanes = [a, b];
+  ensureWorktree(repoPath, dir, a);
+
+  assert.throws(() => prepareCheckout(dir, run, b, { noWorktree: true }), /legacy implementation already owns a worktree/);
+  assert.equal(run.checkout, undefined, 'a selected pending lane cannot change the mode for an implemented sibling');
+});
+
+test('a source lease without its saved checkout mode can still be released for takeover recovery', (t) => {
+  const { dir, run, cleanup } = fixture();
+  t.after(cleanup);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
+  delete run.checkout;
+
+  releaseSourceLease(dir, run);
+  assert.equal(existsSync(join(run.repo.path, '.git', 'issueflow-source-lease.json')), false);
+});
+
+test('finish leaves a source-mode run retryable when releasing its lease fails', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const lane = run.lanes[0];
+  git(['branch', lane.branch, 'main'], repoPath);
+  prepareCheckout(dir, run, lane, { noWorktree: true });
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  t.after(() => rmSync(bin, { recursive: true, force: true }));
+  stubGh(bin, {
+    prsByBranch: { [lane.branch]: [{ number: 6, state: 'MERGED', url: 'https://example.invalid/pull/6', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }] },
+  });
+  const lock = join(repoPath, '.git', 'issueflow-source-lease.json.lock');
+  mkdirSync(lock);
+
+  withGh(bin, () => assert.throws(() => finish(dir, run, {}), /release source checkout lease/));
+  assert.equal(run.finished, null, 'a failed lease release must not record a terminal run');
+  rmSync(lock, { recursive: true, force: true });
+  withGh(bin, () => finish(dir, run, {}));
+  assert.ok(run.finished, 'the next finish retries cleanup before becoming terminal');
 });

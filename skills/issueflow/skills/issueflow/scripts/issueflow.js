@@ -7,7 +7,7 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
@@ -553,6 +553,9 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // current `--repo` now names.
   const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
   if (previous?.checkout?.mode === 'source') releaseSourceLease(dir, previous);
+  if (previous && !previous.checkout?.mode) {
+    releaseSourceLease(dir, { ...previous, repo: { ...previous.repo, path: oldRepoPath } });
+  }
   // `previous?.lanes` is empty in exactly the state this cleanup exists for —
   // `run.json` truncated by a crash or caught mid-write, one of the two
   // documented reasons `--take-over` exists — and a run that broken cannot
@@ -650,7 +653,14 @@ async function cmdStart(args) {
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   claimRunDir(dir, run, { takeOver });
-  if (args.noWorktree) prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
+  if (args.noWorktree) {
+    try {
+      prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
+    } catch (err) {
+      unlinkSync(join(dir, 'run.json'));
+      throw err;
+    }
+  }
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 

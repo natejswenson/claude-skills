@@ -109,8 +109,8 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       }
       issueClosed = true;
     }
-    recordFinished(dir, run, { issueClosed }, now);
     releaseSourceLease(dir, run);
+    recordFinished(dir, run, { issueClosed }, now);
   }
 
   return { rows, run };
