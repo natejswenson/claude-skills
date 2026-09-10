@@ -34,7 +34,7 @@ import {
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
   MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath,
-  fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
@@ -215,7 +215,10 @@ function decideImplement(dir, run, step, ctx) {
         command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
       });
     }
-    return wait(step.key, { pairs: [[artifact, brief]], timeout });
+    // Wake on the heartbeat threshold so the next invocation can turn a
+    // silent worker into a bounded stalled stop. Active workers with a fresh
+    // progress log simply receive another wait; they are not penalized.
+    return wait(step.key, { pairs: [[artifact, brief]], timeout: Math.min(timeout, HEARTBEAT_TIMEOUT_S) });
   }
   return act('accept', { stage: step.stage.id, lane: step.laneSlug, auto: run.auto }, `${step.key} delivered — running the gate`);
 }
@@ -301,6 +304,13 @@ function decideLoop(dir, run, lane, ctx) {
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
     if (red.length > 0) {
+      const fingerprint = ciFailureFingerprint(red);
+      if (fingerprint && fingerprint === lane.review?.lastCiFailure) {
+        return stop('dispute', `${lane.slug}: the same CI failure survived a fixer round — inspect the hosted failure before authorizing another fix`, {
+          command: `review-fix-brief --lane ${lane.slug}`,
+          alternative: `ready --lane ${lane.slug} (only after independently resolving the CI failure)`,
+        });
+      }
       // Converged on findings, red on CI: a fix round for the checks.
       return act('review-fix-brief', { lane: lane.slug }, `${lane.slug}: converged, but ${red.map((c) => c.name).join(', ')} red — briefing a fix`);
     }
@@ -314,6 +324,12 @@ function decideLoop(dir, run, lane, ctx) {
   }
 
   // Open majors: fix, report, next round.
+  const repeated = repeatedReviewMajors(lane);
+  if (repeated.length > 0) {
+    return stop('dispute', `${lane.slug}: ${repeated.map((f) => f.id).join(', ')} survived two fixer rounds — inspect the reviewer/fixer disagreement`, {
+      command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
+    });
+  }
   if (!entry.fix?.briefed) return act('review-fix-brief', { lane: lane.slug }, `${lane.slug} round ${entry.round}: ${openMajors(lane).length} major(s) open — briefing the fixer`);
   return afterFixBrief(dir, run, lane, entry, head, ctx);
 }
@@ -387,6 +403,9 @@ function decideAction(dir, run, c) {
     if (ready.length === 0) {
       const held = remainingSteps(run)[0];
       return stop('blocked', `nothing can run: ${held.key} is held — \`status\` names what by`);
+    }
+    if (ready.length > 1) {
+      return act('brief', { ready: true }, `${ready.length} independent lanes are ready — briefing them together`);
     }
     return decideImplement(dir, run, ready[0], c);
   }

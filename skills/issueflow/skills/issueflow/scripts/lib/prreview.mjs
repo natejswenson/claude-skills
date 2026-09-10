@@ -95,6 +95,15 @@ export const openFindings = (lane) =>
 
 export const openMajors = (lane) => openFindings(lane).filter((f) => f.severity === 'major');
 
+/** A fixer that cannot clear the same major twice is not making progress. */
+export const repeatedReviewMajors = (lane) => openMajors(lane).filter((f) => (f.stillOpenRounds ?? 0) >= 2);
+
+/** Stable enough to compare hosted-check failures across review rounds. */
+export const ciFailureFingerprint = (checks) => (checks ?? [])
+  .filter((c) => c.bucket === 'fail')
+  .map((c) => `${c.name ?? ''}|${c.detail ?? c.conclusion ?? c.status ?? ''}`.toLowerCase().replace(/\s+/g, ' ').trim())
+  .sort().join('\n');
+
 /**
  * Which model fixes this round. Sonnet when every open major is new; opus
  * the moment one is `still-open` — round 3 exists mostly because round 2's

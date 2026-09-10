@@ -21,7 +21,7 @@ import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
   inlineEligible, laneDiff, openFindings, openMajors, openRound, parseDiff, payloadPath, planVerification, postRound,
-  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, riskSensitiveChange, roundRows, ruleFinding, semanticChangedLines, threadBody, touched, validateCandidates,
+  ciFailureFingerprint, readCandidates, registerRound, registeredPath, repeatedReviewMajors, reviewBody, reviewExhausted, riskSensitiveChange, roundRows, ruleFinding, semanticChangedLines, threadBody, touched, validateCandidates,
   validateVerdicts, verdictsPath, fixReportPath,
 } from '../lib/prreview.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief, methodSection } from '../lib/reviewbrief.mjs';
@@ -86,6 +86,23 @@ function fixture({ auto = true } = {}) {
   saveRun(dir, run);
   return { dir, run, lane, repoPath, cleanup: () => { rmSync(dir, { recursive: true, force: true }); rmSync(repoPath, { recursive: true, force: true }); } };
 }
+
+test('repeated review majors identify mechanisms that survived two fixer rounds', () => {
+  const lane = { review: { findings: [
+    { id: 'f-repeat', severity: 'major', status: 'open', stillOpenRounds: 2 },
+    { id: 'f-new', severity: 'major', status: 'open', stillOpenRounds: 1 },
+    { id: 'f-nit', severity: 'nit', status: 'open', stillOpenRounds: 4 },
+  ] } };
+  assert.deepEqual(repeatedReviewMajors(lane).map((f) => f.id), ['f-repeat']);
+});
+
+test('CI failure fingerprints are stable across check ordering', () => {
+  const a = ciFailureFingerprint([{ name: 'ci / issueflow', bucket: 'fail', detail: 'AssertionError\nline 10' }]);
+  const b = ciFailureFingerprint([{ name: 'ci / issueflow', bucket: 'fail', detail: 'AssertionError\nline 10' }]);
+  const c = ciFailureFingerprint([{ name: 'ci / other', bucket: 'fail', detail: 'AssertionError' }]);
+  assert.equal(a, b);
+  assert.notEqual(a, c);
+});
 
 const cand = (over) => ({
   file: 'widget.js', line: 4, side: 'RIGHT', category: 'line-by-line',

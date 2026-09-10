@@ -96,6 +96,7 @@ test('budget: exact deadline blocks a new dispatch, but an in-flight worker can 
   assert.deepEqual(action.budget, {
     elapsedSeconds: 1800, allowanceSeconds: 1800, remainingSeconds: 0, expired: true,
     deadline: now(),
+    usedSeconds: 1800, totalBudgetSeconds: 14400, totalRemainingSeconds: 12600,
   });
   const step = findStep(run, 'investigate');
   markBriefed(dir, run, step, now);
@@ -315,4 +316,28 @@ test('budget: stale implementation remains in flight after expiry', (t) => {
   assert.match(result.stdout, /successor dispatch requires explicit resume/);
   assert.doesNotMatch(result.stdout, /▶ accept/);
   assert.equal(findStep(loadRun(dir), 'implement').stage.at.delivered, undefined);
+});
+
+test('budget: autonomous runs renew an expired window but stop at the cumulative cap', (t) => {
+  const { dir, run } = fixture(t, { runtime: 'codex' });
+  run.autonomous = true;
+  run.totalBudgetSeconds = 1810;
+  saveRun(dir, run);
+  const first = cli(dir, ['next']);
+  assert.equal(first.status, 0, first.stderr);
+  const renewed = loadRun(dir);
+  assert.equal(renewed.budgetRenewals.length, 1);
+  assert.equal(renewed.budgetRenewals[0].automatic, true);
+  assert.equal(renewed.budgetRenewals[0].budgetSeconds, 10);
+
+  renewed.budgetRenewals[0].at = new Date(Date.now() - 20_000).toISOString();
+  saveRun(dir, renewed);
+  const waiting = cli(dir, ['next']);
+  assert.equal(waiting.status, 0, waiting.stderr);
+  assert.match(waiting.stdout, /next: wait/);
+  assert.equal(loadRun(dir).budgetRenewals.length, 1);
+  const stopped = cli(dir, ['brief', '--stage', 'plan']);
+  assert.equal(stopped.status, 4, stopped.stderr);
+  assert.match(stopped.stdout, /hard cumulative time cap is spent/);
+  assert.equal(loadRun(dir).budgetRenewals.length, 1);
 });

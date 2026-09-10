@@ -271,6 +271,14 @@ test('split stacks each lane on the one below it, bottom on the base branch', ()
   cleanup();
 });
 
+test('parallel split puts genuinely independent lanes on the shared base', () => {
+  const { dir, run, cleanup } = freshRun();
+  approvePlan(dir, run);
+  split(dir, run, [{ title: 'first' }, { title: 'second' }], { parallel: true });
+  assert.deepEqual(run.lanes.map((l) => l.base), ['dev', 'dev']);
+  cleanup();
+});
+
 test('split gives every lane its own implement stage, and does not duplicate the plan', () => {
   const { dir, run, cleanup } = freshRun();
   approvePlan(dir, run);

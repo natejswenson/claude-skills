@@ -14,14 +14,14 @@ import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionL
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction, sh } from './lib/next.mjs';
-import { DISPATCHES, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
+import { DISPATCHES, autoRenewBudget, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
   MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
-  laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
+  ciFailureFingerprint, laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
 import { landings } from './lib/reconcile.mjs';
@@ -31,7 +31,7 @@ import { blockingDrift, reconcile } from './lib/reconcile.mjs';
 import {
   HandBack, RunError, accept, artifactPath, blockers, board, claimRunDir, createRun, dependencies, durationOf, findLane,
   findStep, formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence,
-  readySteps, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
+  readySteps, recordAction, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
   worktreePath,
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
@@ -48,7 +48,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'autonomous', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
 
 function argv(args) {
   const out = { _: [] };
@@ -81,6 +81,19 @@ const print = (headers, rows) => { const t = table(headers, rows); if (t) consol
 function identify(repo, args) {
   if (args.repoJson) return { ...JSON.parse(readFileSync(args.repoJson, 'utf8')), path: repo };
   return { ...repoInfo(repo), path: repo };
+}
+
+function cleanRepoState(repo) {
+  try {
+    return execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim();
+  } catch (err) {
+    throw new RunError(`cannot inspect repository state at ${repo}: ${String(err.message).split('\n')[0]}`);
+  }
+}
+
+function requireCleanRepo(repo) {
+  const dirty = cleanRepoState(repo);
+  if (dirty) throw new RunError(`repository is dirty (${dirty.split('\n').length} uncommitted path(s)) — commit or stash changes before starting Issueflow so isolated worktrees share the committed baseline`);
 }
 
 /**
@@ -222,6 +235,14 @@ function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(r
 function guardDispatch(dir, run, args) {
   const budget = budgetStatus(run);
   if (!budget?.expired) return;
+  if (run.autonomous && budget.totalRemainingSeconds > 0) {
+    const renewed = autoRenewBudget(run);
+    if (!renewed) throw new BudgetStop('budget expired — the autonomous cumulative cap is spent');
+    saveRun(dir, run);
+    reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
+    console.log(`Budget automatically renewed: ${renewed.allowanceSeconds}s; cumulative cap remaining ${renewed.totalRemainingSeconds}s.`);
+    return;
+  }
   if (checkpointBudgetStop(dir, run, args, budgetStop(budget))) {
     throw new CheckpointFailure('checkpoint failed while saving the budget stop');
   }
@@ -625,6 +646,10 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
 async function cmdStart(args) {
   if (args.auto && args.reviewPlan) throw new Error('choose either autonomous mode or --review-plan, not both');
   const repo = resolve(args.repo ?? '.');
+  // Autonomous runs must have a reproducible baseline before they claim an
+  // issue. Legacy/offline replay fixtures may intentionally use a dirty
+  // checkout, while `doctor` still reports that condition explicitly.
+  if (args.autonomous && !isOffline(args)) requireCleanRepo(repo);
   const info = identify(repo, args);
   const number = readIssueNumber(args);
   const issue = args.issueJson ? JSON.parse(readFileSync(args.issueJson, 'utf8')) : viewIssue(repo, number);
@@ -644,6 +669,7 @@ async function cmdStart(args) {
     // Autoflow is autonomous by default. The red team's hash-bound pass is the
     // approval; a human plan gate is an explicit diagnostic/review mode.
     auto: !Boolean(args.reviewPlan),
+    autonomous: Boolean(args.autonomous),
     runtime: assertRuntime(args.runtime),
   });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
@@ -956,7 +982,7 @@ async function cmdSplit(args) {
     console.log(`Read ${items.length} work items from the approved plan.\n`);
   }
 
-  split(dir, run, items);
+  split(dir, run, items, { parallel: Boolean(args.parallel) });
   print(
     ['Lane', 'Work item', 'Branch', 'Stacks on'],
     run.lanes.map((l) => [l.slug, truncate(l.title, 48), l.branch, l.base]),
@@ -976,6 +1002,9 @@ async function cmdStatus(args) {
   );
   console.log(`\nRun: ${dir}`);
   if (run.checkpoint?.commentUrl) console.log(`Checkpoint: ${run.checkpoint.commentUrl}`);
+  const budget = budgetStatus(run);
+  if (budget) console.log(`Budget: ${Math.round(budget.usedSeconds)}s used / ${budget.totalBudgetSeconds ?? 'unbounded'}s cumulative cap; ${Math.ceil(budget.remainingSeconds)}s in current window remaining`);
+  if (run.metrics) console.log(`Telemetry: ${run.metrics.actions} deterministic actions, ${run.metrics.dispatches} dispatch boundaries, ${Math.round(run.metrics.deterministicSeconds)}s CLI time`);
   console.log('');
   const now = new Date().toISOString();
   runBoard(run, { now });
@@ -1008,6 +1037,28 @@ async function cmdStatus(args) {
   }
   reportDrift(reconcile(run, { offline: isOffline(args) }));
   nextLine(run);
+}
+
+/** Validate the execution context before a long autonomous run. */
+async function cmdDoctor(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const checks = [];
+  try {
+    const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: run.repo.path, encoding: 'utf8' }).trim();
+    checks.push(['repository', root === resolve(run.repo.path) ? 'ok' : 'mismatch', root]);
+    const dirty = cleanRepoState(run.repo.path);
+    checks.push(['working tree', dirty ? 'failed' : 'ok', dirty ? `${dirty.split('\n').length} uncommitted path(s)` : 'clean']);
+  } catch (err) {
+    checks.push(['repository', 'failed', String(err.message).split('\n')[0]]);
+  }
+  checks.push(['run state', 'ok', runState(run)]);
+  checks.push(['runtime', 'ok', `${run.runtime}${run.autonomous ? ' / autonomous' : ''}`]);
+  checks.push(['CLI', 'ok', `${skillCommand} (v${VERSION})`]);
+  const failures = checks.filter(([, state]) => state === 'failed' || state === 'mismatch');
+  print(['Check', 'State', 'Detail'], checks);
+  if (failures.length > 0) throw new RunError(`preflight failed: ${failures.map(([name]) => name).join(', ')}`);
+  console.log('\nPreflight passed. Use `next` to continue the run.');
 }
 
 /**
@@ -1337,6 +1388,7 @@ async function cmdReviewFixBrief(args) {
   guardDispatch(dir, run, args);
   const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
   entry.fix = { ...(entry.fix ?? {}), briefed: true, ...dispatch, items: items.length, redChecks: checks.length };
+  if (checks.length > 0) lane.review.lastCiFailure = ciFailureFingerprint(checks);
   saveRun(dir, run);
   if (dispatch.reasoning) print(['Lane', 'Round', 'Model', 'Reasoning', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, dispatch.reasoning, String(items.length), String(checks.length)]]);
   else print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
@@ -1483,7 +1535,7 @@ async function cmdNext(args) {
     landings: () => (offline ? [] : landings(loadRun(dir))),
   };
   const perform = {
-    brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: false }),
+    brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: Boolean(a.ready) }),
     review: (a) => cmdReview({ ...args, stage: a.stage, lane: a.lane }),
     accept: (a) => cmdAccept({ ...args, stage: a.stage, lane: a.lane, auto: Boolean(a.auto) }),
     split: () => cmdSplit({ ...args }),
@@ -1502,7 +1554,15 @@ async function cmdNext(args) {
   let completed = false;
   for (let i = 0; i < 12; i += 1) {
     const run = observe(dir, loadRun(dir));
-    const action = decide(dir, run, ctx);
+    let action = decide(dir, run, ctx);
+    // An explicitly autonomous run may cross a window boundary without
+    // making the parent session stop and ask for a manual resume. Renew only
+    // when the decision actually needs a worker dispatch; waiting on an
+    // existing worker must not consume the next autonomous window.
+    if (run.autonomous && action.kind === 'stop' && action.reason === 'budget') {
+      guardDispatch(dir, run, args);
+      action = decide(dir, loadRun(dir), ctx);
+    }
     if (action.kind !== 'run') {
       if (action.kind === 'stop' && action.reason === 'budget') {
         checkpointBudgetStop(dir, run, args, action);
@@ -1525,7 +1585,9 @@ async function cmdNext(args) {
     }
     console.log(`▶ ${action.command}${action.note ? ` — ${action.note}` : ''}\n`);
     try {
+      const actionStartedAt = new Date().toISOString();
       const rows = await perform[action.command](action.args);
+      recordAction(dir, loadRun(dir), action.command, actionStartedAt);
       completed = true;
       if (Array.isArray(rows) && rows.some((r) => r.state === 'failed')) {
         console.log(`\n${renderAction({ kind: 'stop', reason: 'checkpoint', detail: 'Gate results are saved locally; incomplete backup. Repair the reported checkpoint failure, then retry next.', budget: budgetStatus(loadRun(dir)), command: 'next' }, { skillCommand, runDir: dir })}`);
@@ -1574,12 +1636,13 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow resume --run-dir <path> --budget-seconds <positive-integer>
                                                 explicitly grant a fresh time window on an expired run; no dispatch
   issueflow board  [--repo <path>] [--run-root <path>]
-  issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--review-plan] [--take-over]
+  issueflow start  --issue <n> [--repo <path>] [--runtime claude|codex] [--review-plan] [--autonomous] [--take-over]
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
-  issueflow split  [--items-json <path>] [--issue <n>]
+  issueflow split  [--items-json <path>] [--parallel] [--issue <n>]
   issueflow status [--issue <n>]
+  issueflow doctor [--issue <n>]       validate repository, CLI, runtime and run state before driving
   issueflow runs
   issueflow ship   [--issue <n>] [--dry-run] [--no-draft] [--force]
   issueflow review-brief      --lane <slug>     open a review round: the diff, the finder briefs
@@ -1605,7 +1668,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --budget-seconds <positive-integer>  on resume: grant seconds from now, preserving all gates and review limits;
-                       reject invalid allowances and active/completed runs. Never auto-renew.
+                       reject invalid allowances and active/completed runs.
+  --autonomous         on start: automatically cross budget windows within the persisted hard cumulative cap
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
   --force              advance despite drift GitHub reported (an already-merged lane)
   --take-over          on start: displace a run another session owns — republishes over its
@@ -1637,6 +1701,7 @@ async function main() {
       case 'review': return await cmdReview(args);
       case 'split': return await cmdSplit(args);
       case 'status': return await cmdStatus(args);
+      case 'doctor': return await cmdDoctor(args);
       case 'runs': return await cmdRuns(args);
       case 'ship': return await cmdShip(args);
       case 'review-brief': return await cmdReviewBrief(args);
