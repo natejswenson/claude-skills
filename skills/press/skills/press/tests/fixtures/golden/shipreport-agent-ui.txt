@@ -9,8 +9,9 @@ table, not a scroll of raw command output. Concretely:
 - **Keep file reads focused.** Scripts hand each other *paths*; when you need
   a file's text in context, use the host's available file-reading capability.
   In Claude Code, prefer `Read`; in Codex, use focused file or shell reads.
-  Read only the relevant range and keep raw file contents out of user-facing
-  updates. A fetched page or a script's source is usually a wall of text in chat.
+  Read only the relevant range. Never print file contents into the conversation;
+  summarize the relevant result instead. A fetched page or script source is
+  usually a wall of text in chat.
 - **One script call, not a pipeline.** Every step should be a single command that
   returns everything you need. If you find yourself chaining `sed`/`grep`/
   `python3 -` to reshape output, the script should have given it to you — say so

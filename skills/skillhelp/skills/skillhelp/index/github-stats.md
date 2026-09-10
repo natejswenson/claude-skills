@@ -15,9 +15,9 @@
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/github-stats/README.md:86`
 - [gh](https://cli.github.com/), authenticated (gh auth login). The skill uses your existing auth; there is no separate token to manage. `skills/github-stats/README.md:88`
 - [jq](https://jqlang.github.io/jq/) for JSON aggregation. `skills/github-stats/README.md:90`
-- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:32`
-- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:34`
-- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:36`
+- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:147`
+- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:149`
+- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:151`
 
 ## Usage
 
@@ -51,3 +51,4 @@
 - Never auto-create — Creating a repository is the only state-changing, outward-facing action in the skill. This prose is the only thing standing between a casual 'set me up a repo for this' and an unc… `skills/github-stats/skills/github-stats/skill-invariants.json:25`
 - Always confirm thes*n?s*name, visibility, and description — Visibility in particular: defaulting to public when the user assumed private is an irreversible disclosure, not a cosmetic mistake. `skills/github-stats/skills/github-stats/skill-invariants.json:1`
 - gh auth status — Every script path shells out to gh. Without the auth pre-check the failure surfaces as a confusing empty result or a raw CLI error rather than the actionable 'run gh auth login'. `skills/github-stats/skills/github-stats/skill-invariants.json:37`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/github-stats/skills/github-stats/SKILL.md:52`

@@ -73,4 +73,4 @@
 - **Never say a plugin is updated because a command succeeded.** Say it because `skills/pluginsync/skills/pluginsync/SKILL.md:72`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/pluginsync/skills/pluginsync/SKILL.md:152`
 - **Never report a stalled row as updated.** The command exiting 0 is not `skills/pluginsync/skills/pluginsync/SKILL.md:154`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/pluginsync/skills/pluginsync/SKILL.md:206`
+- **Never claim a visual result without the artifact.** "It looks better" with no `skills/pluginsync/skills/pluginsync/SKILL.md:207`
