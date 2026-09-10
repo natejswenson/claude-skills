@@ -539,10 +539,9 @@ Per release:
    brief the native image-generation tool. Request artwork only: one concrete mechanism,
    no lettering, labels, numbers, logos, fake code, UI, wireframe, gradients, or watermark.
    Persist and inspect the exact returned raster, then use `compose-art-cover` to add local
-   PRESS typography. Do not draw the dominant art as inline SVG or CSS. A cover that just
-   re-renders the title in large text is a failure. Match the established backfill look:
+   PRESS typography. Do not draw the dominant art as inline SVG or CSS. Match the established backfill look:
    flat cream paper, monochrome technical engraving, black/gray ink, restrained crosshatching,
-   a quiet left field for the headline, and at most one small orange accent.
+   a quiet left field for the headline, and at most one small orange accent. A cover that just re-renders the title in large text is a failure.
 3. **Rasterize.**
    `npx -y @natjswenson/devlog@latest render-cover '<abs-scratch>/<key>/<version>.html' --project '<key>' --slug '<version>' --out '<abs-scratch>'`
    The HTML is the source of truth and **survives the render**: to fix a visual
