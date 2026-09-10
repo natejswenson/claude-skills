@@ -132,3 +132,15 @@ test('semantic command evidence suppresses brand bypass after press', () => {
   const command = { id: 'command', kind: 'tool-use', toolKind: 'command', name: 'another-host', command: 'press check' };
   assert.equal(findingsOf([edited, command]).filter(f => f.probe === 'brand-bypass').length, 0);
 });
+
+test('Codex exec orchestration source is not treated as a shell command', () => {
+  const events = eventsOf([{ type: 'response_item', payload: {
+    type: 'custom_tool_call',
+    name: 'functions.exec',
+    input: "await tools.exec_command({ cmd: 'gh pr create --base main' });",
+  } }]);
+  const contract = { clauses: [{ id: 'main', severity: 'major', text: 'Never open a PR into main.' }] };
+  assert.equal(events[0].toolKind, undefined);
+  assert.equal(events[0].command, undefined);
+  assert.deepEqual(runProbes({ contract, events, skill: 'widget' }).findings, []);
+});
