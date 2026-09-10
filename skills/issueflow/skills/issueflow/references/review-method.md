@@ -28,7 +28,7 @@ round 2+  finders (1–3, runtime finder profile, over the FIX — the diff sinc
 **Round 1 reviews the change; every later round reviews the fix.** The two
 runs this was measured on (local-fitness #241 and #242) spent 83–94% of their
 tokens in this loop, most of it re-reviewing a whole diff that grew 1286 →
-3993 lines with five finders and eight verifiers a round, in rounds whose
+3993 lines with five finders and four verifier batches a round, in rounds whose
 only job was to check a fix — and the fixes manufactured the next round's
 majors (11 → 13 → 7 → 13). So from round 2 the fleet is sized to the fix, the
 finders read the fix first and the whole diff only as reference, a candidate

@@ -288,7 +288,9 @@ export function fleetPlan(lines, round, { ofFix = false, risk = false } = {}) {
   const finders = ofFix ? Math.min(3, Math.max(floor, Math.ceil(lines / 300))) : Math.min(5, Math.max(floor, Math.ceil(lines / 150)));
   const dealt = Array.from({ length: finders }, () => []);
   angles.forEach((a, i) => dealt[i % finders].push(a));
-  return { finders, maxVerifiers: ofFix ? 4 : 8, angles: dealt };
+  // Four verifier batches fit the default four-slot Codex wave in one batch;
+  // fix reviews remain smaller because they already have prior findings.
+  return { finders, maxVerifiers: 4, angles: dealt };
 }
 
 /** Split items into at most `maxBatches` batches of about `per` each. */
