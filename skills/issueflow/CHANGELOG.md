@@ -5,6 +5,18 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2026-09-10
+
+## Fixed
+
+- Migrating a legacy Codex run with `prepare` now registers every stage the
+  old layout had already approved as an immutable snapshot, so the next stage
+  can be briefed. Before, the plan and any approved lane were archived but
+  never marked approved, and `next` stopped at exit 3 with
+  `approved output has no immutable snapshot` on the first brief after
+  migration. A run migrated before this fix repairs itself on its next
+  `prepare`, `next` or `brief`.
+
 ## [0.12.0] - 2026-09-10
 
 ## Added

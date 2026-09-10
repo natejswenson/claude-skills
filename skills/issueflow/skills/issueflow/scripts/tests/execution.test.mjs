@@ -241,6 +241,27 @@ test('clean legacy migration preserves unpushed lane commits and exact approved 
   assert.ok(existsSync(tree), 'legacy checkout remains available');
 });
 
+test('legacy migration registers already-approved artifacts so successors can be briefed', () => {
+  const { dir, workspaceRoot, run } = fixture();
+  const investigate = findStep(run, 'investigate');
+  writeFileSync(artifactPath(dir, investigate), 'legacy approved investigation');
+  investigate.stage.state = 'approved';
+  saveRun(dir, run);
+  prepareExecution(dir, run, { workspaceRoot });
+  // The migration copy is the first immutable snapshot; the brief must name it.
+  const approved = approvedArtifactPath(dir, run, artifactPath(dir, investigate));
+  assert.equal(readFileSync(approved, 'utf8'), 'legacy approved investigation');
+  assert.ok(readFileSync(writeBrief(dir, run, findStep(run, 'implement'), run.issue).prompt, 'utf8').includes(approved));
+  // A run migrated before approvals were seeded repairs itself on the next prepare.
+  delete run.execution.approved;
+  saveRun(dir, run);
+  const reloaded = loadRun(dir);
+  assert.equal(reloaded.execution.approved, undefined);
+  prepareExecution(dir, reloaded);
+  assert.equal(readFileSync(approvedArtifactPath(dir, reloaded, artifactPath(dir, investigate)), 'utf8'), 'legacy approved investigation');
+  assert.ok(loadRun(dir).execution.approved['shared/investigate.md'], 'the repair is persisted');
+});
+
 for (const state of ['dirty', 'in-flight']) test(`${state} legacy migration refuses without changing canonical state`, () => {
   const { dir, source, workspaceRoot, run } = fixture();
   const tree = ensureWorktree(source, dir, run.lanes[0], { offline: true }).path;
