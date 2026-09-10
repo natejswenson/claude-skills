@@ -22,6 +22,21 @@ import { GOOD_EVIDENCE } from './helpers.mjs';
 import { decide, renderAction, sh } from '../lib/next.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+function codexChild(workspaceRoot, tree, paths) {
+  const [artifact, evidence, progress] = paths;
+  const prompt = [
+    'Run the exact shell operations below, then finish.',
+    `export TMPDIR=${JSON.stringify(workspaceRoot)}`,
+    `printf 'child output\\n' > ${JSON.stringify(artifact)}`,
+    `printf 'child output\\n' > ${JSON.stringify(evidence)}`,
+    `printf 'child output\\n' > ${JSON.stringify(progress)}`,
+    `printf 'child commit\\n' > ${JSON.stringify(join(tree, 'child.txt'))}`,
+    `git -C ${JSON.stringify(tree)} add child.txt`,
+    `git -C ${JSON.stringify(tree)} commit -m child`,
+  ].join('\n');
+  const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-C', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+}
 function fixture(number = 273) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "issueflow execution's workspace ")));
   const source = join(root, 'source');
@@ -65,13 +80,9 @@ test('approved-root execution owns artifact, evidence, progress and every Git ad
   const step = findStep(run, 'implement');
   const tree = prepareCheckout(dir, run, step.lane);
   writeBrief(dir, run, step, run.issue, tree);
-  for (const path of [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]) {
-    assert.ok(path.startsWith(workspaceRoot + '/'), path);
-    writeFileSync(path, 'child output\n');
-  }
-  writeFileSync(join(tree, 'child.txt'), 'child commit\n');
-  git(['add', 'child.txt'], tree);
-  git(['commit', '-m', 'child'], tree);
+  const paths = [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)];
+  for (const path of paths) assert.ok(path.startsWith(workspaceRoot + '/'), path);
+  codexChild(workspaceRoot, tree, paths);
   for (const args of [['--absolute-git-dir'], ['--path-format=absolute', '--git-common-dir'], ['--path-format=absolute', '--git-path', 'index'], ['--path-format=absolute', '--git-path', 'objects'], ['--path-format=absolute', '--git-path', 'refs']]) {
     assert.ok(git(['rev-parse', ...args], tree).startsWith(workspaceRoot + '/'), args.join(' '));
   }
@@ -99,6 +110,21 @@ test('durable snapshots preserve exact bytes and mtime and resume reuses its gen
   assert.equal(artifactPath(dir, findStep(resumed, 'investigate')), path);
 });
 
+test('successor briefs inherit durable snapshots instead of writable active artifacts', () => {
+  const { dir, workspaceRoot, run } = fixture();
+  prepareExecution(dir, run, { workspaceRoot });
+  const plan = findStep(run, 'investigate');
+  writeBrief(dir, run, plan, run.issue);
+  writeFileSync(artifactPath(dir, plan), 'approved plan');
+  plan.stage.state = 'approved';
+  saveRun(dir, run);
+  const archived = archivedPath(dir, run, artifactPath(dir, plan));
+  writeFileSync(artifactPath(dir, plan), 'rewritten active plan');
+  const brief = writeBrief(dir, run, findStep(run, 'implement'), run.issue);
+  assert.ok(readFileSync(brief.prompt, 'utf8').includes(archived));
+  assert.equal(readFileSync(archived, 'utf8'), 'approved plan');
+});
+
 test('symlink outputs stop archival before state advances and retain the child results', () => {
   const { dir, workspaceRoot, run } = fixture();
   prepareExecution(dir, run, { workspaceRoot });
@@ -122,14 +148,12 @@ test('a read-only durable root does not prevent child output or Git writes; fail
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555);
   try {
-    for (const path of [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]) writeFileSync(path, 'child wrote\n');
-    writeFileSync(join(tree, 'new.txt'), 'child\n');
-    git(['add', 'new.txt'], tree); git(['commit', '-m', 'child'], tree);
+    codexChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
     assert.throws(() => saveRun(dir, run), /could not persist.*|could not archive/);
     assert.equal(readFileSync(join(dir, 'run.json'), 'utf8'), before);
   } finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); }
   saveRun(dir, run);
-  assert.equal(readFileSync(archivedPath(dir, run, artifactPath(dir, step)), 'utf8'), 'child wrote\n');
+  assert.equal(readFileSync(archivedPath(dir, run, artifactPath(dir, step)), 'utf8'), 'child output\n');
 });
 
 test('changing a delivered output after gate read refuses the canonical transition', () => {
@@ -243,9 +267,23 @@ test('missing in-flight staging reports unexported work and never recreates appr
 test('unapproved roots and changed ownership refuse before dispatch', () => {
   const { dir, source, workspaceRoot, run } = fixture();
   assert.throws(() => prepareExecution(dir, run, { workspaceRoot: join(source, '.git') }), /approved workspace root/);
+  assert.throws(() => prepareExecution(dir, run, { workspaceRoot: source }), /approved workspace root/);
   prepareExecution(dir, run, { workspaceRoot });
   writeFileSync(join(run.execution.path, 'owner.json'), '{}');
   assert.throws(() => prepareExecution(dir, run), /mismatched execution owner/);
+});
+
+test('staged Git storage preserves optional origin transport settings', () => {
+  const { root, source, dir, workspaceRoot, run } = fixture();
+  const fetch = join(root, 'fetch.git'), push = join(root, 'push.git');
+  git(['init', '--bare', fetch], root); git(['init', '--bare', push], root);
+  git(['remote', 'add', 'origin', fetch], source);
+  git(['config', 'remote.origin.pushurl', push], source);
+  git(['config', '--unset-all', 'remote.origin.fetch'], source);
+  prepareExecution(dir, run, { workspaceRoot });
+  assert.equal(git(['remote', 'get-url', 'origin'], gitStore(dir, run)), fetch);
+  assert.throws(() => git(['config', '--get-all', 'remote.origin.fetch'], gitStore(dir, run)));
+  assert.equal(git(['config', '--get-all', 'remote.origin.pushurl'], gitStore(dir, run)), push);
 });
 
 test('all six worker roles deliver through execution storage and staged commits push and ship', () => {
@@ -336,7 +374,8 @@ test('finish archives history and removes only owned lanes including pre-split l
   const priorPath = process.env.PATH;
   process.env.PATH = bin + ':' + priorPath;
   run.offline = false;
-  try { finish(dir, run); } finally { process.env.PATH = priorPath; }
+  chmodSync(join(source, '.git'), 0o555);
+  try { finish(dir, run); } finally { chmodSync(join(source, '.git'), 0o755); process.env.PATH = priorPath; }
   assert.equal(existsSync(tree), false);
   assert.equal(existsSync(leftover), false);
   assert.ok(existsSync(sibling));

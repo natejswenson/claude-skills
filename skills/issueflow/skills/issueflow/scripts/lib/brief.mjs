@@ -1,4 +1,4 @@
-import { activePath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
+import { activePath, archivedPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The dispatch prompt — rendered, never improvised.
  *
@@ -53,7 +53,7 @@ function inheritedSection(dir, run, step) {
   const rows = steps
     .slice(0, index)
     .filter((s) => s.stage.state === 'approved')
-    .map((s) => [s.stage.id, artifactPath(dir, s)]);
+    .map((s) => [s.stage.id, run.execution ? archivedPath(dir, run, artifactPath(dir, s)) : artifactPath(dir, s)]);
   if (rows.length === 0) return null;
   return [
     '## Read these first — they are the decisions you inherit',
