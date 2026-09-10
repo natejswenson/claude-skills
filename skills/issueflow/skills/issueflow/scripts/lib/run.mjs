@@ -72,6 +72,14 @@ export function classifyIssue(issue) {
   return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
 }
 
+/** A bounded allowance for autonomous runs. It is a hard cumulative cap, not a
+ * promise that a run will consume the whole amount. */
+export function totalBudgetFor(complexity, { split = false } = {}) {
+  const base = complexity?.budgetSeconds ?? 1800;
+  const multiplier = complexity?.kind === 'fast-docs' ? 4 : complexity?.kind === 'standard' ? 4 : 8;
+  return base * multiplier * (split ? 1.5 : 1);
+}
+
 const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', complexity = null) => ({
   id: slug,
   slug,
@@ -85,7 +93,7 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude', now = () => new Date().toISOString() }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime = 'claude', now = () => new Date().toISOString() }) {
   const resolvedRuntime = assertRuntime(runtime);
   const complexity = classifyIssue(issue);
   return {
@@ -104,7 +112,10 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // whether an approval needs a human is a property of the run, not of
     // whoever types the next command.
     auto,
+    autonomous,
     complexity,
+    totalBudgetSeconds: totalBudgetFor(complexity),
+    metrics: { actions: 0, dispatches: 0, deterministicSeconds: 0, byCommand: {}, lastActionAt: null },
     createdAt: now(),
     split: false,
     // The sticky issue comment this run keeps up to date. Adopted by marker
@@ -120,6 +131,21 @@ export function saveRun(dir, run) {
   mkdirSync(join(dir, SHARED_DIR), { recursive: true });
   for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
   writeFileSync(statePath(dir), `${JSON.stringify(run, null, 2)}\n`);
+  return run;
+}
+
+/** Parent-side telemetry for diagnosing orchestration cost. It is advisory and
+ * never participates in a gate. */
+export function recordAction(dir, run, command, startedAt, finishedAt = new Date().toISOString()) {
+  run.metrics ??= { actions: 0, dispatches: 0, deterministicSeconds: 0, byCommand: {}, lastActionAt: null };
+  run.metrics.byCommand ??= {};
+  run.metrics.actions += 1;
+  run.metrics.byCommand[command] = (run.metrics.byCommand[command] ?? 0) + 1;
+  if (['brief', 'review-brief', 'review-verify', 'review-fix-brief'].includes(command)) run.metrics.dispatches += 1;
+  const elapsed = (Date.parse(finishedAt) - Date.parse(startedAt)) / 1000;
+  if (Number.isFinite(elapsed) && elapsed >= 0) run.metrics.deterministicSeconds += elapsed;
+  run.metrics.lastActionAt = finishedAt;
+  saveRun(dir, run);
   return run;
 }
 
@@ -175,7 +201,11 @@ export function loadRun(dir) {
   run.checkpoint ??= { commentId: null, commentUrl: null, pushed: {} };
   run.offline ??= false;
   run.auto ??= false;
+  run.autonomous ??= false;
   run.complexity ??= classifyIssue(run.issue);
+  run.totalBudgetSeconds ??= totalBudgetFor(run.complexity, { split: run.split });
+  run.metrics ??= { actions: 0, dispatches: 0, deterministicSeconds: 0, byCommand: {}, lastActionAt: null };
+  run.metrics.byCommand ??= {};
   run.finished ??= null;
   for (const lane of run.lanes) {
     lane.landed ??= null;
@@ -689,7 +719,7 @@ export function elapsedOf(entry, now) {
  * a split is still safe. (A `brief --ready` straight after the plan used to
  * foreclose `split` forever.)
  */
-export function split(dir, run, items) {
+export function split(dir, run, items, { parallel = false } = {}) {
   if (run.split) throw new RunError('this run is already split — a second split would strand the first split\'s lanes');
   const plan = findStep(run, PLAN_STAGE);
   if (plan.stage.state !== 'approved') {
@@ -707,12 +737,15 @@ export function split(dir, run, items) {
     const slug = slugify(item.slug ?? item.title);
     if (seen.has(slug)) throw new RunError(`two work items slug to "${slug}" — each lane needs its own branch`);
     seen.add(slug);
-    const base = i === 0
+    const base = parallel
+      ? run.policy.base
+      : i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
     return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);
   });
   run.split = true;
+  run.totalBudgetSeconds = totalBudgetFor(run.complexity, { split: true });
   saveRun(dir, run);
   return run;
 }

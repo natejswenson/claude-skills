@@ -11,6 +11,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Persisted complexity profiles with a fast documentation route, bounded review
   rounds, and a 15-minute budget for wording-only issues.
+- Explicit `--autonomous` runs now cross short budget windows within a persisted
+  cumulative cap; `status` exposes budget and deterministic-action telemetry.
+- Independent split lanes can be briefed together with `split --parallel`, and
+  `doctor` validates the repository and runtime before a long run.
+- Repeated review majors and unchanged hosted CI failures now stop for a
+  decision instead of consuming another automatic fixer round.
 - Implementation validation now runs targeted proof before the full suite,
   runs the full suite once after targeted green, and directs workers to deliver
   immediately afterward to avoid repeated broad failing runs.

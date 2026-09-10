@@ -42,19 +42,27 @@ From `$SKILL_DIR`:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --autonomous
+node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run>
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 ```
 
-After explicit user direction to extend an expired budget:
+Start and doctor require a clean source checkout. Commit or stash local edits
+before starting so isolated implementation worktrees inherit the same baseline;
+Issueflow refuses to claim the issue when the checkout is dirty.
+
+After explicit user direction to extend an expired budget (the default,
+non-autonomous mode):
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Never auto-renew. This grants time from resume; review limits stay unchanged.
-It preserves artifacts, commits, gates, runtime and checkpoint identity, and
-dispatches nothing. Follow its printed `next` command.
+Default runs never auto-renew. An explicitly started `--autonomous` run may
+renew short windows automatically, but only within its persisted hard
+cumulative cap. Manual resume grants time from resume; review limits stay
+unchanged. Both paths preserve artifacts, commits, gates, runtime and
+checkpoint identity.
 
 Run `board` only without a named issue. Ask which issue; never ask about anything
 in it because policy and claims are facts. Continue a live run named by `board`.
@@ -69,10 +77,17 @@ destructive cost. Auto mode never takes over.
 After `start`, run `next` repeatedly. It performs deterministic work and prints
 exactly one dispatch, wait, or stop.
 
+For approved plans with independent work items, use `issueflow split --parallel`.
+It gives each lane the same base so `next` can brief all ready lanes in one
+fan-out. Use the flag only when the items do not modify or depend on one another.
+
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
   prompt/model/reasoning/role. Dispatch independent agents immediately. Never
   do the stage yourself.
-- **Wait:** The artifact on disk is the state-machine signal. In Claude or a
+- **Wait:** The artifact on disk is the state-machine signal. Implement waits
+  wake at the five-minute heartbeat threshold; rerun `next` then so a silent
+  worker becomes a bounded `stalled` stop while an active worker gets another
+  wait. In Claude or a
   host without native agent waiting, yield the exact printed `wait:` command,
   then run `next`. In Codex, wait on dispatched agents with the native
   collaboration wait, then run `next`; the summary is information while `next`
@@ -110,6 +125,9 @@ dispatches, including a refused gate's send-back. In-flight work may finish.
 
 Review fanout discounts tests and generated indexes; sensitive changes retain
 multiple finders. Every file remains in the brief. Candidates determine verifiers.
+The loop stops for a decision when the same major survives two fixer rounds or
+the same hosted CI failure survives a CI fixer; it does not spend more workers
+on a mechanism that is not changing.
 
 ## Safety invariants
 
