@@ -140,6 +140,33 @@ Sessions run in parallel safely: one run directory and one worktree per issue,
 run, and a lane is cut from the base as it is now rather than as this checkout
 last happened to fetch it.
 
+Worktree provisioning and missing-lane failures stop at exit 3 before a new
+implementation dispatch. Existing lanes are checked against Git registration,
+repository identity and the expected branch.
+
+To knowingly use the source checkout, pass `--no-worktree` to `start` or the first
+implementation `brief`/`next`. The choice persists on resume and cannot change
+after implementation begins. A lease in the Git common directory excludes other
+runs, including those using alternate run roots or linked source checkouts, and
+overlapping writable lanes. The lease survives crashes; `finish` or explicit
+takeover releases only its owner. Legacy runs without a mode must restore their
+validated worktree or explicitly select source mode when their checkout is missing.
+Claude and Codex retain their existing durable state paths.
+
+Codex setup also requires `--workspace-root <approved-root>`, selected from the
+host's actual writable roots. Supply it to `start`, the first `next`, or
+`prepare --run-dir "<run>" --workspace-root "<approved-root>"`. Naming a directory
+does not grant permission. Each run gets its own generation, artifacts and bare
+Git store under that root; child subprocesses use the prepared `TMPDIR`.
+The parent archives outputs and Git history before persisting state. A failed
+import stops advancement with the recoverable local output path.
+
+Resume reuses the recorded layout. Clean legacy Codex runs can migrate without
+changing approved artifact bytes; dirty or in-flight work must be recovered first.
+Missing staging restores a quiescent snapshot or reports missing work explicitly.
+Cleanup preserves archived history and refuses unprovable Codex ownership.
+Claude keeps its existing home-directory artifacts and source-linked worktrees.
+
 If the run's time allowance expires, `next` still processes delivered results
 through their gates and checkpoints them before blocking new worker dispatches.
 A rejected artifact stays intact; expiry also blocks its send-back dispatch.
@@ -152,13 +179,19 @@ On explicit user direction to extend the budget:
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Never auto-renew. The command grants 1,800 seconds from resume time, preserves
-artifacts, commits, gates, runtime and checkpoint identity, and prints the next
-command without dispatching work. Review limits stay unchanged. It rejects
+Default runs never auto-renew. Start with `--autonomous` to cross short budget
+windows automatically within the run's persisted hard cumulative cap. The
+manual command grants 1,800 seconds from resume time, preserves artifacts,
+commits, gates, runtime and checkpoint identity, and prints the next command
+without dispatching work. Review limits stay unchanged. It rejects
 invalid allowances and active or completed runs. A checkpoint failure leaves
 approvals recorded locally and reports incomplete backup; repair it and retry
 `next`. Native agent completion goes straight to `next`; hosts relying on file
 detection use the printed fallback stability wait once.
+
+For approved plans with independent work items, use `split --parallel` so `next`
+can brief all ready lanes in one fan-out. Keep the default stacked split for
+work items that depend on one another or touch overlapping files.
 
 ## Triggers
 

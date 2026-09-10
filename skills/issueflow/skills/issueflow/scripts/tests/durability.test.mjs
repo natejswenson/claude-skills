@@ -19,6 +19,7 @@ import { finish, FinishError } from '../lib/finish.mjs';
 import { accept, artifactPath, createRun, evidencePath, findStep, loadRun, markBriefed, saveRun, split, worktreePath } from '../lib/run.mjs';
 import { FetchError, WorktreeError, ensureWorktree, originConfigured, removeWorktree } from '../lib/worktree.mjs';
 import { STAGES } from '../lib/stages.mjs';
+import { prepareCheckout, releaseSourceLease, sourceTree } from '../lib/execution.mjs';
 import { GOOD_EVIDENCE, approveImplement, approvePlan, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -110,6 +111,7 @@ for (const delivered of ['plan', 'implementation']) {
       markBriefed(dir, run, step, () => new Date(Date.now() - 60_000).toISOString());
       if (delivered === 'implementation') writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
       run.createdAt = new Date(Date.now() - 20_000_000).toISOString();
+      prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
       run.budgetRenewals = [{ at: new Date(Date.now() - 10_000_000).toISOString(), budgetSeconds: 600 }];
       run.checkpoint.commentId = 123;
       run.checkpoint.commentUrl = 'https://example.invalid/comment/123';
@@ -594,9 +596,7 @@ test('a fetch that fails is a FetchError, and `brief` surfaces it as exit 3 inst
   assert.match(String(err.message), /must not be cut from a stale base/);
   assert.equal(err instanceof WorktreeError, true, 'a FetchError is still a WorktreeError, so `next` still classifies it');
 
-  // And the caller stops rather than warning past it. Every OTHER
-  // `WorktreeError` is survivable — the stage can run in the repository — but
-  // a stage briefed after a failed fetch would work on a stale base.
+  // The caller must stop: a stage briefed after this failure would use a stale base.
   const brief = spawnCli(['brief', '--stage', 'implement', '--run-dir', dir]);
   assert.equal(brief.code, 3, `expected infrastructure exit 3, got ${brief.code}: ${brief.err}`);
   assert.match(brief.err, /stale base/);
@@ -734,12 +734,7 @@ test('originConfigured tells "no origin" apart from a git failure — only the f
     err = e;
   }
   assert.ok(err instanceof WorktreeError, 'a git failure must surface, not read as "no origin"');
-  // And it must surface as the FATAL kind. `briefOne` re-throws a `FetchError`
-  // and swallows every other `WorktreeError` into a warning that briefs the
-  // stage against the user's LIVE checkout — so a transient `git remote`
-  // failure (two parallel sessions contending for `.git/config.lock`, EMFILE)
-  // classified as survivable silently drops a lane out of its own worktree,
-  // which is the hazard the worktree exists to remove.
+  // Retain the fetch subtype even though all checkout failures are fatal.
   assert.ok(err instanceof FetchError, `not knowing whether there is an origin is not knowing whether the base is stale; got ${err?.constructor?.name}`);
   rmSync(notARepo, { recursive: true, force: true });
 });
@@ -787,7 +782,7 @@ test('`brief` provisions a stacked lane over a repo that HAS an origin — the p
   o.cleanup();
 });
 
-test('a WorktreeError that is not a FetchError still warns and `brief` continues — the survivable half of the fatal split', () => {
+test('a non-fetch WorktreeError stops brief before dispatch', () => {
   // The mirror of the FetchError case above: `repoPath` pointed at a
   // subdirectory of a real repo is refused by `ensureWorktree`'s own
   // toplevel check, which is a WorktreeError but never a FetchError.
@@ -808,16 +803,16 @@ test('a WorktreeError that is not a FetchError still warns and `brief` continues
     err = e;
   }
   assert.ok(err instanceof WorktreeError, `expected a WorktreeError, got ${err}`);
-  assert.equal(err instanceof FetchError, false, 'this must be the survivable kind, not the fatal one');
+  assert.equal(err instanceof FetchError, false, 'this failure concerns the checkout, not the fetch');
 
   // `spawnCli`/`spawnSync` above discard stderr on a 0 exit — this is the one
   // case that needs it captured either way, so it runs the child directly.
   const brief = spawnSync(process.execPath, [CLI, 'brief', '--stage', 'implement', '--run-dir', dir], {
     encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
   });
-  assert.equal(brief.status, 0, `a non-fetch WorktreeError must warn and continue, got ${brief.status}: ${brief.stderr}`);
-  assert.match(brief.stderr, /no worktree for root/);
-  assert.match(brief.stderr, /the stage will work in the repository itself/);
+  assert.equal(brief.status, 3, brief.stderr);
+  assert.match(brief.stderr, /not the root of a git repository/);
+  assert.equal(existsSync(join(dir, 'briefs', 'root-implement.md')), false);
 
   rmSync(dir, { recursive: true, force: true });
   rmSync(repoPath, { recursive: true, force: true });
@@ -1060,4 +1055,64 @@ test('a run that never provisioned a worktree finishes cleanly — the --no-work
 
   rmSync(bin, { recursive: true, force: true });
   cleanup();
+});
+
+test('a source lease transfers between unlanded split lanes and from a removed pre-split lane', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const root = run.lanes[0];
+  prepareCheckout(dir, run, root, { noWorktree: true });
+  const a = { ...structuredClone(root), id: 'a', slug: 'a', branch: 'feature/a' };
+  const b = { ...structuredClone(root), id: 'b', slug: 'b', branch: 'feature/b' };
+  run.lanes = [a, b];
+
+  assert.equal(prepareCheckout(dir, run, a, { noWorktree: true }), repoPath);
+  a.stages.find((stage) => stage.id === 'implement').state = 'approved';
+  assert.equal(prepareCheckout(dir, run, b, { noWorktree: true }), repoPath);
+  assert.equal(sourceTree(dir, run, b), repoPath, 'the new active lane owns the transferred lease');
+  releaseSourceLease(dir, run);
+});
+
+test('legacy source migration refuses when any lane already has a validated worktree', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const a = run.lanes[0];
+  const b = { ...structuredClone(a), id: 'b', slug: 'b', branch: 'feature/b' };
+  a.stages[0].state = 'briefed';
+  run.lanes = [a, b];
+  ensureWorktree(repoPath, dir, a);
+
+  assert.throws(() => prepareCheckout(dir, run, b, { noWorktree: true }), /legacy implementation already owns a worktree/);
+  assert.equal(run.checkout, undefined, 'a selected pending lane cannot change the mode for an implemented sibling');
+});
+
+test('a source lease without its saved checkout mode can still be released for takeover recovery', (t) => {
+  const { dir, run, cleanup } = fixture();
+  t.after(cleanup);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
+  delete run.checkout;
+
+  releaseSourceLease(dir, run);
+  assert.equal(existsSync(join(run.repo.path, '.git', 'issueflow-source-lease.json')), false);
+});
+
+test('finish leaves a source-mode run retryable when releasing its lease fails', (t) => {
+  const { dir, run, repoPath, cleanup } = fixture();
+  t.after(cleanup);
+  const lane = run.lanes[0];
+  git(['branch', lane.branch, 'main'], repoPath);
+  prepareCheckout(dir, run, lane, { noWorktree: true });
+  const bin = mkdtempSync(join(tmpdir(), 'issueflow-bin-'));
+  t.after(() => rmSync(bin, { recursive: true, force: true }));
+  stubGh(bin, {
+    prsByBranch: { [lane.branch]: [{ number: 6, state: 'MERGED', url: 'https://example.invalid/pull/6', mergedAt: '2026-08-12T00:00:00Z', baseRefName: 'main' }] },
+  });
+  const lock = join(repoPath, '.git', 'issueflow-source-lease.json.lock');
+  mkdirSync(lock);
+
+  withGh(bin, () => assert.throws(() => finish(dir, run, {}), /release source checkout lease/));
+  assert.equal(run.finished, null, 'a failed lease release must not record a terminal run');
+  rmSync(lock, { recursive: true, force: true });
+  withGh(bin, () => finish(dir, run, {}));
+  assert.ok(run.finished, 'the next finish retries cleanup before becoming terminal');
 });

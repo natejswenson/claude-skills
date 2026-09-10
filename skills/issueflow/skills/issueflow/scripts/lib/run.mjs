@@ -11,14 +11,16 @@
  * survives branch switches and never appears in the user's `git status`.
  */
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
-import { assertRuntime, dispatchProfile } from './runtime.mjs';
+import { assertRuntime, dispatchPolicy, dispatchProfile, modelLabel, runtimeOf } from './runtime.mjs';
+import { validateWorktree, WorktreeError } from './worktree.mjs';
+import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -61,7 +63,7 @@ const stageEntry = (id, runtime = 'claude') => {
 };
 
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
-const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds < 4 ? { maxRounds: complexity.reviewRounds } : {}) });
+const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds ? { maxRounds: complexity.reviewRounds } : {}) });
 
 export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
@@ -69,7 +71,7 @@ export function classifyIssue(issue) {
   const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
-  return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
+  return { kind: 'deep', reviewRounds: 2, budgetSeconds: 1800, reason: 'code or operational change' };
 }
 
 const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', complexity = null) => ({
@@ -85,8 +87,9 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude', now = () => new Date().toISOString() }) {
-  const resolvedRuntime = assertRuntime(runtime);
+export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
+  if (host && runtime && host !== runtime) throw new RunError('--host and --runtime disagree');
+  const resolvedRuntime = assertRuntime(host ?? runtime);
   const complexity = classifyIssue(issue);
   return {
     schema: SCHEMA,
@@ -94,6 +97,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     issue: { number: issue.number, title: issue.title, url: issue.url },
     policy,
     runtime: resolvedRuntime,
+    host: resolvedRuntime,
+    dispatch: dispatchPolicy(resolvedRuntime, childSlots),
     // A run started from frozen `gh` payloads must never dial out later, no
     // matter which flags the next command carries. Recording it on the run is
     // what makes that a property of the run rather than of the invocation.
@@ -104,6 +109,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // whether an approval needs a human is a property of the run, not of
     // whoever types the next command.
     auto,
+    autonomous,
+    totalBudgetSeconds: autonomous ? complexity.budgetSeconds * 8 : null,
     complexity,
     createdAt: now(),
     split: false,
@@ -117,9 +124,21 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
 }
 
 export function saveRun(dir, run) {
-  mkdirSync(join(dir, SHARED_DIR), { recursive: true });
-  for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
-  writeFileSync(statePath(dir), `${JSON.stringify(run, null, 2)}\n`);
+  try {
+    archiveExecution(dir, run);
+    mkdirSync(join(dir, SHARED_DIR), { recursive: true });
+    for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
+    if (run.execution && !existsSync(join(dir, 'execution-owner.json'))) {
+      writeFileSync(join(dir, 'execution-owner.json'), JSON.stringify(run.execution.owner), { flag: 'wx' });
+    }
+    const pending = statePath(dir) + `.${randomUUID()}.pending`;
+    writeFileSync(pending, `${JSON.stringify(run, null, 2)}\n`, { flag: 'wx' });
+    renameSync(pending, statePath(dir));
+    persistedExecution(dir);
+  } catch (err) {
+    if (!run.execution) throw err;
+    throw new WorktreeError(`could not persist ${dir}: ${err.message}; retain outputs at ${run.execution.path} and retry`);
+  }
   return run;
 }
 
@@ -158,7 +177,7 @@ export function claimRunDir(dir, run, { takeOver = false } = {}) {
   return run;
 }
 
-export function loadRun(dir) {
+export function loadRun(dir, { host, childSlots } = {}) {
   if (!existsSync(statePath(dir))) {
     throw new RunError(`no run at ${dir} — start one with \`issueflow start --issue <number>\``);
   }
@@ -169,6 +188,27 @@ export function loadRun(dir) {
         'its artifacts are still on disk, but the state machine cannot resume it; start the issue again',
     );
   }
+  const previous = runtimeOf(run);
+  const selected = assertRuntime(host ?? previous);
+  const changing = selected !== previous || (childSlots != null && Number(childSlots) !== (run.dispatch?.childSlots ?? 1));
+  if (changing) {
+    const used = (path) => existsSync(path) && readdirSync(path, { withFileTypes: true }).some((entry) =>
+      entry.isDirectory() ? used(join(path, entry.name)) : true);
+    const outputs = ['briefs', 'shared', 'reviews', 'progress', 'executions', ...run.lanes.map((lane) => lane.slug)];
+    const started = [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)].some((s) =>
+      s.state !== 'pending' || Object.keys(s.at ?? {}).length || s.review?.rounds?.length || s.review?.briefed);
+    if (run.host || run.dispatch || started || run.execution || run.lanes.some((lane) => lane.pr || lane.review?.rounds?.length) || outputs.some((path) => used(join(dir, path)))) {
+      throw new RunError('cannot adopt a different host or capacity after host selection or dispatch artifacts exist');
+    }
+  }
+  run.host = selected;
+  run.runtime = selected;
+  run.dispatch ??= dispatchPolicy(selected, childSlots);
+  for (const s of [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)]) {
+    delete s.model; delete s.reasoning; delete s.agent; delete s.fork_turns;
+    Object.assign(s, dispatchProfile(run, s.id));
+  }
+  if (changing) saveRun(dir, run);
   // Fields added after a run was created. Defaulted rather than migrated: the
   // run is the record of what happened, and inventing a checkpoint it never
   // made would be a lie told by the loader.
@@ -357,9 +397,9 @@ export function recordFinished(dir, run, { issueClosed = false } = {}, now = () 
  */
 export const SHARED_DIR = 'shared';
 
-export const artifactPath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, step.stage.artifact);
-export const evidencePath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
-export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
+export const artifactPath = (dir, step) => activePath(dir, step.laneSlug ?? SHARED_DIR, step.stage.artifact);
+export const evidencePath = (dir, step) => activePath(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
+export const briefPath = (dir, step) => activePath(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
 
 /**
  * Where a stage may report progress while it works — the fourth thing a stage
@@ -368,10 +408,12 @@ export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace(
  * still fully visible through `board()`'s filesystem-observed clock, which is
  * what keeps this an enrichment rather than the primary liveness signal.
  */
-export const progressPath = (dir, step) => join(dir, 'progress', `${step.key.replace('/', '-')}.log`);
+export const progressPath = (dir, step) => activePath(dir, 'progress', `${step.key.replace('/', '-')}.log`);
 
 /** Where a lane's stages work, so two lanes running at once never share a tree. */
-export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
+export const worktreePath = (dir, lane, run = rawRun(dir)) => {
+  return join(run?.execution ? validateExecution(dir, run).path : dir, 'worktrees', lane.slug);
+};
 
 /** Non-empty means real content — a touched file is not an artifact. */
 export const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim().length > 0;
@@ -411,9 +453,17 @@ const git = (args, cwd) => {
   }
 };
 
-/** The checkout a lane's stage worked in: its worktree when it has one, else the repo. */
+/** Writers must have a validated lane or an explicitly leased source checkout. */
 export const laneTree = (dir, run, lane) =>
-  lane && existsSync(worktreePath(dir, lane)) ? worktreePath(dir, lane) : run.repo.path;
+  run.checkout?.mode === 'source' ? sourceTree(dir, run, lane) : validateWorktree(gitStore(dir, run), dir, lane);
+
+function resultSection(text) {
+  const start = text.search(/^(?:#{1,6}\s+|\*\*)Result(?:\*\*)?\s*$/im);
+  if (start < 0) return '';
+  const body = text.slice(start);
+  const next = body.search(/\n(?:#{1,6}\s+|\*\*)[^\n]+(?:\*\*)?\s*$/im);
+  return next < 0 ? body : body.slice(0, next);
+}
 
 /**
  * Record an artifact and its approval, advancing the state machine.
@@ -439,7 +489,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   }
 
   const declared = stage(step.stage.id);
-  const text = readFileSync(artifact, 'utf8');
+  const text = readDelivery(dir, artifact, run);
   const missing = declared.requires.filter((section) => !hasSection(text, section));
   if (missing.length > 0) {
     throw new RunError(
@@ -449,6 +499,9 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   }
 
   if (PER_ITEM_STAGES.includes(step.stage.id)) {
+    if (/\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(readDelivery(dir, artifactPath(dir, step), run, { dispatched: false })))) {
+      throw new RunError(`cannot accept ${step.key}: blocked or incomplete result (the implementation reports blocked, incomplete, or not performed work)`);
+    }
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {
       throw new RunError(
@@ -459,7 +512,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     // A non-empty file is not a test run. Reading the runner's own summary out
     // of it is what makes the evidence evidence — a stage that wrote `ok` used
     // to clear this gate.
-    const results = parseAllEvidence(readFileSync(proof, 'utf8'));
+    const results = parseAllEvidence(readDelivery(dir, proof, run, { dispatched: false }));
     if (results.length === 0) {
       throw new RunError(
         `cannot accept ${step.key}: ${proof} holds no summary in a format I can parse. ` +
@@ -540,6 +593,11 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   // gate said yes. Keeping both apart is what lets the run report stage time
   // separately from review time instead of blaming the model for the wait.
   step.stage.at = { ...step.stage.at, delivered: mtimeOf(artifact), approved: now() };
+  if (run.execution) {
+    archiveExecution(dir, run);
+    approveArtifact(dir, run, artifact);
+    if (step.stage.evidence) step.stage.evidence = archivedPath(dir, run, step.stage.evidence);
+  }
   saveRun(dir, run);
   return run;
 }
@@ -561,6 +619,7 @@ const mtimeOf = (path) => {
 export function deliveredSince(dir, step) {
   const artifact = artifactPath(dir, step);
   if (!hasContent(artifact)) return null;
+  if (!deliveryCurrent(dir, artifact)) return null;
   const delivered = mtimeOf(artifact);
   const briefed = step.stage.at?.briefed;
   if (briefed && Date.parse(delivered) < Date.parse(briefed)) return null;
@@ -689,7 +748,7 @@ export function elapsedOf(entry, now) {
  * a split is still safe. (A `brief --ready` straight after the plan used to
  * foreclose `split` forever.)
  */
-export function split(dir, run, items) {
+export function split(dir, run, items, { parallel = false } = {}) {
   if (run.split) throw new RunError('this run is already split — a second split would strand the first split\'s lanes');
   const plan = findStep(run, PLAN_STAGE);
   if (plan.stage.state !== 'approved') {
@@ -707,7 +766,7 @@ export function split(dir, run, items) {
     const slug = slugify(item.slug ?? item.title);
     if (seen.has(slug)) throw new RunError(`two work items slug to "${slug}" — each lane needs its own branch`);
     seen.add(slug);
-    const base = i === 0
+    const base = parallel || i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
     return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);
@@ -741,7 +800,7 @@ export function board(run, { now = null } = {}) {
     return {
       step: step.key,
       stage: step.stage.id,
-      model: step.stage.model,
+      model: modelLabel(dispatchProfile(run, step.stage.id)),
       state: entry.state === 'briefed' && delivered ? 'delivered' : entry.state,
       took: durationOf(entry) ?? (now && running ? elapsedOf(entry, now) : null) ?? '—',
       gate: blockers(run, step).length === 0 ? 'open' : 'blocked',

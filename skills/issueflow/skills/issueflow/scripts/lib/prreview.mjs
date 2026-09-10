@@ -1,3 +1,4 @@
+import { activePath, readDelivery } from './execution.mjs';
 /**
  * The pull request review loop — the deterministic half of it.
  *
@@ -23,7 +24,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path';
 import { HandBack, RunError, laneTree, saveRun } from './run.mjs';
 import { GQL, graphql } from './gh.mjs';
-import { dispatchProfile, runtimeOf } from './runtime.mjs';
+import { dispatchProfile } from './runtime.mjs';
 
 /**
  * Four rounds. A round costs two to five opus finders, up to eight opus
@@ -56,8 +57,8 @@ export const CLEANUP_ANGLES = ['reuse', 'simplification', 'efficiency', 'altitud
 export const FINDER_MODEL = 'opus';
 export const VERIFIER_MODEL = 'opus';
 
-export const finderProfile = (run) => dispatchProfile(runtimeOf(run), 'finder');
-export const verifierProfile = (run) => dispatchProfile(runtimeOf(run), 'verifier');
+export const finderProfile = (run) => dispatchProfile(run, 'finder');
+export const verifierProfile = (run) => dispatchProfile(run, 'verifier');
 
 const VERDICTS_NEW = ['CONFIRMED', 'PLAUSIBLE', 'REFUTED'];
 const VERDICTS_PRIOR = ['fixed', 'still-open', 'withdrawn'];
@@ -65,7 +66,7 @@ const VERDICTS_PRIOR = ['fixed', 'still-open', 'withdrawn'];
 // ---------------------------------------------------------------------------
 // Where a round lives on disk.
 // ---------------------------------------------------------------------------
-export const reviewDir = (dir, lane, round) => join(dir, lane.slug, 'review', `r${round}`);
+export const reviewDir = (dir, lane, round) => activePath(dir, lane.slug, 'review', `r${round}`);
 export const diffPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'diff.patch');
 /** Round 2+: what the last fix changed, with context — the finders' primary read. */
 export const fixPatchPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'fix.patch');
@@ -74,9 +75,9 @@ export const verdictsPath = (dir, lane, round, n) => join(reviewDir(dir, lane, r
 export const registeredPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'registered.json');
 export const payloadPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'review-payload.json');
 export const fixReportPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'fix-report.json');
-export const finderBriefPath = (dir, lane, round, n) => join(dir, 'briefs', `${lane.slug}-review-r${round}-finder-${n}.md`);
-export const verifierBriefPath = (dir, lane, round, n) => join(dir, 'briefs', `${lane.slug}-review-r${round}-verifier-${n}.md`);
-export const fixBriefPath = (dir, lane, round) => join(dir, 'briefs', `${lane.slug}-fix-r${round}.md`);
+export const finderBriefPath = (dir, lane, round, n) => activePath(dir, 'briefs', `${lane.slug}-review-r${round}-finder-${n}.md`);
+export const verifierBriefPath = (dir, lane, round, n) => activePath(dir, 'briefs', `${lane.slug}-review-r${round}-verifier-${n}.md`);
+export const fixBriefPath = (dir, lane, round) => activePath(dir, 'briefs', `${lane.slug}-fix-r${round}.md`);
 
 export const currentRound = (lane) => lane.review?.rounds.at(-1) ?? null;
 export const nextReviewRound = (lane) => (lane.review?.rounds.length ?? 0) + 1;
@@ -89,11 +90,23 @@ export const reviewExhausted = (lane) => {
   return rounds.length >= cap && Boolean(last?.registered) && last.verdict !== 'converged';
 };
 
+/** The persisted lane cap, with the legacy four-round default for old runs. */
+export const reviewCap = (lane) => lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
+
 /** Every finding still open on the lane, majors first. */
 export const openFindings = (lane) =>
   (lane.review?.findings ?? []).filter((f) => f.status === 'open').sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));
 
 export const openMajors = (lane) => openFindings(lane).filter((f) => f.severity === 'major');
+
+/** A fixer that cannot clear the same major twice is not making progress. */
+export const repeatedReviewMajors = (lane) => openMajors(lane).filter((f) => (f.stillOpenRounds ?? 0) >= 2);
+
+/** Stable enough to compare hosted-check failures across review rounds. */
+export const ciFailureFingerprint = (checks) => (checks ?? [])
+  .filter((c) => c.bucket === 'fail')
+  .map((c) => `${c.name ?? ''}|${c.detail ?? c.conclusion ?? c.status ?? ''}`.toLowerCase().replace(/\s+/g, ' ').trim())
+  .sort().join('\n');
 
 /**
  * Which model fixes this round. Sonnet when every open major is new; opus
@@ -102,7 +115,7 @@ export const openMajors = (lane) => openFindings(lane).filter((f) => f.severity 
  * is the expensive branch.
  */
 export const fixerProfile = (run, lane) => dispatchProfile(
-  runtimeOf(run),
+  run,
   openMajors(lane).some((f) => f.stillOpenRounds > 0) ? 'fixerEscalated' : 'fixer',
 );
 
@@ -407,7 +420,7 @@ export const findingId = (lane, f) =>
  * Refuses when the cap is spent, and when the head the loop would review is
  * not the head GitHub has — the caller passes what `gh pr view` reported.
  */
-export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, deltaText = null, anotherRound = null, now = () => new Date().toISOString() }) {
+export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, deltaText = null, anotherRound = null, deferSave = false, now = () => new Date().toISOString() }) {
   if (!lane.pr) throw new RunError(`cannot review ${lane.slug}: no pull request — ship first`);
   const last = currentRound(lane);
   if (last && !last.registered) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it (or its finders never delivered) before starting another`);
@@ -455,7 +468,7 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
     round, head, prevHead: last?.head ?? null, lines, fixLines, reviewLines, finders: plan.finders, maxVerifiers: plan.maxVerifiers,
     angles: plan.angles, verifiers: null, at: { briefed: now() }, registered: null, verdict: null, posted: null, fix: null,
   });
-  saveRun(dir, run);
+  if (!deferSave) saveRun(dir, run);
   return { round, plan, lines, fixLines, files };
 }
 
@@ -467,7 +480,7 @@ export function readCandidates(dir, lane, round) {
   for (let n = 1; n <= entry.finders; n += 1) {
     const path = candidatesPath(dir, lane, round, n);
     if (!existsSync(path)) throw new RunError(`finder ${n} of round ${round} has not delivered ${path} — wait for it, or re-dispatch it`);
-    const parsed = validateCandidates(readFileSync(path, 'utf8'), n);
+    const parsed = validateCandidates(readDelivery(dir, path), n);
     if (parsed.error) throw new RunError(`finder ${n}'s candidates ${parsed.error} (${path}) — send the finder its own file back; the registrar repairs nothing`);
     all.push(...parsed.candidates);
     notExamined.push(...parsed.notExamined);
@@ -524,7 +537,7 @@ export function planVerification(dir, run, lane, round, candidates, _opts = {}) 
   entry.autoFixed = autoFixed;
   entry.unverifiedNits = unverified.map(({ id, file, line, category, short_summary }) => ({ id, file, line, category, short_summary }));
   entry.candidates = fresh;
-  saveRun(dir, run);
+  if (!_opts.deferSave) saveRun(dir, run);
   return { batches, prior, fresh, auto, autoFixed, unverified };
 }
 
@@ -537,7 +550,7 @@ export function readVerdicts(dir, lane, round) {
   for (let n = 1; n <= entry.verifiers; n += 1) {
     const path = verdictsPath(dir, lane, round, n);
     if (!existsSync(path)) throw new RunError(`verifier ${n} of round ${round} has not delivered ${path} — wait for it, or re-dispatch it`);
-    const parsed = validateVerdicts(readFileSync(path, 'utf8'), expected);
+    const parsed = validateVerdicts(readDelivery(dir, path), expected);
     if (parsed.error) throw new RunError(`verifier ${n}'s verdicts ${parsed.error} (${path}) — send the verifier its own file back`);
     for (const [id, v] of parsed.verdicts) verdicts.set(id, v);
   }
@@ -568,7 +581,7 @@ export function registerRound(dir, run, lane, round, { tree, now = () => new Dat
   // finding on the first real round, and the review body published the
   // maintainer's home directory. Every text field is made repository-relative
   // here, before it is recorded, rendered or posted.
-  const roots = [workdir, run.repo.path].filter(Boolean).sort((a, b) => b.length - a.length);
+  const roots = [workdir, run.repo.path, ...(run.execution ? [run.execution.path, ...(run.execution.priorRoots ?? [])] : [])].filter(Boolean).sort((a, b) => b.length - a.length);
   const relative = (text) => (typeof text === 'string' ? roots.reduce((t, r) => t.split(`${r}/`).join('').split(r).join('<repo>'), text) : text);
   for (const v of verdicts.values()) { v.quote = relative(v.quote); v.note = relative(v.note); }
   for (const c of entry.candidates ?? []) {
@@ -885,7 +898,7 @@ export function applyFixReport(dir, run, lane, round) {
   if (!existsSync(path)) throw new RunError(`no fix report at ${path} — the fixer has not delivered`);
   let data;
   try {
-    data = JSON.parse(readFileSync(path, 'utf8'));
+    data = JSON.parse(readDelivery(dir, path, run));
   } catch (err) {
     throw new RunError(`${path} is not valid JSON (${String(err.message).split('\n')[0]})`);
   }
@@ -988,9 +1001,10 @@ export function ruleFinding(dir, run, lane, { id, ruling, note, head = null, now
   if (f.status !== 'open') throw new RunError(`${id} is already ${f.status}`);
   // "At the cap" is the round count, not the verdict: with two majors open the
   // first ruling leaves the round open and the second must still be allowed.
-  if (lane.review.rounds.length < MAX_REVIEW_ROUNDS) {
+  const cap = reviewCap(lane);
+  if (lane.review.rounds.length < cap) {
     throw new RunError(
-      `cannot rule on ${lane.slug}: the loop has run ${lane.review.rounds.length} of ${MAX_REVIEW_ROUNDS} rounds — ` +
+      `cannot rule on ${lane.slug}: the loop has run ${lane.review.rounds.length} of ${cap} rounds — ` +
         'the verifiers rule until the cap; a person rules after it. Let the next round judge the fix',
     );
   }

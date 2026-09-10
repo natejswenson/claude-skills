@@ -35,6 +35,62 @@ The run lives outside the target repo on purpose. It survives branch switches,
 it never appears in `git status`, and the implement stage cannot lose it by
 checking out a different branch.
 
+## Checkout ownership
+
+Codex keeps schema-3 state, frozen inputs and checkpoints in the durable directory
+above. Its optional version-1 `run.execution` binds that run and source repository
+to `<approved-root>/issueflow/<run-key>/<generation>/`. The generation contains
+`artifacts/`, `worktrees/`, `git-store/` and `tmp/`; Git objects and administration
+are transported into the independent bare store, with no source alternates or
+hardlinks. Source identity still supplies instructions and the GitHub target.
+Claude and missing-runtime runs retain the layout above and source-linked Git.
+
+The parent runs `prepare --run-dir <run> --workspace-root <approved-root>`
+before the first Codex dispatch, or supplies the root to `start` or `next`.
+The host must already authorize the root for the child. Status and list operations
+do not prepare or migrate anything. Reload reuses the recorded generation even
+from another cwd. `TMPDIR` for child subprocesses uses the prepared `tmp/` directory.
+
+Before saving state, the parent copies active outputs into an immutable
+`execution-archives/<generation>/<snapshot>/` directory, preserving bytes,
+hashes and mtimes, and bundles lane and reviewed Git heads. It saves canonical
+state by atomic rename only after that archive succeeds. A changed file,
+symlink escape or durable-write failure stops advancement and retains execution
+results for retry. Accepted evidence references the archive; progress and waits
+observe execution files. Dispatch records bind outputs to a generation and brief
+and exclude the prior result's hashes on rebrief.
+
+Clean, quiescent legacy Codex runs migrate without rewriting approved Markdown
+or removing old worktrees. Dirty or in-flight work refuses with its recovery path.
+Missing staging can restore a quiescent archived run into a new generation;
+missing in-flight output or history stops for recovery rather than inventing a
+delivery. Submodule and LFS setup requires explicit migration.
+
+Finish archives before removing owned lanes after observed merges. Takeover also
+finds pre-split registrations and retains snapshots under `superseded/`.
+Historical eval readers use archived outputs and a temporary Git store restored
+from the bundle. A corrupt Codex record with an execution ownership marker stops
+cleanup until `run.json` is restored; it cannot prove a deletion target.
+
+`run.checkout` is optional on schema-3 legacy runs. First implementation dispatch
+records `worktree` mode, or `source` when `--no-worktree` was explicitly selected
+at start or first dispatch. Later commands use that recorded choice. An existing
+legacy lane must match its canonical path, Git common directory, registration
+and branch. New lanes also carry an ownership marker in their Git administration
+directory. Missing or invalid checkouts stop at exit 3, including acceptance,
+verification, review workers and rebase. Historical eval reads use the shared
+object store and do not select a writable source checkout.
+
+Source mode uses `issueflow-source-lease.json` in the canonical Git common
+directory, recording the durable run directory, creation identity, source
+checkout and active lane. Exclusive creation and a short transition lock prevent
+alternate run roots or linked source checkouts from claiming it concurrently.
+The lease survives process exit and has no age-based expiry. `finish` and explicit
+takeover release only the matching owner. A transition lock left by a crash must
+be inspected at the reported path; remove it only after confirming that no owner
+is still performing the transition. A missing legacy lane requires restoration
+or an explicit source-mode rebrief; an active validated lane cannot change modes.
+
 ## The two stages
 
 | Stage | Claude | Codex | Owns | Artifact must contain |
