@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -60,16 +60,20 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   const runDir = join(root, 'run');
   const repoJson = join(root, 'repo.json');
   const issueJson = join(root, 'issue.json');
-  writeFileSync(repoJson, `${JSON.stringify(REPO)}\n`);
+  const source = join(root, 'source');
+  mkdirSync(source);
+  execFileSync('git', ['init', '-qb', 'dev'], { cwd: source });
+  execFileSync('git', ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.test', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
+  writeFileSync(repoJson, `${JSON.stringify({ ...REPO, path: source })}\n`);
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
 
-  const output = execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
+  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.runtime, 'codex');
   assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
   assert.match(output, /Auto run: every stage is gated by a red-team review instead of a human/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
-  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline'], { encoding: 'utf8' });
+  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', root], { encoding: 'utf8' });
   assert.match(next, /model `gpt-5\.6-terra`, reasoning_effort `high`, role `explorer`/);
   assert.match(next, /next: dispatch \(brief\)/);
 

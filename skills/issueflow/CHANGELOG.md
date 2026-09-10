@@ -9,6 +9,10 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Keep Codex artifacts, progress, evidence and lane Git administration inside a
+  host-approved workspace root. Archive exact outputs and Git history before
+  state advances; validate generation ownership across resume, migration and cleanup.
+
 - Stop on worktree provisioning or missing-checkout failures instead of silently
   dispatching against the live checkout. Validate existing lanes, persist explicit
   `--no-worktree` mode, and exclusively lease source checkouts across runs and lanes.

@@ -1,3 +1,4 @@
+import { activePath, deliveryCurrent } from './execution.mjs';
 /**
  * `next` — the one next action, computed from state.
  *
@@ -116,20 +117,20 @@ function decidePlan(dir, run, step, ctx) {
 
   // A blocked round: the stage goes back, then delivers again, then is reviewed again.
   if (latest?.verdict === 'decision') {
-    return stop('human', `the red team identified a scope change — read ${join(dir, latest.review)} and decide whether to narrow the issue or authorize it`, {
-      artifact, review: join(dir, latest.review),
+    return stop('human', `the red team identified a scope change — read ${activePath(dir, latest.review)} and decide whether to narrow the issue or authorize it`, {
+      artifact, review: activePath(dir, latest.review),
       command: `brief --stage ${step.stage.id} --another-round "<the user's scope decision>"`,
     });
   }
   if (latest?.verdict === 'blocked') {
     if (latest.repeated) {
-      return stop('dispute', `the same blocking mechanism survived two plan rounds — read ${join(dir, latest.review)} and direct the next round`, {
-        artifact, review: join(dir, latest.review),
+      return stop('dispute', `the same blocking mechanism survived two plan rounds — read ${activePath(dir, latest.review)} and direct the next round`, {
+        artifact, review: activePath(dir, latest.review),
         command: `brief --stage ${step.stage.id} --another-round "<how the repeated blocker should be resolved>"`,
       });
     }
     if (roundsExhausted(step)) {
-      return stop('exhausted', `the red team refused the plan ${latest.round} times — the open findings are in ${join(dir, latest.review)}`, {
+      return stop('exhausted', `the red team refused the plan ${latest.round} times — the open findings are in ${activePath(dir, latest.review)}`, {
         command: `brief --stage ${step.stage.id} --another-round "<what the user decided>"`,
       });
     }
@@ -139,7 +140,7 @@ function decidePlan(dir, run, step, ctx) {
     if (latest.artifactSha === sha256OfFile(artifact)) {
       if (run.auto) return act('accept', { stage: step.stage.id, auto: true }, `round ${latest.round} passed — approving the plan on the verdict`);
       return stop('human', 'the plan passed its red-team review — read it, then approve or send it back', {
-        artifact, review: join(dir, latest.review),
+        artifact, review: activePath(dir, latest.review),
         command: `accept --stage ${step.stage.id}`,
         alternative: `brief --stage ${step.stage.id} --another-round "<your direction>"`,
       });
@@ -160,7 +161,7 @@ function decidePlan(dir, run, step, ctx) {
   // whatever the brief's mtime says — a brief re-rendered under a finished
   // review must not make the review look stale. The registrar binds the
   // verdict to the artifact's bytes either way.
-  if (briefedRound === round && newerThan(findings, artifact)) {
+  if (briefedRound === round && newerThan(findings, artifact) && deliveryCurrent(dir, findings, run)) {
     return act('review', { stage: step.stage.id }, `red-team round ${round} delivered — registering it`);
   }
   if (briefedRound !== round || !newerThan(reviewBrief, artifact)) {
@@ -196,8 +197,8 @@ function decideImplement(dir, run, step, ctx) {
 // A lane's review loop.
 // ---------------------------------------------------------------------------
 
-function allPresent(paths) {
-  return paths.every((p) => existsSync(p));
+function allPresent(dir, paths) {
+  return paths.every((p) => existsSync(p) && deliveryCurrent(dir, p));
 }
 
 /**
@@ -247,7 +248,7 @@ function decideLoop(dir, run, lane, ctx) {
     if (entry.verifiers === null) {
       const files = Array.from({ length: entry.finders }, (_, i) => candidatesPath(dir, lane, round, i + 1));
       const briefs = Array.from({ length: entry.finders }, (_, i) => finderBriefPath(dir, lane, round, i + 1));
-      if (allPresent(files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
+      if (allPresent(dir, files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
       return stalled(files, briefs, finderProfile(run), 'finder') ?? wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
         pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
       });
@@ -255,7 +256,7 @@ function decideLoop(dir, run, lane, ctx) {
     if (entry.verifiers === 0) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: nothing to verify — registering a clean round`);
     const files = Array.from({ length: entry.verifiers }, (_, i) => verdictsPath(dir, lane, round, i + 1));
     const briefs = Array.from({ length: entry.verifiers }, (_, i) => verifierBriefPath(dir, lane, round, i + 1));
-    if (allPresent(files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
+    if (allPresent(dir, files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
     return stalled(files, briefs, verifierProfile(run), 'verifier') ?? wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
       pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
     });
@@ -294,7 +295,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
   const report = fixReportPath(dir, lane, entry.round);
   const brief = fixBriefPath(dir, lane, entry.round);
   if (!entry.fix?.reported) {
-    if (newerThan(report, brief)) return act('review-fix-report', { lane: lane.slug }, `${lane.slug} round ${entry.round}: the fixer reported — recording it`);
+    if (newerThan(report, brief) && deliveryCurrent(dir, report, run)) return act('review-fix-report', { lane: lane.slug }, `${lane.slug} round ${entry.round}: the fixer reported — recording it`);
     return wait(`${lane.slug} round ${entry.round} fixer`, { pairs: [[report, brief]], timeout: timeoutFor(dir, 'implement') });
   }
   // Reported. The next round reviews the pushed fix — which must be pushed.
@@ -307,7 +308,8 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
     const remote = ctx.remoteHead(lane);
     if (remote && remote !== head) {
       return stop('unpushed', `${lane.slug}: local HEAD ${String(head).slice(0, 12)} is not on origin (${remote.slice(0, 12)}) — the fixer did not push`, {
-        command: `git -C ${laneTree(dir, run, lane)} push origin ${lane.branch}`,
+        command: `git -C ${sh(laneTree(dir, run, lane))} push origin ${sh(lane.branch)}`,
+        external: true,
       });
     }
   }
@@ -405,7 +407,7 @@ export function renderAction(action, { skillCommand, runDir }) {
     if (action.artifact) lines.push(`  plan:    ${action.artifact}`);
     if (action.review) lines.push(`  review:  ${action.review}`);
     if (action.items) for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
-    if (action.command) lines.push(`  command: ${skillCommand} ${action.command} --run-dir ${runDir}`);
+    if (action.command) lines.push(`  command: ${action.external ? action.command : `${skillCommand} ${action.command} --run-dir ${runDir}`}`);
     if (action.alternative) lines.push(`  or:      ${skillCommand} ${action.alternative} --run-dir ${runDir}`);
   } else if (action.kind === 'run') {
     lines.push(`  ${action.command}`);
