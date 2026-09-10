@@ -90,11 +90,23 @@ export const reviewExhausted = (lane) => {
   return rounds.length >= cap && Boolean(last?.registered) && last.verdict !== 'converged';
 };
 
+/** The persisted lane cap, with the legacy four-round default for old runs. */
+export const reviewCap = (lane) => lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
+
 /** Every finding still open on the lane, majors first. */
 export const openFindings = (lane) =>
   (lane.review?.findings ?? []).filter((f) => f.status === 'open').sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));
 
 export const openMajors = (lane) => openFindings(lane).filter((f) => f.severity === 'major');
+
+/** A fixer that cannot clear the same major twice is not making progress. */
+export const repeatedReviewMajors = (lane) => openMajors(lane).filter((f) => (f.stillOpenRounds ?? 0) >= 2);
+
+/** Stable enough to compare hosted-check failures across review rounds. */
+export const ciFailureFingerprint = (checks) => (checks ?? [])
+  .filter((c) => c.bucket === 'fail')
+  .map((c) => `${c.name ?? ''}|${c.detail ?? c.conclusion ?? c.status ?? ''}`.toLowerCase().replace(/\s+/g, ' ').trim())
+  .sort().join('\n');
 
 /**
  * Which model fixes this round. Sonnet when every open major is new; opus
@@ -989,9 +1001,10 @@ export function ruleFinding(dir, run, lane, { id, ruling, note, head = null, now
   if (f.status !== 'open') throw new RunError(`${id} is already ${f.status}`);
   // "At the cap" is the round count, not the verdict: with two majors open the
   // first ruling leaves the round open and the second must still be allowed.
-  if (lane.review.rounds.length < MAX_REVIEW_ROUNDS) {
+  const cap = reviewCap(lane);
+  if (lane.review.rounds.length < cap) {
     throw new RunError(
-      `cannot rule on ${lane.slug}: the loop has run ${lane.review.rounds.length} of ${MAX_REVIEW_ROUNDS} rounds — ` +
+      `cannot rule on ${lane.slug}: the loop has run ${lane.review.rounds.length} of ${cap} rounds — ` +
         'the verifiers rule until the cap; a person rules after it. Let the next round judge the fix',
     );
   }

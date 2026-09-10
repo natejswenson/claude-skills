@@ -455,6 +455,14 @@ const git = (args, cwd) => {
 export const laneTree = (dir, run, lane) =>
   run.checkout?.mode === 'source' ? sourceTree(dir, run, lane) : validateWorktree(gitStore(dir, run), dir, lane);
 
+function resultSection(text) {
+  const start = text.search(/^(?:#{1,6}\s+|\*\*)Result(?:\*\*)?\s*$/im);
+  if (start < 0) return '';
+  const body = text.slice(start);
+  const next = body.search(/\n(?:#{1,6}\s+|\*\*)[^\n]+(?:\*\*)?\s*$/im);
+  return next < 0 ? body : body.slice(0, next);
+}
+
 /**
  * Record an artifact and its approval, advancing the state machine.
  *
@@ -489,6 +497,9 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   }
 
   if (PER_ITEM_STAGES.includes(step.stage.id)) {
+    if (/\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(readDelivery(dir, artifactPath(dir, step), run, { dispatched: false })))) {
+      throw new RunError(`cannot accept ${step.key}: the implementation result reports blocked, incomplete, or not performed work`);
+    }
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {
       throw new RunError(

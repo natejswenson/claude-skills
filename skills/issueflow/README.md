@@ -179,13 +179,19 @@ On explicit user direction to extend the budget:
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Never auto-renew. The command grants 1,800 seconds from resume time, preserves
-artifacts, commits, gates, runtime and checkpoint identity, and prints the next
-command without dispatching work. Review limits stay unchanged. It rejects
+Default runs never auto-renew. Start with `--autonomous` to cross short budget
+windows automatically within the run's persisted hard cumulative cap. The
+manual command grants 1,800 seconds from resume time, preserves artifacts,
+commits, gates, runtime and checkpoint identity, and prints the next command
+without dispatching work. Review limits stay unchanged. It rejects
 invalid allowances and active or completed runs. A checkpoint failure leaves
 approvals recorded locally and reports incomplete backup; repair it and retry
 `next`. Native agent completion goes straight to `next`; hosts relying on file
 detection use the printed fallback stability wait once.
+
+For approved plans with independent work items, use `split --parallel` so `next`
+can brief all ready lanes in one fan-out. Keep the default stacked split for
+work items that depend on one another or touch overlapping files.
 
 ## Triggers
 

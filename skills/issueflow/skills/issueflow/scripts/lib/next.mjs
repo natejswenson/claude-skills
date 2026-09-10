@@ -27,15 +27,15 @@ import { activePath, deliveryCurrent } from './execution.mjs';
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import {
   artifactPath, briefPath, deliveredSince, evidencePath, findStep, gateSteps, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
-  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath,
-  fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath, reviewCap,
+  ciFailureFingerprint, fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
@@ -101,6 +101,10 @@ const activityMtime = (dir, run, step) => {
   let latest = Math.max(mtime(progressPath(dir, step)) ?? 0, mtime(evidencePath(dir, step)) ?? 0) || null;
   if (!step.lane) return latest;
   const tree = laneTree(dir, run, step.lane);
+  // A hermetic fixture may live below the checkout running the tests. In that
+  // case git status reports unrelated parent files as lane activity.
+  const top = git(['rev-parse', '--show-toplevel'], tree);
+  if (!top || resolve(top) !== resolve(tree)) return latest;
   const changed = git(['status', '--short', '--untracked-files=all'], tree);
   for (const line of (changed ?? '').split('\n').filter(Boolean)) {
     const relative = line.slice(3).split(' -> ').at(-1);
@@ -240,7 +244,7 @@ function allPresent(dir, paths) {
  * reads it and rules, or buys one more round. `next` never does either.
  */
 const exhaustedStop = (lane) =>
-  stop('exhausted', `${lane.slug}: ${MAX_REVIEW_ROUNDS} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
+  stop('exhausted', `${lane.slug}: ${reviewCap(lane)} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
     command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
     alternative: `review-brief --lane ${lane.slug} --another-round "<why one more round>"`,
   });
@@ -308,6 +312,13 @@ function decideLoop(dir, run, lane, ctx) {
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
     if (red.length > 0) {
+      const fingerprint = ciFailureFingerprint(red);
+      if (fingerprint && fingerprint === lane.review?.lastCiFailure) {
+        return stop('dispute', `${lane.slug}: the same CI failure survived a fixer round — inspect the hosted failure before authorizing another fix`, {
+          command: `review-fix-brief --lane ${lane.slug}`,
+          alternative: `ready --lane ${lane.slug} (only after independently resolving the CI failure)`,
+        });
+      }
       // Converged on findings, red on CI: a fix round for the checks.
       return act('review-fix-brief', { lane: lane.slug }, `${lane.slug}: converged, but ${red.map((c) => c.name).join(', ')} red — briefing a fix`);
     }

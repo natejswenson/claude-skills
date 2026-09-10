@@ -444,6 +444,7 @@ test('decide: finders wait → verify → verifiers wait → register → fix br
   a = decide(dir, run);
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'shipped');
+  assert.match(a.detail, /USER ACTION REQUIRED: review and approve\/merge/);
   a = decide(dir, run, { landings: () => [{ lane, state: 'merged', pr: 1 }] });
   assert.deepEqual([a.kind, a.command], ['run', 'finish']);
   cleanup();
