@@ -22,21 +22,22 @@ import { GOOD_EVIDENCE } from './helpers.mjs';
 import { decide, renderAction, sh } from '../lib/next.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const shLiteral = (value) => `'${value.replaceAll("'", `'"'"'`)}'`;
 function codexChild(workspaceRoot, source, tree, paths) {
   const [artifact, evidence, progress] = paths;
   const script = join(workspaceRoot, 'codex-child.sh');
   writeFileSync(script, [
     'set -eu',
-    `export TMPDIR=${JSON.stringify(workspaceRoot)}`,
-    `printf 'child output\\n' > ${JSON.stringify(artifact)}`,
-    `printf 'child output\\n' > ${JSON.stringify(evidence)}`,
-    `printf 'child output\\n' > ${JSON.stringify(progress)}`,
-    `printf 'child commit\\n' > ${JSON.stringify(join(tree, 'child.txt'))}`,
-    `git -C ${JSON.stringify(tree)} add child.txt`,
-    `git -C ${JSON.stringify(tree)} commit -m child`,
+    `export TMPDIR=${shLiteral(workspaceRoot)}`,
+    `printf 'child output\\n' > ${shLiteral(artifact)}`,
+    `printf 'child output\\n' > ${shLiteral(evidence)}`,
+    `printf 'child output\\n' > ${shLiteral(progress)}`,
+    `printf 'child commit\\n' > ${shLiteral(join(tree, 'child.txt'))}`,
+    `git -C ${shLiteral(tree)} add child.txt`,
+    `git -C ${shLiteral(tree)} commit -m child`,
   ].join('\n'));
   chmodSync(script, 0o700);
-  const prompt = `Run exactly this command, then finish:\n/bin/sh ${JSON.stringify(script)}`;
+  const prompt = `Run exactly this command, then finish:\n/bin/sh ${shLiteral(script)}`;
   const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
     '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -49,7 +50,7 @@ function fixture(number = 273) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "issueflow execution's workspace ")));
   const source = join(root, 'source');
   const dir = join(root, 'durable');
-  const workspaceRoot = join(root, 'approved root');
+  const workspaceRoot = join(root, 'approved $HOME root');
   mkdirSync(source); mkdirSync(workspaceRoot);
   git(['init', '-b', 'dev'], source);
   git(['config', 'user.name', 'Fixture'], source);
