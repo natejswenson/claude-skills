@@ -51,10 +51,15 @@ jobs:
       # on ubuntu-latest; press has no dependencies.)
       - if: steps.changes.outputs.ghostwriter-x == 'true'
         run: node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-x-card
-      # Tier 2: lint the bash, test the Python at 100% coverage
+      # Tier 2: lint the bash, test the Python at 100% coverage. The card
+      # render-lint DOM tests need a real Chromium; without one they skip and
+      # the geometry checks are never actually exercised, so Playwright
+      # provisions it here.
       - if: steps.changes.outputs.ghostwriter-x == 'true'
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt -r requirements-diagrams.txt
         working-directory: skills/ghostwriter-x/skills/ghostwriter-x
+      - if: steps.changes.outputs.ghostwriter-x == 'true'
+        run: python -m playwright install --with-deps chromium
       - if: steps.changes.outputs.ghostwriter-x == 'true'
         run: shellcheck scripts/release_radar.sh scripts/install_radar.sh
         working-directory: skills/ghostwriter-x/skills/ghostwriter-x

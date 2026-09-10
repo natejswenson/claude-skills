@@ -1,6 +1,6 @@
 ---
 name: ghostwriter
-version: 0.22.0
+version: 0.23.0
 user_invocable: true
 description: Write engaging LinkedIn posts in the user's own voice and publish them to their profile after they approve. Use when the user wants to draft, write, or post something to LinkedIn, asks for a "LinkedIn post", wants content about trending topics in their field, or wants to set up / configure LinkedIn auto-posting. Learns the user's voice from their past posts and never publishes without explicit approval.
 ---
@@ -30,7 +30,9 @@ stage, read `references/codex-images.md` and use the built-in image-generation t
 for an original PRESS card that supplements the post. Do not author an HTML card or fill a
 card template in Codex unless the user explicitly asks for the legacy deterministic
 renderer. If native image generation is unavailable, offer the user a text-only,
-native-screenshot, or explicit legacy-renderer choice; never switch silently.
+native-screenshot, or explicit legacy-renderer choice; never switch silently. When the
+legacy brochure is chosen in Codex, scaffold it with `release_facts.py ... --host codex`
+so the card carries the Codex install route rather than Claude slash commands.
 
 # LinkedIn Ghostwriter
 
@@ -617,9 +619,12 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
     its own words → **both** install steps → colophon, with a slender vertical `.plate` down the
     left third holding an illustration composed for *that* release (ink only — the h1 `.sig` is the
     card's one signature moment). **Start from the scaffold, never by hand:**
-    `python3 scripts/release_facts.py <skill> --scaffold images/<slug>.html` writes the card with
-    every *factual* slot already filled from the released artifact — version, ship date, both
-    install steps, the one rule quoted — and leaves the judgment slots marked `TODO`. Compose the
+    `python3 scripts/release_facts.py <skill> --host <claude|codex> --scaffold images/<slug>.html`
+    writes the card with every *factual* slot already filled from the released artifact — version,
+    ship date, both install steps, the one rule quoted — and leaves the judgment slots marked
+    `TODO`. **Pass the host this session runs in** (`claude` in Claude Code, the default; `codex`
+    in Codex): the card has room for exactly one complete install route, and it must be the one
+    its reader can type — a Codex reader cannot run `/plugin install`. Compose the
     plate, the headline, the standfirst and the proof figure; the render lint **fails** while the
     example plate (`id="plate-example"`) survives, so a demo drawing cannot ship. Keep the refusal: a brochure that only lists
     features is an advert.
@@ -654,7 +659,7 @@ assets/diagram.css.example ~/.claude/ghostwriter/assets/diagram.css`, then set t
   | `stem` | ≤2 nodes + ≤3 scols when lead ≥3 lines | | |
   | `code`/`claude` | ≤10 rows | ≤42 chars/line | ask band + final caret line must fit |
   | `date` | — | date-sub ≤40 chars | |
-  | `brochure` (press) | exactly 3 facts | `.fval` ≤11 beside the plate · `.pull .q` ≤3 lines · **2** `.cmdbar` ≤52 each · `.stand` ≤4 lines · plate `viewBox="0 0 300 900"` | needs one `.pull .q`, one `.plate svg`, and BOTH install steps; facts come from `release_facts.py`, never typed |
+  | `brochure` (press) | exactly 3 facts | `.fval` ≤11 beside the plate · `.pull .q` ≤3 lines · **2** `.cmdbar` ≤60 each · `.stand` ≤4 lines · plate `viewBox="0 0 300 900"` | needs one `.pull .q`, one `.plate svg`, and BOTH install steps; facts come from `release_facts.py`, never typed |
   | `carousel` | 7–9 slides | ≤30 words/slide | `--i`/`--n` and pageno text must match count |
 
   Count-adaptive layouts (stack/howto/check/flow at 3, grid at 3, matrix `cols2`/`cols4`/`dense`)

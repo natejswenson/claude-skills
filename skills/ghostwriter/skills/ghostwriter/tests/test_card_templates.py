@@ -126,3 +126,38 @@ def test_howto_family_is_registered_and_synced():
         assert f"card-template-{ctype}.html" in skill_md, (
             f"SKILL.md does not reference card-template-{ctype}.html"
         )
+
+
+def test_brochure_command_budget_is_consistent_and_admits_the_codex_route():
+    """The brochure's `.cmdbar` budget is quoted in three places — the template
+    header, SKILL.md's content-budget table and the stylesheet comment — and all
+    three must agree. The number must also admit the longest install line
+    `release_facts.py` can emit for this repo: the Codex marketplace route is
+    longer than either Claude slash command, and a budget that excludes it is a
+    budget every Codex brochure has to break (the rendered fit is proven in
+    Chromium by test_render_image.py; this pins the documented number to it)."""
+    import release_facts as rf
+
+    tpl = (ASSETS / "card-template-brochure.html").read_text(encoding="utf-8")
+    m = re.search(r"EXACTLY 2 \.cmdbar, <=(\d+) chars each", tpl)
+    assert m, "card-template-brochure.html lost its .cmdbar budget line"
+    budget = int(m.group(1))
+
+    codex_marketplace = "codex plugin marketplace add natejswenson/claude-skills"
+    assert len(codex_marketplace) <= budget, (
+        f"the brochure budget ({budget}) excludes the Codex marketplace route "
+        f"({len(codex_marketplace)} chars)"
+    )
+
+    skill_md = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    m = re.search(r"\*\*2\*\* `\.cmdbar` ≤(\d+) each", skill_md)
+    assert m, "SKILL.md's budget table lost the brochure .cmdbar entry"
+    assert int(m.group(1)) == budget, "SKILL.md and the template disagree on the .cmdbar budget"
+
+    m = re.search(r"brochure[^\n]*install bars?[^\n]*≤(\d+)", CSS)
+    assert m, "diagram.css.example does not state the brochure install-bar budget"
+    assert int(m.group(1)) == budget, "diagram.css.example and the template disagree on the .cmdbar budget"
+
+    longest = max(len(s) for host in rf.HOSTS
+                  for s in rf.install_steps(host, "natejswenson/claude-skills", "ghostwriter"))
+    assert longest <= budget

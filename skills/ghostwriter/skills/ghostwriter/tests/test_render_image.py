@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import builtins
+import os
 import sys
 import types
 
@@ -276,3 +277,79 @@ def test_main_no_open_flag(monkeypatch, tmp_path, capsys):
     ri.main()
     assert opened == []
     assert "opened in viewer" not in capsys.readouterr().out
+
+
+# ------------------------------------------- brochure fit through the personal CSS
+_BARS_JS = """() => {
+  const canvas = document.getElementById('canvas');
+  const c = canvas.getBoundingClientRect();
+  const frameRight = c.right - parseFloat(getComputedStyle(canvas).paddingRight);
+  return Array.from(canvas.querySelectorAll('.install .cmdbar')).map(el => {
+    const st = getComputedStyle(el);
+    const lh = parseFloat(st.lineHeight) || parseFloat(st.fontSize) * 1.3;
+    const inner = el.clientHeight - parseFloat(st.paddingTop) - parseFloat(st.paddingBottom);
+    const r = el.getBoundingClientRect();
+    return {
+      text: el.textContent,
+      visible: st.display !== 'none' && st.visibility !== 'hidden' && parseFloat(st.opacity) !== 0
+               && r.width > 0 && r.height > 0,
+      lines: Math.round(inner / lh),
+      scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
+      right: r.right, frameRight,
+    };
+  });
+}"""
+
+
+def test_brochure_codex_route_fits_through_the_personal_stylesheet(monkeypatch, tmp_path):
+    """The real brochure scaffold, the real Codex install route for this repo,
+    rendered at 1200×1500 in real Chromium — through the SAME stylesheet
+    precedence a user's render takes (`~/.claude/ghostwriter/assets/diagram.css`
+    ahead of the repo copy and the shipped example; the personal file here is a
+    copy of the shipped stylesheet so the measurement is reproducible). Both
+    install bars must be visible, one line, and not clipped: the Codex
+    marketplace route is longer than either Claude slash command, and a cut
+    command is a card nobody can install from."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ModuleNotFoundError:
+        if os.environ.get("GHOSTWRITER_REQUIRE_CHROMIUM"):
+            pytest.fail("GHOSTWRITER_REQUIRE_CHROMIUM is set but playwright is not installed")
+        pytest.skip("playwright not installed")
+    import release_facts as rf
+
+    home = tmp_path / "diagram.css"
+    home.write_text(ri.CSS_EXAMPLE.read_text(encoding="utf-8"), encoding="utf-8")
+    monkeypatch.setattr(ri, "HOME_CSS", home)
+    monkeypatch.setattr(ri, "CSS", tmp_path / "no-repo.css")
+    assert ri.brand_css_path() == home  # the personal path wins
+
+    steps = rf.install_steps("codex", "natejswenson/claude-skills", "ghostwriter")
+    html = ri.inline_assets(rf.scaffold({
+        "skill": "ghostwriter", "version": "0.23.0", "published": "2026-09-10",
+        "installSteps": steps, "oneRule": "Never publish without explicit approval.",
+    }))
+    assert "<style>" in html and "<link" not in html
+
+    with sync_playwright() as p:
+        try:
+            browser = p.chromium.launch()
+        except Exception as e:  # chromium not downloaded
+            if os.environ.get("GHOSTWRITER_REQUIRE_CHROMIUM"):
+                pytest.fail(f"GHOSTWRITER_REQUIRE_CHROMIUM is set but chromium is unavailable: {e}")
+            pytest.skip(f"chromium unavailable: {e}")
+        page = browser.new_page(viewport={"width": 1200, "height": 1500})
+        page.set_content(html, wait_until="load")
+        page.wait_for_selector("#canvas", timeout=5000)
+        bars = page.evaluate(_BARS_JS)
+        import card_lint
+        findings = card_lint.lint_page(page)
+        browser.close()
+
+    assert [b["text"] for b in bars] == steps
+    for b in bars:
+        assert b["visible"], b
+        assert b["lines"] == 1, b
+        assert b["scrollWidth"] <= b["clientWidth"], b
+        assert b["right"] <= b["frameRight"] + 1, b
+    assert not [f for f in findings if f.code in ("cmdbar-fit", "clip-overflow")], findings
