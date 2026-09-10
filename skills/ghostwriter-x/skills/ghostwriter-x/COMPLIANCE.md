@@ -46,6 +46,21 @@ launchd agent) only reads public web sources and writes a local digest to
 Typefully or X. A human still picks an item, reviews the draft, and approves
 it before anything posts.
 
+The explicit Codex backend uses `release_radar_runtime.py` and its separate
+`release_radar_codex_prompt.md`. Trusted code fetches an allowlisted public release
+feed without loading this skill's `.env`. It records bounded source evidence and
+hashes, runs Codex read-only with inherited user config and exec rules ignored,
+and validates citations and receipts before writing a durable digest. Trusted
+runner, policy, and launchd configuration are outside the research/data root.
+No native web search or additional writable roots are enabled for the model.
+
+The enforced claim concerns prohibited writes and network effects, not the
+absence of all shell execution. Explicitly staged interests and prior digests
+also do not establish a general host-read boundary. The opt-in real-Codex test
+attempts tampering against the configured runtime and uses a disposable local
+posting canary; it never calls the Typefully API or uses the Typefully key.
+The legacy Claude launcher and research prompt retain their existing behavior.
+
 ## Other rules we keep
 
 | Requirement | Our approach |

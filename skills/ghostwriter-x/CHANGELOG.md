@@ -5,6 +5,20 @@ All notable changes to the ghostwriter-x skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-10
+
+### Added
+
+- An explicit Codex release-radar backend that installs a durable personal runtime,
+  retrieves primary sources with bounded hash receipts, captures a read-only Codex
+  session, and promotes only receipt-validated digests. No Claude authentication or
+  Typefully credentials are required.
+- Durable digest discovery and named-agent repair that retain the Codex selection
+  and personal input paths across plugin updates, while preserving legacy digests.
+- Deterministic failure/tamper tests and an opt-in real-Codex probe covering hostile
+  inherited policy, actual launch-target writes, network/posting canaries, and the
+  next launch. The legacy Claude research path remains unchanged.
+
 ## [0.2.1] - 2026-07-28
 
 ### Changed

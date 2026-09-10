@@ -1,6 +1,6 @@
 ---
 name: ghostwriter-x
-version: 0.2.1
+version: 0.3.0
 user_invocable: true
 description: Write sharp X (Twitter) posts and threads in the user's own voice and publish them through the free Typefully API after they approve. Use when the user wants to draft, write, or post something to X or Twitter, asks for a "tweet", a "thread", or an "X post", or wants to set up X posting. Enforces X's 280-weighted-character limit per tweet, formats threads natively, and never publishes without explicit approval.
 ---
@@ -240,9 +240,12 @@ scraping. Revisit the whole loop if the account upgrades.
      than ~24 h is usually already picked over — prefer today's signal, and say so when an item
      is borderline stale. No citable signal → the item doesn't go in the lane; fewer real
      trending items beat padded ones.
-   - **Release radar — current through TODAY, not through the last digest.** Read the newest
-     `research/release-radar-*.md` and, **if it exists**, the tail of `research/.radar.log`, and
-     state provenance in the board ("Jul 24 radar, job ran clean"). The log is only created once
+   - **Release radar — current through TODAY, not through the last digest.** Run
+     `python3 scripts/release_radar_runtime.py discover` and read its selected digest and log.
+     A configured Codex radar uses `~/.claude/ghostwriter-x/radar/data/digests/` and
+     `data/.radar.log`; otherwise discovery selects legacy `research/release-radar-*.md`
+     and, **if it exists**, the tail of `research/.radar.log`. State provenance in the board
+     ("Jul 24 radar, job ran clean"). The log is only created once
      the launchd job has run on this machine — **absent means "job never ran here", which is not
      the same as "job failed"**; say which one you actually know and don't spend a second call
      hunting for it. **If the digest is older than today, top the lane
@@ -254,7 +257,10 @@ scraping. Revisit the whole loop if the account upgrades.
      already published (check `published.jsonl`). **Radar stale (>4 days) or missing** → say so,
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
      (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
-     re-renders the launchd agent against the repo's current path.
+     preserves an installed Codex backend and durable digest root, copying updated trusted
+     assets from the loaded plugin. First-time Codex setup uses
+     `bash scripts/install_radar.sh --backend codex` and requires Codex authentication
+     plus `~/.claude/ghostwriter-x/voice/interests.md` (or explicit `--interests <path>`).
    - **Interests & hot takes (1–3 entries).** Read `~/.claude/ghostwriter-x/voice/interests.md` —
      core themes, the "Strong opinions" list, and the story bank — for specific angles not
      covered recently (check `published.jsonl` and recent drafts). A strong uncovered story-bank

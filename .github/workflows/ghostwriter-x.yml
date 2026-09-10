@@ -56,7 +56,7 @@ jobs:
         run: pip install -r requirements-dev.txt
         working-directory: skills/ghostwriter-x/skills/ghostwriter-x
       - if: steps.changes.outputs.ghostwriter-x == 'true'
-        run: shellcheck scripts/release_radar.sh
+        run: shellcheck scripts/release_radar.sh scripts/install_radar.sh
         working-directory: skills/ghostwriter-x/skills/ghostwriter-x
       - if: steps.changes.outputs.ghostwriter-x == 'true'
         run: pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100

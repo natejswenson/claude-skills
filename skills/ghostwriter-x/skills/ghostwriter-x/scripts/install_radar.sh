@@ -16,6 +16,12 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "${1:-}" == "--backend" && "${2:-}" == "claude" ]]; then
+  shift 2
+elif [[ $# -gt 0 || -f "$HOME/.claude/ghostwriter-x/radar/trusted/install.json" ]]; then
+  exec python3 -I "$REPO/scripts/release_radar_runtime.py" install "$@"
+fi
+
 TEMPLATE="$REPO/scripts/release_radar.plist.example"
 AGENTS_DIR="$HOME/Library/LaunchAgents"
 LABEL="com.${USER}.x-release-radar"
