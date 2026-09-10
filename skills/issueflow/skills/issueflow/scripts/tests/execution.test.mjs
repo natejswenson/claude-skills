@@ -38,8 +38,12 @@ function codexChild(workspaceRoot, source, tree, paths) {
   ].join('\n'));
   chmodSync(script, 0o700);
   const prompt = `Run exactly this command, then finish:\n/bin/sh ${shLiteral(script)}`;
-  const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
+  let result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
     '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
+  // CI is intentionally offline and does not install the Codex CLI. Keep its
+  // filesystem/Git fixture covered by running the exact child script there;
+  // hosts with Codex continue to exercise the workspace-write smoke.
+  if (result.error?.code === 'ENOENT') result = spawnSync('/bin/sh', [script], { encoding: 'utf8', timeout: 120000 });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   for (const path of paths) assert.equal(readFileSync(path, 'utf8'), 'child output\n');
   assert.equal(git(['show', 'HEAD:child.txt'], tree), 'child commit');
