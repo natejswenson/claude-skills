@@ -401,6 +401,8 @@ release's own `publish-entry` call. In Codex, the dominant artwork MUST come fro
 image-generation tool as a persisted raster source; wireframes, hand-authored SVG, CSS drawings,
 and title-only placeholders are not covers. The deterministic compositor may add PRESS typography
 around that generated artwork, but it must never substitute for native image generation.
+The cover must carry a custom illustration or other meaningful visual material; a cover that just
+re-renders the title in large text is a failure.
 
 ```bash
 mktemp -d    # → record the absolute path, e.g. /var/folders/.../tmp.abc
