@@ -516,6 +516,79 @@
       }
     },
     {
+      "id": "city-report-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/city-report/skills/city-report/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# City Report$" }
+    },
+    {
+      "id": "devlog-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/devlog/skills/devlog/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# /devlog — Release How-To Generator$" }
+    },
+    {
+      "id": "ghostwriter-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/ghostwriter/skills/ghostwriter/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# LinkedIn Ghostwriter$" }
+    },
+    {
+      "id": "ghostwriter-x-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# X Ghostwriter$" }
+    },
+    {
+      "id": "github-stats-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/github-stats/skills/github-stats/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# GitHub Stats$" }
+    },
+    {
+      "id": "resume-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/resume/skills/resume/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": {
+        "replaceFrom": "^## Presentation — how a run should look$",
+        "replaceTo": "^## Step 1 — One-time setup check$"
+      }
+    },
+    {
+      "id": "shipflow-agent-ui",
+      "repo": "claude-skills",
+      "path": "skills/shipflow/skills/shipflow/SKILL.md",
+      "region": "agent-ui",
+      "syntax": "md",
+      "emitter": "markdown-block",
+      "params": { "doc": "agent-ui" },
+      "init": { "insertAfter": "^# /shipflow — branching [+] release-automation setup$" }
+    },
+    {
       "id": "ghfactory-agent-ui",
       "repo": "claude-skills",
       "path": "skills/ghfactory/skills/ghfactory/SKILL.md",
