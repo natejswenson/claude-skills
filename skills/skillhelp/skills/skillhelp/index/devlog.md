@@ -50,7 +50,7 @@
 - devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:136`
 - npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:258`
 - npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:259`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:559`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:558`
 - npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:68`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
 - npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:361`

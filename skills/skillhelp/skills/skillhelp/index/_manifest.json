@@ -52,7 +52,7 @@
       "name": "devlog",
       "version": "0.14.1",
       "stack": "node",
-      "cardHash": "4df8416b23bc7c02",
+      "cardHash": "a79ffb9dc87daf6d",
       "facts": 61,
       "sections": {
         "setup": 12,
