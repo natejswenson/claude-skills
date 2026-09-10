@@ -63,7 +63,7 @@ const stageEntry = (id, runtime = 'claude') => {
 };
 
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
-const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds < 4 ? { maxRounds: complexity.reviewRounds } : {}) });
+const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds ? { maxRounds: complexity.reviewRounds } : {}) });
 
 export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
@@ -71,7 +71,7 @@ export function classifyIssue(issue) {
   const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
-  return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
+  return { kind: 'deep', reviewRounds: 2, budgetSeconds: 1800, reason: 'code or operational change' };
 }
 
 const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', complexity = null) => ({
@@ -87,7 +87,7 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
   if (host && runtime && host !== runtime) throw new RunError('--host and --runtime disagree');
   const resolvedRuntime = assertRuntime(host ?? runtime);
   const complexity = classifyIssue(issue);
@@ -109,6 +109,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // whether an approval needs a human is a property of the run, not of
     // whoever types the next command.
     auto,
+    autonomous,
+    totalBudgetSeconds: autonomous ? complexity.budgetSeconds * 8 : null,
     complexity,
     createdAt: now(),
     split: false,
@@ -498,7 +500,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
 
   if (PER_ITEM_STAGES.includes(step.stage.id)) {
     if (/\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(readDelivery(dir, artifactPath(dir, step), run, { dispatched: false })))) {
-      throw new RunError(`cannot accept ${step.key}: the implementation result reports blocked, incomplete, or not performed work`);
+      throw new RunError(`cannot accept ${step.key}: blocked or incomplete result (the implementation reports blocked, incomplete, or not performed work)`);
     }
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {
@@ -746,7 +748,7 @@ export function elapsedOf(entry, now) {
  * a split is still safe. (A `brief --ready` straight after the plan used to
  * foreclose `split` forever.)
  */
-export function split(dir, run, items) {
+export function split(dir, run, items, { parallel = false } = {}) {
   if (run.split) throw new RunError('this run is already split — a second split would strand the first split\'s lanes');
   const plan = findStep(run, PLAN_STAGE);
   if (plan.stage.state !== 'approved') {
@@ -764,7 +766,7 @@ export function split(dir, run, items) {
     const slug = slugify(item.slug ?? item.title);
     if (seen.has(slug)) throw new RunError(`two work items slug to "${slug}" — each lane needs its own branch`);
     seen.add(slug);
-    const base = i === 0
+    const base = parallel || i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
     return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);
