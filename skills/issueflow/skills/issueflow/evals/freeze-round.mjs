@@ -27,7 +27,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRun } from '../scripts/lib/run.mjs';
+import { loadRun, worktreePath } from '../scripts/lib/run.mjs';
 import { historyTree } from '../scripts/lib/worktree.mjs';
 import { parseDiff, reviewDir } from '../scripts/lib/prreview.mjs';
 
@@ -45,7 +45,12 @@ const lane = run.lanes.find((l) => l.slug === args.lane);
 if (!lane) throw new Error(`no lane ${args.lane}`);
 const rounds = (args.rounds ? args.rounds.split(',').map(Number) : lane.review.rounds.map((r) => r.round));
 const tree = historyTree(run);
+const checkoutRoots = [worktreePath(runDir, lane), run.repo.path];
 const git = (a) => execFileSync('git', a, { cwd: tree, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const normalize = (text) => [tree, ...checkoutRoots].reduce(
+  (out, root) => out.split(`${root}/`).join('').split(root).join('<repo>'),
+  text,
+);
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -85,8 +90,7 @@ for (const n of rounds) {
       // Machine paths out: the lane worktree and the repository root become
       // `<repo>`, so the fixture carries no home directory and the golden
       // compares the same bytes on any machine.
-      const text = readFileSync(join(src, f), 'utf8').split(`${tree}/`).join('').split(tree).join('<repo>')
-        .split(`${run.repo.path}/`).join('').split(run.repo.path).join('<repo>');
+      const text = normalize(readFileSync(join(src, f), 'utf8'));
       writeFileSync(join(dst, f), text);
     }
   }
@@ -94,9 +98,9 @@ for (const n of rounds) {
   // pooling and how they were dealt to verifiers. The replay reuses it rather
   // than re-pooling: the golden pins the registrar and the payload, and the
   // pooling rule has its own unit tests and is allowed to move.
-  writeFileSync(join(dst, 'plan.json'), `${JSON.stringify({
+  writeFileSync(join(dst, 'plan.json'), normalize(`${JSON.stringify({
     verifiers: entry.verifiers, candidateIds: entry.candidateIds ?? [], priorIds: entry.priorIds ?? [], candidates: entry.candidates ?? [],
-  }, null, 2)}\n`.split(`${tree}/`).join('').split(tree).join('<repo>').split(`${run.repo.path}/`).join('').split(run.repo.path).join('<repo>'));
+  }, null, 2)}\n`));
   const snap = join(OUT, 'files', `r${n}`);
   let count = 0;
   for (const path of files) {

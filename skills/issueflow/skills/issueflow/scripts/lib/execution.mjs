@@ -47,8 +47,9 @@ function sourceLease(dir, run, lane, acquire, reserve = false) {
       throw new WorktreeError(`source checkout is leased by ${held.dir} (${info.lease}); finish that run or explicitly take it over`);
     }
     if (held.lane !== owner.lane) {
-      const previous = run.lanes.find((l) => l.slug === held.lane);
-      if (!acquire || held.lane !== null && !previous?.landed) {
+      const previous = run.lanes.find((candidate) => candidate.slug === held.lane);
+      const finishedImplementing = previous?.stages.some((stage) => stage.id === 'implement' && stage.state === 'approved');
+      if (!acquire || (!run.checkout?.mode && held.lane !== null) || (previous && !finishedImplementing)) {
         throw new WorktreeError(`source checkout is leased by active lane ${held.lane}; overlapping writable lanes require worktrees`);
       }
       writeFileSync(info.lease, JSON.stringify(owner));
@@ -75,8 +76,9 @@ export function prepareCheckout(dir, run, lane, { noWorktree = false, reserve = 
   if (noWorktree && run.checkout?.mode === 'worktree' && run.lanes.some(began)) {
     throw new WorktreeError('cannot change checkout mode after implementation has begun');
   }
-  if (noWorktree && !run.checkout && began(lane) && existsSync(worktreePath(dir, lane))) {
-    validateWorktree(run.repo.path, dir, lane);
+  const legacyWorktree = !run.checkout && run.lanes.find((candidate) => began(candidate) && existsSync(worktreePath(dir, candidate)));
+  if (noWorktree && legacyWorktree) {
+    validateWorktree(run.repo.path, dir, legacyWorktree);
     throw new WorktreeError('legacy implementation already owns a worktree; restore that checkout instead of changing mode');
   }
   if (noWorktree || run.checkout?.mode === 'source') {
@@ -96,7 +98,6 @@ export function prepareCheckout(dir, run, lane, { noWorktree = false, reserve = 
 
 /** Release only this durable run's owner; an unrelated lease is never removed. */
 export function releaseSourceLease(dir, run) {
-  if (run.checkout?.mode !== 'source') return;
   let lock = null;
   try {
     const info = sourceInfo(run);
