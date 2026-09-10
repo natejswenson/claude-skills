@@ -259,6 +259,35 @@ export function archivedPath(dir, run, path) {
   return join(run.execution.archive.path, 'artifacts', key);
 }
 
+/** An approved predecessor keeps its first archived bytes, not a later staging copy. */
+export function approveArtifact(dir, run, path) {
+  if (!run.execution) return;
+  const e = validateExecution(dir, run);
+  const root = activeRoot(dir, run);
+  const key = relative(root, path);
+  const file = e.archive?.files[key];
+  if (!file) fail(`approved output has no durable snapshot: ${path}`);
+  e.approved ??= {};
+  e.approved[key] ??= { path: e.archive.path, hash: file.hash };
+}
+
+/** Successors consume the first immutable snapshot and verify it before reading. */
+export function approvedArtifactPath(dir, run, path) {
+  if (!run.execution) return path;
+  const e = validateExecution(dir, run);
+  const root = activeRoot(dir, run);
+  const key = relative(root, path);
+  const approved = e.approved?.[key];
+  if (!approved) fail(`approved output has no immutable snapshot: ${path}`);
+  const archive = guarded(realpathSync(dir), join(realpathSync(dir), relative(e.owner.dir, approved.path)));
+  const snapshot = JSON.parse(readFileSync(join(archive, 'snapshot.json'), 'utf8'));
+  const output = guarded(archive, join(archive, 'artifacts', key));
+  if (snapshot.path !== approved.path || snapshot.files?.[key]?.hash !== approved.hash || stableFile(output).hash !== approved.hash) {
+    fail(`damaged approved output at ${output}`);
+  }
+  return output;
+}
+
 function quiescent(run) {
   return [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)].every((s) =>
     ['pending', 'approved', 'skipped'].includes(s.state) && !(s.state === 'pending' && s.at?.briefed)) &&

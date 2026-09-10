@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { accept, createRun, deliveredSince, findStep, markBriefed, saveRun, artifactPath, evidencePath, progressPath, loadRun } from '../lib/run.mjs';
 import { writeBrief, writeReviewBrief } from '../lib/brief.mjs';
-import { activeRoot, archivedPath, deliveryCurrent, gitStore, historyRoot, historyStore, prepareCheckout, prepareExecution, readDelivery } from '../lib/execution.mjs';
+import { activeRoot, approveArtifact, approvedArtifactPath, archivedPath, deliveryCurrent, gitStore, historyRoot, historyStore, prepareCheckout, prepareExecution, readDelivery } from '../lib/execution.mjs';
 import { ensureWorktree } from '../lib/worktree.mjs';
 import { markReviewBriefed, registerReview, reviewPath } from '../lib/reviews.mjs';
 import { writeFinderBriefs, writeVerifierBriefs, writeFixBrief } from '../lib/reviewbrief.mjs';
@@ -22,7 +22,7 @@ import { GOOD_EVIDENCE } from './helpers.mjs';
 import { decide, renderAction, sh } from '../lib/next.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-function codexChild(workspaceRoot, tree, paths) {
+function workspaceChild(workspaceRoot, tree, paths) {
   const [artifact, evidence, progress] = paths;
   const prompt = [
     'Run the exact shell operations below, then finish.',
@@ -34,7 +34,7 @@ function codexChild(workspaceRoot, tree, paths) {
     `git -C ${JSON.stringify(tree)} add child.txt`,
     `git -C ${JSON.stringify(tree)} commit -m child`,
   ].join('\n');
-  const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write', '-C', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
+  const result = spawnSync(process.execPath, ['-e', "require('node:child_process').execFileSync('sh', ['-c', process.argv[1]], { stdio: 'inherit' });", prompt], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 }
 function fixture(number = 273) {
@@ -71,7 +71,7 @@ test('Codex writer paths refuse an unprepared execution layout', () => {
   assert.throws(() => writeBrief(dir, run, findStep(run, 'investigate'), run.issue), /workspace-root|execution.*prepar/i);
 });
 
-test('approved-root execution owns artifact, evidence, progress and every Git administration path', () => {
+test('approved-root execution gives a constrained child writable outputs and Git administration paths', () => {
   const { source, dir, workspaceRoot, run } = fixture();
   writeFileSync(join(source, 'untracked.txt'), 'source work');
   const sourceStatus = git(['status', '--porcelain'], source);
@@ -82,7 +82,10 @@ test('approved-root execution owns artifact, evidence, progress and every Git ad
   writeBrief(dir, run, step, run.issue, tree);
   const paths = [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)];
   for (const path of paths) assert.ok(path.startsWith(workspaceRoot + '/'), path);
-  codexChild(workspaceRoot, tree, paths);
+  const archives = join(dir, 'execution-archives', run.execution.generation);
+  chmodSync(dir, 0o555); chmodSync(archives, 0o555); chmodSync(join(source, '.git'), 0o555);
+  try { workspaceChild(workspaceRoot, tree, paths); }
+  finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); chmodSync(join(source, '.git'), 0o755); }
   for (const args of [['--absolute-git-dir'], ['--path-format=absolute', '--git-common-dir'], ['--path-format=absolute', '--git-path', 'index'], ['--path-format=absolute', '--git-path', 'objects'], ['--path-format=absolute', '--git-path', 'refs']]) {
     assert.ok(git(['rev-parse', ...args], tree).startsWith(workspaceRoot + '/'), args.join(' '));
   }
@@ -118,10 +121,13 @@ test('successor briefs inherit durable snapshots instead of writable active arti
   writeFileSync(artifactPath(dir, plan), 'approved plan');
   plan.stage.state = 'approved';
   saveRun(dir, run);
+  approveArtifact(dir, run, artifactPath(dir, plan));
   const archived = archivedPath(dir, run, artifactPath(dir, plan));
   writeFileSync(artifactPath(dir, plan), 'rewritten active plan');
+  saveRun(dir, run);
   const brief = writeBrief(dir, run, findStep(run, 'implement'), run.issue);
-  assert.ok(readFileSync(brief.prompt, 'utf8').includes(archived));
+  assert.ok(readFileSync(brief.prompt, 'utf8').includes(approvedArtifactPath(dir, run, artifactPath(dir, plan))));
+  assert.equal(approvedArtifactPath(dir, run, artifactPath(dir, plan)), archived);
   assert.equal(readFileSync(archived, 'utf8'), 'approved plan');
 });
 
@@ -148,7 +154,7 @@ test('a read-only durable root does not prevent child output or Git writes; fail
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555);
   try {
-    codexChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
+    workspaceChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
     assert.throws(() => saveRun(dir, run), /could not persist.*|could not archive/);
     assert.equal(readFileSync(join(dir, 'run.json'), 'utf8'), before);
   } finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); }

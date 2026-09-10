@@ -58,10 +58,11 @@ test('codex briefs use AGENTS.md and native completion; Claude defaults stay Cla
 test('start --runtime codex persists the host contract; an invalid host writes no run', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-codex-runtime-'));
   const runDir = join(root, 'run');
+  const workspaceRoot = join(root, 'workspace');
   const repoJson = join(root, 'repo.json');
   const issueJson = join(root, 'issue.json');
   const source = join(root, 'source');
-  mkdirSync(source);
+  mkdirSync(source); mkdirSync(workspaceRoot);
   execFileSync('git', ['init', '-qb', 'dev'], { cwd: source });
   execFileSync('git', ['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.test', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
   writeFileSync(repoJson, `${JSON.stringify({ ...REPO, path: source })}\n`);
@@ -73,7 +74,7 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
   assert.match(output, /Auto run: every stage is gated by a red-team review instead of a human/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
-  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', root], { encoding: 'utf8' });
+  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8' });
   assert.match(next, /model `gpt-5\.6-terra`, reasoning_effort `high`, role `explorer`/);
   assert.match(next, /next: dispatch \(brief\)/);
 
