@@ -117,9 +117,12 @@ One pull request per issue is the default. Split only when the approved plan con
 genuinely reviewable stacked work items.
 
 Issueflow persists a complexity profile:
-plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
+plain wording uses `fast-docs` (one PR review round, 15 minutes); docs mentioning
 tests, templates, generated files, manifests, or acceptance criteria use
-`standard` (two rounds, 30 minutes); code and operations use `deep`. Resuming
+`standard` (at most two PR review rounds, 30 minutes); code and operations use
+`deep` (at most two PR review rounds by default). A clean verifier round ends
+the loop immediately; an extra round is only opened when a major remains or the
+user explicitly directs another review. Resuming
 does not change the profile. Elapsed time includes waits; expiry prevents new
 dispatches, including a refused gate's send-back. In-flight work may finish.
 

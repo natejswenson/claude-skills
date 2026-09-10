@@ -20,7 +20,7 @@ import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue } from './lib/gh.mjs';
 import {
-  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
+  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf, reviewCap,
   ciFailureFingerprint, laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding,
 } from './lib/prreview.mjs';
@@ -1279,7 +1279,7 @@ async function cmdReviewBrief(args) {
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
-    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
+    [[lane.slug, `#${lane.pr.number}`, `${round} of ${reviewCap(lane)}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
   if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, b.angles.join(', ')]));
   else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
@@ -1333,7 +1333,7 @@ async function cmdReviewRegister(args) {
   }
   const record = registerRound(dir, run, lane, entry.round, { tree });
   const t = record.transitions;
-  console.log(`Round ${record.round} of ${MAX_REVIEW_ROUNDS} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
+  console.log(`Round ${record.round} of ${reviewCap(lane)} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
     `${record.counts.majors} major open, ${record.counts.nits} nit, ${record.counts.preExisting} pre-existing` +
     `${(entry.unverifiedNits?.length ?? 0) > 0 ? `, ${entry.unverifiedNits.length} proposed nit(s) unverified` : ''}`);
   if (record.round > 1) console.log(`Transitions: ${t.fixed.length} fixed, ${t.stillOpen.length} still open, ${t.withdrawn.length} withdrawn, ${t.new.length} new, ${t.suppressed.length} suppressed, ${t.dropped.length} refuted`);

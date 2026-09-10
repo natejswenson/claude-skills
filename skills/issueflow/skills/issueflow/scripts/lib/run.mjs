@@ -61,7 +61,7 @@ const stageEntry = (id, runtime = 'claude') => {
 };
 
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
-const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds < 4 ? { maxRounds: complexity.reviewRounds } : {}) });
+const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds ? { maxRounds: complexity.reviewRounds } : {}) });
 
 export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
@@ -69,7 +69,7 @@ export function classifyIssue(issue) {
   const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
-  return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
+  return { kind: 'deep', reviewRounds: 2, budgetSeconds: 1800, reason: 'code or operational change' };
 }
 
 /** A bounded allowance for autonomous runs. It is a hard cumulative cap, not a
