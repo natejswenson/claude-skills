@@ -64,7 +64,7 @@ function toolFacts(name, input = {}, { codex = false, rawInput } = {}) {
   input = input && typeof input === 'object' ? input : {};
   const facts = {};
   const kinds = {
-    command: ['Bash', 'exec_command', 'exec'],
+    command: ['Bash', 'exec_command'],
     read: ['Read', 'Grep', 'Glob', 'read_file'],
     edit: ['Write', 'Edit', 'NotebookEdit', 'apply_patch'],
     question: ['AskUserQuestion', 'request_user_input'],
@@ -83,7 +83,7 @@ function toolFacts(name, input = {}, { codex = false, rawInput } = {}) {
   if (codex) {
     const command = input.cmd ?? input.command;
     if (command) facts.command = clip(command, CAP.command);
-    if (name.endsWith('exec') && typeof rawInput === 'string') facts.command = clip(rawInput, CAP.command);
+    if (tool === 'exec_command' && typeof rawInput === 'string') facts.command = clip(rawInput, CAP.command);
     if (facts.toolKind === 'question') facts.questions = (input.questions ?? []).length;
     if (['Read', 'read_file', 'Write', 'Edit', 'NotebookEdit'].includes(tool)) facts.path = redact(input.file_path ?? input.path ?? '');
     if (facts.toolKind === 'skill') facts.skill = redact(input.skill ?? '');
