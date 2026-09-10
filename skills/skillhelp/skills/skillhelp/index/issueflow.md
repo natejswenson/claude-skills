@@ -9,13 +9,13 @@
 
 ## Setup
 
-- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:221`
-- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:222`
-- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:223`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:225`
-- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:227`
-- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:228`
-- **A git repo with a GitHub remote.** `skills/issueflow/README.md:230`
+- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:227`
+- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:228`
+- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:229`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:231`
+- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:233`
+- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:234`
+- **A git repo with a GitHub remote.** `skills/issueflow/README.md:236`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
 - Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:629`
 - Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/checkout-ownership.test.mjs:214`
@@ -38,7 +38,7 @@
 ## Commands
 
 - node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:45`
-- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> --autonomous `skills/issueflow/skills/issueflow/SKILL.md:46`
+- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> `skills/issueflow/skills/issueflow/SKILL.md:46`
 - node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:47`
 - node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:48`
 - node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800 `skills/issueflow/skills/issueflow/SKILL.md:54`

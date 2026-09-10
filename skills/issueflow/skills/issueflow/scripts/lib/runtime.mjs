@@ -1,6 +1,10 @@
 /** Persisted host policy and the one adapter used by every dispatch path. */
 export const RUNTIMES = ['claude', 'codex'];
 
+// Four children drains the largest normal finder/verifier wave in two batches
+// at most, while avoiding the serial behaviour of the old one-slot default.
+export const DEFAULT_CODEX_CHILD_SLOTS = 4;
+
 export function runtimeOf(run) {
   return assertRuntime(typeof run === 'string' ? run : run?.host ?? run?.runtime);
 }
@@ -11,7 +15,7 @@ export function assertRuntime(value) {
   return runtime;
 }
 
-export function dispatchPolicy(host, childSlots = 1) {
+export function dispatchPolicy(host, childSlots = assertRuntime(host) === 'codex' ? DEFAULT_CODEX_CHILD_SLOTS : 1) {
   if (!/^\d+$/.test(String(childSlots)) || !Number.isSafeInteger(Number(childSlots)) || Number(childSlots) < 1) {
     throw new Error('child-slots must be a positive integer');
   }
@@ -24,7 +28,10 @@ export function dispatchProfile(run, role) {
   if (!ROLES.includes(role)) throw new Error(`no dispatch profile for ${runtimeOf(run)}/${role}`);
   if (runtimeOf(run) === 'claude') return { model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose' };
   // Even readers write a result file. A read-only explorer cannot deliver it.
-  return { reasoning: role === 'fixerEscalated' ? 'xhigh' : 'high', agent: 'worker', fork_turns: 'none' };
+  // Read-heavy discovery and a first bounded fix do not need the parent-level
+  // reasoning budget. A surviving major is the signal to pay for escalation.
+  const reasoning = ['finder', 'fixer'].includes(role) ? 'medium' : role === 'fixerEscalated' ? 'xhigh' : 'high';
+  return { reasoning, agent: 'worker', fork_turns: 'none' };
 }
 
 export const modelLabel = (item) => item.model ?? 'parent model';

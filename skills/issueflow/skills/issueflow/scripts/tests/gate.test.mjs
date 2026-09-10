@@ -122,7 +122,7 @@ test('the gate refuses a blocked implementation artifact even with passing basel
   const text = readFileSync(path, 'utf8').replace(/## Result[\s\S]*$/, '## Result\n\nBLOCKED — prerequisite missing.\n');
   writeFileSync(path, text);
   writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
-  assert.throws(() => accept(dir, run, step), /blocked or incomplete result/);
+  assert.throws(() => accept(dir, run, step), /reports blocked, incomplete, or not performed work/);
   cleanup();
 });
 
