@@ -5,6 +5,19 @@ All notable changes to the **press** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-09-09
+
+### Added
+
+- **Shared terminal interaction contract.** All registered skills now inherit
+  the same run envelope, native single- and multi-select rules, table roles,
+  actionable-detail budget, hidden tool-call policy, and HTML-browser draft
+  preview behavior through the generated `agent-ui` region.
+- **All first-party skills are registered.** Added the missing agent-UI
+  consumers for city-report, devlog, ghostwriter, ghostwriter-x, github-stats,
+  resume, and shipflow; résumé's hand-written duplicate was replaced by the
+  generated contract.
+
 ## [0.9.0] - 2026-08-01
 
 ### Added
