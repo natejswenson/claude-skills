@@ -288,6 +288,23 @@ export function approvedArtifactPath(dir, run, path) {
   return output;
 }
 
+/** Recovery retains only approved references whose durable snapshots still verify. */
+function preservedApprovals(dir, e) {
+  const durable = realpathSync(dir);
+  return Object.fromEntries(Object.entries(e.approved ?? {}).map(([key, approved]) => {
+    if (typeof approved?.path !== 'string' || !/^[a-f0-9]{64}$/.test(approved.hash ?? '')) {
+      fail(`invalid approved output snapshot for ${key}`);
+    }
+    const archive = guarded(durable, join(durable, relative(e.owner.dir, approved.path)));
+    const snapshot = JSON.parse(readFileSync(join(archive, 'snapshot.json'), 'utf8'));
+    const output = guarded(archive, join(archive, 'artifacts', key));
+    if (snapshot.path !== approved.path || snapshot.files?.[key]?.hash !== approved.hash || stableFile(output).hash !== approved.hash) {
+      fail(`damaged approved output at ${output}`);
+    }
+    return [key, { path: approved.path, hash: approved.hash }];
+  }));
+}
+
 function quiescent(run) {
   return [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)].every((s) =>
     ['pending', 'approved', 'skipped'].includes(s.state) && !(s.state === 'pending' && s.at?.briefed)) &&
@@ -331,7 +348,9 @@ function prepare(dir, run, { workspaceRoot }) {
   const generation = randomUUID();
   const key = digest(JSON.stringify(owner));
   const path = guarded(root, join(root, 'issueflow', key, generation));
-  const e = { version: 1, owner, root, key, generation, path, source: info.path, common: info.common };
+  const approved = previous ? preservedApprovals(dir, previous) : null;
+  const e = { version: 1, owner, root, key, generation, path, source: info.path, common: info.common,
+    ...(approved && Object.keys(approved).length ? { approved } : {}) };
   const snapshot = previous ? snapshotOf(dir, run) : null;
   const oldRoot = previous ? join(snapshot.path, 'artifacts') : realpathSync(dir);
   if (previous && !existsSync(join(snapshot.path, 'history.bundle'))) fail(`missing execution history at ${previous.path}; unexported commits cannot be recovered`);
