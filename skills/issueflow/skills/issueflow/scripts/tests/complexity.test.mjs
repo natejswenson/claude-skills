@@ -12,6 +12,15 @@ test('documentation with shipped-contract impact stays standard', () => {
   assert.equal(profile.reviewRounds, 2);
 });
 
+test('CI and automation wording stays on the deep operational profile', () => {
+  const profile = classifyIssue({
+    title: 'ci: automate the isolated Codex marketplace install smoke',
+    body: 'Update the README and add a workflow test for the installer.',
+  });
+  assert.equal(profile.kind, 'deep');
+  assert.equal(profile.reason, 'CI, automation or operational change');
+});
+
 test('the profile is persisted on the run and lane', () => {
   const run = createRun({
     repo: { owner: 'a', name: 'b', path: '/tmp/repo' },

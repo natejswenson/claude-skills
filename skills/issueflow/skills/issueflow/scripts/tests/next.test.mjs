@@ -222,6 +222,31 @@ test('decide: an approved plan with work items splits once; then the bottom lane
   cleanup();
 });
 
+test('decide: a parallel split fans out ready lanes and accepts all fresh deliveries before re-briefing', () => {
+  const { dir, run, cleanup } = freshRun({ auto: true });
+  approvePlan(dir, run, { auto: true });
+  const plan = findStep(run, 'investigate');
+  // The approved plan's work-item parser is exercised by the real split CLI;
+  // the parallel flag is an explicit operator decision, never an inference.
+  writeFileSync(artifactPath(dir, plan), `${readFileSync(artifactPath(dir, plan), 'utf8')}\n## Work items\n\nWhy split: two independently mergeable layers\n\n- first: first layer\n- second: second layer\n`);
+  // Re-approve the changed fixture through the test's existing shortcut so the
+  // split precondition remains realistic.
+  plan.stage.at.delivered = at(-60);
+  saveRun(dir, run);
+  cli(['split', '--run-dir', dir, '--parallel', '--offline']);
+  const split = loadRun(dir);
+  assert.deepEqual(split.lanes.map((lane) => lane.base), ['dev', 'dev']);
+  for (const lane of split.lanes) {
+    const step = findStep(split, 'implement', lane.slug);
+    markBriefed(dir, split, step, () => at(-60));
+    writeGood(dir, split, 'implement', lane.slug);
+  }
+  const action = decide(dir, split);
+  assert.deepEqual([action.kind, action.command], ['run', 'accept-ready']);
+  assert.deepEqual(action.args.steps.map((step) => step.lane), ['first', 'second']);
+  cleanup();
+});
+
 test('decide: a plan with no work items never splits, and a stage past the stall threshold stops with a re-dispatch', () => {
   const { dir, run, cleanup } = freshRun({ auto: true });
   approvePlan(dir, run, { auto: true });

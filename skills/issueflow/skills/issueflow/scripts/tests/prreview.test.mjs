@@ -192,7 +192,7 @@ test('semantic review sizing: generated and test bulk does not duplicate a small
 test('fleetPlan: a round sized to the fix gets 1–3 finders and at most 4 verifiers; the same lines over the whole change get the round-1 fleet', () => {
   // two-sided: the same line count, sized two ways
   assert.deepEqual([fleetPlan(500, 2, { ofFix: true }).finders, fleetPlan(500, 2, { ofFix: true }).maxVerifiers], [2, 4]);
-  assert.deepEqual([fleetPlan(500, 2).finders, fleetPlan(500, 2).maxVerifiers], [4, 8], 'a round 2 over the whole change (the golden replay) keeps the round-1 fleet');
+  assert.deepEqual([fleetPlan(500, 2).finders, fleetPlan(500, 2).maxVerifiers], [4, 4], 'a whole-change re-review stays within one default Codex wave');
   assert.equal(fleetPlan(2000, 3, { ofFix: true }).finders, 3, 'three is the cap for a fix');
   assert.equal(fleetPlan(61, 2, { ofFix: true }).finders, 1);
   assert.deepEqual(fleetPlan(20, 2, { ofFix: true }), { finders: 1, maxVerifiers: 2, angles: [[...CORE_ANGLES]] }, 'a small fix is still one finder, no cleanup angle');
