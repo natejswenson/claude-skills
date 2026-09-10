@@ -12,13 +12,13 @@
  */
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
-import { assertRuntime, dispatchProfile } from './runtime.mjs';
+import { assertRuntime, dispatchPolicy, dispatchProfile, modelLabel, runtimeOf } from './runtime.mjs';
 import { validateWorktree, WorktreeError } from './worktree.mjs';
 import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
 
@@ -87,8 +87,9 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime = 'claude', now = () => new Date().toISOString() }) {
-  const resolvedRuntime = assertRuntime(runtime);
+export function createRun({ repo, issue, policy, offline = false, auto = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
+  if (host && runtime && host !== runtime) throw new RunError('--host and --runtime disagree');
+  const resolvedRuntime = assertRuntime(host ?? runtime);
   const complexity = classifyIssue(issue);
   return {
     schema: SCHEMA,
@@ -96,6 +97,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     issue: { number: issue.number, title: issue.title, url: issue.url },
     policy,
     runtime: resolvedRuntime,
+    host: resolvedRuntime,
+    dispatch: dispatchPolicy(resolvedRuntime, childSlots),
     // A run started from frozen `gh` payloads must never dial out later, no
     // matter which flags the next command carries. Recording it on the run is
     // what makes that a property of the run rather than of the invocation.
@@ -172,7 +175,7 @@ export function claimRunDir(dir, run, { takeOver = false } = {}) {
   return run;
 }
 
-export function loadRun(dir) {
+export function loadRun(dir, { host, childSlots } = {}) {
   if (!existsSync(statePath(dir))) {
     throw new RunError(`no run at ${dir} — start one with \`issueflow start --issue <number>\``);
   }
@@ -183,6 +186,27 @@ export function loadRun(dir) {
         'its artifacts are still on disk, but the state machine cannot resume it; start the issue again',
     );
   }
+  const previous = runtimeOf(run);
+  const selected = assertRuntime(host ?? previous);
+  const changing = selected !== previous || (childSlots != null && Number(childSlots) !== (run.dispatch?.childSlots ?? 1));
+  if (changing) {
+    const used = (path) => existsSync(path) && readdirSync(path, { withFileTypes: true }).some((entry) =>
+      entry.isDirectory() ? used(join(path, entry.name)) : true);
+    const outputs = ['briefs', 'shared', 'reviews', 'progress', 'executions', ...run.lanes.map((lane) => lane.slug)];
+    const started = [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)].some((s) =>
+      s.state !== 'pending' || Object.keys(s.at ?? {}).length || s.review?.rounds?.length || s.review?.briefed);
+    if (run.host || run.dispatch || started || run.execution || run.lanes.some((lane) => lane.pr || lane.review?.rounds?.length) || outputs.some((path) => used(join(dir, path)))) {
+      throw new RunError('cannot adopt a different host or capacity after host selection or dispatch artifacts exist');
+    }
+  }
+  run.host = selected;
+  run.runtime = selected;
+  run.dispatch ??= dispatchPolicy(selected, childSlots);
+  for (const s of [...run.stages, ...run.lanes.flatMap((lane) => lane.stages)]) {
+    delete s.model; delete s.reasoning; delete s.agent; delete s.fork_turns;
+    Object.assign(s, dispatchProfile(run, s.id));
+  }
+  if (changing) saveRun(dir, run);
   // Fields added after a run was created. Defaulted rather than migrated: the
   // run is the record of what happened, and inventing a checkpoint it never
   // made would be a lie told by the loader.
@@ -763,7 +787,7 @@ export function board(run, { now = null } = {}) {
     return {
       step: step.key,
       stage: step.stage.id,
-      model: step.stage.model,
+      model: modelLabel(dispatchProfile(run, step.stage.id)),
       state: entry.state === 'briefed' && delivered ? 'delivered' : entry.state,
       took: durationOf(entry) ?? (now && running ? elapsedOf(entry, now) : null) ?? '—',
       gate: blockers(run, step).length === 0 ? 'open' : 'blocked',

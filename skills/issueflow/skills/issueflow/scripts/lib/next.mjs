@@ -39,7 +39,7 @@ import {
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
-import { dispatchLabel } from './runtime.mjs';
+import { dispatchLabel, dispatchProfile, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
@@ -117,11 +117,16 @@ const silentStop = (dir, run, step, now) => {
   const age = heartbeatAge(dir, run, step, now);
   if (age == null || age < HEARTBEAT_TIMEOUT_S) return null;
   return stop('stalled', `${step.key} has reported no progress, evidence, or worktree activity for ${Math.round(age / 60)} minutes — re-dispatch the worker instead of waiting for the full budget`, {
-    items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(briefPath(dir, step)) }],
+    items: [{ ...dispatchProfile(run, step.stage.id), prompt: promptFor(briefPath(dir, step)) }],
     command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
   });
 };
 const newerThan = (output, brief) => existsSync(output) && (!existsSync(brief) || mtime(output) >= mtime(brief));
+
+export const waveDelivered = (dir, run, item) => {
+  const output = item.writes ?? item.artifact;
+  return Boolean(output && existsSync(output) && statSync(output).size > 0 && newerThan(output, item.prompt) && deliveryCurrent(dir, output, run));
+};
 
 /**
  * Has this step been briefed more recently than its last delivery or its last
@@ -213,7 +218,7 @@ function decideImplement(dir, run, step, ctx) {
     const activityAge = heartbeatAge(dir, run, step, ctx.now());
     if (elapsed > timeout && (activityAge == null || activityAge >= HEARTBEAT_TIMEOUT_S)) {
       return stop('stalled', `${step.key} has run ${Math.round(elapsed / 60)} minutes with nothing delivered — past ${Math.round(timeout / 60)} minutes, the stall threshold for this repo`, {
-        items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(brief) }],
+        items: [{ ...dispatchProfile(run, step.stage.id), prompt: promptFor(brief) }],
         command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
       });
     }
@@ -372,6 +377,19 @@ export function decide(dir, run, ctx = {}) {
 function decideAction(dir, run, c) {
   const state = runState(run);
   if (state === 'done') return stop('done', 'every lane landed — this run is over');
+  const wave = waveState(run, (item) => waveDelivered(dir, run, item));
+  if (wave?.kind === 'ready') return act('dispatch-wave', {}, 'released worker slots — dispatching the next queued wave');
+  if (wave?.kind === 'release') return { kind: 'wait', what: 'native worker release', release: true };
+  if (wave?.kind === 'wait') {
+    const missing = wave.items.filter((item) => !waveDelivered(dir, run, item));
+    const oldest = Math.min(...missing.map((item) => mtime(item.prompt) ?? Infinity));
+    if (Date.parse(c.now()) - oldest > DEFAULT_TIMEOUT_S * 1000) {
+      return stop('stalled', 'active Codex wave has missing deliveries; terminate its stalled children before re-dispatching these same briefs', {
+        items: missing.map((item) => ({ ...item, prompt: promptFor(item.prompt) })),
+      });
+    }
+    return wait('Codex worker wave', { pairs: wave.items.map((item) => [item.writes ?? item.artifact, item.prompt]), timeout: DEFAULT_TIMEOUT_S });
+  }
 
   // The plan first.
   const plan = findStep(run, PLAN_STAGE);
@@ -429,6 +447,10 @@ export function renderAction(action, { skillCommand, runDir }) {
       for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
     }
     lines.push('', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
+  } else if (action.kind === 'wait' && action.release) {
+    lines.push('  All wave outputs landed. Wait for every child to finish, then close/release its native slot.',
+      '  Artifact delivery alone does not free a slot. After observing all releases:',
+      `${then} --workers-released`);
   } else if (action.kind === 'wait') {
     lines.push(`  ${action.what} is in flight.`, '', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
   } else if (action.kind === 'stop') {

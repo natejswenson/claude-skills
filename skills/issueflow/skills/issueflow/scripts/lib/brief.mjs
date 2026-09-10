@@ -20,6 +20,7 @@ import {
   BLOCKING, MAX_ROUNDS, REVIEW_FORBIDS, review, reviewBriefPath, reviewPath, reviewProgressPath,
 } from './reviews.mjs';
 import { dispatchProfile, runtimeOf } from './runtime.mjs';
+import { guidanceBlock } from './guidance.mjs';
 
 const bar = (headers, rows) =>
   [`| ${headers.join(' | ')} |`, `|${headers.map(() => '---').join('|')}|`, ...rows.map((r) => `| ${r.join(' | ')} |`)].join('\n');
@@ -101,6 +102,8 @@ function contextSection(dir, run, step, workdir) {
       'down to the files you touch. Those instructions are part of the task.',
     );
   }
+  const guidance = guidanceBlock(workdir ?? run.repo.path);
+  if (guidance) out.push('', guidance);
   return out.join('\n');
 }
 
@@ -257,9 +260,7 @@ export function writeBrief(dir, run, step, issue, workdir = null) {
   return {
     step: step.key,
     stage: step.stage.id,
-    model: step.stage.model,
-    reasoning: step.stage.reasoning,
-    agent: step.stage.agent,
+    ...dispatchProfile(run, step.stage.id),
     prompt: path,
     artifact: artifactPath(dir, step),
     progress: progressPath(dir, step),
@@ -360,7 +361,7 @@ export function renderReviewBrief(dir, run, step, issue, round, workdir = null) 
 /** Write the review brief and return everything the orchestrator needs to dispatch it. */
 export function writeReviewBrief(dir, run, step, issue, round, workdir = null) {
   const declared = review(step.stage.id);
-  const dispatch = dispatchProfile(runtimeOf(run), 'redTeam');
+  const dispatch = dispatchProfile(run, 'redTeam');
   const path = reviewBriefPath(dir, step, round);
   prepareOutputs(dir, run, [path, reviewPath(dir, step, round), reviewProgressPath(dir, step, round)]);
   mkdirSync(dirname(path), { recursive: true });

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
-import { decide, renderAction, sh } from './lib/next.mjs';
+import { decide, renderAction, sh, waveDelivered } from './lib/next.mjs';
 import { DISPATCHES, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
@@ -39,7 +39,7 @@ import { WorktreeError, pruneWorktrees, registeredLanesUnder, removeWorktree } f
 import { activePath, gitStore, prepareCheckout, prepareExecution, rawRun, releaseSourceLease } from './lib/execution.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
-import { assertRuntime, dispatchLabel } from './lib/runtime.mjs';
+import { advanceWave, dispatchLabel, modelLabel, releaseWave, runtimeOf, startWave } from './lib/runtime.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -48,7 +48,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
 
 function argv(args) {
   const out = { _: [] };
@@ -220,6 +220,7 @@ function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(r
 }
 
 function guardDispatch(dir, run, args) {
+  if (run.dispatch?.queue && !run.dispatch.queue.released) throw new RunError('an active Codex wave must deliver and release its workers before another dispatch');
   const budget = budgetStatus(run);
   if (!budget?.expired) return;
   if (checkpointBudgetStop(dir, run, args, budgetStop(budget))) {
@@ -230,7 +231,7 @@ function guardDispatch(dir, run, args) {
 
 async function cmdResume(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = loadRun(dir, { host: args.host, childSlots: args.childSlots });
   const budget = renewBudget(run, args.budgetSeconds);
   saveRun(dir, run);
   const rows = reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
@@ -634,6 +635,11 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  if (args.host && !args.takeOver && existsSync(join(dir, 'run.json'))) {
+    const adopted = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+    console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
+    return;
+  }
   const claim = refuseClaimed(dir, info, issue, args);
   const takeOver = Boolean(args.takeOver) || claim.finished;
   const archived = takeOver ? resetRunDir(dir, repo, { force: Boolean(args.takeOver) }) : null;
@@ -646,7 +652,9 @@ async function cmdStart(args) {
     // Autoflow is autonomous by default. The red team's hash-bound pass is the
     // approval; a human plan gate is an explicit diagnostic/review mode.
     auto: !Boolean(args.reviewPlan),
-    runtime: assertRuntime(args.runtime),
+    runtime: args.runtime,
+    host: args.host,
+    childSlots: args.childSlots,
   });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
@@ -752,11 +760,12 @@ async function cmdBrief(args) {
     guardDispatch(dir, run, args);
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
-    if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.reasoning, info.agent]]);
+    if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, modelLabel(info), info.reasoning, info.agent]]);
     else print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
     console.log(`\nIt must write: ${info.artifact}`);
     if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
-    console.log(
+    if (runtimeOf(run) === 'codex') printDispatch([info], 'reviewers', dir, run);
+    else console.log(
       `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
         `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
     );
@@ -775,9 +784,13 @@ async function cmdBrief(args) {
     for (const step of ready) console.log(expectationLine(dir, run, step));
     console.log('');
     if (briefed.some((b) => b.reasoning)) {
-      print(['Stage', 'Model', 'Reasoning', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.reasoning, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+      print(['Stage', 'Model', 'Reasoning', 'Agent', 'Lane'], briefed.map((b) => [b.stage, modelLabel(b), b.reasoning, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
     } else {
       print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+    }
+    if (runtimeOf(run) === 'codex') {
+      printDispatch(briefed, 'stages', dir, run);
+      return;
     }
     console.log(
       `\nThese ${briefed.length} stages are independent. Dispatch them as ${briefed.length} subagents in ONE message:\n`,
@@ -800,14 +813,15 @@ async function cmdBrief(args) {
   console.log(expectationLine(dir, run, step));
   console.log('');
   // Paths stay out of padded cells — see the note in cmdStart.
-  if (info.reasoning) print(['Stage', 'Model', 'Reasoning', 'Agent'], [[info.stage, info.model, info.reasoning, info.agent]]);
+  if (info.reasoning) print(['Stage', 'Model', 'Reasoning', 'Agent'], [[info.stage, modelLabel(info), info.reasoning, info.agent]]);
   else print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
   console.log(`\nIt must write: ${info.artifact}`);
   if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
   // The brief is handed over as a path, not pasted: it is long, the user has no
   // reason to read it in the transcript, and a subagent can open a file. The
   // file is still the only channel — this is how it is delivered.
-  console.log(
+  if (runtimeOf(run) === 'codex') printDispatch([info], 'stages', dir, run);
+  else console.log(
     `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
       `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
   );
@@ -1176,7 +1190,12 @@ function prIdentity(run, lane, offline) {
   return { nodeId: view.id, headRefOid: view.headRefOid, isDraft: view.isDraft, state: view.state };
 }
 
-function printDispatch(items, kind) {
+function printDispatch(items, kind, dir = null, run = null, { queued = false } = {}) {
+  if (run && runtimeOf(run) === 'codex') {
+    if (!queued) items = startWave(run, items);
+    saveRun(dir, run);
+    if (run.dispatch.queue) console.log(`\nCodex wave: ${items.length} worker(s), child-slots=${run.dispatch.childSlots}. Wait for completion and release every native child slot before next --workers-released.`);
+  }
   if (items.length === 1) {
     console.log(`\nDispatch ONE subagent, ${dispatchLabel(items[0])}, with exactly this prompt:\n\n  Read ${items[0].prompt} and follow it exactly. It is your complete brief.\n`);
     return;
@@ -1219,13 +1238,13 @@ async function cmdReviewBrief(args) {
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
     [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
-  if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, b.angles.join(', ')]));
+  if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, b.angles.join(', ')]));
   else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
   const majors = openMajors(lane).length;
   const rest = openFindings(lane).length - majors;
   if (majors > 0) console.log(`\n${majors} major(s) still open from earlier rounds will be re-judged this round.`);
   if (rest > 0) console.log(`${rest} open nit/pre-existing finding(s) are not re-verified after round 1 — still open by construction.`);
-  printDispatch(briefs, 'finders');
+  printDispatch(briefs, 'finders', dir, run);
   console.log(`Then: \`issueflow review-verify --lane ${lane.slug}\` once every candidates file has landed.`);
 }
 
@@ -1252,9 +1271,9 @@ async function cmdReviewVerify(args) {
     return;
   }
   console.log('');
-  if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, String(b.items)]));
+  if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, String(b.items)]));
   else print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
-  printDispatch(briefs, 'verifiers');
+  printDispatch(briefs, 'verifiers', dir, run);
   console.log(`Then: \`issueflow review-register --lane ${lane.slug}\` once every verdicts file has landed.`);
 }
 
@@ -1323,7 +1342,7 @@ async function cmdReviewFixBrief(args) {
   const checks = offline ? [] : prChecks(run.repo.path, lane.pr.number).filter((c) => c.bucket === 'fail');
   assertFixRequired(entry, checks, lane.slug);
   const dispatch = fixerProfile(run, lane);
-  const model = dispatch.model;
+  const model = modelLabel(dispatch);
   guardDispatch(dir, run, args);
   const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
   entry.fix = { ...(entry.fix ?? {}), briefed: true, ...dispatch, items: items.length, redChecks: checks.length };
@@ -1331,7 +1350,7 @@ async function cmdReviewFixBrief(args) {
   if (dispatch.reasoning) print(['Lane', 'Round', 'Model', 'Reasoning', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, dispatch.reasoning, String(items.length), String(checks.length)]]);
   else print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
   if (openMajors(lane).some((f) => f.stillOpenRounds > 0)) console.log(`\n${model} this round: a major survived the previous fix.`);
-  printDispatch([info], 'fixers');
+  printDispatch([info], 'fixers', dir, run);
   console.log(`Then: \`issueflow review-fix-report --lane ${lane.slug}\` once the fix report has landed.`);
 }
 
@@ -1456,6 +1475,11 @@ async function cmdRebase(args) {
  */
 async function cmdNext(args) {
   const { dir } = locate(args);
+  const selected = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+  if (args.workersReleased) {
+    releaseWave(selected, (item) => waveDelivered(dir, selected, item));
+    saveRun(dir, selected);
+  }
   const offline = isOffline(args);
   const ctx = {
     offline,
@@ -1473,6 +1497,11 @@ async function cmdNext(args) {
     landings: () => (offline ? [] : landings(loadRun(dir))),
   };
   const perform = {
+    'dispatch-wave': () => {
+      const run = loadRun(dir);
+      guardDispatch(dir, run, args);
+      printDispatch(advanceWave(run), 'workers', dir, run, { queued: true });
+    },
     brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: false }),
     review: (a) => cmdReview({ ...args, stage: a.stage, lane: a.lane }),
     accept: (a) => cmdAccept({ ...args, stage: a.stage, lane: a.lane, auto: Boolean(a.auto) }),

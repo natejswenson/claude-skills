@@ -36,8 +36,8 @@
     },
     {
       "id": "the-model-is-not-a-suggestion",
-      "pattern": "Never dispatch a stage on a model other than the one",
-      "rationale": "The per-stage model and reasoning effort are the whole reason this is separate subagents rather than one loop. An orchestrator that quietly runs everything on one profile has kept the ceremony and thrown away the design — and a reviewer on a cheaper model than the work it reviews is a gate that rubber-stamps."
+      "pattern": "Never bypass the persisted host adapter",
+      "rationale": "The persisted host adapter owns host-valid model, reasoning, role, cold-fork and capacity fields. Claude retains its model contract while Codex inherits a valid parent model and never receives a Claude alias or literal inherit identifier."
     },
     {
       "id": "runtime-is-persisted",

@@ -7,33 +7,137 @@ import test from 'node:test';
 import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
 import { renderAction } from '../lib/next.mjs';
 import { finderProfile, fixerProfile, verifierProfile } from '../lib/prreview.mjs';
-import { createRun, findStep } from '../lib/run.mjs';
-import { assertRuntime } from '../lib/runtime.mjs';
+import { createRun, findStep, loadRun, saveRun } from '../lib/run.mjs';
+import { assertRuntime, dispatchProfile } from '../lib/runtime.mjs';
+import * as runtime from '../lib/runtime.mjs';
 
 const ISSUE = { number: 42, title: 'make both hosts work', body: 'Codex cannot dispatch opus.' };
 const REPO = { owner: 'acme', name: 'widgets', path: '/tmp/widgets', defaultBranch: 'dev' };
 const POLICY = { base: 'dev', featurePrefix: 'feature/', mergeMethod: 'squash' };
 const CLI = new URL('../issueflow.js', import.meta.url).pathname;
 
-test('codex runtime resolves every worker to a native model, reasoning effort and role', () => {
+for (const stage of ['investigate', 'implement', 'redTeam']) {
+  test(`${stage} receives scoped guidance from the actual worktree`, () => {
+    const tree = mkdtempSync(join(tmpdir(), 'issueflow-guidance-'));
+    mkdirSync(join(tree, 'src'));
+    for (const [path, content] of Object.entries({ 'CLAUDE.md': 'ROOT_CLAUDE_RULE', 'AGENTS.md': 'SHADOWED_ROOT_RULE', 'AGENTS.override.md': 'ROOT_OVERRIDE_RULE', 'REVIEW.md': 'ROOT_REVIEW_RULE', 'src/AGENTS.md': 'NESTED_AGENT_RULE', 'src/CLAUDE.md': 'NESTED_CLAUDE_RULE', 'src/REVIEW.md': 'NESTED_REVIEW_RULE' })) writeFileSync(join(tree, path), content);
+    const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });
+    const step = findStep(run, stage === 'redTeam' ? 'investigate' : stage);
+    const text = stage === 'redTeam' ? renderReviewBrief('/tmp/run', run, step, ISSUE, 1, tree) : renderBrief('/tmp/run', run, step, ISSUE, tree);
+    for (const rule of ['ROOT_CLAUDE_RULE', 'ROOT_OVERRIDE_RULE', 'ROOT_REVIEW_RULE', 'NESTED_AGENT_RULE', 'NESTED_CLAUDE_RULE', 'NESTED_REVIEW_RULE']) assert.ok(text.includes(rule), `missing ${rule}`);
+    assert.doesNotMatch(text, /SHADOWED_ROOT_RULE/);
+    assert.ok(text.indexOf('ROOT_OVERRIDE_RULE') < text.indexOf('NESTED_AGENT_RULE'));
+  });
+}
+
+for (const role of ['investigate', 'implement', 'redTeam', 'finder', 'verifier', 'fixer', 'fixerEscalated']) {
+  test(`host adapter: ${role} omits the Codex model override`, () => {
+    assert.equal(Object.hasOwn(dispatchProfile('codex', role), 'model'), false);
+  });
+  test(`host adapter: ${role} explicitly starts cold`, () => {
+    assert.equal(dispatchProfile('codex', role).fork_turns, 'none');
+  });
+  test(`host adapter: ${role} can write its delivery`, () => {
+    assert.equal(dispatchProfile('codex', role).agent, 'worker');
+  });
+  test(`host adapter: ${role} preserves Claude`, () => {
+    assert.deepEqual(dispatchProfile('claude', role), {
+      model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose',
+    });
+  });
+}
+
+test('host selection and child capacity survive save/load', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-host-'));
+  const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, host: 'codex', childSlots: 2 });
+  saveRun(dir, run);
+  const resumed = loadRun(dir);
+  assert.deepEqual([runtime.runtimeOf(resumed), resumed.dispatch?.childSlots], ['codex', 2]);
+});
+
+test('a legacy run can adopt Codex before artifacts', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-adopt-'));
+  const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY });
+  delete run.host; delete run.runtime; delete run.dispatch;
+  saveRun(dir, run);
+  const adopted = loadRun(dir, { host: 'codex', childSlots: 2 });
+  assert.equal(runtime.runtimeOf(adopted), 'codex');
+  assert.equal(runtime.runtimeOf(loadRun(dir)), 'codex');
+  assert.equal(Object.hasOwn(findStep(adopted, 'investigate').stage, 'model'), false);
+});
+
+for (const path of ['briefs/investigate.md', 'shared/investigate.md', 'reviews/investigate-r1.findings.json', 'root/review/r1/candidates-1.json']) {
+  test(`legacy adoption refuses existing output: ${path}`, () => {
+    const dir = mkdtempSync(join(tmpdir(), 'issueflow-adopt-used-'));
+    const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY });
+    delete run.host; delete run.runtime; delete run.dispatch;
+    saveRun(dir, run);
+    mkdirSync(join(dir, path, '..'), { recursive: true });
+    writeFileSync(join(dir, path), 'already dispatched');
+    assert.throws(() => loadRun(dir, { host: 'codex' }), /cannot.*host|cannot.*adopt/i);
+    assert.equal(runtime.runtimeOf(loadRun(dir)), 'claude');
+  });
+}
+
+test('artifact-bearing old Codex runs preserve their host while dropping fixed model aliases', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-old-codex-'));
+  const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });
+  delete run.host; delete run.dispatch;
+  run.stages[0].model = 'gpt-5.6-terra';
+  run.stages[0].at.briefed = '2026-01-01T00:00:00Z';
+  saveRun(dir, run);
+  const loaded = loadRun(dir);
+  assert.equal(runtime.runtimeOf(loaded), 'codex');
+  assert.equal(Object.hasOwn(loaded.stages[0], 'model'), false);
+});
+
+for (const count of [5, 8]) {
+  test(`capacity host drains all ${count} briefs only after delivery AND slot release`, () => {
+    const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex', childSlots: 2 });
+    const items = Array.from({ length: count }, (_, n) => ({ prompt: `brief-${n}`, writes: `output-${n}` }));
+    // The pre-adapter host prints the whole fleet; the test file still loads on that baseline.
+    const start = runtime.startWave ?? ((_run, fleet) => fleet);
+    const delivered = new Set();
+    const active = new Set();
+    const seen = [];
+    let wave = start(run, items);
+    while (wave.length) {
+      for (const item of wave) {
+        assert.ok(active.size < 2, 'host refuses a spawn while both slots are retained');
+        active.add(item.prompt); seen.push(item.prompt); delivered.add(item.writes);
+      }
+      assert.equal(runtime.waveState(run, (item) => delivered.has(item.writes)).kind, 'release');
+      assert.throws(() => runtime.startWave(run, items), /active|release|wave/i);
+      // Completion files do not free this host's children. Native wait/close must happen first.
+      active.clear();
+      runtime.releaseWave(run, (item) => delivered.has(item.writes));
+      wave = runtime.advanceWave(run);
+    }
+    assert.deepEqual(seen, items.map((item) => item.prompt));
+    assert.equal(new Set(seen).size, count);
+  });
+}
+
+test('codex runtime inherits the parent model with cold writable workers', () => {
   const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });
   const plan = findStep(run, 'investigate');
   const implement = findStep(run, 'implement', 'root');
 
   assert.deepEqual(
     [plan.stage.model, plan.stage.reasoning, plan.stage.agent],
-    ['gpt-5.6-terra', 'high', 'explorer'],
+    [undefined, 'high', 'worker'],
   );
   assert.deepEqual(
     [implement.stage.model, implement.stage.reasoning, implement.stage.agent],
-    ['gpt-6-astra', 'high', 'worker'],
+    [undefined, 'high', 'worker'],
   );
-  assert.deepEqual(finderProfile(run), { model: 'gpt-5.6-terra', reasoning: 'high', agent: 'explorer' });
-  assert.deepEqual(verifierProfile(run), { model: 'gpt-6-astra', reasoning: 'high', agent: 'default' });
-  assert.deepEqual(fixerProfile(run, run.lanes[0]), { model: 'gpt-5.6-terra', reasoning: 'high', agent: 'worker' });
+  const profile = { reasoning: 'high', agent: 'worker', fork_turns: 'none' };
+  assert.deepEqual(finderProfile(run), profile);
+  assert.deepEqual(verifierProfile(run), profile);
+  assert.deepEqual(fixerProfile(run, run.lanes[0]), profile);
 
   run.lanes[0].review.findings = [{ severity: 'major', status: 'open', stillOpenRounds: 1 }];
-  assert.deepEqual(fixerProfile(run, run.lanes[0]), { model: 'gpt-6-astra', reasoning: 'xhigh', agent: 'worker' });
+  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'xhigh' });
 });
 
 test('codex briefs use AGENTS.md and native completion; Claude defaults stay Claude-shaped', () => {
@@ -75,7 +179,7 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   assert.match(output, /Auto run: every stage is gated by a red-team review instead of a human/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
   const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8' });
-  assert.match(next, /model `gpt-5\.6-terra`, reasoning_effort `high`, role `explorer`/);
+  assert.match(next, /model override omitted.*reasoning_effort `high`.*role `worker`.*fork_turns `none`/);
   assert.match(next, /next: dispatch \(brief\)/);
 
   const reviewDir = join(root, 'review-plan');
