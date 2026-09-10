@@ -94,7 +94,8 @@ def plugin_names(payload, field, expected, command):
             f'Codex command returned no {field} list: {display_command(command)}'
         )
     names = [entry.get('name') if isinstance(entry, dict) else None for entry in entries]
-    if len(names) != len(expected) or any(name not in expected for name in names):
+    has_duplicate = any(names.count(name) > 1 for name in names)
+    if len(names) != len(expected) or has_duplicate or any(name not in expected for name in names):
         missing = sorted((name for name in expected if name not in names))
         extra = sorted((name for name in names if name not in expected), key=repr)
         raise SmokeError(

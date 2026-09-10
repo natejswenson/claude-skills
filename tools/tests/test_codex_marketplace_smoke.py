@@ -108,6 +108,19 @@ class CodexMarketplaceSmokeTests(unittest.TestCase):
             self.assertIn('available plugin set mismatch', result.stdout + result.stderr)
             self.assertIn('unexpected', result.stdout + result.stderr)
 
+    def test_duplicate_discovery_entry_fails_when_another_plugin_is_missing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'commands.jsonl'
+            fake_codex = self.make_fake_codex(directory)
+            available = PLUGIN_NAMES.copy()
+            available[1] = available[0]
+            result = self.run_runner(fake_codex, log, FAKE_AVAILABLE=json.dumps(available))
+
+            self.assertNotEqual(result.returncode, 0)
+            output = result.stdout + result.stderr
+            self.assertIn('available plugin set mismatch', output)
+            self.assertIn(PLUGIN_NAMES[1], output)
+
     def test_malformed_discovery_name_reports_mismatch_without_type_error(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / 'commands.jsonl'
