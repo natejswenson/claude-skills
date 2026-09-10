@@ -1538,7 +1538,7 @@ async function cmdNext(args) {
     // Offline autonomous runs can exercise budget renewal without claiming a
     // real Codex workspace. Keep this simulation resumable and side-effect
     // free; a real host must prepare execution before dispatch.
-    if ((offline || loaded.offline) && runtimeOf(loaded) === 'codex' && (loaded.autonomous || loaded.auto) && !loaded.execution) {
+    if (runtimeOf(loaded) === 'codex' && !loaded.execution && (offline || loaded.offline || loaded.checkout?.mode === 'source')) {
       const budget = budgetStatus(loaded);
       if (budget?.expired && budget.totalRemainingSeconds > 0) {
         autoRenewBudget(loaded);
@@ -1692,7 +1692,8 @@ async function main() {
       const { dir } = locate(args);
       // Host adoption is part of loading a legacy run. It must happen before
       // execution preparation validates Codex-only workspace-root options.
-      prepareExecution(dir, loadRun(dir, { host: args.host, childSlots: args.childSlots }), args);
+      const run = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+      if (args.workspaceRoot || run.execution) prepareExecution(dir, run, args);
     }
     switch (cmd) {
       case 'board': return await cmdBoard(args);
