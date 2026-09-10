@@ -17,7 +17,8 @@ import {
   fixPatchPath, fixReportPath, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
-import { runtimeOf } from './runtime.mjs';
+import { dispatchProfile, runtimeOf } from './runtime.mjs';
+import { guidanceBlock as resolvedGuidance } from './guidance.mjs';
 
 const METHOD_PATH = new URL('../../references/review-method.md', import.meta.url);
 const METHOD = readFileSync(METHOD_PATH, 'utf8');
@@ -35,7 +36,7 @@ export function methodSection(heading) {
 export const angleText = (id, run = null) => {
   const text = methodSection(`angle: ${id}`);
   if (id !== 'conventions' || runtimeOf(run) !== 'codex') return text;
-  return text.replaceAll('CLAUDE.md', 'AGENTS.md');
+  return text + '\n\nAlso apply scoped AGENTS.override.md / AGENTS.md and REVIEW.md from Repository guidance below.';
 };
 
 const bar = (headers, rows) =>
@@ -100,11 +101,13 @@ function intentBlock(dir, run) {
 }
 
 /** The repository's own review instructions, when it has them. REVIEW.md is spliced; the host's instruction file is named. */
-function guidanceBlock(run, files) {
+function guidanceBlock(run, files, tree) {
+  const resolved = resolvedGuidance(tree, files);
+  if (resolved) return resolved;
   const out = ['## Repository guidance', ''];
-  const reviewMd = join(run.repo.path, 'REVIEW.md');
+  const reviewMd = join(tree, 'REVIEW.md');
   const instructionName = runtimeOf(run) === 'codex' ? 'AGENTS.md' : 'CLAUDE.md';
-  const instructionFile = join(run.repo.path, instructionName);
+  const instructionFile = join(tree, instructionName);
   if (existsSync(reviewMd)) {
     out.push('The repository\'s own `REVIEW.md`, verbatim — it says what this repository wants flagged and at what severity:', '', readFileSync(reviewMd, 'utf8').trim(), '');
   } else {
@@ -115,7 +118,7 @@ function guidanceBlock(run, files) {
     let d = dirname(f.path);
     while (d && d !== '.') { dirs.add(d); d = dirname(d); }
   }
-  const nested = [...dirs].filter((d) => existsSync(join(run.repo.path, d, instructionName))).map((d) => `\`${d}/${instructionName}\``);
+  const nested = [...dirs].filter((d) => existsSync(join(tree, d, instructionName))).map((d) => `\`${d}/${instructionName}\``);
   if (existsSync(instructionFile)) {
     // Named repo-relative on purpose: a finder that copies the absolute path
     // into a finding puts the maintainer's home directory on the pull request.
@@ -222,7 +225,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '',
     methodSection('The anti-self-censorship rule'),
     '',
-    guidanceBlock(run, files),
+    guidanceBlock(run, files, tree),
     '',
     '## You must not',
     '',
@@ -314,7 +317,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
       '',
     );
   }
-  out.push(intentBlock(dir, run), '', issueBlock(issue), '', '## Your items', '');
+  out.push(intentBlock(dir, run), '', issueBlock(issue), '', ...(resolvedGuidance(tree, items) ? [resolvedGuidance(tree, items), ''] : []), '## Your items', '');
   if (fresh.length > 0) {
     out.push(`### New candidates (${fresh.length})`, '', '```json', JSON.stringify(fresh.map(({ prior: _p, mergedFrom: _m, ...c }) => c), null, 2), '```', '');
   }
@@ -418,6 +421,8 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     `## Open findings (${items.length})`,
     '',
   ];
+  const guidance = resolvedGuidance(tree, items.length ? items : null);
+  if (guidance) out.splice(out.length - 2, 0, guidance, '');
   for (const f of items) {
     out.push(
       `### \`${f.id}\` — ${f.severity} — \`${f.file}:${f.line}\``,
@@ -475,13 +480,14 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
   return out.join('\n');
 }
 
-export function writeFixBrief(dir, run, lane, entry, { items, checks, model, reasoning, agent, issue }) {
+export function writeFixBrief(dir, run, lane, entry, { items, checks, model, issue }) {
   const path = fixBriefPath(dir, lane, entry.round);
   prepareOutputs(dir, run, [path, fixReportPath(dir, lane, entry.round), evidencePath(dir, findStep(run, 'implement', lane.slug)), activePath(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`)]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderFixBrief(dir, run, lane, entry, { items, checks, model, issue }));
   recordDispatch(dir, run, path, [fixReportPath(dir, lane, entry.round)]);
-  return { model, reasoning, agent, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
+  const profile = dispatchProfile(run, items.some((item) => item.severity === 'major' && item.stillOpenRounds > 0) ? 'fixerEscalated' : 'fixer');
+  return { ...profile, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
 }
 
 export { NIT_CAP };
