@@ -9,7 +9,8 @@ Two layers:
   * DOM checks — `lint_page(page)` measures the already-rendered page in
     Chromium: clipped/overflowing content, fired ellipses, wrapped eyebrows,
     dead vertical bands, per-template count budgets, wrapped command chips,
-    and ramp trend-line drift.
+    brochure install bars that wrap, hide or run past the frame, and ramp
+    trend-line drift.
 
 Standalone CLI (self-renders via render_image's inline_assets path):
 
@@ -388,6 +389,34 @@ LINT_JS = r"""
     if (count('.plate svg') !== 1)
       push('FAIL', 'count-budget',
         'brochure needs exactly one plate illustration — found ' + count('.plate svg'));
+    // The install bars are the one thing on the card a reader will copy, and
+    // the Codex marketplace route is longer than either Claude slash command.
+    // A step that is still the template placeholder, hidden, wrapped, or run
+    // past the frame is a route nobody can install from — FAIL, measured on
+    // the rendered bar rather than counted in characters.
+    const frameRight = cRect.right - parseFloat(cs.paddingRight);
+    for (const el of canvas.querySelectorAll('.install .cmdbar')) {
+      const t = txt(el);
+      if (/^the --actual (first|second) command$/.test(t))
+        push('FAIL', 'placeholder', 'install step is still the template placeholder: "' + t +
+          '" — scaffold it with release_facts.py --host <claude|codex>');
+      if (!visible(el)) {
+        push('FAIL', 'cmdbar-fit', '.cmdbar "' + short(el) +
+          '" is hidden — both install steps must be visible');
+        continue;
+      }
+      const st = getComputedStyle(el);
+      const lh = parseFloat(st.lineHeight) || parseFloat(st.fontSize) * 1.3;
+      const inner = el.clientHeight - parseFloat(st.paddingTop) - parseFloat(st.paddingBottom);
+      const r = el.getBoundingClientRect();
+      if (inner > 1.7 * lh)
+        push('FAIL', 'cmdbar-fit', '.cmdbar wraps to two+ lines: "' + t +
+          '" — an install step is one line, ≤60 chars');
+      else if (el.scrollWidth > el.clientWidth + 1 || r.right > frameRight + 1)
+        push('FAIL', 'cmdbar-fit', '.cmdbar runs past the frame (right edge ' + Math.round(r.right) +
+          'px, frame ends at ' + Math.round(frameRight) + 'px): "' + t +
+          '" — a cut command cannot be copied; ≤60 chars');
+    }
   }
 
   if (cls.includes('code')) {

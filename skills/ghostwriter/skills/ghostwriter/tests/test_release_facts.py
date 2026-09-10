@@ -346,3 +346,96 @@ def test_a_missing_one_rule_says_what_to_do_instead_of_inventing_one(tmp_path, m
     html = out.read_text()
     assert "declares no" in html and "release notes" in html
     assert "TODO" in html, "the slot must stay obviously unfinished"
+
+
+# ── the selected host ────────────────────────────────────────────────────────
+#
+# A brochure has room for exactly one complete install route, so the route on
+# it has to be the one the reader can actually run. A Codex user cannot type a
+# Claude slash command, and a card showing both hosts' lines advertises one
+# command that does not work wherever it is read.
+
+CODEX_STEPS = ["codex plugin marketplace add o/r", "codex plugin add demo@claude-skills"]
+CLAUDE_STEPS = ["/plugin marketplace add o/r", "/plugin install demo@claude-skills"]
+
+
+def test_install_steps_per_host():
+    assert rf.install_steps("claude", "o/r", "demo") == CLAUDE_STEPS
+    assert rf.install_steps("codex", "o/r", "demo") == CODEX_STEPS
+    with pytest.raises(ValueError, match="gemini"):
+        rf.install_steps("gemini", "o/r", "demo")
+
+
+def test_claude_is_the_default_host(monkeypatch, tmp_path, capsys):
+    # No --host: the two slash commands exactly as before, and nothing Codex.
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    out = tmp_path / "facts.json"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--json", str(out)]) == 0
+    facts = json.loads(out.read_text())
+    assert facts["host"] == "claude"
+    assert facts["installSteps"] == CLAUDE_STEPS
+    printed = capsys.readouterr().out
+    assert "| host" in printed and "claude" in printed
+    assert "codex plugin" not in printed and "codex plugin" not in out.read_text()
+
+
+def test_explicit_claude_host_is_the_default_route(monkeypatch, tmp_path):
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    out = tmp_path / "facts.json"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--host", "claude", "--json", str(out)]) == 0
+    facts = json.loads(out.read_text())
+    assert facts["host"] == "claude"
+    assert facts["installSteps"] == CLAUDE_STEPS
+    assert facts["installSteps"][0] == facts["marketplace"]
+    assert facts["installSteps"][1] == facts["install"]
+
+
+def test_codex_host_emits_only_the_codex_route(monkeypatch, tmp_path, capsys):
+    # `codex plugin marketplace add <repo>` then `codex plugin add <skill>@<marketplace>`
+    # — the route the Codex CLI documents — and no Claude slash command anywhere:
+    # not in the terminal table, not in the JSON, not on the scaffolded card.
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    out = tmp_path / "facts.json"
+    card = tmp_path / "card.html"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--host", "codex",
+                    "--json", str(out), "--scaffold", str(card)]) == 0
+
+    facts = json.loads(out.read_text())
+    assert facts["host"] == "codex"
+    assert facts["installSteps"] == CODEX_STEPS
+    assert facts["installSteps"][0] == facts["marketplace"]
+    assert facts["installSteps"][1] == facts["install"]
+    assert "/plugin" not in out.read_text()
+
+    printed = capsys.readouterr().out
+    assert CODEX_STEPS[0] in printed and CODEX_STEPS[1] in printed
+    assert "/plugin" not in printed
+
+    html = card.read_text()
+    assert f'<code class="cmdbar">{CODEX_STEPS[0]}</code>' in html
+    assert f'<code class="cmdbar">{CODEX_STEPS[1]}</code>' in html
+    assert "/plugin" not in html
+    assert "the --actual" not in html
+
+
+def test_claude_scaffold_carries_no_codex_command(monkeypatch, tmp_path):
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    card = tmp_path / "card.html"
+    assert rf.main(["demo", "--repo", str(tmp_path), "--scaffold", str(card)]) == 0
+    html = card.read_text()
+    assert f'<code class="cmdbar">{CLAUDE_STEPS[0]}</code>' in html
+    assert f'<code class="cmdbar">{CLAUDE_STEPS[1]}</code>' in html
+    assert "codex plugin" not in html
+
+
+def test_an_unknown_host_is_refused_before_any_fact_is_read(monkeypatch, tmp_path, capsys):
+    _skill(tmp_path, skill_md=SKILL_MD)
+    _wire(monkeypatch)
+    with pytest.raises(SystemExit) as e:
+        rf.main(["demo", "--repo", str(tmp_path), "--host", "gemini"])
+    assert e.value.code == 2
+    assert "invalid choice: 'gemini'" in capsys.readouterr().err

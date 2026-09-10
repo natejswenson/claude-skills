@@ -51,16 +51,24 @@ jobs:
       # on ubuntu-latest; press has no dependencies.)
       - if: steps.changes.outputs.ghostwriter == 'true'
         run: node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-card
-      # Tier 2: lint the bash, test the Python at 100% coverage
+      # Tier 2: lint the bash, test the Python at 100% coverage. The card DOM
+      # assertions (brochure install-bar fit, render-lint geometry) need a real
+      # Chromium; without one they skip, and a skipped geometry proof is no
+      # proof. Playwright provisions it, and GHOSTWRITER_REQUIRE_CHROMIUM turns
+      # that skip into a failure here so the brochure test cannot go quiet.
       - if: steps.changes.outputs.ghostwriter == 'true'
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt -r requirements-diagrams.txt
         working-directory: skills/ghostwriter/skills/ghostwriter
+      - if: steps.changes.outputs.ghostwriter == 'true'
+        run: python -m playwright install --with-deps chromium
       - if: steps.changes.outputs.ghostwriter == 'true'
         run: shellcheck scripts/release_radar.sh scripts/install_radar.sh
         working-directory: skills/ghostwriter/skills/ghostwriter
       - if: steps.changes.outputs.ghostwriter == 'true'
         run: pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100
         working-directory: skills/ghostwriter/skills/ghostwriter
+        env:
+          GHOSTWRITER_REQUIRE_CHROMIUM: "1"
 
   release:
     needs: ci

@@ -192,6 +192,12 @@
    "file": "references/codex-images.md",
    "pattern": "rendered-graph reconciliation[\\s\\S]{0,900}missing, reversed, extra, ambiguous, or unsupported relationship",
    "rationale": "A correct prompt does not prove the raster output is correct. The rendered arrows and containment must be transcribed from the image and compared with the evidence model before the card is shown."
+  },
+  {
+   "id": "brochure-host-route",
+   "file": "SKILL.md",
+   "pattern": "release_facts\\.py <skill> --host <claude\\|codex>",
+   "rationale": "A brochure has room for exactly one install route. The scaffold step must pass the host this session runs in: a Codex session that scaffolds without --host advertises two Claude slash commands on a card only Codex users will read, and neither can be typed into Codex."
   }
  ],
  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",

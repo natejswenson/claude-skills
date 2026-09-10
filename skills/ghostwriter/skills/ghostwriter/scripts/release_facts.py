@@ -10,7 +10,12 @@ capability, or advertise an install command that does not work.
 It returns facts. It never writes a card: composing one is judgment, and a
 brochure this script could generate would be the same brochure every time.
 
-    release_facts.py <skill> [--repo <path>] [--json <out>]
+    release_facts.py <skill> [--host claude|codex] [--repo <path>] [--json <out>]
+
+`--host` selects the ONE install route the card carries. A brochure has room
+for exactly two command bars — one complete route — and a Codex reader cannot
+type a Claude slash command, so the facts name the route for the host the
+session runs in and nothing from the other one.
 """
 from __future__ import annotations
 
@@ -22,6 +27,29 @@ import sys
 from pathlib import Path
 
 MARKETPLACE = "claude-skills"
+
+# The hosts a card can be read from. Claude stays the default so every existing
+# invocation keeps emitting the two slash commands it always did.
+HOSTS = ("claude", "codex")
+
+
+def install_steps(host: str, slug: str, skill: str) -> list[str]:
+    """BOTH steps for the selected host, always, in order.
+
+    The install line alone does nothing until the marketplace is added — on
+    either host — so a card showing only the second line advertises a command
+    that does not work; that is the exact failure this module exists to prevent.
+    The Codex route is what `codex plugin marketplace add --help` and
+    `codex plugin add --help` document: a source as owner/repo, then
+    PLUGIN@MARKETPLACE.
+    """
+    if host == "claude":
+        return [f"/plugin marketplace add {slug}",
+                f"/plugin install {skill}@{MARKETPLACE}"]
+    if host == "codex":
+        return [f"codex plugin marketplace add {slug}",
+                f"codex plugin add {skill}@{MARKETPLACE}"]
+    raise ValueError(f"unknown host {host!r}; expected one of {', '.join(HOSTS)}")
 
 
 def _run(args: list[str]) -> str | None:
@@ -197,6 +225,9 @@ def scaffold(facts: dict) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("skill")
+    ap.add_argument("--host", choices=HOSTS, default="claude",
+                    help="the host the card will be read from — its install "
+                         "route is the only one the facts carry (default: claude)")
     ap.add_argument("--repo", default=".")
     ap.add_argument("--json", dest="json_out")
     ap.add_argument("--scaffold", dest="scaffold_out",
@@ -226,6 +257,9 @@ def main(argv: list[str] | None = None) -> int:
 
     version = rel["tagName"].split("-v", 1)[1]
     md = sdir / "SKILL.md"
+    # One host, one route: the selected host's two steps and nothing from the
+    # other host (see install_steps for why it is always both).
+    steps = install_steps(args.host, slug, skill)
     facts = {
         "skill": skill,
         "version": version,
@@ -233,16 +267,10 @@ def main(argv: list[str] | None = None) -> int:
         "published": (rel.get("publishedAt") or "")[:10],
         "releaseUrl": f"https://github.com/{slug}/releases/tag/{rel['tagName']}",
         "repo": slug,
-        # BOTH steps, always. `/plugin install` alone does nothing until the
-        # marketplace is added, so a card showing only the second line
-        # advertises a command that does not work — the exact failure this
-        # module exists to prevent.
-        "marketplace": f"/plugin marketplace add {slug}",
-        "install": f"/plugin install {skill}@{MARKETPLACE}",
-        "installSteps": [
-            f"/plugin marketplace add {slug}",
-            f"/plugin install {skill}@{MARKETPLACE}",
-        ],
+        "host": args.host,
+        "marketplace": steps[0],
+        "install": steps[1],
+        "installSteps": steps,
         "description": frontmatter_description(md),
         "oneRule": one_rule(md),
         "changelogBullets": changelog_bullets(repo, skill, version),
@@ -253,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
         ["version", facts["version"]],
         ["tag", facts["tag"]],
         ["published", facts["published"] or "—"],
+        ["host", facts["host"]],
         ["install step 1", facts["installSteps"][0]],
         ["install step 2", facts["installSteps"][1]],
         ["one rule", "present" if facts["oneRule"] else "— (none declared)"],

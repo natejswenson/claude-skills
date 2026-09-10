@@ -637,3 +637,72 @@ def test_dom_code_line_budget_fails_at_14_rows(dom_page):
         f.code == "count-budget" and "14 code lines" in f.message
         for f in findings if f.level == "FAIL"
     )
+
+
+# ------------------------------------------------------ brochure install bars
+# The two install bars are the one thing on a brochure a reader will copy, and
+# the Codex marketplace route is longer than either Claude slash command. These
+# render the REAL scaffold (release_facts.scaffold on the shipped template) so
+# the geometry under test is the geometry that ships.
+def brochure(step1: str, step2: str, style: str = "") -> str:
+    import release_facts as rf
+
+    html = rf.scaffold({
+        "skill": "demo", "version": "0.1.0", "published": "2026-01-01",
+        "installSteps": [step1, step2],
+        "oneRule": "Never ship a claim it cannot back.",
+    })
+    # The example plate is its own FAIL (placeholder); it is not what these measure.
+    html = html.replace('id="plate-example"', 'id="plate-demo"')
+    return html.replace("</head>", style + "</head>", 1) if style else html
+
+
+CODEX_ROUTE = ("codex plugin marketplace add natejswenson/claude-skills",
+               "codex plugin add ghostwriter@claude-skills")
+
+
+def fit_fails(findings):
+    return [f for f in findings if f.code == "cmdbar-fit" and f.level == "FAIL"]
+
+
+def test_dom_brochure_codex_route_fits_both_bars(dom_page):
+    findings = run_dom(dom_page, brochure(*CODEX_ROUTE))
+    assert not fit_fails(findings), [f.message for f in findings]
+    assert "clip-overflow" not in codes(findings)
+    assert "placeholder" not in codes(findings)
+
+
+def test_dom_brochure_command_past_the_frame_fails(dom_page):
+    long_route = ("codex plugin marketplace add natejswenson/claude-skills --ref main "
+                  "--sparse skills/ghostwriter")  # 96 chars: the bar runs off the card
+    findings = run_dom(dom_page, brochure(long_route, CODEX_ROUTE[1]))
+    fails = fit_fails(findings)
+    assert fails and "past the frame" in fails[0].message, [f.message for f in findings]
+    assert long_route in fails[0].message
+
+
+def test_dom_brochure_wrapped_command_fails(dom_page):
+    # A personal stylesheet that lets the bar wrap: still one FAIL, named as a wrap.
+    style = ('<style>.card.press[data-card="brochure"] .install .cmdbar'
+             '{white-space:normal !important}</style>')
+    long_route = "codex plugin marketplace add natejswenson/claude-skills " + "x" * 40
+    findings = run_dom(dom_page, brochure(long_route, CODEX_ROUTE[1], style=style))
+    fails = fit_fails(findings)
+    assert fails and "wraps" in fails[0].message, [f.message for f in findings]
+
+
+def test_dom_brochure_hidden_command_fails(dom_page):
+    # Two bars in the DOM but one hidden: the count budget is satisfied and the
+    # reader still sees one step. That is the exact "half a route" failure.
+    style = '<style>.install .cmdbar:first-of-type{display:none}</style>'
+    findings = run_dom(dom_page, brochure(*CODEX_ROUTE, style=style))
+    fails = fit_fails(findings)
+    assert fails and "hidden" in fails[0].message, [f.message for f in findings]
+    assert "count-budget" not in codes(findings, "FAIL")
+
+
+def test_dom_brochure_placeholder_command_fails(dom_page):
+    findings = run_dom(dom_page, brochure("the --actual first command", CODEX_ROUTE[1]))
+    ph = [f for f in findings if f.code == "placeholder" and f.level == "FAIL"]
+    assert any("install step" in f.message and "--host" in f.message for f in ph), \
+        [f.message for f in findings]

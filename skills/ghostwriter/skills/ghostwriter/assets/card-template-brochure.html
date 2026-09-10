@@ -57,13 +57,19 @@
   facts beats one with three where a reader cannot tell which is stale.
 
   ── EVIDENCE ─────────────────────────────────────────────────────────────────
-    python3 scripts/release_facts.py <skill> --json /tmp/<skill>.json
+    python3 scripts/release_facts.py <skill> --host <claude|codex> --json /tmp/<skill>.json
   reads the version, tag, publish date, BOTH install steps and the skill's own
   one rule off the RELEASED artifact. Never type a version or an install command
-  by hand. `installSteps` has two entries and the card shows both: `/plugin
-  install` does nothing until the marketplace has been added, so a card showing
+  by hand. `installSteps` has two entries and the card shows both: the install
+  line does nothing until the marketplace has been added, so a card showing
   only the second line advertises a command that does not work. A skill with no
   published release has no brochure to make yet.
+
+  `--host` is the host the card will be READ from, and the card carries that
+  host's route only. Two bars hold exactly one complete route; a Codex reader
+  cannot type a Claude slash command and a Claude reader cannot type a Codex
+  CLI command, so a card showing both advertises a command that does not work
+  wherever it is read. Claude is the default; pass `--host codex` in Codex.
 
   Render portrait 4:5 (the default --size 1200x1500):
     render_image.py --type card --size 1200x1500 --in images/<slug>.html --out images/<slug>.png
@@ -72,7 +78,9 @@
     eyebrow <=24 chars, one line    h1 <=2 lines (~11 chars/line beside the
     plate; add class "compact" for ~16)   stand <=4 lines (~34ch measure)
     EXACTLY 3 .fact — .fval <=11 chars beside the plate · .flabel/.fcap one line
-    .pull .q <=3 lines              EXACTLY 2 .cmdbar, <=52 chars each, one line
+    .pull .q <=3 lines              EXACTLY 2 .cmdbar, <=60 chars each, one line
+    (the Codex marketplace route is 55; the lint FAILS a bar that wraps, hides
+    or runs past the frame, measured on the render rather than counted)
     colophon .out <=52 chars        plate svg viewBox "0 0 300 900"
     plate: <=1 .sig-fill · id="plate-example" must be gone
 
@@ -147,7 +155,8 @@
       </div>
     </div>
 
-    <!-- both steps: /plugin install does nothing until the marketplace is added -->
+    <!-- both steps of ONE host's route: the install line does nothing until the
+         marketplace is added, and the other host's commands never appear here -->
     <div class="install">
       <span class="step-no">01</span>
       <code class="cmdbar">the --actual first command</code>

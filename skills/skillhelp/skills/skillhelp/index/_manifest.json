@@ -98,9 +98,9 @@
     },
     {
       "name": "ghostwriter",
-      "version": "0.22.0",
+      "version": "0.23.0",
       "stack": "python",
-      "cardHash": "4e5019902a47bb94",
+      "cardHash": "94eaa3f62805a57b",
       "facts": 59,
       "sections": {
         "setup": 8,

@@ -4,6 +4,24 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-09-10
+
+### Added
+
+- **Release brochures carry the install route for the host that will read them.**
+  `release_facts.py` takes `--host claude|codex` (Claude stays the default and keeps
+  both slash commands); `--host codex` emits `codex plugin marketplace add <repo>`
+  then `codex plugin add <skill>@claude-skills`, and the terminal table, JSON and
+  scaffolded card carry exactly that route with no command from the other host.
+  The skill instructions pass the active host.
+- **The brochure install bars are measured, not counted.** The render lint fails a
+  bar that is hidden, wraps, runs past the frame or is still the template
+  placeholder; the documented budget is now the measured 60 characters (the Codex
+  marketplace route is 55), stated identically in the template, SKILL.md and the
+  stylesheet and pinned by a test. A real Chromium test renders the Codex route at
+  1200×1500 through the personal-stylesheet precedence path, and CI now provisions
+  Chromium so that proof runs rather than skips.
+
 ## [0.22.0] - 2026-09-10
 
 ### Added

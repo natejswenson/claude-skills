@@ -1191,7 +1191,9 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
 .card.press .lt { font: 800 40px/1.1 var(--font); letter-spacing: -.015em; color: var(--ink); }
 .card.press .le { font: 400 27px/1.4 var(--serif); color: var(--dim); max-width: 52ch; }
 
-/* cmdbar: the real command/flag as a full-ink inset bar (≤44 chars, one line) */
+/* cmdbar: the real command/flag as a full-ink inset bar (≤44 chars, one line
+   beside a ledger number; the brochure's full-width install bars take ≤60 —
+   see the brochure block below) */
 .card.press .cmdbar { align-self: flex-start; margin-top: 8px; background: var(--ink);
   color: var(--paper); font: 600 24px/1 var(--mono); padding: 18px 26px; white-space: nowrap; }
 
@@ -1346,6 +1348,9 @@ body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: ant
   opacity: 0.55;
 }
 
+/* The brochure install bars span the reading measure (≤60 chars at 24px mono;
+   the Codex marketplace route is 55), so a step never wraps — and one that
+   would run past the frame is a render-lint FAIL, not a quiet overflow. */
 .card.press[data-card="brochure"] .install .cmdbar { white-space: nowrap; }
 
 /* A value must never break mid-token: "2026-08-04" split across two lines at
