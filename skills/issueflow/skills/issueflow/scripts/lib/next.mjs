@@ -33,7 +33,7 @@ import {
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
-  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath,
+  MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath, reviewCap,
   ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
@@ -236,7 +236,7 @@ function allPresent(paths) {
  * reads it and rules, or buys one more round. `next` never does either.
  */
 const exhaustedStop = (lane) =>
-  stop('exhausted', `${lane.slug}: ${MAX_REVIEW_ROUNDS} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
+  stop('exhausted', `${lane.slug}: ${reviewCap(lane)} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
     command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
     alternative: `review-brief --lane ${lane.slug} --another-round "<why one more round>"`,
   });
