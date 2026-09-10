@@ -20,7 +20,7 @@ import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
 import { assertRuntime, dispatchProfile } from './runtime.mjs';
 import { validateWorktree, WorktreeError } from './worktree.mjs';
-import { activePath, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
+import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -556,9 +556,10 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   // gate said yes. Keeping both apart is what lets the run report stage time
   // separately from review time instead of blaming the model for the wait.
   step.stage.at = { ...step.stage.at, delivered: mtimeOf(artifact), approved: now() };
-  if (run.execution && step.stage.evidence) {
+  if (run.execution) {
     archiveExecution(dir, run);
-    step.stage.evidence = archivedPath(dir, run, step.stage.evidence);
+    approveArtifact(dir, run, artifact);
+    if (step.stage.evidence) step.stage.evidence = archivedPath(dir, run, step.stage.evidence);
   }
   saveRun(dir, run);
   return run;

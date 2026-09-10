@@ -1,4 +1,4 @@
-import { activePath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
+import { activePath, approvedArtifactPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The review loop's briefs — finder, verifier, fixer — rendered from
  * `references/review-method.md`, never improvised.
@@ -93,7 +93,7 @@ function intentBlock(dir, run) {
   return [
     '## What the change is for',
     '',
-    `The approved plan is at \`${activePath(dir, SHARED_DIR, plan.stage.artifact)}\` — root cause, approach, the`,
+    `The approved plan is at \`${approvedArtifactPath(dir, run, activePath(dir, SHARED_DIR, plan.stage.artifact))}\` — root cause, approach, the`,
     'files it said it would touch, and the proof it promised. It was red-teamed and approved before',
     'any code was written; the diff is supposed to be that plan, built.',
   ].join('\n');
