@@ -120,7 +120,7 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       }
       issueClosed = true;
     }
-    releaseSourceLease(dir, run);
+    if (run.checkout?.mode === 'source') releaseSourceLease(dir, run);
     recordFinished(dir, run, { issueClosed }, now);
   }
 

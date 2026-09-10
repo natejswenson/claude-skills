@@ -35,7 +35,8 @@ function record(dir, run) {
     fail(`invalid execution ownership at ${dir}; restore the recorded run`);
   }
   if (realpathSync(e.root) !== e.root || within(realpathSync(dir), e.root) ||
-      within(join(homedir(), '.claude'), e.root) || within(e.common, e.root)) {
+      within(join(homedir(), '.claude'), e.root) || within(e.common, e.root) ||
+      within(e.root, e.source) || within(e.source, e.root)) {
     fail(`execution root is not an approved workspace location: ${e.root}`);
   }
   return e;
@@ -295,7 +296,8 @@ function prepare(dir, run, { workspaceRoot }) {
   if (!quiescent(run)) fail(`cannot migrate or restore in-flight execution at ${previous?.path ?? dir}; recover the child outputs and commit or preserve dirty lane work before preparing`);
   const info = sourceInfo(run);
   const root = realpathSync(resolve(workspaceRoot ?? previous.root));
-  if (within(realpathSync(dir), root) || within(join(homedir(), '.claude'), root) || within(info.common, root)) fail(`not an approved workspace root: ${root}`);
+  if (within(realpathSync(dir), root) || within(join(homedir(), '.claude'), root) || within(info.common, root) ||
+      within(root, info.path) || within(info.path, root)) fail(`not an approved workspace root: ${root}`);
   const owner = ownerOf(dir, run);
   const generation = randomUUID();
   const key = digest(JSON.stringify(owner));
@@ -326,8 +328,12 @@ function prepare(dir, run, { workspaceRoot }) {
   if (git(['for-each-ref', '--format=%(refname)', 'refs/remotes/origin'], info.path)) git(['fetch', info.path, '+refs/remotes/origin/*:refs/remotes/origin/*'], store);
   if (git(['remote'], info.path).split('\n').includes('origin')) {
     git(['remote', 'add', 'origin', git(['remote', 'get-url', 'origin'], info.path)], store);
-    git(['config', '--unset-all', 'remote.origin.fetch'], store);
-    for (const spec of git(['config', '--get-all', 'remote.origin.fetch'], info.path).split('\n').filter(Boolean)) git(['config', '--add', 'remote.origin.fetch', spec], store);
+    try { git(['config', '--unset-all', 'remote.origin.fetch'], store); } catch (err) { if (err.status !== 5) throw err; }
+    let fetch = [], push = [];
+    try { fetch = git(['config', '--get-all', 'remote.origin.fetch'], info.path).split('\n').filter(Boolean); } catch (err) { if (err.status !== 1) throw err; }
+    try { push = git(['config', '--get-all', 'remote.origin.pushurl'], info.path).split('\n').filter(Boolean); } catch (err) { if (err.status !== 1) throw err; }
+    for (const spec of fetch) git(['config', '--add', 'remote.origin.fetch', spec], store);
+    for (const url of push) git(['config', '--add', 'remote.origin.pushurl', url], store);
   }
   for (const config of ['user.name', 'user.email']) {
     try { git(['config', config, git(['config', '--get', config], info.path)], store); } catch (err) { if (err.status !== 1) throw err; }
