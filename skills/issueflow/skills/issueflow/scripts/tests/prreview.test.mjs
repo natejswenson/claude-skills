@@ -235,7 +235,7 @@ test('openRound: handed the fix delta, a round is sized to it, writes fix.patch 
   rmSync(join(dir, lane.slug, 'review', 'r2'), { recursive: true, force: true });
   const cli = execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'issueflow.js'), 'review-brief', '--run-dir', dir, '--lane', lane.slug, '--offline'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
   assert.match(cli, /Fix lines/);
-  assert.match(cli, /\| 2 of 4 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
+  assert.match(cli, /\| 2 of 2 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
   assert.ok(existsSync(fixPatchPath(dir, lane, 2)));
   assert.match(readFileSync(finderBriefPath(dir, lane, 2, 1), 'utf8'), /## The fix under review/);
   cleanup();

@@ -98,7 +98,7 @@ test('budget: exact deadline blocks a new dispatch, but an in-flight worker can 
   assert.deepEqual(action.budget, {
     elapsedSeconds: 1800, allowanceSeconds: 1800, remainingSeconds: 0, expired: true,
     deadline: now(),
-    usedSeconds: 1800, totalBudgetSeconds: null, totalRemainingSeconds: null,
+    usedSeconds: 1800, totalBudgetSeconds: 14400, totalRemainingSeconds: 12600,
   });
   const step = findStep(run, 'investigate');
   markBriefed(dir, run, step, now);
