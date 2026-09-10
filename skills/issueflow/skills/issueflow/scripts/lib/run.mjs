@@ -441,6 +441,14 @@ const git = (args, cwd) => {
   }
 };
 
+function resultSection(text) {
+  const start = text.search(/^(?:#{1,6}\s+|\*\*)Result(?:\*\*)?\s*$/im);
+  if (start < 0) return '';
+  const body = text.slice(start);
+  const next = body.search(/\n(?:#{1,6}\s+|\*\*)[^\n]+(?:\*\*)?\s*$/im);
+  return next < 0 ? body : body.slice(0, next);
+}
+
 /** The checkout a lane's stage worked in: its worktree when it has one, else the repo. */
 export const laneTree = (dir, run, lane) =>
   lane && existsSync(worktreePath(dir, lane)) ? worktreePath(dir, lane) : run.repo.path;
@@ -475,6 +483,13 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     throw new RunError(
       `cannot accept ${step.key}: the artifact has no ${missing.join(' section, no ')} section — ` +
         `${step.stage.id} owes the next stage a heading for each of ${declared.requires.join(', ')}`,
+    );
+  }
+
+  if (step.stage.id === 'implement' && /\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(text))) {
+    throw new RunError(
+      `cannot accept ${step.key}: the implementation artifact reports a blocked or incomplete result — ` +
+        'a worker hand-back is not a completed implementation',
     );
   }
 
