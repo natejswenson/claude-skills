@@ -70,7 +70,7 @@ jobs:
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.gmailtriage == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target gmailtriage-agent-ui --target gmailtriage-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target gmailtriage-readme
 
       # Tier 2 — gmailtriage's own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.

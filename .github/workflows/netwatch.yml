@@ -70,7 +70,7 @@ jobs:
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.netwatch == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target netwatch-agent-ui --target netwatch-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target netwatch-readme
 
       # Tier 2 — netwatch's own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.

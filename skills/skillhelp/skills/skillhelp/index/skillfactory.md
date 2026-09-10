@@ -50,22 +50,16 @@
 
 ## Architecture
 
-- scripts/skillfactory.js — the CLI: detect, spec, check-spec, scaffold, freeze, verify `skills/skillfactory/skills/skillfactory/SKILL.md:261`
-- scripts/lib/house.mjs — every registry, read from disk — the question budget `skills/skillfactory/skills/skillfactory/SKILL.md:262`
-- scripts/lib/conform.mjs — the two-tier check list: house, then skillfactory `skills/skillfactory/skills/skillfactory/SKILL.md:263`
-- scripts/lib/readme.mjs — the README house style, as a check `skills/skillfactory/skills/skillfactory/SKILL.md:264`
-- scripts/lib/spec.mjs — the spec contract, graded harder than CI `skills/skillfactory/skills/skillfactory/SKILL.md:265`
-- scripts/lib/scaffold.mjs — the ten-step checklist as one pure plan `skills/skillfactory/skills/skillfactory/SKILL.md:266`
-- scripts/lib/apply.mjs — all-or-nothing application of that plan `skills/skillfactory/skills/skillfactory/SKILL.md:267`
-- scripts/lib/templates.mjs — every byte a new skill starts life with `skills/skillfactory/skills/skillfactory/SKILL.md:268`
-- scripts/lib/freeze.mjs — a real run turned into a reproducible eval `skills/skillfactory/skills/skillfactory/SKILL.md:269`
-- references/anatomy.md — the fixed shape of a generated skill `skills/skillfactory/skills/skillfactory/SKILL.md:270`
-- references/readme.md — the README house style: fixed head, free tail, fixed foot `skills/skillfactory/skills/skillfactory/SKILL.md:271`
-- references/wiring.md — the eight registries, and what breaks when one is missed `skills/skillfactory/skills/skillfactory/SKILL.md:272`
-- skill-invariants.json names what must not silently disappear. The baseline is pinned against a real scaffold run of the repocount demo spec and re-runs it on every test; scripts/tests/conformance.tes… `skills/skillfactory/skills/skillfactory/SKILL.md:277`
 - Deterministic: read every registry the house keeps — node scripts/skillfactory.js detect `skills/skillfactory/skills/skillfactory/skill-invariants.json:86`
 - Deterministic: grade a spec before it costs anything — node scripts/skillfactory.js check-spec `skills/skillfactory/skills/skillfactory/skill-invariants.json:90`
 - Deterministic: emit the tree and all eight wiring points — node scripts/skillfactory.js scaffold `skills/skillfactory/skills/skillfactory/skill-invariants.json:94`
+- Deterministic: turn a real run into a baseline eval — node scripts/skillfactory.js freeze `skills/skillfactory/skills/skillfactory/skill-invariants.json:98`
+- Deterministic: run the ladder and report the rung — node scripts/skillfactory.js verify `skills/skillfactory/skills/skillfactory/skill-invariants.json:102`
+- Model judgment: what the skill is for, and what it refuses to do — the one rule is the only thing that makes a skill more than a prompt, and nothing on disk contains it `skills/skillfactory/skills/skillfactory/skill-invariants.json:108`
+- Model judgment: which half of the work is deterministic — a wrong split ships either an unrepeatable skill or a script with a chat interface `skills/skillfactory/skills/skillfactory/skill-invariants.json:112`
+- Model judgment: what a real run looks like — only a person knows which run is representative enough to be worth pinning `skills/skillfactory/skills/skillfactory/skill-invariants.json:116`
+- Model judgment: the prose in SKILL.md and references/ — tone, ordering, and what to leave out `skills/skillfactory/skills/skillfactory/skill-invariants.json:120`
+- Model judgment: the baseline row in CLAUDE.md's eval table — what a baseline catches is a judgment about failure modes, not a template `skills/skillfactory/skills/skillfactory/skill-invariants.json:124`
 
 ## Troubleshooting
 

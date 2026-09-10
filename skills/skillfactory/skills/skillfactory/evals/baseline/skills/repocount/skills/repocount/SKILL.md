@@ -67,7 +67,9 @@ One table with a fixed column set, then one sentence, then stop.
 - **Never claim a result you did not observe.** Say what you verified and what
   you did not.
 
-<!-- press:agent-ui -->
+<!-- press:runtime -->
+In Claude Code, load `/press`; in Codex, load $press`; then follow the shared PRESS terminal/UI contract from `brand/agent-ui.md`. Do not copy or override that contract here.
+<!-- press:runtime -->
 
 ## What's here
 
