@@ -58,14 +58,45 @@ const stripInjected = (text) =>
  * is dropped: a trace that carries whole file bodies is a liability, not
  * evidence.
  */
-function toolFacts(name, input = {}) {
+function toolFacts(name, input = {}, { codex = false, rawInput } = {}) {
+  const tool = codex ? String(name).replace(/^functions[._]/, '') : name;
+  const patch = typeof input === 'string' ? input : rawInput ?? input?.patch ?? input?.input;
+  input = input && typeof input === 'object' ? input : {};
   const facts = {};
+  const kinds = {
+    command: ['Bash', 'exec_command'],
+    read: ['Read', 'Grep', 'Glob', 'read_file'],
+    edit: ['Write', 'Edit', 'NotebookEdit', 'apply_patch'],
+    question: ['AskUserQuestion', 'request_user_input'],
+    delegation: ['Agent', 'spawn_agent'],
+    skill: ['Skill'],
+  };
+  for (const [kind, names] of Object.entries(kinds)) {
+    if (names.includes(tool)) facts.toolKind = kind;
+  }
   if (name === 'Bash') facts.command = clip(input.command ?? '', CAP.command);
   if (['Read', 'Write', 'Edit', 'NotebookEdit'].includes(name)) facts.path = redact(input.file_path ?? '');
   if (name === 'Skill') facts.skill = String(input.skill ?? '');
   if (name === 'Agent') facts.agent = String(input.subagent_type ?? 'general-purpose');
   if (name === 'AskUserQuestion') facts.questions = (input.questions ?? []).length;
   if (name === 'Grep' || name === 'Glob') facts.pattern = redact(String(input.pattern ?? ''));
+  if (codex) {
+    const command = input.cmd ?? input.command;
+    if (command) facts.command = clip(command, CAP.command);
+    if (tool === 'exec_command' && typeof rawInput === 'string') facts.command = clip(rawInput, CAP.command);
+    if (facts.toolKind === 'question') facts.questions = (input.questions ?? []).length;
+    if (['Read', 'read_file', 'Write', 'Edit', 'NotebookEdit'].includes(tool)) facts.path = redact(input.file_path ?? input.path ?? '');
+    if (facts.toolKind === 'skill') facts.skill = redact(input.skill ?? '');
+    if (facts.toolKind === 'delegation') facts.agent = redact(input.agent_type ?? input.subagent_type ?? 'general-purpose');
+    if (tool === 'Grep' || tool === 'Glob') facts.pattern = redact(input.pattern ?? '');
+    if (tool === 'apply_patch') {
+      // Only file headers are evidence; patch bodies never enter the trace.
+      facts.paths = typeof patch === 'string'
+        ? [...new Set([...patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: ([^\r\n]+)\r?$/gm)].map(m => redact(m[1])))]
+        : [];
+      if (facts.paths.length > 0) facts.path = facts.paths[0];
+    }
+  }
   return facts;
 }
 
@@ -127,14 +158,12 @@ export function normalizeTranscript(jsonl) {
         } else dropped.bookkeeping += 1;
       } else if (['function_call', 'custom_tool_call'].includes(p.type)) {
         let input = {};
-        try { input = JSON.parse(p.arguments ?? '{}'); } catch { /* raw custom tool input */ }
+        try { input = JSON.parse(p.arguments ?? '{}'); } catch { input = p.arguments; }
         const name = String(p.name ?? '?');
-        const command = input.cmd ?? input.command;
         push(line, {
           kind: 'tool-use', name,
           ...(p.call_id ? { callId: p.call_id } : {}),
-          ...(command ? { command: clip(command, CAP.command) } : {}),
-          ...(name.endsWith('exec') && typeof p.input === 'string' ? { command: clip(p.input, CAP.command) } : {}),
+          ...toolFacts(name, input, { codex: true, rawInput: p.input }),
         });
       } else if (['function_call_output', 'custom_tool_call_output'].includes(p.type)) {
         const output = typeof p.output === 'string' ? p.output : JSON.stringify(p.output ?? '');
