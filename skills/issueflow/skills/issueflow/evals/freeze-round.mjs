@@ -27,8 +27,10 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRun, laneTree } from '../scripts/lib/run.mjs';
-import { parseDiff, reviewDir } from '../scripts/lib/prreview.mjs';
+import { loadRun, worktreePath } from '../scripts/lib/run.mjs';
+import { historyTree } from '../scripts/lib/worktree.mjs';
+import { historyRoot } from '../scripts/lib/execution.mjs';
+import { parseDiff } from '../scripts/lib/prreview.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, 'inputs', 'review-round');
@@ -43,8 +45,15 @@ const run = loadRun(runDir);
 const lane = run.lanes.find((l) => l.slug === args.lane);
 if (!lane) throw new Error(`no lane ${args.lane}`);
 const rounds = (args.rounds ? args.rounds.split(',').map(Number) : lane.review.rounds.map((r) => r.round));
-const tree = laneTree(runDir, run, lane);
+const tree = historyTree(run, runDir);
+if (run.execution) process.on('exit', () => rmSync(tree, { recursive: true, force: true }));
+const artifacts = historyRoot(runDir, run);
+const checkoutRoots = [worktreePath(runDir, lane), run.repo.path];
 const git = (a) => execFileSync('git', a, { cwd: tree, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const normalize = (text) => [tree, ...checkoutRoots].reduce(
+  (out, root) => out.split(`${root}/`).join('').split(root).join('<repo>'),
+  text,
+);
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -62,7 +71,7 @@ const meta = {
 // unchanged since round 1 must not show up as "added" between the two commits.
 const files = new Set();
 for (const n of rounds) {
-  const src = reviewDir(runDir, lane, n);
+  const src = join(artifacts, lane.slug, 'review', `r${n}`);
   for (const f of parseDiff(readFileSync(join(src, 'diff.patch'), 'utf8'))) files.add(f.path);
   for (const f of readdirSync(src)) {
     if (!/^(candidates|verdicts)-\d+\.json$/.test(f)) continue;
@@ -76,7 +85,7 @@ for (const n of rounds) {
 for (const n of rounds) {
   const entry = lane.review.rounds.find((r) => r.round === n);
   if (!entry?.registered) throw new Error(`round ${n} is not registered — nothing to freeze`);
-  const src = reviewDir(runDir, lane, n);
+  const src = join(artifacts, lane.slug, 'review', `r${n}`);
   const dst = join(OUT, `r${n}`);
   mkdirSync(dst, { recursive: true });
   for (const f of readdirSync(src)) {
@@ -84,8 +93,7 @@ for (const n of rounds) {
       // Machine paths out: the lane worktree and the repository root become
       // `<repo>`, so the fixture carries no home directory and the golden
       // compares the same bytes on any machine.
-      const text = readFileSync(join(src, f), 'utf8').split(`${tree}/`).join('').split(tree).join('<repo>')
-        .split(`${run.repo.path}/`).join('').split(run.repo.path).join('<repo>');
+      const text = normalize(readFileSync(join(src, f), 'utf8'));
       writeFileSync(join(dst, f), text);
     }
   }
@@ -93,9 +101,9 @@ for (const n of rounds) {
   // pooling and how they were dealt to verifiers. The replay reuses it rather
   // than re-pooling: the golden pins the registrar and the payload, and the
   // pooling rule has its own unit tests and is allowed to move.
-  writeFileSync(join(dst, 'plan.json'), `${JSON.stringify({
+  writeFileSync(join(dst, 'plan.json'), normalize(`${JSON.stringify({
     verifiers: entry.verifiers, candidateIds: entry.candidateIds ?? [], priorIds: entry.priorIds ?? [], candidates: entry.candidates ?? [],
-  }, null, 2)}\n`.split(`${tree}/`).join('').split(tree).join('<repo>').split(`${run.repo.path}/`).join('').split(run.repo.path).join('<repo>'));
+  }, null, 2)}\n`));
   const snap = join(OUT, 'files', `r${n}`);
   let count = 0;
   for (const path of files) {

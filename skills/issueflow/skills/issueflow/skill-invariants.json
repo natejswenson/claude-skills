@@ -5,6 +5,16 @@
   },
   "prose": [
     {
+      "id": "codex-approved-execution-root",
+      "pattern": "actual host-approved writable root",
+      "rationale": "A supplied path does not grant a child's sandbox write authority; preparation and parent archival are required."
+    },
+    {
+      "id": "no-source-fallback",
+      "pattern": "never fall back to source",
+      "rationale": "A failed worktree must stop dispatch; source mode requires explicit consent and a repository-wide lease."
+    },
+    {
       "id": "explicit-budget-renewal",
       "pattern": "Never auto-renew",
       "rationale": "A printed recovery command is not user authorization to grant another time window."
@@ -26,8 +36,8 @@
     },
     {
       "id": "the-model-is-not-a-suggestion",
-      "pattern": "Never dispatch a stage on a model other than the one",
-      "rationale": "The per-stage model and reasoning effort are the whole reason this is separate subagents rather than one loop. An orchestrator that quietly runs everything on one profile has kept the ceremony and thrown away the design — and a reviewer on a cheaper model than the work it reviews is a gate that rubber-stamps."
+      "pattern": "Never bypass the persisted host adapter",
+      "rationale": "The persisted host adapter owns host-valid model, reasoning, role, cold-fork and capacity fields. Claude retains its model contract while Codex inherits a valid parent model and never receives a Claude alias or literal inherit identifier."
     },
     {
       "id": "runtime-is-persisted",
@@ -98,6 +108,10 @@
   "split": {
     "deterministic": [
       {
+        "step": "prepare owned Codex execution storage and Git administration; archive exact outputs and history before canonical persistence",
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" prepare --run-dir <run> --workspace-root <approved-root>"
+      },
+      {
         "step": "explicitly renew an expired time allowance while preserving artifacts, checkpoint identity, gates and review limits",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" resume --run-dir <run> --budget-seconds 1800"
       },
@@ -114,7 +128,7 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" start"
       },
       {
-        "step": "render a stage's or the red team's dispatch prompt, host-native model, reasoning effort and subagent role from the approved artifacts",
+        "step": "validate lane checkout ownership or acquire an explicit source lease, then render the dispatch prompt and host-native worker profile from approved artifacts",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
@@ -212,6 +226,14 @@
   "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and — see review-round-golden — a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
   "baseline": [
     {
+      "id": "codex-execution-storage",
+      "kind": "trap",
+      "test": "scripts/tests/execution.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/execution.test.mjs",
+      "rationale": "Real local repositories prove workspace output and Git isolation, exact archival, stale-output refusal, parent write failure, migration, recovery and owned cleanup. The real restricted Codex child smoke supplements this deterministic corpus."
+    },
+    {
       "id": "artifact-before-budget-and-recovery",
       "kind": "trap",
       "test": "scripts/tests/budget.test.mjs",
@@ -290,6 +312,14 @@
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
       "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network — spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 — and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+    },
+    {
+      "id": "checkout-ownership",
+      "kind": "trap",
+      "test": "scripts/tests/checkout-ownership.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/checkout-ownership.test.mjs",
+      "rationale": "Real repositories in paths with spaces and apostrophes prove fatal provisioning, strict later writer lookup, persisted explicit source mode and exclusive ownership across run roots and linked source checkouts. The paired success paths resume owned lanes and preserve unrelated source work."
     },
     {
       "id": "worktree-isolation",
