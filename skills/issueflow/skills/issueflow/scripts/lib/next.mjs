@@ -446,7 +446,7 @@ function decideAction(dir, run, c) {
 
 function gateStepsForWave(dir, run, items) {
   if (items.length !== 1) return null;
-  return gateSteps(run).find((step) => artifactPath(dir, step) === items[0].writes) ?? null;
+  return gateSteps(run).find((step) => artifactPath(dir, step) === (items[0].writes ?? items[0].artifact)) ?? null;
 }
 
 /** The lines `next` prints for an action. Fixed shape: the orchestrator copies them, it does not read them. */
