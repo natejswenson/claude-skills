@@ -25,8 +25,8 @@
     },
     {
       "path": ".github/workflows/repocount.yml",
-      "bytes": 3371,
-      "sha256": "331ca41a954ca82b146e30b5c721b92f696e47933a4394460403f1f05bd85787"
+      "bytes": 3343,
+      "sha256": "32594f2e66f022e6179e9e754278a1bcb88edb1f04c1ed7f678e14690f7742d3"
     },
     {
       "path": "CLAUDE.md",
@@ -40,8 +40,8 @@
     },
     {
       "path": "skills/press/skills/press/targets.json",
-      "bytes": 944,
-      "sha256": "63af8a2df074dc536b71198d45903ed720ccf1e8734723c79fcea8ef20fd2f1b"
+      "bytes": 669,
+      "sha256": "072c44669a05e0f05581bc149734fe3cba3424e5b9f9a39fd1915ebed8b85fde"
     },
     {
       "path": "skills/repocount/.claude-plugin/plugin.json",
@@ -65,8 +65,8 @@
     },
     {
       "path": "skills/repocount/skills/repocount/SKILL.md",
-      "bytes": 3202,
-      "sha256": "1eb29fe25fcecfc8234a81d3161774266edcabc8b0d45cb036814626edc60c2c"
+      "bytes": 3399,
+      "sha256": "4aeddfa491d607ec6573e8ea494131d3357ba46739602cf58b9cc3f922d355c8"
     },
     {
       "path": "skills/repocount/skills/repocount/package.json",

@@ -136,8 +136,8 @@ function cmdScaffold(args) {
     table(
       ['Next', 'Why'],
       [
-        [`press emit --repo . --init --target ${spec.name}-agent-ui --target ${spec.name}-readme`, 'splice the brand regions — never hand-write them'],
-        ['node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs', "refresh press's golden set — two new targets, or ci / press goes red"],
+        [`press emit --repo . --init --target ${spec.name}-readme`, 'emit artifact brand regions; load terminal/UI rules from PRESS at runtime'],
+        ['node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs', "refresh press's golden set when artifact targets change"],
         [`ghfactory header .github/workflows/${spec.name}.yml`, 'stamp the masthead from press'],
         [`ghfactory verify .github/workflows/${spec.name}.yml`, 'refs real, lint-clean, before anyone reads it'],
         ['run .github/repo-settings.sh (admin)', 'editing the contexts array applies NOTHING on its own'],
