@@ -17,6 +17,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { HandBack, createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
 import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
@@ -75,6 +76,7 @@ function fixture({ auto = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-prreview-'));
   const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: repoPath, defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, auto });
   saveRun(dir, run);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
   approvePlan(dir, run, { auto });
@@ -756,6 +758,30 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   assert.match(fix, /"not-changed"/);
   assert.match(fix, /addressed to `main`/);
   assert.match(methodSection('fixer'), /ONE commit/);
+  cleanup();
+});
+
+test('finder, verifier and fixer receive only applicable scoped guidance', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  const { files } = open(dir, run, lane, repoPath);
+  const entry = currentRound(lane); entry.verifiers = 1;
+  mkdirSync(join(repoPath, 'src')); mkdirSync(join(repoPath, 'other'));
+  writeFileSync(join(repoPath, 'AGENTS.md'), 'ROOT_SHADOWED');
+  writeFileSync(join(repoPath, 'AGENTS.override.md'), 'ROOT_OVERRIDE');
+  writeFileSync(join(repoPath, 'CLAUDE.md'), 'ROOT_CLAUDE');
+  writeFileSync(join(repoPath, 'src', 'AGENTS.md'), 'SRC_AGENT');
+  writeFileSync(join(repoPath, 'other', 'AGENTS.md'), 'OTHER_AGENT');
+  const scoped = [{ ...files[0], path: 'src/widget.js' }];
+  const item = { ...cand({ file: 'src/widget.js' }), id: 'c-1-1', prior: false };
+  const rendered = [
+    renderFinderBrief(dir, run, lane, entry, 1, { angles: entry.angles[0], issue: ISSUE, files: scoped, prior: [] }),
+    renderVerifierBrief(dir, run, lane, entry, 1, { items: [item], issue: ISSUE }),
+    renderFixBrief(dir, run, lane, entry, { items: [{ ...item, id: 'f-1', severity: 'major', stillOpenRounds: 0 }], checks: [], model: 'opus', issue: ISSUE }),
+  ];
+  for (const text of rendered) {
+    assert.match(text, /ROOT_OVERRIDE/); assert.match(text, /ROOT_CLAUDE/); assert.match(text, /SRC_AGENT/);
+    assert.doesNotMatch(text, /ROOT_SHADOWED|OTHER_AGENT/);
+  }
   cleanup();
 });
 

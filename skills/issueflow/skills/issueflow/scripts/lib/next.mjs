@@ -1,3 +1,4 @@
+import { activePath, deliveryCurrent } from './execution.mjs';
 /**
  * `next` — the one next action, computed from state.
  *
@@ -29,16 +30,16 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import {
-  artifactPath, briefPath, deliveredSince, evidencePath, findStep, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
+  artifactPath, briefPath, deliveredSince, evidencePath, findStep, gateSteps, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
   MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath, reviewCap,
-  ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  ciFailureFingerprint, fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
-import { dispatchLabel } from './runtime.mjs';
+import { dispatchLabel, dispatchProfile, runtimeOf, startWave, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
@@ -100,10 +101,8 @@ const activityMtime = (dir, run, step) => {
   let latest = Math.max(mtime(progressPath(dir, step)) ?? 0, mtime(evidencePath(dir, step)) ?? 0) || null;
   if (!step.lane) return latest;
   const tree = laneTree(dir, run, step.lane);
-  // A hermetic fixture can live below the repository that runs the tests. In
-  // that case `git status` would report the parent checkout's unrelated files
-  // as lane activity, making a fresh brief look stalled. Only trust worktree
-  // activity when the requested tree is itself the Git worktree root.
+  // A hermetic fixture may live below the checkout running the tests. In that
+  // case git status reports unrelated parent files as lane activity.
   const top = git(['rev-parse', '--show-toplevel'], tree);
   if (!top || resolve(top) !== resolve(tree)) return latest;
   const changed = git(['status', '--short', '--untracked-files=all'], tree);
@@ -122,11 +121,16 @@ const silentStop = (dir, run, step, now) => {
   const age = heartbeatAge(dir, run, step, now);
   if (age == null || age < HEARTBEAT_TIMEOUT_S) return null;
   return stop('stalled', `${step.key} has reported no progress, evidence, or worktree activity for ${Math.round(age / 60)} minutes — re-dispatch the worker instead of waiting for the full budget`, {
-    items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(briefPath(dir, step)) }],
+    items: [{ ...dispatchProfile(run, step.stage.id), prompt: promptFor(briefPath(dir, step)) }],
     command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
   });
 };
 const newerThan = (output, brief) => existsSync(output) && (!existsSync(brief) || mtime(output) >= mtime(brief));
+
+export const waveDelivered = (dir, run, item) => {
+  const output = item.writes ?? item.artifact;
+  return Boolean(output && existsSync(output) && statSync(output).size > 0 && newerThan(output, item.prompt) && deliveryCurrent(dir, output, run));
+};
 
 /**
  * Has this step been briefed more recently than its last delivery or its last
@@ -148,20 +152,20 @@ function decidePlan(dir, run, step, ctx) {
 
   // A blocked round: the stage goes back, then delivers again, then is reviewed again.
   if (latest?.verdict === 'decision') {
-    return stop('human', `the red team identified a scope change — read ${join(dir, latest.review)} and decide whether to narrow the issue or authorize it`, {
-      artifact, review: join(dir, latest.review),
+    return stop('human', `the red team identified a scope change — read ${activePath(dir, latest.review)} and decide whether to narrow the issue or authorize it`, {
+      artifact, review: activePath(dir, latest.review),
       command: `brief --stage ${step.stage.id} --another-round "<the user's scope decision>"`,
     });
   }
   if (latest?.verdict === 'blocked') {
     if (latest.repeated) {
-      return stop('dispute', `the same blocking mechanism survived two plan rounds — read ${join(dir, latest.review)} and direct the next round`, {
-        artifact, review: join(dir, latest.review),
+      return stop('dispute', `the same blocking mechanism survived two plan rounds — read ${activePath(dir, latest.review)} and direct the next round`, {
+        artifact, review: activePath(dir, latest.review),
         command: `brief --stage ${step.stage.id} --another-round "<how the repeated blocker should be resolved>"`,
       });
     }
     if (roundsExhausted(step)) {
-      return stop('exhausted', `the red team refused the plan ${latest.round} times — the open findings are in ${join(dir, latest.review)}`, {
+      return stop('exhausted', `the red team refused the plan ${latest.round} times — the open findings are in ${activePath(dir, latest.review)}`, {
         command: `brief --stage ${step.stage.id} --another-round "<what the user decided>"`,
       });
     }
@@ -171,7 +175,7 @@ function decidePlan(dir, run, step, ctx) {
     if (latest.artifactSha === sha256OfFile(artifact)) {
       if (run.auto) return act('accept', { stage: step.stage.id, auto: true }, `round ${latest.round} passed — approving the plan on the verdict`);
       return stop('human', 'the plan passed its red-team review — read it, then approve or send it back', {
-        artifact, review: join(dir, latest.review),
+        artifact, review: activePath(dir, latest.review),
         command: `accept --stage ${step.stage.id}`,
         alternative: `brief --stage ${step.stage.id} --another-round "<your direction>"`,
       });
@@ -192,7 +196,7 @@ function decidePlan(dir, run, step, ctx) {
   // whatever the brief's mtime says — a brief re-rendered under a finished
   // review must not make the review look stale. The registrar binds the
   // verdict to the artifact's bytes either way.
-  if (briefedRound === round && newerThan(findings, artifact)) {
+  if (briefedRound === round && newerThan(findings, artifact) && deliveryCurrent(dir, findings, run)) {
     return act('review', { stage: step.stage.id }, `red-team round ${round} delivered — registering it`);
   }
   if (briefedRound !== round || !newerThan(reviewBrief, artifact)) {
@@ -210,6 +214,7 @@ function decideImplement(dir, run, step, ctx) {
   const artifact = artifactPath(dir, step);
   const timeout = timeoutFor(dir, step.stage.id);
   if (!step.stage.at?.briefed) return act('brief', { stage: step.stage.id, lane: step.laneSlug }, `${step.key} is ready to be briefed`);
+  laneTree(dir, run, step.lane);
   if (!deliveredSince(dir, step)) {
     const silent = silentStop(dir, run, step, ctx.now());
     if (silent) return silent;
@@ -217,14 +222,11 @@ function decideImplement(dir, run, step, ctx) {
     const activityAge = heartbeatAge(dir, run, step, ctx.now());
     if (elapsed > timeout && (activityAge == null || activityAge >= HEARTBEAT_TIMEOUT_S)) {
       return stop('stalled', `${step.key} has run ${Math.round(elapsed / 60)} minutes with nothing delivered — past ${Math.round(timeout / 60)} minutes, the stall threshold for this repo`, {
-        items: [{ model: step.stage.model, reasoning: step.stage.reasoning, agent: step.stage.agent, prompt: promptFor(brief) }],
+        items: [{ ...dispatchProfile(run, step.stage.id), prompt: promptFor(brief) }],
         command: `brief --stage ${step.stage.id}${step.laneSlug !== 'root' ? ` --lane ${step.laneSlug}` : ''} (re-render, then re-dispatch)`,
       });
     }
-    // Wake on the heartbeat threshold so the next invocation can turn a
-    // silent worker into a bounded stalled stop. Active workers with a fresh
-    // progress log simply receive another wait; they are not penalized.
-    return wait(step.key, { pairs: [[artifact, brief]], timeout: Math.min(timeout, HEARTBEAT_TIMEOUT_S) });
+    return wait(step.key, { pairs: [[artifact, brief]], timeout });
   }
   return act('accept', { stage: step.stage.id, lane: step.laneSlug, auto: run.auto }, `${step.key} delivered — running the gate`);
 }
@@ -233,8 +235,8 @@ function decideImplement(dir, run, step, ctx) {
 // A lane's review loop.
 // ---------------------------------------------------------------------------
 
-function allPresent(paths) {
-  return paths.every((p) => existsSync(p));
+function allPresent(dir, paths) {
+  return paths.every((p) => existsSync(p) && deliveryCurrent(dir, p));
 }
 
 /**
@@ -284,7 +286,7 @@ function decideLoop(dir, run, lane, ctx) {
     if (entry.verifiers === null) {
       const files = Array.from({ length: entry.finders }, (_, i) => candidatesPath(dir, lane, round, i + 1));
       const briefs = Array.from({ length: entry.finders }, (_, i) => finderBriefPath(dir, lane, round, i + 1));
-      if (allPresent(files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
+      if (allPresent(dir, files)) return act('review-verify', { lane: lane.slug }, `${lane.slug} round ${round}: every finder delivered — planning verification`);
       return stalled(files, briefs, finderProfile(run), 'finder') ?? wait(`${lane.slug} round ${round} finders (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
         pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
       });
@@ -292,7 +294,7 @@ function decideLoop(dir, run, lane, ctx) {
     if (entry.verifiers === 0) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: nothing to verify — registering a clean round`);
     const files = Array.from({ length: entry.verifiers }, (_, i) => verdictsPath(dir, lane, round, i + 1));
     const briefs = Array.from({ length: entry.verifiers }, (_, i) => verifierBriefPath(dir, lane, round, i + 1));
-    if (allPresent(files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
+    if (allPresent(dir, files)) return act('review-register', { lane: lane.slug }, `${lane.slug} round ${round}: every verifier delivered — registering`);
     return stalled(files, briefs, verifierProfile(run), 'verifier') ?? wait(`${lane.slug} round ${round} verifiers (${files.filter((f) => existsSync(f)).length}/${files.length} delivered)`, {
       pairs: files.map((f, i) => [f, briefs[i]]), timeout: DEFAULT_TIMEOUT_S,
     });
@@ -330,12 +332,6 @@ function decideLoop(dir, run, lane, ctx) {
   }
 
   // Open majors: fix, report, next round.
-  const repeated = repeatedReviewMajors(lane);
-  if (repeated.length > 0) {
-    return stop('dispute', `${lane.slug}: ${repeated.map((f) => f.id).join(', ')} survived two fixer rounds — inspect the reviewer/fixer disagreement`, {
-      command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
-    });
-  }
   if (!entry.fix?.briefed) return act('review-fix-brief', { lane: lane.slug }, `${lane.slug} round ${entry.round}: ${openMajors(lane).length} major(s) open — briefing the fixer`);
   return afterFixBrief(dir, run, lane, entry, head, ctx);
 }
@@ -344,7 +340,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
   const report = fixReportPath(dir, lane, entry.round);
   const brief = fixBriefPath(dir, lane, entry.round);
   if (!entry.fix?.reported) {
-    if (newerThan(report, brief)) return act('review-fix-report', { lane: lane.slug }, `${lane.slug} round ${entry.round}: the fixer reported — recording it`);
+    if (newerThan(report, brief) && deliveryCurrent(dir, report, run)) return act('review-fix-report', { lane: lane.slug }, `${lane.slug} round ${entry.round}: the fixer reported — recording it`);
     return wait(`${lane.slug} round ${entry.round} fixer`, { pairs: [[report, brief]], timeout: timeoutFor(dir, 'implement') });
   }
   // Reported. The next round reviews the pushed fix — which must be pushed.
@@ -357,7 +353,8 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
     const remote = ctx.remoteHead(lane);
     if (remote && remote !== head) {
       return stop('unpushed', `${lane.slug}: local HEAD ${String(head).slice(0, 12)} is not on origin (${remote.slice(0, 12)}) — the fixer did not push`, {
-        command: `git -C ${laneTree(dir, run, lane)} push origin ${lane.branch}`,
+        command: `git -C ${sh(laneTree(dir, run, lane))} push origin ${sh(lane.branch)}`,
+        external: true,
       });
     }
   }
@@ -382,7 +379,15 @@ export function decide(dir, run, ctx = {}) {
     remoteHead: ctx.remoteHead ?? (() => null),
     landings: ctx.landings ?? (() => []),
   };
-  const action = decideAction(dir, run, c);
+  let action = decideAction(dir, run, c);
+  // Old Codex runs can have an already-briefed fleet but no queue because the
+  // capacity policy did not exist when they were persisted. Queue that first
+  // stalled re-dispatch exactly like a fresh fleet; no brief is dropped.
+  if (runtimeOf(run) === 'codex' && action.kind === 'stop' && action.reason === 'stalled' && action.items?.length > 0 && !run.dispatch?.queue) {
+    const queued = action.items.map((item) => ({ ...item, prompt: String(item.prompt).replace(/^Read (.*) and follow it exactly\. It is your complete brief\.$/, '$1') }));
+    const active = startWave(run, queued);
+    action = { ...action, items: active.map((item) => ({ ...item, prompt: promptFor(item.prompt) })), waveStarted: true };
+  }
   const budget = budgetStatus(run, c.now());
   if (budget?.expired && (action.kind === 'dispatch' || (action.kind === 'run' && DISPATCHES.has(action.command)))) return budgetStop(budget);
   return budget ? { ...action, budget } : action;
@@ -391,6 +396,27 @@ export function decide(dir, run, ctx = {}) {
 function decideAction(dir, run, c) {
   const state = runState(run);
   if (state === 'done') return stop('done', 'every lane landed — this run is over');
+  const wave = waveState(run, (item) => waveDelivered(dir, run, item));
+  if (wave?.kind === 'ready') return act('dispatch-wave', {}, 'released worker slots — dispatching the next queued wave');
+  if (wave?.kind === 'release') return { kind: 'wait', what: 'native worker release', release: true };
+  if (wave?.kind === 'wait') {
+    const missing = wave.items.filter((item) => !waveDelivered(dir, run, item));
+    // An implementation wave still needs its five-minute heartbeat rule. A
+    // generic fleet wait would otherwise hide a silent writer for 30 minutes.
+    const step = gateStepsForWave(dir, run, missing);
+    if (step?.stage.id === 'implement') return decideImplement(dir, run, step, c);
+    const oldest = Math.min(...missing.map((item) => item.dispatchedAt ?? mtime(item.prompt) ?? Infinity));
+    if (Date.parse(c.now()) - oldest > DEFAULT_TIMEOUT_S * 1000) {
+      // This exact brief is about to be re-dispatched. Refresh the persisted
+      // wave timestamp so the replacement child receives its own timeout.
+      for (const item of missing) item.dispatchedAt = Date.parse(c.now());
+      return stop('stalled', 'active Codex wave has missing deliveries; terminate its stalled children before re-dispatching these same briefs', {
+        items: missing.map((item) => ({ ...item, prompt: promptFor(item.prompt) })),
+        waveRedispatched: true,
+      });
+    }
+    return wait('Codex worker wave', { pairs: wave.items.map((item) => [item.writes ?? item.artifact, item.prompt]), timeout: DEFAULT_TIMEOUT_S });
+  }
 
   // The plan first.
   const plan = findStep(run, PLAN_STAGE);
@@ -410,9 +436,6 @@ function decideAction(dir, run, c) {
       const held = remainingSteps(run)[0];
       return stop('blocked', `nothing can run: ${held.key} is held — \`status\` names what by`);
     }
-    if (ready.length > 1) {
-      return act('brief', { ready: true }, `${ready.length} independent lanes are ready — briefing them together`);
-    }
     return decideImplement(dir, run, ready[0], c);
   }
 
@@ -429,7 +452,12 @@ function decideAction(dir, run, c) {
   // Everything converged: finish what has merged.
   const landed = c.landings();
   if (landed.some((l) => l.state === 'merged' && !l.lane.landed)) return act('finish', {}, 'a pull request merged — finishing that lane');
-  return stop('shipped', `USER ACTION REQUIRED: review and approve/merge ${run.lanes.map((l) => l.pr.url).join(', ')} — Issueflow will not merge; run \`finish\` once they land`);
+  return stop('shipped', `every lane's review loop has converged — ${run.lanes.map((l) => l.pr.url).join(', ')} await a merge; \`finish\` once they land`);
+}
+
+function gateStepsForWave(dir, run, items) {
+  if (items.length !== 1) return null;
+  return gateSteps(run).find((step) => artifactPath(dir, step) === (items[0].writes ?? items[0].artifact)) ?? null;
 }
 
 /** The lines `next` prints for an action. Fixed shape: the orchestrator copies them, it does not read them. */
@@ -451,6 +479,10 @@ export function renderAction(action, { skillCommand, runDir }) {
       for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
     }
     lines.push('', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
+  } else if (action.kind === 'wait' && action.release) {
+    lines.push('  All wave outputs landed. Wait for every child to finish, then close/release its native slot.',
+      '  Artifact delivery alone does not free a slot. After observing all releases:',
+      `${then} --workers-released`);
   } else if (action.kind === 'wait') {
     lines.push(`  ${action.what} is in flight.`, '', '  Native agent completion: run next immediately. Otherwise use the fallback wait below once.', `wait: ${action.wait}`, then);
   } else if (action.kind === 'stop') {
@@ -458,7 +490,7 @@ export function renderAction(action, { skillCommand, runDir }) {
     if (action.artifact) lines.push(`  plan:    ${action.artifact}`);
     if (action.review) lines.push(`  review:  ${action.review}`);
     if (action.items) for (const it of action.items) lines.push(`  [${dispatchLabel(it, { compact: true })}] ${it.prompt}`);
-    if (action.command) lines.push(`  command: ${skillCommand} ${action.command} --run-dir ${runDir}`);
+    if (action.command) lines.push(`  command: ${action.external ? action.command : `${skillCommand} ${action.command} --run-dir ${runDir}`}`);
     if (action.alternative) lines.push(`  or:      ${skillCommand} ${action.alternative} --run-dir ${runDir}`);
   } else if (action.kind === 'run') {
     lines.push(`  ${action.command}`);

@@ -29,12 +29,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   accept, artifactPath, board, createRun, durationOf, findStep, gateSteps, markBriefed, observe, progressPath,
-  saveRun,
+  saveRun, loadRun,
 } from '../lib/run.mjs';
 import { renderBrief } from '../lib/brief.mjs';
 import { PER_ITEM_STAGES, STAGES, stage } from '../lib/stages.mjs';
 import { readTimings } from '../lib/timings.mjs';
-import { redTeamPass } from './helpers.mjs';
+import { fixtureCheckout, redTeamPass } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -316,7 +316,9 @@ test('dispatch-expectation: readTimings summarizes investigate\'s spread exactly
 
 test('dispatch-expectation: brief prints a position line and a duration range+median above its table', () => {
   const { dir, cleanup } = seededTimingsRoot();
-  const r = cli(['brief', '--stage', 'implement', '--lane', 'a', '--run-dir', dir, '--offline', '--no-worktree']);
+  const run = loadRun(dir);
+  fixtureCheckout(dir, run, run.lanes[0]);
+  const r = cli(['brief', '--stage', 'implement', '--lane', 'a', '--run-dir', dir, '--offline']);
   assert.equal(r.code, 0, `brief exited ${r.code}: ${r.err}`);
   assert.match(r.out, /Step 2 of 3/, `no position line, or wrong position: ${r.out}`);
   assert.match(r.out, /\[a\/implement\]/, 'the step being dispatched is not bracketed in the chain');

@@ -18,20 +18,18 @@
  * which is why `ship` still pushes from there and needs no change.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, realpathSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { worktreePath } from './run.mjs';
+import { historyStore, rawRun, validateExecution } from './execution.mjs';
 
 export class WorktreeError extends Error {}
 
 /**
  * A failed fetch, told apart from every other provisioning failure.
  *
- * `brief` tolerates a `WorktreeError` — a stage can still run in the repository
- * itself, so a missing checkout is a warning. A failed fetch is not that: the
- * branch would be cut anyway, from whatever `origin/<base>` this checkout last
- * happened to see, which is the stale base this class exists to refuse. Its own
- * class is what lets the caller re-throw this one and keep warning on the rest.
+ * All provisioning failures are fatal. This subtype retains the distinction
+ * between an unavailable fresh base and an invalid local checkout.
  */
 export class FetchError extends WorktreeError {}
 
@@ -48,7 +46,7 @@ const git = (args, cwd) => {
     return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   } catch (err) {
     throw new WorktreeError(
-      String(err.stderr ?? err.message ?? '').trim().split('\n').filter(Boolean).pop() ?? `git ${args[0]} failed`,
+      `git ${args[0]} in ${cwd}: ` + (String(err.stderr ?? err.message ?? '').trim().split('\n').filter(Boolean).pop() ?? 'failed'),
     );
   }
 };
@@ -90,14 +88,8 @@ const sleep = (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0
  * skipping the fetch on a transient error is the exact stale-base defect this change exists to
  * prevent, made invisible instead of fatal.
  *
- * It fails as a `FetchError`, not a plain `WorktreeError`, because of what the
- * caller does with each: `brief` tolerates a `WorktreeError` by briefing the
- * stage against the user's live checkout, and a transient `git remote` failure
- * — two parallel sessions contending for `.git/config.lock`, which is the
- * scenario this whole change is for — must not be the thing that silently
- * downgrades a lane out of its own worktree. Not knowing whether there is an
- * origin is not knowing whether the base is stale, which is exactly what
- * `FetchError` means everywhere else in this file.
+ * Not knowing whether there is an origin is not knowing whether the base is
+ * stale, which is what `FetchError` means elsewhere in this file.
  */
 export function originConfigured(repoPath) {
   try {
@@ -187,38 +179,88 @@ function fetchBase(repoPath, base) {
  * never heard of it and a `git fetch` for it fails every time, not just when
  * stale. Fetching is only ever meant to refresh a *shared* base like `dev`.
  */
-export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [] } = {}) {
-  const path = worktreePath(dir, lane);
-  if (existsSync(path)) return { path, created: false };
+export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [], executionRun = rawRun(dir) } = {}) {
+  const path = worktreePath(dir, lane, executionRun);
+  try {
+    if (lstatSync(path, { throwIfNoEntry: false }) || existsSync(dirname(path)) && lstatSync(dirname(path)).isSymbolicLink()) {
+      validateWorktree(repoPath, dir, lane, executionRun);
+      return { path, created: false };
+    }
 
-  // Compared through `realpath`: on macOS a temporary directory is handed out
-  // as `/var/folders/…` and reported by git as `/private/var/folders/…`, and a
-  // string comparison would call every such repo a subdirectory of itself.
-  const top = git(['rev-parse', '--show-toplevel'], repoPath);
-  if (real(top) !== real(repoPath)) {
-    throw new WorktreeError(`${repoPath} is not the root of a git repository (that is ${top})`);
-  }
+    // Compared through `realpath`: on macOS a temporary directory is handed out
+    // as `/var/folders/…` and reported by git as `/private/var/folders/…`, and a
+    // string comparison would call every such repo a subdirectory of itself.
+    const bare = git(['rev-parse', '--is-bare-repository'], repoPath) === 'true';
+    const top = bare ? git(['rev-parse', '--absolute-git-dir'], repoPath) : git(['rev-parse', '--show-toplevel'], repoPath);
+    if (real(top) !== real(repoPath)) {
+      throw new WorktreeError(`${repoPath} is not the root of a git repository (that is ${top})`);
+    }
 
-  mkdirSync(dirname(path), { recursive: true });
-  if (exists(repoPath, `refs/heads/${lane.branch}`)) {
-    git(['worktree', 'add', path, lane.branch], repoPath);
-  } else {
-    // Only on the path that creates a branch: an existing worktree returned
-    // above, and a branch that already exists has nothing left to cut from a
-    // base, so re-briefing a stage still costs no network. Also skipped when
-    // the base is a sibling lane's branch — a stacked lane's base is local-only
-    // until that lane ships, so origin has no ref for it to fetch.
-    const stacked = lanes.some((l) => l.branch === lane.base);
-    if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
-    git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
+    mkdirSync(dirname(path), { recursive: true });
+    accessSync(dirname(path), constants.W_OK);
+    if (exists(repoPath, `refs/heads/${lane.branch}`)) {
+      git(['worktree', 'add', path, lane.branch], repoPath);
+    } else {
+      // Only on the path that creates a branch: an existing worktree returned
+      // above, and a branch that already exists has nothing left to cut from a
+      // base, so re-briefing a stage still costs no network. Also skipped when
+      // the base is a sibling lane's branch — a stacked lane's base is local-only
+      // until that lane ships, so origin has no ref for it to fetch.
+      const stacked = lanes.some((l) => l.branch === lane.base);
+      if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
+      git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
+    }
+    validateWorktree(repoPath, dir, lane, executionRun);
+    const admin = git(['rev-parse', '--absolute-git-dir'], path);
+    writeFileSync(join(admin, 'issueflow-owner.json'), JSON.stringify({ dir: real(dir), lane: lane.slug, branch: lane.branch }), { flag: 'wx' });
+    return { path, created: true };
+  } catch (err) {
+    if (err instanceof WorktreeError) throw err;
+    throw new WorktreeError(`provision worktree ${path}: ${err.message}`);
   }
-  return { path, created: true };
 }
+
+/** Existing legacy lanes are accepted only through Git's own ownership records. */
+export function validateWorktree(repoPath, dir, lane, run = rawRun(dir)) {
+  const path = worktreePath(dir, lane, run);
+  try {
+    if (!existsSync(path)) throw new WorktreeError(`missing lane checkout ${path} — restore it or explicitly select --no-worktree for a legacy run`);
+    const root = run?.execution ? validateExecution(dir, run).path : real(dir);
+    if (lstatSync(path).isSymbolicLink() || real(path) !== join(root, 'worktrees', lane.slug)) {
+      throw new WorktreeError(`worktree ${path} escapes its run directory`);
+    }
+    if (real(git(['rev-parse', '--show-toplevel'], path)) !== real(path) || real(path) === real(repoPath)) {
+      throw new WorktreeError(`checkout ${path} is not its own lane worktree`);
+    }
+    const common = (cwd) => real(git(['rev-parse', '--path-format=absolute', '--git-common-dir'], cwd));
+    if (common(path) !== common(repoPath)) throw new WorktreeError(`worktree ${path} belongs to another repository`);
+    const registered = git(['worktree', 'list', '--porcelain', '-z'], repoPath).split('\0\0')
+      .some((block) => block.split('\0').includes('worktree ' + real(path)) && block.split('\0').includes('branch refs/heads/' + lane.branch));
+    if (!registered || git(['symbolic-ref', '--quiet', 'HEAD'], path) !== 'refs/heads/' + lane.branch) {
+      throw new WorktreeError(`worktree ${path} is not registered on expected branch ${lane.branch}`);
+    }
+    const marker = join(git(['rev-parse', '--absolute-git-dir'], path), 'issueflow-owner.json');
+    if (existsSync(marker)) {
+      const owner = JSON.parse(readFileSync(marker, 'utf8'));
+      if (owner.dir !== real(dir) || owner.lane !== lane.slug || owner.branch !== lane.branch) {
+        throw new WorktreeError(`worktree ${path} belongs to another run or lane`);
+      }
+    }
+    return path;
+  } catch (err) {
+    if (err instanceof WorktreeError) throw err;
+    throw new WorktreeError(`validate worktree ${path}: ${err.message}`);
+  }
+}
+
+/** Historical reads need the shared object store, even after a lane is removed. */
+export const historyTree = (run, dir = run.execution?.owner.dir) => run.execution ? historyStore(dir, run) : run.repo.path;
 
 /** Drop a lane's checkout. The branch and its commits are untouched. */
 export function removeWorktree(repoPath, dir, lane) {
   const path = worktreePath(dir, lane);
   if (!existsSync(path)) return { path, removed: false };
+  if (rawRun(dir)?.execution) validateWorktree(repoPath, dir, lane);
   git(['worktree', 'remove', '--force', path], repoPath);
   return { path, removed: true };
 }
@@ -249,7 +291,8 @@ export function registeredLanesUnder(repoPath, dir) {
   } catch {
     return [];
   }
-  const prefix = `${real(resolve(dir, 'worktrees'))}/`;
+  const run = rawRun(dir);
+  const prefix = `${real(resolve(run?.execution ? validateExecution(dir, run).path : dir, 'worktrees'))}/`;
   const lanes = [];
   for (const block of out.split('\n\n')) {
     const pathMatch = block.match(/^worktree (.+)$/m);

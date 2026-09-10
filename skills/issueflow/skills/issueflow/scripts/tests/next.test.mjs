@@ -15,10 +15,12 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimes
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { accept, artifactPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
+import { accept, artifactPath, briefPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
 import { markReviewBriefed, registerReview, reviewBriefPath, reviewPath } from '../lib/reviews.mjs';
 import { candidatesPath, currentRound, fixBriefPath, fixReportPath, headOf, laneDiff, openRound, planVerification, readCandidates, registerRound, verdictsPath } from '../lib/prreview.mjs';
 import { decide, renderAction, timeoutFor, waitLine } from '../lib/next.mjs';
+import { prepareCheckout, prepareExecution, releaseSourceLease } from '../lib/execution.mjs';
+import { ensureWorktree } from '../lib/worktree.mjs';
 import { approveImplement, approvePlan, redTeamBlock, redTeamPass, writeGood, writeReview } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -210,6 +212,7 @@ test('decide: an approved plan with work items splits once; then the bottom lane
   a = decide(dir, split);
   assert.deepEqual([a.kind, a.command, a.args], ['run', 'brief', { stage: 'implement', lane: 'first' }]);
   markBriefed(dir, split, findStep(split, 'implement', 'first'), () => at(-60));
+  ensureWorktree(split.repo.path, dir, split.lanes[0], { offline: true });
   a = decide(dir, split);
   assert.equal(a.kind, 'wait');
   assert.match(a.wait, /first\/implement\.md|first\/implement/);
@@ -225,6 +228,7 @@ test('decide: a plan with no work items never splits, and a stage past the stall
   let a = decide(dir, run);
   assert.deepEqual([a.kind, a.command, a.args], ['run', 'brief', { stage: 'implement', lane: 'root' }]);
   markBriefed(dir, run, findStep(run, 'implement'), () => at(-4000));
+  ensureWorktree(run.repo.path, dir, run.lanes[0], { offline: true });
   a = decide(dir, run, { now: () => at(0) });
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'stalled');
@@ -255,6 +259,7 @@ function loopFixture() {
   writeFileSync(join(repoPath, 'a.js'), 'export const a = 2;\nexport const b = 3;\n');
   git(['commit', '-qam', 'change'], repoPath);
   const ctx = freshRun({ auto: true, repoPath });
+  prepareCheckout(ctx.dir, ctx.run, ctx.run.lanes[0], { noWorktree: true });
   approvePlan(ctx.dir, ctx.run, { auto: true });
   approveImplement(ctx.dir, ctx.run, null, { auto: true });
   ctx.run.lanes[0].pr = { number: 1, url: 'u', title: 't' };
@@ -284,7 +289,9 @@ for (const delivery of ['finders', 'verifiers', 'fixer']) {
       writeFileSync(fixReportPath(dir, lane, 1), JSON.stringify({ _summary: 'fixed', [lane.review.findings[0].id]: { status: 'fixed', note: 'fixed in commit' } }));
       git(['commit', '-q', '--allow-empty', '-m', 'fix'], repoPath);
     }
+    releaseSourceLease(dir, run);
     run.createdAt = at(-20_000);
+    prepareCheckout(dir, run, lane, { noWorktree: true });
     saveRun(dir, run);
     const result = cli(['next', '--run-dir', dir, '--offline']);
     if (delivery === 'verifiers') {
@@ -325,7 +332,9 @@ for (const command of ['brief', 'review-brief', 'review-verify', 'review-fix-bri
     }
     const clock = join(dir, 'clock.mjs');
     const now = Date.now();
+    releaseSourceLease(dir, run);
     run.createdAt = new Date(now).toISOString();
+    prepareCheckout(dir, run, lane, { noWorktree: true });
     saveRun(dir, run);
     writeFileSync(clock, `const RealDate = Date; let reads = 0; globalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [${now} + (++reads >= 2 ? 20000000 : 0)])); } };\n`);
     const extra = command === 'brief' ? ['--stage', 'implement'] : [];
@@ -351,7 +360,9 @@ test('budget: renewed CI fixer still needs its report, pushed commit and another
   entry.fix = { briefed: true };
   mkdirSync(dirname(fixBriefPath(dir, lane, 1)), { recursive: true });
   writeFileSync(fixBriefPath(dir, lane, 1), '# fix CI\n');
+  releaseSourceLease(dir, run);
   run.createdAt = at(-20_000);
+  prepareCheckout(dir, run, lane, { noWorktree: true });
   saveRun(dir, run);
   assert.equal(decide(dir, run).kind, 'wait');
   const result = cli(['resume', '--run-dir', dir, '--budget-seconds', '1800']);
@@ -524,6 +535,26 @@ test('decide: a finder fleet that never delivers is a stall with the prompts to 
   cleanup();
 });
 
+test('decide: an in-flight legacy Codex finder fleet is queued and each stalled redispatch resets its active-wave timeout', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  run.host = 'codex'; run.runtime = 'codex'; run.dispatch = { host: 'codex', childSlots: 1 };
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  const entry = currentRound(lane); entry.finders = 5;
+  for (let n = 1; n <= 5; n += 1) {
+    const brief = join(dir, 'briefs', `root-review-r1-finder-${n}.md`);
+    mkdirSync(dirname(brief), { recursive: true }); writeFileSync(brief, '# finder\n'); backdate(brief, 4000);
+  }
+  let action = decide(dir, run);
+  assert.deepEqual([action.kind, action.reason, action.items.length, action.waveStarted], ['stop', 'stalled', 1, true]);
+  assert.equal(run.dispatch.queue.items.length, 5);
+  run.dispatch.queue.active[0].dispatchedAt = Date.now() - 4000 * 1000;
+  action = decide(dir, run);
+  assert.equal(action.waveRedispatched, true);
+  assert.ok(run.dispatch.queue.active[0].dispatchedAt >= Date.now() - 1000);
+  cleanup();
+});
+
 test('decide: an unpushed fix is a stop when the remote head disagrees, and a stacked lane is rebased before its first round', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];
@@ -541,7 +572,7 @@ test('decide: an unpushed fix is a stop when the remote head disagrees, and a st
   const a = decide(dir, run, { offline: false, remoteHead: () => 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', checks: () => [] });
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'unpushed');
-  assert.match(a.command, /git -C .* push origin feature\/issue-8/);
+  assert.match(a.command, /git -C .* push origin 'feature\/issue-8'/);
 
   // A second lane stacked on the first, whose branch then moved: rebase first.
   const second = { ...structuredClone(lane), id: 'second', slug: 'second', branch: 'feature/issue-8-second', base: lane.branch, pr: { number: 2, url: 'u2', title: 't2' }, review: { rounds: [], converged: false, draft: true }, stages: structuredClone(lane.stages) };
@@ -549,9 +580,11 @@ test('decide: an unpushed fix is a stop when the remote head disagrees, and a st
   run.lanes = [lane, second];
   lane.review.converged = true;
   saveRun(dir, run);
-  // decide reads HEAD of the lane's tree; with no worktree, that is the repo, on lane 1's branch —
-  // so point the repo at lane 2's branch to stand in for its worktree.
-  git(['checkout', '-q', 'feature/issue-8-second'], repoPath);
+  releaseSourceLease(dir, run);
+  delete run.checkout;
+  git(['checkout', '-q', 'dev'], repoPath);
+  ensureWorktree(repoPath, dir, lane, { offline: true });
+  ensureWorktree(repoPath, dir, second, { offline: true, lanes: run.lanes });
   const b = decide(dir, run, { offline: true });
   assert.deepEqual([b.kind, b.command, b.args], ['run', 'rebase', { lane: 'second' }]);
   cleanup();
@@ -602,8 +635,11 @@ for (const runtime of ['claude', 'codex']) {
       const cwd = join(root, 'unrelated');
       mkdirSync(cwd);
       cpSync(SKILL, plugin, { recursive: true });
-      const run = createRun({ repo: { owner: 'acme', name: 'w', path: join(INPUTS, 'repo'), defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
+      const source = runtime === 'codex' ? repo() : join(INPUTS, 'repo');
+      if (runtime === 'codex') t.after(() => rmSync(source, { recursive: true, force: true }));
+      const run = createRun({ repo: { owner: 'acme', name: 'w', path: source, defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
       saveRun(dir, run);
+      if (runtime === 'codex') prepareExecution(dir, run, { workspaceRoot: root });
       mkdirSync(join(dir, 'inputs'), { recursive: true });
       writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
       const env = { ...process.env };
@@ -617,7 +653,7 @@ for (const runtime of ['claude', 'codex']) {
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /^next: wait/m);
       assert.equal(result.stdout.match(/^wait: (.+)$/m)[1], waitLine({
-        pairs: [[artifactPath(dir, findStep(run, 'investigate')), join(dir, 'briefs', 'investigate.md')]], timeout: 1800,
+        pairs: [[artifactPath(dir, findStep(run, 'investigate')), briefPath(dir, findStep(run, 'investigate'))]], timeout: 1800,
       }));
     });
   }
@@ -679,7 +715,8 @@ test('exit codes: a gate refusal is 2, a hand-back is 4, an unknown command is 2
 
 test('next (CLI): --review-plan drives a fresh run through review and stops once at the human — one call per turn', () => {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-cli-'));
-  const repoPath = join(INPUTS, 'repo');
+  const repoPath = repo();
+  cpSync(join(INPUTS, 'repo'), repoPath, { recursive: true });
   cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json'), '--review-plan']);
 
   let r = cli(['next', '--run-dir', dir]);
@@ -718,6 +755,7 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   assert.match(r.out, /▶ brief — descriptions\/implement is ready to be briefed/);
   assert.match(r.out, /next: dispatch \(brief\)/);
   rmSync(dir, { recursive: true, force: true });
+  rmSync(repoPath, { recursive: true, force: true });
 });
 
 test('next (CLI): a refused gate is a send-back — exit 2, the refusal printed, the brief re-rendered', () => {
@@ -726,7 +764,7 @@ test('next (CLI): a refused gate is a send-back — exit 2, the refusal printed,
   const step = findStep(run, 'implement');
   markBriefed(dir, run, step, () => at(-30));
   writeGood(dir, run, 'implement'); // delivered, but with no evidence file
-  const r = cli(['next', '--run-dir', dir, '--no-worktree']);
+  const r = cli(['next', '--run-dir', dir]);
   assert.equal(r.code, 2);
   assert.match(r.out, /gate refused: cannot accept root\/implement: no test output/);
   assert.match(r.out, /next: dispatch \(send-back\)/);
