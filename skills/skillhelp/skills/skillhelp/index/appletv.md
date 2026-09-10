@@ -62,13 +62,6 @@
 
 ## Architecture
 
-- scripts/appletv.js — the CLI: doctor, scan, pair, alias, state, send, apps, type, report `skills/appletv/skills/appletv/SKILL.md:301`
-- references/commands.md — every command the skill can send, the protocol it needs, the read-back that verifies it, and which are unverifiable `skills/appletv/skills/appletv/SKILL.md:302`
-- references/pairing.md — the protocols (AirPlay, Companion, MRP-over-AirPlay), the one-PIN-per-protocol flow, where credentials live, and the TV settings that block pairing `skills/appletv/skills/appletv/SKILL.md:303`
-- references/apps.md — the verified bundle-id table and how deep links open a specific title in Netflix, Disney+, Max, YouTube and Apple TV+ `skills/appletv/skills/appletv/SKILL.md:304`
-- references/errors.md — the error taxonomy — each failure the network, the TV or tvOS produces, mapped to the message and the fix the skill gives `skills/appletv/skills/appletv/SKILL.md:305`
-- references/intents.md — the twenty things people actually ask a TV to do, each mapped to a command sequence and its confirmation policy `skills/appletv/skills/appletv/SKILL.md:306`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/appletv/skills/appletv/SKILL.md:310`
 - Deterministic: check python and pyatv, make the venv — node scripts/appletv.js doctor `skills/appletv/skills/appletv/skill-invariants.json:36`
 - Deterministic: discover every Apple TV on the network, with the unicast fallback — node scripts/appletv.js scan `skills/appletv/skills/appletv/skill-invariants.json:40`
 - Deterministic: pair one named device over AirPlay and Companion and store credentials — node scripts/appletv.js pair --device <name> `skills/appletv/skills/appletv/skill-invariants.json:44`
@@ -78,6 +71,13 @@
 - Deterministic: list apps and resolve a name or deep link to a launch target — node scripts/appletv.js apps --device <name> `skills/appletv/skills/appletv/skill-invariants.json:60`
 - Deterministic: type into the focused field and read it back — node scripts/appletv.js type --device <name> <text> `skills/appletv/skills/appletv/skill-invariants.json:64`
 - Deterministic: render a captured run as the report — node scripts/appletv.js report --from <dir> `skills/appletv/skills/appletv/skill-invariants.json:68`
+- Deterministic: take a screenshot of the TV over the developer tunnel — node scripts/appletv.js screen `skills/appletv/skills/appletv/skill-invariants.json:72`
+- Deterministic: open an app on the household's preferred profile — node scripts/appletv.js open <app> `skills/appletv/skills/appletv/skill-invariants.json:76`
+- Deterministic: play a title by deep link where the service honours one, verified by read-back — node scripts/appletv.js play <url> `skills/appletv/skills/appletv/skill-invariants.json:80`
+- Deterministic: press to a named person's tile on a picker and select — node scripts/appletv.js who <name> `skills/appletv/skills/appletv/skill-invariants.json:84`
+- Model judgment: pick which Apple TV the user means when the phrase is a room, not a device name, and offer to alias it — 'the living room one' is a fact about the house, not the network `skills/appletv/skills/appletv/skill-invariants.json:90`
+- Model judgment: turn an intent into a command sequence — 'skip the intro' into skip_forward, 'put on Severance' into a deep link, 'movie night' into wake + launch + play — an intent is an app, a menu… `skills/appletv/skills/appletv/skill-invariants.json:1`
+- Model judgment: read the PIN off the screen through the user, one protocol at a time — pairing shows a code on the TV that only a person in the room can see `skills/appletv/skills/appletv/skill-invariants.json:98`
 
 ## Troubleshooting
 

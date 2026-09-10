@@ -15,9 +15,9 @@
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/github-stats/README.md:86`
 - [gh](https://cli.github.com/), authenticated (gh auth login). The skill uses your existing auth; there is no separate token to manage. `skills/github-stats/README.md:88`
 - [jq](https://jqlang.github.io/jq/) for JSON aggregation. `skills/github-stats/README.md:90`
-- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:32`
-- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:34`
-- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:36`
+- gh (GitHub CLI), authenticated: check gh auth status. If not authed, tell the user to run gh auth login (suggest they type ! gh auth login). `skills/github-stats/skills/github-stats/SKILL.md:36`
+- jq for the script's JSON aggregation. `skills/github-stats/skills/github-stats/SKILL.md:38`
+- The script lives next to this file at scripts/gh-stats.sh. Run it from the skill directory (the folder containing this SKILL.md). `skills/github-stats/skills/github-stats/SKILL.md:40`
 
 ## Usage
 
