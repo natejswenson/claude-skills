@@ -11,8 +11,9 @@ are how a from-scratch visual language stays consistent from post to post.
 
 ## What you're composing
 
-A single self-contained HTML document (inline `<style>`, inline SVG for any artwork) that
-renders, at exactly 1600×900px, as a cover image for one dev log entry. Compose from these
+A single PRESS editorial cover that renders, at exactly 1600×900px, as a cover image for
+one dev log entry. In Codex, the dominant image is a native generated raster illustration;
+the local compositor adds the typography and layout. Compose from these
 fields only — never open the post's raw markdown file, never reference any section other
 than `## Shipped` (no `## Changelog`, no gotchas, no sources):
 - `title`
@@ -34,11 +35,11 @@ Before writing any HTML, do this thinking step explicitly:
    key that doesn't fit, a git tag being distrusted like any other user input, one broken
    link in a chain, a filter separating signal from noise, a clock catching a stale
    timestamp, two paths diverging and one being cut off.
-3. Design ONE illustration — built from inline SVG shapes (lines, arcs, polygons,
-   simple geometric forms) — that depicts that concept. Not a photo, not a stock icon,
-   not a screenshot: a small original line-art scene, **editorial line art in ink with
-   sparing orange**, in the spirit of a newspaper diagram or a technical schematic, using
-   only the palette below.
+3. Design ONE native raster illustration that depicts that concept. Not a photo, stock
+   icon, screenshot, UI, wireframe, or geometric placeholder: a detailed original
+   **monochrome technical engraving in black and warm gray ink on flat cream paper**, in
+   the spirit of a historical engineering plate or newspaper field illustration, with at
+   most one small vermilion/orange focal accent. The art must look printed, not painterly.
 4. That illustration is the dominant visual element of the cover — roughly half the
    canvas, not a thumbnail in the corner. Title, kicker, and summary text support it;
    they do not replace it.
@@ -151,10 +152,10 @@ For the two-node slot specifically: the accent icon's presence must not be read 
   `DevlogCoverFont` finishes loading. That's resolving a name the browser already has, not
   embedding or fetching a file — no different in kind from the fallback this rule already
   requires.
-- No external resources of any kind — no `<link>`, no `@import`, no remote `<img src>`,
-  no web fonts, no raster images. All artwork is inline SVG built from basic shapes
-  (`<path>`, `<circle>`, `<rect>`, `<line>`, `<polygon>`, `<polyline>`) — everything must
-  be inline HTML/CSS/SVG, hand-composed, not fetched or embedded from anywhere.
+- The final cover must be self-contained and offline-renderable. Native raster artwork is
+  persisted locally and embedded by `compose-art-cover`; no remote images or web fonts.
+  Typography is rendered locally and the generated artwork is never replaced by inline
+  SVG, CSS shapes, a wireframe, or a title-only placeholder.
 
 ## Visual direction
 
@@ -176,9 +177,10 @@ site, not a marketing graphic and not a repeated template.
   survives, and only inside a terminal element. Never on paper.
 <!-- <<< press:palette -->
 
-Prefer flat, limited color and solid/line fills over gradients or smooth shading — the
-render is compressed with lossy PNG palette quantization afterward, and gradients band
-visibly under that compression while flat fills don't.
+Prefer flat, limited color and solid/line fills over gradients or smooth shading. Native
+art should be predominantly cream paper plus black/gray engraving lines, with no broad
+color wash, no saturated palette, and no painterly digital lighting. The only bright color
+is the single small orange accent permitted by the accent law below.
 
 ### The accent law, carried to covers
 
@@ -304,7 +306,8 @@ summary as on-image text.
   cursor, no bare `_` suffix, no stray `$` prompt as decoration. The dark palette now
   belongs to exactly one place, the `.term` panel, and only when it's real code.
 - Don't embed a photograph, stock image, or anything requiring an external fetch — the
-  illustration is drawn from inline SVG primitives, not sourced from anywhere.
+  illustration is native-generated raster artwork persisted locally and embedded by the
+  compositor, never a hand-authored SVG substitute.
 - Don't reference any font file other than the bundled `'DevlogCoverFont'` — the serif
   and display voices lean on this rendering host's own system fonts, never a file you
   fetch or embed yourself.
