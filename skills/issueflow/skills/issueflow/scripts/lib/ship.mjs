@@ -138,10 +138,10 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
   const repo = run.repo.path;
   const results = [];
   for (const lane of run.lanes) {
-    if (!branchExists(repo, lane.branch)) {
+    if (!branchExists(gitStore(dir, run), lane.branch)) {
       throw new ShipError(`branch ${lane.branch} does not exist — the implement stage never committed to it`);
     }
-    const ahead = commitsAhead(repo, lane.branch, lane.base);
+    const ahead = commitsAhead(gitStore(dir, run), lane.branch, lane.base);
     if (ahead === 0) {
       throw new ShipError(`${lane.branch} has no commits over ${lane.base} — there is nothing to open a pull request about`);
     }
@@ -150,7 +150,7 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
       results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: '(dry run)' });
       continue;
     }
-    git(['push', '-u', 'origin', lane.branch], repo);
+    git(['push', '-u', 'origin', lane.branch], gitStore(dir, run));
     const bodyFile = join(dir, lane.slug, 'pr-body.md');
     writeFileSync(bodyFile, prBody(dir, run, lane));
     const opened = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
@@ -161,3 +161,4 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
   }
   return results;
 }
+import { gitStore } from './execution.mjs';

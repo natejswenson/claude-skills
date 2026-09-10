@@ -21,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { worktreePath } from './run.mjs';
+import { historyStore, rawRun, validateExecution } from './execution.mjs';
 
 export class WorktreeError extends Error {}
 
@@ -178,18 +179,19 @@ function fetchBase(repoPath, base) {
  * never heard of it and a `git fetch` for it fails every time, not just when
  * stale. Fetching is only ever meant to refresh a *shared* base like `dev`.
  */
-export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [] } = {}) {
-  const path = worktreePath(dir, lane);
+export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [], executionRun = rawRun(dir) } = {}) {
+  const path = worktreePath(dir, lane, executionRun);
   try {
     if (lstatSync(path, { throwIfNoEntry: false }) || existsSync(dirname(path)) && lstatSync(dirname(path)).isSymbolicLink()) {
-      validateWorktree(repoPath, dir, lane);
+      validateWorktree(repoPath, dir, lane, executionRun);
       return { path, created: false };
     }
 
     // Compared through `realpath`: on macOS a temporary directory is handed out
     // as `/var/folders/…` and reported by git as `/private/var/folders/…`, and a
     // string comparison would call every such repo a subdirectory of itself.
-    const top = git(['rev-parse', '--show-toplevel'], repoPath);
+    const bare = git(['rev-parse', '--is-bare-repository'], repoPath) === 'true';
+    const top = bare ? git(['rev-parse', '--absolute-git-dir'], repoPath) : git(['rev-parse', '--show-toplevel'], repoPath);
     if (real(top) !== real(repoPath)) {
       throw new WorktreeError(`${repoPath} is not the root of a git repository (that is ${top})`);
     }
@@ -208,7 +210,7 @@ export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [
       if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
       git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
     }
-    validateWorktree(repoPath, dir, lane);
+    validateWorktree(repoPath, dir, lane, executionRun);
     const admin = git(['rev-parse', '--absolute-git-dir'], path);
     writeFileSync(join(admin, 'issueflow-owner.json'), JSON.stringify({ dir: real(dir), lane: lane.slug, branch: lane.branch }), { flag: 'wx' });
     return { path, created: true };
@@ -219,11 +221,12 @@ export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [
 }
 
 /** Existing legacy lanes are accepted only through Git's own ownership records. */
-export function validateWorktree(repoPath, dir, lane) {
-  const path = worktreePath(dir, lane);
+export function validateWorktree(repoPath, dir, lane, run = rawRun(dir)) {
+  const path = worktreePath(dir, lane, run);
   try {
     if (!existsSync(path)) throw new WorktreeError(`missing lane checkout ${path} — restore it or explicitly select --no-worktree for a legacy run`);
-    if (lstatSync(path).isSymbolicLink() || real(path) !== join(real(dir), 'worktrees', lane.slug)) {
+    const root = run?.execution ? validateExecution(dir, run).path : real(dir);
+    if (lstatSync(path).isSymbolicLink() || real(path) !== join(root, 'worktrees', lane.slug)) {
       throw new WorktreeError(`worktree ${path} escapes its run directory`);
     }
     if (real(git(['rev-parse', '--show-toplevel'], path)) !== real(path) || real(path) === real(repoPath)) {
@@ -251,12 +254,13 @@ export function validateWorktree(repoPath, dir, lane) {
 }
 
 /** Historical reads need the shared object store, even after a lane is removed. */
-export const historyTree = (run) => run.repo.path;
+export const historyTree = (run, dir = run.execution?.owner.dir) => run.execution ? historyStore(dir, run) : run.repo.path;
 
 /** Drop a lane's checkout. The branch and its commits are untouched. */
 export function removeWorktree(repoPath, dir, lane) {
   const path = worktreePath(dir, lane);
   if (!existsSync(path)) return { path, removed: false };
+  if (rawRun(dir)?.execution) validateWorktree(repoPath, dir, lane);
   git(['worktree', 'remove', '--force', path], repoPath);
   return { path, removed: true };
 }
@@ -287,7 +291,8 @@ export function registeredLanesUnder(repoPath, dir) {
   } catch {
     return [];
   }
-  const prefix = `${real(resolve(dir, 'worktrees'))}/`;
+  const run = rawRun(dir);
+  const prefix = `${real(resolve(run?.execution ? validateExecution(dir, run).path : dir, 'worktrees'))}/`;
   const lanes = [];
   for (const block of out.split('\n\n')) {
     const pathMatch = block.match(/^worktree (.+)$/m);

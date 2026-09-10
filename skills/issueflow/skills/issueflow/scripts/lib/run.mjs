@@ -11,16 +11,16 @@
  * survives branch switches and never appears in the user's `git status`.
  */
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
 import { assertRuntime, dispatchProfile } from './runtime.mjs';
-import { validateWorktree } from './worktree.mjs';
-import { sourceTree } from './execution.mjs';
+import { validateWorktree, WorktreeError } from './worktree.mjs';
+import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -119,9 +119,21 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
 }
 
 export function saveRun(dir, run) {
-  mkdirSync(join(dir, SHARED_DIR), { recursive: true });
-  for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
-  writeFileSync(statePath(dir), `${JSON.stringify(run, null, 2)}\n`);
+  try {
+    archiveExecution(dir, run);
+    mkdirSync(join(dir, SHARED_DIR), { recursive: true });
+    for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
+    if (run.execution && !existsSync(join(dir, 'execution-owner.json'))) {
+      writeFileSync(join(dir, 'execution-owner.json'), JSON.stringify(run.execution.owner), { flag: 'wx' });
+    }
+    const pending = statePath(dir) + `.${randomUUID()}.pending`;
+    writeFileSync(pending, `${JSON.stringify(run, null, 2)}\n`, { flag: 'wx' });
+    renameSync(pending, statePath(dir));
+    persistedExecution(dir);
+  } catch (err) {
+    if (!run.execution) throw err;
+    throw new WorktreeError(`could not persist ${dir}: ${err.message}; retain outputs at ${run.execution.path} and retry`);
+  }
   return run;
 }
 
@@ -359,9 +371,9 @@ export function recordFinished(dir, run, { issueClosed = false } = {}, now = () 
  */
 export const SHARED_DIR = 'shared';
 
-export const artifactPath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, step.stage.artifact);
-export const evidencePath = (dir, step) => join(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
-export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
+export const artifactPath = (dir, step) => activePath(dir, step.laneSlug ?? SHARED_DIR, step.stage.artifact);
+export const evidencePath = (dir, step) => activePath(dir, step.laneSlug ?? SHARED_DIR, EVIDENCE_FILE);
+export const briefPath = (dir, step) => activePath(dir, 'briefs', `${step.key.replace('/', '-')}.md`);
 
 /**
  * Where a stage may report progress while it works — the fourth thing a stage
@@ -370,10 +382,12 @@ export const briefPath = (dir, step) => join(dir, 'briefs', `${step.key.replace(
  * still fully visible through `board()`'s filesystem-observed clock, which is
  * what keeps this an enrichment rather than the primary liveness signal.
  */
-export const progressPath = (dir, step) => join(dir, 'progress', `${step.key.replace('/', '-')}.log`);
+export const progressPath = (dir, step) => activePath(dir, 'progress', `${step.key.replace('/', '-')}.log`);
 
 /** Where a lane's stages work, so two lanes running at once never share a tree. */
-export const worktreePath = (dir, lane) => join(dir, 'worktrees', lane.slug);
+export const worktreePath = (dir, lane, run = rawRun(dir)) => {
+  return join(run?.execution ? validateExecution(dir, run).path : dir, 'worktrees', lane.slug);
+};
 
 /** Non-empty means real content — a touched file is not an artifact. */
 export const hasContent = (path) => existsSync(path) && readFileSync(path, 'utf8').trim().length > 0;
@@ -415,7 +429,7 @@ const git = (args, cwd) => {
 
 /** Writers must have a validated lane or an explicitly leased source checkout. */
 export const laneTree = (dir, run, lane) =>
-  run.checkout?.mode === 'source' ? sourceTree(dir, run, lane) : validateWorktree(run.repo.path, dir, lane);
+  run.checkout?.mode === 'source' ? sourceTree(dir, run, lane) : validateWorktree(gitStore(dir, run), dir, lane);
 
 /**
  * Record an artifact and its approval, advancing the state machine.
@@ -441,7 +455,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   }
 
   const declared = stage(step.stage.id);
-  const text = readFileSync(artifact, 'utf8');
+  const text = readDelivery(dir, artifact, run);
   const missing = declared.requires.filter((section) => !hasSection(text, section));
   if (missing.length > 0) {
     throw new RunError(
@@ -461,7 +475,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     // A non-empty file is not a test run. Reading the runner's own summary out
     // of it is what makes the evidence evidence — a stage that wrote `ok` used
     // to clear this gate.
-    const results = parseAllEvidence(readFileSync(proof, 'utf8'));
+    const results = parseAllEvidence(readDelivery(dir, proof, run, { dispatched: false }));
     if (results.length === 0) {
       throw new RunError(
         `cannot accept ${step.key}: ${proof} holds no summary in a format I can parse. ` +
@@ -542,6 +556,11 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   // gate said yes. Keeping both apart is what lets the run report stage time
   // separately from review time instead of blaming the model for the wait.
   step.stage.at = { ...step.stage.at, delivered: mtimeOf(artifact), approved: now() };
+  if (run.execution) {
+    archiveExecution(dir, run);
+    approveArtifact(dir, run, artifact);
+    if (step.stage.evidence) step.stage.evidence = archivedPath(dir, run, step.stage.evidence);
+  }
   saveRun(dir, run);
   return run;
 }
@@ -563,6 +582,7 @@ const mtimeOf = (path) => {
 export function deliveredSince(dir, step) {
   const artifact = artifactPath(dir, step);
   if (!hasContent(artifact)) return null;
+  if (!deliveryCurrent(dir, artifact)) return null;
   const delivered = mtimeOf(artifact);
   const briefed = step.stage.at?.briefed;
   if (briefed && Date.parse(delivered) < Date.parse(briefed)) return null;

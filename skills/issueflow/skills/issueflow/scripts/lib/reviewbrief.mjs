@@ -1,3 +1,4 @@
+import { activePath, approvedArtifactPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The review loop's briefs — finder, verifier, fixer — rendered from
  * `references/review-method.md`, never improvised.
@@ -92,7 +93,7 @@ function intentBlock(dir, run) {
   return [
     '## What the change is for',
     '',
-    `The approved plan is at \`${join(dir, SHARED_DIR, plan.stage.artifact)}\` — root cause, approach, the`,
+    `The approved plan is at \`${approvedArtifactPath(dir, run, activePath(dir, SHARED_DIR, plan.stage.artifact))}\` — root cause, approach, the`,
     'files it said it would touch, and the proof it promised. It was red-teamed and approved before',
     'any code was written; the diff is supposed to be that plan, built.',
   ].join('\n');
@@ -155,7 +156,8 @@ function priorBlock(prior) {
   return out.join('\n');
 }
 
-const progressBlock = (path, run) => runtimeOf(run) === 'codex' ? '' : [
+const progressBlock = (path, run) => runtimeOf(run) === 'codex' && !run.execution ? '' : [
+  ...executionInstructions(run),
   '## While you work',
   '',
   `Append one short lowercase line to \`${path}\` whenever you reach a real milestone —`,
@@ -260,7 +262,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     'required even when empty-handed: a clean pass that names nothing it skipped is',
     'indistinguishable from an unfinished one.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`), run),
     '',
     doneBlock(run, 'the candidates file', candidatesPath(dir, lane, entry.round, n)),
     '',
@@ -274,8 +276,10 @@ export function writeFinderBriefs(dir, run, lane, entry, { issue, files, prior }
   entry.angles.forEach((angles, i) => {
     const n = i + 1;
     const path = finderBriefPath(dir, lane, entry.round, n);
+    prepareOutputs(dir, run, [path, candidatesPath(dir, lane, entry.round, n), activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`)]);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderFinderBrief(dir, run, lane, entry, n, { angles, issue, files, prior }));
+    recordDispatch(dir, run, path, [candidatesPath(dir, lane, entry.round, n)]);
     out.push({ n, ...dispatch, prompt: path, writes: candidatesPath(dir, lane, entry.round, n), angles });
   });
   return out;
@@ -353,7 +357,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     'One entry per item, every item. `severity` is required for a CONFIRMED or PLAUSIBLE candidate',
     'and ignored for a REFUTED one. `quote` is required on every entry.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`), run),
     '',
     doneBlock(run, 'the verdicts file', verdictsPath(dir, lane, entry.round, n)),
     '',
@@ -366,8 +370,10 @@ export function writeVerifierBriefs(dir, run, lane, entry, { batches, issue }) {
   return batches.map((items, i) => {
     const n = i + 1;
     const path = verifierBriefPath(dir, lane, entry.round, n);
+    prepareOutputs(dir, run, [path, verdictsPath(dir, lane, entry.round, n), activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`)]);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderVerifierBrief(dir, run, lane, entry, n, { items, issue }));
+    recordDispatch(dir, run, path, [verdictsPath(dir, lane, entry.round, n)]);
     return { n, ...dispatch, prompt: path, writes: verdictsPath(dir, lane, entry.round, n), items: items.length };
   });
 }
@@ -461,7 +467,7 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     '',
     `Also report, in the same file under the key \`"_summary"\`, one sentence naming the commit sha you pushed.`,
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`), run),
     '',
     doneBlock(run, 'the fix report', fixReportPath(dir, lane, entry.round)),
     '',
@@ -471,8 +477,10 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
 
 export function writeFixBrief(dir, run, lane, entry, { items, checks, model, reasoning, agent, issue }) {
   const path = fixBriefPath(dir, lane, entry.round);
+  prepareOutputs(dir, run, [path, fixReportPath(dir, lane, entry.round), evidencePath(dir, findStep(run, 'implement', lane.slug)), activePath(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`)]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderFixBrief(dir, run, lane, entry, { items, checks, model, issue }));
+  recordDispatch(dir, run, path, [fixReportPath(dir, lane, entry.round)]);
   return { model, reasoning, agent, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
 }
 

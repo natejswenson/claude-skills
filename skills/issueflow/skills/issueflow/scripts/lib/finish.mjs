@@ -14,9 +14,9 @@
 import { execFileSync } from 'node:child_process';
 import { closeIssue, issueState } from './gh.mjs';
 import { landings } from './reconcile.mjs';
-import { recordFinished, recordLanding } from './run.mjs';
-import { pruneWorktrees, removeWorktree } from './worktree.mjs';
-import { releaseSourceLease } from './execution.mjs';
+import { recordFinished, recordLanding, saveRun } from './run.mjs';
+import { pruneWorktrees, registeredLanesUnder, removeWorktree } from './worktree.mjs';
+import { gitStore, releaseSourceLease } from './execution.mjs';
 
 export class FinishError extends Error {
   constructor(message, rows = []) {
@@ -63,6 +63,8 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
   }
 
   const repo = run.repo.path;
+  if (run.execution) saveRun(dir, run);
+  const store = gitStore(dir, run);
   const results = landings(run, {});
   const rows = [];
 
@@ -77,15 +79,16 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       continue;
     }
 
-    removeWorktree(repo, dir, lane);
-    pruneWorktrees(repo);
+    removeWorktree(store, dir, lane);
+    pruneWorktrees(store);
     try {
       // -D, not -d: the merge landed on the remote, which this checkout may
       // not have fetched, so -d's local-reachability check would refuse a
       // deletion GitHub already confirmed is safe — that confirmation is the
       // stronger check, and it already happened above.
-      git(['branch', '-D', lane.branch], repo);
-    } catch {
+      git(['branch', '-D', lane.branch], store);
+    } catch (err) {
+      if (run.execution && git(['for-each-ref', '--format=%(refname)', `refs/heads/${lane.branch}`], store).trim()) throw err;
       // Already gone — a second `finish` after a first that deleted it, or a
       // branch removed by hand. Not a reason to refuse recording the landing.
     }
@@ -98,6 +101,14 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
   }
 
   if (run.lanes.every((l) => l.landed)) {
+    if (run.execution) {
+      // Split can leave the old root registered; it belongs to this run too.
+      for (const leftover of registeredLanesUnder(store, dir)) {
+        removeWorktree(store, dir, leftover);
+        git(['branch', '-D', leftover.branch], store);
+      }
+      pruneWorktrees(store);
+    }
     let issueClosed = false;
     if (closeIssueFlag) {
       const state = issueState(repo, run.issue.number);
@@ -109,7 +120,7 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       }
       issueClosed = true;
     }
-    releaseSourceLease(dir, run);
+    if (run.checkout?.mode === 'source') releaseSourceLease(dir, run);
     recordFinished(dir, run, { issueClosed }, now);
   }
 

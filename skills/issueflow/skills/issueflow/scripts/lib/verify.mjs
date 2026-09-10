@@ -40,13 +40,13 @@ export function verify(dir, run, step) {
     rows.push(['workdir', cwd === run.repo.path ? 'the repository itself' : 'lane worktree']);
     rows.push(['branch', lane.branch]);
 
-    const head = git(['rev-parse', '--short', `refs/heads/${lane.branch}`], run.repo.path);
+    const head = git(['rev-parse', '--short', `refs/heads/${lane.branch}`], gitStore(dir, run));
     rows.push(['head', head ?? 'the branch does not exist yet']);
 
-    const base = git(['rev-parse', '--verify', `refs/remotes/origin/${lane.base}`], run.repo.path)
+    const base = git(['rev-parse', '--verify', `refs/remotes/origin/${lane.base}`], gitStore(dir, run))
       ? `origin/${lane.base}`
       : lane.base;
-    const ahead = head ? git(['rev-list', '--count', `${base}..${lane.branch}`], run.repo.path) : null;
+    const ahead = head ? git(['rev-list', '--count', `${base}..${lane.branch}`], gitStore(dir, run)) : null;
     rows.push([`commits over ${base}`, ahead ?? 'unknown']);
 
     const dirty = git(['status', '--porcelain'], cwd);
@@ -64,3 +64,4 @@ export function verify(dir, run, step) {
 
   return rows;
 }
+import { gitStore } from './execution.mjs';

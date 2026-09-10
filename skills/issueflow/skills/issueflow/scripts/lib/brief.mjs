@@ -1,3 +1,4 @@
+import { activePath, approvedArtifactPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The dispatch prompt — rendered, never improvised.
  *
@@ -52,7 +53,7 @@ function inheritedSection(dir, run, step) {
   const rows = steps
     .slice(0, index)
     .filter((s) => s.stage.state === 'approved')
-    .map((s) => [s.stage.id, artifactPath(dir, s)]);
+    .map((s) => [s.stage.id, approvedArtifactPath(dir, run, artifactPath(dir, s))]);
   if (rows.length === 0) return null;
   return [
     '## Read these first — they are the decisions you inherit',
@@ -140,12 +141,11 @@ function completionSection(run, what, path) {
   ].join('\n');
 }
 
-// Codex subagents already return lifecycle updates through the host. Writing
-// optional progress files under the durable ~/.claude run root causes a fresh
-// sandbox approval for every shell append, without contributing to any gate.
+// Only prepared Codex runs expose a writable progress channel.
 function progressSection(run, path, next) {
-  if (runtimeOf(run) === 'codex') return [];
+  if (runtimeOf(run) === 'codex' && !run.execution) return [];
   return [
+    ...executionInstructions(run),
     '## While you work',
     '',
     `Append one short lowercase line to \`${path}\` whenever you`,
@@ -182,7 +182,7 @@ function feedbackSection(dir, run, step) {
     `## Review feedback — round ${latest.round + 1}`,
     '',
     `A red-team review refused your round-${latest.round} artifact. Read`,
-    `\`${join(dir, step.stage.review.feedback)}\` first — it is the full review.`,
+    `\`${activePath(dir, step.stage.review.feedback)}\` first — it is the full review.`,
     '',
     bar(['Severity', 'Disposition', 'Cite', 'Finding'], blocking.map((f) => [f.severity, f.disposition, f.cite, f.text])),
     ...(deferred.length > 0 ? ['', 'The following findings are recorded for implementation or a user decision; do not expand the plan to prove an unavailable capability:', '', bar(['Severity', 'Disposition', 'Cite', 'Finding'], deferred.map((f) => [f.severity, f.disposition, f.cite, f.text]))] : []),
@@ -250,8 +250,10 @@ export function renderBrief(dir, run, step, issue, workdir = null) {
 /** Write the brief and return everything the orchestrator needs to dispatch it. */
 export function writeBrief(dir, run, step, issue, workdir = null) {
   const path = briefPath(dir, step);
+  prepareOutputs(dir, run, [path, artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderBrief(dir, run, step, issue, workdir));
+  recordDispatch(dir, run, path, [artifactPath(dir, step)]);
   return {
     step: step.key,
     stage: step.stage.id,
@@ -360,8 +362,10 @@ export function writeReviewBrief(dir, run, step, issue, round, workdir = null) {
   const declared = review(step.stage.id);
   const dispatch = dispatchProfile(runtimeOf(run), 'redTeam');
   const path = reviewBriefPath(dir, step, round);
+  prepareOutputs(dir, run, [path, reviewPath(dir, step, round), reviewProgressPath(dir, step, round)]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderReviewBrief(dir, run, step, issue, round, workdir));
+  recordDispatch(dir, run, path, [reviewPath(dir, step, round)]);
   return {
     step: step.key,
     stage: step.stage.id,

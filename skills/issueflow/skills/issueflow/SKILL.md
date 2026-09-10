@@ -10,12 +10,13 @@ version: 0.11.1
 Resolve bundled paths beside this `SKILL.md`; pass the repository with `--repo`.
 `~/.claude/issueflow` remains canonical for both hosts.
 
-In Codex, invoke `$issueflow` with `--runtime codex`. Dispatch each printed
-subagent with its exact model, reasoning, role, and prompt; completion returns
-automatically.
+In Codex, pass `--runtime codex --workspace-root <approved-root>`.
+Use an actual host-approved writable root; a path grants no authority.
+The parent prepares execution storage and archives outputs before advancing.
+Dispatch the exact model, reasoning, role and prompt; completion returns automatically.
 
-Request one reusable approval for the absolute CLI prefix when sandbox
-escalation is needed; never imply host prompts can be bypassed.
+If sandbox escalation is needed, request reusable approval for the absolute
+CLI prefix; never bypass host prompts.
 
 **Announce once:** "I'm using the issueflow skill — plan, red team, implement,
 then a review loop on the pull request."
@@ -42,7 +43,7 @@ From `$SKILL_DIR`:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root>
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 ```
 
@@ -96,11 +97,9 @@ exactly one dispatch, wait, or stop.
 | `shipped` | Report every PR and review URL. The PR is ready; merge only when authorized. |
 | `done` | Report verified landings and cleanup. |
 
-The flow is plan → independent red team → automatic plan acceptance →
-implementation with observed red-before-green proof → draft PR → independent
-finder/verifier/fixer rounds → ready when no major remains and CI is green.
-One pull request per issue is the default. Split only when the approved plan contains
-genuinely reviewable stacked work items.
+The flow is plan → red team → implementation with red-before-green proof →
+draft PR → finder/verifier/fixer rounds → ready with no majors and green CI.
+One pull request per issue is the default; split only for approved stacked work items.
 
 Issueflow persists a complexity profile:
 plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
