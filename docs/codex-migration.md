@@ -15,6 +15,17 @@ Run from the repository root:
 ```sh
 python3 tools/sync_codex.py --check
 python3 tools/check_compatibility.py
+python3 tools/codex_marketplace_smoke.py --expected-version 0.153.4
+```
+
+The executable smoke creates a temporary `CODEX_HOME`, reports the installed
+Codex CLI version, adds this local marketplace, discovers every catalog entry,
+installs each plugin, and verifies that every plugin is enabled. It never uses
+the developer's real Codex home, authenticates an account, or runs a model.
+
+For a manual installation, use:
+
+```sh
 codex plugin marketplace add "$PWD"
 codex plugin list --available --json --marketplace claude-skills
 codex plugin add <name>@claude-skills
@@ -93,5 +104,8 @@ Claude UUID-specific moment citations are unavailable for Codex rollouts.
 Packaging was checked against the installed Codex CLI's `plugin --help`,
 `plugin add --help`, and marketplace commands, plus the bundled plugin-creator
 validator and [official plugin documentation](https://learn.chatgpt.com/docs/plugins).
-The CLI discovery/install smoke test uses an isolated `CODEX_HOME`, without
-authenticating accounts or running a model.
+The CLI discovery/install smoke test is implemented by
+`python3 tools/codex_marketplace_smoke.py`. CI pins and asserts Codex CLI
+version `0.153.4`; local runs can omit `--expected-version` when checking an
+intentionally different installed version. It uses an isolated `CODEX_HOME`,
+without authenticating accounts or running a model.
