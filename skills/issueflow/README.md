@@ -140,6 +140,19 @@ Sessions run in parallel safely: one run directory and one worktree per issue,
 run, and a lane is cut from the base as it is now rather than as this checkout
 last happened to fetch it.
 
+Worktree provisioning and missing-lane failures stop at exit 3 before a new
+implementation dispatch. Existing lanes are checked against Git registration,
+repository identity and the expected branch.
+
+To knowingly use the source checkout, pass `--no-worktree` to `start` or the first
+implementation `brief`/`next`. The choice persists on resume and cannot change
+after implementation begins. A lease in the Git common directory excludes other
+runs, including those using alternate run roots or linked source checkouts, and
+overlapping writable lanes. The lease survives crashes; `finish` or explicit
+takeover releases only its owner. Legacy runs without a mode must restore their
+validated worktree or explicitly select source mode when their checkout is missing.
+Claude and Codex retain their existing durable state paths.
+
 If the run's time allowance expires, `next` still processes delivered results
 through their gates and checkpoints them before blocking new worker dispatches.
 A rejected artifact stays intact; expiry also blocks its send-back dispatch.

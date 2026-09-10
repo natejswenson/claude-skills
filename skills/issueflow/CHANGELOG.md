@@ -7,6 +7,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop on worktree provisioning or missing-checkout failures instead of silently
+  dispatching against the live checkout. Validate existing lanes, persist explicit
+  `--no-worktree` mode, and exclusively lease source checkouts across runs and lanes.
+
 ### Added
 
 - Persisted complexity profiles with a fast documentation route, bounded review
