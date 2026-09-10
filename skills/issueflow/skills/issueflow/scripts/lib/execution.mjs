@@ -68,7 +68,7 @@ export function validateExecution(dir, run) {
 
 /** Canonical directory arguments remain stable; only child-facing paths are routed. */
 export function activeRoot(dir, run = rawRun(dir)) {
-  if (!run?.execution) return dir;
+  if (!run?.execution || (run.runtime === 'codex' && run.offline && !run.execution)) return dir;
   const e = validateExecution(dir, run);
   return guarded(e.root, join(e.path, 'artifacts'));
 }
@@ -91,7 +91,10 @@ export function gitStore(dir, run = rawRun(dir)) {
 
 /** Read-only inspection can see legacy state; dispatch must pass this boundary. */
 export function prepareOutputs(dir, run, paths) {
-  if (run.runtime === 'codex') validateExecution(dir, run);
+  // An explicitly autonomous offline run may renew its budget before the
+  // host has supplied a workspace; let that simulation render its next brief.
+  // Every real Codex writer, and every prepared execution, remains strict.
+  if (run.runtime === 'codex' && !(run.autonomous && run.offline && !run.execution)) validateExecution(dir, run);
   if (run.execution) mkdirSync(guarded(run.execution.root, join(run.execution.path, 'tmp')), { recursive: true });
   for (const path of paths) {
     if (run.execution) guarded(activeRoot(dir, run), path);
@@ -483,7 +486,7 @@ export function prepareCheckout(dir, run, lane, { noWorktree = false, reserve = 
   }
   // A disappeared dispatched checkout may contain unpushed work; recreating
   // one from a branch would conceal the loss.
-  if (run.runtime === 'codex') validateExecution(dir, run);
+  if (run.runtime === 'codex' && !(run.autonomous && run.offline && !run.execution)) validateExecution(dir, run);
   if (began(lane)) validateWorktree(gitStore(dir, run), dir, lane);
   const tree = ensureWorktree(gitStore(dir, run), dir, lane, { offline: run.offline, lanes: run.lanes }).path;
   run.checkout = { mode: 'worktree' };
