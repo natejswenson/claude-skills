@@ -635,13 +635,15 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  if (args.host && args.runtime && args.host !== args.runtime) throw new RunError('--host and --runtime disagree');
+  const requestedHost = args.host ?? args.runtime;
   // Retain the pre-artifact host-adoption shortcut for a live legacy run, but
   // let a completed run continue through refuseClaimed/resetRunDir so a
   // reopened issue starts fresh instead of silently retaining its finish.
-  if (args.host && !args.takeOver && existsSync(join(dir, 'run.json'))) {
+  if (requestedHost && !args.takeOver && existsSync(join(dir, 'run.json'))) {
     const existing = loadRun(dir);
     if (!existing.finished) {
-      const adopted = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+      const adopted = loadRun(dir, { host: requestedHost, childSlots: args.childSlots });
       console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
       return;
     }

@@ -233,6 +233,19 @@ test('a legacy run can adopt Codex before artifacts', () => {
   assert.equal(Object.hasOwn(findStep(adopted, 'investigate').stage, 'model'), false);
 });
 
+test('start --runtime codex adopts a pre-artifact legacy run', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-start-runtime-adopt-'));
+  const source = join(root, 'source'); const dir = join(root, 'run'); const repoJson = join(root, 'repo.json'); const issueJson = join(root, 'issue.json');
+  mkdirSync(source); execFileSync('git', ['init', '-qb', 'dev'], { cwd: source });
+  execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
+  const legacy = createRun({ repo: { ...REPO, path: source }, issue: ISSUE, policy: POLICY, offline: true });
+  delete legacy.host; delete legacy.runtime; delete legacy.dispatch;
+  saveRun(dir, legacy); writeFileSync(repoJson, JSON.stringify({ ...REPO, path: source })); writeFileSync(issueJson, JSON.stringify(ISSUE));
+  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', dir], { encoding: 'utf8' });
+  assert.match(output, /Host retained as codex/);
+  assert.equal(loadRun(dir).host, 'codex');
+});
+
 test('next adopts a pre-artifact legacy run before Codex execution preparation', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-next-adopt-'));
   const source = join(root, 'source'); const workspace = join(root, 'workspace'); const dir = join(root, 'run');
