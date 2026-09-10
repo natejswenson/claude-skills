@@ -336,6 +336,7 @@ function prepare(dir, run, { workspaceRoot }) {
     const e = validateExecution(dir, run);
     if (workspaceRoot && realpathSync(resolve(workspaceRoot)) !== e.root) fail(`resume must reuse recorded workspace root ${e.root}`);
     gitStore(dir, run);
+    if (seedApprovals(run)) saveRun(dir, run);
     return run;
   }
   if (!run.execution && run.lanes.some((lane) => existsSync(join(dir, 'briefs', `${lane.slug}-fix-r${lane.review?.rounds?.at(-1)?.round}.md`)) &&
@@ -403,8 +404,37 @@ function prepare(dir, run, { workspaceRoot }) {
   const staged = { ...run, execution: e };
   for (const lane of restored) ensureWorktree(store, dir, lane, { offline: true, lanes: run.lanes, executionRun: staged });
   saveRun(dir, staged);
+  // A legacy run arrives with stages the old layout already approved. Their
+  // migration copy is the first immutable snapshot successors may read, so it
+  // is registered as approved here — accept never runs for them again.
+  if (seedApprovals(staged)) saveRun(dir, staged);
   Object.assign(run, staged);
   return run;
+}
+
+/**
+ * Register an archived artifact as the approved snapshot for every approved
+ * stage that has none. Only migration produces that state: accept records the
+ * approval itself, so on a run that was never legacy this changes nothing.
+ */
+function seedApprovals(run) {
+  const e = run.execution;
+  if (!e?.archive) return false;
+  const steps = [
+    ...run.stages.map((stage) => ({ key: `shared/${stage.artifact}`, stage })),
+    ...run.lanes.flatMap((lane) => lane.stages.map((stage) => ({ key: `${lane.slug}/${stage.artifact}`, stage }))),
+  ];
+  let seeded = false;
+  for (const { key, stage } of steps) {
+    if (stage.state !== 'approved' || e.approved?.[key]) continue;
+    const file = e.archive.files[key];
+    // No archived copy means nothing to register; the successor's read reports it.
+    if (!file) continue;
+    e.approved ??= {};
+    e.approved[key] = { path: e.archive.path, hash: file.hash };
+    seeded = true;
+  }
+  return seeded;
 }
 
 function sourceInfo(run) {
