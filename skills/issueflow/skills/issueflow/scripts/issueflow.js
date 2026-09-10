@@ -7,7 +7,7 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
@@ -32,11 +32,11 @@ import {
   HandBack, RunError, accept, artifactPath, blockers, board, claimRunDir, createRun, dependencies, durationOf, findLane,
   findStep, formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence,
   readySteps, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
-  worktreePath,
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
+import { WorktreeError, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
+import { prepareCheckout, releaseSourceLease } from './lib/execution.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 import { assertRuntime, dispatchLabel } from './lib/runtime.mjs';
@@ -552,6 +552,10 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // exactly a rename or re-clone of the same repository, which is what the
   // current `--repo` now names.
   const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
+  if (previous?.checkout?.mode === 'source') releaseSourceLease(dir, previous);
+  if (previous && !previous.checkout?.mode) {
+    releaseSourceLease(dir, { ...previous, repo: { ...previous.repo, path: oldRepoPath } });
+  }
   // `previous?.lanes` is empty in exactly the state this cleanup exists for —
   // `run.json` truncated by a crash or caught mid-write, one of the two
   // documented reasons `--take-over` exists — and a run that broken cannot
@@ -649,6 +653,14 @@ async function cmdStart(args) {
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   claimRunDir(dir, run, { takeOver });
+  if (args.noWorktree) {
+    try {
+      prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
+    } catch (err) {
+      unlinkSync(join(dir, 'run.json'));
+      throw err;
+    }
+  }
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 
@@ -737,7 +749,7 @@ async function cmdBrief(args) {
       }
     }
     const round = nextRound(step);
-    const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+    const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
     guardDispatch(dir, run, args);
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
@@ -829,33 +841,11 @@ function briefOne(dir, run, step, args) {
     }
   }
 
-  // A stage that commits gets its own checkout. Failing to provision one is not
-  // fatal — the stage can still run in the repository — but it must be said,
-  // because a lane silently sharing the user's tree is the hazard this removes.
-  let workdir = null;
-  let warning = null;
-  if (step.lane && !args.noWorktree) {
-    try {
-      // `lanes` is not optional here, despite its `[]` default: it is the only
-      // thing that tells a stacked lane's base — a sibling lane's branch, which
-      // lives only locally until that lane ships — apart from a shared base
-      // like `dev`. Omitting it makes every split run's second lane fetch a ref
-      // origin has never heard of, and hard-stop at exit 3.
-      workdir = ensureWorktree(run.repo.path, dir, step.lane, { offline: run.offline, lanes: run.lanes }).path;
-    } catch (err) {
-      // A `FetchError` is the one provisioning failure that is not survivable:
-      // continuing would cut the lane from whatever `origin/<base>` this
-      // checkout last saw, which is the stale base the fetch exists to refuse.
-      // Every other `WorktreeError` still warns and runs in the repository.
-      if (err instanceof FetchError) throw err;
-      warning = String(err.message ?? err).split('\n')[0];
-    }
-  }
+  const workdir = step.lane ? prepareCheckout(dir, run, step.lane, args) : null;
 
   guardDispatch(dir, run, args);
   const info = writeBrief(dir, run, step, loadIssue(dir), workdir);
   markBriefed(dir, run, step);
-  if (warning) console.error(`issueflow: no worktree for ${step.laneSlug} (${warning}) — the stage will work in the repository itself`);
   return info;
 }
 
@@ -908,7 +898,7 @@ async function cmdReview(args) {
   const run = observe(dir, loadRun(dir));
   if (!args.stage) throw new Error('name the reviewed stage with --stage <id>');
   const step = findStep(run, args.stage, args.lane ?? null);
-  const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+  const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
 
   const result = registerReview(dir, run, step, { workdir });
 
@@ -1614,7 +1604,9 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        artifacts to superseded/<timestamp>/ inside the run directory.
                        Only for a human who has READ that comment
   --offline            make no network call and no checkpoint
-  --no-worktree        run stages in the repository itself instead of a per-lane checkout
+  --no-worktree        explicitly lease the source checkout at start or first implementation;
+                       persisted on resume; one active run/lane per Git common directory
+                       Worktree failures otherwise stop at exit 3, with no source fallback.
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow
   --issues-json <path> read issues from a file instead of the network (evals)
   --close-issue        finish also closes the issue, once every lane has landed

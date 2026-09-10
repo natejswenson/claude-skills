@@ -14,6 +14,12 @@ artifacts, written under `briefs/`, and handed back as a path. The baseline
 eval byte-compares those files, which is how a brief that silently stopped
 carrying the plan gets caught by CI instead of by a confused subagent.
 
+Before implementation dispatch, the CLI validates or provisions the lane checkout.
+A failure exits 3 without a new brief or briefed transition. Never substitute the
+live checkout. Explicit `--no-worktree` is a persistent source-mode lease, accepted
+at start or first implementation dispatch; it refuses overlapping writable lanes.
+Rebriefs, acceptance and review workers validate the same recorded checkout.
+
 ## What crosses
 
 | In the brief | Why |

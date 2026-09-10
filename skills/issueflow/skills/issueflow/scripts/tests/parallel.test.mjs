@@ -22,6 +22,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FINISHED_MARKER, claimedIn, finishedIn, markerFor } from '../lib/checkpoint.mjs';
 import { HandBack, claimRunDir, createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout, releaseSourceLease } from '../lib/execution.mjs';
 import { ensureWorktree } from '../lib/worktree.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -317,6 +318,42 @@ test('start reads a pre-0.8.0 finished comment as done, not as a stranger\'s liv
   assert.equal(r.code, 0, `a pre-0.8.0 finished comment must not read as a live claim, got ${r.code}: ${r.err}`);
   assert.equal(existsSync(join(f.runDir, 'run.json')), true);
   f.cleanup();
+});
+
+test('a failed source reservation releases its fresh claim so start can retry after lease contention', (t) => {
+  const f = online();
+  t.after(f.cleanup);
+  const holderDir = mkdtempSync(join(tmpdir(), 'issueflow-source-holder-'));
+  t.after(() => rmSync(holderDir, { recursive: true, force: true }));
+  const holder = createRun({
+    repo: { owner: OWNER, name: NAME, path: f.repoPath, defaultBranch: 'main' },
+    issue: { number: 7, title: 'holder', url: 'https://example.invalid/7' },
+    policy: { base: 'main', featurePrefix: 'feature/', mergeMethod: 'squash', source: 'test', shipflow: false },
+  });
+  saveRun(holderDir, holder);
+  prepareCheckout(holderDir, holder, holder.lanes[0], { noWorktree: true });
+
+  const blocked = f.start(['--no-worktree']);
+  assert.equal(blocked.code, 3, `lease contention must be infrastructure failure, got ${blocked.code}: ${blocked.err}`);
+  assert.equal(existsSync(join(f.runDir, 'run.json')), false, 'a failed reservation must not leave an unresumable claim');
+  assert.equal(existsSync(join(f.runDir, 'inputs', 'issue.json')), false, 'the absent claim has no misleading frozen input');
+
+  releaseSourceLease(holderDir, holder);
+  const retry = f.start(['--no-worktree']);
+  assert.equal(retry.code, 0, `start must retry cleanly once the lease is available: ${retry.err}`);
+  assert.equal(existsSync(join(f.runDir, 'inputs', 'issue.json')), true, 'the successful claim freezes its issue');
+});
+
+test('--take-over reclaims a source lease when the displaced run lost its checkout mode', (t) => {
+  const f = online();
+  t.after(f.cleanup);
+  assert.equal(f.start(['--no-worktree']).code, 0);
+  const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
+  delete state.checkout;
+  writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+  const replacement = f.start(['--take-over', '--no-worktree']);
+  assert.equal(replacement.code, 0, `take-over must reclaim the surviving lease: ${replacement.err}`);
 });
 
 // ---------------------------------------------------------------------------

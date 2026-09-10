@@ -81,8 +81,9 @@ exactly one dispatch, wait, or stop.
 - **Gate refused (exit 2):** `next` has re-rendered the brief. Re-dispatch its
   exact prompt with the printed refusal appended. Never repair the artifact in
   the orchestrator.
-- **Infrastructure (exit 3):** Retry the same command. If the host blocked a
-  required action, request one scoped reusable permission.
+- **Infrastructure (exit 3):** Worktree failures stop; never fall back to source.
+  Only explicit `--no-worktree` leases it. Otherwise retry; request scoped permission
+  when blocked.
 - **Stop:** Follow the table below. Never advance over a safety stop by guess.
 
 | Stop | Action |

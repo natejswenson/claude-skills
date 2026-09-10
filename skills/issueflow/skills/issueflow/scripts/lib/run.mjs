@@ -19,6 +19,8 @@ import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
 import { assertRuntime, dispatchProfile } from './runtime.mjs';
+import { validateWorktree } from './worktree.mjs';
+import { sourceTree } from './execution.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -411,9 +413,9 @@ const git = (args, cwd) => {
   }
 };
 
-/** The checkout a lane's stage worked in: its worktree when it has one, else the repo. */
+/** Writers must have a validated lane or an explicitly leased source checkout. */
 export const laneTree = (dir, run, lane) =>
-  lane && existsSync(worktreePath(dir, lane)) ? worktreePath(dir, lane) : run.repo.path;
+  run.checkout?.mode === 'source' ? sourceTree(dir, run, lane) : validateWorktree(run.repo.path, dir, lane);
 
 /**
  * Record an artifact and its approval, advancing the state machine.
