@@ -13,6 +13,7 @@ import tempfile
 
 
 VERSION_PATTERN = re.compile(r'(?<![\w.])\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?(?![\w.])')
+COMMAND_TIMEOUT_SECONDS = 120
 
 
 class SmokeError(RuntimeError):
@@ -33,7 +34,12 @@ def run_command(command, environment, repo_root):
             capture_output=True,
             text=True,
             check=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
         )
+    except subprocess.TimeoutExpired as error:
+        raise SmokeError(
+            f'Codex command timed out after {COMMAND_TIMEOUT_SECONDS} seconds: {rendered}'
+        ) from error
     except OSError as error:
         raise SmokeError(
             f'Codex command could not start: {rendered}\n'
@@ -88,9 +94,9 @@ def plugin_names(payload, field, expected, command):
             f'Codex command returned no {field} list: {display_command(command)}'
         )
     names = [entry.get('name') if isinstance(entry, dict) else None for entry in entries]
-    if len(names) != len(expected) or set(names) != set(expected):
-        missing = sorted(set(expected) - set(names))
-        extra = sorted(set(names) - set(expected))
+    if len(names) != len(expected) or any(name not in expected for name in names):
+        missing = sorted((name for name in expected if name not in names))
+        extra = sorted((name for name in names if name not in expected), key=repr)
         raise SmokeError(
             f'{field} plugin set mismatch for {display_command(command)}: '
             f'missing={missing!r}, extra={extra!r}'

@@ -1,16 +1,21 @@
 import json
+import importlib.util
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER = ROOT / 'tools/codex_marketplace_smoke.py'
 MARKETPLACE = json.loads((ROOT / '.claude-plugin/marketplace.json').read_text())
 PLUGIN_NAMES = [entry['name'] for entry in MARKETPLACE['plugins']]
+RUNNER_SPEC = importlib.util.spec_from_file_location('codex_marketplace_smoke', RUNNER)
+SMOKE = importlib.util.module_from_spec(RUNNER_SPEC)
+RUNNER_SPEC.loader.exec_module(SMOKE)
 
 
 FAKE_CODEX = r'''#!/usr/bin/env python3
@@ -102,6 +107,31 @@ class CodexMarketplaceSmokeTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('available plugin set mismatch', result.stdout + result.stderr)
             self.assertIn('unexpected', result.stdout + result.stderr)
+
+    def test_malformed_discovery_name_reports_mismatch_without_type_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'commands.jsonl'
+            fake_codex = self.make_fake_codex(directory)
+            available = PLUGIN_NAMES[1:] + [None, 'unexpected']
+            result = self.run_runner(fake_codex, log, FAKE_AVAILABLE=json.dumps(available))
+
+            self.assertNotEqual(result.returncode, 0)
+            output = result.stdout + result.stderr
+            self.assertIn('available plugin set mismatch', output)
+            self.assertIn('None', output)
+            self.assertIn('unexpected', output)
+            self.assertNotIn('TypeError', output)
+
+    def test_codex_command_timeout_identifies_command(self):
+        command = ['codex', 'plugin', 'add', 'ghostwriter@claude-skills']
+        timeout = subprocess.TimeoutExpired(command, SMOKE.COMMAND_TIMEOUT_SECONDS)
+        with mock.patch.object(SMOKE.subprocess, 'run', side_effect=timeout) as run:
+            with self.assertRaises(SMOKE.SmokeError) as raised:
+                SMOKE.run_command(command, {}, ROOT)
+
+        self.assertIn('timed out', str(raised.exception))
+        self.assertIn('plugin add ghostwriter@claude-skills', str(raised.exception))
+        self.assertEqual(run.call_args.kwargs['timeout'], SMOKE.COMMAND_TIMEOUT_SECONDS)
 
     def test_plugin_specific_install_failure_identifies_plugin_and_command(self):
         with tempfile.TemporaryDirectory() as directory:
