@@ -71,4 +71,4 @@
 - first tweet[.n]*(stand alone — hook)[sS]{0,2500}?[s*ns*/s*Ns*· — X has no fold: tweet 1 IS the hook, and the numbered per-tweet preview with live weighted counts is the only place the user SEES each… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
 - 280s+weighted — weighted[.n]{0,40}280 — The weighted 280/tweet limit is enforced by x_len.py at publish, but drafting to fit (URLs=23, emoji/CJK=2) lives in prose; deleting it regresses to trimming a… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
 - transcription of a real session,s*not ans*invention — A real ghostwriter session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's ac… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
-- **Never do** — anti-patterns to avoid (engagement bait, "🧵👇", corporate buzzwords, `skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md:129`
+- **Never do** — anti-patterns to avoid (engagement bait, "🧵👇", corporate buzzwords, `skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md:133`

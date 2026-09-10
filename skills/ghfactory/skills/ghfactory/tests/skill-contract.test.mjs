@@ -47,10 +47,11 @@ test('SKILL.md documents every command the CLI actually exposes', () => {
   }
 });
 
-test('the run-presentation contract is a generated region, not a hand-copy', () => {
+test('the run-presentation contract is loaded from PRESS at runtime', () => {
   assert.match(
     skill,
-    />>> press:agent-ui v[\d.]+ sha256:[0-9a-f]{12} GENERATED/,
-    'the agent-ui region is missing — a hand-copied presentation contract drifts silently',
+    /<!-- press:runtime -->[\s\S]*brand\/agent-ui\.md[\s\S]*<!-- press:runtime -->/,
+    'the runtime PRESS dependency is missing — local copies drift silently',
   );
+  assert.doesNotMatch(skill, /press:agent-ui/, 'the terminal/UI contract must not be embedded');
 });

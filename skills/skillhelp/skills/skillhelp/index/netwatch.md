@@ -51,13 +51,6 @@
 
 ## Architecture
 
-- scripts/netwatch.js — the CLI: flows, baseline, report, render, accept `skills/netwatch/skills/netwatch/SKILL.md:191`
-- scripts/lib/providers.mjs — the offline network-block → operator lookup (a factual allocation table, never a safety verdict) `skills/netwatch/skills/netwatch/SKILL.md:192`
-- assets/report.css — the report's stylesheet; its :root block is a press-generated token region `skills/netwatch/skills/netwatch/SKILL.md:193`
-- references/anatomy.md — the fixed shape of a netwatch report — the flow table, the network column, the known/unrecognized split, and the rollups `skills/netwatch/skills/netwatch/SKILL.md:194`
-- references/capture.md — how a live snapshot is taken agent-side (lsof, nettop, ps), why the skill reads connections and not packet payloads, and why no command here needs sudo `skills/netwatch/skills/netwatch/SKILL.md:195`
-- references/baseline.md — the baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous' `skills/netwatch/skills/netwatch/SKILL.md:196`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/netwatch/skills/netwatch/SKILL.md:200`
 - Deterministic: parse the captured snapshot into normalized flows, each grounded in its source line — node scripts/netwatch.js flows `skills/netwatch/skills/netwatch/skill-invariants.json:36`
 - Deterministic: classify each flow known-vs-unrecognized strictly against the baseline and roll up volumes by process and destination — node scripts/netwatch.js report `skills/netwatch/skills/netwatch/skill-invariants.json:40`
 - Deterministic: validate and store the baseline of known flows, and report snapshot coverage — node scripts/netwatch.js baseline `skills/netwatch/skills/netwatch/skill-invariants.json:44`
@@ -82,4 +75,3 @@
 - **A zero-match warning is never narrated into a success.** accept --snapshot warns by name when a just-added entry matches nothing in the current snapshot — exit stays 0, because pre-seeding a range… `skills/netwatch/skills/netwatch/SKILL.md:180`
 - **Never claim a result you did not observe.** Say what you verified and what `skills/netwatch/skills/netwatch/SKILL.md:166`
 - **Never accept a flow the user did not choose.** accept writes to the `skills/netwatch/skills/netwatch/SKILL.md:177`
-- **Never claim a visual result without the artifact.** "It looks better" with no `skills/netwatch/skills/netwatch/SKILL.md:232`
