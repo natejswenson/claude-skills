@@ -35,6 +35,27 @@ The run lives outside the target repo on purpose. It survives branch switches,
 it never appears in `git status`, and the implement stage cannot lose it by
 checking out a different branch.
 
+## Checkout ownership
+
+`run.checkout` is optional on schema-3 legacy runs. First implementation dispatch
+records `worktree` mode, or `source` when `--no-worktree` was explicitly selected
+at start or first dispatch. Later commands use that recorded choice. An existing
+legacy lane must match its canonical path, Git common directory, registration
+and branch. New lanes also carry an ownership marker in their Git administration
+directory. Missing or invalid checkouts stop at exit 3, including acceptance,
+verification, review workers and rebase. Historical eval reads use the shared
+object store and do not select a writable source checkout.
+
+Source mode uses `issueflow-source-lease.json` in the canonical Git common
+directory, recording the durable run directory, creation identity, source
+checkout and active lane. Exclusive creation and a short transition lock prevent
+alternate run roots or linked source checkouts from claiming it concurrently.
+The lease survives process exit and has no age-based expiry. `finish` and explicit
+takeover release only the matching owner. A transition lock left by a crash must
+be inspected at the reported path; remove it only after confirming that no owner
+is still performing the transition. A missing legacy lane requires restoration
+or an explicit source-mode rebrief; an active validated lane cannot change modes.
+
 ## The two stages
 
 | Stage | Claude | Codex | Owns | Artifact must contain |

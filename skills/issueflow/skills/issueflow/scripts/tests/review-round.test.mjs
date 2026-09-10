@@ -25,6 +25,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
 import {
   applyFixReport, buildPayload, candidatesPath, fixReportPath, headOf, openRound, planVerification, readCandidates,
   registerRound, registeredPath, payloadPath, verdictsPath,
@@ -77,6 +78,7 @@ function rebuild() {
   });
   run.lanes[0].slug = meta.lane; run.lanes[0].id = meta.lane; run.lanes[0].branch = meta.branch;
   saveRun(dir, run);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue)}\n`);
   approvePlan(dir, run, { auto: true });

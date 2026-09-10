@@ -55,10 +55,16 @@ export function generate() {
   // runs from an interrupted earlier test and make this offline golden vary.
   const sandboxDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-'));
   const runDir = join(sandboxDir, 'issue-133');
+  const repoPath = join(sandboxDir, 'repo');
+  cpSync(REPO, repoPath, { recursive: true });
+  const git = (args) => execFileSync('git', args, { cwd: repoPath, stdio: 'pipe' });
+  git(['init', '-qb', 'main']);
+  git(['add', '.']);
+  git(['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'frozen input']);
   const artifacts = {};
   const at = (...p) => join(INPUTS, ...p);
 
-  const common = ['--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', runDir];
+  const common = ['--repo', repoPath, '--repo-json', at('repo.json'), '--run-dir', runDir];
 
   artifacts['board.txt'] = cli(['board', '--repo', REPO, '--repo-json', at('repo.json'), '--issues-json', at('issues.json')]);
   // This historical fixture exercises the optional human plan gate. New runs
@@ -160,7 +166,7 @@ export function generate() {
     rmSync(reviewSandbox, { recursive: true, force: true });
   }
 
-  for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key], runDir);
+  for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key].replaceAll(repoPath, '<REPO>'), runDir);
   rmSync(sandboxDir, { recursive: true, force: true });
   return artifacts;
 

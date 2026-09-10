@@ -178,6 +178,7 @@ function decideImplement(dir, run, step, ctx) {
   const artifact = artifactPath(dir, step);
   const timeout = timeoutFor(dir, step.stage.id);
   if (!step.stage.at?.briefed) return act('brief', { stage: step.stage.id, lane: step.laneSlug }, `${step.key} is ready to be briefed`);
+  laneTree(dir, run, step.lane);
   if (!deliveredSince(dir, step)) {
     const elapsed = (Date.parse(ctx.now()) - Date.parse(step.stage.at.briefed)) / 1000;
     if (elapsed > timeout) {
