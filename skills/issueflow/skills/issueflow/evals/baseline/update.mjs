@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dispatchProfile } from '../../scripts/lib/runtime.mjs';
 import { STAGES } from '../../scripts/lib/stages.mjs';
 import { REVIEWS, REVIEW_FORBIDS } from '../../scripts/lib/reviews.mjs';
 import { renderComment } from '../../scripts/lib/checkpoint.mjs';
@@ -121,7 +122,7 @@ export function generate() {
   // reporting a state machine with a missing stage as complete.
   for (const s of STAGES) {
     artifacts[`stage-${s.id}.json`] = `${JSON.stringify(
-      { id: s.id, title: s.title, model: s.model, agent: s.agent, artifact: s.artifact, requires: s.requires, asks: s.asks, forbids: s.forbids },
+      { id: s.id, title: s.title, model: dispatchProfile('claude', s.id).model, agent: dispatchProfile('claude', s.id).agent, artifact: s.artifact, requires: s.requires, asks: s.asks, forbids: s.forbids },
       null,
       2,
     )}\n`;
@@ -132,7 +133,7 @@ export function generate() {
   // still render a complete-looking review brief.
   for (const r of REVIEWS) {
     artifacts[`review-${r.id}.json`] = `${JSON.stringify(
-      { id: r.id, title: r.title, model: r.model, agent: r.agent, asks: r.asks, forbids: REVIEW_FORBIDS },
+      { id: r.id, title: r.title, model: dispatchProfile('claude', 'redTeam').model, agent: dispatchProfile('claude', 'redTeam').agent, asks: r.asks, forbids: REVIEW_FORBIDS },
       null,
       2,
     )}\n`;

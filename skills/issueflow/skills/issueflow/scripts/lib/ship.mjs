@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gateSteps } from './run.mjs';
 import { createPr } from './gh.mjs';
+import { dispatchProfile, modelLabel } from './runtime.mjs';
 
 export class ShipError extends Error {}
 
@@ -78,7 +79,7 @@ export function prBody(dir, run, lane) {
         '| Stage | Model | State | Review rounds |',
         '|---|---|---|---|',
         ...[...shared, ...own].map(
-          (s) => `| ${s.stage.id} | ${s.stage.model} | ${s.stage.state} | ${s.stage.review?.rounds.length ?? 0} |`,
+          (s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} | ${s.stage.review?.rounds.length ?? 0} |`,
         ),
         '',
         'Every stage above was gated by an adversarial red-team review — every',
@@ -88,7 +89,7 @@ export function prBody(dir, run, lane) {
     : [
         '| Stage | Model | State |',
         '|---|---|---|',
-        ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${s.stage.model} | ${s.stage.state} |`),
+        ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} |`),
         '',
         'Every stage above was approved by a human before the next one started.',
       ];

@@ -20,6 +20,11 @@ live checkout. Explicit `--no-worktree` is a persistent source-mode lease, accep
 at start or first implementation dispatch; it refuses overlapping writable lanes.
 Rebriefs, acceptance and review workers validate the same recorded checkout.
 
+Codex adds `fork_turns: "none"`, a writable worker role and a persisted child
+slot limit. A missing model field means inherit the parent model; `inherit` is
+never sent as a model identifier. Independent fleets are emitted in ordered
+waves, and output delivery does not release a native child slot.
+
 ## What crosses
 
 For Codex, the parent must supply `--workspace-root <approved-root>` at preparation

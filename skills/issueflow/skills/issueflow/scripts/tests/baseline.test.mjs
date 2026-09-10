@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate } from '../../evals/baseline/update.mjs';
 import { STAGES } from '../lib/stages.mjs';
+import { dispatchProfile } from '../lib/runtime.mjs';
 import { REVIEWS } from '../lib/reviews.mjs';
 import { createRun, gateSteps } from '../lib/run.mjs';
 import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
@@ -235,8 +236,8 @@ test('stage-contract-corpus: every shipped stage is frozen with its full contrac
 
   for (const s of STAGES) {
     const snapshot = JSON.parse(frozen(`stage-${s.id}.json`));
-    assert.equal(snapshot.model, s.model, `${s.id} changed model — that changes what every run of it costs and how good it is`);
-    assert.equal(snapshot.agent, s.agent);
+    assert.equal(snapshot.model, dispatchProfile('claude', s.id).model, `${s.id} changed model — that changes what every run of it costs and how good it is`);
+    assert.equal(snapshot.agent, dispatchProfile('claude', s.id).agent);
     assert.equal(snapshot.artifact, s.artifact);
     assert.deepEqual(snapshot.requires, s.requires, `${s.id} changed what the gate reads for`);
     assert.deepEqual(snapshot.asks, s.asks, `${s.id} changed what it asks the subagent`);
@@ -253,7 +254,7 @@ test('stage-contract-corpus: the implement brief says which evidence the gate re
 });
 
 test('stage-contract-corpus: the models are the ones the skill promises', () => {
-  const byId = Object.fromEntries(STAGES.map((s) => [s.id, s.model]));
+  const byId = Object.fromEntries(STAGES.map((s) => [s.id, dispatchProfile('claude', s.id).model]));
   assert.deepEqual(byId, { investigate: 'opus', implement: 'opus' });
 });
 
@@ -286,7 +287,7 @@ test('review-contract-corpus: the shipped plan reviewer is frozen with its full 
   for (const r of REVIEWS) {
     const snapshot = JSON.parse(frozen(`review-${r.id}.json`));
     assert.equal(snapshot.model, 'opus', `${r.id} reviewer changed model — the red team is the judgment the run pays for`);
-    assert.equal(snapshot.agent, r.agent);
+    assert.equal(snapshot.agent, dispatchProfile('claude', 'redTeam').agent);
     assert.deepEqual(snapshot.asks, r.asks, `${r.id} reviewer changed what it hunts`);
     assert.ok(snapshot.asks.length >= 8, 'the plan reviewer hunts the investigation AND the design — fewer than eight asks means one half fell out');
     assert.match(snapshot.forbids, /Never edit the work/, 'the shared forbids lost its first rule');
