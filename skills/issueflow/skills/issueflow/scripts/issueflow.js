@@ -7,14 +7,14 @@
  * already as a table. The agent's job is the conversation; this binary's job
  * is facts — and, in `accept` and `ship`, the gate.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
-import { decide, renderAction, sh } from './lib/next.mjs';
-import { DISPATCHES, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
+import { decide, renderAction, sh, waveDelivered } from './lib/next.mjs';
+import { DISPATCHES, autoRenewBudget, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -32,14 +32,14 @@ import {
   HandBack, RunError, accept, artifactPath, blockers, board, claimRunDir, createRun, dependencies, durationOf, findLane,
   findStep, formatSpan, gateSteps, laneTree, loadRun, markBriefed, nextStep, observe, progressPath, readEvidence,
   readySteps, recordCapOverride, remainingSteps, runDir, runRoot, runState, saveRun, skip, split, workItemsFromPlan,
-  worktreePath,
 } from './lib/run.mjs';
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
-import { FetchError, WorktreeError, ensureWorktree, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
+import { WorktreeError, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
+import { activePath, gitStore, prepareCheckout, prepareExecution, rawRun, releaseSourceLease } from './lib/execution.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
-import { assertRuntime, dispatchLabel } from './lib/runtime.mjs';
+import { advanceWave, dispatchLabel, modelLabel, releaseWave, runtimeOf, startWave } from './lib/runtime.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -48,7 +48,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn']);
+const BOOLEAN_FLAGS = new Set(['auto', 'autonomous', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
 
 function argv(args) {
   const out = { _: [] };
@@ -220,8 +220,13 @@ function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(r
 }
 
 function guardDispatch(dir, run, args) {
+  if (run.dispatch?.queue && !run.dispatch.queue.released) throw new RunError('an active Codex wave must deliver and release its workers before another dispatch');
   const budget = budgetStatus(run);
   if (!budget?.expired) return;
+  if (run.autonomous && autoRenewBudget(run)) {
+    saveRun(dir, run);
+    return;
+  }
   if (checkpointBudgetStop(dir, run, args, budgetStop(budget))) {
     throw new CheckpointFailure('checkpoint failed while saving the budget stop');
   }
@@ -230,7 +235,7 @@ function guardDispatch(dir, run, args) {
 
 async function cmdResume(args) {
   const { dir } = locate(args);
-  const run = loadRun(dir);
+  const run = loadRun(dir, { host: args.host, childSlots: args.childSlots });
   const budget = renewBudget(run, args.budgetSeconds);
   saveRun(dir, run);
   const rows = reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
@@ -533,12 +538,8 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // is no run here to displace, and nothing below should touch the directory.
   if (!existsSync(join(dir, 'run.json'))) return null;
 
-  let previous = null;
-  try {
-    previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
-  } catch {
-    previous = null;
-  }
+  const previous = rawRun(dir);
+  if (previous?.execution) saveRun(dir, previous);
   // `previous.repo.path` is the displaced run's OWN recorded checkout, which
   // is where its worktrees and branches are actually registered — needed
   // whenever the current invocation is a second clone with no registration
@@ -551,7 +552,12 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // is the best fallback: the common way the recorded path goes stale is
   // exactly a rename or re-clone of the same repository, which is what the
   // current `--repo` now names.
-  const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
+  const oldRepoPath = previous?.execution ? gitStore(dir, previous) :
+    previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
+  if (previous?.checkout?.mode === 'source') releaseSourceLease(dir, previous);
+  if (previous && !previous.checkout?.mode) {
+    releaseSourceLease(dir, { ...previous, repo: { ...previous.repo, path: oldRepoPath } });
+  }
   // `previous?.lanes` is empty in exactly the state this cleanup exists for —
   // `run.json` truncated by a crash or caught mid-write, one of the two
   // documented reasons `--take-over` exists — and a run that broken cannot
@@ -570,7 +576,8 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   for (const lane of lanes) {
     try {
       removeWorktree(oldRepoPath, dir, lane);
-    } catch {
+    } catch (err) {
+      if (previous?.execution) throw err;
       // Already gone, or the repo path from a stale run no longer resolves.
     }
   }
@@ -632,6 +639,19 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  if (args.host && args.runtime && args.host !== args.runtime) throw new RunError('--host and --runtime disagree');
+  const requestedHost = args.host ?? args.runtime;
+  // Retain the pre-artifact host-adoption shortcut for a live legacy run, but
+  // let a completed run continue through refuseClaimed/resetRunDir so a
+  // reopened issue starts fresh instead of silently retaining its finish.
+  if (requestedHost && !args.takeOver && existsSync(join(dir, 'run.json'))) {
+    const existing = loadRun(dir);
+    if (!existing.finished) {
+      const adopted = loadRun(dir, { host: requestedHost, childSlots: args.childSlots });
+      console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
+      return;
+    }
+  }
   const claim = refuseClaimed(dir, info, issue, args);
   const takeOver = Boolean(args.takeOver) || claim.finished;
   const archived = takeOver ? resetRunDir(dir, repo, { force: Boolean(args.takeOver) }) : null;
@@ -644,11 +664,23 @@ async function cmdStart(args) {
     // Autoflow is autonomous by default. The red team's hash-bound pass is the
     // approval; a human plan gate is an explicit diagnostic/review mode.
     auto: !Boolean(args.reviewPlan),
-    runtime: assertRuntime(args.runtime),
+    autonomous: Boolean(args.autonomous),
+    runtime: args.runtime,
+    host: args.host,
+    childSlots: args.childSlots,
   });
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   claimRunDir(dir, run, { takeOver });
+  if (args.workspaceRoot) prepareExecution(dir, run, args);
+  if (args.noWorktree) {
+    try {
+      prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
+    } catch (err) {
+      unlinkSync(join(dir, 'run.json'));
+      throw err;
+    }
+  }
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
 
@@ -737,15 +769,16 @@ async function cmdBrief(args) {
       }
     }
     const round = nextRound(step);
-    const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+    const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
     guardDispatch(dir, run, args);
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
-    if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.reasoning, info.agent]]);
+    if (info.reasoning) print(['Review of', 'Round', 'Model', 'Reasoning', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, modelLabel(info), info.reasoning, info.agent]]);
     else print(['Review of', 'Round', 'Model', 'Agent'], [[step.key, `${round} of ${MAX_ROUNDS}`, info.model, info.agent]]);
     console.log(`\nIt must write: ${info.artifact}`);
     if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
-    console.log(
+    if (runtimeOf(run) === 'codex') printDispatch([info], 'reviewers', dir, run);
+    else console.log(
       `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
         `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
     );
@@ -764,9 +797,13 @@ async function cmdBrief(args) {
     for (const step of ready) console.log(expectationLine(dir, run, step));
     console.log('');
     if (briefed.some((b) => b.reasoning)) {
-      print(['Stage', 'Model', 'Reasoning', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.reasoning, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+      print(['Stage', 'Model', 'Reasoning', 'Agent', 'Lane'], briefed.map((b) => [b.stage, modelLabel(b), b.reasoning, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
     } else {
       print(['Stage', 'Model', 'Agent', 'Lane'], briefed.map((b) => [b.stage, b.model, b.agent, b.step.split('/')[0] === b.stage ? '—' : b.step.split('/')[0]]));
+    }
+    if (runtimeOf(run) === 'codex') {
+      printDispatch(briefed, 'stages', dir, run);
+      return;
     }
     console.log(
       `\nThese ${briefed.length} stages are independent. Dispatch them as ${briefed.length} subagents in ONE message:\n`,
@@ -789,14 +826,15 @@ async function cmdBrief(args) {
   console.log(expectationLine(dir, run, step));
   console.log('');
   // Paths stay out of padded cells — see the note in cmdStart.
-  if (info.reasoning) print(['Stage', 'Model', 'Reasoning', 'Agent'], [[info.stage, info.model, info.reasoning, info.agent]]);
+  if (info.reasoning) print(['Stage', 'Model', 'Reasoning', 'Agent'], [[info.stage, modelLabel(info), info.reasoning, info.agent]]);
   else print(['Stage', 'Model', 'Agent'], [[info.stage, info.model, info.agent]]);
   console.log(`\nIt must write: ${info.artifact}`);
   if (info.workdir !== run.repo.path) console.log(`Works in:      ${info.workdir}`);
   // The brief is handed over as a path, not pasted: it is long, the user has no
   // reason to read it in the transcript, and a subagent can open a file. The
   // file is still the only channel — this is how it is delivered.
-  console.log(
+  if (runtimeOf(run) === 'codex') printDispatch([info], 'stages', dir, run);
+  else console.log(
     `\nDispatch ONE subagent, ${dispatchLabel(info)}, with exactly this prompt:\n\n` +
       `  Read ${info.prompt} and follow it exactly. It is your complete brief.\n`,
   );
@@ -829,33 +867,11 @@ function briefOne(dir, run, step, args) {
     }
   }
 
-  // A stage that commits gets its own checkout. Failing to provision one is not
-  // fatal — the stage can still run in the repository — but it must be said,
-  // because a lane silently sharing the user's tree is the hazard this removes.
-  let workdir = null;
-  let warning = null;
-  if (step.lane && !args.noWorktree) {
-    try {
-      // `lanes` is not optional here, despite its `[]` default: it is the only
-      // thing that tells a stacked lane's base — a sibling lane's branch, which
-      // lives only locally until that lane ships — apart from a shared base
-      // like `dev`. Omitting it makes every split run's second lane fetch a ref
-      // origin has never heard of, and hard-stop at exit 3.
-      workdir = ensureWorktree(run.repo.path, dir, step.lane, { offline: run.offline, lanes: run.lanes }).path;
-    } catch (err) {
-      // A `FetchError` is the one provisioning failure that is not survivable:
-      // continuing would cut the lane from whatever `origin/<base>` this
-      // checkout last saw, which is the stale base the fetch exists to refuse.
-      // Every other `WorktreeError` still warns and runs in the repository.
-      if (err instanceof FetchError) throw err;
-      warning = String(err.message ?? err).split('\n')[0];
-    }
-  }
+  const workdir = step.lane ? prepareCheckout(dir, run, step.lane, args) : null;
 
   guardDispatch(dir, run, args);
   const info = writeBrief(dir, run, step, loadIssue(dir), workdir);
   markBriefed(dir, run, step);
-  if (warning) console.error(`issueflow: no worktree for ${step.laneSlug} (${warning}) — the stage will work in the repository itself`);
   return info;
 }
 
@@ -908,7 +924,7 @@ async function cmdReview(args) {
   const run = observe(dir, loadRun(dir));
   if (!args.stage) throw new Error('name the reviewed stage with --stage <id>');
   const step = findStep(run, args.stage, args.lane ?? null);
-  const workdir = step.lane && existsSync(worktreePath(dir, step.lane)) ? worktreePath(dir, step.lane) : null;
+  const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
 
   const result = registerReview(dir, run, step, { workdir });
 
@@ -956,7 +972,7 @@ async function cmdSplit(args) {
     console.log(`Read ${items.length} work items from the approved plan.\n`);
   }
 
-  split(dir, run, items);
+  split(dir, run, items, { parallel: Boolean(args.parallel) });
   print(
     ['Lane', 'Work item', 'Branch', 'Stacks on'],
     run.lanes.map((l) => [l.slug, truncate(l.title, 48), l.branch, l.base]),
@@ -1187,7 +1203,12 @@ function prIdentity(run, lane, offline) {
   return { nodeId: view.id, headRefOid: view.headRefOid, isDraft: view.isDraft, state: view.state };
 }
 
-function printDispatch(items, kind) {
+function printDispatch(items, kind, dir = null, run = null, { queued = false } = {}) {
+  if (run && runtimeOf(run) === 'codex') {
+    if (!queued) items = startWave(run, items);
+    saveRun(dir, run);
+    if (run.dispatch.queue) console.log(`\nCodex wave: ${items.length} worker(s), child-slots=${run.dispatch.childSlots}. Wait for completion and release every native child slot before next --workers-released.`);
+  }
   if (items.length === 1) {
     console.log(`\nDispatch ONE subagent, ${dispatchLabel(items[0])}, with exactly this prompt:\n\n  Read ${items[0].prompt} and follow it exactly. It is your complete brief.\n`);
     return;
@@ -1210,8 +1231,8 @@ async function cmdReviewBrief(args) {
     // The round reviews what GitHub has. Fetch the branch and compare; a
     // failed fetch is infrastructure, not a refusal.
     try {
-      git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
-      remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+      git(['fetch', '--quiet', 'origin', `+${lane.branch}:refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+      remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
     } catch (err) {
       throw new GhError(`could not fetch origin/${lane.branch}: ${String(err.stderr ?? err.message).split('\n')[0]}`);
     }
@@ -1223,20 +1244,20 @@ async function cmdReviewBrief(args) {
   const last = currentRound(lane);
   const deltaText = last?.registered ? fixDiff(tree, last.head, head) : null;
   guardDispatch(dir, run, args);
-  const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound });
+  const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound, deferSave: Boolean(run.execution) });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
-    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
+    [[lane.slug, `#${lane.pr.number}`, `${round} of ${lane.review.maxRounds ?? run.complexity?.reviewRounds ?? MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
-  if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, b.angles.join(', ')]));
+  if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, b.angles.join(', ')]));
   else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
   const majors = openMajors(lane).length;
   const rest = openFindings(lane).length - majors;
   if (majors > 0) console.log(`\n${majors} major(s) still open from earlier rounds will be re-judged this round.`);
   if (rest > 0) console.log(`${rest} open nit/pre-existing finding(s) are not re-verified after round 1 — still open by construction.`);
-  printDispatch(briefs, 'finders');
+  printDispatch(briefs, 'finders', dir, run);
   console.log(`Then: \`issueflow review-verify --lane ${lane.slug}\` once every candidates file has landed.`);
 }
 
@@ -1250,7 +1271,9 @@ async function cmdReviewVerify(args) {
   if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
   guardDispatch(dir, run, args);
-  const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
+  const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane), deferSave: Boolean(run.execution) });
+  const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
+  saveRun(dir, run);
   print(['Lane', 'Round', 'Candidates', 'Unverified nits', 'Prior majors', 'Prior nits', 'Verifiers', 'Not examined'],
     [[lane.slug, String(entry.round), String(fresh.length), String(unverified.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
   if (unverified.length > 0) console.log(`\n${unverified.length} candidate(s) the finders proposed as nits are recorded and not verified — after round 1 a nit is neither posted nor fixed.`);
@@ -1260,11 +1283,10 @@ async function cmdReviewVerify(args) {
     console.log(`  issueflow review-register --lane ${lane.slug}`);
     return;
   }
-  const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
   console.log('');
-  if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, String(b.items)]));
+  if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, String(b.items)]));
   else print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
-  printDispatch(briefs, 'verifiers');
+  printDispatch(briefs, 'verifiers', dir, run);
   console.log(`Then: \`issueflow review-register --lane ${lane.slug}\` once every verdicts file has landed.`);
 }
 
@@ -1333,7 +1355,7 @@ async function cmdReviewFixBrief(args) {
   const checks = offline ? [] : prChecks(run.repo.path, lane.pr.number).filter((c) => c.bucket === 'fail');
   assertFixRequired(entry, checks, lane.slug);
   const dispatch = fixerProfile(run, lane);
-  const model = dispatch.model;
+  const model = modelLabel(dispatch);
   guardDispatch(dir, run, args);
   const info = writeFixBrief(dir, run, lane, entry, { items, checks, ...dispatch, issue: loadIssue(dir) });
   entry.fix = { ...(entry.fix ?? {}), briefed: true, ...dispatch, items: items.length, redChecks: checks.length };
@@ -1341,7 +1363,7 @@ async function cmdReviewFixBrief(args) {
   if (dispatch.reasoning) print(['Lane', 'Round', 'Model', 'Reasoning', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, dispatch.reasoning, String(items.length), String(checks.length)]]);
   else print(['Lane', 'Round', 'Model', 'Findings to fix', 'Red checks'], [[lane.slug, String(entry.round), model, String(items.length), String(checks.length)]]);
   if (openMajors(lane).some((f) => f.stillOpenRounds > 0)) console.log(`\n${model} this round: a major survived the previous fix.`);
-  printDispatch([info], 'fixers');
+  printDispatch([info], 'fixers', dir, run);
   console.log(`Then: \`issueflow review-fix-report --lane ${lane.slug}\` once the fix report has landed.`);
 }
 
@@ -1426,7 +1448,7 @@ async function cmdReady(args) {
       prLabel(run.repo.path, lane.pr.number, lane.review.fallback.label, { remove: true });
       rows.push(['title/label', 'restored']);
     }
-    const summary = join(dir, lane.slug, 'review', 'summary.md');
+    const summary = activePath(dir, lane.slug, 'review', 'summary.md');
     writeFileSync(summary, [
       `### issueflow review loop — converged after ${last.round} round${last.round === 1 ? '' : 's'}`,
       '',
@@ -1442,6 +1464,7 @@ async function cmdReady(args) {
   saveRun(dir, run);
   print(['Lane', 'Rounds', 'Head', 'State'], [[lane.slug, String(last.round), last.head.slice(0, 12), 'ready for review']]);
   if (rows.length > 0) { console.log(''); print(['Action', 'Result'], rows); }
+  if (!offline) console.log(`\nUSER ACTION REQUIRED: review and approve/merge PR #${lane.pr.number} (${lane.pr.url}). Issueflow will not merge it.`);
   nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }
@@ -1466,6 +1489,11 @@ async function cmdRebase(args) {
  */
 async function cmdNext(args) {
   const { dir } = locate(args);
+  const selected = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+  if (args.workersReleased) {
+    releaseWave(selected, (item) => waveDelivered(dir, selected, item));
+    saveRun(dir, selected);
+  }
   const offline = isOffline(args);
   const ctx = {
     offline,
@@ -1474,8 +1502,8 @@ async function cmdNext(args) {
       if (offline) return null;
       const run = loadRun(dir);
       try {
-        git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
-        return git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+        git(['fetch', '--quiet', 'origin', `+${lane.branch}:refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+        return git(['rev-parse', `refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
       } catch {
         return null;
       }
@@ -1483,6 +1511,11 @@ async function cmdNext(args) {
     landings: () => (offline ? [] : landings(loadRun(dir))),
   };
   const perform = {
+    'dispatch-wave': () => {
+      const run = loadRun(dir);
+      guardDispatch(dir, run, args);
+      printDispatch(advanceWave(run), 'workers', dir, run, { queued: true });
+    },
     brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: false }),
     review: (a) => cmdReview({ ...args, stage: a.stage, lane: a.lane }),
     accept: (a) => cmdAccept({ ...args, stage: a.stage, lane: a.lane, auto: Boolean(a.auto) }),
@@ -1501,9 +1534,23 @@ async function cmdNext(args) {
   let dispatched = null;
   let completed = false;
   for (let i = 0; i < 12; i += 1) {
-    const run = observe(dir, loadRun(dir));
+    const loaded = loadRun(dir);
+    // Offline autonomous runs can exercise budget renewal without claiming a
+    // real Codex workspace. Keep this simulation resumable and side-effect
+    // free; a real host must prepare execution before dispatch.
+    if (runtimeOf(loaded) === 'codex' && !loaded.execution && (offline || loaded.offline || loaded.checkout?.mode === 'source')) {
+      const budget = budgetStatus(loaded);
+      if (budget?.expired && budget.totalRemainingSeconds > 0) {
+        autoRenewBudget(loaded);
+        saveRun(dir, loaded);
+      }
+      console.log(`\n${renderAction({ kind: 'wait', what: 'approved Codex workspace', budget: budgetStatus(loadRun(dir)) }, { skillCommand, runDir: dir })}`);
+      return;
+    }
+    const run = observe(dir, loaded);
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
+      if (action.waveStarted || action.waveRedispatched) saveRun(dir, run);
       if (action.kind === 'stop' && action.reason === 'budget') {
         checkpointBudgetStop(dir, run, args, action);
         return;
@@ -1614,8 +1661,13 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        artifacts to superseded/<timestamp>/ inside the run directory.
                        Only for a human who has READ that comment
   --offline            make no network call and no checkpoint
-  --no-worktree        run stages in the repository itself instead of a per-lane checkout
+  --no-worktree        explicitly lease the source checkout at start or first implementation;
+                       persisted on resume; one active run/lane per Git common directory
+                       Worktree failures otherwise stop at exit 3, with no source fallback.
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow
+  --workspace-root <path>  host-approved writable root for Codex execution
+  prepare --run-dir <path> --workspace-root <path>
+                       prepare or recover quiescent Codex execution before dispatch
   --issues-json <path> read issues from a file instead of the network (evals)
   --close-issue        finish also closes the issue, once every lane has landed
 
@@ -1629,6 +1681,20 @@ async function main() {
   if (args.version) return console.log(VERSION);
   if (args.help) return console.log(USAGE);
   try {
+    if (cmd === 'prepare') {
+      const { dir } = locate(args);
+      const run = loadRun(dir);
+      prepareExecution(dir, run, args);
+      console.log(`Execution: ${run.execution?.path ?? dir}`);
+      return;
+    }
+    if (['brief', 'review-brief', 'review-verify', 'review-fix-brief', 'next'].includes(cmd)) {
+      const { dir } = locate(args);
+      // Host adoption is part of loading a legacy run. It must happen before
+      // execution preparation validates Codex-only workspace-root options.
+      const run = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+      if (args.workspaceRoot || run.execution) prepareExecution(dir, run, args);
+    }
     switch (cmd) {
       case 'board': return await cmdBoard(args);
       case 'start': return await cmdStart(args);

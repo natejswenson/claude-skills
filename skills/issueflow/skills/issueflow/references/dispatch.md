@@ -14,7 +14,39 @@ artifacts, written under `briefs/`, and handed back as a path. The baseline
 eval byte-compares those files, which is how a brief that silently stopped
 carrying the plan gets caught by CI instead of by a confused subagent.
 
+Before implementation dispatch, the CLI validates or provisions the lane checkout.
+A failure exits 3 without a new brief or briefed transition. Never substitute the
+live checkout. Explicit `--no-worktree` is a persistent source-mode lease, accepted
+at start or first implementation dispatch; it refuses overlapping writable lanes.
+Rebriefs, acceptance and review workers validate the same recorded checkout.
+
+Codex adds `fork_turns: "none"`, a writable worker role and a persisted child
+slot limit. A missing model field means inherit the parent model; `inherit` is
+never sent as a model identifier. Independent fleets are emitted in ordered
+waves, and output delivery does not release a native child slot.
+
 ## What crosses
+
+For Codex, the parent must supply `--workspace-root <approved-root>` at preparation
+and ensure each child inherits that actual writable root. Merely changing cwd or
+printing an additional directory grants no permission. Prefer a writable workspace
+or temporary root outside the user's live checkout. Both output paths and the
+lane's complete Git administration live there. Only explicit `--no-worktree`
+uses the source lease, and that opt-out may still require Git metadata authority.
+
+Investigators, plan reviewers, implementers, finders, verifiers and fixers all
+receive prepared output/progress directories. Briefs name a prepared `TMPDIR`;
+set it in every child subprocess environment, particularly when the host excludes
+global temporary directories. Children write declared outputs and finish their
+turn; the parent imports exact bytes and timestamps and persists canonical state.
+A failed import stops the successor dispatch with the local recovery path.
+
+Preparation is available directly for legacy runs:
+`node "$SKILL_DIR/scripts/issueflow.js" prepare --run-dir "<run>" --workspace-root "<approved-root>"`.
+Resume retains the recorded root and generation. Restore dirty/in-flight legacy
+work before migrating. Rebrief requires a fresh result; copying the previous
+delivery with a new mtime cannot satisfy the new dispatch. Old approved Markdown
+and hashes remain unchanged. See anatomy for archival and missing-staging recovery.
 
 | In the brief | Why |
 |---|---|

@@ -2,7 +2,7 @@
 name: issueflow
 description: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "take this issue to a PR", or asks to list open issues. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested.
 user_invocable: true
-version: 0.11.1
+version: 0.12.0
 ---
 
 ## Runtime
@@ -10,12 +10,13 @@ version: 0.11.1
 Resolve bundled paths beside this `SKILL.md`; pass the repository with `--repo`.
 `~/.claude/issueflow` remains canonical for both hosts.
 
-In Codex, invoke `$issueflow` with `--runtime codex`. Dispatch each printed
-subagent with its exact model, reasoning, role, and prompt; completion returns
-automatically.
+In Codex, pass `--host codex --workspace-root <approved-root>`; `--runtime codex` remains supported.
+Use an actual host-approved writable root; a path grants no authority.
+The parent prepares execution storage and archives outputs before advancing.
+Dispatch the adapter's reasoning, writable role, cold `fork_turns: "none"` setting and prompt. The adapter omits a model override so the child inherits the valid parent model; completion returns automatically.
 
-Request one reusable approval for the absolute CLI prefix when sandbox
-escalation is needed; never imply host prompts can be bypassed.
+If sandbox escalation is needed, request reusable approval for the absolute
+CLI prefix; never bypass host prompts.
 
 **Announce once:** "I'm using the issueflow skill — plan, red team, implement,
 then a review loop on the pull request."
@@ -42,7 +43,8 @@ From `$SKILL_DIR`:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> --autonomous
+node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run>
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 ```
 
@@ -70,7 +72,9 @@ After `start`, run `next` repeatedly. It performs deterministic work and prints
 exactly one dispatch, wait, or stop.
 
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
-  prompt/model/reasoning/role. Dispatch independent agents immediately. Never
+  prompt and host adapter fields. Codex fleets are capacity limited; release
+  every child after its output lands before starting the next wave. Dispatch
+  independent agents immediately. Never
   do the stage yourself.
 - **Wait:** The artifact on disk is the state-machine signal. In Claude or a
   host without native agent waiting, yield the exact printed `wait:` command,
@@ -81,8 +85,9 @@ exactly one dispatch, wait, or stop.
 - **Gate refused (exit 2):** `next` has re-rendered the brief. Re-dispatch its
   exact prompt with the printed refusal appended. Never repair the artifact in
   the orchestrator.
-- **Infrastructure (exit 3):** Retry the same command. If the host blocked a
-  required action, request one scoped reusable permission.
+- **Infrastructure (exit 3):** Worktree failures stop; never fall back to source.
+  Only explicit `--no-worktree` leases it. Otherwise retry; request scoped permission
+  when blocked.
 - **Stop:** Follow the table below. Never advance over a safety stop by guess.
 
 | Stop | Action |
@@ -95,11 +100,9 @@ exactly one dispatch, wait, or stop.
 | `shipped` | Report every PR and review URL. The PR is ready; merge only when authorized. |
 | `done` | Report verified landings and cleanup. |
 
-The flow is plan → independent red team → automatic plan acceptance →
-implementation with observed red-before-green proof → draft PR → independent
-finder/verifier/fixer rounds → ready when no major remains and CI is green.
-One pull request per issue is the default. Split only when the approved plan contains
-genuinely reviewable stacked work items.
+The flow is plan → red team → implementation with red-before-green proof →
+draft PR → finder/verifier/fixer rounds → ready with no majors and green CI.
+One pull request per issue is the default; split only for approved stacked work items.
 
 Issueflow persists a complexity profile:
 plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
@@ -117,7 +120,7 @@ multiple finders. Every file remains in the brief. Candidates determine verifier
   only local and stop.
 - The run persists that choice of runtime. The red team is the gate, and it is
   a dispatched subagent — never you. Never do a stage's work yourself.
-- Never dispatch a stage on a model other than the one the brief names.
+- Never bypass the persisted host adapter or pass `inherit` as a literal model.
 - Never weaken a review to clear a finding. Classify dispositions honestly;
   repeated blockers stop for a user decision. Never auto-ship over an open
   blocking finding. Never ready a pull request over an open major.

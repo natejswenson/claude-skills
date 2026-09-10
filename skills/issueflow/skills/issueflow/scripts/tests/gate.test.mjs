@@ -8,7 +8,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { STAGES, SHARED_STAGES, PER_ITEM_STAGES, PLAN_STAGE } from '../lib/stages.mjs';
@@ -111,6 +111,18 @@ test('an accepted implement stage records the evidence it was proved by', () => 
   assert.equal(step.stage.state, 'approved');
   assert.match(step.stage.evidence, /test-output\.txt$/);
   assert.equal(step.stage.result, 'node --test, 24 passed, 0 failed');
+  cleanup();
+});
+
+test('the gate refuses a blocked implementation artifact even with passing baseline evidence', () => {
+  const { dir, run, cleanup } = freshRun();
+  approvePlan(dir, run);
+  const step = writeGood(dir, run, 'implement');
+  const path = artifactPath(dir, step);
+  const text = readFileSync(path, 'utf8').replace(/## Result[\s\S]*$/, '## Result\n\nBLOCKED — prerequisite missing.\n');
+  writeFileSync(path, text);
+  writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
+  assert.throws(() => accept(dir, run, step), /blocked or incomplete result/);
   cleanup();
 });
 
@@ -267,7 +279,15 @@ test('split stacks each lane on the one below it, bottom on the base branch', ()
     'feature/issue-3-rotate-secrets',
     'feature/issue-3-decommission-host',
   ]);
-  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null });
+  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null, maxRounds: 2 });
+  cleanup();
+});
+
+test('parallel split puts genuinely independent lanes on the shared base', () => {
+  const { dir, run, cleanup } = freshRun();
+  approvePlan(dir, run);
+  split(dir, run, [{ title: 'first' }, { title: 'second' }], { parallel: true });
+  assert.deepEqual(run.lanes.map((l) => l.base), ['dev', 'dev']);
   cleanup();
 });
 

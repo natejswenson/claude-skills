@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dispatchProfile } from '../../scripts/lib/runtime.mjs';
 import { STAGES } from '../../scripts/lib/stages.mjs';
 import { REVIEWS, REVIEW_FORBIDS } from '../../scripts/lib/reviews.mjs';
 import { renderComment } from '../../scripts/lib/checkpoint.mjs';
@@ -55,10 +56,16 @@ export function generate() {
   // runs from an interrupted earlier test and make this offline golden vary.
   const sandboxDir = mkdtempSync(join(tmpdir(), 'issueflow-baseline-'));
   const runDir = join(sandboxDir, 'issue-133');
+  const repoPath = join(sandboxDir, 'repo');
+  cpSync(REPO, repoPath, { recursive: true });
+  const git = (args) => execFileSync('git', args, { cwd: repoPath, stdio: 'pipe' });
+  git(['init', '-qb', 'main']);
+  git(['add', '.']);
+  git(['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'frozen input']);
   const artifacts = {};
   const at = (...p) => join(INPUTS, ...p);
 
-  const common = ['--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', runDir];
+  const common = ['--repo', repoPath, '--repo-json', at('repo.json'), '--run-dir', runDir];
 
   artifacts['board.txt'] = cli(['board', '--repo', REPO, '--repo-json', at('repo.json'), '--issues-json', at('issues.json')]);
   // This historical fixture exercises the optional human plan gate. New runs
@@ -115,7 +122,7 @@ export function generate() {
   // reporting a state machine with a missing stage as complete.
   for (const s of STAGES) {
     artifacts[`stage-${s.id}.json`] = `${JSON.stringify(
-      { id: s.id, title: s.title, model: s.model, agent: s.agent, artifact: s.artifact, requires: s.requires, asks: s.asks, forbids: s.forbids },
+      { id: s.id, title: s.title, model: dispatchProfile('claude', s.id).model, agent: dispatchProfile('claude', s.id).agent, artifact: s.artifact, requires: s.requires, asks: s.asks, forbids: s.forbids },
       null,
       2,
     )}\n`;
@@ -126,7 +133,7 @@ export function generate() {
   // still render a complete-looking review brief.
   for (const r of REVIEWS) {
     artifacts[`review-${r.id}.json`] = `${JSON.stringify(
-      { id: r.id, title: r.title, model: r.model, agent: r.agent, asks: r.asks, forbids: REVIEW_FORBIDS },
+      { id: r.id, title: r.title, model: dispatchProfile('claude', 'redTeam').model, agent: dispatchProfile('claude', 'redTeam').agent, asks: r.asks, forbids: REVIEW_FORBIDS },
       null,
       2,
     )}\n`;
@@ -160,7 +167,7 @@ export function generate() {
     rmSync(reviewSandbox, { recursive: true, force: true });
   }
 
-  for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key], runDir);
+  for (const key of Object.keys(artifacts)) artifacts[key] = normalize(artifacts[key].replaceAll(repoPath, '<REPO>'), runDir);
   rmSync(sandboxDir, { recursive: true, force: true });
   return artifacts;
 

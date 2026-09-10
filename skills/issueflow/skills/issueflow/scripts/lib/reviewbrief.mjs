@@ -1,3 +1,4 @@
+import { activePath, approvedArtifactPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The review loop's briefs — finder, verifier, fixer — rendered from
  * `references/review-method.md`, never improvised.
@@ -16,7 +17,8 @@ import {
   fixPatchPath, fixReportPath, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
-import { runtimeOf } from './runtime.mjs';
+import { dispatchProfile, runtimeOf } from './runtime.mjs';
+import { guidanceBlock as resolvedGuidance } from './guidance.mjs';
 
 const METHOD_PATH = new URL('../../references/review-method.md', import.meta.url);
 const METHOD = readFileSync(METHOD_PATH, 'utf8');
@@ -34,7 +36,7 @@ export function methodSection(heading) {
 export const angleText = (id, run = null) => {
   const text = methodSection(`angle: ${id}`);
   if (id !== 'conventions' || runtimeOf(run) !== 'codex') return text;
-  return text.replaceAll('CLAUDE.md', 'AGENTS.md');
+  return text + '\n\nAlso apply scoped AGENTS.override.md / AGENTS.md and REVIEW.md from Repository guidance below.';
 };
 
 const bar = (headers, rows) =>
@@ -92,18 +94,20 @@ function intentBlock(dir, run) {
   return [
     '## What the change is for',
     '',
-    `The approved plan is at \`${join(dir, SHARED_DIR, plan.stage.artifact)}\` — root cause, approach, the`,
+    `The approved plan is at \`${approvedArtifactPath(dir, run, activePath(dir, SHARED_DIR, plan.stage.artifact))}\` — root cause, approach, the`,
     'files it said it would touch, and the proof it promised. It was red-teamed and approved before',
     'any code was written; the diff is supposed to be that plan, built.',
   ].join('\n');
 }
 
 /** The repository's own review instructions, when it has them. REVIEW.md is spliced; the host's instruction file is named. */
-function guidanceBlock(run, files) {
+function guidanceBlock(run, files, tree) {
+  const resolved = resolvedGuidance(tree, files);
+  if (resolved) return resolved;
   const out = ['## Repository guidance', ''];
-  const reviewMd = join(run.repo.path, 'REVIEW.md');
+  const reviewMd = join(tree, 'REVIEW.md');
   const instructionName = runtimeOf(run) === 'codex' ? 'AGENTS.md' : 'CLAUDE.md';
-  const instructionFile = join(run.repo.path, instructionName);
+  const instructionFile = join(tree, instructionName);
   if (existsSync(reviewMd)) {
     out.push('The repository\'s own `REVIEW.md`, verbatim — it says what this repository wants flagged and at what severity:', '', readFileSync(reviewMd, 'utf8').trim(), '');
   } else {
@@ -114,7 +118,7 @@ function guidanceBlock(run, files) {
     let d = dirname(f.path);
     while (d && d !== '.') { dirs.add(d); d = dirname(d); }
   }
-  const nested = [...dirs].filter((d) => existsSync(join(run.repo.path, d, instructionName))).map((d) => `\`${d}/${instructionName}\``);
+  const nested = [...dirs].filter((d) => existsSync(join(tree, d, instructionName))).map((d) => `\`${d}/${instructionName}\``);
   if (existsSync(instructionFile)) {
     // Named repo-relative on purpose: a finder that copies the absolute path
     // into a finding puts the maintainer's home directory on the pull request.
@@ -155,7 +159,8 @@ function priorBlock(prior) {
   return out.join('\n');
 }
 
-const progressBlock = (path, run) => runtimeOf(run) === 'codex' ? '' : [
+const progressBlock = (path, run) => runtimeOf(run) === 'codex' && !run.execution ? '' : [
+  ...executionInstructions(run),
   '## While you work',
   '',
   `Append one short lowercase line to \`${path}\` whenever you reach a real milestone —`,
@@ -220,7 +225,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     '',
     methodSection('The anti-self-censorship rule'),
     '',
-    guidanceBlock(run, files),
+    guidanceBlock(run, files, tree),
     '',
     '## You must not',
     '',
@@ -260,7 +265,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     'required even when empty-handed: a clean pass that names nothing it skipped is',
     'indistinguishable from an unfinished one.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`), run),
     '',
     doneBlock(run, 'the candidates file', candidatesPath(dir, lane, entry.round, n)),
     '',
@@ -274,8 +279,10 @@ export function writeFinderBriefs(dir, run, lane, entry, { issue, files, prior }
   entry.angles.forEach((angles, i) => {
     const n = i + 1;
     const path = finderBriefPath(dir, lane, entry.round, n);
+    prepareOutputs(dir, run, [path, candidatesPath(dir, lane, entry.round, n), activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-finder-${n}.log`)]);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderFinderBrief(dir, run, lane, entry, n, { angles, issue, files, prior }));
+    recordDispatch(dir, run, path, [candidatesPath(dir, lane, entry.round, n)]);
     out.push({ n, ...dispatch, prompt: path, writes: candidatesPath(dir, lane, entry.round, n), angles });
   });
   return out;
@@ -310,7 +317,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
       '',
     );
   }
-  out.push(intentBlock(dir, run), '', issueBlock(issue), '', '## Your items', '');
+  out.push(intentBlock(dir, run), '', issueBlock(issue), '', ...(resolvedGuidance(tree, items) ? [resolvedGuidance(tree, items), ''] : []), '## Your items', '');
   if (fresh.length > 0) {
     out.push(`### New candidates (${fresh.length})`, '', '```json', JSON.stringify(fresh.map(({ prior: _p, mergedFrom: _m, ...c }) => c), null, 2), '```', '');
   }
@@ -353,7 +360,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     'One entry per item, every item. `severity` is required for a CONFIRMED or PLAUSIBLE candidate',
     'and ignored for a REFUTED one. `quote` is required on every entry.',
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`), run),
     '',
     doneBlock(run, 'the verdicts file', verdictsPath(dir, lane, entry.round, n)),
     '',
@@ -366,8 +373,10 @@ export function writeVerifierBriefs(dir, run, lane, entry, { batches, issue }) {
   return batches.map((items, i) => {
     const n = i + 1;
     const path = verifierBriefPath(dir, lane, entry.round, n);
+    prepareOutputs(dir, run, [path, verdictsPath(dir, lane, entry.round, n), activePath(dir, 'progress', `${lane.slug}-review-r${entry.round}-verifier-${n}.log`)]);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, renderVerifierBrief(dir, run, lane, entry, n, { items, issue }));
+    recordDispatch(dir, run, path, [verdictsPath(dir, lane, entry.round, n)]);
     return { n, ...dispatch, prompt: path, writes: verdictsPath(dir, lane, entry.round, n), items: items.length };
   });
 }
@@ -412,6 +421,8 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     `## Open findings (${items.length})`,
     '',
   ];
+  const guidance = resolvedGuidance(tree, items.length ? items : null);
+  if (guidance) out.splice(out.length - 2, 0, guidance, '');
   for (const f of items) {
     out.push(
       `### \`${f.id}\` — ${f.severity} — \`${f.file}:${f.line}\``,
@@ -461,7 +472,7 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
     '',
     `Also report, in the same file under the key \`"_summary"\`, one sentence naming the commit sha you pushed.`,
     '',
-    progressBlock(join(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`), run),
+    progressBlock(activePath(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`), run),
     '',
     doneBlock(run, 'the fix report', fixReportPath(dir, lane, entry.round)),
     '',
@@ -469,11 +480,14 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
   return out.join('\n');
 }
 
-export function writeFixBrief(dir, run, lane, entry, { items, checks, model, reasoning, agent, issue }) {
+export function writeFixBrief(dir, run, lane, entry, { items, checks, model, issue }) {
   const path = fixBriefPath(dir, lane, entry.round);
+  prepareOutputs(dir, run, [path, fixReportPath(dir, lane, entry.round), evidencePath(dir, findStep(run, 'implement', lane.slug)), activePath(dir, 'progress', `${lane.slug}-fix-r${entry.round}.log`)]);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, renderFixBrief(dir, run, lane, entry, { items, checks, model, issue }));
-  return { model, reasoning, agent, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
+  recordDispatch(dir, run, path, [fixReportPath(dir, lane, entry.round)]);
+  const profile = dispatchProfile(run, items.some((item) => item.severity === 'major' && item.stillOpenRounds > 0) ? 'fixerEscalated' : 'fixer');
+  return { ...profile, prompt: path, writes: fixReportPath(dir, lane, entry.round), items: items.length };
 }
 
 export { NIT_CAP };

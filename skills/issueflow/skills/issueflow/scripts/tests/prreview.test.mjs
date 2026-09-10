@@ -17,11 +17,12 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { HandBack, createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
 import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
   inlineEligible, laneDiff, openFindings, openMajors, openRound, parseDiff, payloadPath, planVerification, postRound,
-  readCandidates, registerRound, registeredPath, reviewBody, reviewExhausted, riskSensitiveChange, roundRows, ruleFinding, semanticChangedLines, threadBody, touched, validateCandidates,
+  ciFailureFingerprint, readCandidates, registerRound, registeredPath, repeatedReviewMajors, reviewBody, reviewExhausted, riskSensitiveChange, roundRows, ruleFinding, semanticChangedLines, threadBody, touched, validateCandidates,
   validateVerdicts, verdictsPath, fixReportPath,
 } from '../lib/prreview.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief, methodSection } from '../lib/reviewbrief.mjs';
@@ -75,17 +76,38 @@ function fixture({ auto = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-prreview-'));
   const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: repoPath, defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, auto });
   saveRun(dir, run);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
   approvePlan(dir, run, { auto });
   // implement approved against the repo itself (no worktree): the evidence is what accept reads
   approveImplement(dir, run, null, { auto });
   const lane = run.lanes[0];
+  // This fixture exercises the legacy global cap; real runs persist a
+  // complexity-specific cap on every lane.
+  delete lane.review.maxRounds;
   lane.pr = { number: 42, url: 'https://example.invalid/pull/42', title: ISSUE.title, nodeId: 'PR_node' };
   lane.review.draft = true;
   saveRun(dir, run);
   return { dir, run, lane, repoPath, cleanup: () => { rmSync(dir, { recursive: true, force: true }); rmSync(repoPath, { recursive: true, force: true }); } };
 }
+
+test('repeated review majors identify mechanisms that survived two fixer rounds', () => {
+  const lane = { review: { findings: [
+    { id: 'f-repeat', severity: 'major', status: 'open', stillOpenRounds: 2 },
+    { id: 'f-new', severity: 'major', status: 'open', stillOpenRounds: 1 },
+    { id: 'f-nit', severity: 'nit', status: 'open', stillOpenRounds: 4 },
+  ] } };
+  assert.deepEqual(repeatedReviewMajors(lane).map((f) => f.id), ['f-repeat']);
+});
+
+test('CI failure fingerprints are stable across check ordering', () => {
+  const a = ciFailureFingerprint([{ name: 'ci / issueflow', bucket: 'fail', detail: 'AssertionError\nline 10' }]);
+  const b = ciFailureFingerprint([{ name: 'ci / issueflow', bucket: 'fail', detail: 'AssertionError\nline 10' }]);
+  const c = ciFailureFingerprint([{ name: 'ci / other', bucket: 'fail', detail: 'AssertionError' }]);
+  assert.equal(a, b);
+  assert.notEqual(a, c);
+});
 
 const cand = (over) => ({
   file: 'widget.js', line: 4, side: 'RIGHT', category: 'line-by-line',
@@ -213,7 +235,7 @@ test('openRound: handed the fix delta, a round is sized to it, writes fix.patch 
   rmSync(join(dir, lane.slug, 'review', 'r2'), { recursive: true, force: true });
   const cli = execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'issueflow.js'), 'review-brief', '--run-dir', dir, '--lane', lane.slug, '--offline'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
   assert.match(cli, /Fix lines/);
-  assert.match(cli, /\| 2 of 4 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
+  assert.match(cli, /\| 2 of 2 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
   assert.ok(existsSync(fixPatchPath(dir, lane, 2)));
   assert.match(readFileSync(finderBriefPath(dir, lane, 2, 1), 'utf8'), /## The fix under review/);
   cleanup();
@@ -736,6 +758,30 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   assert.match(fix, /"not-changed"/);
   assert.match(fix, /addressed to `main`/);
   assert.match(methodSection('fixer'), /ONE commit/);
+  cleanup();
+});
+
+test('finder, verifier and fixer receive only applicable scoped guidance', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  const { files } = open(dir, run, lane, repoPath);
+  const entry = currentRound(lane); entry.verifiers = 1;
+  mkdirSync(join(repoPath, 'src')); mkdirSync(join(repoPath, 'other'));
+  writeFileSync(join(repoPath, 'AGENTS.md'), 'ROOT_SHADOWED');
+  writeFileSync(join(repoPath, 'AGENTS.override.md'), 'ROOT_OVERRIDE');
+  writeFileSync(join(repoPath, 'CLAUDE.md'), 'ROOT_CLAUDE');
+  writeFileSync(join(repoPath, 'src', 'AGENTS.md'), 'SRC_AGENT');
+  writeFileSync(join(repoPath, 'other', 'AGENTS.md'), 'OTHER_AGENT');
+  const scoped = [{ ...files[0], path: 'src/widget.js' }];
+  const item = { ...cand({ file: 'src/widget.js' }), id: 'c-1-1', prior: false };
+  const rendered = [
+    renderFinderBrief(dir, run, lane, entry, 1, { angles: entry.angles[0], issue: ISSUE, files: scoped, prior: [] }),
+    renderVerifierBrief(dir, run, lane, entry, 1, { items: [item], issue: ISSUE }),
+    renderFixBrief(dir, run, lane, entry, { items: [{ ...item, id: 'f-1', severity: 'major', stillOpenRounds: 0 }], checks: [], model: 'opus', issue: ISSUE }),
+  ];
+  for (const text of rendered) {
+    assert.match(text, /ROOT_OVERRIDE/); assert.match(text, /ROOT_CLAUDE/); assert.match(text, /SRC_AGENT/);
+    assert.doesNotMatch(text, /ROOT_SHADOWED|OTHER_AGENT/);
+  }
   cleanup();
 });
 

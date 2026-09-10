@@ -1,7 +1,7 @@
 /** Wall-clock allowance is independent of complexity and review-round limits. */
 import { RunError, runState } from './run.mjs';
 
-export const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief']);
+export const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief', 'dispatch-wave']);
 
 /** Schema-3 runs need no migration: their first window starts at createdAt. */
 export function budgetStatus(run, now = new Date().toISOString()) {
@@ -11,12 +11,21 @@ export function budgetStatus(run, now = new Date().toISOString()) {
   if (!allowanceSeconds || !Number.isFinite(start)) return null;
   const deadline = start + allowanceSeconds * 1000;
   const current = Date.parse(now);
+  const usedSeconds = (run.complexity?.budgetSeconds ?? 0) + (run.budgetRenewals ?? []).reduce((sum, r) => sum + (Number(r.budgetSeconds) || 0), 0);
+  // Older fixtures/runs did not persist the cumulative cap. Keep the bounded
+  // eight-window policy observable for those records while new runs persist it.
+  const totalBudgetSeconds = Number.isFinite(run.totalBudgetSeconds)
+    ? run.totalBudgetSeconds
+    : Number.isFinite(run.complexity?.budgetSeconds) ? run.complexity.budgetSeconds * 8 : null;
   return {
     elapsedSeconds: Math.max(0, (current - Date.parse(run.createdAt)) / 1000),
     allowanceSeconds,
     remainingSeconds: Math.max(0, (deadline - current) / 1000),
     expired: current >= deadline,
     deadline: new Date(deadline).toISOString(),
+    usedSeconds,
+    totalBudgetSeconds,
+    totalRemainingSeconds: totalBudgetSeconds == null ? null : Math.max(0, totalBudgetSeconds - usedSeconds),
   };
 }
 
@@ -32,7 +41,14 @@ export function renewBudget(run, value, now = new Date().toISOString()) {
     throw new RunError('--budget-seconds must produce a representable deadline');
   }
   if (runState(run) === 'done') throw new RunError('a completed run cannot be resumed');
-  if (!budgetStatus(run, now)?.expired) throw new RunError('the budget is already active — no time was added');
+  const current = budgetStatus(run, now);
+  if (!current?.expired) throw new RunError('the budget is already active — no time was added');
+  if (current.totalRemainingSeconds != null && current.totalRemainingSeconds <= 0) {
+    throw new RunError('the hard cumulative budget cap is spent — no more time can be added');
+  }
+  if (current.totalRemainingSeconds != null && budgetSeconds > current.totalRemainingSeconds) {
+    throw new RunError(`--budget-seconds exceeds the ${current.totalRemainingSeconds}s remaining cumulative cap`);
+  }
   run.budgetRenewals ??= [];
   run.budgetRenewals.push({ at: now, budgetSeconds });
   return budgetStatus(run, now);
@@ -41,7 +57,23 @@ export function renewBudget(run, value, now = new Date().toISOString()) {
 export function budgetStop(budget) {
   return {
     kind: 'stop', reason: 'budget', budget,
-    detail: 'The time allowance expired. Delivered results retain their gates; new worker dispatches require explicit resume.',
+    detail: budget.totalBudgetSeconds != null && budget.totalRemainingSeconds <= 0
+      ? 'The hard cumulative time cap is spent. Delivered results retain their gates; no further worker dispatch is permitted.'
+      : 'The time allowance expired. Delivered results retain their gates; new worker dispatches require explicit resume.',
     command: 'resume --budget-seconds 1800',
   };
+}
+
+/** Renew one window for an explicitly autonomous run, without exceeding its
+ * persisted hard cap. Returns null when the cap is exhausted. */
+export function autoRenewBudget(run, now = new Date().toISOString()) {
+  const status = budgetStatus(run, now);
+  if (!status?.expired || !run.autonomous) return null;
+  if (status.totalRemainingSeconds != null && status.totalRemainingSeconds <= 0) return null;
+  const allowance = status.totalRemainingSeconds == null
+    ? status.allowanceSeconds
+    : Math.min(status.allowanceSeconds, status.totalRemainingSeconds);
+  run.budgetRenewals ??= [];
+  run.budgetRenewals.push({ at: now, budgetSeconds: allowance, automatic: true });
+  return budgetStatus(run, now);
 }

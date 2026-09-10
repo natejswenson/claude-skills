@@ -32,9 +32,10 @@ const mostSpecific = (clauses) =>
   )[0];
 
 const bash = (events) => events.filter((e) => e.kind === 'tool-use' &&
-  (e.name === 'Bash' || /(^|[._])exec_command$/.test(e.name)));
+  (e.toolKind ? e.toolKind === 'command' : e.name === 'Bash' || /(^|[._])exec_command$/.test(e.name)));
 const said = (events) => events.filter((e) => e.kind === 'assistant');
-const tool = (events, name) => events.filter((e) => e.kind === 'tool-use' && e.name === name);
+const tool = (events, kind, names) => events.filter((e) => e.kind === 'tool-use' &&
+  (e.toolKind ? e.toolKind === kind : names.includes(e.name)));
 const ranAny = (events, re) => bash(events).some((e) => re.test(e.command ?? ''));
 
 /** Split a shell command into segments that are not piped into anything else. */
@@ -126,7 +127,7 @@ export const PROBES = [
       const m = /at most (one|two|three|four|\d+) questions?/i.exec(clause.text);
       const budget = m ? (words[m[1].toLowerCase()] ?? Number(m[1])) : null;
       if (budget === null) return [];
-      const asks = tool(events, 'AskUserQuestion');
+      const asks = tool(events, 'question', ['AskUserQuestion']);
       let total = 0;
       const out = [];
       for (const e of asks) {
@@ -187,9 +188,10 @@ export const PROBES = [
     decide: (events) => {
       if (ranAny(events, /press(\.js)?\s+(emit|check)/)) return [];
       const target = /skills\/[^/]+\/(skills\/[^/]+\/)?(SKILL|README)\.md$/;
-      return events
-        .filter((e) => e.kind === 'tool-use' && ['Write', 'Edit'].includes(e.name) && target.test(e.path ?? ''))
-        .map((e) => ({ eventId: e.id, detail: `edited ${e.path} with no press emit/check anywhere in the run` }));
+      return tool(events, 'edit', ['Write', 'Edit'])
+        .map((e) => ({ event: e, path: (e.paths ?? [e.path]).find(path => target.test(path ?? '')) }))
+        .filter(({ path }) => path)
+        .map(({ event, path }) => ({ eventId: event.id, detail: `edited ${path} with no press emit/check anywhere in the run` }));
     },
   },
 

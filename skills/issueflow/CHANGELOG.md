@@ -5,12 +5,40 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-09-10
+
+## Added
+
+- Autonomous Issueflow runs now spend less time waiting between observed
+  artifacts and stop stalled workers with an actionable re-dispatch prompt.
+- Review effort is bounded by issue complexity, with explicit limits for fast
+  documentation, standard, and deep work.
+
+## Changed
+
+- Ready pull requests now clearly identify the human approval and merge step;
+  Issueflow never merges a pull request on the operator's behalf.
+- Implementation gates reject blocked or incomplete result reports, and
+  liveness checks ignore unrelated files from a containing parent checkout.
+
 ## [Unreleased]
+
+### Fixed
+
+- Keep Codex artifacts, progress, evidence and lane Git administration inside a
+  host-approved workspace root. Archive exact outputs and Git history before
+  state advances; validate generation ownership across resume, migration and cleanup.
+
+- Stop on worktree provisioning or missing-checkout failures instead of silently
+  dispatching against the live checkout. Validate existing lanes, persist explicit
+  `--no-worktree` mode, and exclusively lease source checkouts across runs and lanes.
 
 ### Added
 
 - Persisted complexity profiles with a fast documentation route, bounded review
   rounds, and a 15-minute budget for wording-only issues.
+- Explicit approval checkpoints now identify the PR action required from the
+  operator, and final review caps are selected from issue complexity.
 - Implementation validation now runs targeted proof before the full suite,
   runs the full suite once after targeted green, and directs workers to deliver
   immediately afterward to avoid repeated broad failing runs.

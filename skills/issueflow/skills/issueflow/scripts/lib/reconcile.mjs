@@ -71,7 +71,7 @@ export function reconcile(run, { lane = null, offline = false } = {}) {
   const bases = new Set((lane ? [lane] : run.lanes).map((l) => l.base));
   for (const base of bases) {
     if (run.lanes.some((l) => l.branch === base)) continue; // a stacked base is a lane, not a remote branch
-    if (git(['rev-parse', '--verify', `refs/remotes/origin/${base}`], repoPath) === null) {
+    if (git(['rev-parse', '--verify', `refs/remotes/origin/${base}`], run.execution ? gitStore(run.execution.owner.dir, run) : repoPath) === null) {
       rows.push(row(`base ${base}`, 'not on origin', 'the branch these lanes target is not on the remote', true));
     }
   }
@@ -107,3 +107,4 @@ export function landings(run, { lane = null } = {}) {
     }
   });
 }
+import { gitStore } from './execution.mjs';
