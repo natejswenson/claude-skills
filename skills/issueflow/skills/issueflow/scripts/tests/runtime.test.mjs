@@ -8,7 +8,7 @@ import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
 import { renderAction } from '../lib/next.mjs';
 import { finderProfile, fixerProfile, verifierProfile } from '../lib/prreview.mjs';
 import { artifactPath, createRun, evidencePath, findStep, laneTree, loadRun, progressPath, saveRun } from '../lib/run.mjs';
-import { assertRuntime, dispatchProfile } from '../lib/runtime.mjs';
+import { assertRuntime, DEFAULT_CODEX_CHILD_SLOTS, dispatchProfile } from '../lib/runtime.mjs';
 import * as runtime from '../lib/runtime.mjs';
 import { resolveGuidance } from '../lib/guidance.mjs';
 import { activePath, prepareExecution } from '../lib/execution.mjs';
@@ -56,7 +56,7 @@ const backdate = (path, seconds) => {
   utimesSync(path, at, at);
 };
 
-test('CLI drains five finder and eight verifier briefs through persisted waves and native slot release', (t) => {
+test('CLI drains five finder and four verifier briefs through persisted waves and native slot release', (t) => {
   const { dir, run, tree, git, cli, ok } = cliFixture(t);
   writeFileSync(join(tree, 'a.js'), Array.from({ length: 751 }, (_, n) => `export const a${n} = ${n};`).join('\n') + '\n');
   git(['add', 'a.js'], tree); git(['commit', '-qm', 'large change'], tree);
@@ -68,7 +68,7 @@ test('CLI drains five finder and eight verifier briefs through persisted waves a
   saveRun(dir, run);
   let output = ok('next', '--workers-released');
   const seen = new Set(), slots = new Set(), delivered = new Set();
-  for (const [role, count] of [['finder', 5], ['verifier', 8]]) {
+  for (const [role, count] of [['finder', 5], ['verifier', 4]]) {
     const initial = loadRun(dir).dispatch.queue;
     assert.equal(initial.items.length, count);
     const expected = initial.items.map((item) => item.prompt);
@@ -110,9 +110,9 @@ test('CLI drains five finder and eight verifier briefs through persisted waves a
       output = ok('next', '--workers-released');
     }
     assert.deepEqual([...seen].filter((path) => expected.includes(path)), expected);
-    assert.equal(delivered.size, role === 'finder' ? 5 : 13);
+    assert.equal(delivered.size, role === 'finder' ? 5 : 9);
   }
-  assert.equal(seen.size, 13);
+  assert.equal(seen.size, 9);
   assert.equal(loadRun(dir).dispatch.queue, undefined);
   assert.equal(loadRun(dir).lanes[0].review.rounds[0].verdict, 'converged');
 });
@@ -220,6 +220,12 @@ test('host selection and child capacity survive save/load', () => {
   saveRun(dir, run);
   const resumed = loadRun(dir);
   assert.deepEqual([runtime.runtimeOf(resumed), resumed.dispatch?.childSlots], ['codex', 2]);
+});
+
+test('Codex defaults to bounded concurrency while Claude keeps its host default', () => {
+  assert.equal(runtime.dispatchPolicy('codex').childSlots, DEFAULT_CODEX_CHILD_SLOTS);
+  assert.equal(runtime.dispatchPolicy('claude').childSlots, 1);
+  assert.equal(createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' }).dispatch.childSlots, 4);
 });
 
 test('a legacy run can adopt Codex before artifacts', () => {
@@ -351,7 +357,7 @@ test('each queued Codex wave receives a fresh dispatch timestamp and release ack
   assert.equal(runtime.releaseWave(run, () => true), false);
 });
 
-test('codex runtime inherits the parent model with cold writable workers', () => {
+test('codex runtime uses role-sized reasoning with cold writable workers', () => {
   const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });
   const plan = findStep(run, 'investigate');
   const implement = findStep(run, 'implement', 'root');
@@ -365,9 +371,9 @@ test('codex runtime inherits the parent model with cold writable workers', () =>
     [undefined, 'high', 'worker'],
   );
   const profile = { reasoning: 'high', agent: 'worker', fork_turns: 'none' };
-  assert.deepEqual(finderProfile(run), profile);
+  assert.deepEqual(finderProfile(run), { ...profile, reasoning: 'medium' });
   assert.deepEqual(verifierProfile(run), profile);
-  assert.deepEqual(fixerProfile(run, run.lanes[0]), profile);
+  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'medium' });
 
   run.lanes[0].review.findings = [{ severity: 'major', status: 'open', stillOpenRounds: 1 }];
   assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'xhigh' });
@@ -428,7 +434,7 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   assert.equal(existsSync(join(badDir, 'run.json')), false);
 });
 
-test('start --autonomous persists bounded budget automation as an explicit opt-in', () => {
+test('start ignores the removed autonomous renewal flag', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-autonomous-'));
   const runDir = join(root, 'run');
   const repoJson = join(root, 'repo.json');
@@ -437,8 +443,8 @@ test('start --autonomous persists bounded budget automation as an explicit opt-i
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
   execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--autonomous', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
-  assert.equal(persisted.autonomous, true);
-  assert.ok(persisted.totalBudgetSeconds > persisted.complexity.budgetSeconds);
+  assert.equal(persisted.autonomous, undefined);
+  assert.equal(persisted.totalBudgetSeconds, undefined);
 });
 
 test('codex dispatch output names the exact spawn fields and invalid runtimes refuse', () => {

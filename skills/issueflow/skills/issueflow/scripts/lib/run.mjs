@@ -69,6 +69,11 @@ export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
   const docs = /\b(doc|docs|documentation|readme|copy|wording|typo|guide|changelog)\b/i.test(text);
   const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
+  // CI/automation issues may mention docs in their explanation, but changing
+  // an installer, workflow or release path is operational work and must not
+  // take the cheap documentation profile.
+  const operational = /\b(ci|workflow|install(?:er|ation)?|marketplace|release|deploy(?:ment)?|pipeline|automation|smoke test)\b/i.test(text);
+  if (operational) return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'CI, automation or operational change' };
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
   return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
@@ -746,7 +751,7 @@ export function elapsedOf(entry, now) {
  * a split is still safe. (A `brief --ready` straight after the plan used to
  * foreclose `split` forever.)
  */
-export function split(dir, run, items) {
+export function split(dir, run, items, { parallel = false } = {}) {
   if (run.split) throw new RunError('this run is already split — a second split would strand the first split\'s lanes');
   const plan = findStep(run, PLAN_STAGE);
   if (plan.stage.state !== 'approved') {
@@ -764,7 +769,7 @@ export function split(dir, run, items) {
     const slug = slugify(item.slug ?? item.title);
     if (seen.has(slug)) throw new RunError(`two work items slug to "${slug}" — each lane needs its own branch`);
     seen.add(slug);
-    const base = i === 0
+    const base = parallel || i === 0
       ? run.policy.base
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
     return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);

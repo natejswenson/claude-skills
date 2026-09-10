@@ -48,7 +48,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
+const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
 
 function argv(args) {
   const out = { _: [] };
@@ -967,7 +967,7 @@ async function cmdSplit(args) {
     console.log(`Read ${items.length} work items from the approved plan.\n`);
   }
 
-  split(dir, run, items);
+  split(dir, run, items, { parallel: Boolean(args.parallel) });
   print(
     ['Lane', 'Work item', 'Branch', 'Stacks on'],
     run.lanes.map((l) => [l.slug, truncate(l.title, 48), l.branch, l.base]),
@@ -1511,9 +1511,14 @@ async function cmdNext(args) {
       guardDispatch(dir, run, args);
       printDispatch(advanceWave(run), 'workers', dir, run, { queued: true });
     },
-    brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: false }),
+    brief: (a) => cmdBrief({ ...args, stage: a.stage, lane: a.lane, review: Boolean(a.review), ready: Boolean(a.ready) }),
     review: (a) => cmdReview({ ...args, stage: a.stage, lane: a.lane }),
     accept: (a) => cmdAccept({ ...args, stage: a.stage, lane: a.lane, auto: Boolean(a.auto) }),
+    'accept-ready': async (a) => {
+      for (const step of a.steps ?? []) {
+        await cmdAccept({ ...args, stage: step.stage, lane: step.lane, auto: Boolean(args.auto) });
+      }
+    },
     split: () => cmdSplit({ ...args }),
     ship: () => cmdShip({ ...args, dryRun: false }),
     rebase: (a) => cmdRebase({ ...args, lane: a.lane }),
@@ -1528,7 +1533,10 @@ async function cmdNext(args) {
   };
   let dispatched = null;
   let completed = false;
-  for (let i = 0; i < 12; i += 1) {
+  // A single `next` may cross several cheap deterministic gates, especially
+  // after a split. Keep a loop guard without making healthy large runs fail.
+  const MAX_DETERMINISTIC_ACTIONS = 64;
+  for (let i = 0; i < MAX_DETERMINISTIC_ACTIONS; i += 1) {
     const run = observe(dir, loadRun(dir));
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
@@ -1593,7 +1601,7 @@ async function cmdNext(args) {
     }
     console.log('');
   }
-  throw new Error('next performed 12 actions without reaching a dispatch, a wait or a stop — this is a bug in the driver');
+  throw new Error(`next performed ${MAX_DETERMINISTIC_ACTIONS} actions without reaching a dispatch, a wait or a stop — this is a bug in the driver`);
 }
 
 const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request: plan, red team, implement, review loop.
@@ -1607,7 +1615,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow brief  [--stage <id>] [--lane <slug>] [--ready] [--review] [--issue <n>]
   issueflow review --stage <id> [--lane <slug>] [--issue <n>]
   issueflow accept [--stage <id>] [--lane <slug>] [--evidence <path>] [--skip "<reason>"] [--force] [--auto]
-  issueflow split  [--items-json <path>] [--issue <n>]
+  issueflow split  [--parallel] [--items-json <path>] [--issue <n>]
   issueflow status [--issue <n>]
   issueflow runs
   issueflow ship   [--issue <n>] [--dry-run] [--no-draft] [--force]
@@ -1631,6 +1639,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        on accept: approve on a registered, hash-bound passing review
   --runtime <host>     on start: persist the dispatch contract for \`claude\` (default)
                        or \`codex\`; Codex emits native model, reasoning and role fields
+  --child-slots <n>    Codex children to run concurrently (default: 4; explicit override)
+  --parallel           on split: place approved independent work items on the same base branch
   --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
   --budget-seconds <positive-integer>  on resume: grant seconds from now, preserving all gates and review limits;

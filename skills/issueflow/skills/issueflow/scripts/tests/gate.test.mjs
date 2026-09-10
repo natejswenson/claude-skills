@@ -122,7 +122,7 @@ test('the gate refuses a blocked implementation artifact even with passing basel
   const text = readFileSync(path, 'utf8').replace(/## Result[\s\S]*$/, '## Result\n\nBLOCKED — prerequisite missing.\n');
   writeFileSync(path, text);
   writeFileSync(evidencePath(dir, step), GOOD_EVIDENCE);
-  assert.throws(() => accept(dir, run, step), /blocked or incomplete result/);
+  assert.throws(() => accept(dir, run, step), /reports blocked, incomplete, or not performed work/);
   cleanup();
 });
 
@@ -279,7 +279,7 @@ test('split stacks each lane on the one below it, bottom on the base branch', ()
     'feature/issue-3-rotate-secrets',
     'feature/issue-3-decommission-host',
   ]);
-  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null, maxRounds: 2 });
+  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null });
   cleanup();
 });
 

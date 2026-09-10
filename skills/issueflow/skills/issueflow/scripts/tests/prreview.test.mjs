@@ -192,7 +192,7 @@ test('semantic review sizing: generated and test bulk does not duplicate a small
 test('fleetPlan: a round sized to the fix gets 1–3 finders and at most 4 verifiers; the same lines over the whole change get the round-1 fleet', () => {
   // two-sided: the same line count, sized two ways
   assert.deepEqual([fleetPlan(500, 2, { ofFix: true }).finders, fleetPlan(500, 2, { ofFix: true }).maxVerifiers], [2, 4]);
-  assert.deepEqual([fleetPlan(500, 2).finders, fleetPlan(500, 2).maxVerifiers], [4, 8], 'a round 2 over the whole change (the golden replay) keeps the round-1 fleet');
+  assert.deepEqual([fleetPlan(500, 2).finders, fleetPlan(500, 2).maxVerifiers], [4, 4], 'a whole-change re-review stays within one default Codex wave');
   assert.equal(fleetPlan(2000, 3, { ofFix: true }).finders, 3, 'three is the cap for a fix');
   assert.equal(fleetPlan(61, 2, { ofFix: true }).finders, 1);
   assert.deepEqual(fleetPlan(20, 2, { ofFix: true }), { finders: 1, maxVerifiers: 2, angles: [[...CORE_ANGLES]] }, 'a small fix is still one finder, no cleanup angle');
@@ -235,7 +235,7 @@ test('openRound: handed the fix delta, a round is sized to it, writes fix.patch 
   rmSync(join(dir, lane.slug, 'review', 'r2'), { recursive: true, force: true });
   const cli = execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'issueflow.js'), 'review-brief', '--run-dir', dir, '--lane', lane.slug, '--offline'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
   assert.match(cli, /Fix lines/);
-  assert.match(cli, /\| 2 of 2 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
+  assert.match(cli, /\| 2 of 4 +\| [0-9a-f]{12} +\| \d+ +\| 1 +\| 1 +\| 2 +\|/, `the CLI sized round 2 to the one-line fix:\n${cli}`);
   assert.ok(existsSync(fixPatchPath(dir, lane, 2)));
   assert.match(readFileSync(finderBriefPath(dir, lane, 2, 1), 'utf8'), /## The fix under review/);
   cleanup();
