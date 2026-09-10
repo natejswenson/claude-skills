@@ -5,6 +5,11 @@
   },
   "prose": [
     {
+      "id": "no-source-fallback",
+      "pattern": "never fall back to source",
+      "rationale": "A failed worktree must stop dispatch; source mode requires explicit consent and a repository-wide lease."
+    },
+    {
       "id": "explicit-budget-renewal",
       "pattern": "Never auto-renew",
       "rationale": "A printed recovery command is not user authorization to grant another time window."
@@ -114,7 +119,7 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" start"
       },
       {
-        "step": "render a stage's or the red team's dispatch prompt, host-native model, reasoning effort and subagent role from the approved artifacts",
+        "step": "validate lane checkout ownership or acquire an explicit source lease, then render the dispatch prompt and host-native worker profile from approved artifacts",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
@@ -290,6 +295,14 @@
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
       "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network — spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 — and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+    },
+    {
+      "id": "checkout-ownership",
+      "kind": "trap",
+      "test": "scripts/tests/checkout-ownership.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/checkout-ownership.test.mjs",
+      "rationale": "Real repositories in paths with spaces and apostrophes prove fatal provisioning, strict later writer lookup, persisted explicit source mode and exclusive ownership across run roots and linked source checkouts. The paired success paths resume owned lanes and preserve unrelated source work."
     },
     {
       "id": "worktree-isolation",

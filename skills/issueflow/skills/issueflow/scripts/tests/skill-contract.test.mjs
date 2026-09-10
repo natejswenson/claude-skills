@@ -9,6 +9,15 @@ const SKILL = join(HERE, '..', '..');
 const read = (p) => readFileSync(join(SKILL, p), 'utf8');
 const inv = JSON.parse(read('skill-invariants.json'));
 
+test('checkout guidance requires explicit source mode and fatal worktree failures', () => {
+  for (const file of ['SKILL.md', 'references/dispatch.md', '../../README.md']) {
+    const text = read(file).replace(/\s+/g, ' ');
+    assert.match(text, /--no-worktree/, file);
+    assert.match(text, /exit 3|exits 3/, file);
+    assert.match(text, /lease/, file);
+  }
+});
+
 test('budget: help and operator guidance document explicit recovery without changing review limits', () => {
   for (const file of ['SKILL.md', 'references/operator-stops.md', '../../README.md']) {
     const text = read(file).replace(/\s+/g, ' ');

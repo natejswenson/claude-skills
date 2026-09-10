@@ -27,7 +27,8 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRun, laneTree } from '../scripts/lib/run.mjs';
+import { loadRun } from '../scripts/lib/run.mjs';
+import { historyTree } from '../scripts/lib/worktree.mjs';
 import { parseDiff, reviewDir } from '../scripts/lib/prreview.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -43,7 +44,7 @@ const run = loadRun(runDir);
 const lane = run.lanes.find((l) => l.slug === args.lane);
 if (!lane) throw new Error(`no lane ${args.lane}`);
 const rounds = (args.rounds ? args.rounds.split(',').map(Number) : lane.review.rounds.map((r) => r.round));
-const tree = laneTree(runDir, run, lane);
+const tree = historyTree(run);
 const git = (a) => execFileSync('git', a, { cwd: tree, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 
 rmSync(OUT, { recursive: true, force: true });

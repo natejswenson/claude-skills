@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { artifactPath, briefPath, createRun, evidencePath, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
 import { decide, renderAction } from '../lib/next.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
 import { markReviewBriefed, reviewBriefPath } from '../lib/reviews.mjs';
 import { GOOD_EVIDENCE, approvePlan, redTeamBlock, redTeamPass, writeGood, writeReview } from './helpers.mjs';
 
@@ -35,6 +36,7 @@ function fixture(t, { expired = true, runtime = 'claude', auto = true } = {}) {
   run.createdAt = new Date(Date.now() - (expired ? 7200 : 0) * 1000).toISOString();
   run.complexity.budgetSeconds = 1800;
   saveRun(dir, run);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
   return { dir, run, repoPath };

@@ -17,6 +17,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { HandBack, createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
 import {
   CLEANUP_ANGLES, CORE_ANGLES, MAX_REVIEW_ROUNDS, NIT_CAP, applyFixReport, batchItems, buildPayload, candidatesPath,
   changedLines, converge, currentRound, dedupCandidates, finderBriefPath, findingId, fixDiff, fixItems, fixPatchPath, fixerModel, fleetPlan, headOf,
@@ -75,6 +76,7 @@ function fixture({ auto = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-prreview-'));
   const run = createRun({ repo: { owner: 'acme', name: 'widgets', path: repoPath, defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, auto });
   saveRun(dir, run);
+  prepareCheckout(dir, run, run.lanes[0], { noWorktree: true });
   mkdirSync(join(dir, 'inputs'), { recursive: true });
   writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(ISSUE, null, 2)}\n`);
   approvePlan(dir, run, { auto });

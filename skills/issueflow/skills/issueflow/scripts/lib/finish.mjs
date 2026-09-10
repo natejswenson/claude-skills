@@ -16,6 +16,7 @@ import { closeIssue, issueState } from './gh.mjs';
 import { landings } from './reconcile.mjs';
 import { recordFinished, recordLanding } from './run.mjs';
 import { pruneWorktrees, removeWorktree } from './worktree.mjs';
+import { releaseSourceLease } from './execution.mjs';
 
 export class FinishError extends Error {
   constructor(message, rows = []) {
@@ -109,6 +110,7 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       issueClosed = true;
     }
     recordFinished(dir, run, { issueClosed }, now);
+    releaseSourceLease(dir, run);
   }
 
   return { rows, run };
