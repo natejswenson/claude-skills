@@ -1538,7 +1538,7 @@ async function cmdNext(args) {
     // Offline autonomous runs can exercise budget renewal without claiming a
     // real Codex workspace. Keep this simulation resumable and side-effect
     // free; a real host must prepare execution before dispatch.
-    if ((offline || loaded.offline) && runtimeOf(loaded) === 'codex' && loaded.autonomous && !loaded.execution) {
+    if ((offline || loaded.offline) && runtimeOf(loaded) === 'codex' && (loaded.autonomous || loaded.auto) && !loaded.execution) {
       const budget = budgetStatus(loaded);
       if (budget?.expired && budget.totalRemainingSeconds > 0) {
         autoRenewBudget(loaded);
