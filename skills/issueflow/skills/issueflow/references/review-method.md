@@ -52,6 +52,12 @@ or directs a fifth round (`review-brief --another-round "<why>"`). The
 verifiers rule until the cap; a person rules after it — `review-rule` refuses
 before the cap, and the driver never issues either command.
 
+On Codex, every finder, verifier and fixer is dispatched cold with the persisted
+host adapter. A fleet larger than the available child slots is queued in waves;
+each original brief appears once, and the next wave waits for both delivery and
+native child release. Reviewers receive scoped `AGENTS.override.md`, `AGENTS.md`,
+`CLAUDE.md` and `REVIEW.md` guidance from their actual checkout.
+
 ## The anti-self-censorship rule
 
 Pass every candidate with a nameable failure scenario through — finders that

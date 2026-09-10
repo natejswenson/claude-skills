@@ -1,7 +1,7 @@
 /** Wall-clock allowance is independent of complexity and review-round limits. */
 import { RunError, runState } from './run.mjs';
 
-export const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief']);
+export const DISPATCHES = new Set(['brief', 'review-brief', 'review-verify', 'review-fix-brief', 'dispatch-wave']);
 
 /** Schema-3 runs need no migration: their first window starts at createdAt. */
 export function budgetStatus(run, now = new Date().toISOString()) {

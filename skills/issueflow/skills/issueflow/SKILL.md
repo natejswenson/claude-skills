@@ -10,10 +10,10 @@ version: 0.11.1
 Resolve bundled paths beside this `SKILL.md`; pass the repository with `--repo`.
 `~/.claude/issueflow` remains canonical for both hosts.
 
-In Codex, pass `--runtime codex --workspace-root <approved-root>`.
+In Codex, pass `--host codex --workspace-root <approved-root>`; `--runtime codex` remains supported.
 Use an actual host-approved writable root; a path grants no authority.
 The parent prepares execution storage and archives outputs before advancing.
-Dispatch the exact model, reasoning, role and prompt; completion returns automatically.
+Dispatch the adapter's reasoning, writable role, cold `fork_turns: "none"` setting and prompt. The adapter omits a model override so the child inherits the valid parent model; completion returns automatically.
 
 If sandbox escalation is needed, request reusable approval for the absolute
 CLI prefix; never bypass host prompts.
@@ -71,7 +71,9 @@ After `start`, run `next` repeatedly. It performs deterministic work and prints
 exactly one dispatch, wait, or stop.
 
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
-  prompt/model/reasoning/role. Dispatch independent agents immediately. Never
+  prompt and host adapter fields. Codex fleets are capacity limited; release
+  every child after its output lands before starting the next wave. Dispatch
+  independent agents immediately. Never
   do the stage yourself.
 - **Wait:** The artifact on disk is the state-machine signal. In Claude or a
   host without native agent waiting, yield the exact printed `wait:` command,
@@ -117,7 +119,7 @@ multiple finders. Every file remains in the brief. Candidates determine verifier
   only local and stop.
 - The run persists that choice of runtime. The red team is the gate, and it is
   a dispatched subagent — never you. Never do a stage's work yourself.
-- Never dispatch a stage on a model other than the one the brief names.
+- Never bypass the persisted host adapter or pass `inherit` as a literal model.
 - Never weaken a review to clear a finding. Classify dispositions honestly;
   repeated blockers stop for a user decision. Never auto-ship over an open
   blocking finding. Never ready a pull request over an open major.
