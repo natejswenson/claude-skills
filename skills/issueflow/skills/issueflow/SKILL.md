@@ -107,7 +107,7 @@ fan-out. Use the flag only when the items do not modify or depend on one another
 | `exhausted` · `dispute` | Show every open finding and the last fix; only the user may rule it or buy another round. |
 | `budget` | Delivered artifacts reach their gates before expiry blocks new dispatches. Report checkpoint results; resume only on explicit direction. |
 | `stalled` · `unpushed` | Show the named incomplete work and stop; do not manufacture completion. |
-| `shipped` | Report every PR and review URL. The PR is ready; merge only when authorized. |
+| `shipped` | Say **USER ACTION REQUIRED** with every PR URL: review and approve/merge it. Issueflow never merges; run `finish` after the merge is observed. |
 | `done` | Report verified landings and cleanup. |
 
 The flow is plan → independent red team → automatic plan acceptance →
@@ -128,6 +128,9 @@ dispatches, including a refused gate's send-back. In-flight work may finish.
 
 Review fanout discounts tests and generated indexes; sensitive changes retain
 multiple finders. Every file remains in the brief. Candidates determine verifiers.
+Completed child threads must be closed before the next dispatch; a native
+completion signal is authoritative, while a missing artifact after the worker
+timeout becomes a user-visible `stalled` stop instead of an indefinite wait.
 The loop stops for a decision when the same major survives two fixer rounds or
 the same hosted CI failure survives a CI fixer; it does not spend more workers
 on a mechanism that is not changing.
