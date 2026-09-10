@@ -12,7 +12,11 @@ export function budgetStatus(run, now = new Date().toISOString()) {
   const deadline = start + allowanceSeconds * 1000;
   const current = Date.parse(now);
   const usedSeconds = (run.complexity?.budgetSeconds ?? 0) + (run.budgetRenewals ?? []).reduce((sum, r) => sum + (Number(r.budgetSeconds) || 0), 0);
-  const totalBudgetSeconds = Number.isFinite(run.totalBudgetSeconds) ? run.totalBudgetSeconds : null;
+  // Older fixtures/runs did not persist the cumulative cap. Keep the bounded
+  // eight-window policy observable for those records while new runs persist it.
+  const totalBudgetSeconds = Number.isFinite(run.totalBudgetSeconds)
+    ? run.totalBudgetSeconds
+    : Number.isFinite(run.complexity?.budgetSeconds) ? run.complexity.budgetSeconds * 8 : null;
   return {
     elapsedSeconds: Math.max(0, (current - Date.parse(run.createdAt)) / 1000),
     allowanceSeconds,
