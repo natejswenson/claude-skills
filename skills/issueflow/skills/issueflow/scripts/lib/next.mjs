@@ -26,7 +26,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import {
   artifactPath, briefPath, deliveredSince, evidencePath, findStep, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
@@ -100,6 +100,12 @@ const activityMtime = (dir, run, step) => {
   let latest = Math.max(mtime(progressPath(dir, step)) ?? 0, mtime(evidencePath(dir, step)) ?? 0) || null;
   if (!step.lane) return latest;
   const tree = laneTree(dir, run, step.lane);
+  // A hermetic fixture can live below the repository that runs the tests. In
+  // that case `git status` would report the parent checkout's unrelated files
+  // as lane activity, making a fresh brief look stalled. Only trust worktree
+  // activity when the requested tree is itself the Git worktree root.
+  const top = git(['rev-parse', '--show-toplevel'], tree);
+  if (!top || resolve(top) !== resolve(tree)) return latest;
   const changed = git(['status', '--short', '--untracked-files=all'], tree);
   for (const line of (changed ?? '').split('\n').filter(Boolean)) {
     const relative = line.slice(3).split(' -> ').at(-1);
