@@ -54,22 +54,15 @@
 
 ## Architecture
 
-- scripts/eval.js — the CLI: contract, trace, probe, report, case `skills/eval/skills/eval/SKILL.md:186`
-- scripts/lib/contract.mjs — clause extraction — the rubric, lifted from committed files `skills/eval/skills/eval/SKILL.md:187`
-- scripts/lib/trace.mjs — a session JSONL turned into citable events, redacted `skills/eval/skills/eval/SKILL.md:188`
-- scripts/lib/probes.mjs — the eight probes, and the citation rule they all obey `skills/eval/skills/eval/SKILL.md:189`
-- scripts/lib/report.mjs — findings beside the coverage gap, never without it `skills/eval/skills/eval/SKILL.md:190`
-- scripts/lib/cases.mjs — a finding turned into a test, kept only if observed red `skills/eval/skills/eval/SKILL.md:191`
-- references/rubric.md — where a clause comes from, what makes it citable, and which committed files are contract versus commentary `skills/eval/skills/eval/SKILL.md:192`
-- references/probes.md — the deterministic probe catalogue — what each probe decides, and explicitly what it cannot decide and must hand to judgment `skills/eval/skills/eval/SKILL.md:193`
-- references/cases.md — what makes a generated eval case real instead of decorative, and why a case that passes on arrival is refused `skills/eval/skills/eval/SKILL.md:194`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/eval/skills/eval/SKILL.md:198`
 - Deterministic: extract every committed clause with a stable id and a source anchor — node scripts/eval.js contract --skill <name> `skills/eval/skills/eval/skill-invariants.json:41`
 - Deterministic: normalize a session transcript into anchored, citable events — node scripts/eval.js trace --run <file> `skills/eval/skills/eval/skill-invariants.json:45`
 - Deterministic: decide the mechanically checkable violations and resolve every citation — node scripts/eval.js probe --skill <name> --run <file> `skills/eval/skills/eval/skill-invariants.json:49`
 - Deterministic: assemble the scored report and the clause-coverage gap — node scripts/eval.js report --skill <name> --run <file> `skills/eval/skills/eval/skill-invariants.json:53`
 - Deterministic: prove a generated eval case actually fails against the skill as it exists today — node scripts/eval.js case --skill <name> --finding <id> --prove `skills/eval/skills/eval/skill-invariants.json:57`
 - Model judgment: decide whether a clause no probe can parse was violated in spirit — a rule like "never claim a result you did not observe" is a semantic relation between a sentence and an event, not… `skills/eval/skills/eval/skill-invariants.json:63`
+- Model judgment: rank findings by what they would actually have cost — counting violations is arithmetic; knowing which one would have shipped a broken skill and which is cosmetic is judgment nothing… `skills/eval/skills/eval/skill-invariants.json:67`
+- Model judgment: choose which confirmed findings deserve to become permanent eval cases — most violations are one-off accidents; a case is worth keeping only when its failure class will recur, and no… `skills/eval/skills/eval/skill-invariants.json:71`
+- Model judgment: write the report prose and the recommended fix for each finding — ordering, tone and what to leave out — a report nobody reads catches nothing `skills/eval/skills/eval/skill-invariants.json:75`
 
 ## Troubleshooting
 

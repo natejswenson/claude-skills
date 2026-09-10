@@ -76,21 +76,13 @@ export function planEdits(spec, house) {
     ),
   );
 
-  // 3. press targets — the brand regions this skill will carry.
+  // 3. press targets — artifact brand regions this skill will carry. The
+  // terminal/UI contract is a runtime dependency of every skill, not a copied
+  // target; changing PRESS must not rewrite every SKILL.md.
   edits.push({
     path: 'skills/press/skills/press/targets.json',
     json: (data) => {
-      if (data.targets.some((t) => t.id === `${n}-agent-ui`)) return null;
       data.targets.push(
-        {
-          id: `${n}-agent-ui`,
-          repo: 'claude-skills',
-          path: `skills/${n}/skills/${n}/SKILL.md`,
-          region: 'agent-ui',
-          syntax: 'md',
-          emitter: 'markdown-block',
-          params: { doc: 'agent-ui' },
-        },
         {
           id: `${n}-readme`,
           repo: 'claude-skills',

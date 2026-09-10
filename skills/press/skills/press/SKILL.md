@@ -224,10 +224,17 @@ personal avatar footer. A whole-file sync clobbered exactly that once already.
 
 ## Adopting the prose contracts
 
-`brand/agent-ui.md` and `brand/voice-core.md` are spliced **into** a consuming
-SKILL.md as `markdown-block` regions rather than referenced. A consuming skill is
-a separately installed plugin and cannot reliably read this skill's files at
-runtime, so build-time splicing is the only mechanism that actually works.
+`brand/agent-ui.md` is the single runtime presentation contract. Skills carry
+only a stable dependency note telling the host to load the installed PRESS
+skill before producing user-facing output; they do not embed, version, or copy
+the contract. This keeps UI changes in one file. `brand/voice-core.md` remains a
+content rule for artifacts and is still consumed where a skill explicitly needs
+it.
+
+There is no native cross-skill import field in Claude or Codex manifests. The
+dependency note is therefore the host-neutral handoff: Claude Code loads
+`/press`, Codex loads `$press`, and the host reads `brand/agent-ui.md` before
+rendering the run.
 
 A medium's own voice layers on top and **wins on conflict** — ghostwriter's
 learned profile and devlog's release-note shape stay where they are. The core is

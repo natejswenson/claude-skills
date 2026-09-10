@@ -250,9 +250,9 @@ export function conform(house, skill) {
     check(
       'press-region',
       native ? 'skillfactory' : 'advisory',
-      Boolean(skill.skillMd?.includes('press:agent-ui')),
-      skill.skillMd?.includes('press:agent-ui') ? 'agent-ui region present' : 'SKILL.md carries no press:agent-ui region',
-      'the run-presentation contract is spliced from press, never copied — copies drift silently',
+      Boolean(skill.skillMd?.includes('press:runtime')) && !skill.skillMd?.includes('press:agent-ui'),
+      skill.skillMd?.includes('press:runtime') ? 'runtime PRESS dependency present' : 'SKILL.md carries no press:runtime dependency',
+      'the run-presentation contract is loaded from PRESS at runtime, never copied — one change updates every skill',
     ),
   );
 

@@ -8,9 +8,9 @@
  * contract, one changed character is a change to every skill made after it.
  *
  * Two deliberate omissions from this file: the press masthead on the caller
- * workflow, and the press:agent-ui region in SKILL.md. Both are *stamped* after
- * the tree lands, by press and ghfactory themselves. A brand value written down
- * here would be the ninth hand-ported copy of the thing press exists to end.
+ * workflow and terminal/UI prose. The masthead is stamped after the tree lands;
+ * terminal/UI rules are loaded from PRESS at runtime. A brand value written down
+ * here would be another hand-ported copy of the thing PRESS exists to end.
  */
 
 const ORG = 'natejswenson';
@@ -212,9 +212,8 @@ export const packageJson = (spec) =>
 
 /**
  * The SKILL.md skeleton. Every heading here is one the author step must fill —
- * it is a contract, not filler. The `<!-- press:agent-ui -->` anchor is where
- * `press emit --init` splices the run-presentation contract; the region is
- * never written by hand.
+ * it is a contract, not filler. The runtime PRESS dependency note tells the
+ * host to load the shared run-presentation contract before a run.
  */
 export const skillMd = (spec) => {
   const cmdRows = spec.commands.map((c) => `| \`${spec.name} ${c.name}\` | ${c.does} |`).join('\n');
@@ -287,7 +286,9 @@ ${cmdRows}
 - **Never claim a result you did not observe.** Say what you verified and what
   you did not.
 
-<!-- press:agent-ui -->
+<!-- press:runtime -->
+In Claude Code, load \`/press\`; in Codex, load \$press\`; then follow the shared PRESS terminal/UI contract from \`brand/agent-ui.md\`. Do not copy or override that contract here.
+<!-- press:runtime -->
 
 ## What's here
 
@@ -631,7 +632,7 @@ ${spec.stack === 'node' ? setup : ''}
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.${spec.name} == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target ${spec.name}-agent-ui --target ${spec.name}-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target ${spec.name}-readme
 
       # Tier 2 — ${spec.name}'s own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.

@@ -52,10 +52,10 @@
 
 ## Architecture
 
-- npm test — offline unit suite (no network, no LLM calls): schema/content validation, the HTML generator's structural contract, theme resolution, PDF rendering in both shipped themes, the text-extract… `skills/resume/skills/resume/SKILL.md:290`
-- node scripts/evals/run.mjs — the tailoring-quality evaluation harness. See docs/plans/2026-07-08-resume-eval-harness-design.md for the full design (a single PASS/FAIL verdict, a real dollar cost cap,… `skills/resume/skills/resume/SKILL.md:295`
-- docs/security/prompt-injection-fixtures/ is a manual verification checklist for periodic spot-checks, backed by an automated scanning-oracle unit test (scripts/prompt-injection.test.mjs) and the eval… `skills/resume/skills/resume/SKILL.md:299`
-- Versioning (semver): in the dev → main PR, bump version here **and** in package.json (the release tag is driven by package.json), and add a matching ## [N.M.P] section to CHANGELOG.md. On a dispatche… `skills/resume/skills/resume/SKILL.md:303`
+- npm test — offline unit suite (no network, no LLM calls): schema/content validation, the HTML generator's structural contract, theme resolution, PDF rendering in both shipped themes, the text-extract… `skills/resume/skills/resume/SKILL.md:256`
+- node scripts/evals/run.mjs — the tailoring-quality evaluation harness. See docs/plans/2026-07-08-resume-eval-harness-design.md for the full design (a single PASS/FAIL verdict, a real dollar cost cap,… `skills/resume/skills/resume/SKILL.md:261`
+- docs/security/prompt-injection-fixtures/ is a manual verification checklist for periodic spot-checks, backed by an automated scanning-oracle unit test (scripts/prompt-injection.test.mjs) and the eval… `skills/resume/skills/resume/SKILL.md:265`
+- Versioning (semver): in the dev → main PR, bump version here **and** in package.json (the release tag is driven by package.json), and add a matching ## [N.M.P] section to CHANGELOG.md. On a dispatche… `skills/resume/skills/resume/SKILL.md:269`
 
 ## Troubleshooting
 
@@ -69,6 +69,5 @@
 - Recommend ats-plain whenever the user says they are applying — The default press theme puts section headings in a left gutter, which a column-detecting PDF parser reads as a separate column and separ… `skills/resume/skills/resume/skill-invariants.json:49`
 - Never tailor froms*n?s*a stored résumé without telling the user which one you used — Once the résumé is stored and a run needs only a job URL, the user stops seeing which career history is being used… `skills/resume/skills/resume/skill-invariants.json:1`
 - you musts*n?s*confirm with the user before passing it — Replacing the stored résumé is destructive and it is the user's data, not the agent's: the stored copy may be the only plain-text version they… `skills/resume/skills/resume/skill-invariants.json:1`
-- Never print file contents into the conversation — This skill is watched, not just run, so the transcript is part of the product. Every input it touches is long — a job posting, a resume, a tailored J… `skills/resume/skills/resume/skill-invariants.json:67`
-- **Never print file contents into the conversation.** Not the job description, `skills/resume/skills/resume/SKILL.md:44`
+- press:runtime — Terminal and transcript presentation is shared behavior. The skill must load PRESS at runtime so interface changes happen once instead of being copied into every skill. `skills/resume/skills/resume/skill-invariants.json:67`
 - Previously fixed: **Validate/fix loop is now explicitly capped at 3 attempts** before `skills/resume/CHANGELOG.md:176`

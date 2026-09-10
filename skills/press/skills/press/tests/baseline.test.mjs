@@ -13,7 +13,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { loadTokens } from '../lib/tokens.mjs';
@@ -21,6 +21,7 @@ import { emitBody } from '../lib/emit.mjs';
 import { loadTargets } from '../lib/targets.mjs';
 
 const HERE = dirname(new URL(import.meta.url).pathname);
+const REPO_ROOT = join(HERE, '..', '..', '..', '..', '..');
 const FIXTURES = join(HERE, 'fixtures');
 const GOLDEN = join(FIXTURES, 'golden');
 const REFRESH = 'node tests/fixtures/update-pre-migration.mjs';
@@ -204,13 +205,15 @@ for (const [capability, route] of PRESENTATION_ROUTES) {
   });
 }
 
-test('every registered presentation consumer receives the dual-host routes', () => {
-  const consumers = targets.filter((t) => t.emitter === 'markdown-block' && t.params.doc === 'agent-ui');
+test('every skill points to the runtime PRESS contract without embedding it', () => {
+  const skillsRoot = join(REPO_ROOT, 'skills');
+  const consumers = readdirSync(skillsRoot).filter((name) => name !== 'press' &&
+    existsSync(join(skillsRoot, name, 'skills', name, 'SKILL.md')));
   assert.ok(consumers.length >= 12, 'the presentation corpus shrank');
-  for (const target of consumers) {
-    const body = emitBody(tokens, target.emitter, target.params);
-    for (const [capability, route] of PRESENTATION_ROUTES) {
-      assert.match(body, route, `${target.id}: missing ${capability}`);
-    }
+  for (const name of consumers) {
+    const body = readFileSync(join(skillsRoot, name, 'skills', name, 'SKILL.md'), 'utf8');
+    assert.match(body, /<!-- press:runtime -->/i, `${name}: missing runtime PRESS dependency`);
+    assert.doesNotMatch(body, /press:agent-ui|>>> press:agent-ui/i,
+      `${name}: embedded PRESS rules must be removed`);
   }
 });
