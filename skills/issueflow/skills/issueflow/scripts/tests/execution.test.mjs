@@ -22,7 +22,7 @@ import { GOOD_EVIDENCE } from './helpers.mjs';
 import { decide, renderAction, sh } from '../lib/next.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-function workspaceChild(workspaceRoot, tree, paths) {
+function codexChild(workspaceRoot, tree, paths) {
   const [artifact, evidence, progress] = paths;
   const prompt = [
     'Run the exact shell operations below, then finish.',
@@ -34,7 +34,8 @@ function workspaceChild(workspaceRoot, tree, paths) {
     `git -C ${JSON.stringify(tree)} add child.txt`,
     `git -C ${JSON.stringify(tree)} commit -m child`,
   ].join('\n');
-  const result = spawnSync(process.execPath, ['-e', "require('node:child_process').execFileSync('sh', ['-c', process.argv[1]], { stdio: 'inherit' });", prompt], { encoding: 'utf8' });
+  const result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
+    '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 }
 function fixture(number = 273) {
@@ -84,7 +85,7 @@ test('approved-root execution gives a constrained child writable outputs and Git
   for (const path of paths) assert.ok(path.startsWith(workspaceRoot + '/'), path);
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555); chmodSync(join(source, '.git'), 0o555);
-  try { workspaceChild(workspaceRoot, tree, paths); }
+  try { codexChild(workspaceRoot, tree, paths); }
   finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); chmodSync(join(source, '.git'), 0o755); }
   for (const args of [['--absolute-git-dir'], ['--path-format=absolute', '--git-common-dir'], ['--path-format=absolute', '--git-path', 'index'], ['--path-format=absolute', '--git-path', 'objects'], ['--path-format=absolute', '--git-path', 'refs']]) {
     assert.ok(git(['rev-parse', ...args], tree).startsWith(workspaceRoot + '/'), args.join(' '));
@@ -154,7 +155,7 @@ test('a read-only durable root does not prevent child output or Git writes; fail
   const archives = join(dir, 'execution-archives', run.execution.generation);
   chmodSync(dir, 0o555); chmodSync(archives, 0o555);
   try {
-    workspaceChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
+    codexChild(workspaceRoot, tree, [artifactPath(dir, step), evidencePath(dir, step), progressPath(dir, step)]);
     assert.throws(() => saveRun(dir, run), /could not persist.*|could not archive/);
     assert.equal(readFileSync(join(dir, 'run.json'), 'utf8'), before);
   } finally { chmodSync(dir, 0o755); chmodSync(archives, 0o755); }
@@ -247,8 +248,14 @@ test('missing staging restores an archived lane and reviewed head in a new gener
   const tree = prepareCheckout(dir, run, lane);
   writeFileSync(join(tree, 'history.txt'), 'retain me'); git(['add', 'history.txt'], tree); git(['commit', '-m', 'reviewed'], tree);
   const head = git(['rev-parse', 'HEAD'], tree);
+  const investigate = findStep(run, 'investigate');
+  writeBrief(dir, run, investigate, run.issue);
+  writeFileSync(artifactPath(dir, investigate), 'approved investigation');
+  investigate.stage.state = 'approved';
   lane.stages[0].state = 'approved';
   lane.review.rounds.push({ round: 1, head, registered: 'yes' });
+  saveRun(dir, run);
+  approveArtifact(dir, run, artifactPath(dir, investigate));
   saveRun(dir, run);
   const old = run.execution.path;
   renameSync(old, old + '-crashed');
@@ -257,6 +264,9 @@ test('missing staging restores an archived lane and reviewed head in a new gener
   assert.equal(git(['rev-parse', lane.branch], gitStore(dir, run)), head);
   assert.equal(readFileSync(join(prepareCheckout(dir, run, lane), 'history.txt'), 'utf8'), 'retain me');
   assert.equal(git(['show', head + ':history.txt'], historyStore(dir, run)), 'retain me');
+  const approved = approvedArtifactPath(dir, run, artifactPath(dir, investigate));
+  assert.equal(readFileSync(approved, 'utf8'), 'approved investigation');
+  assert.ok(readFileSync(writeBrief(dir, run, findStep(run, 'implement'), run.issue).prompt, 'utf8').includes(approved));
 });
 
 test('missing in-flight staging reports unexported work and never recreates approval', () => {
