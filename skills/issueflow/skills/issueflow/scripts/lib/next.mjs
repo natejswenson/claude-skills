@@ -30,7 +30,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import {
-  artifactPath, briefPath, deliveredSince, evidencePath, findStep, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
+  artifactPath, briefPath, deliveredSince, evidencePath, findStep, gateSteps, laneTree, progressPath, readySteps, remainingSteps, runState, sha256OfFile,
 } from './run.mjs';
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
@@ -39,7 +39,7 @@ import {
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
-import { dispatchLabel, dispatchProfile, waveState } from './runtime.mjs';
+import { dispatchLabel, dispatchProfile, runtimeOf, startWave, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
@@ -368,7 +368,15 @@ export function decide(dir, run, ctx = {}) {
     remoteHead: ctx.remoteHead ?? (() => null),
     landings: ctx.landings ?? (() => []),
   };
-  const action = decideAction(dir, run, c);
+  let action = decideAction(dir, run, c);
+  // Old Codex runs can have an already-briefed fleet but no queue because the
+  // capacity policy did not exist when they were persisted. Queue that first
+  // stalled re-dispatch exactly like a fresh fleet; no brief is dropped.
+  if (runtimeOf(run) === 'codex' && action.kind === 'stop' && action.reason === 'stalled' && action.items?.length > 0 && !run.dispatch?.queue) {
+    const queued = action.items.map((item) => ({ ...item, prompt: String(item.prompt).replace(/^Read (.*) and follow it exactly\. It is your complete brief\.$/, '$1') }));
+    const active = startWave(run, queued);
+    action = { ...action, items: active.map((item) => ({ ...item, prompt: promptFor(item.prompt) })), waveStarted: true };
+  }
   const budget = budgetStatus(run, c.now());
   if (budget?.expired && (action.kind === 'dispatch' || (action.kind === 'run' && DISPATCHES.has(action.command)))) return budgetStop(budget);
   return budget ? { ...action, budget } : action;
@@ -382,10 +390,18 @@ function decideAction(dir, run, c) {
   if (wave?.kind === 'release') return { kind: 'wait', what: 'native worker release', release: true };
   if (wave?.kind === 'wait') {
     const missing = wave.items.filter((item) => !waveDelivered(dir, run, item));
-    const oldest = Math.min(...missing.map((item) => mtime(item.prompt) ?? Infinity));
+    // An implementation wave still needs its five-minute heartbeat rule. A
+    // generic fleet wait would otherwise hide a silent writer for 30 minutes.
+    const step = gateStepsForWave(dir, run, missing);
+    if (step?.stage.id === 'implement') return decideImplement(dir, run, step, c);
+    const oldest = Math.min(...missing.map((item) => item.dispatchedAt ?? mtime(item.prompt) ?? Infinity));
     if (Date.parse(c.now()) - oldest > DEFAULT_TIMEOUT_S * 1000) {
+      // This exact brief is about to be re-dispatched. Refresh the persisted
+      // wave timestamp so the replacement child receives its own timeout.
+      for (const item of missing) item.dispatchedAt = Date.parse(c.now());
       return stop('stalled', 'active Codex wave has missing deliveries; terminate its stalled children before re-dispatching these same briefs', {
         items: missing.map((item) => ({ ...item, prompt: promptFor(item.prompt) })),
+        waveRedispatched: true,
       });
     }
     return wait('Codex worker wave', { pairs: wave.items.map((item) => [item.writes ?? item.artifact, item.prompt]), timeout: DEFAULT_TIMEOUT_S });
@@ -426,6 +442,11 @@ function decideAction(dir, run, c) {
   const landed = c.landings();
   if (landed.some((l) => l.state === 'merged' && !l.lane.landed)) return act('finish', {}, 'a pull request merged — finishing that lane');
   return stop('shipped', `every lane's review loop has converged — ${run.lanes.map((l) => l.pr.url).join(', ')} await a merge; \`finish\` once they land`);
+}
+
+function gateStepsForWave(dir, run, items) {
+  if (items.length !== 1) return null;
+  return gateSteps(run).find((step) => artifactPath(dir, step) === items[0].writes) ?? null;
 }
 
 /** The lines `next` prints for an action. Fixed shape: the orchestrator copies them, it does not read them. */

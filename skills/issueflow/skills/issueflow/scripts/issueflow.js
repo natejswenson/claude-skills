@@ -635,10 +635,16 @@ async function cmdStart(args) {
   // repo.json is the whole remote, so the dev-on-origin detection is off.
   const policy = resolvePolicy(repo, info.defaultBranch, isOffline(args) ? { remoteBranches: [] } : {});
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
+  // Retain the pre-artifact host-adoption shortcut for a live legacy run, but
+  // let a completed run continue through refuseClaimed/resetRunDir so a
+  // reopened issue starts fresh instead of silently retaining its finish.
   if (args.host && !args.takeOver && existsSync(join(dir, 'run.json'))) {
-    const adopted = loadRun(dir, { host: args.host, childSlots: args.childSlots });
-    console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
-    return;
+    const existing = loadRun(dir);
+    if (!existing.finished) {
+      const adopted = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+      console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
+      return;
+    }
   }
   const claim = refuseClaimed(dir, info, issue, args);
   const takeOver = Boolean(args.takeOver) || claim.finished;
@@ -1523,6 +1529,7 @@ async function cmdNext(args) {
     const run = observe(dir, loadRun(dir));
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
+      if (action.waveStarted || action.waveRedispatched) saveRun(dir, run);
       if (action.kind === 'stop' && action.reason === 'budget') {
         checkpointBudgetStop(dir, run, args, action);
         return;
@@ -1662,7 +1669,9 @@ async function main() {
     }
     if (['brief', 'review-brief', 'review-verify', 'review-fix-brief', 'next'].includes(cmd)) {
       const { dir } = locate(args);
-      prepareExecution(dir, loadRun(dir), args);
+      // Host adoption is part of loading a legacy run. It must happen before
+      // execution preparation validates Codex-only workspace-root options.
+      prepareExecution(dir, loadRun(dir, { host: args.host, childSlots: args.childSlots }), args);
     }
     switch (cmd) {
       case 'board': return await cmdBoard(args);
