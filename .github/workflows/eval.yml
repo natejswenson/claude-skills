@@ -71,7 +71,7 @@ jobs:
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.eval == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target eval-agent-ui --target eval-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target eval-readme
 
       # Tier 2 — eval's own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.

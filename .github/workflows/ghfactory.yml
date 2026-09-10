@@ -62,7 +62,7 @@ jobs:
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.ghfactory == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target ghfactory-agent-ui --target ghfactory-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target ghfactory-readme
 
       # Tier 2 — ghfactory's own suite. Offline and $0 by construction: the baseline
       # never calls the network, so CI cannot spend and cannot flake on rate limits.

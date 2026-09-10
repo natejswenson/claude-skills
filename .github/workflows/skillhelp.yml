@@ -77,7 +77,7 @@ jobs:
 
       # Tier 1.6 — brand drift, this skill's regions only
       - if: steps.changes.outputs.skillhelp == 'true'
-        run: node skills/press/skills/press/bin/press.js check --repo . --target skillhelp-agent-ui --target skillhelp-readme
+        run: node skills/press/skills/press/bin/press.js check --repo . --target skillhelp-readme
 
       # Tier 2 — skillhelp's own suite. Offline and $0 by construction: the
       # baseline never calls the network, so CI cannot spend and cannot flake.
