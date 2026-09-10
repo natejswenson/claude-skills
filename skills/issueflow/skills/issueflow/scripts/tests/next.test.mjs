@@ -15,11 +15,11 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimes
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { accept, artifactPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
+import { accept, artifactPath, briefPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
 import { markReviewBriefed, registerReview, reviewBriefPath, reviewPath } from '../lib/reviews.mjs';
 import { candidatesPath, currentRound, fixBriefPath, fixReportPath, headOf, laneDiff, openRound, planVerification, readCandidates, registerRound, verdictsPath } from '../lib/prreview.mjs';
 import { decide, renderAction, timeoutFor, waitLine } from '../lib/next.mjs';
-import { prepareCheckout, releaseSourceLease } from '../lib/execution.mjs';
+import { prepareCheckout, prepareExecution, releaseSourceLease } from '../lib/execution.mjs';
 import { ensureWorktree } from '../lib/worktree.mjs';
 import { approveImplement, approvePlan, redTeamBlock, redTeamPass, writeGood, writeReview } from './helpers.mjs';
 
@@ -551,7 +551,7 @@ test('decide: an unpushed fix is a stop when the remote head disagrees, and a st
   const a = decide(dir, run, { offline: false, remoteHead: () => 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', checks: () => [] });
   assert.equal(a.kind, 'stop');
   assert.equal(a.reason, 'unpushed');
-  assert.match(a.command, /git -C .* push origin feature\/issue-8/);
+  assert.match(a.command, /git -C .* push origin 'feature\/issue-8'/);
 
   // A second lane stacked on the first, whose branch then moved: rebase first.
   const second = { ...structuredClone(lane), id: 'second', slug: 'second', branch: 'feature/issue-8-second', base: lane.branch, pr: { number: 2, url: 'u2', title: 't2' }, review: { rounds: [], converged: false, draft: true }, stages: structuredClone(lane.stages) };
@@ -614,8 +614,11 @@ for (const runtime of ['claude', 'codex']) {
       const cwd = join(root, 'unrelated');
       mkdirSync(cwd);
       cpSync(SKILL, plugin, { recursive: true });
-      const run = createRun({ repo: { owner: 'acme', name: 'w', path: join(INPUTS, 'repo'), defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
+      const source = runtime === 'codex' ? repo() : join(INPUTS, 'repo');
+      if (runtime === 'codex') t.after(() => rmSync(source, { recursive: true, force: true }));
+      const run = createRun({ repo: { owner: 'acme', name: 'w', path: source, defaultBranch: 'dev' }, issue: ISSUE, policy: POLICY, offline: true, runtime });
       saveRun(dir, run);
+      if (runtime === 'codex') prepareExecution(dir, run, { workspaceRoot: root });
       mkdirSync(join(dir, 'inputs'), { recursive: true });
       writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
       const env = { ...process.env };
@@ -629,7 +632,7 @@ for (const runtime of ['claude', 'codex']) {
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /^next: wait/m);
       assert.equal(result.stdout.match(/^wait: (.+)$/m)[1], waitLine({
-        pairs: [[artifactPath(dir, findStep(run, 'investigate')), join(dir, 'briefs', 'investigate.md')]], timeout: 1800,
+        pairs: [[artifactPath(dir, findStep(run, 'investigate')), briefPath(dir, findStep(run, 'investigate'))]], timeout: 1800,
       }));
     });
   }

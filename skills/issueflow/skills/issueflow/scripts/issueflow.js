@@ -36,7 +36,7 @@ import {
 import { ShipError, ship, shipBlockers } from './lib/ship.mjs';
 import { readTimings } from './lib/timings.mjs';
 import { WorktreeError, pruneWorktrees, registeredLanesUnder, removeWorktree } from './lib/worktree.mjs';
-import { prepareCheckout, releaseSourceLease } from './lib/execution.mjs';
+import { activePath, gitStore, prepareCheckout, prepareExecution, rawRun, releaseSourceLease } from './lib/execution.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 import { assertRuntime, dispatchLabel } from './lib/runtime.mjs';
@@ -533,12 +533,8 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // is no run here to displace, and nothing below should touch the directory.
   if (!existsSync(join(dir, 'run.json'))) return null;
 
-  let previous = null;
-  try {
-    previous = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
-  } catch {
-    previous = null;
-  }
+  const previous = rawRun(dir);
+  if (previous?.execution) saveRun(dir, previous);
   // `previous.repo.path` is the displaced run's OWN recorded checkout, which
   // is where its worktrees and branches are actually registered — needed
   // whenever the current invocation is a second clone with no registration
@@ -551,7 +547,8 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   // is the best fallback: the common way the recorded path goes stale is
   // exactly a rename or re-clone of the same repository, which is what the
   // current `--repo` now names.
-  const oldRepoPath = previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
+  const oldRepoPath = previous?.execution ? gitStore(dir, previous) :
+    previous?.repo?.path && existsSync(previous.repo.path) ? previous.repo.path : repoPath;
   if (previous?.checkout?.mode === 'source') releaseSourceLease(dir, previous);
   if (previous && !previous.checkout?.mode) {
     releaseSourceLease(dir, { ...previous, repo: { ...previous.repo, path: oldRepoPath } });
@@ -574,7 +571,8 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
   for (const lane of lanes) {
     try {
       removeWorktree(oldRepoPath, dir, lane);
-    } catch {
+    } catch (err) {
+      if (previous?.execution) throw err;
       // Already gone, or the repo path from a stale run no longer resolves.
     }
   }
@@ -653,6 +651,7 @@ async function cmdStart(args) {
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   claimRunDir(dir, run, { takeOver });
+  if (args.workspaceRoot) prepareExecution(dir, run, args);
   if (args.noWorktree) {
     try {
       prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
@@ -1200,8 +1199,8 @@ async function cmdReviewBrief(args) {
     // The round reviews what GitHub has. Fetch the branch and compare; a
     // failed fetch is infrastructure, not a refusal.
     try {
-      git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
-      remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+      git(['fetch', '--quiet', 'origin', `+${lane.branch}:refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+      remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
     } catch (err) {
       throw new GhError(`could not fetch origin/${lane.branch}: ${String(err.stderr ?? err.message).split('\n')[0]}`);
     }
@@ -1213,7 +1212,7 @@ async function cmdReviewBrief(args) {
   const last = currentRound(lane);
   const deltaText = last?.registered ? fixDiff(tree, last.head, head) : null;
   guardDispatch(dir, run, args);
-  const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound });
+  const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound, deferSave: Boolean(run.execution) });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
@@ -1240,7 +1239,9 @@ async function cmdReviewVerify(args) {
   if (entry.verifiers !== null) throw new RunError(`round ${entry.round} of ${lane.slug} already has ${entry.verifiers} verifier brief(s) — dispatch those`);
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
   guardDispatch(dir, run, args);
-  const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane) });
+  const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane), deferSave: Boolean(run.execution) });
+  const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
+  saveRun(dir, run);
   print(['Lane', 'Round', 'Candidates', 'Unverified nits', 'Prior majors', 'Prior nits', 'Verifiers', 'Not examined'],
     [[lane.slug, String(entry.round), String(fresh.length), String(unverified.length), String(prior.length), String(auto.length), String(batches.length), String(notExamined.length)]]);
   if (unverified.length > 0) console.log(`\n${unverified.length} candidate(s) the finders proposed as nits are recorded and not verified — after round 1 a nit is neither posted nor fixed.`);
@@ -1250,7 +1251,6 @@ async function cmdReviewVerify(args) {
     console.log(`  issueflow review-register --lane ${lane.slug}`);
     return;
   }
-  const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
   console.log('');
   if (briefs.some((b) => b.reasoning)) print(['Verifier', 'Model', 'Reasoning', 'Role', 'Items'], briefs.map((b) => [String(b.n), b.model, b.reasoning, b.agent, String(b.items)]));
   else print(['Verifier', 'Model', 'Items'], briefs.map((b) => [String(b.n), b.model, String(b.items)]));
@@ -1416,7 +1416,7 @@ async function cmdReady(args) {
       prLabel(run.repo.path, lane.pr.number, lane.review.fallback.label, { remove: true });
       rows.push(['title/label', 'restored']);
     }
-    const summary = join(dir, lane.slug, 'review', 'summary.md');
+    const summary = activePath(dir, lane.slug, 'review', 'summary.md');
     writeFileSync(summary, [
       `### issueflow review loop — converged after ${last.round} round${last.round === 1 ? '' : 's'}`,
       '',
@@ -1464,8 +1464,8 @@ async function cmdNext(args) {
       if (offline) return null;
       const run = loadRun(dir);
       try {
-        git(['fetch', '--quiet', 'origin', lane.branch], run.repo.path);
-        return git(['rev-parse', `refs/remotes/origin/${lane.branch}`], run.repo.path);
+        git(['fetch', '--quiet', 'origin', `+${lane.branch}:refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+        return git(['rev-parse', `refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
       } catch {
         return null;
       }
@@ -1608,6 +1608,9 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        persisted on resume; one active run/lane per Git common directory
                        Worktree failures otherwise stop at exit 3, with no source fallback.
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow
+  --workspace-root <path>  host-approved writable root for Codex execution
+  prepare --run-dir <path> --workspace-root <path>
+                       prepare or recover quiescent Codex execution before dispatch
   --issues-json <path> read issues from a file instead of the network (evals)
   --close-issue        finish also closes the issue, once every lane has landed
 
@@ -1621,6 +1624,17 @@ async function main() {
   if (args.version) return console.log(VERSION);
   if (args.help) return console.log(USAGE);
   try {
+    if (cmd === 'prepare') {
+      const { dir } = locate(args);
+      const run = loadRun(dir);
+      prepareExecution(dir, run, args);
+      console.log(`Execution: ${run.execution?.path ?? dir}`);
+      return;
+    }
+    if (['brief', 'review-brief', 'review-verify', 'review-fix-brief', 'next'].includes(cmd)) {
+      const { dir } = locate(args);
+      prepareExecution(dir, loadRun(dir), args);
+    }
     switch (cmd) {
       case 'board': return await cmdBoard(args);
       case 'start': return await cmdStart(args);

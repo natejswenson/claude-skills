@@ -29,7 +29,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadRun, worktreePath } from '../scripts/lib/run.mjs';
 import { historyTree } from '../scripts/lib/worktree.mjs';
-import { parseDiff, reviewDir } from '../scripts/lib/prreview.mjs';
+import { historyRoot } from '../scripts/lib/execution.mjs';
+import { parseDiff } from '../scripts/lib/prreview.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, 'inputs', 'review-round');
@@ -44,7 +45,9 @@ const run = loadRun(runDir);
 const lane = run.lanes.find((l) => l.slug === args.lane);
 if (!lane) throw new Error(`no lane ${args.lane}`);
 const rounds = (args.rounds ? args.rounds.split(',').map(Number) : lane.review.rounds.map((r) => r.round));
-const tree = historyTree(run);
+const tree = historyTree(run, runDir);
+if (run.execution) process.on('exit', () => rmSync(tree, { recursive: true, force: true }));
+const artifacts = historyRoot(runDir, run);
 const checkoutRoots = [worktreePath(runDir, lane), run.repo.path];
 const git = (a) => execFileSync('git', a, { cwd: tree, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 const normalize = (text) => [tree, ...checkoutRoots].reduce(
@@ -68,7 +71,7 @@ const meta = {
 // unchanged since round 1 must not show up as "added" between the two commits.
 const files = new Set();
 for (const n of rounds) {
-  const src = reviewDir(runDir, lane, n);
+  const src = join(artifacts, lane.slug, 'review', `r${n}`);
   for (const f of parseDiff(readFileSync(join(src, 'diff.patch'), 'utf8'))) files.add(f.path);
   for (const f of readdirSync(src)) {
     if (!/^(candidates|verdicts)-\d+\.json$/.test(f)) continue;
@@ -82,7 +85,7 @@ for (const n of rounds) {
 for (const n of rounds) {
   const entry = lane.review.rounds.find((r) => r.round === n);
   if (!entry?.registered) throw new Error(`round ${n} is not registered — nothing to freeze`);
-  const src = reviewDir(runDir, lane, n);
+  const src = join(artifacts, lane.slug, 'review', `r${n}`);
   const dst = join(OUT, `r${n}`);
   mkdirSync(dst, { recursive: true });
   for (const f of readdirSync(src)) {

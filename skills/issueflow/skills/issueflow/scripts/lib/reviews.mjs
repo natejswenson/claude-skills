@@ -1,3 +1,4 @@
+import { activePath, readDelivery } from './execution.mjs';
 /**
  * The red team, declared once — the reviewer contract, the finding shape,
  * and the registrar that turns a review on disk into a verdict the gate can
@@ -127,10 +128,10 @@ const keyOf = (step) => step.key.replace('/', '-');
  * rounds — a parser that fails a review on punctuation is a parser that
  * teaches the reviewer to write less.
  */
-export const reviewPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.findings.json`);
-export const verdictPath = (dir, step, round) => join(dir, 'reviews', `${keyOf(step)}-r${round}.verdict.json`);
-export const reviewBriefPath = (dir, step, round) => join(dir, 'briefs', `review-${keyOf(step)}-r${round}.md`);
-export const reviewProgressPath = (dir, step, round) => join(dir, 'progress', `review-${keyOf(step)}-r${round}.log`);
+export const reviewPath = (dir, step, round) => activePath(dir, 'reviews', `${keyOf(step)}-r${round}.findings.json`);
+export const verdictPath = (dir, step, round) => activePath(dir, 'reviews', `${keyOf(step)}-r${round}.verdict.json`);
+export const reviewBriefPath = (dir, step, round) => activePath(dir, 'briefs', `review-${keyOf(step)}-r${round}.md`);
+export const reviewProgressPath = (dir, step, round) => activePath(dir, 'progress', `review-${keyOf(step)}-r${round}.log`);
 
 /** The round the next review of this step would be — one past what is registered. */
 export const nextRound = (step) => (step.stage.review?.rounds.length ?? 0) + 1;
@@ -198,7 +199,7 @@ export function parseFindings(text) {
  * review. A red team whose findings cannot be checked is a red team whose
  * findings cannot be trusted — the eval skill's rule, adopted as code.
  */
-export function resolveCitation(cite, { roots = [], artifactText = '' } = {}) {
+export function resolveCitation(cite, { roots = [], aliases = [], artifactText = '' } = {}) {
   const heading = /^\S+\.md\s+§\s+(.+)$/.exec(cite);
   if (heading) {
     return hasSection(artifactText, heading[1].trim())
@@ -209,8 +210,9 @@ export function resolveCitation(cite, { roots = [], artifactText = '' } = {}) {
   const loc = /^(.+?):(\d+)(?:-(\d+))?$/.exec(cite);
   if (loc) {
     const [, path, l1] = loc;
-    for (const root of roots) {
-      const full = isAbsolute(path) ? path : join(root, path);
+    const paths = isAbsolute(path) ? [path, ...aliases.filter(([old]) => path.startsWith(old + '/')).map(([old, current]) => join(current, path.slice(old.length + 1)))] :
+      roots.map((root) => join(root, path));
+    for (const full of paths) {
       if (!existsSync(full) || !statSync(full).isFile()) continue;
       const total = readFileSync(full, 'utf8').split('\n').length;
       return Number(l1) <= total
@@ -301,7 +303,7 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
         're-brief the reviewer on the current artifact',
     );
   }
-  const parsed = parseFindings(readFileSync(file, 'utf8'));
+  const parsed = parseFindings(readDelivery(dir, file, run));
   if (parsed.error) {
     throw new RunError(`cannot register the review of ${step.key}: ${file} ${parsed.error}`);
   }
@@ -314,10 +316,13 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
     );
   }
 
-  const artifactText = readFileSync(artifact, 'utf8');
-  const roots = [run.repo.path, join(dir, step.laneSlug ?? 'shared')];
+  const artifactText = readDelivery(dir, artifact, run, { dispatched: false });
+  const roots = [run.repo.path, activePath(dir, step.laneSlug ?? 'shared'), join(dir, step.laneSlug ?? 'shared')];
+  const aliases = (run.execution?.priorRoots ?? []).map((root) => [
+    root === run.execution.owner.dir ? root : join(root, 'artifacts'), activePath(dir),
+  ]);
   for (const f of findings) {
-    const resolved = resolveCitation(f.cite, { roots, artifactText });
+    const resolved = resolveCitation(f.cite, { roots, aliases, artifactText });
     if (!resolved.ok) {
       throw new RunError(
         `cannot register the review of ${step.key}: the citation "${f.cite}" does not resolve ` +

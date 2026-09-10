@@ -5,6 +5,11 @@
   },
   "prose": [
     {
+      "id": "codex-approved-execution-root",
+      "pattern": "actual host-approved writable root",
+      "rationale": "A supplied path does not grant a child's sandbox write authority; preparation and parent archival are required."
+    },
+    {
       "id": "no-source-fallback",
       "pattern": "never fall back to source",
       "rationale": "A failed worktree must stop dispatch; source mode requires explicit consent and a repository-wide lease."
@@ -102,6 +107,10 @@
   ],
   "split": {
     "deterministic": [
+      {
+        "step": "prepare owned Codex execution storage and Git administration; archive exact outputs and history before canonical persistence",
+        "command": "node \"$SKILL_DIR/scripts/issueflow.js\" prepare --run-dir <run> --workspace-root <approved-root>"
+      },
       {
         "step": "explicitly renew an expired time allowance while preserving artifacts, checkpoint identity, gates and review limits",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" resume --run-dir <run> --budget-seconds 1800"
@@ -216,6 +225,14 @@
   },
   "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and — see review-round-golden — a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
   "baseline": [
+    {
+      "id": "codex-execution-storage",
+      "kind": "trap",
+      "test": "scripts/tests/execution.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/execution.test.mjs",
+      "rationale": "Real local repositories prove workspace output and Git isolation, exact archival, stale-output refusal, parent write failure, migration, recovery and owned cleanup. The real restricted Codex child smoke supplements this deterministic corpus."
+    },
     {
       "id": "artifact-before-budget-and-recovery",
       "kind": "trap",

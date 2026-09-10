@@ -327,6 +327,7 @@ function adoptComment(repoPath, run) {
  * the user already passed.
  */
 export function checkpoint(dir, run, { offline = false, push = true, comment = true } = {}) {
+  if (run.execution) saveRun(dir, run);
   if (offline || run.offline) return [{ action: 'checkpoint', state: 'offline', detail: 'nothing sent' }];
 
   const repoPath = run.repo.path;
@@ -334,7 +335,7 @@ export function checkpoint(dir, run, { offline = false, push = true, comment = t
 
   if (push) {
     for (const lane of run.lanes) {
-      const result = pushLane(repoPath, lane);
+      const result = pushLane(gitStore(dir, run), lane);
       if (result.state === 'pushed') {
         run.checkpoint.pushed[lane.slug] = result.sha;
         rows.push({ action: `push ${lane.slug}`, state: 'pushed', detail: `origin/${lane.branch} @ ${result.sha}` });
@@ -380,3 +381,4 @@ export function checkpoint(dir, run, { offline = false, push = true, comment = t
   saveRun(dir, run);
   return rows.length > 0 ? rows : [{ action: 'checkpoint', state: 'nothing to send', detail: '—' }];
 }
+import { gitStore } from './execution.mjs';
