@@ -534,6 +534,26 @@ test('decide: a finder fleet that never delivers is a stall with the prompts to 
   cleanup();
 });
 
+test('decide: an in-flight legacy Codex finder fleet is queued and each stalled redispatch resets its active-wave timeout', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  run.host = 'codex'; run.runtime = 'codex'; run.dispatch = { host: 'codex', childSlots: 1 };
+  openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
+  const entry = currentRound(lane); entry.finders = 5;
+  for (let n = 1; n <= 5; n += 1) {
+    const brief = join(dir, 'briefs', `root-review-r1-finder-${n}.md`);
+    mkdirSync(dirname(brief), { recursive: true }); writeFileSync(brief, '# finder\n'); backdate(brief, 4000);
+  }
+  let action = decide(dir, run);
+  assert.deepEqual([action.kind, action.reason, action.items.length, action.waveStarted], ['stop', 'stalled', 1, true]);
+  assert.equal(run.dispatch.queue.items.length, 5);
+  run.dispatch.queue.active[0].dispatchedAt = Date.now() - 4000 * 1000;
+  action = decide(dir, run);
+  assert.equal(action.waveRedispatched, true);
+  assert.ok(run.dispatch.queue.active[0].dispatchedAt >= Date.now() - 1000);
+  cleanup();
+});
+
 test('decide: an unpushed fix is a stop when the remote head disagrees, and a stacked lane is rebased before its first round', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
   const lane = run.lanes[0];

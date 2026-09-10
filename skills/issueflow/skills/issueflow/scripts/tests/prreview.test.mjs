@@ -741,6 +741,30 @@ test('the finder, verifier and fix briefs are rendered from the method file, and
   cleanup();
 });
 
+test('finder, verifier and fixer receive only applicable scoped guidance', () => {
+  const { dir, run, lane, repoPath, cleanup } = fixture();
+  const { files } = open(dir, run, lane, repoPath);
+  const entry = currentRound(lane); entry.verifiers = 1;
+  mkdirSync(join(repoPath, 'src')); mkdirSync(join(repoPath, 'other'));
+  writeFileSync(join(repoPath, 'AGENTS.md'), 'ROOT_SHADOWED');
+  writeFileSync(join(repoPath, 'AGENTS.override.md'), 'ROOT_OVERRIDE');
+  writeFileSync(join(repoPath, 'CLAUDE.md'), 'ROOT_CLAUDE');
+  writeFileSync(join(repoPath, 'src', 'AGENTS.md'), 'SRC_AGENT');
+  writeFileSync(join(repoPath, 'other', 'AGENTS.md'), 'OTHER_AGENT');
+  const scoped = [{ ...files[0], path: 'src/widget.js' }];
+  const item = { ...cand({ file: 'src/widget.js' }), id: 'c-1-1', prior: false };
+  const rendered = [
+    renderFinderBrief(dir, run, lane, entry, 1, { angles: entry.angles[0], issue: ISSUE, files: scoped, prior: [] }),
+    renderVerifierBrief(dir, run, lane, entry, 1, { items: [item], issue: ISSUE }),
+    renderFixBrief(dir, run, lane, entry, { items: [{ ...item, id: 'f-1', severity: 'major', stillOpenRounds: 0 }], checks: [], model: 'opus', issue: ISSUE }),
+  ];
+  for (const text of rendered) {
+    assert.match(text, /ROOT_OVERRIDE/); assert.match(text, /ROOT_CLAUDE/); assert.match(text, /SRC_AGENT/);
+    assert.doesNotMatch(text, /ROOT_SHADOWED|OTHER_AGENT/);
+  }
+  cleanup();
+});
+
 // ---------------------------------------------------------------------------
 // Posting, against a stubbed gh: one pending review per round, one thread per
 // inline finding, a refused anchor costing one thread and not the round.

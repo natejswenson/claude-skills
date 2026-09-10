@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -10,6 +10,7 @@ import { finderProfile, fixerProfile, verifierProfile } from '../lib/prreview.mj
 import { createRun, findStep, loadRun, saveRun } from '../lib/run.mjs';
 import { assertRuntime, dispatchProfile } from '../lib/runtime.mjs';
 import * as runtime from '../lib/runtime.mjs';
+import { resolveGuidance } from '../lib/guidance.mjs';
 
 const ISSUE = { number: 42, title: 'make both hosts work', body: 'Codex cannot dispatch opus.' };
 const REPO = { owner: 'acme', name: 'widgets', path: '/tmp/widgets', defaultBranch: 'dev' };
@@ -66,6 +67,47 @@ test('a legacy run can adopt Codex before artifacts', () => {
   assert.equal(Object.hasOwn(findStep(adopted, 'investigate').stage, 'model'), false);
 });
 
+test('next adopts a pre-artifact legacy run before Codex execution preparation', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-next-adopt-'));
+  const source = join(root, 'source'); const workspace = join(root, 'workspace'); const dir = join(root, 'run');
+  mkdirSync(source); mkdirSync(workspace);
+  execFileSync('git', ['init', '-qb', 'dev'], { cwd: source });
+  execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
+  const run = createRun({ repo: { ...REPO, path: source }, issue: ISSUE, policy: POLICY, offline: true });
+  delete run.host; delete run.runtime; delete run.dispatch;
+  saveRun(dir, run); mkdirSync(join(dir, 'inputs')); writeFileSync(join(dir, 'inputs', 'issue.json'), JSON.stringify(ISSUE));
+  const result = execFileSync('node', [CLI, 'next', '--run-dir', dir, '--host', 'codex', '--workspace-root', workspace, '--offline'], { encoding: 'utf8' });
+  assert.match(result, /fork_turns `none`/);
+  assert.equal(loadRun(dir).host, 'codex');
+});
+
+test('start with --host codex restarts a completed run instead of retaining it', () => {
+  const root = mkdtempSync(join(tmpdir(), 'issueflow-restart-host-'));
+  const source = join(root, 'source'); const dir = join(root, 'run'); const repoJson = join(root, 'repo.json'); const issueJson = join(root, 'issue.json');
+  mkdirSync(source); execFileSync('git', ['init', '-qb', 'dev'], { cwd: source });
+  execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
+  const old = createRun({ repo: { ...REPO, path: source }, issue: ISSUE, policy: POLICY, offline: true }); old.finished = '2026-01-01T00:00:00.000Z';
+  saveRun(dir, old); writeFileSync(repoJson, JSON.stringify({ ...REPO, path: source })); writeFileSync(issueJson, JSON.stringify(ISSUE));
+  execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--host', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', dir]);
+  const restarted = loadRun(dir);
+  assert.equal(restarted.host, 'codex'); assert.equal(restarted.finished, null);
+});
+
+test('guidance follows safe in-checkout symlinks and skips unreadable unrelated directories', () => {
+  const tree = mkdtempSync(join(tmpdir(), 'issueflow-guidance-links-'));
+  writeFileSync(join(tree, 'rules.md'), 'OVERRIDE_THROUGH_SYMLINK');
+  writeFileSync(join(tree, 'AGENTS.md'), 'SHADOWED_AGENT_RULE');
+  symlinkSync('rules.md', join(tree, 'AGENTS.override.md'));
+  mkdirSync(join(tree, 'unreadable')); chmodSync(join(tree, 'unreadable'), 0);
+  try {
+    const text = resolveGuidance(tree).map((entry) => entry.text).join('\n');
+    assert.match(text, /OVERRIDE_THROUGH_SYMLINK/);
+    assert.doesNotMatch(text, /SHADOWED_AGENT_RULE/);
+  } finally {
+    chmodSync(join(tree, 'unreadable'), 0o700);
+  }
+});
+
 for (const path of ['briefs/investigate.md', 'shared/investigate.md', 'reviews/investigate-r1.findings.json', 'root/review/r1/candidates-1.json']) {
   test(`legacy adoption refuses existing output: ${path}`, () => {
     const dir = mkdtempSync(join(tmpdir(), 'issueflow-adopt-used-'));
@@ -117,6 +159,18 @@ for (const count of [5, 8]) {
     assert.equal(new Set(seen).size, count);
   });
 }
+
+test('each queued Codex wave receives a fresh dispatch timestamp and release acknowledgement is retry-safe', () => {
+  const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex', childSlots: 1 });
+  const items = [{ prompt: 'one', writes: 'one.out' }, { prompt: 'two', writes: 'two.out' }];
+  const first = runtime.startWave(run, items); const firstAt = first[0].dispatchedAt;
+  assert.ok(firstAt >= Date.now() - 1000);
+  runtime.releaseWave(run, () => true);
+  const second = runtime.advanceWave(run);
+  assert.ok(second[0].dispatchedAt >= firstAt);
+  runtime.releaseWave(run, () => true);
+  assert.equal(runtime.releaseWave(run, () => true), false);
+});
 
 test('codex runtime inherits the parent model with cold writable workers', () => {
   const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });

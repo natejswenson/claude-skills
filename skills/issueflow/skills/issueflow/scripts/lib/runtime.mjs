@@ -60,10 +60,14 @@ export function waveState(run, delivered) {
 
 export function releaseWave(run, delivered) {
   const queue = run.dispatch?.queue;
-  if (!queue || queue.released) throw new Error('no active wave to release');
+  // `next --workers-released` is retried after an infrastructure failure.
+  // Its acknowledgement was already persisted before that failure, so making
+  // the same acknowledgement a no-op is the only safe retry behaviour.
+  if (!queue || queue.released) return false;
   if (!queue.active.every(delivered)) throw new Error('cannot release a wave before all its outputs have delivered');
   queue.released = true;
   if (queue.cursor === queue.items.length) delete run.dispatch.queue;
+  return true;
 }
 
 export function advanceWave(run) {
@@ -72,6 +76,10 @@ export function advanceWave(run) {
   if (!queue.released) throw new Error('active workers must release their slots before the next wave');
   const cap = dispatchPolicy(runtimeOf(run), run.dispatch.childSlots).childSlots;
   queue.active = queue.items.slice(queue.cursor, queue.cursor + cap);
+  // Brief creation can precede this wave by many minutes.  Stalls measure the
+  // actual dispatch, not when the complete fleet happened to be rendered.
+  const dispatchedAt = Date.now();
+  for (const item of queue.active) item.dispatchedAt = dispatchedAt;
   queue.cursor += queue.active.length;
   queue.released = false;
   return queue.active;
