@@ -63,7 +63,7 @@ const stageEntry = (id, runtime = 'claude') => {
 };
 
 /** The pull-request review loop's record on a lane — empty until `ship` opens the pull request. */
-const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds < 4 ? { maxRounds: complexity.reviewRounds } : {}) });
+const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, draft: null, ...(complexity?.reviewRounds ? { maxRounds: complexity.reviewRounds } : {}) });
 
 export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
@@ -76,7 +76,7 @@ export function classifyIssue(issue) {
   if (operational) return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'CI, automation or operational change' };
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
-  return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'code or operational change' };
+  return { kind: 'deep', reviewRounds: 2, budgetSeconds: 1800, reason: 'code or operational change' };
 }
 
 const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', complexity = null) => ({
@@ -92,7 +92,7 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
   if (host && runtime && host !== runtime) throw new RunError('--host and --runtime disagree');
   const resolvedRuntime = assertRuntime(host ?? runtime);
   const complexity = classifyIssue(issue);
@@ -114,6 +114,8 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // whether an approval needs a human is a property of the run, not of
     // whoever types the next command.
     auto,
+    autonomous,
+    totalBudgetSeconds: autonomous ? complexity.budgetSeconds * 8 : null,
     complexity,
     createdAt: now(),
     split: false,
@@ -503,7 +505,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
 
   if (PER_ITEM_STAGES.includes(step.stage.id)) {
     if (/\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(readDelivery(dir, artifactPath(dir, step), run, { dispatched: false })))) {
-      throw new RunError(`cannot accept ${step.key}: the implementation result reports blocked, incomplete, or not performed work`);
+      throw new RunError(`cannot accept ${step.key}: blocked or incomplete result (the implementation reports blocked, incomplete, or not performed work)`);
     }
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {

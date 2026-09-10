@@ -14,7 +14,7 @@ import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionL
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction, sh, waveDelivered } from './lib/next.mjs';
-import { DISPATCHES, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
+import { DISPATCHES, autoRenewBudget, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
 import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
@@ -48,7 +48,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
+const BOOLEAN_FLAGS = new Set(['auto', 'autonomous', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
 
 function argv(args) {
   const out = { _: [] };
@@ -223,6 +223,10 @@ function guardDispatch(dir, run, args) {
   if (run.dispatch?.queue && !run.dispatch.queue.released) throw new RunError('an active Codex wave must deliver and release its workers before another dispatch');
   const budget = budgetStatus(run);
   if (!budget?.expired) return;
+  if (run.autonomous && autoRenewBudget(run)) {
+    saveRun(dir, run);
+    return;
+  }
   if (checkpointBudgetStop(dir, run, args, budgetStop(budget))) {
     throw new CheckpointFailure('checkpoint failed while saving the budget stop');
   }
@@ -660,6 +664,7 @@ async function cmdStart(args) {
     // Autoflow is autonomous by default. The red team's hash-bound pass is the
     // approval; a human plan gate is an explicit diagnostic/review mode.
     auto: !Boolean(args.reviewPlan),
+    autonomous: Boolean(args.autonomous),
     runtime: args.runtime,
     host: args.host,
     childSlots: args.childSlots,
@@ -1244,7 +1249,7 @@ async function cmdReviewBrief(args) {
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
   saveRun(dir, run);
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
-    [[lane.slug, `#${lane.pr.number}`, `${round} of ${MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
+    [[lane.slug, `#${lane.pr.number}`, `${round} of ${lane.review.maxRounds ?? run.complexity?.reviewRounds ?? MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
   if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, b.angles.join(', ')]));
   else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
@@ -1537,7 +1542,20 @@ async function cmdNext(args) {
   // after a split. Keep a loop guard without making healthy large runs fail.
   const MAX_DETERMINISTIC_ACTIONS = 64;
   for (let i = 0; i < MAX_DETERMINISTIC_ACTIONS; i += 1) {
-    const run = observe(dir, loadRun(dir));
+    const loaded = loadRun(dir);
+    // Offline autonomous runs can exercise budget renewal without claiming a
+    // real Codex workspace. Keep this simulation resumable and side-effect
+    // free; a real host must prepare execution before dispatch.
+    if (runtimeOf(loaded) === 'codex' && !loaded.execution && (offline || loaded.offline || loaded.checkout?.mode === 'source')) {
+      const budget = budgetStatus(loaded);
+      if (budget?.expired && budget.totalRemainingSeconds > 0) {
+        autoRenewBudget(loaded);
+        saveRun(dir, loaded);
+      }
+      console.log(`\n${renderAction({ kind: 'wait', what: 'approved Codex workspace', budget: budgetStatus(loadRun(dir)) }, { skillCommand, runDir: dir })}`);
+      return;
+    }
+    const run = observe(dir, loaded);
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
       if (action.waveStarted || action.waveRedispatched) saveRun(dir, run);
@@ -1684,7 +1702,8 @@ async function main() {
       const { dir } = locate(args);
       // Host adoption is part of loading a legacy run. It must happen before
       // execution preparation validates Codex-only workspace-root options.
-      prepareExecution(dir, loadRun(dir, { host: args.host, childSlots: args.childSlots }), args);
+      const run = loadRun(dir, { host: args.host, childSlots: args.childSlots });
+      if (args.workspaceRoot || run.execution) prepareExecution(dir, run, args);
     }
     switch (cmd) {
       case 'board': return await cmdBoard(args);

@@ -434,7 +434,7 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   assert.equal(existsSync(join(badDir, 'run.json')), false);
 });
 
-test('start ignores the removed autonomous renewal flag', () => {
+test('start --autonomous persists bounded budget automation as an explicit opt-in', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-autonomous-'));
   const runDir = join(root, 'run');
   const repoJson = join(root, 'repo.json');
@@ -443,8 +443,8 @@ test('start ignores the removed autonomous renewal flag', () => {
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
   execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--autonomous', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
-  assert.equal(persisted.autonomous, undefined);
-  assert.equal(persisted.totalBudgetSeconds, undefined);
+  assert.equal(persisted.autonomous, true);
+  assert.ok(persisted.totalBudgetSeconds > persisted.complexity.budgetSeconds);
 });
 
 test('codex dispatch output names the exact spawn fields and invalid runtimes refuse', () => {

@@ -465,7 +465,7 @@ function decideAction(dir, run, c) {
   // Everything converged: finish what has merged.
   const landed = c.landings();
   if (landed.some((l) => l.state === 'merged' && !l.lane.landed)) return act('finish', {}, 'a pull request merged — finishing that lane');
-  return stop('shipped', `every lane's review loop has converged — ${run.lanes.map((l) => l.pr.url).join(', ')} await a merge; \`finish\` once they land`);
+  return stop('shipped', `USER ACTION REQUIRED: review and approve/merge ${run.lanes.map((l) => l.pr.url).join(', ')} — Issueflow will not merge; run \`finish\` once they land`);
 }
 
 function gateStepsForWave(dir, run, items) {

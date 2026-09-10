@@ -5,6 +5,22 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-09-10
+
+## Added
+
+- Autonomous Issueflow runs now spend less time waiting between observed
+  artifacts and stop stalled workers with an actionable re-dispatch prompt.
+- Review effort is bounded by issue complexity, with explicit limits for fast
+  documentation, standard, and deep work.
+
+## Changed
+
+- Ready pull requests now clearly identify the human approval and merge step;
+  Issueflow never merges a pull request on the operator's behalf.
+- Implementation gates reject blocked or incomplete result reports, and
+  liveness checks ignore unrelated files from a containing parent checkout.
+
 ## [Unreleased]
 
 ### Fixed
