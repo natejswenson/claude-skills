@@ -1,0 +1,32 @@
+name: codex marketplace
+
+# Exercises the real Codex marketplace loader in a temporary CODEX_HOME. This
+# is intentionally separate from marketplace.yml, whose static checks cover
+# both catalogs and the Claude compatibility gate.
+on:
+  pull_request:
+    branches: [dev, main, 'feature/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: codex / marketplace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+      - name: Install Codex CLI
+        run: npm install --global @openai/codex@0.153.4
+      - name: Read back Codex CLI version
+        run: codex --version
+      - name: Run isolated smoke unit tests
+        run: python3 -m unittest discover -s tools/tests -p test_codex_marketplace_smoke.py
+      - name: Run live marketplace smoke
+        run: python3 tools/codex_marketplace_smoke.py --expected-version 0.153.4
