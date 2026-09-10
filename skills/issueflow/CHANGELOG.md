@@ -5,6 +5,24 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-09-10
+
+### Added
+
+- Codex runs now use bounded four-child dispatch by default, with role-sized
+  reasoning so read-heavy work uses less expensive inference while judgment
+  and persistent review findings retain stronger reasoning.
+- Approved, independently mergeable work items can use `split --parallel`.
+  The driver fans out ready implementation lanes and accepts fresh deliveries
+  together without re-briefing completed work.
+
+### Changed
+
+- Operational issues covering CI, automation, installers, releases, and
+  deployment now receive the deeper review and budget profile.
+- Large review waves cap verifier batches at four, and deterministic driver
+  transitions are bounded high enough for larger split runs.
+
 ## [0.12.0] - 2026-09-10
 
 ## Added
