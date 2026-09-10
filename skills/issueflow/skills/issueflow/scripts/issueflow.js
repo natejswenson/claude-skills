@@ -1459,6 +1459,7 @@ async function cmdReady(args) {
   saveRun(dir, run);
   print(['Lane', 'Rounds', 'Head', 'State'], [[lane.slug, String(last.round), last.head.slice(0, 12), 'ready for review']]);
   if (rows.length > 0) { console.log(''); print(['Action', 'Result'], rows); }
+  if (!offline) console.log(`\nUSER ACTION REQUIRED: review and approve/merge PR #${lane.pr.number} (${lane.pr.url}). Issueflow will not merge it.`);
   nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }

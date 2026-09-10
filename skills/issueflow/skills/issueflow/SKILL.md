@@ -43,7 +43,8 @@ From `$SKILL_DIR`:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root>
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> --autonomous
+node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run>
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 ```
 
