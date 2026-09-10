@@ -43,7 +43,7 @@ From `$SKILL_DIR`:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" board --repo <path>
-node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> --autonomous
+node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root>
 node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run>
 node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run>
 ```
@@ -74,7 +74,9 @@ exactly one dispatch, wait, or stop.
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
   prompt and host adapter fields. Codex fleets are capacity limited; release
   every child after its output lands before starting the next wave. Dispatch
-  independent agents immediately. Never
+  independent agents immediately up to the persisted `child-slots` capacity
+  (four by default; an explicit `--child-slots <n>` override is retained).
+  Never
   do the stage yourself.
 - **Wait:** The artifact on disk is the state-machine signal. In Claude or a
   host without native agent waiting, yield the exact printed `wait:` command,
@@ -102,12 +104,17 @@ exactly one dispatch, wait, or stop.
 
 The flow is plan → red team → implementation with red-before-green proof →
 draft PR → finder/verifier/fixer rounds → ready with no majors and green CI.
-One pull request per issue is the default; split only for approved stacked work items.
+One pull request per issue is the default; split only for approved work items.
+Splits are stacked by default. When the approved plan proves the items are
+independently mergeable, `issueflow split --parallel` may place them on the
+same base; `next` briefs all ready implementation lanes together and accepts
+their delivered artifacts as one deterministic transition.
 
 Issueflow persists a complexity profile:
 plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
 tests, templates, generated files, manifests, or acceptance criteria use
-`standard` (two rounds, 30 minutes); code and operations use `deep`. Resuming
+`standard` (two rounds, 30 minutes); CI, automation and other operations use
+`deep`. Resuming
 does not change the profile. Elapsed time includes waits; expiry prevents new
 dispatches, including a refused gate's send-back. In-flight work may finish.
 

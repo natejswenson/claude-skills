@@ -35,6 +35,26 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Codex runs now default to four bounded concurrent child slots, with an
+  explicit `--child-slots` override for hosts with different capacity.
+
+### Changed
+
+- Codex dispatch profiles use medium reasoning for read-heavy finders and
+  first-pass fixers, high for judgment/implementation roles, and xhigh only
+  when a major survives a fix.
+- Documentation now matches the implemented CLI: unsupported
+  `--autonomous` and `split --parallel` guidance was removed.
+- Large review waves now cap verifier batching at four, matching the default
+  Codex capacity and avoiding an unnecessary second verifier wave.
+- Complexity routing gives CI, automation, installer and release issues the
+  deep operational profile even when their issue body also mentions docs.
+- Restore explicit `split --parallel` for approved independently mergeable work
+  items, fan out all ready implementation lanes from `next`, and consume their
+  deliveries before considering another brief.
+- Raise the deterministic `next` driver guard to 64 transitions so larger
+  split runs do not fail merely because they crossed the old small-run limit.
+
 - Persisted complexity profiles with a fast documentation route, bounded review
   rounds, and a 15-minute budget for wording-only issues.
 - Explicit approval checkpoints now identify the PR action required from the

@@ -429,12 +429,25 @@ function decideAction(dir, run, c) {
     if (/^\s{0,3}#{1,6}\s+work items\s*$/im.test(text) && !startedLane) return act('split', {}, 'the approved plan lists work items — splitting into lanes');
   }
 
-  // Implements, in stack order. Only the next lane up is ever ready.
+  // Implements in stack order. Only the next lane up is ready because stacked
+  // lanes depend on the branch below them; parallelism belongs inside review
+  // waves, where the queued workers are independent.
   if (remainingSteps(run).length > 0) {
     const ready = readySteps(run);
     if (ready.length === 0) {
       const held = remainingSteps(run)[0];
       return stop('blocked', `nothing can run: ${held.key} is held — \`status\` names what by`);
+    }
+    // A parallel implementation wave can deliver several gate artifacts at
+    // once. Consume those deliveries before looking for more work; otherwise
+    // the fan-out path would re-brief already-completed lanes.
+    const delivered = ready.filter((step) => deliveredSince(dir, step));
+    if (delivered.length > 1) {
+      return act('accept-ready', { steps: delivered.map((step) => ({ stage: step.stage.id, lane: step.laneSlug ?? null })) }, `accepting ${delivered.length} delivered implementation lane${delivered.length === 1 ? '' : 's'}`);
+    }
+    if (delivered.length === 1) return decideImplement(dir, run, delivered[0], c);
+    if (ready.length > 1) {
+      return act('brief', { ready: true }, `${ready.length} independent implementation lanes are ready — briefing them as one fan-out`);
     }
     return decideImplement(dir, run, ready[0], c);
   }
