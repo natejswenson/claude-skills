@@ -21,9 +21,11 @@ function parseModelGateRoutes(markdown) {
   return rows;
 }
 
-function resolveModelGate(host) {
+function resolveModelGate(host, model) {
   const routes = parseModelGateRoutes(read('SKILL.md'));
-  const selected = routes.get(routes.has(host) ? host : 'unknown');
+  const observedModel = arguments.length < 2 ? 'observable' : model;
+  const route = observedModel === undefined || observedModel === null || observedModel === '' ? 'unknown' : host;
+  const selected = routes.get(routes.has(route) ? route : 'unknown');
   if (!selected?.reference) return { path: undefined, text: '' };
   return { path: selected.reference, text: read(selected.reference) };
 }
@@ -110,10 +112,19 @@ test('the Codex route asks for capability without a Claude command', () => {
 });
 
 test('an unobservable host uses neutral strongest-capability guidance', () => {
-  const gate = resolveModelGate('unobservable');
+  const gate = resolveModelGate('unobservable', undefined);
   assert.equal(gate.path, 'references/model-gate-neutral.md');
   assert.match(gate.text, /strongest supported capability available/i);
   assert.doesNotMatch(gate.text, /\/model opus/);
+});
+
+test('a known host with an unobservable model uses neutral guidance', () => {
+  for (const host of ['claude', 'codex']) {
+    const gate = resolveModelGate(host, undefined);
+    assert.equal(gate.path, 'references/model-gate-neutral.md', `${host} must use the neutral route`);
+    assert.match(gate.text, /strongest supported capability available/i);
+    assert.doesNotMatch(gate.text, /\/model opus/);
+  }
 });
 
 test('the shared entrypoint contains no Claude-only model command', () => {
