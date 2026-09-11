@@ -38,7 +38,10 @@ export function adaptiveReasoning(run, role, signals = {}) {
 export function dispatchProfile(run, role) {
   if (!ROLES.includes(role)) throw new Error(`no dispatch profile for ${runtimeOf(run)}/${role}`);
   if (runtimeOf(run) === 'claude') {
-    return { model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose' };
+    // Review fanout uses the efficient model; core planning and implementation
+    // retain Opus. This is the current shared Claude contract on dev.
+    const model = ['finder', 'verifier', 'fixer'].includes(role) ? 'sonnet' : 'opus';
+    return { model, agent: 'general-purpose' };
   }
   // Even readers write a result file. A read-only explorer cannot deliver it.
   // Read-heavy discovery and a first bounded fix do not need the parent-level

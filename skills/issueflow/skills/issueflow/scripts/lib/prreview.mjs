@@ -304,9 +304,17 @@ export function reviewRisk(files = [], { disagreement = false, priorMajors = 0 }
 export function fleetPlan(lines, round, { ofFix = false, risk = false, files = [], disagreement = false, priorMajors = 0 } = {}) {
   const angles = round === 1 ? [...CORE_ANGLES, ...CLEANUP_ANGLES] : [...CORE_ANGLES];
   const semantic = reviewRisk(files, { disagreement, priorMajors });
-  const sensitive = risk === true || semantic.risk === 'sensitive';
+  // An unresolved major changes the reasoning policy, but it must not turn a
+  // tiny fix review into a second finder fleet. File-level sensitive/high-risk
+  // surfaces and disagreements still receive the larger floor.
+  const semanticEscalation = semantic.risk === 'sensitive'
+    || (semantic.risk === 'high' && !semantic.reasons.includes('unresolved major findings'));
+  const sensitive = risk === true || semanticEscalation;
   const explain = files.length > 0 || disagreement || priorMajors > 0;
-  if (lines < SMALL_DIFF_LINES && !sensitive && semantic.risk === 'low') return explain ? { finders: 1, maxVerifiers: 2, angles: [angles], risk: semantic.risk, reasons: semantic.reasons } : { finders: 1, maxVerifiers: 2, angles: [angles] };
+  const priorOnly = semantic.reasons.length === 1 && semantic.reasons[0] === 'unresolved major findings';
+  if (lines < SMALL_DIFF_LINES && !sensitive && (semantic.risk === 'low' || priorOnly)) {
+    return explain ? { finders: 1, maxVerifiers: 2, angles: [angles], risk: semantic.risk, reasons: semantic.reasons } : { finders: 1, maxVerifiers: 2, angles: [angles] };
+  }
   const floor = sensitive ? 2 : (ofFix ? 1 : 2);
   const finders = ofFix ? Math.min(3, Math.max(floor, Math.ceil(lines / 300))) : Math.min(5, Math.max(floor, Math.ceil(lines / 150)));
   const dealt = Array.from({ length: finders }, () => []);
@@ -318,6 +326,7 @@ export function fleetPlan(lines, round, { ofFix = false, risk = false, files = [
 
 /** Keep related candidates together and isolate high-impact candidates. */
 export function routeVerifierCandidates(candidates, { capacity = 4 } = {}) {
+  if (candidates.length === 0) return [];
   const groups = new Map();
   for (const candidate of candidates) {
     const key = candidate.mechanism ?? candidate.category ?? `${candidate.file ?? 'unknown'}:${candidate.line ?? 0}`;
@@ -326,11 +335,31 @@ export function routeVerifierCandidates(candidates, { capacity = 4 } = {}) {
   }
   const high = []; const ordinary = [];
   for (const bucket of groups.values()) {
-    const sensitive = bucket.some((c) => ['major', 'critical'].includes(c.severity ?? c.proposed_severity) || /(security|data.loss|concurr)/i.test(`${c.category} ${c.failure_scenario}`));
+    // `proposed_severity: major` is the legacy default for an unrated finder
+    // candidate; treating every such candidate as high-impact would turn a
+    // large ordinary review into one verifier per line. Only an explicit
+    // verifier severity, critical proposal, or clearly dangerous mechanism
+    // earns isolated handling.
+    const sensitive = bucket.some((c) => !c.prior && ['major', 'critical'].includes(c.severity)
+      || c.proposed_severity === 'critical'
+      || /(security|data.loss|concurr)/i.test(`${c.category} ${c.failure_scenario}`));
     // High-impact candidates are independent verification units. Related
     // low-risk candidates remain together to reduce prompt overhead.
     if (sensitive) high.push(...bucket.map((candidate) => [candidate]));
     else ordinary.push(bucket);
+  }
+  // Preserve the established single-verifier path when no candidate carries
+  // an explicit high-impact signal. Routing ordinary findings by category is
+  // only useful once the review already needs isolated high-impact readers;
+  // otherwise it creates needless verifier fanout for small, mixed-angle
+  // reviews.
+  if (high.length === 0) {
+    const all = ordinary.flat();
+    if (all.length <= 12) return [all];
+    const size = Math.ceil(all.length / Math.max(1, capacity));
+    const batches = [];
+    for (let i = 0; i < all.length; i += size) batches.push(all.slice(i, i + size));
+    return batches;
   }
   const ordinaryPerBatch = Math.max(1, Math.ceil(ordinary.flat().length / Math.max(1, capacity - high.length)));
   const low = [];
