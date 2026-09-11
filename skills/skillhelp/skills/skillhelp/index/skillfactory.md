@@ -35,13 +35,13 @@
 
 ## Commands
 
-- node scripts/skillfactory.js verify --skill <name> `skills/skillfactory/skills/skillfactory/SKILL.md:60`
-- node scripts/skillfactory.js detect --repo <path> `skills/skillfactory/skills/skillfactory/SKILL.md:106`
-- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:130`
-- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:131`
-- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:156`
-- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:170`
-- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:205`
+- node scripts/skillfactory.js verify --skill <name> `skills/skillfactory/skills/skillfactory/SKILL.md:69`
+- node scripts/skillfactory.js detect --repo <path> `skills/skillfactory/skills/skillfactory/SKILL.md:115`
+- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:139`
+- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:140`
+- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:165`
+- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:179`
+- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:214`
 - npm run audit — npm audit --audit-level=moderate `skills/skillfactory/skills/skillfactory/package.json:41`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillfactory/skills/skillfactory/package.json:43`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillfactory/skills/skillfactory/package.json:42`
@@ -78,4 +78,4 @@
 - an unresolvable anchor aborts before the first byte is written — A half-applied wiring is worse than none, because the half that landed makes the rest look done. ci / shipflow sat un-required from th… `skills/skillfactory/skills/skillfactory/skill-invariants.json:69`
 - only takes effect when an admin runs it — Editing the contexts array in repo-settings.sh changes a file, not GitHub. A skill whose check is written down but never applied goes green on every PR and g… `skills/skillfactory/skills/skillfactory/skill-invariants.json:74`
 - Name the skill after the job, never a metaphor — A name is the only thing a user sees before deciding whether the skill is for them, and a metaphor tells them nothing. This repo shipped three of them… `skills/skillfactory/skills/skillfactory/skill-invariants.json:79`
-- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:243`
+- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:252`

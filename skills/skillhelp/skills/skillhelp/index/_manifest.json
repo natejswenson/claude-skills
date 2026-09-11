@@ -292,7 +292,7 @@
       "name": "skillfactory",
       "version": "0.4.0",
       "stack": "node",
-      "cardHash": "b9d06e60bf561267",
+      "cardHash": "0fddfe3a657b1111",
       "facts": 58,
       "sections": {
         "setup": 8,

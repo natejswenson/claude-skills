@@ -1,0 +1,1 @@
+If this session is running in Codex and is not on the most capable model, ask the user to select the strongest available Codex model or the highest available reasoning setting. One line, then continue if the user declines — never silently proceed as though it made no difference.
