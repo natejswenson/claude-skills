@@ -41,9 +41,19 @@ skillfactory is built for the strongest model available. The spec, the one rule 
 deterministic/nondeterministic split are judgment, and a weaker model produces a
 skill that passes every lint in this repo and is still bad.
 
-**If this session is not on the most capable model, say so in one line and offer
-to switch (`/model opus`).** One line, then continue if the user declines — never
-silently proceed as though it made no difference.
+**If this session is not on the most capable model, say so in one line.** Resolve
+the active host/model to exactly one reference from this closed route table; when the
+host is known but the model cannot be observed reliably, select the `unknown` row, then
+load only that reference before continuing:
+
+| Host | Reference |
+| --- | --- |
+| claude | `references/model-gate-claude.md` |
+| codex | `references/model-gate-codex.md` |
+| unknown | `references/model-gate-neutral.md` |
+
+If the user declines, continue — never silently proceed as though it made no
+difference.
 
 ## The one rule
 
