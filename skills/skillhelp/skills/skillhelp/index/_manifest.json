@@ -52,7 +52,7 @@
       "name": "devlog",
       "version": "0.14.1",
       "stack": "node",
-      "cardHash": "3c6308ef0ad062a7",
+      "cardHash": "ee99234e0703b8b7",
       "facts": 61,
       "sections": {
         "setup": 12,
@@ -162,9 +162,9 @@
     },
     {
       "name": "issueflow",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "stack": "node",
-      "cardHash": "f58e13343e0f229d",
+      "cardHash": "c5d809d7cd224cb8",
       "facts": 64,
       "sections": {
         "setup": 10,

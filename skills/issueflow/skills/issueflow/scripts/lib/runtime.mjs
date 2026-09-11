@@ -26,7 +26,13 @@ const ROLES = ['investigate', 'implement', 'redTeam', 'finder', 'verifier', 'fix
 
 export function dispatchProfile(run, role) {
   if (!ROLES.includes(role)) throw new Error(`no dispatch profile for ${runtimeOf(run)}/${role}`);
-  if (runtimeOf(run) === 'claude') return { model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose' };
+  if (runtimeOf(run) === 'claude') {
+    // Finders and verifiers are deliberately high-fanout readers. They
+    // produce bounded candidate/verdict files; the red team, implementer and
+    // escalated fixer retain Opus for the judgment-heavy work.
+    const model = ['finder', 'verifier', 'fixer'].includes(role) ? 'sonnet' : 'opus';
+    return { model, agent: 'general-purpose' };
+  }
   // Even readers write a result file. A read-only explorer cannot deliver it.
   // Read-heavy discovery and a first bounded fix do not need the parent-level
   // reasoning budget. A surviving major is the signal to pay for escalation.
