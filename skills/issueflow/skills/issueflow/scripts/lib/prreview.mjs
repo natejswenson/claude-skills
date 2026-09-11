@@ -515,6 +515,7 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
     files: sizingFiles,
     priorMajors: openFindings(lane).filter((finding) => finding.severity === 'major').length,
   });
+  run.reasoningPolicy = { risk: plan.risk ?? (riskSensitiveChange(sizingFiles) ? 'high' : 'low'), priorMajors: plan.reasons?.includes('unresolved major findings') ? 1 : 0 };
   mkdirSync(reviewDir(dir, lane, round), { recursive: true });
   writeFileSync(diffPath(dir, lane, round), diffText);
   if (deltaText !== null) writeFileSync(fixPatchPath(dir, lane, round), deltaText);

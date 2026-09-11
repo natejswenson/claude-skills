@@ -43,7 +43,7 @@ export function dispatchProfile(run, role) {
   // Even readers write a result file. A read-only explorer cannot deliver it.
   // Read-heavy discovery and a first bounded fix do not need the parent-level
   // reasoning budget. A surviving major is the signal to pay for escalation.
-  const reasoning = adaptiveReasoning(run, role);
+  const reasoning = adaptiveReasoning(run, role, run?.reasoningPolicy ?? {});
   return { reasoning, agent: 'worker', fork_turns: 'none' };
 }
 

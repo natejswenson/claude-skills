@@ -39,7 +39,7 @@ import {
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
-import { dispatchLabel, dispatchProfile, runtimeOf, startWave, waveState } from './runtime.mjs';
+import { dispatchLabel, dispatchProfile, rollingWave, runtimeOf, startWave, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 import { stageTimeout } from './codex-policy.mjs';
 

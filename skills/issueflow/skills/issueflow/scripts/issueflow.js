@@ -39,9 +39,9 @@ import { WorktreeError, pruneWorktrees, registeredLanesUnder, removeWorktree } f
 import { activePath, gitStore, prepareCheckout, prepareExecution, rawRun, releaseSourceLease } from './lib/execution.mjs';
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
-import { advanceWave, dispatchLabel, modelLabel, releaseWave, runtimeOf, startWave } from './lib/runtime.mjs';
+import { advanceWave, dispatchLabel, modelLabel, releaseWave, rollingWave, runtimeOf, startWave } from './lib/runtime.mjs';
 import { readTelemetry, recordTelemetry, summarizeTelemetry } from './lib/telemetry.mjs';
-import { buildContextPacket } from './lib/context.mjs';
+import { buildContextPacket, verifyContextPacket } from './lib/context.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -1294,6 +1294,12 @@ async function cmdReviewVerify(args) {
   const { candidates, notExamined } = readCandidates(dir, lane, entry.round);
   guardDispatch(dir, run, args);
   const { batches, prior, fresh, auto, autoFixed, unverified } = planVerification(dir, run, lane, entry.round, candidates, { tree: laneTree(dir, run, lane), deferSave: Boolean(run.execution) });
+  if (runtimeOf(run) === 'codex') {
+    const packetPath = activePath(dir, lane.slug, 'review', String(entry.round), 'context.json');
+    if (!existsSync(packetPath)) throw new RunError(`round ${entry.round} of ${lane.slug} is missing its shared context packet`);
+    const packet = JSON.parse(readFileSync(packetPath, 'utf8'));
+    if (!verifyContextPacket(packet, packet.packetHash) || packet.head !== headOf(laneTree(dir, run, lane))) throw new RunError(`round ${entry.round} of ${lane.slug} has a stale or invalid shared context packet`);
+  }
   const briefs = writeVerifierBriefs(dir, run, lane, entry, { batches, issue: loadIssue(dir) });
   saveRun(dir, run);
   print(['Lane', 'Round', 'Candidates', 'Unverified nits', 'Prior majors', 'Prior nits', 'Verifiers', 'Not examined'],
@@ -1513,6 +1519,12 @@ async function cmdNext(args) {
   const { dir } = locate(args);
   const selected = loadRun(dir, { host: args.host, childSlots: args.childSlots });
   if (args.workersReleased) {
+    const refill = rollingWave(selected, (item) => waveDelivered(dir, selected, item));
+    if (refill.length > 0) {
+      saveRun(dir, selected);
+      printDispatch(refill, 'replacement workers', dir, selected, { queued: true });
+      return;
+    }
     for (const item of selected.dispatch?.queue?.active ?? []) {
       const output = item.writes ?? item.artifact;
       recordTelemetry(dir, selected, 'worker', {
