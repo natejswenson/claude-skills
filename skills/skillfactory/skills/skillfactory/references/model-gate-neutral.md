@@ -1,0 +1,1 @@
+If the active host or model cannot be observed reliably, ask the user to select the strongest supported capability available for this session. One line, then continue if the user declines — never silently proceed as though it made no difference.
