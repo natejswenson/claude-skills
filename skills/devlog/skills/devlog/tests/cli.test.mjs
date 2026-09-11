@@ -83,9 +83,9 @@ function runInit(t, host, extra = {}) {
   const codex = join(fakeBin, 'codex');
   writeFileSync(codex, `#!/bin/sh\nprintf '%s\\n' "$*" >> "${codexCalls}"\nprintf '%s\\n' 'mutated by codex' > "${marketplace}"\nexit 0\n`);
   chmodSync(codex, 0o755);
-  const r = spawnSync(process.execPath, [BIN, 'init', ...(host ? ['--host', host] : [])], {
+  const r = spawnSync(process.execPath, [BIN, 'init', ...(host ? ['--host', host] : []), '--yes'], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, USERPROFILE: home, GIT_CONFIG_GLOBAL: gitConfig, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, DEVLOG_INIT_TEST: '1', ...extra },
+    env: { ...process.env, HOME: home, USERPROFILE: home, GIT_CONFIG_GLOBAL: gitConfig, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, ...extra },
   });
   return { home, codexCalls, marketplace, ...r };
 }

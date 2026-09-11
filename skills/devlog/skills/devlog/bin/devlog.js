@@ -91,19 +91,7 @@ const log = {
 };
 
 async function initPrompt(questions, options) {
-  if (process.env.DEVLOG_INIT_TEST !== '1') return prompts(questions, options);
-  const list = Array.isArray(questions) ? questions : [questions];
-  const answers = {};
-  for (const question of list) {
-    if (question.name === 'gitAuthor') answers.gitAuthor = 'Test';
-    else if (question.name === 'githubUser') answers.githubUser = 'me';
-    else if (question.name === 'targetRepoName') answers.targetRepoName = 'daily-dev-log';
-    else if (question.name === 'voicePath') answers.voicePath = '';
-    else if (question.name === 'add') answers.add = false;
-    else if (question.name === 'proceed') answers.proceed = true;
-    else if (question.name) answers[question.name] = true;
-  }
-  return answers;
+  return prompts(questions, options);
 }
 
 function readPackageVersion() {
