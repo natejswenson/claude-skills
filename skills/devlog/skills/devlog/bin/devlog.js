@@ -90,6 +90,22 @@ const log = {
   hint: (msg) => console.log(kleur.dim('  ' + msg)),
 };
 
+async function initPrompt(questions, options) {
+  if (process.env.DEVLOG_INIT_TEST !== '1') return prompts(questions, options);
+  const list = Array.isArray(questions) ? questions : [questions];
+  const answers = {};
+  for (const question of list) {
+    if (question.name === 'gitAuthor') answers.gitAuthor = 'Test';
+    else if (question.name === 'githubUser') answers.githubUser = 'me';
+    else if (question.name === 'targetRepoName') answers.targetRepoName = 'daily-dev-log';
+    else if (question.name === 'voicePath') answers.voicePath = '';
+    else if (question.name === 'add') answers.add = false;
+    else if (question.name === 'proceed') answers.proceed = true;
+    else if (question.name) answers[question.name] = true;
+  }
+  return answers;
+}
+
 function readPackageVersion() {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
   return pkg.version;
@@ -179,7 +195,7 @@ function detectProjectRemote(path) {
 
 async function confirmOverwrite(label, path) {
   if (!existsSync(path)) return true;
-  const { ok } = await prompts({
+  const { ok } = await initPrompt({
     type: 'confirm',
     name: 'ok',
     message: `${label} already exists at ${path}. Overwrite?`,
@@ -296,7 +312,20 @@ async function promptForProject(defaults = {}) {
 }
 
 // ─── init ────────────────────────────────────────────────────────────────────
-async function cmdInit() {
+async function cmdInit(rest = []) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: {
+      host: { type: 'string', default: 'claude' },
+    },
+    allowPositionals: false,
+  });
+  const host = values.host;
+  if (host !== 'claude' && host !== 'codex') {
+    log.err(`Unknown host "${host}". Use "claude" or "codex".`);
+    process.exit(2);
+  }
+
   log.info(kleur.bold('\ndevlog setup\n'));
   await preflight();
 
@@ -309,7 +338,7 @@ async function cmdInit() {
     voicePath: existsSync(GHOSTWRITER_VOICE_DIR) ? GHOSTWRITER_VOICE_DIR : '',
   };
 
-  const answers = await prompts([
+  const answers = await initPrompt([
     { type: 'text', name: 'gitAuthor', message: 'Your name (retained for backward compatibility; not currently rendered on entries):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
     { type: 'text', name: 'githubUser', message: 'Your GitHub username:', initial: defaults.githubUser, validate: VALIDATORS.githubUser },
     { type: 'text', name: 'targetRepoName', message: 'Name of the repo where dev logs will be published:', initial: defaults.targetRepoName, validate: VALIDATORS.targetRepoName },
@@ -320,7 +349,7 @@ async function cmdInit() {
   const projects = [];
   let firstPrompt = true;
   for (;;) {
-    const { add } = await prompts({
+    const { add } = await initPrompt({
       type: 'confirm',
       name: 'add',
       message: firstPrompt ? 'Register a project now?' : 'Register another project?',
@@ -367,9 +396,14 @@ async function cmdInit() {
   log.info(`  Branch:         ${config.branch}`);
   log.info(`  Voice profile:  ${config.voicePath || '(ghostwriter if present, else bundled default)'}`);
   log.info(`  Projects:       ${config.projects.length === 0 ? '(none — add later with `devlog add-project`)' : config.projects.map((p) => p.key).join(', ')}`);
-  log.info(`  Skill location: ${CONFIG_DIR}`);
+  if (host === 'claude') {
+    log.info(`  Skill location: ${CONFIG_DIR}`);
+  } else {
+    log.info(`  Personal data:  ${CONFIG_DIR}`);
+    log.info('  Host:           Codex (marketplace plugin remains authoritative)');
+  }
 
-  const { proceed } = await prompts({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
+  const { proceed } = await initPrompt({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
   if (!proceed) process.exit(0);
   log.info('');
 
@@ -392,21 +426,23 @@ async function cmdInit() {
     log.ok(`Created ${CONFIG_DIR}`);
   }
 
-  if (await confirmOverwrite('SKILL.md', SKILL_DEST)) {
-    // These are versioned instructions, not personal config/voice/style files.
-    // Install references with the entrypoint so standalone hosts can resolve them.
-    const references = join(PACKAGE_ROOT, 'references');
-    const referenceDest = join(CONFIG_DIR, 'references');
-    mkdirSync(referenceDest, { recursive: true, mode: 0o700 });
-    for (const name of readdirSync(references)) {
-      if (name.endsWith('.md') && statSync(join(references, name)).isFile()) {
-        copyFileSync(join(references, name), join(referenceDest, name));
+  if (host === 'claude') {
+    if (await confirmOverwrite('SKILL.md', SKILL_DEST)) {
+      // These are versioned instructions, not personal config/voice/style files.
+      // Install references with the entrypoint so standalone hosts can resolve them.
+      const references = join(PACKAGE_ROOT, 'references');
+      const referenceDest = join(CONFIG_DIR, 'references');
+      mkdirSync(referenceDest, { recursive: true, mode: 0o700 });
+      for (const name of readdirSync(references)) {
+        if (name.endsWith('.md') && statSync(join(references, name)).isFile()) {
+          copyFileSync(join(references, name), join(referenceDest, name));
+        }
       }
+      copyFileSync(SKILL_SRC, SKILL_DEST);
+      log.ok(`Installed SKILL.md → ${SKILL_DEST}`);
+    } else {
+      log.warn('Skipped SKILL.md');
     }
-    copyFileSync(SKILL_SRC, SKILL_DEST);
-    log.ok(`Installed SKILL.md → ${SKILL_DEST}`);
-  } else {
-    log.warn('Skipped SKILL.md');
   }
 
   if (await confirmOverwrite('config.json', CONFIG_PATH)) {
@@ -470,7 +506,13 @@ async function cmdInit() {
 
   log.info('\n' + kleur.bold().green('Setup complete.') + '\n');
   log.info('Next steps:');
-  if (config.projects.length === 0) {
+  if (host === 'codex') {
+    log.info('  1. The marketplace-installed Codex plugin remains the authoritative $devlog entrypoint.');
+    log.info('  2. To install the plugin in Codex:');
+    log.info(`     ${kleur.cyan('codex plugin marketplace add <marketplace>')}`);
+    log.info(`     ${kleur.cyan('codex plugin add devlog@claude-skills')}`);
+    log.info(`  3. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
+  } else if (config.projects.length === 0) {
     log.info(`  1. Add a project: ${kleur.cyan('npx @natjswenson/devlog add-project')}`);
     log.info('  2. Tag a release in the project (e.g. `git tag v0.1.0`)');
     log.info(`  3. In Claude Code, run: ${kleur.cyan('/devlog')}`);
@@ -1333,7 +1375,7 @@ function printHelp() {
 ${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — release dev log generator
 
 Setup & config:
-  ${kleur.cyan('npx @natjswenson/devlog init')}                     One-time setup: create your dev-log repo, install the skill, write config
+  ${kleur.cyan('npx @natjswenson/devlog init [--host claude|codex]')}  One-time setup (defaults to Claude); Codex plugin is installed separately
   ${kleur.cyan('npx @natjswenson/devlog add-project')}              Register a project (interactive; add --yes --path <p> for non-interactive)
   ${kleur.cyan('npx @natjswenson/devlog remove-project <key> --yes')}  Unregister a project (entries stay published)
   ${kleur.cyan('npx @natjswenson/devlog set <field> <value>')}      Update one config field (${SETTABLE_FIELDS.join(', ')})
@@ -1388,7 +1430,7 @@ if (isMain) {
   const rest = process.argv.slice(3);
   switch (arg) {
     case 'init':
-      cmdInit();
+      cmdInit(rest);
       break;
     case 'add-project':
       cmdAddProject(rest);

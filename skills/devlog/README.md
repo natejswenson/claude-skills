@@ -65,13 +65,16 @@ $devlog
 ```
 
 ```sh
-npx @natjswenson/devlog init      # create the repo, install the skill, write config
+npx @natjswenson/devlog init      # create the repo, install the Claude skill, write config
 npx @natjswenson/devlog preview   # see it rendered at http://localhost:5173
 ```
 
 `init` creates `<your-username>/daily-dev-log` on GitHub (or uses an existing
-repo), installs the skill at `~/.claude/skills/devlog/`, writes its config, and
-lets you register one or more projects in a single run.
+repo), writes shared config and personal assets to `~/.claude/skills/devlog/`,
+and lets you register one or more projects in a single run. It defaults to the
+Claude standalone installation; use `init --host codex` when configuring the
+Codex plugin. Codex keeps the marketplace-installed $devlog plugin
+authoritative and does not create or update a standalone skill copy.
 
 > **Run from any directory *outside* a clone of this repo.** Running inside it
 > causes a `package.json` name collision and `npx` fails with
@@ -91,7 +94,9 @@ lets you register one or more projects in a single run.
 ## Requirements
 
 - **Claude Code:** Authenticate `gh` in the shell and allow web research for release guides.
-- **Codex:** Use the same authenticated `gh` CLI and available web tools. `init` still writes its legacy Claude skill copy; the Codex plugin is installed separately above.
+- **Codex:** Use the same authenticated `gh` CLI and available web tools. Run
+  `init --host codex` to write shared config and personal assets; install or
+  update the marketplace plugin separately using the Codex commands above.
 - **Personal data:** Both hosts retain config, voice fallback and image-style assets in `~/.claude/skills/devlog/`; an existing `~/.claude/ghostwriter/voice` can also supply the voice.
 
 See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
@@ -125,7 +130,7 @@ not apply to a dev log.
 
 | Command | What it does |
 |---|---|
-| `devlog init` | One-time setup: create dev-log repo, install skill, write config |
+| `devlog init [--host claude or codex]` | One-time setup (Claude by default); write config and host-appropriate assets |
 | `devlog add-project` | Register a project (interactive; `--yes --path <p>` for agent use) |
 | `devlog remove-project <key> --yes` | Unregister a project (published entries stay) |
 | `devlog set <field> <value>` | Update one config field |

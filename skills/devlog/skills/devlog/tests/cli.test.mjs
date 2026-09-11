@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, copyFileSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync, copyFileSync, unlinkSync, chmodSync } from 'node:fs';
 import { tmpdir, homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,6 +65,21 @@ function run(home, ...args) {
     env: { ...process.env, HOME: home, USERPROFILE: home, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH },
   });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+}
+
+function runInit(t, host, extra = {}) {
+  const home = mkdtempSync(join(tmpdir(), 'devlog-init-' + host + '-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const fakeBin = join(home, 'bin');
+  mkdirSync(fakeBin);
+  const gh = join(fakeBin, 'gh');
+  writeFileSync(gh, '#!/bin/sh\ncase "$1 $2" in\n  "--version " ) echo "gh version 2.0.0" ;;\n  "auth status") echo authenticated ;;\n  "api user") echo me ;;\n  "repo view") exit 0 ;;\n  *) exit 0 ;;\nesac\n');
+  chmodSync(gh, 0o755);
+  const r = spawnSync(process.execPath, [BIN, 'init', ...(host ? ['--host', host] : [])], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home, USERPROFILE: home, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, DEVLOG_INIT_TEST: '1', ...extra },
+  });
+  return { home, ...r };
 }
 
 const parse = (out) => JSON.parse(out.stdout);
@@ -171,6 +186,59 @@ test('the CLI dispatches when invoked through a bin symlink (the npm/npx layout)
   const r = spawnSync(process.execPath, [link, '--version'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout.trim(), /^\d+\.\d+\.\d+$/, 'expected the version on stdout — silent exit means the isMain guard failed to match through the symlink');
+});
+
+test('init defaults to Claude and installs the standalone skill plus shared assets', (t) => {
+  const out = runInit(t, null);
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  const configDir = join(out.home, '.claude', 'skills', 'devlog');
+  assert.ok(existsSync(join(configDir, 'config.json')), out.stdout + out.stderr);
+  assert.ok(existsSync(join(configDir, 'SKILL.md')));
+  assert.ok(existsSync(join(configDir, 'references', 'guide-publishing.md')));
+  assert.ok(existsSync(join(configDir, 'voice', 'voice-profile.md')));
+  assert.ok(existsSync(join(configDir, 'image-style', 'style-guide.md')));
+  assert.match(out.stdout, /Skill location:/);
+  assert.match(out.stdout, /In Claude Code, run:.*\/devlog/);
+});
+
+test('init --host codex writes shared assets without creating a shadow skill copy', (t) => {
+  const out = runInit(t, 'codex');
+  assert.equal(out.status, 0, out.stdout + out.stderr);
+  const configDir = join(out.home, '.claude', 'skills', 'devlog');
+  assert.ok(existsSync(join(configDir, 'config.json')), out.stdout + out.stderr);
+  assert.ok(existsSync(join(configDir, 'voice', 'voice-profile.md')));
+  assert.ok(existsSync(join(configDir, 'image-style', 'style-guide.md')));
+  assert.equal(existsSync(join(configDir, 'SKILL.md')), false);
+  assert.equal(existsSync(join(configDir, 'references')), false);
+  assert.match(out.stdout, /marketplace-installed Codex plugin remains the authoritative \$devlog entrypoint/);
+  assert.match(out.stdout, /codex plugin marketplace add/);
+  assert.doesNotMatch(out.stdout, /Installed SKILL\.md/);
+});
+
+test('init --host codex preserves an existing legacy skill copy', (t) => {
+  const out = runInit(t, 'codex');
+  assert.equal(out.status, 0, out.stderr);
+  const configDir = join(out.home, '.claude', 'skills', 'devlog');
+  mkdirSync(configDir, { recursive: true });
+  const skill = join(configDir, 'SKILL.md');
+  writeFileSync(skill, 'legacy sentinel\n');
+  const fakeBin = join(out.home, 'bin');
+  const rerun = spawnSync(process.execPath, [BIN, 'init', '--host', 'codex'], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: out.home, USERPROFILE: out.home, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, DEVLOG_INIT_TEST: '1' },
+  });
+  assert.equal(rerun.status, 0, rerun.stderr);
+  assert.equal(readFileSync(skill, 'utf8'), 'legacy sentinel\n');
+});
+
+test('help describes the host-aware init contract', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'devlog-help-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const out = run(home, '--help');
+  assert.equal(out.status, 0, out.stderr);
+  assert.match(out.stdout, /--host claude\|codex/);
+  assert.match(out.stdout, /defaults to Claude/);
+  assert.match(out.stdout, /Codex plugin is installed separately/);
 });
 
 test('publish-entry via CLI refuses a second publish of the same version', (t) => {
