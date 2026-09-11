@@ -1,0 +1,1 @@
+If this session is not on the most capable model, say so in one line and offer to switch (`/model opus`). One line, then continue if the user declines — never silently proceed as though it made no difference.

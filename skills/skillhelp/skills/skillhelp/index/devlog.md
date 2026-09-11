@@ -8,18 +8,18 @@
 
 ## Setup
 
-- **Claude Code:** Authenticate gh in the shell and allow web research for release guides. `skills/devlog/README.md:93`
-- **Codex:** Use the same authenticated gh CLI and available web tools. init still writes its legacy Claude skill copy; the Codex plugin is installed separately above. `skills/devlog/README.md:94`
-- **Personal data:** Both hosts retain config, voice fallback and image-style assets in ~/.claude/skills/devlog/; an existing ~/.claude/ghostwriter/voice can also supply the voice. `skills/devlog/README.md:95`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/devlog/README.md:97`
-- **Node 18+** for the CLI and preview app. `skills/devlog/README.md:99`
-- **GitHub CLI** (gh), authenticated with gh auth login — used to create your dev-log repo and push entries. `skills/devlog/README.md:100`
-- **Claude Code** (/devlog) or **Codex** ($devlog) to run the skill. `skills/devlog/README.md:102`
-- Concept drafts use independent agents for review/adaptation when available; missing capabilities retain the draft with explicit uncompleted checks. `skills/devlog/README.md:103`
-- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:279`
-- Field — Type — Description `skills/devlog/README.md:281`
-- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:283`
-- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:284`
+- **Claude Code:** Authenticate gh in the shell and allow web research for release guides. `skills/devlog/README.md:96`
+- **Codex:** Use the same authenticated gh CLI and available web tools. Run init --host codex to write shared config and personal assets; install or update the marketplace plugin separately using the C… `skills/devlog/README.md:97`
+- **Personal data:** Both hosts retain config, voice fallback and image-style assets in ~/.claude/skills/devlog/; an existing ~/.claude/ghostwriter/voice can also supply the voice. `skills/devlog/README.md:100`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/devlog/README.md:102`
+- **Node 18+** for the CLI and preview app. `skills/devlog/README.md:104`
+- **GitHub CLI** (gh), authenticated with gh auth login — used to create your dev-log repo and push entries. `skills/devlog/README.md:105`
+- **Claude Code** (/devlog) or **Codex** ($devlog) to run the skill. `skills/devlog/README.md:107`
+- Concept drafts use independent agents for review/adaptation when available; missing capabilities retain the draft with explicit uncompleted checks. `skills/devlog/README.md:108`
+- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:284`
+- Field — Type — Description `skills/devlog/README.md:286`
+- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:288`
+- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:289`
 
 ## Usage
 
@@ -38,24 +38,24 @@
 
 ## Commands
 
-- Command — What it does `skills/devlog/README.md:126`
-- devlog init — One-time setup: create dev-log repo, install skill, write config `skills/devlog/README.md:128`
-- devlog add-project — Register a project (interactive; --yes --path <p> for agent use) `skills/devlog/README.md:129`
-- devlog remove-project <key> --yes — Unregister a project (published entries stay) `skills/devlog/README.md:130`
-- devlog set <field> <value> — Update one config field `skills/devlog/README.md:131`
-- devlog config [--json] — Show current config with validation status `skills/devlog/README.md:132`
-- devlog scan [--project <key>] — JSON plan of new releases needing entries `skills/devlog/README.md:133`
-- devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:134`
-- devlog lint-guide <file> [--voice] — Post checks plus a unique top-of-post implementation handoff `skills/devlog/README.md:135`
-- devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:136`
-- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:147`
-- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:148`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:449`
-- npx @natjswenson/devlog init # create the repo, install the skill, write config `skills/devlog/README.md:68`
+- Command — What it does `skills/devlog/README.md:131`
+- devlog init [--host claude or codex] — One-time setup (Claude by default); write config and host-appropriate assets `skills/devlog/README.md:133`
+- devlog add-project — Register a project (interactive; --yes --path <p> for agent use) `skills/devlog/README.md:134`
+- devlog remove-project <key> --yes — Unregister a project (published entries stay) `skills/devlog/README.md:135`
+- devlog set <field> <value> — Update one config field `skills/devlog/README.md:136`
+- devlog config [--json] — Show current config with validation status `skills/devlog/README.md:137`
+- devlog scan [--project <key>] — JSON plan of new releases needing entries `skills/devlog/README.md:138`
+- devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:139`
+- devlog lint-guide <file> [--voice] — Post checks plus a unique top-of-post implementation handoff `skills/devlog/README.md:140`
+- devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:141`
+- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:152`
+- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:153`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:454`
+- npx @natjswenson/devlog init # create the repo, install the Claude skill, write config `skills/devlog/README.md:68`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
-- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:361`
-- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:362`
-- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:363`
+- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:366`
+- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:367`
+- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:368`
 - npm run audit — npm audit --audit-level=moderate `skills/devlog/skills/devlog/package.json:50`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/devlog/skills/devlog/package.json:52`
 

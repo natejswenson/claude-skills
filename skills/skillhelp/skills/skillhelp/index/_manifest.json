@@ -52,7 +52,7 @@
       "name": "devlog",
       "version": "0.14.1",
       "stack": "node",
-      "cardHash": "3c6308ef0ad062a7",
+      "cardHash": "ee99234e0703b8b7",
       "facts": 61,
       "sections": {
         "setup": 12,
@@ -292,7 +292,7 @@
       "name": "skillfactory",
       "version": "0.4.0",
       "stack": "node",
-      "cardHash": "b9d06e60bf561267",
+      "cardHash": "acb9837ef7841e31",
       "facts": 58,
       "sections": {
         "setup": 8,
