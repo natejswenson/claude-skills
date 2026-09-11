@@ -13,6 +13,10 @@
   ],
   "asks": [
     "Make the change described in the approved plan, and nothing else.",
+    "Treat the approved Files section as a scope allowlist. Before editing,",
+    "check every intended path against it; if the fix needs a new path or",
+    "would materially exceed the plan's rough line budget, stop and report it",
+    "under Deviations instead of widening the job silently.",
     "Match the surrounding code: its naming, its comment density, its idiom.",
     "Write the test the plan named as its proof, in the place this repo already",
     "keeps its tests.",

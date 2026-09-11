@@ -96,6 +96,8 @@ Then plan the change. Name the approach chosen AND at least one approach
 rejected, with the reason — a plan with no rejected alternative is a first
 idea wearing a design doc.
 List every file that will be touched and what happens to it.
+Treat that Files section as the scope allowlist: name anything explicitly
+out of scope, and give a rough changed-line budget for the whole change.
 State how the change will be proven: the specific behaviour a test must
 assert, phrased so a reader can tell it maps to the issue.
 ONE pull request is the default, even when the issue bundles several

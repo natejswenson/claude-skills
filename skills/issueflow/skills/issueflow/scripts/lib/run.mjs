@@ -53,9 +53,9 @@ export const runDir = (root, owner, name, number) => join(root, `${owner}__${nam
 const statePath = (dir) => join(dir, 'run.json');
 
 /** A stage entry, built from the declaration so the two can never disagree. */
-const stageEntry = (id, runtime = 'claude') => {
+const stageEntry = (id, runtime = 'claude', complexity = null) => {
   const s = stage(id);
-  const dispatch = dispatchProfile(runtime, id);
+  const dispatch = dispatchProfile({ runtime, host: runtime, complexity }, id);
   return {
     id: s.id, ...dispatch, artifact: s.artifact, state: 'pending', at: {},
     review: { rounds: [], feedback: null },
@@ -88,7 +88,7 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
   pr: null,
   landed: null,
   review: laneReviewEntry(complexity),
-  stages: PER_ITEM_STAGES.map((id) => stageEntry(id, runtime)),
+  stages: PER_ITEM_STAGES.map((id) => stageEntry(id, runtime, complexity)),
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
@@ -123,7 +123,7 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
     // when a run is resumed on a machine that has no run.json.
     checkpoint: { commentId: null, commentUrl: null, pushed: {} },
     finished: null,
-    stages: SHARED_STAGES.map((id) => stageEntry(id, resolvedRuntime)),
+    stages: SHARED_STAGES.map((id) => stageEntry(id, resolvedRuntime, complexity)),
     lanes: [laneEntry(policy, issue, { slug: 'root', title: issue.title, base: policy.base }, resolvedRuntime, complexity)],
   };
 }

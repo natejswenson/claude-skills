@@ -35,7 +35,7 @@ import {
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
   MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath, reviewCap,
-  ciFailureFingerprint, fixReportPath, openMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
@@ -329,6 +329,23 @@ function decideLoop(dir, run, lane, ctx) {
       };
     }
     return act('ready', { lane: lane.slug }, `${lane.slug}: converged and CI is ${checks.length === 0 ? 'absent' : 'green'} — readying the pull request`);
+  }
+
+  // Complete an already-dispatched fixer before evaluating whether the
+  // mechanism has repeated. A delivered report is still a required gate.
+  if (entry.fix?.briefed && !entry.fix?.reported) return afterFixBrief(dir, run, lane, entry, head, ctx);
+
+  // Two failed fix rounds are a non-converging mechanism, not a reason to
+  // spend the remaining cap repeating the same repair. The first surviving
+  // major already escalates the fixer; if it survives that escalation too,
+  // hand the concrete finding back to the user before starting another fleet.
+  const repeated = repeatedReviewMajors(lane);
+  if (repeated.length > 0) {
+    return stop('dispute', `${lane.slug}: ${repeated.map((f) => f.id).join(', ')} survived two fix rounds — inspect the mechanism and decide`, {
+      items: repeated.map((f) => ({ id: f.id, severity: f.severity, file: f.file, line: f.line, summary: f.short_summary })),
+      command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
+      alternative: `review-brief --lane ${lane.slug} --another-round "<why another independent fix attempt is justified>"`,
+    });
   }
 
   // Open majors: fix, report, next round.
