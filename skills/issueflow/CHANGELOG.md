@@ -5,6 +5,21 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-09-11
+
+### Added
+
+- Add a scope allowlist and rough change-size budget to the investigation and
+  implementation handoff, making unplanned files and scope growth explicit
+  deviations.
+
+### Changed
+
+- Use Sonnet for Claude's high-fanout finder and verifier readers while keeping
+  Opus for planning, red-team judgment, implementation, and escalated fixes.
+- Stop a review lane for an explicit user decision when the same major survives
+  two fix rounds, avoiding another unproductive repair fleet.
+
 ## [0.13.0] - 2026-09-10
 
 ### Added
@@ -57,6 +72,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   explicit `--child-slots` override for hosts with different capacity.
 
 ### Changed
+
+- Use Sonnet for Claude's high-fanout finder and verifier readers while
+  retaining Opus for planning, red-team judgment, implementation and
+  escalated fixes.
+- Stop a review lane as a dispute when the same major survives two fix rounds,
+  avoiding another unproductive fleet while preserving an explicit user route
+  for an independently justified round.
+- Add an implementation scope allowlist and rough line-budget check to the
+  plan/implementation handoff so new files and scope growth become explicit
+  deviations instead of silent expansion.
 
 - Codex dispatch profiles use medium reasoning for read-heavy finders and
   first-pass fixers, high for judgment/implementation roles, and xhigh only
