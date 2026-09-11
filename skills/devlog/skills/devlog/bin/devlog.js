@@ -90,22 +90,6 @@ const log = {
   hint: (msg) => console.log(kleur.dim('  ' + msg)),
 };
 
-async function initPrompt(questions, options) {
-  if (process.env.DEVLOG_INIT_TEST !== '1') return prompts(questions, options);
-  const list = Array.isArray(questions) ? questions : [questions];
-  const answers = {};
-  for (const question of list) {
-    if (question.name === 'gitAuthor') answers.gitAuthor = 'Test';
-    else if (question.name === 'githubUser') answers.githubUser = 'me';
-    else if (question.name === 'targetRepoName') answers.targetRepoName = 'daily-dev-log';
-    else if (question.name === 'voicePath') answers.voicePath = '';
-    else if (question.name === 'add') answers.add = false;
-    else if (question.name === 'proceed') answers.proceed = true;
-    else if (question.name) answers[question.name] = true;
-  }
-  return answers;
-}
-
 function readPackageVersion() {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
   return pkg.version;
@@ -193,8 +177,9 @@ function detectProjectRemote(path) {
   return m ? m[1] : null;
 }
 
-async function confirmOverwrite(label, path) {
+async function confirmOverwrite(label, path, { autoConfirm = false } = {}) {
   if (!existsSync(path)) return true;
+  if (autoConfirm) return true;
   const { ok } = await initPrompt({
     type: 'confirm',
     name: 'ok',
@@ -317,6 +302,7 @@ async function cmdInit(rest = []) {
     args: rest,
     options: {
       host: { type: 'string', default: 'claude' },
+      yes: { type: 'boolean', default: false },
     },
     allowPositionals: false,
   });
@@ -338,7 +324,12 @@ async function cmdInit(rest = []) {
     voicePath: existsSync(GHOSTWRITER_VOICE_DIR) ? GHOSTWRITER_VOICE_DIR : '',
   };
 
-  const answers = await initPrompt([
+  const answers = values.yes ? {
+    gitAuthor: defaults.gitAuthor,
+    githubUser: defaults.githubUser,
+    targetRepoName: defaults.targetRepoName,
+    voicePath: '',
+  } : await initPrompt([
     { type: 'text', name: 'gitAuthor', message: 'Your name (retained for backward compatibility; not currently rendered on entries):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
     { type: 'text', name: 'githubUser', message: 'Your GitHub username:', initial: defaults.githubUser, validate: VALIDATORS.githubUser },
     { type: 'text', name: 'targetRepoName', message: 'Name of the repo where dev logs will be published:', initial: defaults.targetRepoName, validate: VALIDATORS.targetRepoName },
@@ -347,24 +338,26 @@ async function cmdInit(rest = []) {
 
   // Optionally register projects in a loop. First time defaults to "yes".
   const projects = [];
-  let firstPrompt = true;
-  for (;;) {
-    const { add } = await initPrompt({
-      type: 'confirm',
-      name: 'add',
-      message: firstPrompt ? 'Register a project now?' : 'Register another project?',
-      initial: firstPrompt,
-    }, { onCancel: () => process.exit(1) });
-    firstPrompt = false;
-    if (!add) break;
-    const p = await promptForProject();
-    if (projects.find((x) => x.key === p.key)) {
-      log.warn(`Skipped (duplicate key): ${p.key}`);
-      continue;
+  if (!values.yes) {
+    let firstPrompt = true;
+    for (;;) {
+      const { add } = await initPrompt({
+        type: 'confirm',
+        name: 'add',
+        message: firstPrompt ? 'Register a project now?' : 'Register another project?',
+        initial: firstPrompt,
+      }, { onCancel: () => process.exit(1) });
+      firstPrompt = false;
+      if (!add) break;
+      const p = await promptForProject();
+      if (projects.find((x) => x.key === p.key)) {
+        log.warn(`Skipped (duplicate key): ${p.key}`);
+        continue;
+      }
+      if (p.tagPrefix === 'v') delete p.tagPrefix;
+      projects.push(p);
+      log.ok(`Registered: ${p.key}`);
     }
-    if (p.tagPrefix === 'v') delete p.tagPrefix;
-    projects.push(p);
-    log.ok(`Registered: ${p.key}`);
   }
 
   const targetRepo = `${answers.githubUser}/${answers.targetRepoName}`;
@@ -403,7 +396,9 @@ async function cmdInit(rest = []) {
     log.info('  Host:           Codex (marketplace plugin remains authoritative)');
   }
 
-  const { proceed } = await initPrompt({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
+  const { proceed } = values.yes
+    ? { proceed: true }
+    : await initPrompt({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
   if (!proceed) process.exit(0);
   log.info('');
 
@@ -427,7 +422,7 @@ async function cmdInit(rest = []) {
   }
 
   if (host === 'claude') {
-    if (await confirmOverwrite('SKILL.md', SKILL_DEST)) {
+    if (await confirmOverwrite('SKILL.md', SKILL_DEST, { autoConfirm: values.yes })) {
       // These are versioned instructions, not personal config/voice/style files.
       // Install references with the entrypoint so standalone hosts can resolve them.
       const references = join(PACKAGE_ROOT, 'references');
@@ -445,7 +440,7 @@ async function cmdInit(rest = []) {
     }
   }
 
-  if (await confirmOverwrite('config.json', CONFIG_PATH)) {
+  if (await confirmOverwrite('config.json', CONFIG_PATH, { autoConfirm: values.yes })) {
     atomicWriteJSON(CONFIG_PATH, config);
     log.ok(`Wrote config → ${CONFIG_PATH}`);
   }
@@ -459,7 +454,7 @@ async function cmdInit(rest = []) {
   for (const [src, dest] of [['voice-profile.example.md', 'voice-profile.md'], ['voice-notes.example.md', 'voice-notes.md']]) {
     const s = join(VOICE_SRC_DIR, src);
     const d = join(VOICE_DEST_DIR, dest);
-    if (existsSync(s) && (await confirmOverwrite(`voice/${dest}`, d))) {
+    if (existsSync(s) && (await confirmOverwrite(`voice/${dest}`, d, { autoConfirm: values.yes }))) {
       copyFileSync(s, d);
       log.ok(`Installed voice/${dest} → ${d}`);
     }
@@ -472,19 +467,19 @@ async function cmdInit(rest = []) {
   }
   const styleGuideSrc = join(IMAGE_STYLE_SRC_DIR, 'style-guide.example.md');
   const styleGuideDest = join(IMAGE_STYLE_DEST_DIR, 'style-guide.md');
-  if (existsSync(styleGuideSrc) && (await confirmOverwrite('image-style/style-guide.md', styleGuideDest))) {
+  if (existsSync(styleGuideSrc) && (await confirmOverwrite('image-style/style-guide.md', styleGuideDest, { autoConfirm: values.yes }))) {
     copyFileSync(styleGuideSrc, styleGuideDest);
     log.ok(`Installed image-style/style-guide.md → ${styleGuideDest}`);
   }
   const fontSrc = join(IMAGE_STYLE_SRC_DIR, 'font.ttf');
   const fontDest = join(IMAGE_STYLE_DEST_DIR, 'font.ttf');
-  if (existsSync(fontSrc) && (await confirmOverwrite('image-style/font.ttf', fontDest))) {
+  if (existsSync(fontSrc) && (await confirmOverwrite('image-style/font.ttf', fontDest, { autoConfirm: values.yes }))) {
     copyFileSync(fontSrc, fontDest);
     log.ok(`Installed image-style/font.ttf → ${fontDest}`);
   }
   const iconsSrc = join(IMAGE_STYLE_SRC_DIR, 'icons.md');
   const iconsDest = join(IMAGE_STYLE_DEST_DIR, 'icons.md');
-  if (existsSync(iconsSrc) && (await confirmOverwrite('image-style/icons.md', iconsDest))) {
+  if (existsSync(iconsSrc) && (await confirmOverwrite('image-style/icons.md', iconsDest, { autoConfirm: values.yes }))) {
     copyFileSync(iconsSrc, iconsDest);
     log.ok(`Installed image-style/icons.md → ${iconsDest}`);
   }
@@ -1375,7 +1370,7 @@ function printHelp() {
 ${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — release dev log generator
 
 Setup & config:
-  ${kleur.cyan('npx @natjswenson/devlog init [--host claude|codex]')}  One-time setup (defaults to Claude); Codex plugin is installed separately
+  ${kleur.cyan('npx @natjswenson/devlog init [--host claude|codex] [--yes]')}  One-time setup (defaults to Claude); Codex plugin is installed separately; --yes is non-interactive
   ${kleur.cyan('npx @natjswenson/devlog add-project')}              Register a project (interactive; add --yes --path <p> for non-interactive)
   ${kleur.cyan('npx @natjswenson/devlog remove-project <key> --yes')}  Unregister a project (entries stay published)
   ${kleur.cyan('npx @natjswenson/devlog set <field> <value>')}      Update one config field (${SETTABLE_FIELDS.join(', ')})

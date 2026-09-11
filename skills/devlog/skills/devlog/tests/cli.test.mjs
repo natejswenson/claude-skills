@@ -72,14 +72,22 @@ function runInit(t, host, extra = {}) {
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const fakeBin = join(home, 'bin');
   mkdirSync(fakeBin);
+  const gitConfig = join(home, 'gitconfig');
+  writeFileSync(gitConfig, '[user]\n\tname = Test\n');
   const gh = join(fakeBin, 'gh');
   writeFileSync(gh, '#!/bin/sh\ncase "$1 $2" in\n  "--version " ) echo "gh version 2.0.0" ;;\n  "auth status") echo authenticated ;;\n  "api user") echo me ;;\n  "repo view") exit 0 ;;\n  *) exit 0 ;;\nesac\n');
   chmodSync(gh, 0o755);
-  const r = spawnSync(process.execPath, [BIN, 'init', ...(host ? ['--host', host] : [])], {
+  const codexCalls = join(home, 'codex-calls.log');
+  const marketplace = join(home, 'marketplace-source.json');
+  writeFileSync(marketplace, '{"devlog":"marketplace-authoritative"}\n');
+  const codex = join(fakeBin, 'codex');
+  writeFileSync(codex, `#!/bin/sh\nprintf '%s\\n' "$*" >> "${codexCalls}"\nprintf '%s\\n' 'mutated by codex' > "${marketplace}"\nexit 0\n`);
+  chmodSync(codex, 0o755);
+  const r = spawnSync(process.execPath, [BIN, 'init', ...(host ? ['--host', host] : []), '--yes'], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, USERPROFILE: home, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, DEVLOG_INIT_TEST: '1', ...extra },
+    env: { ...process.env, HOME: home, USERPROFILE: home, GIT_CONFIG_GLOBAL: gitConfig, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, ...extra },
   });
-  return { home, ...r };
+  return { home, codexCalls, marketplace, ...r };
 }
 
 const parse = (out) => JSON.parse(out.stdout);
@@ -213,6 +221,8 @@ test('init --host codex writes shared assets without creating a shadow skill cop
   assert.match(out.stdout, /marketplace-installed Codex plugin remains the authoritative \$devlog entrypoint/);
   assert.match(out.stdout, /codex plugin marketplace add/);
   assert.doesNotMatch(out.stdout, /Installed SKILL\.md/);
+  assert.equal(existsSync(out.codexCalls), false);
+  assert.equal(readFileSync(out.marketplace, 'utf8'), '{"devlog":"marketplace-authoritative"}\n');
 });
 
 test('init --host codex preserves an existing legacy skill copy', (t) => {
@@ -223,9 +233,9 @@ test('init --host codex preserves an existing legacy skill copy', (t) => {
   const skill = join(configDir, 'SKILL.md');
   writeFileSync(skill, 'legacy sentinel\n');
   const fakeBin = join(out.home, 'bin');
-  const rerun = spawnSync(process.execPath, [BIN, 'init', '--host', 'codex'], {
+  const rerun = spawnSync(process.execPath, [BIN, 'init', '--host', 'codex', '--yes'], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: out.home, USERPROFILE: out.home, PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH, DEVLOG_INIT_TEST: '1' },
+    env: { ...process.env, HOME: out.home, USERPROFILE: out.home, GIT_CONFIG_GLOBAL: join(out.home, 'gitconfig'), PATH: fakeBin + ':' + process.env.PATH, PLAYWRIGHT_BROWSERS_PATH: REAL_PLAYWRIGHT_BROWSERS_PATH },
   });
   assert.equal(rerun.status, 0, rerun.stderr);
   assert.equal(readFileSync(skill, 'utf8'), 'legacy sentinel\n');
