@@ -39,8 +39,9 @@ import {
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
-import { dispatchLabel, dispatchProfile, runtimeOf, startWave, waveState } from './runtime.mjs';
+import { dispatchLabel, dispatchProfile, rollingWave, runtimeOf, startWave, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
+import { stageTimeout } from './codex-policy.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
@@ -55,11 +56,12 @@ const spanToSeconds = (span) => {
 };
 
 /** Three times the repo's median for this stage, else the default. */
-export function timeoutFor(dir, stageId) {
+export function timeoutFor(dir, stageId, runtime = 'claude') {
+  const fallback = runtime === 'codex' ? stageTimeout(stageId) : DEFAULT_TIMEOUT_S;
   const entry = readTimings(dir).find((t) => t.stage === stageId);
-  if (!entry || entry.n < 2) return DEFAULT_TIMEOUT_S;
+  if (!entry || entry.n < 2) return fallback;
   const median = spanToSeconds(entry.median);
-  return median ? Math.max(300, median * STALL_FACTOR) : DEFAULT_TIMEOUT_S;
+  return median ? Math.max(300, median * STALL_FACTOR) : fallback;
 }
 
 export const sh = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
@@ -148,7 +150,7 @@ function decidePlan(dir, run, step, ctx) {
   const brief = briefPath(dir, step);
   const artifact = artifactPath(dir, step);
   const latest = latestRound(step);
-  const timeout = timeoutFor(dir, step.stage.id);
+  const timeout = timeoutFor(dir, step.stage.id, runtimeOf(run));
 
   // A blocked round: the stage goes back, then delivers again, then is reviewed again.
   if (latest?.verdict === 'decision') {
@@ -212,7 +214,7 @@ function decidePlan(dir, run, step, ctx) {
 function decideImplement(dir, run, step, ctx) {
   const brief = briefPath(dir, step);
   const artifact = artifactPath(dir, step);
-  const timeout = timeoutFor(dir, step.stage.id);
+  const timeout = timeoutFor(dir, step.stage.id, runtimeOf(run));
   if (!step.stage.at?.briefed) return act('brief', { stage: step.stage.id, lane: step.laneSlug }, `${step.key} is ready to be briefed`);
   laneTree(dir, run, step.lane);
   if (!deliveredSince(dir, step)) {
@@ -358,7 +360,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
   const brief = fixBriefPath(dir, lane, entry.round);
   if (!entry.fix?.reported) {
     if (newerThan(report, brief) && deliveryCurrent(dir, report, run)) return act('review-fix-report', { lane: lane.slug }, `${lane.slug} round ${entry.round}: the fixer reported — recording it`);
-    return wait(`${lane.slug} round ${entry.round} fixer`, { pairs: [[report, brief]], timeout: timeoutFor(dir, 'implement') });
+    return wait(`${lane.slug} round ${entry.round} fixer`, { pairs: [[report, brief]], timeout: timeoutFor(dir, 'implement', runtimeOf(run)) });
   }
   // Reported. The next round reviews the pushed fix — which must be pushed.
   if (head && head === entry.head) {
