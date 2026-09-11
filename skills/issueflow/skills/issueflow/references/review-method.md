@@ -15,7 +15,7 @@ cleanup angles run in round one only and yield nits only.
 
 ```
 round 1   finders (2–5, runtime finder profile, one angle set each, over the whole change) ──▶ candidates
-    ──▶ verifiers (≤8, runtime verifier profile, ≤3 items each) ──▶ verdicts
+    ──▶ verifiers (≤4, runtime verifier profile, ≤3 items each) ──▶ verdicts
     ──▶ registrar (code) ──▶ one GitHub review, inline threads
     ──▶ fixer (runtime efficient profile) ──▶ one commit, a push, a fix report
 round 2+  finders (1–3, runtime finder profile, over the FIX — the diff since the last round's head) ──▶ candidates proposed as major
@@ -57,6 +57,11 @@ host adapter. A fleet larger than the available child slots is queued in waves;
 each original brief appears once, and the next wave waits for both delivery and
 native child release. Reviewers receive scoped `AGENTS.override.md`, `AGENTS.md`,
 `CLAUDE.md` and `REVIEW.md` guidance from their actual checkout.
+
+On Claude, the high-fanout finder and verifier readers use Sonnet; the plan,
+red-team, implementation and escalated-fixer roles retain Opus. A major that
+survives two fix rounds stops as a dispute instead of buying another identical
+repair attempt.
 
 ## The anti-self-censorship rule
 

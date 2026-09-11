@@ -33,11 +33,11 @@ error, and the stage goes back. A tree with uncommitted work goes back too —
 the pull request is opened from the commits.
 
 **Then the review loop, on the pull request.** The pull request opens as a
-draft. Round 1 reviews the change: one to five finders, sized by semantic
+draft. Round 1 reviews the change: one to five efficient finders, sized by semantic
 review load — each dealt
 angles from `references/review-method.md`: line-by-line, removed behaviour,
 cross-file, intent against the plan, conventions — file candidates; up to
-four high-capability verifier batches rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
+four verifier batches rule each one CONFIRMED, PLAUSIBLE or REFUTED; the
 registrar assigns ids once, decides which lines may carry a thread, and
 applies the convergence rules as code; one GitHub review goes up with a thread
 per finding; a fixer addresses every open major, commits once, pushes, and
@@ -46,8 +46,8 @@ finders sized to what the fix changed, up to four verifiers ruling on the
 candidates proposed as majors and on every earlier major — fixed, still open,
 or withdrawn with a quote at the new head; a nit is never re-verified — and a
 resolve on every fixed thread. It converges when no major is open — nits may
-remain — and `ready` lifts the draft once CI is green. Four rounds is the cap;
-a fifth is a conversation with you.
+remain — and `ready` lifts the draft once CI is green. A major surviving two
+fix rounds stops for a user decision; four rounds remains the absolute cap.
 
 **One command drives all of it.** `next` performs every deterministic step it
 can and prints exactly one thing to do: a dispatch with the wait line that

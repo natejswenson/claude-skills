@@ -209,7 +209,7 @@ for (const role of ['investigate', 'implement', 'redTeam', 'finder', 'verifier',
   });
   test(`host adapter: ${role} preserves Claude`, () => {
     assert.deepEqual(dispatchProfile('claude', role), {
-      model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose',
+      model: ['finder', 'verifier', 'fixer'].includes(role) ? 'sonnet' : 'opus', agent: 'general-purpose',
     });
   });
 }
@@ -377,6 +377,17 @@ test('codex runtime uses role-sized reasoning with cold writable workers', () =>
 
   run.lanes[0].review.findings = [{ severity: 'major', status: 'open', stillOpenRounds: 1 }];
   assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'xhigh' });
+});
+
+test('Claude review fanout uses the efficient model while core work stays on Opus', () => {
+  const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'claude' });
+  assert.equal(findStep(run, 'investigate').stage.model, 'opus');
+  assert.equal(findStep(run, 'implement', 'root').stage.model, 'opus');
+  assert.equal(dispatchProfile(run, 'redTeam').model, 'opus');
+  assert.equal(dispatchProfile(run, 'finder').model, 'sonnet');
+  assert.equal(dispatchProfile(run, 'verifier').model, 'sonnet');
+  assert.equal(dispatchProfile(run, 'fixer').model, 'sonnet');
+  assert.equal(dispatchProfile(run, 'fixerEscalated').model, 'opus');
 });
 
 test('codex briefs use AGENTS.md and native completion; Claude defaults stay Claude-shaped', () => {
