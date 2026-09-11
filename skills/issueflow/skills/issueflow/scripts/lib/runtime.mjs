@@ -24,19 +24,26 @@ export function dispatchPolicy(host, childSlots = assertRuntime(host) === 'codex
 
 const ROLES = ['investigate', 'implement', 'redTeam', 'finder', 'verifier', 'fixer', 'fixerEscalated'];
 
+/** Deterministic Codex effort selection; Claude never calls this policy. */
+export function adaptiveReasoning(run, role, signals = {}) {
+  let effort = ['finder', 'fixer'].includes(role) ? 'medium' : role === 'fixerEscalated' ? 'xhigh' : 'high';
+  const risk = String(signals.risk ?? run?.reasoningPolicy?.risk ?? '').toLowerCase();
+  const majors = Number(signals.unresolvedMajors ?? run?.reasoningPolicy?.unresolvedMajors ?? 0);
+  const disagreement = Number(signals.disagreement ?? run?.reasoningPolicy?.disagreement ?? 0);
+  if (risk === 'sensitive' || majors > 0 || disagreement > 0) effort = 'xhigh';
+  else if (risk === 'low' && ['finder', 'verifier', 'fixer'].includes(role)) effort = 'medium';
+  return effort;
+}
+
 export function dispatchProfile(run, role) {
   if (!ROLES.includes(role)) throw new Error(`no dispatch profile for ${runtimeOf(run)}/${role}`);
   if (runtimeOf(run) === 'claude') {
-    // Finders and verifiers are deliberately high-fanout readers. They
-    // produce bounded candidate/verdict files; the red team, implementer and
-    // escalated fixer retain Opus for the judgment-heavy work.
-    const model = ['finder', 'verifier', 'fixer'].includes(role) ? 'sonnet' : 'opus';
-    return { model, agent: 'general-purpose' };
+    return { model: role === 'fixer' ? 'sonnet' : 'opus', agent: 'general-purpose' };
   }
   // Even readers write a result file. A read-only explorer cannot deliver it.
   // Read-heavy discovery and a first bounded fix do not need the parent-level
   // reasoning budget. A surviving major is the signal to pay for escalation.
-  const reasoning = ['finder', 'fixer'].includes(role) ? 'medium' : role === 'fixerEscalated' ? 'xhigh' : 'high';
+  const reasoning = adaptiveReasoning(run, role);
   return { reasoning, agent: 'worker', fork_turns: 'none' };
 }
 
@@ -69,6 +76,21 @@ export function waveState(run, delivered) {
   if (queue.released) return { kind: 'ready', items: [] };
   const items = queue.active;
   return { kind: items.every(delivered) ? 'release' : 'wait', items };
+}
+
+/** Return delivered queue entries and refill slots without crossing a wave barrier. */
+export function rollingWave(run, delivered) {
+  const queue = run.dispatch?.queue;
+  if (!queue || queue.released) return [];
+  const done = queue.active.filter(delivered);
+  if (!done.length) return [];
+  queue.active = queue.active.filter((item) => !delivered(item));
+  const cap = dispatchPolicy(runtimeOf(run), run.dispatch.childSlots).childSlots;
+  const refill = queue.items.slice(queue.cursor, queue.cursor + Math.max(0, cap - queue.active.length));
+  queue.cursor += refill.length;
+  for (const item of refill) item.dispatchedAt = Date.now();
+  queue.active.push(...refill);
+  return refill;
 }
 
 export function releaseWave(run, delivered) {

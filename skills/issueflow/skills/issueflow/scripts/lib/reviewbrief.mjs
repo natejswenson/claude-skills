@@ -19,6 +19,7 @@ import {
 } from './prreview.mjs';
 import { dispatchProfile, runtimeOf } from './runtime.mjs';
 import { guidanceBlock as resolvedGuidance } from './guidance.mjs';
+import { delegationInstructions } from './codex-policy.mjs';
 
 const METHOD_PATH = new URL('../../references/review-method.md', import.meta.url);
 const METHOD = readFileSync(METHOD_PATH, 'utf8');
@@ -103,7 +104,7 @@ function intentBlock(dir, run) {
 /** The repository's own review instructions, when it has them. REVIEW.md is spliced; the host's instruction file is named. */
 function guidanceBlock(run, files, tree) {
   const resolved = resolvedGuidance(tree, files);
-  if (resolved) return resolved;
+  if (resolved) return runtimeOf(run) === 'codex' ? `${resolved}\n\n## Codex delegation policy\n\n${delegationInstructions('codex')}` : resolved;
   const out = ['## Repository guidance', ''];
   const reviewMd = join(tree, 'REVIEW.md');
   const instructionName = runtimeOf(run) === 'codex' ? 'AGENTS.md' : 'CLAUDE.md';
@@ -126,6 +127,7 @@ function guidanceBlock(run, files, tree) {
   } else {
     out.push(`The repository has no \`${instructionName}\`; the conventions angle returns nothing unless \`REVIEW.md\` above states a rule.`);
   }
+  if (runtimeOf(run) === 'codex') out.push('', '## Codex delegation policy', '', delegationInstructions('codex'));
   return out.join('\n');
 }
 

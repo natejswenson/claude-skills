@@ -40,6 +40,8 @@ import { activePath, gitStore, prepareCheckout, prepareExecution, rawRun, releas
 import { execFileSync } from 'node:child_process';
 import { verify } from './lib/verify.mjs';
 import { advanceWave, dispatchLabel, modelLabel, releaseWave, runtimeOf, startWave } from './lib/runtime.mjs';
+import { readTelemetry, recordTelemetry, summarizeTelemetry } from './lib/telemetry.mjs';
+import { buildContextPacket } from './lib/context.mjs';
 
 const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -927,6 +929,11 @@ async function cmdReview(args) {
   const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
 
   const result = registerReview(dir, run, step, { workdir });
+  for (const finding of result.items) recordTelemetry(dir, run, 'finding', {
+    confirmed: finding.status === 'confirmed',
+    severity: finding.severity,
+    path: finding.cite,
+  });
 
   console.log(`Round ${result.round} of ${MAX_ROUNDS} on ${step.key}: ${result.verdict.toUpperCase()}`);
   if (result.items.length > 0) {
@@ -1206,6 +1213,14 @@ function prIdentity(run, lane, offline) {
 function printDispatch(items, kind, dir = null, run = null, { queued = false } = {}) {
   if (run && runtimeOf(run) === 'codex') {
     if (!queued) items = startWave(run, items);
+    for (const item of items) recordTelemetry(dir, run, 'dispatch', {
+      role: item.role ?? item.agent,
+      reasoning: item.reasoning,
+      prompt: item.prompt,
+      promptBytes: item.prompt && existsSync(item.prompt) ? statSync(item.prompt).size : null,
+      retry: Number(item.retry ?? 0),
+      queueOccupancy: run.dispatch?.queue?.active?.length ?? items.length,
+    });
     saveRun(dir, run);
     if (run.dispatch.queue) console.log(`\nCodex wave: ${items.length} worker(s), child-slots=${run.dispatch.childSlots}. Wait for completion and release every native child slot before next --workers-released.`);
   }
@@ -1247,6 +1262,13 @@ async function cmdReviewBrief(args) {
   const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound, deferSave: Boolean(run.execution) });
   const entry = currentRound(lane);
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane) });
+  if (runtimeOf(run) === 'codex') {
+    const packet = buildContextPacket({ issue: loadIssue(dir), base: lane.base, head, files, plan, priorFindings: openFindings(lane) });
+    const packetPath = activePath(dir, lane.slug, 'review', String(round), 'context.json');
+    mkdirSync(join(packetPath, '..'), { recursive: true });
+    writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`);
+    for (const brief of briefs) writeFileSync(brief.prompt, `${readFileSync(brief.prompt, 'utf8')}\n## Shared context packet\n\nRead \`${packetPath}\` first; its hash is \`${packet.packetHash}\`. Refuse stale packets.\n`);
+  }
   saveRun(dir, run);
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
     [[lane.slug, `#${lane.pr.number}`, `${round} of ${lane.review.maxRounds ?? run.complexity?.reviewRounds ?? MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
@@ -1491,6 +1513,19 @@ async function cmdNext(args) {
   const { dir } = locate(args);
   const selected = loadRun(dir, { host: args.host, childSlots: args.childSlots });
   if (args.workersReleased) {
+    for (const item of selected.dispatch?.queue?.active ?? []) {
+      const output = item.writes ?? item.artifact;
+      recordTelemetry(dir, selected, 'worker', {
+        role: item.role ?? item.agent,
+        reasoning: item.reasoning,
+        artifact: output,
+        artifactBytes: output && existsSync(output) ? statSync(output).size : null,
+        wallTimeMs: item.dispatchedAt ? Date.now() - item.dispatchedAt : null,
+        agentTimeMs: null,
+        success: waveDelivered(dir, selected, item),
+        unknown: true,
+      });
+    }
     releaseWave(selected, (item) => waveDelivered(dir, selected, item));
     saveRun(dir, selected);
   }
@@ -1558,6 +1593,14 @@ async function cmdNext(args) {
     const run = observe(dir, loaded);
     const action = decide(dir, run, ctx);
     if (action.kind !== 'run') {
+      if (action.waveRedispatched) recordTelemetry(dir, run, 'retry', { retry: 1, reason: action.reason ?? 'wave redispatch' });
+      if (action.kind === 'stop' && action.reason !== 'budget') {
+        for (const item of run.dispatch?.queue?.active ?? []) recordTelemetry(dir, run, 'worker', {
+          role: item.role ?? item.agent, reasoning: item.reasoning, success: false,
+          wallTimeMs: item.dispatchedAt ? Date.now() - item.dispatchedAt : null,
+          agentTimeMs: null, unknown: true, reason: action.reason,
+        });
+      }
       if (action.waveStarted || action.waveRedispatched) saveRun(dir, run);
       if (action.kind === 'stop' && action.reason === 'budget') {
         checkpointBudgetStop(dir, run, args, action);
@@ -1589,6 +1632,7 @@ async function cmdNext(args) {
       }
     } catch (err) {
       if (action.command === 'accept' && err instanceof RunError) {
+        recordTelemetry(dir, loadRun(dir), 'gate-refusal', { reason: err.message });
         // The gate refused a delivery: say why, re-render the brief (which
         // resets the stage's clock), and hand the same prompt back with the
         // refusal. The stage goes back; nobody edits the artifact.
@@ -1679,6 +1723,8 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   prepare --run-dir <path> --workspace-root <path>
                        prepare or recover quiescent Codex execution before dispatch
   --issues-json <path> read issues from a file instead of the network (evals)
+  telemetry --run-dir <dir> [--json]
+                       report durable run performance telemetry
   --close-issue        finish also closes the issue, once every lane has landed
 
 Every state change is checkpointed: the lane's branch is pushed and one comment
@@ -1727,6 +1773,7 @@ async function main() {
       case 'next': return await cmdNext(args);
       case 'resume': return await cmdResume(args);
       case 'finish': return await cmdFinish(args);
+      case 'telemetry': return await cmdTelemetry(args);
       default:
         console.log(USAGE);
         process.exitCode = cmd ? 2 : 0;
@@ -1735,6 +1782,15 @@ async function main() {
     if (!(err instanceof BudgetStop || err instanceof CheckpointFailure)) console.error(`issueflow: ${err.message}`);
     process.exitCode = exitCodeFor(err);
   }
+}
+
+async function cmdTelemetry(args) {
+  const { dir } = locate(args);
+  const run = loadRun(dir);
+  const events = readTelemetry(dir, run);
+  const summary = summarizeTelemetry(events);
+  if (args.json) console.log(JSON.stringify(summary, null, 2));
+  else print(['Metric', 'Value'], Object.entries(summary).map(([key, value]) => [key, value]));
 }
 
 /**

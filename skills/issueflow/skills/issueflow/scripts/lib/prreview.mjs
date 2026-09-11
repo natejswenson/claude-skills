@@ -281,16 +281,63 @@ export function lineCountAt(tree, head, path) {
  * re-reviewing a diff that grew 1286 → 3993 lines with five finders and eight
  * verifiers every round — rounds whose only job was to check a fix.
  */
-export function fleetPlan(lines, round, { ofFix = false, risk = false } = {}) {
+export function reviewRisk(files = [], { disagreement = false, priorMajors = 0 } = {}) {
+  const paths = files.map((f) => typeof f === 'string' ? f : f.path ?? '');
+  const text = paths.join('\n').toLowerCase();
+  const sensitive = /(auth|permission|credential|secret|security|token|password)/.test(text);
+  const operational = /(^|\/)(\.github|workflow|release|deploy|install|migration)/.test(text);
+  const persistence = /(database|migration|checkpoint|archive|persist|storage)/.test(text);
+  const publicApi = /(api|schema|package\.json|plugin\.json)/.test(text);
+  const generated = paths.length > 0 && paths.every((p) => /(^|\/)(generated|dist|build)\//.test(p) || /\.lock$/.test(p));
+  const risk = sensitive ? 'sensitive' : (operational || persistence || publicApi || disagreement || priorMajors > 0) ? 'high' : generated ? 'low' : paths.length > 4 ? 'medium' : 'low';
+  const reasons = [];
+  if (sensitive) reasons.push('security/authentication or permissions');
+  if (operational) reasons.push('CI/release/deployment surface');
+  if (persistence) reasons.push('persistence or migration surface');
+  if (publicApi) reasons.push('public API or package metadata');
+  if (generated) reasons.push('generated/lockfile-only change');
+  if (disagreement) reasons.push('prior verifier disagreement');
+  if (priorMajors > 0) reasons.push('unresolved major findings');
+  return { risk, reasons };
+}
+
+export function fleetPlan(lines, round, { ofFix = false, risk = false, files = [], disagreement = false, priorMajors = 0 } = {}) {
   const angles = round === 1 ? [...CORE_ANGLES, ...CLEANUP_ANGLES] : [...CORE_ANGLES];
-  if (lines < SMALL_DIFF_LINES && !risk) return { finders: 1, maxVerifiers: 2, angles: [angles] };
-  const floor = risk ? 2 : (ofFix ? 1 : 2);
+  const semantic = reviewRisk(files, { disagreement, priorMajors });
+  const sensitive = risk === true || semantic.risk === 'sensitive';
+  const explain = files.length > 0 || disagreement || priorMajors > 0;
+  if (lines < SMALL_DIFF_LINES && !sensitive && semantic.risk === 'low') return explain ? { finders: 1, maxVerifiers: 2, angles: [angles], risk: semantic.risk, reasons: semantic.reasons } : { finders: 1, maxVerifiers: 2, angles: [angles] };
+  const floor = sensitive ? 2 : (ofFix ? 1 : 2);
   const finders = ofFix ? Math.min(3, Math.max(floor, Math.ceil(lines / 300))) : Math.min(5, Math.max(floor, Math.ceil(lines / 150)));
   const dealt = Array.from({ length: finders }, () => []);
   angles.forEach((a, i) => dealt[i % finders].push(a));
   // Four verifier batches fit the default four-slot Codex wave in one batch;
   // fix reviews remain smaller because they already have prior findings.
-  return { finders, maxVerifiers: 4, angles: dealt };
+  return explain ? { finders, maxVerifiers: 4, angles: dealt, risk: semantic.risk, reasons: semantic.reasons } : { finders, maxVerifiers: 4, angles: dealt };
+}
+
+/** Keep related candidates together and isolate high-impact candidates. */
+export function routeVerifierCandidates(candidates, { capacity = 4 } = {}) {
+  const groups = new Map();
+  for (const candidate of candidates) {
+    const key = candidate.mechanism ?? candidate.category ?? `${candidate.file ?? 'unknown'}:${candidate.line ?? 0}`;
+    const bucket = groups.get(key) ?? [];
+    bucket.push(candidate); groups.set(key, bucket);
+  }
+  const high = []; const ordinary = [];
+  for (const bucket of groups.values()) {
+    const sensitive = bucket.some((c) => ['major', 'critical'].includes(c.severity ?? c.proposed_severity) || /(security|data.loss|concurr)/i.test(`${c.category} ${c.failure_scenario}`));
+    // High-impact candidates are independent verification units. Related
+    // low-risk candidates remain together to reduce prompt overhead.
+    if (sensitive) high.push(...bucket.map((candidate) => [candidate]));
+    else ordinary.push(bucket);
+  }
+  const ordinaryPerBatch = Math.max(1, Math.ceil(ordinary.flat().length / Math.max(1, capacity - high.length)));
+  const low = [];
+  for (let i = 0; i < ordinary.length; i += 1) low.push(ordinary.slice(i, i + ordinaryPerBatch).flat());
+  // Never discard a candidate when sensitive work exceeds capacity. Capacity
+  // limits the low-risk batching target; every candidate remains represented.
+  return [...high, ...low];
 }
 
 /** Split items into at most `maxBatches` batches of about `per` each. */
@@ -462,7 +509,12 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
   if (deltaText !== null && fixLines === 0) throw new RunError(`cannot review ${lane.slug}: nothing changed since round ${last?.round ?? '?'} reviewed ${String(last?.head).slice(0, 12)} — there is no fix to review`);
   const sizingFiles = fixFiles ?? files;
   const reviewLines = semanticChangedLines(sizingFiles);
-  const plan = fleetPlan(reviewLines, round, { ofFix: fixLines !== null, risk: riskSensitiveChange(sizingFiles) });
+  const plan = fleetPlan(reviewLines, round, {
+    ofFix: fixLines !== null,
+    risk: riskSensitiveChange(sizingFiles),
+    files: sizingFiles,
+    priorMajors: openFindings(lane).filter((finding) => finding.severity === 'major').length,
+  });
   mkdirSync(reviewDir(dir, lane, round), { recursive: true });
   writeFileSync(diffPath(dir, lane, round), diffText);
   if (deltaText !== null) writeFileSync(fixPatchPath(dir, lane, round), deltaText);
@@ -531,7 +583,7 @@ export function planVerification(dir, run, lane, round, candidates, _opts = {}) 
   const unverified = round > 1 ? candidates.filter((c) => c.proposed_severity === 'nit') : [];
   const fresh = candidates.filter((c) => !unverified.includes(c)).map((c) => ({ ...c, prior: false }));
   const items = [...prior, ...fresh];
-  const batches = batchItems(items, { per: 3, maxBatches: entry.maxVerifiers });
+  const batches = routeVerifierCandidates(items, { capacity: entry.maxVerifiers });
   entry.verifiers = batches.length;
   entry.candidateIds = fresh.map((c) => c.id);
   entry.priorIds = prior.map((p) => p.id);
