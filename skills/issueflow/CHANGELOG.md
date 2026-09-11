@@ -5,6 +5,21 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-09-11
+
+### Added
+
+- Add a scope allowlist and rough change-size budget to the investigation and
+  implementation handoff, making unplanned files and scope growth explicit
+  deviations.
+
+### Changed
+
+- Use Sonnet for Claude's high-fanout finder and verifier readers while keeping
+  Opus for planning, red-team judgment, implementation, and escalated fixes.
+- Stop a review lane for an explicit user decision when the same major survives
+  two fix rounds, avoiding another unproductive repair fleet.
+
 ## [0.13.0] - 2026-09-10
 
 ### Added
