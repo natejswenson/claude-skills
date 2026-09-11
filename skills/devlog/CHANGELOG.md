@@ -2,6 +2,11 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## Unreleased
+
+- Make init host-aware: Claude retains standalone skill installation while
+  Codex writes shared personal assets without shadowing the marketplace plugin.
+
 ## 0.14.1 (2026-09-10) — native branded cover generation
 
 - Require Codex covers to use native generated raster artwork in the established

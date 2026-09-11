@@ -90,6 +90,10 @@ const log = {
   hint: (msg) => console.log(kleur.dim('  ' + msg)),
 };
 
+async function initPrompt(questions, options) {
+  return prompts(questions, options);
+}
+
 function readPackageVersion() {
   const pkg = JSON.parse(readFileSync(join(PACKAGE_ROOT, 'package.json'), 'utf8'));
   return pkg.version;
@@ -177,9 +181,10 @@ function detectProjectRemote(path) {
   return m ? m[1] : null;
 }
 
-async function confirmOverwrite(label, path) {
+async function confirmOverwrite(label, path, { autoConfirm = false } = {}) {
   if (!existsSync(path)) return true;
-  const { ok } = await prompts({
+  if (autoConfirm) return true;
+  const { ok } = await initPrompt({
     type: 'confirm',
     name: 'ok',
     message: `${label} already exists at ${path}. Overwrite?`,
@@ -296,7 +301,21 @@ async function promptForProject(defaults = {}) {
 }
 
 // ─── init ────────────────────────────────────────────────────────────────────
-async function cmdInit() {
+async function cmdInit(rest = []) {
+  const { values } = safeParseArgs({
+    args: rest,
+    options: {
+      host: { type: 'string', default: 'claude' },
+      yes: { type: 'boolean', default: false },
+    },
+    allowPositionals: false,
+  });
+  const host = values.host;
+  if (host !== 'claude' && host !== 'codex') {
+    log.err(`Unknown host "${host}". Use "claude" or "codex".`);
+    process.exit(2);
+  }
+
   log.info(kleur.bold('\ndevlog setup\n'));
   await preflight();
 
@@ -309,7 +328,12 @@ async function cmdInit() {
     voicePath: existsSync(GHOSTWRITER_VOICE_DIR) ? GHOSTWRITER_VOICE_DIR : '',
   };
 
-  const answers = await prompts([
+  const answers = values.yes ? {
+    gitAuthor: defaults.gitAuthor,
+    githubUser: defaults.githubUser,
+    targetRepoName: defaults.targetRepoName,
+    voicePath: '',
+  } : await initPrompt([
     { type: 'text', name: 'gitAuthor', message: 'Your name (retained for backward compatibility; not currently rendered on entries):', initial: defaults.gitAuthor, validate: VALIDATORS.gitAuthor },
     { type: 'text', name: 'githubUser', message: 'Your GitHub username:', initial: defaults.githubUser, validate: VALIDATORS.githubUser },
     { type: 'text', name: 'targetRepoName', message: 'Name of the repo where dev logs will be published:', initial: defaults.targetRepoName, validate: VALIDATORS.targetRepoName },
@@ -318,24 +342,26 @@ async function cmdInit() {
 
   // Optionally register projects in a loop. First time defaults to "yes".
   const projects = [];
-  let firstPrompt = true;
-  for (;;) {
-    const { add } = await prompts({
-      type: 'confirm',
-      name: 'add',
-      message: firstPrompt ? 'Register a project now?' : 'Register another project?',
-      initial: firstPrompt,
-    }, { onCancel: () => process.exit(1) });
-    firstPrompt = false;
-    if (!add) break;
-    const p = await promptForProject();
-    if (projects.find((x) => x.key === p.key)) {
-      log.warn(`Skipped (duplicate key): ${p.key}`);
-      continue;
+  if (!values.yes) {
+    let firstPrompt = true;
+    for (;;) {
+      const { add } = await initPrompt({
+        type: 'confirm',
+        name: 'add',
+        message: firstPrompt ? 'Register a project now?' : 'Register another project?',
+        initial: firstPrompt,
+      }, { onCancel: () => process.exit(1) });
+      firstPrompt = false;
+      if (!add) break;
+      const p = await promptForProject();
+      if (projects.find((x) => x.key === p.key)) {
+        log.warn(`Skipped (duplicate key): ${p.key}`);
+        continue;
+      }
+      if (p.tagPrefix === 'v') delete p.tagPrefix;
+      projects.push(p);
+      log.ok(`Registered: ${p.key}`);
     }
-    if (p.tagPrefix === 'v') delete p.tagPrefix;
-    projects.push(p);
-    log.ok(`Registered: ${p.key}`);
   }
 
   const targetRepo = `${answers.githubUser}/${answers.targetRepoName}`;
@@ -367,9 +393,16 @@ async function cmdInit() {
   log.info(`  Branch:         ${config.branch}`);
   log.info(`  Voice profile:  ${config.voicePath || '(ghostwriter if present, else bundled default)'}`);
   log.info(`  Projects:       ${config.projects.length === 0 ? '(none — add later with `devlog add-project`)' : config.projects.map((p) => p.key).join(', ')}`);
-  log.info(`  Skill location: ${CONFIG_DIR}`);
+  if (host === 'claude') {
+    log.info(`  Skill location: ${CONFIG_DIR}`);
+  } else {
+    log.info(`  Personal data:  ${CONFIG_DIR}`);
+    log.info('  Host:           Codex (marketplace plugin remains authoritative)');
+  }
 
-  const { proceed } = await prompts({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
+  const { proceed } = values.yes
+    ? { proceed: true }
+    : await initPrompt({ type: 'confirm', name: 'proceed', message: 'Continue?', initial: true }, { onCancel: () => process.exit(1) });
   if (!proceed) process.exit(0);
   log.info('');
 
@@ -392,24 +425,26 @@ async function cmdInit() {
     log.ok(`Created ${CONFIG_DIR}`);
   }
 
-  if (await confirmOverwrite('SKILL.md', SKILL_DEST)) {
-    // These are versioned instructions, not personal config/voice/style files.
-    // Install references with the entrypoint so standalone hosts can resolve them.
-    const references = join(PACKAGE_ROOT, 'references');
-    const referenceDest = join(CONFIG_DIR, 'references');
-    mkdirSync(referenceDest, { recursive: true, mode: 0o700 });
-    for (const name of readdirSync(references)) {
-      if (name.endsWith('.md') && statSync(join(references, name)).isFile()) {
-        copyFileSync(join(references, name), join(referenceDest, name));
+  if (host === 'claude') {
+    if (await confirmOverwrite('SKILL.md', SKILL_DEST, { autoConfirm: values.yes })) {
+      // These are versioned instructions, not personal config/voice/style files.
+      // Install references with the entrypoint so standalone hosts can resolve them.
+      const references = join(PACKAGE_ROOT, 'references');
+      const referenceDest = join(CONFIG_DIR, 'references');
+      mkdirSync(referenceDest, { recursive: true, mode: 0o700 });
+      for (const name of readdirSync(references)) {
+        if (name.endsWith('.md') && statSync(join(references, name)).isFile()) {
+          copyFileSync(join(references, name), join(referenceDest, name));
+        }
       }
+      copyFileSync(SKILL_SRC, SKILL_DEST);
+      log.ok(`Installed SKILL.md → ${SKILL_DEST}`);
+    } else {
+      log.warn('Skipped SKILL.md');
     }
-    copyFileSync(SKILL_SRC, SKILL_DEST);
-    log.ok(`Installed SKILL.md → ${SKILL_DEST}`);
-  } else {
-    log.warn('Skipped SKILL.md');
   }
 
-  if (await confirmOverwrite('config.json', CONFIG_PATH)) {
+  if (await confirmOverwrite('config.json', CONFIG_PATH, { autoConfirm: values.yes })) {
     atomicWriteJSON(CONFIG_PATH, config);
     log.ok(`Wrote config → ${CONFIG_PATH}`);
   }
@@ -423,7 +458,7 @@ async function cmdInit() {
   for (const [src, dest] of [['voice-profile.example.md', 'voice-profile.md'], ['voice-notes.example.md', 'voice-notes.md']]) {
     const s = join(VOICE_SRC_DIR, src);
     const d = join(VOICE_DEST_DIR, dest);
-    if (existsSync(s) && (await confirmOverwrite(`voice/${dest}`, d))) {
+    if (existsSync(s) && (await confirmOverwrite(`voice/${dest}`, d, { autoConfirm: values.yes }))) {
       copyFileSync(s, d);
       log.ok(`Installed voice/${dest} → ${d}`);
     }
@@ -436,19 +471,19 @@ async function cmdInit() {
   }
   const styleGuideSrc = join(IMAGE_STYLE_SRC_DIR, 'style-guide.example.md');
   const styleGuideDest = join(IMAGE_STYLE_DEST_DIR, 'style-guide.md');
-  if (existsSync(styleGuideSrc) && (await confirmOverwrite('image-style/style-guide.md', styleGuideDest))) {
+  if (existsSync(styleGuideSrc) && (await confirmOverwrite('image-style/style-guide.md', styleGuideDest, { autoConfirm: values.yes }))) {
     copyFileSync(styleGuideSrc, styleGuideDest);
     log.ok(`Installed image-style/style-guide.md → ${styleGuideDest}`);
   }
   const fontSrc = join(IMAGE_STYLE_SRC_DIR, 'font.ttf');
   const fontDest = join(IMAGE_STYLE_DEST_DIR, 'font.ttf');
-  if (existsSync(fontSrc) && (await confirmOverwrite('image-style/font.ttf', fontDest))) {
+  if (existsSync(fontSrc) && (await confirmOverwrite('image-style/font.ttf', fontDest, { autoConfirm: values.yes }))) {
     copyFileSync(fontSrc, fontDest);
     log.ok(`Installed image-style/font.ttf → ${fontDest}`);
   }
   const iconsSrc = join(IMAGE_STYLE_SRC_DIR, 'icons.md');
   const iconsDest = join(IMAGE_STYLE_DEST_DIR, 'icons.md');
-  if (existsSync(iconsSrc) && (await confirmOverwrite('image-style/icons.md', iconsDest))) {
+  if (existsSync(iconsSrc) && (await confirmOverwrite('image-style/icons.md', iconsDest, { autoConfirm: values.yes }))) {
     copyFileSync(iconsSrc, iconsDest);
     log.ok(`Installed image-style/icons.md → ${iconsDest}`);
   }
@@ -470,7 +505,13 @@ async function cmdInit() {
 
   log.info('\n' + kleur.bold().green('Setup complete.') + '\n');
   log.info('Next steps:');
-  if (config.projects.length === 0) {
+  if (host === 'codex') {
+    log.info('  1. The marketplace-installed Codex plugin remains the authoritative $devlog entrypoint.');
+    log.info('  2. To install the plugin in Codex:');
+    log.info(`     ${kleur.cyan('codex plugin marketplace add <marketplace>')}`);
+    log.info(`     ${kleur.cyan('codex plugin add devlog@claude-skills')}`);
+    log.info(`  3. Preview locally: ${kleur.cyan('npx @natjswenson/devlog preview')}`);
+  } else if (config.projects.length === 0) {
     log.info(`  1. Add a project: ${kleur.cyan('npx @natjswenson/devlog add-project')}`);
     log.info('  2. Tag a release in the project (e.g. `git tag v0.1.0`)');
     log.info(`  3. In Claude Code, run: ${kleur.cyan('/devlog')}`);
@@ -1333,7 +1374,7 @@ function printHelp() {
 ${kleur.bold('@natjswenson/devlog')} v${readPackageVersion()} — release dev log generator
 
 Setup & config:
-  ${kleur.cyan('npx @natjswenson/devlog init')}                     One-time setup: create your dev-log repo, install the skill, write config
+  ${kleur.cyan('npx @natjswenson/devlog init [--host claude|codex] [--yes]')}  One-time setup (defaults to Claude); Codex plugin is installed separately; --yes is non-interactive
   ${kleur.cyan('npx @natjswenson/devlog add-project')}              Register a project (interactive; add --yes --path <p> for non-interactive)
   ${kleur.cyan('npx @natjswenson/devlog remove-project <key> --yes')}  Unregister a project (entries stay published)
   ${kleur.cyan('npx @natjswenson/devlog set <field> <value>')}      Update one config field (${SETTABLE_FIELDS.join(', ')})
@@ -1388,7 +1429,7 @@ if (isMain) {
   const rest = process.argv.slice(3);
   switch (arg) {
     case 'init':
-      cmdInit();
+      cmdInit(rest);
       break;
     case 'add-project':
       cmdAddProject(rest);
