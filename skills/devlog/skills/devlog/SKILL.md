@@ -10,6 +10,11 @@ When running in Codex, invoke this skill as `$devlog`. Resolve scripts, assets,
 and references from the directory containing this SKILL.md, regardless of the
 current working directory. Existing `~/.claude/` personal-data paths remain valid
 and are still used by the bundled scripts; they do not require Claude to run.
+The Codex marketplace plugin is the authoritative $devlog entrypoint. When
+running init from Codex, use --host codex so the CLI writes shared config,
+voice, and image-style assets without creating or updating a standalone skill
+copy in the retained legacy directory. Claude init remains the standalone
+skill-copy installation path.
 Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
 `WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
 available question tool or a concise chat question; wait for answers that gate
