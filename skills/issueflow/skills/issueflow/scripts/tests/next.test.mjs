@@ -294,6 +294,20 @@ function loopFixture() {
 
 const CAND = { file: 'a.js', line: 1, side: 'RIGHT', category: 'line-by-line', summary: 'a is 2', short_summary: 'a is now 2', failure_scenario: 'callers expecting 1 break', introduced_by_diff: true };
 
+test('decide hands back a major that survived two fixes before opening another fleet', () => {
+  const { dir, run, repoPath, cleanup } = loopFixture();
+  const lane = run.lanes[0];
+  const head = headOf(repoPath);
+  lane.review.findings = [{ id: 'f-repeat', severity: 'major', status: 'open', stillOpenRounds: 2, file: 'a.js', line: 1, short_summary: 'the mechanism still fails' }];
+  lane.review.rounds = [{ round: 3, head, registered: true, posted: true, verdict: 'open', fix: { briefed: true, reported: true } }];
+  const action = decide(dir, run);
+  assert.equal(action.kind, 'stop');
+  assert.equal(action.reason, 'dispute');
+  assert.equal(action.items[0].id, 'f-repeat');
+  assert.match(action.alternative, /another independent fix attempt/);
+  cleanup();
+});
+
 for (const delivery of ['finders', 'verifiers', 'fixer']) {
   test(`budget: expired ${delivery} delivery follows its ordinary registration boundary`, (t) => {
     const { dir, run, repoPath, cleanup } = loopFixture();
@@ -556,7 +570,7 @@ test('decide: a finder fleet that never delivers is a stall with the prompts to 
   assert.equal(a.reason, 'stalled');
   assert.equal(a.items.length, 1);
   assert.match(a.items[0].prompt, /root-review-r1-finder-1\.md/);
-  assert.equal(a.items[0].model, 'opus');
+  assert.equal(a.items[0].model, 'sonnet');
   cleanup();
 });
 

@@ -58,6 +58,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Use Sonnet for Claude's high-fanout finder and verifier readers while
+  retaining Opus for planning, red-team judgment, implementation and
+  escalated fixes.
+- Stop a review lane as a dispute when the same major survives two fix rounds,
+  avoiding another unproductive fleet while preserving an explicit user route
+  for an independently justified round.
+- Add an implementation scope allowlist and rough line-budget check to the
+  plan/implementation handoff so new files and scope growth become explicit
+  deviations instead of silent expansion.
+
 - Codex dispatch profiles use medium reasoning for read-heavy finders and
   first-pass fixers, high for judgment/implementation roles, and xhigh only
   when a major survives a fix.
