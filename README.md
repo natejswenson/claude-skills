@@ -36,6 +36,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`brandreport`](skills/brandreport) | ![brandreport](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=brandreport-v*&label=&sort=semver&color=blue) | `/brandreport` | Node | Give it just a name; it blind-searches the open web for that person's presence, keeps only what it can prove is them, and renders what it found as a press-styled brand report. |
 | [`netwatch`](skills/netwatch) | ![netwatch](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=netwatch-v*&label=&sort=semver&color=blue) | `/netwatch` | Node | Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch. |
 | [`appletv`](skills/appletv) | ![appletv](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=appletv-v*&label=&sort=semver&color=blue) | `/appletv` | Node | Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the TV's own state says so. |
+| [`issuecreator`](skills/issuecreator) | ![issuecreator](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issuecreator-v*&label=&sort=semver&color=blue) | `/issuecreator` | Node | Create actionable GitHub issues that issueflow can take through planning and implementation. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -89,6 +90,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install brandreport@claude-skills
 /plugin install netwatch@claude-skills
 /plugin install appletv@claude-skills
+/plugin install issuecreator@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -128,6 +130,7 @@ ln -sfn "$PWD/skills/skillhelp/skills/skillhelp" ~/.claude/skills/skillhelp
 ln -sfn "$PWD/skills/brandreport/skills/brandreport" ~/.claude/skills/brandreport
 ln -sfn "$PWD/skills/netwatch/skills/netwatch" ~/.claude/skills/netwatch
 ln -sfn "$PWD/skills/appletv/skills/appletv" ~/.claude/skills/appletv
+ln -sfn "$PWD/skills/issuecreator/skills/issuecreator" ~/.claude/skills/issuecreator
 ```
 </details>
 
