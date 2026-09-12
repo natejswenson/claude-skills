@@ -7,7 +7,7 @@ release happened.
 |---|---|---|---|
 | Preflight | `release preflight` | what is on main, what is tagged, what is unreleased, what blocks it, and who else rides along | that any of it is *worth* releasing |
 | Notes | `release changelog-draft` → your prose → `release prepare` | the version and the entry exist in one commit on a branch | that anything is pushed |
-| Cut | `release cut` (repeatedly) | the branch reached dev, the promotion reached main | that a tag was cut |
+| Cut | `release cut` (repeatedly) | the release PR reached main, through promotion only for two-branch repos | that a tag was cut |
 | Proof | `release cut` returning `done: true` | **the tag exists on origin** | — |
 
 ## What may never be reported as a release
@@ -71,3 +71,16 @@ about API stability.
 
 `suggestedBump` caps this at `minor` and sets `suggestedBumpCapped: true`. Offer
 the major bump; never take it. The maintainer decides when something is 1.0.
+
+## Branch patterns
+
+An explicit `github-flow` pattern uses configured main as the preparation and PR
+base, even while a legacy dev field remains in config. Status returns
+`workflowPattern`, `releaseBase`, and `pendingComponents`; `versionOnDev` is null
+and `collateral` is empty. Pending components are discovered from configured
+versions/tags on main, without labels. With no explicit pattern, the legacy
+integration/promotion behavior and dev-ahead guard remain.
+
+`cut --version` must match main, the integration branch, or the actual prepared
+branch. Missing/failed required checks prevent a merge request, and freshly
+fetched main must contain the selected version and notes before dispatch.

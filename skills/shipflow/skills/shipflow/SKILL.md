@@ -171,11 +171,29 @@ and release workflow live, with `{name}` as the only substitution token;
 its root (`package.json`, `CHANGELOG.md`, `v{version}`), so a one-project repo needs no config
 at all and `--component` may be omitted.
 
+`workflowPattern: "github-flow"` is authoritative: preparation and feature PRs
+use configured main, status never reads dev, and cut skips promotion. A stale dev
+field does not change that. Absent-pattern and two-branch consumers retain the
+integration branch, promotion and dev-ahead refusal. GitHub-flow `releases`
+returns `mergedPrs`; legacy consumers retain `promotions`. These labels are
+optional reminders: component `release-status` inventories pending versions and
+tags without them, and `release-cut` requires no label.
+
+For the declared `skills/{name}/.codex-plugin/plugin.json` layout, preparation
+requires this repository's `tools/sync_codex.py` and `tools/check_compatibility.py`.
+It checks existing metadata, updates both lockfile version fields and the shared
+version files, runs generation and compatibility checks in the worktree, and
+refuses unrelated generated edits. Generic consumers have no Python dependency.
+Before requesting merge, cut reads the full live required-check set; before
+explicit dispatch, it fetches and verifies main's intended version and changelog.
+Keep main PRs draft until their review and authorized merge decision are complete;
+the existing GitHub-flow workflow enables native auto-merge on eligible PRs.
+
 1. **Read the state. Never guess it.**
    ```
    npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name>
    ```
-   Returns `state`, the version on main and dev, the last tag, every commit since that tag that
+   Returns `state`, `workflowPattern`, `releaseBase`, the version on main (and dev for two-branch repos), the last tag, every commit since that tag that
    touched this component's paths, a `suggestedBump` with its reason, `blockers`, `notes`, and a
    `statusHash`. `state` decides the path:
    - `clean` — the released version is what's on main. A bump is needed: go to step 2.
@@ -215,7 +233,7 @@ at all and `--component` may be omitted.
 3. **Cut it, and prove it.**
    ```
    npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \
-     --expect-status-hash <hash-from-step-1> --wait 240
+     --version <prepared-or-confirmed-version> --expect-status-hash <hash-from-step-1> --wait 240
    ```
    `--expect-status-hash` is mandatory (same TOCTOU discipline as `apply`'s `--expect-state-hash`);
    `--skip-hash-check` is a named escape hatch, never a default.
@@ -226,7 +244,7 @@ at all and `--component` may be omitted.
    re-run `release-status` to release what's on dev (the normal recovery), **or** add
    `--version <x.y.z>` naming exactly the version on main, if you deliberately mean to release
    that one and leave dev's higher version for later. `--version` is a confirmation, not a
-   bypass — it is only ever accepted when it matches a version already on main or dev; anything
+   bypass — it is only ever accepted when it matches a version already on main, dev, or the verified prepared branch; anything
    else is refused the same as passing nothing.
 
    **`release-cut` is resumable and bounded, and it will usually return `done: false`.** The full
@@ -236,8 +254,8 @@ at all and `--component` may be omitted.
    derives every stage from live remote state and never from a record of what a previous call did,
    so a resumed run and a fresh one are the same code path.
 
-   **The promotion merging cuts nothing.** `release-cut` dispatches the component's release
-   workflow itself, after the promotion lands — that dispatch is the single point at which any tag
+   **Merging cuts nothing.** `release-cut` dispatches the component's release
+   workflow itself, after the selected version and notes reach main — that dispatch is the single point at which any tag
    is created in this repo, which is why a merge can no longer surprise anyone with a release.
 
 4. **Report the tag, and only the tag.** `done: true` carries `tag` and `releaseUrl`, read back
