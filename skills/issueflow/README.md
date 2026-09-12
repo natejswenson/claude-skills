@@ -49,6 +49,11 @@ resolve on every fixed thread. It converges when no major is open — nits may
 remain — and `ready` lifts the draft once CI is green. A major surviving two
 fix rounds stops for a user decision; four rounds remains the absolute cap.
 
+The plan red team follows the same bounded principle: three blocked rounds stop
+the autonomous loop, and one user-directed recovery round is the absolute final
+attempt. Further overrides are refused so a plan cannot consume hours in an
+unbounded re-brief cycle.
+
 **One command drives all of it.** `next` performs every deterministic step it
 can and prints exactly one thing to do: a dispatch with the wait line that
 tells you when it is done, a wait, or a stop naming who must act. Every state
@@ -106,8 +111,10 @@ implementations and verification, and bounded `medium` reasoning for
 read-heavy finders and first-pass fixes; a surviving major escalates the fixer
 to `xhigh`. Codex briefs also carry `reasoning_effort`, native agent roles and
 `AGENTS.md` discovery, and return completion through the subagent's final
-response. Codex review fleets use four concurrent child slots by default; pass
-`--child-slots <n>` to override that host-capacity choice.
+response. Auto runs renew their bounded time windows automatically; the
+`--autonomous` flag remains as a compatibility alias. Codex review fleets use
+four concurrent child slots by default; pass `--child-slots <n>` to override
+that host-capacity choice.
 
 ```
 | # | Issue                                     | Labels | Comments | Updated    | Detail | Run         |

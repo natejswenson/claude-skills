@@ -28,14 +28,18 @@ import { PLAN_STAGE } from './stages.mjs';
 import { RunError, artifactPath, hasSection, saveRun, sha256OfFile } from './run.mjs';
 
 /**
- * Three blocked rounds is the ceiling. The house's adversarial doc reviews
- * converged in 7–10 rounds over whole designs; a single plan that a red team
- * has refused three times is not converging, it is oscillating — and an
- * autonomous loop that keeps paying for oscillation is the failure mode a
- * cap exists to name. On exhaustion the run stops and surfaces the open
- * findings; it never skips, never forces, never approves over them.
+ * Three blocked rounds is the autonomous ceiling. The house's adversarial doc
+ * reviews converged in 7–10 rounds over whole designs; a single plan that a
+ * red team has refused three times is not converging, it is oscillating — and
+ * an autonomous loop that keeps paying for oscillation is the failure mode a
+ * cap exists to name. A user may direct one recovery round, but that does not
+ * turn the cap into an unbounded override loop: the fourth blocked result is
+ * terminal until the user changes the scope or fixes the issue outside this
+ * run. On exhaustion the run stops and surfaces the open findings; it never
+ * skips, never forces, never approves over them.
  */
 export const MAX_ROUNDS = 3;
+export const MAX_TOTAL_ROUNDS = MAX_ROUNDS + 1;
 
 export const SEVERITIES = ['critical', 'high', 'medium', 'low'];
 
@@ -139,10 +143,11 @@ export const nextRound = (step) => (step.stage.review?.rounds.length ?? 0) + 1;
 /** The most recent registered round, or null before any review has run. */
 export const latestRound = (step) => step.stage.review?.rounds.at(-1) ?? null;
 
-/** True when the cap is spent: MAX_ROUNDS reviews registered and the last one still blocked. */
+/** True when the cap is spent: the normal cap plus one directed recovery are blocked. */
 export const roundsExhausted = (step) => {
   const rounds = step.stage.review?.rounds ?? [];
   if (rounds.length < MAX_ROUNDS || rounds.at(-1)?.verdict !== 'blocked') return false;
+  if (rounds.length >= MAX_TOTAL_ROUNDS) return true;
   // A recorded user override for the next round re-opens the stage — the cap
   // stops the autonomous loop, not the person it works for.
   const overrides = step.stage.review?.overrides ?? [];
