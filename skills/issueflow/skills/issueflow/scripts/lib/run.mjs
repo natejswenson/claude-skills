@@ -670,8 +670,14 @@ const mtimeOf = (path) => {
 export function deliveredSince(dir, step) {
   const artifact = artifactPath(dir, step);
   if (!hasContent(artifact)) return null;
-  if (!deliveryCurrent(dir, artifact)) return null;
+  const run = rawRun(dir);
+  if (!deliveryCurrent(dir, artifact, run)) return null;
   const delivered = mtimeOf(artifact);
+  // Strict delivery has already checked the current UUID, generation, immutable
+  // inputs, output hashes and native terminal state. A preserved artifact mtime
+  // must not override that proof (for example, same-byte report-only retries).
+  // Legacy runs still need the timestamp guard below.
+  if (run?.harness?.attempts) return delivered;
   const briefed = step.stage.at?.briefed;
   if (briefed && Date.parse(delivered) < Date.parse(briefed)) return null;
   return delivered;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -148,11 +148,17 @@ test('report-only repair at the same HEAD gets a fresh verification batch, not a
   const f = fixture(t);
   const brief = join(f.dir, 'repair-brief.md'); const output = artifactPath(f.dir, f.step);
   writeFileSync(brief, 'Synthetic dispatch'); recordDispatch(f.dir, f.run, brief, [output]);
+  // Reproduce the CI clock-order failure deterministically. A current immutable
+  // completion, not an old artifact mtime, establishes a strict delivery.
+  const old = new Date(Date.parse(f.step.stage.at.briefed) - 10000);
+  utimesSync(output, old, old);
   completeAttempt(f.run.harness.attempts['root/implement.md'].manifest);
   verifyLane(f.dir, f.run, f.lane);
   const firstBatch = f.lane.verification.batchId;
   // Same timestamp as well as same commit: UUID, not clock resolution, separates attempts.
   writeFileSync(brief, 'Synthetic corrected report dispatch'); recordDispatch(f.dir, f.run, brief, [output]);
+  saveRun(f.dir, f.run);
+  assert.notEqual(decide(f.dir, f.run, { offline: true }).command, 'verify-run', 'the old completion cannot satisfy the new attempt');
   completeAttempt(f.run.harness.attempts['root/implement.md'].manifest); saveRun(f.dir, f.run);
   assert.equal(verificationCurrent(f.dir, f.run, f.lane), false);
   assert.equal(decide(f.dir, f.run, { offline: true }).command, 'verify-run');
