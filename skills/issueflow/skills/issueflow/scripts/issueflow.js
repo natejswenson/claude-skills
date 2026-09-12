@@ -12,7 +12,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
-import { MAX_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
+import { MAX_ROUNDS, MAX_TOTAL_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
 import { decide, renderAction, sh, waveDelivered } from './lib/next.mjs';
 import { DISPATCHES, autoRenewBudget, budgetStatus, budgetStop, renewBudget } from './lib/budget.mjs';
 import { PLAN_STAGE } from './lib/stages.mjs';
@@ -666,7 +666,10 @@ async function cmdStart(args) {
     // Autoflow is autonomous by default. The red team's hash-bound pass is the
     // approval; a human plan gate is an explicit diagnostic/review mode.
     auto: !Boolean(args.reviewPlan),
-    autonomous: Boolean(args.autonomous),
+    // An ordinary auto run must remain self-driving across its bounded time
+    // windows. `--autonomous` remains accepted for compatibility; the only
+    // mode that deliberately keeps a human in the loop is --review-plan.
+    autonomous: !Boolean(args.reviewPlan) || Boolean(args.autonomous),
     runtime: args.runtime,
     host: args.host,
     childSlots: args.childSlots,
@@ -718,7 +721,7 @@ async function cmdStart(args) {
   if (run.auto) {
     console.log(
       '\nAuto run: every stage is gated by a red-team review instead of a human.\n' +
-        `A stage advances only on a registered pass; ${MAX_ROUNDS} blocked rounds stop the run.`,
+        `A stage advances only on a registered pass; ${MAX_ROUNDS} blocked rounds plus one recovery round are the absolute plan-review cap.`,
     );
   }
   if (run.runtime === 'codex') {
@@ -760,13 +763,15 @@ async function cmdBrief(args) {
       throw new Error(`${step.key} has not delivered its artifact yet — there is nothing to review`);
     }
     if (roundsExhausted(step)) {
-      if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+      if (step.stage.review.rounds.length < MAX_TOTAL_ROUNDS && typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
         recordCapOverride(dir, run, step, args.anotherRound);
       } else {
         throw new HandBack(
-          `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
+          `the red team has refused ${step.key} ${step.stage.review.rounds.length} times — the loop is not converging. ` +
             'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
-            'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
+            (step.stage.review.rounds.length < MAX_TOTAL_ROUNDS
+              ? 'A user-directed round re-opens the stage: --another-round "<what the user decided>"'
+              : 'The cumulative plan-review cap is spent; change the issue or fix it outside this run.'),
         );
       }
     }
@@ -858,14 +863,16 @@ function briefOne(dir, run, step, args) {
   // move is to stop and put the open findings in front of the user. Only the
   // user re-opens it, and only with their direction recorded as the reason.
   if (roundsExhausted(step)) {
-    if (typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
+    if (step.stage.review.rounds.length < MAX_TOTAL_ROUNDS && typeof args.anotherRound === 'string' && args.anotherRound.trim()) {
       recordCapOverride(dir, run, step, args.anotherRound);
-    } else {
-      throw new HandBack(
-        `the red team has refused ${step.key} ${MAX_ROUNDS} times — the loop is not converging. ` +
-          'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
-          'A user-directed round re-opens the stage: --another-round "<what the user decided>"',
-      );
+      } else {
+        throw new HandBack(
+          `the red team has refused ${step.key} ${step.stage.review.rounds.length} times — the loop is not converging. ` +
+            'Stop, checkpoint, and surface the open findings to the user; never approve over them. ' +
+            (step.stage.review.rounds.length < MAX_TOTAL_ROUNDS
+              ? 'A user-directed round re-opens the stage: --another-round "<what the user decided>"'
+              : 'The cumulative plan-review cap is spent; change the issue or fix it outside this run.'),
+        );
     }
   }
 

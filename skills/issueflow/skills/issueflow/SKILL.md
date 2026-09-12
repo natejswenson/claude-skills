@@ -32,6 +32,11 @@ Autoflow is autonomous. A registered, hash-bound red-team pass approves the
 plan; `next` continues. `--review-plan` opts into one human gate. Routine edits,
 transitions, retries, fixes and readiness need no confirmation.
 
+The plan-review loop is cumulatively bounded: after three blocked rounds, one
+user-directed recovery round is allowed; a blocked fourth round is terminal.
+Further `--another-round` overrides are refused so a run cannot spend hours
+re-briefing the same plan.
+
 User decisions are required for destructive takeover, unresolved drift,
 exhaustion, repeated disputes, missing authority or unauthorized external
 actions. Auto mode never forces drift, takes over claims, rules findings or
@@ -62,7 +67,9 @@ Run `board` only without a named issue. Ask which issue; never ask about anythin
 in it because policy and claims are facts. Continue a live run named by `board`.
 Never call `gh issue view` after `start`; the frozen issue is authoritative.
 
-`start` is autonomous unless `--review-plan` is present. Pass `--take-over`
+`start` is autonomous unless `--review-plan` is present. Auto runs also renew
+their bounded time windows automatically; `--autonomous` remains a compatible
+alias. Pass `--take-over`
 only after a human has read the displaced claim and explicitly accepted its
 destructive cost. Auto mode never takes over.
 

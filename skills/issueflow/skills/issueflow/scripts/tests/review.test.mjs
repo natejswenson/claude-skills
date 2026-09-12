@@ -376,6 +376,25 @@ test('rounds-cap-trap: a user-directed round re-opens the stage, records the rea
   cleanup();
 });
 
+test('rounds-cap-trap: the directed recovery round is the absolute final round', () => {
+  const ctx = exhaustedRun();
+  const direction = 'fix the remaining plan boundary once, then stop';
+  const reopened = cli(['brief', '--stage', 'investigate', '--run-dir', ctx.dir, '--offline', '--another-round', direction]);
+  assert.equal(reopened.code, 0, reopened.err);
+  const after = loadRun(ctx.dir);
+  const step = findStep(after, 'investigate');
+  // Model the delivered, blocked recovery result directly. Registration is
+  // covered by the normal red-team tests; this test isolates the cumulative
+  // cap from the reviewer-brief handoff.
+  step.stage.review.rounds.push({ round: MAX_ROUNDS + 1, verdict: 'blocked' });
+  saveRun(ctx.dir, after);
+  assert.equal(roundsExhausted(findStep(loadRun(ctx.dir), 'investigate')), true);
+  const refused = cli(['brief', '--stage', 'investigate', '--run-dir', ctx.dir, '--offline', '--another-round', 'ignore the cap']);
+  assert.notEqual(refused.code, 0, 'a second override must not make the plan-review loop unbounded');
+  assert.match(refused.err, /refused .* 4 times|not converging/);
+  ctx.cleanup();
+});
+
 test('rounds-cap-trap: two-sided — below the cap the loop continues: brief carries the feedback', () => {
   const { dir, run, step, cleanup } = autoRun();
   redTeamBlock(dir, run, step, 'evidence never reproduces.');
