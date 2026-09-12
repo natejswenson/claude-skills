@@ -1245,7 +1245,7 @@ function printDispatch(items, kind, dir = null, run = null, { queued = false } =
     if (!queued) items = startWave(run, items);
     for (const item of items) recordTelemetry(dir, run, 'dispatch', {
       attemptId: item.attemptId,
-      role: item.role ?? item.agent,
+      role: item.taskRole ?? item.role ?? item.agent,
       reasoning: item.reasoning,
       prompt: item.prompt,
       promptBytes: item.prompt && existsSync(item.prompt) ? statSync(item.prompt).size : null,
@@ -1614,7 +1614,7 @@ async function cmdNext(args) {
       const output = item.writes ?? item.artifact;
       recordTelemetry(dir, selected, 'worker', {
         attemptId: item.attemptId ?? `${item.prompt}:${item.dispatchedAt}`,
-        role: item.role ?? item.agent,
+        role: item.taskRole ?? item.role ?? item.agent,
         reasoning: item.reasoning,
         artifact: output,
         artifactBytes: output && existsSync(output) ? statSync(output).size : null,
@@ -1702,7 +1702,7 @@ async function cmdNext(args) {
       if (action.kind === 'stop' && action.reason !== 'budget') {
         for (const item of run.dispatch?.queue?.active ?? []) recordTelemetry(dir, run, 'worker-stop', {
           attemptId: item.attemptId ?? `${item.prompt}:${item.dispatchedAt}`,
-          role: item.role ?? item.agent, reasoning: item.reasoning, success: false,
+          role: item.taskRole ?? item.role ?? item.agent, reasoning: item.reasoning, success: false,
           wallTimeMs: item.dispatchedAt ? Date.now() - item.dispatchedAt : null,
           agentTimeMs: null, unknown: true, reason: action.reason,
         });

@@ -91,6 +91,28 @@ export function summarizeTelemetry(events, run = null) {
     const subtotal = known.reduce((a, b) => a + b, 0);
     return [field, { total: native.length && native.length === attempts.length && known.length === native.length ? subtotal : null, knownSubtotal: subtotal, missingAttempts: attempts.length - known.length }];
   }));
+  // PR review state is authoritative: the old finding sidecar was emitted only
+  // by plan review. Counting it omitted PR findings entirely. Count pooled
+  // candidates per lane/round, and first-confirmed findings once per lane;
+  // subsequent fixed/still-open transitions must not add confirmations.
+  const findingCountsSource = Array.isArray(run?.lanes) ? 'pr-review-state' : 'legacy-finding-events';
+  let findingsProposed = 0, findingsConfirmed = 0;
+  if (findingCountsSource === 'pr-review-state') {
+    for (const lane of run.lanes) {
+      const rounds = (lane.review?.rounds ?? []).filter((r) => !r.cancelled);
+      for (const round of rounds) {
+        findingsProposed += new Set([...(round.candidates ?? []), ...(round.unverifiedNits ?? [])]
+          .map((c) => c.id).filter((id) => typeof id === 'string' && id.length > 0)).size;
+      }
+      const registered = new Set(rounds.filter((r) => r.registered).map((r) => r.round));
+      findingsConfirmed += new Set((lane.review?.findings ?? [])
+        .filter((f) => f.verdict === 'CONFIRMED' && registered.has(f.firstRound))
+        .map((f) => f.id).filter((id) => typeof id === 'string' && id.length > 0)).size;
+    }
+  } else {
+    findingsProposed = events.filter((e) => e.event === 'finding' && e.confirmed !== true).length;
+    findingsConfirmed = events.filter((e) => e.event === 'finding' && e.confirmed === true).length;
+  }
   const result = {
     schema: TELEMETRY_SCHEMA,
     events: events.length,
@@ -103,8 +125,9 @@ export function summarizeTelemetry(events, run = null) {
     failedWorkers: workers.filter((e) => e.success === false).length,
     retries: events.filter((e) => e.event === 'retry').length,
     gateRefusals: events.filter((e) => e.event === 'gate-refusal').length,
-    findingsProposed: events.filter((e) => e.event === 'finding' && e.confirmed !== true).length,
-    findingsConfirmed: events.filter((e) => e.event === 'finding' && e.confirmed === true).length,
+    findingCountsSource,
+    findingsProposed,
+    findingsConfirmed,
     // Worker intervals may overlap. They do not establish end-to-end elapsed time.
     wallTimeMs: run?.finished && Number.isFinite(Date.parse(run.finished.at)) && Number.isFinite(Date.parse(run.createdAt))
       ? Math.max(0, Date.parse(run.finished.at) - Date.parse(run.createdAt)) : null,

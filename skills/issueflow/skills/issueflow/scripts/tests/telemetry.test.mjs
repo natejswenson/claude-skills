@@ -7,6 +7,34 @@ import { recordTelemetry, readTelemetry, summarizeTelemetry, telemetryEvent, tel
 
 const run = { runtime: 'codex' };
 
+test('live PR9 telemetry counts pooled PR candidates and confirmed findings after repair', () => {
+  const observed = JSON.parse(readFileSync(new URL('./fixtures/telemetry-pr9.json', import.meta.url), 'utf8'));
+  const planNote = telemetryEvent(run, 'finding', { confirmed: false });
+  const summary = summarizeTelemetry([planNote], observed);
+  assert.equal(summary.findingsProposed, 2, 'three raw candidates were pooled into two distinct PR proposals');
+  assert.equal(summary.findingsConfirmed, 2, 'both confirmed majors remain counted after round2 fixes');
+  assert.equal(summary.findingCountsSource, 'pr-review-state');
+  assert.deepEqual(summarizeTelemetry([planNote, planNote], observed), { ...summary, events: 2 });
+});
+
+test('PR finding counts exclude cancelled rounds, separate lanes and do not recount prior findings', () => {
+  const round = { round: 1, registered: { head: 'a' }, candidates: [{ id: 'c1' }, { id: 'c1' }], unverifiedNits: [{ id: 'c2' }] };
+  const review = {
+    rounds: [round, { round: 2, registered: { head: 'b' }, candidates: [], priorIds: ['f1'] },
+      { round: 3, cancelled: true, registered: { head: 'c' }, candidates: [{ id: 'ignored' }] }],
+    findings: [{ id: 'f1', verdict: 'CONFIRMED', firstRound: 1, status: 'fixed' },
+      { id: 'f1', verdict: 'CONFIRMED', firstRound: 1 },
+      { id: 'plausible', verdict: 'PLAUSIBLE', firstRound: 1 },
+      { id: 'cancelled', verdict: 'CONFIRMED', firstRound: 3 }],
+  };
+  const summary = summarizeTelemetry([], { lanes: [{ slug: 'a', review }, { slug: 'b', review }] });
+  assert.equal(summary.findingsProposed, 4);
+  assert.equal(summary.findingsConfirmed, 2);
+  const pending = summarizeTelemetry([], { lanes: [{ review: { rounds: [{ ...round, registered: null }], findings: review.findings } }] });
+  assert.equal(pending.findingsProposed, 2);
+  assert.equal(pending.findingsConfirmed, 0);
+});
+
 test('duplicate acknowledgements and stops cannot invent worker completions or double-count time', () => {
   const worker = telemetryEvent(run, 'worker', { attemptId: 'a', wallTimeMs: 100, agentTimeMs: 60, success: true });
   const stop = telemetryEvent(run, 'worker-stop', { attemptId: 'a', wallTimeMs: 200 });
@@ -84,7 +112,7 @@ test('telemetry excludes raw paths and tolerates malformed lines', () => {
     schema: 1, events: 1, workers: 1, successfulWorkers: 0, failedWorkers: 1,
     nativeObservedWorkers: 0, missingNativeObservations: 0, costUsd: null,
     usage: Object.fromEntries(['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens'].map((field) => [field, { total: null, knownSubtotal: 0, missingAttempts: 0 }])),
-    retries: 0, gateRefusals: 0, findingsProposed: 0, findingsConfirmed: 0,
+    retries: 0, gateRefusals: 0, findingCountsSource: 'legacy-finding-events', findingsProposed: 0, findingsConfirmed: 0,
     wallTimeMs: null, workerWallTimeMs: null, knownWorkerWallTimeMs: 0, missingWorkerTimeSamples: 1,
     agentTimeMs: null, knownAgentTimeMs: 0, missingAgentTimeSamples: 1, unknownAgentTime: true,
   });

@@ -15,6 +15,7 @@ import { activePath, prepareExecution } from '../lib/execution.mjs';
 import { renderFinderBrief, renderFixBrief, renderVerifierBrief } from '../lib/reviewbrief.mjs';
 import { STAGES } from '../lib/stages.mjs';
 import { GOOD_EVIDENCE } from './helpers.mjs';
+import { readTelemetry } from '../lib/telemetry.mjs';
 
 const ISSUE = { number: 42, title: 'make both hosts work', body: 'Codex cannot dispatch opus.' };
 const REPO = { owner: 'acme', name: 'widgets', path: '/tmp/widgets', defaultBranch: 'dev' };
@@ -55,6 +56,20 @@ const backdate = (path, seconds) => {
   const at = new Date(Date.now() - seconds * 1000);
   utimesSync(path, at, at);
 };
+
+test('CLI telemetry preserves semantic task roles without changing native worker dispatch', (t) => {
+  const { dir, run, implementation } = cliFixture(t);
+  const events = readTelemetry(dir, run);
+  assert.deepEqual(events.filter((e) => e.event === 'dispatch').map((e) => e.role), ['investigate', 'redTeam', 'implement']);
+  assert.deepEqual(events.filter((e) => e.event === 'worker').map((e) => e.role), ['investigate', 'redTeam']);
+  const [item] = run.dispatch.queue.active;
+  assert.equal(item.taskRole, 'implement');
+  assert.equal(item.agent, 'worker');
+  assert.equal(item.fork_turns, 'none');
+  assert.equal(Object.hasOwn(item, 'model'), false);
+  assert.match(implementation, /role `worker`, fork_turns `none`/);
+  assert.equal(dispatchedPaths(implementation).length, 1);
+});
 
 test('CLI drains five finder and four verifier briefs through persisted waves and native slot release', (t) => {
   const { dir, run, tree, git, cli, ok } = cliFixture(t);
@@ -115,6 +130,11 @@ test('CLI drains five finder and four verifier briefs through persisted waves an
   assert.equal(seen.size, 9);
   assert.equal(loadRun(dir).dispatch.queue, undefined);
   assert.equal(loadRun(dir).lanes[0].review.rounds[0].verdict, 'converged');
+  const events = readTelemetry(dir, loadRun(dir));
+  for (const [role, count] of [['finder', 5], ['verifier', 4]]) {
+    assert.equal(events.filter((e) => e.event === 'dispatch' && e.role === role).length, count);
+    assert.equal(events.filter((e) => e.event === 'worker' && e.role === role).length, count);
+  }
 });
 
 for (const activity of ['silent', 'progress', 'evidence', 'checkout']) {
@@ -141,6 +161,7 @@ for (const activity of ['silent', 'progress', 'evidence', 'checkout']) {
     if (activity === 'silent') {
       assert.equal(result.status, 4, result.stdout + result.stderr);
       assert.match(result.stdout, /no progress, evidence, or worktree activity for 6 minutes/);
+      assert.equal(readTelemetry(dir, loadRun(dir)).filter((e) => e.event === 'worker-stop').at(-1).role, 'implement');
     } else {
       assert.equal(result.status, 0, result.stdout + result.stderr);
       assert.match(result.stdout, /root\/implement is in flight/);
@@ -206,6 +227,7 @@ for (const role of ['investigate', 'implement', 'redTeam', 'finder', 'verifier',
   });
   test(`host adapter: ${role} can write its delivery`, () => {
     assert.equal(dispatchProfile('codex', role).agent, 'worker');
+    assert.equal(dispatchProfile('codex', role).taskRole, role);
   });
   test(`host adapter: ${role} preserves Claude`, () => {
     assert.deepEqual(dispatchProfile('claude', role), {
@@ -371,12 +393,12 @@ test('codex runtime uses role-sized reasoning with cold writable workers', () =>
     [undefined, 'high', 'worker'],
   );
   const profile = { reasoning: 'high', agent: 'worker', fork_turns: 'none' };
-  assert.deepEqual(finderProfile(run), { ...profile, reasoning: 'medium' });
-  assert.deepEqual(verifierProfile(run), profile);
-  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'medium' });
+  assert.deepEqual(finderProfile(run), { ...profile, reasoning: 'medium', taskRole: 'finder' });
+  assert.deepEqual(verifierProfile(run), { ...profile, taskRole: 'verifier' });
+  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'medium', taskRole: 'fixer' });
 
   run.lanes[0].review.findings = [{ severity: 'major', status: 'open', stillOpenRounds: 1 }];
-  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'xhigh' });
+  assert.deepEqual(fixerProfile(run, run.lanes[0]), { ...profile, reasoning: 'xhigh', taskRole: 'fixerEscalated' });
 });
 
 test('Claude review fanout uses the efficient model while core work stays on Opus', () => {

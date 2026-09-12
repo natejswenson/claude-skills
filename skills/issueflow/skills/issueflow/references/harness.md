@@ -90,6 +90,12 @@ satisfy delivery. Optional terminal `--usage-file <host-jsonl>` imports only
 sanitized, attempt-correlated usage; never guess usage from artifact size. The
 file must have stopped changing. `telemetry --json` reports coverage and known
 subtotals separately from complete totals; missing tokens/cost remain unknown.
+Finding totals use persisted PR review state (`findingCountsSource: pr-review-state`):
+proposals are pooled candidate IDs per lane/round, including unverified nits;
+confirmations are distinct first-confirmed findings from registered rounds.
+Plan-review notes, cancelled rounds, and repeat fixed/still-open transitions do
+not inflate these totals. Without run state, legacy finding events are explicitly
+labeled and must not be interpreted as complete PR-review counts.
 Observation is a trusted-parent assertion, not independent OS attestation. Hosts
 without exposed IDs still require observed completion and report missing telemetry.
 

@@ -61,7 +61,7 @@ export function dispatchProfile(run, role) {
   // Read-heavy discovery and a first bounded fix do not need the parent-level
   // reasoning budget. A surviving major is the signal to pay for escalation.
   const reasoning = adaptiveReasoning(run, role, run?.reasoningPolicy ?? {});
-  return { reasoning, agent: 'worker', fork_turns: 'none' };
+  return { reasoning, agent: 'worker', fork_turns: 'none', taskRole: role };
 }
 
 export const modelLabel = (item) => item.model ?? 'parent model';
