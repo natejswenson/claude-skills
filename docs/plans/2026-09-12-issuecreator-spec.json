@@ -1,0 +1,78 @@
+{
+  "name": "issuecreator",
+  "summary": "Create actionable GitHub issues that issueflow can take through planning and implementation.",
+  "description": "Create GitHub issues grounded in repository evidence and formatted for issueflow. Use when the user says \"create an issue\", \"turn this into a GitHub issue\", \"write an issue for issueflow\", or \"break this work into issues\". Supports local drafts and authorized publishing; implementing existing issues belongs to issueflow.",
+  "oneRule": "Never present an issue as ready for implementation when its desired outcome, scope, or testable acceptance criteria remain unresolved.",
+  "stack": "node",
+  "npmPublish": false,
+  "commands": [
+    {
+      "name": "validate",
+      "does": "Validate a structured issue draft, reporting missing required fields, empty acceptance criteria, unresolved blocking questions, and placeholder content."
+    },
+    {
+      "name": "render",
+      "does": "Render validated structured input to a GitHub Markdown body and metadata locally, preserving literal code and multiline text."
+    },
+    {
+      "name": "create",
+      "does": "Publish a validated issue to an explicit owner/repository through gh using argument arrays and a body file, then read back its title, body, number and URL. Save a receipt and stop on ambiguous failures instead of blindly retrying."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Check structural readiness without claiming semantic correctness",
+        "command": "node scripts/issuecreator.js validate"
+      },
+      {
+        "step": "Render a consistent issue body",
+        "command": "node scripts/issuecreator.js render"
+      },
+      {
+        "step": "Create and read back the GitHub issue",
+        "command": "node scripts/issuecreator.js create"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Inspect repository instructions, relevant code, tests, issue templates and related issues",
+        "why": "Which evidence matters depends on the requested change and repository conventions."
+      },
+      {
+        "step": "Write the smallest independently implementable scope with observable acceptance criteria",
+        "why": "Intent, tradeoffs, dependencies and semantic completeness require judgment."
+      },
+      {
+        "step": "Resolve consequential unknowns and distinguish observations from implementation suggestions",
+        "why": "A populated template cannot establish that claims are true or that an issue is actionable."
+      }
+    ]
+  },
+  "references": [
+    {
+      "file": "issue-format.md",
+      "is": "Issue body contract: problem and impact; desired behavior; in-scope and out-of-scope work; verified repository context; acceptance checklist; verification plan; dependencies and consequential open questions. Bug issues additionally include reproduction, expected/actual behavior and available environment details. Respect repository issue templates and avoid invented evidence."
+    }
+  ],
+  "evalPlan": [
+    {
+      "id": "real-local-draft",
+      "kind": "golden",
+      "pinnedAgainst": "A real local draft of this requested issuecreator skill addition, researched against this checkout and rendered during implementation; no GitHub issue is posted merely to test the skill.",
+      "catches": "Lost acceptance criteria, scope, evidence, multiline formatting or validation behavior when rerendering the captured input offline."
+    },
+    {
+      "id": "incomplete-draft",
+      "kind": "trap",
+      "pinnedAgainst": "The captured real draft with acceptance criteria removed or a blocking question added.",
+      "catches": "Accepting structurally incomplete input as ready to publish."
+    },
+    {
+      "id": "publication-boundaries",
+      "kind": "trap",
+      "pinnedAgainst": "Offline gh test doubles covering literal shell metacharacters, read-back mismatches and ambiguous create failures.",
+      "catches": "Shell interpolation, false publication claims and automatic duplicate creation."
+    }
+  ]
+}

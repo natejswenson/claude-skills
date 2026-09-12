@@ -1,0 +1,10 @@
+{
+  "name": "issuecreator",
+  "version": "0.1.0",
+  "description": "Create actionable GitHub issues that issueflow can take through planning and implementation.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/issuecreator",
+  "license": "MIT"
+}
