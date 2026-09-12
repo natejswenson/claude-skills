@@ -15,7 +15,8 @@
 - **Codex:** Allow the same local tools; authenticate gh in the Codex environment. `skills/issuecreator/README.md:76`
 - **Personal data:** No private configuration store; receipts stay in the chosen output directory. `skills/issuecreator/README.md:77`
 - See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host setup. `skills/issuecreator/README.md:79`
-- Local drafting needs neither authentication nor issueflow installed. Issueflow handoff is an optional next step. Publication receipts stay in the chosen output directory; no credentials are bundled o… `skills/issuecreator/README.md:81`
+- After a verified create-only request, issuecreator shows the issue URL, a short summary, and any limitations, then ends with: “Would you like to pick up this issue with issueflow?” Accepting starts /… `skills/issuecreator/README.md:81`
+- Local drafting needs neither authentication nor issueflow installed. Unpublished drafts and failed or unverified publications do not offer or start issueflow; in a partial batch, only individually ve… `skills/issuecreator/README.md:83`
 - Requires Node >=18 (package.json engines). `skills/issuecreator/skills/issuecreator/package.json:36`
 
 ## Usage
@@ -48,16 +49,24 @@
 
 ## Architecture
 
-- scripts/issuecreator.js owns validation, rendering and verified publication. skill-invariants.json declares the code/judgment split and offline baseline. See [references/baseline.md](references/basel… `skills/issuecreator/skills/issuecreator/SKILL.md:103`
-- Deterministic: Check structural readiness without claiming semantic correctness — node scripts/issuecreator.js validate `skills/issuecreator/skills/issuecreator/skill-invariants.json:21`
-- Deterministic: Render a consistent issue body — node scripts/issuecreator.js render `skills/issuecreator/skills/issuecreator/skill-invariants.json:25`
-- Deterministic: Create and read back the GitHub issue — node scripts/issuecreator.js create `skills/issuecreator/skills/issuecreator/skill-invariants.json:29`
-- Model judgment: Inspect repository instructions, relevant code, tests, issue templates and related issues — Which evidence matters depends on the requested change and repository conventions. `skills/issuecreator/skills/issuecreator/skill-invariants.json:35`
-- Model judgment: Write the smallest independently implementable scope with observable acceptance criteria — Intent, tradeoffs, dependencies and semantic completeness require judgment. `skills/issuecreator/skills/issuecreator/skill-invariants.json:39`
-- Model judgment: Resolve consequential unknowns and distinguish observations from implementation suggestions — A populated template cannot establish that claims are true or that an issue is actionable. `skills/issuecreator/skills/issuecreator/skill-invariants.json:43`
+- scripts/issuecreator.js owns validation, rendering and verified publication. skill-invariants.json declares the code/judgment split and offline baseline. See [references/baseline.md](references/basel… `skills/issuecreator/skills/issuecreator/SKILL.md:129`
+- Deterministic: Check structural readiness without claiming semantic correctness — node scripts/issuecreator.js validate `skills/issuecreator/skills/issuecreator/skill-invariants.json:61`
+- Deterministic: Render a consistent issue body — node scripts/issuecreator.js render `skills/issuecreator/skills/issuecreator/skill-invariants.json:65`
+- Deterministic: Create and read back the GitHub issue — node scripts/issuecreator.js create `skills/issuecreator/skills/issuecreator/skill-invariants.json:69`
+- Model judgment: Inspect repository instructions, relevant code, tests, issue templates and related issues — Which evidence matters depends on the requested change and repository conventions. `skills/issuecreator/skills/issuecreator/skill-invariants.json:75`
+- Model judgment: Write the smallest independently implementable scope with observable acceptance criteria — Intent, tradeoffs, dependencies and semantic completeness require judgment. `skills/issuecreator/skills/issuecreator/skill-invariants.json:79`
+- Model judgment: Resolve consequential unknowns and distinguish observations from implementation suggestions — A populated template cannot establish that claims are true or that an issue is actionable. `skills/issuecreator/skills/issuecreator/skill-invariants.json:83`
 
 ## Troubleshooting
 
 - Never present an issue as ready for implementation when its — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra… `skills/issuecreator/skills/issuecreator/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/issuecreator/skills/issuecreator/skill-invariants.json:14`
+- Then make the final user-facing sentence exactly: “Would you like to pick up this issue with issueflow — Verified create-only completion ends with an explicit pickup decision after reporting the resu… `skills/issuecreator/skills/issuecreator/skill-invariants.json:19`
+- with the verified issue number and the explicit repository from the publication result — Acceptance must preserve the verified destination instead of inferring it from the working directory. `skills/issuecreator/skills/issuecreator/skill-invariants.json:24`
+- If the user declines, end the flow without starting implementation — Declining must not trigger implementation. `skills/issuecreator/skills/issuecreator/skill-invariants.json:29`
+- If the question is unanswered, leave it pending without starting implementation — Silence is not implementation authorization. `skills/issuecreator/skills/issuecreator/skill-invariants.json:34`
+- If the user already explicitly authorized issueflow pickup, start the verified handoff without asking the same decision again — Existing pickup authorization must be honored without a redundant quest… `skills/issuecreator/skills/issuecreator/skill-invariants.json:39`
+- Do not offer or start issueflow for a local draft, failed publication, or unverified publication — Only verified issues can be candidates, including in a partial batch. `skills/issuecreator/skills/issuecreator/skill-invariants.json:44`
+- Claude Code: /issueflow <verified-issue-number> --repo '<verified-local-checkout-path>' — Claude Code keeps its slash invocation and verified context. `skills/issuecreator/skills/issuecreator/skill-invariants.json:49`
+- Codex: — Codex uses $issueflow with the verified issue number and matching local checkout path; the completion contract test asserts the full invocation. `skills/issuecreator/skills/issuecreator/skill-invariants.json:54`
 - **Never present an issue as ready for implementation when its desired outcome, scope, or testable acceptance criteria remain unresolved.** `skills/issuecreator/skills/issuecreator/SKILL.md:12`

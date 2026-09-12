@@ -13,6 +13,46 @@
       "id": "never-claim-an-unobserved-result",
       "pattern": "Never claim a result you did not observe",
       "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "handoff-final-question",
+      "pattern": "Then make the final user-facing sentence exactly: “Would you like to pick up this issue with issueflow",
+      "rationale": "Verified create-only completion ends with an explicit pickup decision after reporting the result."
+    },
+    {
+      "id": "handoff-verified-context",
+      "pattern": "with the verified issue number and the explicit repository from the publication result",
+      "rationale": "Acceptance must preserve the verified destination instead of inferring it from the working directory."
+    },
+    {
+      "id": "handoff-decline",
+      "pattern": "If the user declines, end the flow without starting implementation",
+      "rationale": "Declining must not trigger implementation."
+    },
+    {
+      "id": "handoff-unanswered",
+      "pattern": "If the question is unanswered, leave it pending without starting implementation",
+      "rationale": "Silence is not implementation authorization."
+    },
+    {
+      "id": "handoff-existing-authorization",
+      "pattern": "If the user already explicitly authorized issueflow pickup, start the verified handoff without asking the same decision again",
+      "rationale": "Existing pickup authorization must be honored without a redundant question."
+    },
+    {
+      "id": "handoff-publication-exclusions",
+      "pattern": "Do not offer or start issueflow for a local draft, failed publication, or unverified publication",
+      "rationale": "Only verified issues can be candidates, including in a partial batch."
+    },
+    {
+      "id": "handoff-claude",
+      "pattern": "Claude Code: `/issueflow <verified-issue-number> --repo '<verified-local-checkout-path>'`",
+      "rationale": "Claude Code keeps its slash invocation and verified context."
+    },
+    {
+      "id": "handoff-codex",
+      "pattern": "Codex:",
+      "rationale": "Codex uses $issueflow with the verified issue number and matching local checkout path; the completion contract test asserts the full invocation."
     }
   ],
   "split": {
