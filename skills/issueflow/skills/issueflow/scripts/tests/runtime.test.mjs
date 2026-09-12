@@ -436,6 +436,7 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '43', '--runtime', 'codex', '--review-plan', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', reviewDir]);
   const reviewPlan = JSON.parse(readFileSync(join(reviewDir, 'run.json'), 'utf8'));
   assert.equal(reviewPlan.auto, false, '--review-plan is the explicit human-gate mode');
+  assert.equal(reviewPlan.autonomous, false, '--review-plan also disables automatic budget renewal');
 
   const badDir = join(root, 'bad');
   assert.throws(
@@ -445,14 +446,14 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   assert.equal(existsSync(join(badDir, 'run.json')), false);
 });
 
-test('start --autonomous persists bounded budget automation as an explicit opt-in', () => {
+test('auto start persists bounded budget automation without a second opt-in flag', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-autonomous-'));
   const runDir = join(root, 'run');
   const repoJson = join(root, 'repo.json');
   const issueJson = join(root, 'issue.json');
   writeFileSync(repoJson, `${JSON.stringify(REPO)}\n`);
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
-  execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--autonomous', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
+  execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.autonomous, true);
   assert.ok(persisted.totalBudgetSeconds > persisted.complexity.budgetSeconds);
