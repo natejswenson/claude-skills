@@ -499,9 +499,16 @@ export function readStatus(repoPath, config, name) {
   // release decision between the moment it is shown to a human and the moment
   // it is acted on: both branch heads, the versions, the last tag, and who
   // else is riding along.
+  const preparedBranches = git(['for-each-ref', '--format=%(refname)',
+    `refs/heads/feature/release-${name}-v*`, `refs/remotes/origin/feature/release-${name}-v*`], { cwd: repoPath })
+    .stdout.split('\n').filter(Boolean).sort().map((ref) => {
+      const version = readVersionAt(repoPath, component, ref).version;
+      return { ref, sha: revParse(repoPath, ref), version, notes: notesAt(repoPath, component, ref, version) };
+    });
   const statusHash = sha256(
     JSON.stringify({
       component: name,
+      preparedBranches,
       mainSha: revParse(repoPath, mainRef),
       workflowPattern: policy.workflowPattern,
       devSha: devRef ? revParse(repoPath, devRef) : null,
@@ -526,6 +533,7 @@ export function readStatus(repoPath, config, name) {
     mainBranch,
     devBranch,
     pendingComponents,
+    preparedBranches,
     state,
     versionOnMain: onMain.version,
     versionOnDev: onDev.version,
@@ -618,7 +626,7 @@ export function spliceChangelog(existing, version, notes, date) {
 }
 
 export const releaseBranchName = (name, version) => `feature/release-${name}-v${version}`;
-const worktreeDir = (name, version) => join(tmpdir(), `shipflow-release-${name}-${version}`);
+const worktreeDir = (repoPath, name, version) => join(tmpdir(), `shipflow-release-${sha256(resolve(repoPath)).slice(0, 16)}-${name}-${version}`);
 
 export function prepare(repoPath, config, name, version, notes, { date, featureBranchPrefix } = {}) {
   const component = resolveComponent(repoPath, config, name);
@@ -642,7 +650,7 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
   if (featureBranchPrefix && !branch.startsWith(featureBranchPrefix)) {
     return { ok: false, error: `release branch ${branch} does not start with the configured featureBranchPrefix ${featureBranchPrefix}` };
   }
-  const dir = worktreeDir(name, version);
+  const dir = worktreeDir(repoPath, name, version);
 
   // A leftover worktree from an aborted run must not silently become the base
   // for this one — remove it, then re-create from the CURRENT dev.
@@ -863,7 +871,7 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   if (!preparedExists && !baseHasVersion) {
     return { ok: false, error: `branch ${branch} does not exist — run release-prepare first` };
   }
-  const dir = worktreeDir(name, targetVersion);
+  const dir = worktreeDir(repoPath, name, targetVersion);
   const pushCwd = existsSync(dir) ? dir : repoPath;
   if (preparedExists && !baseHasVersion && !revParse(repoPath, `origin/${branch}`)) {
     const pushed = git(['push', '-u', 'origin', branch], { cwd: pushCwd });
@@ -963,7 +971,7 @@ function notesAt(repoPath, component, ref, version) {
   const result = git(['show', `${ref}:${component.changelog}`], { cwd: repoPath });
   if (result.status !== 0) return null;
   const lines = result.stdout.split('\n');
-  const start = lines.findIndex((line) => line.startsWith('## ') && line.includes(`[${version}]`));
+  const start = lines.findIndex((line) => line.startsWith('## ') && (line.slice(3).split(/\s+/)[0] === version || line.slice(3).split(/\s+/)[0] === `[${version}]`));
   if (start < 0) return null;
   const end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
   return lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim() || null;
@@ -995,24 +1003,43 @@ function waitForChecks(ownerRepo, prNumber, base, config, deadline, pollSeconds,
   if (!protection.ok && !/404/.test(protection.stderr)) return { ok: false, error: 'could not read required branch checks' };
   const rules = ghApiJson(`repos/${ownerRepo}/rules/branches/${encodeURIComponent(base)}`);
   if (!rules.ok) return { ok: false, error: 'could not read branch rules' };
-  const required = [...new Set([
-    ...(protection.data?.required_status_checks?.contexts ?? []),
-    ...(protection.data?.required_status_checks?.checks ?? []).map((c) => c.context),
-    ...(rules.data ?? []).filter((r) => r.type === 'required_status_checks').flatMap((r) => (r.parameters?.required_status_checks ?? []).map((c) => c.context)),
-    ...(config?.requiredChecks ?? []),
-  ])];
+  const checks = protection.data?.required_status_checks?.checks ?? [];
+  const required = [
+    ...checks.map((c) => ({ context: c.context, appId: c.app_id })),
+    ...(protection.data?.required_status_checks?.contexts ?? [])
+      .filter((context) => !checks.some((c) => c.context === context))
+      .map((context) => ({ context })),
+    ...(rules.data ?? []).filter((r) => r.type === 'required_status_checks')
+      .flatMap((r) => (r.parameters?.required_status_checks ?? []).map((c) => ({ context: c.context, appId: c.integration_id }))),
+    ...(base === branchPolicy(config).main && config?.protectionOwner !== 'external' ? config?.requiredChecks ?? [] : [])
+      .map((context) => ({ context })),
+  ];
+  const matchesRun = (required, run) => run.name === required.context &&
+    (required.appId == null || required.appId === -1 || run.app?.id === required.appId);
+  const matchesStatus = (required, status) => status.context === required.context &&
+    (required.appId == null || required.appId === -1);
   for (;;) {
     const r = ghApiJson(`repos/${ownerRepo}/pulls/${prNumber}`);
     if (!r.ok) return { ok: false, error: `could not read PR #${prNumber}: ${r.stderr}` };
     const sha = r.data?.head?.sha;
-    const cr = ghApiJson(`repos/${ownerRepo}/commits/${sha}/check-runs?per_page=100`);
-    if (!cr.ok) return { ok: false, error: `could not read check runs: ${cr.stderr}` };
-    const runs = cr.data?.check_runs ?? [];
-    const cs = ghApiJson(`repos/${ownerRepo}/commits/${sha}/status`);
-    if (!cs.ok) return { ok: false, error: 'could not read commit statuses' };
-    const contexts = cs.data?.statuses ?? [];
-    const missing = required.filter((name) => !runs.some((c) => c.name === name && c.status === 'completed' && ['success', 'neutral', 'skipped'].includes(c.conclusion)) && !contexts.some((c) => c.context === name && c.state === 'success'));
-    const failedStatuses = contexts.filter((c) => required.includes(c.context) && ['failure', 'error'].includes(c.state));
+    const runs = [];
+    const contexts = [];
+    for (let page = 1; ; page++) {
+      const cr = ghApiJson(`repos/${ownerRepo}/commits/${sha}/check-runs?per_page=100&page=${page}`);
+      if (!cr.ok) return { ok: false, error: `could not read check runs: ${cr.stderr}` };
+      const batch = cr.data?.check_runs ?? [];
+      runs.push(...batch);
+      if (batch.length < 100) break;
+    }
+    for (let page = 1; ; page++) {
+      const cs = ghApiJson(`repos/${ownerRepo}/commits/${sha}/status?per_page=100&page=${page}`);
+      if (!cs.ok) return { ok: false, error: 'could not read commit statuses' };
+      const batch = cs.data?.statuses ?? [];
+      contexts.push(...batch);
+      if (batch.length < 100) break;
+    }
+    const missing = required.filter((r) => !runs.some((c) => matchesRun(r, c) && c.status === 'completed' && ['success', 'neutral', 'skipped'].includes(c.conclusion)) && !contexts.some((c) => matchesStatus(r, c) && c.state === 'success'));
+    const failedStatuses = contexts.filter((c) => required.some((r) => matchesStatus(r, c)) && ['failure', 'error'].includes(c.state));
     if (failedStatuses.length) return { ok: false, error: `required statuses failed: ${failedStatuses.map((c) => c.context).join(', ')}` };
     const pending = runs.filter((c) => c.status !== 'completed');
     const failed = runs.filter((c) => c.status === 'completed' && !['success', 'neutral', 'skipped'].includes(c.conclusion));
@@ -1024,7 +1051,7 @@ function waitForChecks(ownerRepo, prNumber, base, config, deadline, pollSeconds,
       return { ok: true, done: true };
     }
     if (Date.now() + pollSeconds * 1000 > deadline) {
-      log.push({ stage: 'feature-pr', msg: `${pending.length}/${runs.length} checks still running; missing required checks: ${missing.join(', ')}` });
+      log.push({ stage: 'feature-pr', msg: `${pending.length}/${runs.length} checks still running; missing required checks: ${missing.map((r) => r.context).join(', ')}` });
       return { ok: true, done: false };
     }
     sleepSync(pollSeconds * 1000);
