@@ -109,7 +109,7 @@
     {
       "id": "untagged-bump-is-not-permission-to-cut",
       "pattern": "is not, by itself, permission to cut",
-      "rationale": "#173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate."
+      "rationale": "For legacy two-branch consumers only (GitHub flow never reads dev): #173: `untagged-bump-on-main` collapsed two independently-true facts (main has an untagged bump; dev already carries something higher) into one state string, and the fast path acted on it without checking which one was true — silently tagging the OLDER version while a human meant the one on dev. This line is what stops an agent (or a human skimming the state table) from treating the state name alone as a green light; `devAhead` and the refusal it drives are the actual gate."
     }
   ],
   "cli_commands_referenced": ["detect", "plan", "apply", "releases", "release-dispatch", "release-status", "release-prepare", "release-cut", "rename-default-branch"],

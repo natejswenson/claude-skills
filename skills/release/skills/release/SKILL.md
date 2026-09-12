@@ -55,7 +55,7 @@ not report success from anything else.
 |---|---|
 | which bump this release actually is | commit types are a suggestion, not a decision — only a person knows whether a refactor broke someone, and whether an 0.x component is ready to claim 1.0.0 |
 | what the CHANGELOG entry says | grouped commit subjects are raw material; a release note explains why a change was made and what breaks, which no commit message reliably records |
-| whether the collateral releases are acceptable | a promotion is atomic, so releasing one component releases every other bumped one — only the user can say whether shipping those today is fine |
+| whether moving collateral bumps is acceptable | a two-branch promotion moves all integration work to main; each component still needs a separate release decision |
 
 Every mutating step is `shipflow`'s, not this skill's. `scripts/release.js`
 resolves the shipflow CLI, enforces its minimum version, and reshapes its JSON
@@ -80,14 +80,14 @@ commit count and the blockers are all facts.
 | `state` | Means | Path |
 |---|---|---|
 | `clean` | the released version is what's on main | needs a bump — step 2 |
-| `untagged-bump-on-main` | the bump is on main but was never tagged, **and `On dev` equals `On main`** | **no PR needed** — skip to step 4 |
+| `untagged-bump-on-main` | the bump is on main but was never tagged, **and there is no dev-ahead blocker** | **no PR needed** — skip to step 4 |
 | `bump-on-dev-unpromoted` | the bump is on dev, waiting to be promoted | skip to step 4 |
 | `version-behind-tag` | main carries a *lower* version than an existing tag | **stop and ask** |
 
 `version-behind-tag` means a tag was cut from something other than main. Do not
 guess your way out of it; guessing is how it gets worse.
 
-**`untagged-bump-on-main` is not, by itself, permission to cut.** Check `On dev`
+**`untagged-bump-on-main` is not, by itself, permission to cut.** For two-branch repos, check `On dev`
 against `On main` in the table. If they differ, dev already carries a newer
 version than the one sitting untagged on main — cutting now would tag the
 wrong one. shipflow reports this as the `dev-ahead-of-main` blocker; `cut`
@@ -130,6 +130,18 @@ CHANGELOG entry land in **one commit** — the notes are read off `main` when th
 release is dispatched, so a CHANGELOG arriving in a later promotion than its
 version is notes the release will never carry.
 
+GitHub flow (`workflowPattern: "github-flow"`) prepares from configured main and
+opens its release PR directly into main. Its preflight has no `On dev` column,
+no dev-ahead blocker and no promotion collateral. Other pending components are
+listed from main's versions and tags without requiring PR labels. Two-branch
+consumers retain their configured integration base and promotion stage.
+
+When the declared version files include `skills/{name}/.codex-plugin/plugin.json`,
+preparation uses the repository's maintained `tools/sync_codex.py` and
+`tools/check_compatibility.py` in the isolated worktree. Both lockfile version
+fields and Claude/Codex manifests must agree; stale metadata, failed checks or
+unrelated generated changes stop preparation. Missing optional lockfiles are fine.
+
 ### 4. Name the collateral, then cut
 
 **Before the irreversible step, say out loud every component in `collateral`.**
@@ -145,7 +157,7 @@ dispatch away from a release nobody asked for.
 
 ```bash
 node scripts/release.js cut --repo <path> --component <name> \
-  --expect-status-hash <hash-from-preflight>
+  --version <prepared-or-confirmed-version> --expect-status-hash <hash-from-preflight>
 ```
 
 `--expect-status-hash` is mandatory. If it is rejected as stale, the repo moved
@@ -153,7 +165,7 @@ since the table the user approved — re-run preflight, re-confirm, and pass the
 new hash. Never reach for `--skip-hash-check` to make the error go away.
 
 **`cut` will usually return `done: false`, and that is not an error.** The full
-path — feature PR, checks, merge, promotion, auto-merge, dispatch, release run,
+path — feature PR, checks, merge, optional promotion, dispatch, release run,
 tag — takes longer than one call should block for. Each call advances as far as
 it can and reports the `stage` it is parked at. **Call it again, unchanged, until
 `done: true`.** Say one short line between calls (`waiting on the promotion to
@@ -161,8 +173,15 @@ auto-merge…`) so the user sees progress rather than dead air.
 
 **The merge cuts nothing — this skill does.** Every release job in this repo is
 `workflow_dispatch`-only, and `cut` dispatches one named component after its
-promotion lands. That dispatch is the only way a tag is ever created here, which
+version and changelog reach main. That dispatch is the only way a tag is ever created here, which
 is precisely why a merge can no longer surprise anyone with a release.
+
+Pass the exact version returned by `prepare` on every `cut` call. Before a merge,
+`cut` reads required checks from live protection and rules; missing or failed
+checks stop it. Before dispatch it fetches main again and compares its version
+and changelog with the selected release. Keep the PR draft until review and the
+user's merge decision are complete: the configured GitHub-flow automation can
+enable native auto-merge on eligible main PRs.
 
 ### 5. Report the tag, and only the tag
 
@@ -173,7 +192,7 @@ release did not happen.** Do not round it up.
 
 ## Requirements
 
-- **`shipflow` ≥ 0.4.0.** Every mutating step is one of its `release-*` commands,
+- **`shipflow` ≥ 0.6.0.** Every mutating step is one of its `release-*` commands,
   which did not exist before then. `release.js` checks this at startup and stops
   with a plain message rather than failing obscurely three steps later.
 - **`gh`, authenticated** with repo write access. Every check is a `gh` API call.

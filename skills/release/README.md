@@ -18,17 +18,16 @@ actually got cut, or whether a green check just made it look like it did.
 
 Say **"release devlog"** and this reads the commits on main since `devlog-v0.13.0`,
 proposes a bump with its reason, drafts the CHANGELOG entry for you to rewrite,
-and then drives the whole path — bump, branch, PR, promotion, release run — and
+and then drives the whole path — bump, branch, PR, optional promotion, explicit release run — and
 reports the tag URL. It ships the method as well as the commands: 4 steps the
 machine decides outright, 3 the model has to judge, with the line between them
 written down in `skill-invariants.json` rather than left to taste.
 
 Two things it refuses to do quietly:
 
-- **It names the collateral.** A `dev → main` promotion is one merge of the whole
-  branch and cannot be made selective, so releasing one component releases every
-  other one sitting bumped-but-untagged. That list is spoken aloud before the
-  irreversible step — tags, GitHub Releases and npm publishes do not come back.
+- **It names pending work.** GitHub flow releases directly from main without a
+  dev branch or promotion. Two-branch consumers still see every collateral bump
+  a promotion moves to main. Those components each need a separate dispatch.
 - **It will not call a release done without the tag.** A dispatched workflow
   exits 0 for a run that fails a minute later. A promotion can merge while the
   release job errors. The tag, fetched from origin, is the only evidence.
@@ -67,7 +66,7 @@ $release
 ```
 
 ```bash
-release preflight         # one table per named component: its state, the version on main, the last tag, how many commits are unreleased, every blocker, and every other component the same promotion would release
+release preflight         # one table per named component: its state, the version on main, the last tag, how many commits are unreleased, every blocker, and other pending components and any bumps a two-branch promotion would move
 release changelog-draft   # the commits since the last tag, grouped into Keep-a-Changelog sections, as a starting entry the model rewrites into prose
 release prepare           # the agreed version and notes written into every version file and the CHANGELOG, in one commit on a release branch
 release cut               # one bounded step of the path to the tag, reporting the stage it is parked at and whether the tag now exists on the remote
