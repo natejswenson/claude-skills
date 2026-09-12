@@ -178,8 +178,8 @@
   {
    "id": "selectable-controls-first",
    "file": "SKILL.md",
-   "pattern": "selectable controls first[\\s\\S]{0,500}one compact Markdown table",
-   "rationale": "A real Codex run made the user type menu numbers and read repeated prose choices even when the product can present selections. Native choices are the primary interaction; a compact table is the fallback."
+   "pattern": "consistent idea table[\\s\\S]{0,250}`#`, `Idea`, `Angle / signal`, `Status`[\\s\\S]{0,1800}Claude.s supported selector remains available",
+   "rationale": "Preserve Claude's working native choices and a compact visible fallback. The September 11 Codex test accepted an asynchronous question without a usable selector; Codex Default must show its actual options inline instead."
   },
   {
    "id": "architecture-evidence-model",

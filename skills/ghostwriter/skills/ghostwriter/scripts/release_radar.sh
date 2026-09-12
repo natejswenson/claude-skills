@@ -26,13 +26,17 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO" || exit 1
 
 LOG="$REPO/research/.radar.log"
+EVENTS="$REPO/research/.radar-events.log"
 TODAY="$(date +%F)"
 DIGEST="research/release-radar-${TODAY}.md"
 PROMPT_FILE="$REPO/scripts/release_radar_prompt.md"
 
 mkdir -p "$REPO/research"
 
-log() { printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >>"$LOG"; }
+log() {
+  printf '%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >>"$EVENTS"
+  printf '\n%s  %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >>"$LOG"
+}
 
 # Make sure the claude CLI is reachable when launchd runs us with a minimal PATH.
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
@@ -42,6 +46,13 @@ if ! command -v claude >/dev/null 2>&1; then
   exit 127
 fi
 
+# The OS releases this lock on process exit, including a killed runner.
+if [[ "${1:-}" != "--lock-held" ]]; then
+  exec python3 "$REPO/scripts/release_radar_lock.py" "$REPO"
+fi
+STAGING="$(mktemp -d "$REPO/research/.radar-run.XXXXXX")" || exit 1
+trap 'rm -rf "$STAGING"' EXIT
+CANDIDATE="$STAGING/release-radar-${TODAY}.md"
 log "Release radar starting (digest: $DIGEST)"
 
 # Append the concrete output target so the run writes a predictable filename.
@@ -53,7 +64,7 @@ shopt -u nullglob
 RECENT_DIGESTS="${digest_files[*]: -6}"
 
 PROMPT="$(cat "$PROMPT_FILE")
-Today is ${TODAY}. Write the digest to ${DIGEST}.
+Today is ${TODAY}. The output target for this run is ${CANDIDATE}; use this path instead of the default research path. Do not modify previous digests or radar event logs.
 Previous digests to dedup against (read EVERY one): ${RECENT_DIGESTS:-none}"
 
 # --max-budget-usd is a hard cost ceiling (Sonnet keeps a normal run well under it).
@@ -68,11 +79,11 @@ claude -p "$PROMPT" \
 
 STATUS=$?
 
-if [[ $STATUS -eq 0 && -f "$REPO/$DIGEST" ]]; then
+if [[ $STATUS -eq 0 && -s "$CANDIDATE" && ! -L "$CANDIDATE" ]] && mv "$CANDIDATE" "$REPO/$DIGEST"; then
   log "Release radar done: $DIGEST"
-  osascript -e "display notification \"New digest: ${DIGEST}. Say 'draft a post from item N in the radar'.\" with title \"LinkedIn Release Radar\"" >/dev/null 2>&1
+  osascript -e "display notification \"New digest: ${DIGEST}. Say 'draft a post from item N in the radar'.\" with title \"LinkedIn Release Radar\"" >/dev/null 2>&1 || true
 else
   log "ERROR: run exited $STATUS or digest not written ($DIGEST missing)."
-  osascript -e "display notification \"Release radar run failed (exit ${STATUS}). Check research/.radar.log.\" with title \"LinkedIn Release Radar\"" >/dev/null 2>&1
+  osascript -e "display notification \"Release radar run failed (exit ${STATUS}). Check research/.radar.log.\" with title \"LinkedIn Release Radar\"" >/dev/null 2>&1 || true
   exit 1
 fi
