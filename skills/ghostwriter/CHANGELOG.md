@@ -4,6 +4,58 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Terminal-only radar with Ctrl+T / t expansion, keyboard navigation, scrolling,
+  persistent selection, and disabled selection for watchlist/stale ideas.
+- Terminal interaction regression checks for expansion, selection, exit, resize,
+  long boards, and terminal-control text sanitization.
+
+### Fixed
+
+- Red-team regressions: successful cross-midnight runs retain their digest;
+  failed retries preserve completed research; quoted model output cannot verify
+  success; disabled job plists are skipped and ambiguous output roots require
+  repair; URL deduplication preserves case-sensitive paths and query values.
+- Legacy Claude runs now stage output, promote only nonempty successful results,
+  and write runner events separately from model output. Historical log success
+  is marked unverified. An OS-managed lock serializes runs without stale lock
+  directories blocking future attempts. Malformed source URLs cannot crash dedup.
+- Legacy radar discovery follows the installed launch agent's research directory,
+  including from a versioned plugin cache, and excludes failed, unfinished, and
+  empty digests. Freshness and latest legacy run status are reported explicitly.
+- A failed trend refresh replaces the previous same-day receipt instead of leaving
+  stale candidates looking current. Successful news queries survive another query's
+  failure, and duplicate stories keep their strongest measured signal.
+
+### Changed
+
+- Use the same # / Idea / Angle or signal / Status table on the first inline
+  menu and expanded/collapsed views. Always offer Choose your own topic, including
+  when no recommendations are available; supplied topics proceed directly to drafting.
+
+- Keep the radar in the terminal; hosts without direct keyboard attachment use
+  inline more/fewer replies. No browser fallback.
+- Following the live UI test, Codex Default shows ideas and approval choices inline
+  instead of relying on an unusable asynchronous selector. Claude's supported
+  selector is retained. Exiting a run invalidates its pending choice.
+- Remove optional scraper probes, credential checks in ideas-only mode, inline
+  execution programs, and command narration from normal runs. Document the host
+  boundary for native tool-card visibility rather than promising hidden commands.
+- Clarify actual research backends and the twice-weekly, budget-capped digest
+  schedule; interactive source checks do not regenerate the scheduled digest.
+- Trend sources fetch concurrently with deterministic ranking. Optional `--json`
+  output includes refresh time, status, source counts, failures, and candidates;
+  existing table output and exit codes remain supported.
+- Explicit trend/idea refresh requests run research without LinkedIn setup or
+  unrelated outcome and publishing questions. Every open-ended idea request runs
+  a fresh sweep rather than treating a saved board as live evidence.
+- Terminal choices adapt to Claude and Codex tool capabilities. Draft approval uses
+  one readable host-appropriate view, quiet routine checks, and fewer repeated
+  summaries while retaining source, voice, edit, and publishing approval gates.
+
 ## [0.22.0] - 2026-09-10
 
 ### Added

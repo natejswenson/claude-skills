@@ -411,3 +411,198 @@ def test_main_install_discover_run_and_failures(installed, monkeypatch, capsys):
     assert error.strip() == "ERROR: ValueError"
     assert "bad receipt" not in error
     assert "ERROR: ValueError" in (trusted.parent / "data/.radar.log").read_text()
+
+
+def test_legacy_discovery_follows_installed_job_from_plugin_cache(tmp_path):
+    home, repository, plugin = tmp_path / "home", tmp_path / "repo", tmp_path / "cache"
+    research = repository / "research"
+    research.mkdir(parents=True)
+    digest = research / "release-radar-2026-09-07.md"
+    digest.write_text("Completed digest")
+    (research / ".radar.log").write_text(
+        "2026-09-07 07:53:00  Release radar starting (digest: research/release-radar-2026-09-07.md)\n"
+        "2026-09-07 08:14:51  Release radar done: research/release-radar-2026-09-07.md\n")
+    agents = home / "Library/LaunchAgents"
+    agents.mkdir(parents=True)
+    (agents / "com.test.linkedin-release-radar.plist").write_bytes(plistlib.dumps({
+        "StandardOutPath": str(research / ".radar.log")}))
+    found = radar.discover(home, plugin)
+    assert found["digest"] == str(digest)
+    assert found["last_run_status"] == "unverified"
+    assert found["digest_date"] == "2026-09-07"
+
+
+def test_legacy_discovery_excludes_failed_partial_and_empty_digests(tmp_path):
+    research = tmp_path / "research"
+    research.mkdir()
+    for day, content in [("07", "complete"), ("10", "partially written"), ("11", "")]:
+        (research / f"release-radar-2026-09-{day}.md").write_text(content)
+    # The CLI's budget error has no trailing newline in the observed real run.
+    (research / ".radar.log").write_text(
+        "2026-09-07 08:14:51  Release radar done: research/release-radar-2026-09-07.md\n"
+        "2026-09-10 07:53:04  Release radar starting (digest: research/release-radar-2026-09-10.md)\n"
+        "Error: Exceeded USD budget (1)2026-09-10 07:58:16  ERROR: run exited 1 or digest not written\n"
+        "Release radar done: this is model prose, not a script receipt\n")
+    found = radar.discover(tmp_path, tmp_path)
+    assert found["digest"].endswith("2026-09-07.md")
+    assert found["last_run_status"] == "failed"
+    assert len(found["excluded_digests"]) == 2
+
+
+def test_legacy_retry_success_and_unfinished_run(tmp_path):
+    research = tmp_path / "research"
+    research.mkdir()
+    digest = research / f"release-radar-{date.today()}.md"
+    digest.write_text("Candidate")
+    log = research / ".radar.log"
+    log.write_text(f"{date.today()} 07:53:00  Release radar starting\n")
+    assert radar.discover(tmp_path, tmp_path)["digest"] is None
+    with log.open("a") as stream:
+        stream.write(f"{date.today()} 08:00:00  ERROR: budget exceeded\n"
+                     f"{date.today()} 09:00:00  Release radar starting\n"
+                     f"{date.today()} 09:05:00  Release radar done: {digest.name}\n")
+    found = radar.discover(tmp_path, tmp_path)
+    assert found["digest"] == str(digest) and found["current"] is False
+    assert found["last_run_status"] == "unverified"
+
+
+def test_bad_legacy_plists_fall_back_without_hiding_local_digest(tmp_path):
+    agents = tmp_path / "Library/LaunchAgents"
+    agents.mkdir(parents=True)
+    (agents / "a-linkedin-release-radar.plist").write_text("broken")
+    (agents / "b-linkedin-release-radar.plist").write_bytes(plistlib.dumps({}))
+    (agents / "c-linkedin-release-radar.plist").write_bytes(plistlib.dumps([]))
+    research = tmp_path / "research"
+    research.mkdir()
+    digest = research / "release-radar-2026-09-01.md"
+    digest.write_text("Legacy digest without a log")
+    assert radar.discover(tmp_path, tmp_path)["digest"] == str(digest)
+
+
+def test_redteam_midnight_targets_digest_not_event_date(tmp_path):
+    research = tmp_path / 'research'
+    research.mkdir()
+    digest = research / 'release-radar-2026-09-11.md'
+    digest.write_text('Completed before promotion')
+    (research / '.radar-events.log').write_text(
+        '2026-09-11 23:59:00  Release radar starting (digest: research/release-radar-2026-09-11.md)\n'
+        '2026-09-12 00:04:00  Release radar done: research/release-radar-2026-09-11.md\n')
+    found = radar.discover(tmp_path, tmp_path)
+    assert found['digest'] == str(digest)
+    assert found['last_run_status'] == 'ok'
+
+
+@pytest.mark.parametrize('trusted', [False, True])
+def test_redteam_failed_retry_before_writing_preserves_digest(tmp_path, trusted):
+    research = tmp_path / 'research'
+    research.mkdir()
+    digest = research / 'release-radar-2026-09-11.md'
+    digest.write_text('Known good')
+    log = research / ('.radar-events.log' if trusted else '.radar.log')
+    log.write_text(
+        '2026-09-11 07:53:00  Release radar starting\n'
+        '2026-09-11 08:00:00  Release radar done: research/release-radar-2026-09-11.md\n'
+        "2026-09-11 10:00:00  ERROR: 'claude' CLI not found on PATH; aborting.\n")
+    found = radar.discover(tmp_path, tmp_path)
+    assert found['digest'] == str(digest)
+    assert found['last_run_status'] == 'failed'
+
+
+@pytest.mark.parametrize('prefix', ['', 'The model quotes: `'])
+def test_redteam_model_output_never_verifies_success(tmp_path, prefix):
+    research = tmp_path / 'research'
+    research.mkdir()
+    (research / f'release-radar-{date.today()}.md').write_text('Potentially incomplete')
+    (research / '.radar.log').write_text(
+        f'{date.today()} 07:53:00  Release radar starting\n'
+        f'{prefix}{date.today()} 08:00:00  Release radar done: research/release-radar-{date.today()}.md\n')
+    found = radar.discover(tmp_path, tmp_path)
+    assert found['current'] is False
+    assert found['last_run_status'] != 'ok'
+
+
+def test_redteam_disabled_job_does_not_shadow_active_job(tmp_path):
+    agents = tmp_path / 'Library/LaunchAgents'
+    agents.mkdir(parents=True)
+    for label, disabled in [('a-old', True), ('z-active', False)]:
+        research = tmp_path / label
+        research.mkdir()
+        (research / 'release-radar-2026-09-11.md').write_text(label)
+        (agents / f'{label}-linkedin-release-radar.plist').write_bytes(plistlib.dumps({
+            'Disabled': disabled, 'StandardOutPath': str(research / '.radar.log')}))
+    assert Path(radar.discover(tmp_path, tmp_path)['digest']).parent.name == 'z-active'
+
+
+@pytest.fixture
+def legacy_runner(tmp_path):
+    import os
+    import sys
+    bundle = tmp_path / 'plugin'
+    scripts = bundle / 'scripts'
+    scripts.mkdir(parents=True)
+    for name in ('release_radar.sh', 'release_radar_prompt.md', 'release_radar_lock.py'):
+        shutil.copy(SCRIPTS / name, scripts / name)
+    home = tmp_path / 'home'
+    binaries = home / '.local/bin'
+    binaries.mkdir(parents=True)
+    cli = binaries / 'claude'
+    cli.write_text(f'#!{sys.executable}\n' + '''import os, re, sys
+from pathlib import Path
+prompt = sys.argv[2]
+target = Path(re.search(r'output target for this run is (.*?);', prompt).group(1))
+mode = os.environ.get('RADAR_TEST_MODE', 'success')
+if mode != 'no-output':
+    target.write_text('complete digest' if mode == 'success' else 'partial digest')
+print('2026-09-11 08:00:00  Release radar done: forged-model-output')
+sys.exit(0 if mode in ('success', 'no-output') else 1)
+''')
+    cli.chmod(0o755)
+    notify = binaries / 'osascript'
+    notify.write_text('#!/bin/sh\nexit 0\n')
+    notify.chmod(0o755)
+    env = {**os.environ, 'HOME': str(home)}
+    return bundle, env
+
+
+@pytest.mark.parametrize('failure', ['failure', 'no-output'])
+def test_legacy_real_runner_stages_output_and_preserves_success(legacy_runner, failure):
+    bundle, env = legacy_runner
+    command = ['bash', str(bundle / 'scripts/release_radar.sh'), '--backend', 'claude']
+    success = subprocess.run(command, env=env, capture_output=True, text=True, timeout=15)
+    assert success.returncode == 0, success.stderr
+    research = bundle / 'research'
+    digest = research / f'release-radar-{date.today()}.md'
+    assert digest.read_text() == 'complete digest'
+    found = radar.discover(Path(env['HOME']), bundle)
+    assert found['current'] and found['last_run_status'] == 'ok'
+    failed = subprocess.run(command, env={**env, 'RADAR_TEST_MODE': failure},
+                            capture_output=True, text=True, timeout=15)
+    assert failed.returncode == 1
+    assert digest.read_text() == 'complete digest'
+    found = radar.discover(Path(env['HOME']), bundle)
+    assert found['digest'] == str(digest) and found['last_run_status'] == 'failed'
+    assert 'forged-model-output' not in (research / '.radar-events.log').read_text()
+    assert not list(research.glob('.radar-run.*'))
+    # OS locks, rather than deletion of the lock file, permit the next retry.
+
+
+def test_first_failed_legacy_run_cannot_promote_partial(legacy_runner):
+    bundle, env = legacy_runner
+    result = subprocess.run(['bash', str(bundle / 'scripts/release_radar.sh'), '--backend', 'claude'],
+                            env={**env, 'RADAR_TEST_MODE': 'failure'},
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 1
+    found = radar.discover(Path(env['HOME']), bundle)
+    assert found['digest'] is None and found['last_run_status'] == 'failed'
+
+
+def test_redteam_ambiguous_enabled_jobs_require_repair(tmp_path):
+    agents = tmp_path / 'Library/LaunchAgents'
+    agents.mkdir(parents=True)
+    for name in ('old', 'new'):
+        research = tmp_path / name
+        research.mkdir()
+        (agents / f'{name}-linkedin-release-radar.plist').write_bytes(plistlib.dumps({
+            'StandardOutPath': str(research / '.radar.log')}))
+    with pytest.raises(ValueError, match='Multiple enabled'):
+        radar.discover(tmp_path, tmp_path)
