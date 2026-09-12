@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/issueflow",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Takes one open GitHub issue to a reviewed pull request with a red-teamed plan, proven implementation, and converging review loop on Claude Code or Codex.",
   "license": "MIT",
   "author": "Nate Swenson",
