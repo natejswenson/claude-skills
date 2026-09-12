@@ -6,6 +6,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { saveRun, worktreePath } from './run.mjs';
 import { ensureWorktree, registeredLanesUnder, validateWorktree, WorktreeError } from './worktree.mjs';
+import { attemptDelivered, createAttempt } from './attempts.mjs';
 
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const began = (lane) => lane.stages.some((s) => s.state !== 'pending' || s.at?.briefed);
@@ -111,6 +112,17 @@ export const executionInstructions = (run) => run.execution ? [
 
 /** A rebrief binds its output to this generation and excludes the prior delivery. */
 export function recordDispatch(dir, run, brief, outputs) {
+  if (run.harness) {
+    const root = activeRoot(dir, run);
+    const attempt = createAttempt(root, run, brief, outputs);
+    run.harness.attempts ??= {};
+    run.harness.attemptHistory ??= [];
+    for (const output of outputs) {
+      const key = relative(root, output);
+      if (run.harness.attempts[key]) run.harness.attemptHistory.push({ ...run.harness.attempts[key], state: 'superseded' });
+      run.harness.attempts[key] = attempt;
+    }
+  }
   if (!run.execution) return;
   const e = validateExecution(dir, run);
   const root = activeRoot(dir, run);
@@ -127,6 +139,11 @@ export function recordDispatch(dir, run, brief, outputs) {
 }
 
 export function deliveryCurrent(dir, path, run = rawRun(dir)) {
+  if (run?.harness?.attempts) {
+    const attempt = run.harness.attempts[relative(activeRoot(dir, run), path)];
+    if (!attemptDelivered(attempt)) return false;
+    return attempt.generation === (run.execution?.generation ?? run.createdAt);
+  }
   if (!run?.execution) return true;
   const root = activeRoot(dir, run);
   guarded(root, path);
@@ -139,6 +156,7 @@ export function deliveryCurrent(dir, path, run = rawRun(dir)) {
 const deliveries = new Map();
 /** Pin the exact bytes read by a gate until its canonical save has succeeded. */
 export function readDelivery(dir, path, run = rawRun(dir), { dispatched = true } = {}) {
+  if (run?.harness?.attempts && dispatched && !deliveryCurrent(dir, path, run)) fail(`missing, stale, or incomplete attempt delivery ${path}`);
   if (!run?.execution) return readFileSync(path, 'utf8');
   if (dispatched && !deliveryCurrent(dir, path, run)) fail(`stale or undispatched output ${path}; rebrief and deliver this generation's result`);
   const root = activeRoot(dir, run);

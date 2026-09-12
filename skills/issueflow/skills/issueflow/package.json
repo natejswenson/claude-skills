@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/issueflow",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Takes one open GitHub issue to a reviewed pull request with a red-teamed plan, proven implementation, and converging review loop on Claude Code or Codex.",
   "license": "MIT",
   "author": "Nate Swenson",
@@ -37,6 +37,9 @@
   },
   "scripts": {
     "test": "node --test \"scripts/**/*.test.mjs\"",
+    "eval:harness": "node evals/harness.mjs run --mode offline",
+    "test:native:codex": "ISSUEFLOW_NATIVE_HOST=codex node --test scripts/tests/execution.test.mjs",
+    "test:native:claude": "ISSUEFLOW_NATIVE_HOST=claude node --test scripts/tests/execution.test.mjs",
     "audit": "npm audit --audit-level=moderate",
     "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
     "postpack": "rm -f README.md LICENSE CHANGELOG.md"

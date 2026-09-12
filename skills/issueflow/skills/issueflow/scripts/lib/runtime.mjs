@@ -1,4 +1,5 @@
 /** Persisted host policy and the one adapter used by every dispatch path. */
+import { randomUUID } from 'node:crypto';
 export const RUNTIMES = ['claude', 'codex'];
 
 // Four children drains the largest normal finder/verifier wave in two batches
@@ -20,6 +21,19 @@ export function dispatchPolicy(host, childSlots = assertRuntime(host) === 'codex
     throw new Error('child-slots must be a positive integer');
   }
   return { host: assertRuntime(host), childSlots: Number(childSlots) };
+}
+
+export function setAvailableSlots(run, value) {
+  if (!/^\d+$/.test(String(value)) || !Number.isSafeInteger(Number(value))) throw new Error('available-child-slots must be a nonnegative host-observed integer');
+  run.dispatch.availableChildSlots = Number(value);
+  run.dispatch.capacitySource = 'host-observed';
+}
+
+export function effectiveSlots(run) {
+  const configured = dispatchPolicy(runtimeOf(run), run.dispatch?.childSlots).childSlots;
+  // Without host observation, a strict run starts conservatively with one
+  // child. A configured maximum is not evidence that those slots are free.
+  return Math.min(configured, run.dispatch?.availableChildSlots ?? (run.harness ? 1 : configured));
 }
 
 const ROLES = ['investigate', 'implement', 'redTeam', 'finder', 'verifier', 'fixer', 'fixerEscalated'];
@@ -47,7 +61,7 @@ export function dispatchProfile(run, role) {
   // Read-heavy discovery and a first bounded fix do not need the parent-level
   // reasoning budget. A surviving major is the signal to pay for escalation.
   const reasoning = adaptiveReasoning(run, role, run?.reasoningPolicy ?? {});
-  return { reasoning, agent: 'worker', fork_turns: 'none' };
+  return { reasoning, agent: 'worker', fork_turns: 'none', taskRole: role };
 }
 
 export const modelLabel = (item) => item.model ?? 'parent model';
@@ -68,6 +82,7 @@ export const dispatchLabel = (item, { compact = false } = {}) => {
 export function startWave(run, items) {
   if (runtimeOf(run) !== 'codex' || items.length === 0) return items;
   run.dispatch ??= dispatchPolicy('codex');
+  if (effectiveSlots(run) === 0) throw new Error('no available native child slots; observe releases before dispatch');
   if (run.dispatch.queue) throw new Error('an active wave must deliver and release its workers first');
   run.dispatch.queue = { items, cursor: 0, active: [], released: true };
   return advanceWave(run);
@@ -88,10 +103,10 @@ export function rollingWave(run, delivered) {
   const done = queue.active.filter(delivered);
   if (!done.length) return [];
   queue.active = queue.active.filter((item) => !delivered(item));
-  const cap = dispatchPolicy(runtimeOf(run), run.dispatch.childSlots).childSlots;
+  const cap = effectiveSlots(run);
   const refill = queue.items.slice(queue.cursor, queue.cursor + Math.max(0, cap - queue.active.length));
   queue.cursor += refill.length;
-  for (const item of refill) item.dispatchedAt = Date.now();
+  for (const item of refill) { item.dispatchedAt = Date.now(); item.attemptId = randomUUID(); }
   queue.active.push(...refill);
   return refill;
 }
@@ -112,12 +127,13 @@ export function advanceWave(run) {
   const queue = run.dispatch?.queue;
   if (!queue) return [];
   if (!queue.released) throw new Error('active workers must release their slots before the next wave');
-  const cap = dispatchPolicy(runtimeOf(run), run.dispatch.childSlots).childSlots;
+  const cap = effectiveSlots(run);
+  if (cap === 0) throw new Error('no available native child slots; observe releases before dispatch');
   queue.active = queue.items.slice(queue.cursor, queue.cursor + cap);
   // Brief creation can precede this wave by many minutes.  Stalls measure the
   // actual dispatch, not when the complete fleet happened to be rendered.
   const dispatchedAt = Date.now();
-  for (const item of queue.active) item.dispatchedAt = dispatchedAt;
+  for (const item of queue.active) { item.dispatchedAt = dispatchedAt; item.attemptId = randomUUID(); }
   queue.cursor += queue.active.length;
   queue.released = false;
   return queue.active;

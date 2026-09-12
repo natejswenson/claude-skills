@@ -20,8 +20,22 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
+import { readUsage } from '../scripts/lib/usage.mjs';
 
 const argv = process.argv.slice(2);
+// Structured, privacy-preserving adapter mode. Legacy presentation remains
+// available for old Claude campaigns, but new measurements use this mode.
+if (argv.includes('--host')) {
+  const host = argv[argv.indexOf('--host') + 1];
+  const path = argv[argv.indexOf('--file') + 1];
+  if (!argv.includes('--file') || !path || !existsSync(path)) {
+    console.error('usage: measure-run.mjs --host <claude|codex> --file <session.jsonl> [--attempt-id <id>]');
+    process.exit(2);
+  }
+  const attemptId = argv.includes('--attempt-id') ? argv[argv.indexOf('--attempt-id') + 1] : null;
+  console.log(JSON.stringify(readUsage(readFileSync(path, 'utf8').split('\n').filter(Boolean), { host, attemptId }), null, 2));
+  process.exit(0);
+}
 const file = argv.find((a) => !a.startsWith('--'));
 const split = argv.includes('--split') ? argv[argv.indexOf('--split') + 1] : null;
 if (!file || !existsSync(file)) {

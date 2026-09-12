@@ -2,7 +2,7 @@
 name: issueflow
 description: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "take this issue to a PR", or asks to list open issues. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested.
 user_invocable: true
-version: 0.15.0
+version: 0.16.0
 ---
 
 ## Runtime
@@ -27,6 +27,10 @@ then a review loop on the pull request."
 to disk — and a stage that was skipped is reported as skipped, never as done.**
 The CLI enforces this rule; the orchestrator never performs stage work or edits
 an artifact to clear a gate.
+
+New runs require controller-observed verification receipts and atomic worker
+completion. Read `references/harness.md` before the first strict run or recovery;
+it defines the reviewed JSON contract, native-release acknowledgement, and limits.
 
 Autoflow is autonomous. A registered, hash-bound red-team pass approves the
 plan; `next` continues. `--review-plan` opts into one human gate. Routine edits,
@@ -59,7 +63,8 @@ After explicit user direction to extend an expired budget:
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Never auto-renew. This grants time from resume; review limits stay unchanged.
+Manual runs never auto-renew; renewal requires user direction. Autonomous windows renew only
+within the original cumulative cap; they never enlarge it. Review limits stay unchanged.
 It preserves artifacts, commits, gates, runtime and checkpoint identity, and
 dispatches nothing. Follow its printed `next` command.
 
@@ -81,8 +86,8 @@ exactly one dispatch, wait, or stop.
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
   prompt and host adapter fields. Codex fleets are capacity limited; release
   every child after its output lands before starting the next wave. Dispatch
-  independent agents immediately up to the persisted `child-slots` capacity
-  (four by default; an explicit `--child-slots <n>` override is retained).
+  independent agents up to observed capacity and the persisted `child-slots`
+  ceiling (four by default; strict runs assume one until capacity is observed).
   Never
   do the stage yourself.
 - **Wait:** The artifact on disk is the state-machine signal. In Claude or a
@@ -106,6 +111,7 @@ exactly one dispatch, wait, or stop.
 | `exhausted` · `dispute` | Show every open finding and the last fix; only the user may rule it or buy another round. |
 | `budget` | Delivered artifacts reach their gates before expiry blocks new dispatches. Report checkpoint results; resume only on explicit direction. |
 | `stalled` · `unpushed` | Show the named incomplete work and stop; do not manufacture completion. |
+| `offline` | Report local verification only; remote PR, CI, and readiness remain unverified. |
 | `shipped` | Report every PR and review URL. The PR is ready; merge only when authorized. |
 | `done` | Report verified landings and cleanup. |
 
@@ -118,11 +124,11 @@ same base; `next` briefs all ready implementation lanes together and accepts
 their delivered artifacts as one deterministic transition.
 
 Issueflow persists a complexity profile:
-plain wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
+prose-only docs wording uses `fast-docs` (one review round, 15 minutes); docs mentioning
 tests, templates, generated files, manifests, or acceptance criteria use
 `standard` (two rounds, 30 minutes); CI, automation and other operations use
 `deep`. Resuming
-does not change the profile. Elapsed time includes waits; expiry prevents new
+preserves the budget. Observed behavioral/sensitive scope escalates review, never the allowance. Elapsed time includes waits; expiry prevents new
 dispatches, including a refused gate's send-back. In-flight work may finish.
 
 Review fanout discounts tests and generated indexes; sensitive changes retain
