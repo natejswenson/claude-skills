@@ -211,7 +211,7 @@ function cmdReleases(args) {
     ...p,
     ...confirmPromotionMerged(ownerRepo, p.number),
   }));
-  printJson({ promotions: withMergeCheck });
+  printJson(config.workflowPattern === 'github-flow' ? { mergedPrs: withMergeCheck } : { promotions: withMergeCheck });
 }
 
 function cmdReleaseDispatch(args) {
