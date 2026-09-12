@@ -1,211 +1,125 @@
 # CLAUDE.md — claude-skills monorepo
 
-A monorepo of self-contained, independently-released Claude Code skills. Each skill under
-`skills/<name>/` is versioned, tested, and released on its own cadence with a namespaced tag
-(`<skill>-v<version>`). This file is the source of truth for the **branch and release process** —
-read it before opening any PR.
+A monorepo of independently released Claude Code and Codex skills. Each skill under
+`skills/<name>/` keeps its own version and namespaced tag (`<skill>-v<version>`).
+This file is the source of truth for the branch and release process.
 
 ## Golden rules (read first)
 
-- **Never PR a feature branch straight into `main`.** The only path to `main` is a `dev → main`
-  promotion PR. Feature work goes `feature/* → dev`, then `dev → main`. (If a feature PR is
-  accidentally opened against `main`, retarget its base to `dev`: `gh pr edit <n> --base dev`.)
-  A stacked PR layer targets the layer below it and the *bottom* of the stack targets `dev` —
-  so `gh stack init` always takes `--base dev`, never the default `main` (see Stacked PRs).
-- **Never push directly to `main`.** It is protected; every `ci / <skill>` check must pass and
-  a PR is required. `dev` is unprotected — direct pushes there are fine.
-- **A merge never cuts a tag. `/release` does.** Every per-skill `release` job is
-  `workflow_dispatch`-only, so promoting `dev → main` moves a version bump to `main` and stops
-  there. The tag is cut when — and only when — that skill's workflow is dispatched, which is what
-  the `release` skill does after the promotion lands. **Never add `push` back to a release job's
-  `if:`** (see the release-process section for the two releases that cost).
-  Releasing still requires the version bumped (`package.json` for node skills, `SKILL.md`
-  frontmatter `version:` for python skills, **and** `plugin.json.version` in
-  `skills/<skill>/.claude-plugin/plugin.json` for all skills — the Tier-1.5 lint fails the PR if it
-  diverges) **and** a `CHANGELOG.md` entry in the same change, since `_release.yml` reads the notes
-  off `main` at dispatch time.
-- **Always delete a feature branch as soon as it's merged** — local *and* remote. The repo has
-  `delete_branch_on_merge` on, so a PR merged on GitHub auto-removes its head. If you merge or
-  integrate any other way (CLI, direct push, squash), delete the branch by hand:
-  `git push origin --delete <branch>` + `git branch -D <branch>`. Never leave merged branches around.
-  (`dev` and `main` are deletion-protected, so auto-delete only ever eats `feature/*` heads.)
-- **Keep this file current in the same PR.** Any change to the branch model, CI, release flow, or
-  repo settings updates the relevant section here as part of that same change, not as a follow-up.
+- **Branch from `main` and open a PR into `main`.** Use short-lived `feature/*` branches.
+  A stacked layer targets the layer below it; the bottom layer targets `main`.
+- **Never push directly to `main`.** A PR and every `ci / <skill>` check are required.
+  Review the work before making it ready: eligible open main PRs receive native auto-merge.
+  Keep implementation PRs draft until review and the authorized merge decision are complete.
+- **A merge never cuts a tag. `/release` does.** Release jobs accept only an explicit
+  `workflow_dispatch` on main, after CI. Never add `push` to a release job's `if:`.
+  Versions and changelog notes must already be on main when dispatched.
+- **Delete merged feature branches locally and remotely.** Remote cleanup uses
+  `delete_branch_on_merge`; prune local branches after checking their PR is merged.
+  Protect `main` from deletion. Retire the old `dev` branch only through the audited
+  [cutover procedure](docs/github-flow-cutover.md), preserving its unique work first.
+- **Keep this file current in the same PR.** Branch, CI, release, and settings changes
+  must update their instructions together. Preserve both supported hosts.
 
 ## Branch model
 
 ```
-feature/* ──PR──▶ dev ──PR (auto-merge on green)──▶ main ··· release tags cut manually
+feature/* ──reviewed PR + green CI──▶ main ··· explicit per-skill release dispatch
+feature/c ──PR──▶ feature/b ──PR──▶ feature/a ──PR──▶ main
 ```
 
-Work that splits into reviewable layers stacks instead of landing as one wide PR (see
-Stacked PRs, below). The bottom of a stack targets `dev`; each layer above targets the
-layer below it:
-
-```
-feature/c ──PR──▶ feature/b ──PR──▶ feature/a ──PR──▶ dev ──▶ main
-   └ each PR's diff is only that layer's changes
-```
-
-- **`main`** — default + protected release branch. Required: a PR, every `ci / <skill>` check
-  green, no force-push, no deletion. **0 required approvals** (solo maintainer self-merges).
-  **`enforce_admins: false`** — the admin keeps a direct-push break-glass path; protection is a
-  discipline gate for the normal flow, not a hard wall.
-- **`dev`** — integration branch, push-open (no required checks/PR — direct and force pushes allowed)
-  but **deletion-protected**. Land feature work here (via PR or direct push). `dev` is long-lived;
-  the deletion lock is what lets repo-wide `delete_branch_on_merge` run without eating `dev` on a
-  `dev → main` merge.
-- **Feature branches are deleted on merge** (`delete_branch_on_merge`); only `feature/*` heads are
-  ever auto-removed since `dev`/`main` are deletion-protected.
-- Merge style: **merge commit** for `dev → main` (keeps `dev` and `main` linked so `dev` never
-  diverges and needs no reset). Feature → `dev` is typically squashed for a clean integration commit.
+`main` is the default, protected, releasable branch. Ordinary feature merges use squash.
+Protection requires every skill's CI context and a PR, disallows force-push/deletion,
+and requires linear history. The solo-maintainer policy remains **0 required approvals**
+and **`enforce_admins: false`**. Admin bypass is the existing break-glass capability;
+normal development still uses reviewed, green PRs. There is no integration/promotion step.
 
 ## Stacked PRs
 
-Native GitHub stacked PRs via the `gh stack` extension (`gh extension install github/gh-stack`,
-needs `gh` ≥ 2.0). **This is the expected shape for work that splits into layers** — a `tools/`
-change plus the skills consuming it, a refactor plus the feature built on it, a workflow fix plus
-the docs describing it. Each layer gets its own PR whose diff is only that layer, so it can be
-reviewed and CI'd alone. A single-layer change is still just `feature/* → dev`; don't stack for
-the sake of it.
+Use `gh stack` for changes that split into reviewable dependent layers. A single-layer
+change is simply `feature/* → main`.
 
 ```sh
-gh stack init --base dev feature/first-layer   # --base dev is MANDATORY, see below
+gh stack init --base main feature/first-layer
 # ...commit...
-gh stack add feature/second-layer              # ...commit...
-gh stack submit                                # pushes all branches, opens the PRs, links the stack
-gh stack view                                  # see the stack; `up`/`down`/`top`/`bottom` navigate
+gh stack add feature/second-layer
+# ...commit...
+gh stack submit
+gh stack view
 ```
 
-Four things that actually bite:
-
-- **Always pass `--base dev` to `gh stack init`.** The repo's *default* branch is `main`, and
-  `gh stack` roots a stack on the default branch unless told otherwise. Omitting `--base` silently
-  builds a stack whose bottom PR targets `main` — a direct violation of the first golden rule.
-- **Land a stack with `gh stack merge`, not layer by layer.** Feature → `dev` is squash
-  (`shipflow.json` `featureToDevMethod`), which rewrites the bottom layer's commits; merging one
-  layer at a time therefore forces a `gh stack sync` before the next layer's diff is clean again.
-  `gh stack merge --yes --squash` lands the whole stack all-or-nothing in one squash per layer and
-  avoids that entirely. Keeping squash is deliberate — the friction is a merge-order problem, not
-  a merge-method problem.
-- **Every layer gets its own `ci / <skill>` checks, and none of them are required.** `dev` is
-  push-open with zero required checks, so a red layer will still merge. Read the checks; they will
-  not stop you. This works only because each caller's `pull_request` trigger lists `feature/**` as
-  a base — **a stacked layer's base is the branch below it, not `dev`, so dropping `feature/**`
-  from any caller silently gives that skill no checks at all on stacked work.**
-- **Cleanup is the existing rule, not a new one.** `delete_branch_on_merge` removes merged layer
-  heads on the remote and GitHub auto-retargets the next PR onto `dev`; `gh stack sync --prune`
-  clears the locals. Feature branches still get deleted as soon as they merge, local *and* remote.
-
-Stacks never target `main`: promotion stays a single `dev → main` PR, and
-`dev-to-main-automerge.yml` guards on `head.ref == 'dev'`, so stacked PRs cannot trip the
-promotion or release automation. Stack metadata lives in `.git/gh-stack` and is not committed.
+Every layer receives every skill's CI because caller PR bases include `feature/**`.
+Do not add PR path filters: unchanged skills report success through their existing
+job-level change detection. Main's required-check gate protects layers targeting main;
+it does not protect feature-base layers. Review each layer and require its CI to pass
+before landing it. Squash rewrites the lower layer's commits, so synchronize dependent
+branches before landing the next layer. Use the stack extension's merge/sync flow and
+inspect each resulting base and diff. Remote branch cleanup and `gh stack sync --prune`
+remove merged layers. Stack metadata stays in `.git/gh-stack`, outside commits.
 
 ## Shipflow-managed automation
 
-The `dev → main` auto-merge workflow and the release-ask flow are managed by the `shipflow` skill
-this repo ships, dogfooded on itself. `.github/shipflow.json` is the committed policy source of
-truth for that automation (branch names, merge methods, branch cleanup, release mode). Branch
-*protection* itself is **not** shipflow-owned here (`protectionOwner: "external"` — see Repo
-settings, below) — `.github/repo-settings.sh` stays the source of truth for that.
+`.github/shipflow.json` declares `workflowPattern: "github-flow"`, main-only cleanup,
+squash, manual component releases, and required skill checks. The existing renderer
+reads the squash value from `mergeMethod.devToMainMethod`; that legacy field name does
+not declare a dev branch. Branch protection is externally owned by
+`.github/repo-settings.sh` (`protectionOwner: "external"`).
 
-**Always invoke the CLI as `npx -y @natjswenson/shipflow@latest <command>` — never bare
-`@natjswenson/shipflow`.** Without a version/tag, `npx` prefers a stale install already on `PATH`
-(e.g. a leftover `npm install -g`) over fetching the current version from the registry, silently
-and with no warning. This bit this exact repo during the 2026-07-15 PAT-wiring dogfood run: a bare
-invocation silently ran a stale global 0.2.0 install, missing every fix through 0.2.5 (including a
-Critical template-injection fix). Every command below already pins `@latest`; keep it that way in
-any new invocation you add here.
+`.github/workflows/main-automerge.yml` is generated by shipflow's apply path. Never
+hand-edit it. Update config, apply, and commit both the generated file and its
+`renderedTemplateHashes` receipt. Shipflow refuses to overwrite an unrecognized edit.
+The workflow enables native auto-merge for eligible main PRs and labels merged PRs
+`release-pending`. These labels are optional reminders, never release prerequisites.
+The trigger omits `ready_for_review`: after making a reviewed draft ready, explicitly
+enable native auto-merge or close/reopen to retrigger it. No tags are created by merging.
 
-- `.github/workflows/dev-to-main-automerge.yml` is **rendered by shipflow's `apply`**, not
-  hand-written. Never edit it directly — edit `.github/shipflow.json` and re-run
-  `npx -y @natjswenson/shipflow@latest apply --repo .` (it refuses to overwrite a hand-edited file it
-  detects a hash mismatch on). If a re-render does change it, commit the file and the config's
-  updated `renderedTemplateHashes` entry together.
-- To check for drift between this config and live repo state at any time:
-  `npx -y @natjswenson/shipflow@latest plan --repo .`.
-- To check for a release decision waiting on a merged promotion:
-  `npx -y @natjswenson/shipflow@latest releases --repo .` (see step 4 below).
+For an installed release use `npx -y @natjswenson/shipflow@latest`, always with `@latest`:
+bare npx can silently select a stale global installation (observed here on 2026-07-15).
+During development of an unreleased engine, invoke this checkout's scripts instead:
+
+```sh
+node skills/shipflow/skills/shipflow/bin/shipflow.js plan --repo .
+node skills/shipflow/skills/shipflow/bin/shipflow.js apply --repo .
+node skills/shipflow/skills/shipflow/bin/shipflow.js releases --repo .
+```
+
+`apply` can also change live automation settings; follow the reviewed cutover runbook
+before applying repository settings. Draft implementation alone does not execute cutover.
 
 ## Release process (step by step)
 
-> **Use `/release <skill>` instead of doing this by hand.** Since `release` 0.1.0 the whole
-> path below is one flow: `release preflight` reads what's on main and what's unreleased,
-> `release changelog-draft` groups the commits, and `release cut` drives the bump through
-> `feature/* → dev → main` and does not report success until the tag is fetched back from
-> origin. The steps below are the specification it implements, kept here because they are
-> what the skill is checked against — and because steps 3–6 are still the manual fallback.
->
-> Two things `/release` surfaces that the manual path silently does not:
-> **collateral** (a promotion is atomic and carries all of `dev`, so releasing one skill
-> releases every other bumped-but-untagged one — the list is named before the irreversible
-> step), and the **0.x cap** (a breaking change is held at minor rather than silently
-> declaring 1.0.0).
->
-> **Every component must be declared** in `.github/shipflow.json`'s `release.components`.
-> `ci / release`'s corpus baseline fails if a directory under `skills/` is missing from it,
-> so a new skill cannot quietly become invisible to the release flow.
+Use `/release <skill>` in Claude Code or `$release <skill>` in Codex. Until this migration's
+engine has been released, invoke the release script from this checkout, which consumes
+the compatible local shipflow engine. Shared tooling still supports other repositories
+using dev/main; this repository explicitly selects GitHub flow.
 
-**Auto-merge and release tagging are decoupled.** Promoting `dev → main` auto-merges on green; it
-does **not** cut a release tag on its own. Cutting a tag is a separate, deliberate step.
+1. Branch from main and land the reviewed feature PR into main with every required check
+   green. Keep main releasable; ordinary merges and pushes run CI and publish nothing.
+2. Run release preflight. It inventories every configured component from versions, tags,
+   and commits without requiring dev or a `release-pending` label. Select one component
+   and review the proposed version and changelog. Breaking 0.x changes remain capped at
+   a minor bump rather than silently declaring 1.0.0.
+3. Prepare the release branch from main. Commit the selected version and changelog together.
+   Keep package.json, SKILL.md, the Claude manifest, and generated Codex manifest in sync.
+   When a lockfile exists, update both its root `version` and `packages[""].version`;
+   dependency versions must not change. Missing optional lockfiles are allowed. The fixed
+   repository adapter runs `tools/sync_codex.py`, checks drift, and verifies both hosts
+   inside the prepared worktree before committing. Only selected component paths and
+   verified generated catalog output are staged.
+4. Open the version/changelog PR directly into main. Review it and wait for all required
+   checks. The release engine refuses missing/failed required contexts before asking for
+   merge, then verifies the intended version and exact notes on freshly fetched main.
+5. Dispatch only the selected skill's workflow on main. The reusable `_release.yml` uses
+   that skill's independent version, namespaced tag and changelog. The release engine
+   reports success only after reading the tag back from origin. An existing tag is safely
+   resumed; it is never replaced to repair release notes. npm-enabled components publish
+   only through this explicit dispatch. Another component's pending bump stays pending.
+6. Resolve any associated reminder only after the intended release operation is confirmed.
+   A failed dispatch keeps its reminder; preflight still discovers untagged work if no
+   reminder exists. Historical promotion reminders are handled by the cutover runbook.
 
-1. **Branch off `dev`**, do the work. Each skill must keep its own tests green (`ci / <skill>` runs them).
-2. **Land it on `dev`** — open a PR into `dev` and merge it, or push directly (dev is unprotected).
-3. **Promote: open a PR from `dev` into `main`.** The shipflow-rendered **`auto-merge dev to main`**
-   workflow (`.github/workflows/dev-to-main-automerge.yml`) turns on GitHub native auto-merge, and
-   the PR **merges itself once every `ci / <skill>` check passes**. If any check fails, it never
-   merges.
-   - **Hold a promotion** by opening the `dev → main` PR as a **draft** — `gh pr merge --auto` will
-     not succeed against a draft. **Known gap (shipflow v0.2.0):** the rendered workflow's trigger
-     list omits `ready_for_review`, so marking the draft ready for review does **not** re-fire the
-     auto-merge job on its own — push an empty commit (or close/reopen) to force a `synchronize`/
-     `reopened` event once it's ready. Tracked as a follow-up against the shipflow skill.
-4. **No synchronous ask anymore.** The same workflow's `label-release-pending` job attaches a
-   durable `release-pending` label **once the promotion PR actually merges** (not when it's opened —
-   native auto-merge completes asynchronously with no live agent session attached at that moment).
-   A **separate, later** invocation checks for it:
-   ```
-   npx -y @natjswenson/shipflow@latest releases --repo .
-   ```
-   For each promotion returned with `merged: true`, the agent lists which skills changed and asks
-   whether to cut a release. Declining is final for that promotion in this version — there's no
-   "defer" state, the label just stays (expected, not a bug; a later manual dispatch is still safe).
-5. **If a release is wanted**, first ensure that skill's version is bumped (`package.json` for node
-   skills, `SKILL.md` frontmatter `version:` for python skills, **and `plugin.json.version` in
-   `skills/<skill>/.claude-plugin/plugin.json` for all skills**) with a matching `CHANGELOG.md` entry.
-   `plugin.json.version` is a required-mutually-equal field — the Tier-1.5 `lint_plugin.py` step in
-   that skill's `ci` job fails the `dev → main` PR if it diverges from the other present version
-   fields, so this is normally caught before merge, not at release time (release runs via
-   `workflow_dispatch`, which the PR-time lint doesn't gate — see the marketplace design doc's Data
-   Flow section).
-   **`package-lock.json` is one of those fields too** (both its root `version` and its
-   `packages[""].version`), so a node skill's bump must touch the lockfile as well —
-   `npm install` does it for free. It went unchecked until 2026-08-02, by which point five
-   skills had drifted (shipflow's lockfile said 0.2.4 against a 0.5.0 package). It matters
-   because `npm pack`/`npm publish` read the lockfile into the tarball, so the wrong version
-   ships to the registry. A skill with **no dependencies** correctly has no lockfile, and its
-   absence is never an error.
-6. **Dispatch and clear the label together:**
-   ```
-   npx -y @natjswenson/shipflow@latest release-dispatch --repo . --pr <number> \
-     --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main
-   ```
-   This is a thin wrapper around `gh workflow run <skill>.yml --ref main` per changed skill, plus
-   clearing the `release-pending` label **only after every dispatch is confirmed successful** — a
-   partial failure leaves the label in place so the promotion resurfaces on the next `releases` check
-   (re-dispatching an already-released skill is a safe idempotent no-op). The `release` job runs the
-   version-driven `_release` reusable workflow: it cuts the `<skill>-v<version>` tag + a GitHub
-   Release with notes from `CHANGELOG.md` (skipped if the tag already exists), and — for skills with
-   `npm-publish: true` — publishes to npm when that version isn't on the registry yet.
-
-   To cut only the GitHub tag/Release without npm, `gh release create` also works:
-   ```
-   awk '/^## \[<version>\]/{f=1;next} /^## \[/{f=0} f' skills/<skill>/CHANGELOG.md > /tmp/notes.md
-   gh release create "<skill>-v<version>" --target "$(gh api repos/<owner>/<repo>/commits/main --jq .sha)" \
-     --title "<skill> v<version>" --notes-file /tmp/notes.md
-   ```
-   (this bypasses `release-dispatch`, so clear the `release-pending` label by hand:
-   `gh pr edit <number> --remove-label release-pending`.)
+Every component must be declared in `release.components`; `ci / release` enforces this
+against the skill directories. No version consolidation or tag renaming is part of GitHub flow.
 
 > **The per-skill `release` job (`needs: ci`) runs on `workflow_dispatch` and nothing else.**
 > A push to `main` runs that skill's `ci` job and cuts nothing. **A dispatch is the only way a
@@ -253,15 +167,14 @@ See `AGENTS.md` and `docs/codex-migration.md` for Codex runtime details.
 
 - One reusable **`_release.yml`** (`workflow_call`) + one caller **`<skill>.yml`** per skill +
   **`tools.yml`** (shared `tools/score_skill.py` scorer) + the shipflow-rendered
-  **`dev-to-main-automerge.yml`**.
+  **`main-automerge.yml`**.
 - Each caller has a **`ci` job** (Tier-1 `tools/score_skill.py` SKILL.md lint + the skill's own
-  Tier-2 tests) and a **`release` job** (`needs: ci`, runs only on push to `main`).
-- **Why every check always passes on any PR:** the `pull_request` trigger is **un-filtered**, so
+  Tier-2 tests) and a **`release` job** (`needs: ci`, runs only on explicit `workflow_dispatch` to `main`).
+- **Why every required check reports on every supported PR:** the `pull_request` trigger is **un-filtered**, so
   every `ci / <skill>` check reports on every PR — running real tests when that skill changed, and
   short-circuiting to success (via `dorny/paths-filter`) when it didn't. This is what makes the
-  required-check set always satisfiable, so a `dev → main` PR can auto-merge no matter which skills
-  it touches. **The `push` trigger IS path-filtered** so a skill only releases when its own files
-  changed.
+  required-check set always satisfiable, so a feature PR into main has a complete required-check set. **Push CI is path-filtered**
+  to relevant skill files; pushes never publish.
 
 ## Baseline eval sets (the anti-degradation gate)
 
@@ -398,44 +311,24 @@ Three things that bite:
 
 ## Repo settings (as code)
 
-`.github/repo-settings.sh` is the idempotent source of truth for repo + `main`/`dev` **protection**
-(run by an admin with `gh`). Branch/auto-merge/release-label **automation** is a separate concern,
-owned by `.github/shipflow.json` (see Shipflow-managed automation, above) — shipflow's
-`protectionOwner: "external"` config means it defers to this script for protection and never
-installs a competing ruleset. Key settings here:
+`.github/repo-settings.sh` applies repository settings and main protection, then verifies
+the response against its declared policy. Run it only as part of an authorized settings
+change, after the source changes are merged. It does not create or remove dev protection;
+the guarded cutover tool owns the one-time removal.
 
-- `allow_auto_merge: true`, `allow_merge_commit: true` — required for the `dev → main` auto-merge.
-- `delete_branch_on_merge: true` — **safe only because `dev` is separately deletion-protected**
-  (`allow_deletions: false` in its branch protection, set by this same script). A `dev → main` PR's head is `dev`,
-  so delete-on-merge would otherwise delete the long-lived `dev` branch; the deletion lock is what
-  stops that, letting repo-wide auto-cleanup run and only ever eat `feature/*` heads.
-- `main` required checks — **one per skill, no exceptions**: `ci / devlog`, `ci / resume`,
-  `ci / ghostwriter`, `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`,
-  `ci / city-report`, `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
-  `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`, `ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`. These names are the job `name:` values — **renaming a caller or its `ci`
-  job silently un-requires it; update branch protection in the same change.**
-  `ci / marketplace` is deliberately NOT required yet (see `marketplace.yml`'s header).
-  To audit for drift — a skill whose CI runs but does not gate `main`:
-  ```bash
-  req=$(gh api repos/<owner>/<repo>/branches/main/protection --jq '.required_status_checks.contexts[]' | sed 's|ci / ||')
-  for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' | grep -v '^_\|automerge\|tools\|marketplace\|propagate\|security'); do
-    echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
-  done
-  ```
-  (`ci / shipflow` was missing this way from its introduction until 2026-07-28 — its CI ran and
-  reported on every PR, but a promotion could auto-merge with it red.)
-  The filter excludes `press-propagate` and `security` too: `press-propagate` has only a
-  `propagate` job, and `security.yml`'s four jobs are all named `security / <job>` — neither has a
-  `ci` job, so neither can ever satisfy a required check. Without those exclusions the audit
-  reports them as drift on every run, and an audit that always cries wolf stops being read.
-  (`security` was missing from this list until 2026-08-02, found by actually running the audit
-  after adding `ci / release` — the snippet predates `security.yml`.)
+- Native auto-merge, squash and delete-on-merge are enabled; merge commits and rebase merges
+  are disabled. Main remains the default branch and requires linear history.
+- Every skill's stable `ci / <skill>` context is required. Keep the script and
+  `.github/shipflow.json.requiredChecks` synchronized when adding a skill.
+- A PR is required with 0 required approvals and admin enforcement disabled, preserving
+  the existing solo-maintainer policy. Never use this bypass to make a red release succeed.
+- The path-filtered tools job, marketplace checks, press-propagate and security checks
+  retain their existing non-required policy. Never require a path-filtered context.
 
-**Bootstrap note:** `dev-to-main-automerge.yml` is a plain `pull_request`-triggered workflow (not
-`pull_request_target`), so unlike the auto-merge workflow it replaced, it needs **no manual-merge
-bootstrap** — GitHub evaluates `pull_request` workflows from the PR's merge ref, so the file fires
-correctly on the very first `dev → main` PR that introduces it, as long as it already exists on
-`dev` (the head).
+The cutover audit captures branch protections, rulesets and bypass settings independently.
+A successful script exit establishes read-back of the settings it owns; required checks
+on a real feature-to-main PR must still be observed. See
+[the cutover runbook](docs/github-flow-cutover.md) for live evidence and recovery.
 
 ## Adding a new skill
 
