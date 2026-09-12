@@ -93,10 +93,32 @@ repository, using verified existing values. For several authorized issues, creat
 prerequisites first and insert their actual URLs into dependent drafts. Stop on an
 uncertain creation; report verified issues so partial success does not cause duplicates.
 
-Return the issue URL, a short scope summary, and any remaining limitations. For a
-local draft return its file link and mark it unpublished. Offer the host-appropriate
-handoff (`/issueflow` or `$issueflow`, issue number and repository); start implementation
-only when the user requested it. **Never claim a result you did not observe.**
+For a verified issue from a create-only request, show its URL, a short scope
+summary, and any remaining limitations first. Then make the final user-facing
+sentence exactly: “Would you like to pick up this issue with issueflow?”
+Do not put a footer, invocation suggestion, or summary after that question.
+Issue creation authorization alone does not authorize implementation.
+
+If the user accepts, start issueflow through the current host with the verified
+issue number and the explicit repository from the publication result. Do not
+re-resolve the repository from the current working directory. Load the host's
+issueflow skill and carry that context into its invocation:
+
+- Claude Code: `/issueflow <verified-issue-number> --repo <publication-repository>`.
+- Codex: `$issueflow <verified-issue-number> --repo <publication-repository>`.
+
+If the user declines, end the flow without starting implementation. If the
+question is unanswered, leave it pending without starting implementation.
+If the user already explicitly authorized issueflow pickup, start the verified
+handoff without asking the same decision again. Report the verified URL, short
+scope summary, and limitations before that handoff. If issueflow is unavailable,
+report that limitation; do not claim it started.
+
+For an unpublished local draft, return its file link and mark it unpublished.
+For failed or unverified publication, including created-unverified results, report
+the actual state. Do not offer or start issueflow for a local draft, failed
+publication, or unverified publication. In a partial batch, only individually
+verified issues can be handoff candidates. **Never claim a result you did not observe.**
 
 ## Maintainer reference
 
