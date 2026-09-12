@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { adaptiveReasoning } from '../lib/runtime.mjs';
+import { adaptiveReasoning, effectiveSlots, setAvailableSlots, startWave, rollingWave } from '../lib/runtime.mjs';
 import { buildContextPacket, compactContext, verifyContextPacket } from '../lib/context.mjs';
 import { fleetPlan, reviewRisk, routeVerifierCandidates } from '../lib/prreview.mjs';
 
@@ -33,4 +33,18 @@ test('context packets are hash-bound and compact without losing provenance', () 
   const compact = compactContext('x'.repeat(100), 20);
   assert.equal(compact.summarized, true);
   assert.equal(compact.sourceHash.length, 64);
+});
+
+test('observed capacity bounds rolling refill without freeing undelivered native slots', () => {
+  const run = { runtime: 'codex', harness: {}, dispatch: { childSlots: 4 } };
+  assert.equal(effectiveSlots(run), 1);
+  setAvailableSlots(run, 2);
+  const items = [0, 1, 2, 3].map((id) => ({ id }));
+  assert.equal(startWave(run, items).length, 2);
+  assert.deepEqual(rollingWave(run, (item) => item.id === 0).map((item) => item.id), [2]);
+  assert.deepEqual(run.dispatch.queue.active.map((item) => item.id), [1, 2]);
+  assert.equal(new Set(run.dispatch.queue.active.map((item) => item.attemptId)).size, 2);
+  setAvailableSlots(run, 0);
+  assert.deepEqual(rollingWave(run, (item) => item.id === 2), []);
+  assert.deepEqual(run.dispatch.queue.active.map((item) => item.id), [1]);
 });

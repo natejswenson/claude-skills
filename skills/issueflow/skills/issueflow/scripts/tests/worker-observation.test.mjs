@@ -1,0 +1,37 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRun, saveRun, loadRun } from '../lib/run.mjs';
+import { createAttempt, completeAttempt, attemptDelivered } from '../lib/attempts.mjs';
+import { observeWorker } from '../lib/worker-observation.mjs';
+import { summarizeTelemetry } from '../lib/telemetry.mjs';
+
+test('native observations bind current attempts, gate terminal delivery and retain unknown usage', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'issueflow-native-observation-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const run = createRun({ strict: true, runtime: 'codex', repo: { path: dir, owner: 'test', name: 'fixture' }, issue: { number: 1, title: 'fixture' }, policy: { base: 'main' }, offline: true });
+  const brief = join(dir, 'brief.md'); const output = join(dir, 'output.json');
+  writeFileSync(brief, 'Read source'); writeFileSync(output, '{}');
+  const a = createAttempt(dir, run, brief, [output]);
+  run.harness.attempts = { output: a }; saveRun(dir, run);
+  const observe = (status, extra = {}) => observeWorker(dir, run, { attemptId: a.id, workerId: 'host-thread', status, ...extra });
+  observe('started'); completeAttempt(a.manifest);
+  assert.equal(attemptDelivered(a), false, 'a file is not terminal host completion');
+  assert.throws(() => observe('completed', { workerId: 'other' }), /identity/);
+  const usage = join(dir, 'host.jsonl');
+  writeFileSync(usage, JSON.stringify({ type: 'turn.completed', turn_id: 'turn-1', usage: { input_tokens: 100, output_tokens: 20, cached_input_tokens: 50 } }) + '\n');
+  assert.throws(() => observe('started', { usageFile: usage }), /terminal worker/);
+  observe('completed', { usageFile: usage });
+  assert.equal(attemptDelivered(a), true);
+  observe('completed', { usageFile: usage });
+  assert.throws(() => observe('failed'), /terminal status/);
+  const summary = summarizeTelemetry([], loadRun(dir));
+  assert.equal(summary.nativeObservedWorkers, 1);
+  assert.equal(summary.usage.inputTokens.total, 100);
+  assert.equal(summary.usage.cacheWriteTokens.total, null);
+  assert.equal(summary.costUsd, null);
+  writeFileSync(usage, '{}'); assert.throws(() => observe('completed', { usageFile: usage }), /source changed/);
+  a.state = 'cancelled'; assert.throws(() => observe('completed'), /current dispatched/);
+});
