@@ -11,12 +11,13 @@ Release preparation is isolated in [draft PR #353](https://github.com/natejswens
 targeting `dev`. The source checkout's unrelated changes were not committed or
 pushed. No PR was merged and no release workflow was dispatched.
 
-The proposed next version is **0.16.0**, following published 0.15.0. Version and
-release-note approval remains outstanding; this candidate still carries the
-matching 0.15.0 metadata. It must not be published under that already-used version.
-After approval: prepare the bump/notes, regenerate both-host metadata, recheck the
-exact bumped candidate, then follow the normal dev-to-main promotion and explicit
-release dispatch process. This report does not authorize those later actions.
+The next version is **0.16.0**, following published 0.15.0. The initial evaluation
+candidate retained matching 0.15.0 metadata while approval was outstanding.
+The user subsequently approved merging and publishing on 2026-09-12. The release
+preparation updates the version/notes and both-host metadata together, rechecks
+the bumped candidate, and follows normal dev-to-main promotion and explicit
+release dispatch. This historical evaluation report alone is not proof that the
+tag or registry publication exists; those require remote read-back.
 
 ## Live failure and repair
 
