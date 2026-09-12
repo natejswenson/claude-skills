@@ -80,6 +80,7 @@ export function readHouse(repo) {
 
   return {
     repo,
+    branchPolicy: readJson(join(repo, '.github', 'shipflow.json')),
     skills,
     marketplaceName: marketplace?.name ?? null,
     marketplaceNames: (marketplace?.plugins ?? []).map((p) => p.name),

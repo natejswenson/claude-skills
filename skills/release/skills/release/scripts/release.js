@@ -137,6 +137,9 @@ async function cmdPreflight(args) {
   const repo = resolve(args.repo ?? '.');
   const names = args.component ? [args.component] : declaredComponents(repo);
 
+  const config = JSON.parse(readFileSync(join(repo, '.github', 'shipflow.json'), 'utf8'));
+  const githubFlow = config.workflowPattern === 'github-flow';
+  const headers = githubFlow ? PREFLIGHT_HEADERS.filter((h) => h !== 'On dev') : PREFLIGHT_HEADERS;
   const rows = [];
   let meta = null;
   const detail = [];
@@ -163,7 +166,7 @@ async function cmdPreflight(args) {
     if (names.length === 1) detail.push(s);
   }
 
-  console.log(table(PREFLIGHT_HEADERS, rows));
+  console.log(table(headers, githubFlow ? rows.map((r) => r.filter((_, i) => i !== 3)) : rows));
 
   for (const s of detail) {
     if (s.commits.length > 0) {
@@ -183,10 +186,14 @@ async function cmdPreflight(args) {
     // A silently-absent section reads as "nothing to see"; an explicit "none"
     // is the difference between a checked question and an unasked one.
     if (s.collateral.length > 0) {
-      console.log(`\nALSO RELEASED by the same promotion — a promotion is atomic and carries all of dev:`);
-      console.log(table(['Component', 'Version', 'Tag it would cut'], s.collateral.map((c) => [c.name, c.version ?? '?', c.tag ?? '?'])));
+      console.log(`\nALSO MOVED TO MAIN by this promotion — each component still requires its own explicit dispatch:`);
+      console.log(table(['Component', 'Version', 'Pending tag'], s.collateral.map((c) => [c.name, c.version ?? '?', c.tag ?? '?'])));
     } else {
-      console.log('\nCollateral: none — no other component is bumped-but-untagged on dev.');
+      console.log(githubFlow ? '\nCollateral: none — GitHub flow has no promotion.' : '\nCollateral: none — no other component is bumped-but-untagged on dev.');
+    }
+    if (githubFlow && s.pendingComponents?.length) {
+      console.log('\nOther pending components on main (separate release decisions):');
+      console.log(table(['Component', 'Version', 'Pending tag'], s.pendingComponents.map((c) => [c.name, c.version, c.tag])));
     }
     if (s.blockers.length > 0) {
       console.log(`\n${table(['Blocker', 'Detail'], s.blockers.map((b) => [b.id, b.detail]))}`);
@@ -310,6 +317,7 @@ async function cmdCut(args) {
   }
   const r = shipflow(repo, [
     'release-cut', '--repo', repo,
+    ...(args.version ? ['--version', args.version] : []),
     ...(args.component ? ['--component', args.component] : []),
     ...(args.expectStatusHash ? ['--expect-status-hash', args.expectStatusHash] : ['--skip-hash-check']),
     ...(args.wait ? ['--wait', String(args.wait)] : []),
@@ -336,7 +344,7 @@ const USAGE = `release v${VERSION} — cut a release for one named component and
   release preflight       [--repo <path>] [--component <name>]
   release changelog-draft [--repo <path>] [--component <name>]
   release prepare         [--repo <path>] [--component <name>] --version <x.y.z> --notes-file <path>
-  release cut             [--repo <path>] [--component <name>] --expect-status-hash <hash> [--wait <seconds>]
+  release cut             [--repo <path>] [--component <name>] [--version <x.y.z>] --expect-status-hash <hash> [--wait <seconds>]
 
 Exit codes: 0 ok · 1 blocked or failed · 2 bad usage · 3 cut is parked, call it again.
 `;

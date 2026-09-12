@@ -62,12 +62,13 @@ export function resolvePolicy(repoPath, defaultBranch = 'main', { remoteBranches
   // that declares no dev branch is a single-branch repo, so feature work goes
   // to main — inventing a `dev` that does not exist would open a PR into
   // nothing.
-  const base = config.branches?.dev ?? config.branches?.main ?? defaultBranch;
+  const githubFlow = config.workflowPattern === 'github-flow';
+  const base = githubFlow ? (config.branches?.main ?? defaultBranch) : (config.branches?.dev ?? config.branches?.main ?? defaultBranch);
 
   return {
     base,
     featurePrefix: config.featureBranchPrefix ?? 'feature/',
-    mergeMethod: config.mergeMethod?.featureToDevMethod ?? 'squash',
+    mergeMethod: (githubFlow ? config.mergeMethod?.devToMainMethod : config.mergeMethod?.featureToDevMethod) ?? 'squash',
     source: '.github/shipflow.json',
     shipflow: true,
   };
