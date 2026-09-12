@@ -241,3 +241,103 @@ def test_main_dedups_against_published_and_boards(tmp_path, monkeypatch, capsys)
     assert trending.main(argv2 + ["--limit", "1"]) == 0
     second_table = capsys.readouterr().out
     assert top_title not in second_table
+
+
+def test_news_query_failure_preserves_other_interests():
+    cfg = {"interests": [{"name": name, "keywords": [], "news_query": name}
+                         for name in ("good", "bad")]}
+
+    def get(url):
+        if "bad" in url:
+            raise OSError("unavailable")
+        return b"<rss><channel><item><title>New story</title></item></channel></rss>"
+
+    failures = []
+    assert len(trending.sweep_gnews(cfg, get, failures)) == 1
+    assert failures == ["news (bad): unavailable"]
+    with pytest.raises(OSError):
+        trending.sweep_gnews(cfg, get)
+    fresh, counts, failures = trending.build_candidates(cfg, get, "", 12)
+    assert counts["news"] == 1
+    assert fresh[0]["title"] == "New story"
+    assert any("news (bad)" in f for f in failures)
+
+
+def test_surfaces_overlap_without_serial_waiting(monkeypatch):
+    from threading import Barrier
+    barrier = Barrier(4)
+
+    def sweep(cfg, get):
+        barrier.wait(timeout=3)
+        return []
+
+    monkeypatch.setattr(trending, "SURFACES", {str(i): sweep for i in range(4)})
+    _, counts, failures = trending.build_candidates({}, None, "", 12)
+    assert counts == {str(i): 0 for i in range(4)}
+    assert failures == []  # sequential fetching would break the barrier
+
+
+def test_duplicate_stories_keep_strongest_signal(monkeypatch):
+    stories = [dict(source="hn", title=title, url=url, rank=rank, signal="s", age="d")
+               for title, url, rank in [("Story A", "https://a/", 300),
+                                        ("Different title", "https://a", 200),
+                                        ("Story A", "https://elsewhere", 100),
+                                        ("Story B", "https://b", 50)]]
+    monkeypatch.setattr(trending, "SURFACES", {"hn": lambda cfg, get: stories})
+    fresh, _, _ = trending.build_candidates({}, None, "", 12, include_all=True)
+    assert [(c["title"], c["rank"]) for c in fresh] == [("Story A", 300), ("Story B", 50)]
+
+
+def test_failed_refresh_replaces_previous_success(tmp_path, monkeypatch, capsys):
+    from datetime import datetime
+    argv, research = _main_env(tmp_path, monkeypatch, frozen_fetch)
+    assert trending.main(argv + ["--json"]) == 0
+    success = json.loads(capsys.readouterr().out)
+    assert success["status"] == "ok" and success["candidates"]
+    assert datetime.fromisoformat(success["generated_at"]).tzinfo
+
+    def dead(url):
+        raise OSError("offline")
+
+    monkeypatch.setattr(trending, "fetch", dead)
+    assert trending.main(argv + ["--json"]) == 2
+    failure = json.loads(capsys.readouterr().out)
+    assert failure["status"] == "failed" and failure["candidates"] == []
+    saved = json.loads(Path(failure["sidecar"]).read_text())
+    assert saved["status"] == "failed" and saved["candidates"] == []
+    assert len(list(research.glob(".trending-*.json"))) == 1
+
+
+def test_filtered_empty_is_success_not_stale_reuse(tmp_path, monkeypatch, capsys):
+    argv, _ = _main_env(tmp_path, monkeypatch, frozen_fetch)
+    cfg = json.loads(EXAMPLE_CONFIG.read_text())
+    cfg["interests"] = []
+    Path(argv[1]).write_text(json.dumps(cfg))
+    assert trending.main(argv + ["--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "ok" and result["candidates"] == []
+
+
+def test_limit_must_be_positive():
+    with pytest.raises(SystemExit) as exc:
+        trending.main(["--limit", "0"])
+    assert exc.value.code == 2
+
+
+def test_redteam_url_identity_preserves_case_sensitive_components(monkeypatch):
+    urls = ['https://example.com/AbC', 'https://example.com/abc',
+            'https://example.com/?id=AbC', 'https://example.com/?id=abc',
+            'https://EXAMPLE.com/AbC#section', 'https://example.com/abc/']
+    stories = [dict(source='hn', title=f'Unique title {i}', url=url, rank=200-i)
+               for i, url in enumerate(urls)]
+    monkeypatch.setattr(trending, 'SURFACES', {'hn': lambda cfg, get: stories})
+    fresh, _, _ = trending.build_candidates({}, None, '', 12, include_all=True)
+    assert [c['url'] for c in fresh] == urls[:4] + urls[5:]
+
+
+def test_redteam_malformed_url_does_not_crash_other_sources(monkeypatch):
+    stories = [dict(source='hn', title=f'Candidate {i}', url=url, rank=200-i)
+               for i, url in enumerate(['https://[broken', 'https://example.com/valid'])]
+    monkeypatch.setattr(trending, 'SURFACES', {'hn': lambda cfg, get: stories})
+    fresh, _, _ = trending.build_candidates({}, None, '', 12, include_all=True)
+    assert len(fresh) == 2 and fresh[1]['url'] == 'https://example.com/valid'
