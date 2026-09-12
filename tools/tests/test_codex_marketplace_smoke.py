@@ -95,7 +95,8 @@ class CodexMarketplaceSmokeTests(unittest.TestCase):
             installed = [command['args'][2].split('@', 1)[0] for command in commands
                          if command['args'][:2] == ['plugin', 'add']]
             self.assertEqual(installed, PLUGIN_NAMES)
-            self.assertIn('20 plugins', result.stdout)
+            self.assertGreaterEqual(len(PLUGIN_NAMES), 20)
+            self.assertIn(f'{len(PLUGIN_NAMES)} plugins', result.stdout)
 
     def test_missing_or_extra_discovery_entry_fails(self):
         with tempfile.TemporaryDirectory() as directory:
