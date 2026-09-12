@@ -1,15 +1,15 @@
 name: tools
 
 # CI for the shared repo tooling (the Tier-1 SKILL.md scorer that gates every
-# skill). Path-filtered to tools/** and intentionally NOT a required status check,
+# skill). Path-filtered to policy and tooling; intentionally NOT a required status check,
 # so it never participates in the per-skill required-check set (no deadlock).
 on:
   push:
     branches: [main]
-    paths: ["tools/**", ".github/workflows/tools.yml"]
+    paths: ["tools/**", ".github/**", "AGENTS.md", "CLAUDE.md", "README.md", "docs/github-flow-cutover.md", "skills/shipflow/**", "skills/release/**"]
   pull_request:
-    branches: [dev, main, 'feature/**']
-    paths: ["tools/**", ".github/workflows/tools.yml"]
+    branches: [main, 'feature/**']
+    paths: ["tools/**", ".github/**", "AGENTS.md", "CLAUDE.md", "README.md", "docs/github-flow-cutover.md", "skills/shipflow/**", "skills/release/**"]
   workflow_dispatch:
 
 # Deny-all floor: this job only reads code and runs the scorer.
@@ -27,5 +27,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: skills/shipflow/skills/shipflow
+      - run: node --test tools/tests/github-flow-cutover.test.mjs
       - run: pip install -r tools/requirements-dev.txt
       - run: python -m pytest tools/tests -q

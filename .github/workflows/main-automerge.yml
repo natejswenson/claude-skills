@@ -1,10 +1,14 @@
-name: auto-merge dev to main
+name: auto-merge to main
 
 # Rendered by shipflow's apply.mjs from this template. Do not hand-edit
 # without also updating .github/shipflow.json's renderedTemplateHashes entry
 # for this file, or shipflow's next apply will refuse to overwrite it
 # (handEditDetected) until an explicit --force is passed. Commit both files
 # together in the same commit.
+#
+# GitHub Flow has no separate "promotion" branch — every PR into main
+# is eligible for auto-merge and every merge is release-worthy, so unlike
+# dev-main-promotion's template, neither job here restricts on head.ref.
 #
 # GH_TOKEN uses config.release.releaseCredential, NOT a hardcoded
 # secrets.GITHUB_TOKEN, because of GitHub's loop-prevention rule: a PR
@@ -31,10 +35,7 @@ on:
 #
 # `contents: write` is dropped entirely, not moved. `gh pr merge --auto` only
 # *enables* native auto-merge, a pull-requests operation; GitHub performs the
-# merge itself afterwards, under its own automation rather than this token. The
-# grants below are what matters when releaseCredential is left as GITHUB_TOKEN
-# — where a real PAT is configured (the supported setup, see above), the
-# workflow token's permissions do not apply to these steps at all.
+# merge itself afterwards, under its own automation rather than this token.
 permissions: {}
 
 jobs:
@@ -44,28 +45,25 @@ jobs:
   # required-checks gate is satisfied (see the design's discussion of why a
   # bespoke polling/blocking job was rejected).
   auto-merge:
-    if: >-
-      github.event.action != 'closed' &&
-      github.event.pull_request.head.ref == 'dev'
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - name: Enable auto-merge
-        run: gh pr merge --auto --merge "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ secrets.SHIPFLOW_AUTOMERGE_PAT }}
 
-  # Fires once, when the promotion PR actually merges (a separate event from
-  # the job above, which only *enables* auto-merge). Applies a durable
+  # Fires once, when a PR actually merges (a separate event from the job
+  # above, which only *enables* auto-merge). Applies a durable
   # release-pending label so a later, disconnected shipflow invocation can
-  # find this promotion and ask about a release — this repo's actual merge
-  # completion has no live Claude session attached to react to it directly.
+  # find this merge and ask about a release — the merge completion has no
+  # live Claude session attached to react to it directly.
   label-release-pending:
     if: >-
       github.event.action == 'closed' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.head.ref == 'dev'
+      github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

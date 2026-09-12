@@ -11,8 +11,8 @@ name: appletv
 # Per-skill CI + release for the appletv skill. The `pull_request` trigger is
 # deliberately UN-filtered so `ci / appletv` reports on every PR — running real
 # tests when this skill changed and short-circuiting to success when it didn't —
-# which is what keeps the required-check set always satisfiable for a dev -> main
-# PR. The `push` trigger IS path-filtered so the skill only releases when its own
+# which is what keeps the required-check set always satisfiable for a feature -> main
+# PR. The `push` trigger IS path-filtered so the skill only runs push CI when its own
 # files changed.
 on:
   push:
@@ -23,7 +23,7 @@ on:
       - "tools/lint_plugin.py"
       - ".github/workflows/appletv.yml"
   pull_request:
-    branches: [dev, main, 'feature/**']
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
 
   release:
     needs: ci
-    # Dispatch-only, deliberately. Never re-add `push` here: a dev → main
+    # Dispatch-only, deliberately. Never re-add `push` here: a feature → main
     # auto-merge fires push events, which made promotions publish-on-merge and
     # cost two unplanned releases. `/release` dispatches this job.
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
