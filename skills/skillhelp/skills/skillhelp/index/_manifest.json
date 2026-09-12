@@ -161,6 +161,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "issuecreator",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "3779eac17dc1f5ed",
+      "facts": 40,
+      "sections": {
+        "setup": 8,
+        "usage": 12,
+        "commands": 10,
+        "architecture": 7,
+        "troubleshooting": 3
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "issueflow",
       "version": "0.16.0",
       "stack": "node",

@@ -1,0 +1,93 @@
+{
+  "comment": "What must not silently disappear from issuecreator. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never present an issue as ready for implementation when its ",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Check structural readiness without claiming semantic correctness",
+        "command": "node scripts/issuecreator.js validate"
+      },
+      {
+        "step": "Render a consistent issue body",
+        "command": "node scripts/issuecreator.js render"
+      },
+      {
+        "step": "Create and read back the GitHub issue",
+        "command": "node scripts/issuecreator.js create"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Inspect repository instructions, relevant code, tests, issue templates and related issues",
+        "why": "Which evidence matters depends on the requested change and repository conventions."
+      },
+      {
+        "step": "Write the smallest independently implementable scope with observable acceptance criteria",
+        "why": "Intent, tradeoffs, dependencies and semantic completeness require judgment."
+      },
+      {
+        "step": "Resolve consequential unknowns and distinguish observations from implementation suggestions",
+        "why": "A populated template cannot establish that claims are true or that an issue is actionable."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-local-draft",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/real-draft.json",
+        "evals/incomplete-draft.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/issue.md",
+        "evals/baseline/issue.json"
+      ],
+      "update_command": "node scripts/issuecreator.js render --input evals/real-draft.json --out /tmp/issuecreator-refresh; then follow references/baseline.md to freeze the reviewed output",
+      "rationale": "Lost acceptance criteria, scope, evidence, multiline formatting or validation behavior when rerendering the captured input offline. \u2014 pinned against A real local draft of this requested issuecreator skill addition, researched against this checkout and rendered during implementation; no GitHub issue is posted merely to test the skill.."
+    },
+    {
+      "id": "incomplete-draft",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/real-draft.json",
+        "evals/incomplete-draft.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/issue.md",
+        "evals/baseline/issue.json"
+      ],
+      "update_command": "node scripts/issuecreator.js render --input evals/real-draft.json --out /tmp/issuecreator-refresh; then follow references/baseline.md to freeze the reviewed output",
+      "rationale": "Accepting structurally incomplete input as ready to publish. \u2014 pinned against The captured real draft with acceptance criteria removed or a blocking question added.."
+    },
+    {
+      "id": "publication-boundaries",
+      "kind": "trap",
+      "test": "scripts/tests/issuecreator.test.mjs",
+      "fixtures": [
+        "evals/real-draft.json",
+        "evals/incomplete-draft.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/issue.md",
+        "evals/baseline/issue.json"
+      ],
+      "update_command": "node scripts/issuecreator.js render --input evals/real-draft.json --out /tmp/issuecreator-refresh; then follow references/baseline.md to freeze the reviewed output",
+      "rationale": "Shell interpolation, false publication claims and automatic duplicate creation. \u2014 pinned against Offline gh test doubles covering literal shell metacharacters, read-back mismatches and ambiguous create failures.."
+    }
+  ]
+}

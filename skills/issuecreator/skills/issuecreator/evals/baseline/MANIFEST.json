@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/issuecreator.js render --input evals/real-draft.json --out \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "issue.json",
+      "bytes": 2884,
+      "sha256": "137e9c06a0f8bd5f03e4a6eb1b943db82901444004e0d7438182a9cde020cf1b"
+    },
+    {
+      "path": "issue.md",
+      "bytes": 2642,
+      "sha256": "d837ec9762727d62a97bedf097df67e45a979f99f505a0209cc9ec5fdee60457"
+    }
+  ]
+}
