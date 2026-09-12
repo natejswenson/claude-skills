@@ -1,18 +1,33 @@
 {
   "branches": {
-    "main": "main",
-    "dev": "dev"
+    "main": "main"
   },
   "featureBranchPrefix": "feature/",
   "requiredChecks": [
+    "ci / appletv",
+    "ci / brandreport",
+    "ci / city-report",
     "ci / devlog",
+    "ci / eval",
+    "ci / ghfactory",
     "ci / ghostwriter",
+    "ci / ghostwriter-x",
     "ci / github-stats",
-    "ci / resume"
+    "ci / gmailtriage",
+    "ci / issuecreator",
+    "ci / issueflow",
+    "ci / netwatch",
+    "ci / pluginsync",
+    "ci / press",
+    "ci / release",
+    "ci / resume",
+    "ci / shipflow",
+    "ci / shipreport",
+    "ci / skillfactory",
+    "ci / skillhelp"
   ],
   "mergeMethod": {
-    "featureToDevMethod": "squash",
-    "devToMainMethod": "merge"
+    "devToMainMethod": "squash"
   },
   "protectionOwner": "external",
   "release": {
@@ -25,7 +40,9 @@
       "versionFiles": [
         "skills/{name}/skills/{name}/package.json",
         "skills/{name}/skills/{name}/SKILL.md",
-        "skills/{name}/.claude-plugin/plugin.json"
+        "skills/{name}/.claude-plugin/plugin.json",
+        "skills/{name}/skills/{name}/package-lock.json",
+        "skills/{name}/.codex-plugin/plugin.json"
       ],
       "changelog": "skills/{name}/CHANGELOG.md",
       "tagPattern": "{name}-v{version}",
@@ -61,12 +78,12 @@
   "branchCleanup": {
     "deleteOnMerge": true,
     "protectedBranches": [
-      "dev",
       "main"
     ]
   },
   "enforceAdmins": false,
   "renderedTemplateHashes": {
-    ".github/workflows/dev-to-main-automerge.yml": "cc7f3f2efe68758a96735e5ac489513689e3b6eb295ff129c6904595eeeaac23"
-  }
+    ".github/workflows/main-automerge.yml": "c3d9150170792d69390ad4816e83b1a4e7340da55369816b3fa77c6ebc287174"
+  },
+  "workflowPattern": "github-flow"
 }

@@ -4,14 +4,14 @@ name: city-report
 # PR/push trigger + change-detection rationale: the `pull_request` trigger is
 # deliberately UN-filtered so `ci / city-report` reports on every PR (running real
 # tests when this skill changed, short-circuiting to success when it didn't), which
-# is what keeps the required-check set always satisfiable for a dev -> main PR.
-# The `push` trigger IS path-filtered so the skill only releases when its own files changed.
+# is what keeps the required-check set always satisfiable for a feature -> main PR.
+# The `push` trigger IS path-filtered so the skill only runs push CI when its own files changed.
 on:
   push:
     branches: [main]
     paths: ["skills/city-report/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/city-report.yml"]
   pull_request:
-    branches: [dev, main, 'feature/**']
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 jobs:
@@ -66,7 +66,7 @@ jobs:
     needs: ci
     # workflow_dispatch ONLY. A push to main must never cut a tag: the /release
     # skill is the single release path, and it dispatches this workflow itself
-    # after the promotion lands. A dev -> main merge DOES fire push events
+    # after the release PR lands. A feature -> main merge DOES fire push events
     # (confirmed 2026-08-02: shipflow-v0.4.0 was tagged and published to npm by
     # a promotion merging, with no dispatch), so gating on the event is what
     # actually stops it -- the push trigger above still runs `ci`, nothing more.
