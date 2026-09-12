@@ -164,7 +164,7 @@
       "name": "issuecreator",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "a94156fd0511964a",
+      "cardHash": "ad821743b5d7f036",
       "facts": 49,
       "sections": {
         "setup": 9,

@@ -52,6 +52,9 @@ const handoffRules = {
   acceptance: [
     /If the user accepts, start issueflow through the current host with the verified issue number and the explicit repository from the publication result\./,
     /Do not re-resolve the repository from the current working directory\./,
+    /Resolve an absolute local checkout path and verify that its GitHub repository matches the publication repository before starting issueflow\./,
+    /Its `--repo` takes that local path, never the publication's `OWNER\/REPO` slug\./,
+    /If no matching checkout can be verified, request its location and leave pickup pending without starting implementation:/,
   ],
   decline: [/If the user declines, end the flow without starting implementation\./],
   'no answer': [/If the question is unanswered, leave it pending without starting implementation\./],
@@ -73,8 +76,8 @@ const handoffRules = {
 };
 
 for (const [host, invocation] of [
-  ['Claude Code', /Claude Code: `\/issueflow <verified-issue-number> --repo <publication-repository>`/],
-  ['Codex', /Codex: `\$issueflow <verified-issue-number> --repo <publication-repository>`/],
+  ['Claude Code', /Claude Code: `\/issueflow <verified-issue-number> --repo '<verified-local-checkout-path>'`/],
+  ['Codex', /Codex: `\$issueflow <verified-issue-number> --repo '<verified-local-checkout-path>'`/],
 ]) {
   for (const [scenario, patterns] of Object.entries(handoffRules)) {
     test(`${host} completion contract: ${scenario}`, () => {

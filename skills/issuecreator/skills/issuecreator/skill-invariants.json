@@ -16,7 +16,7 @@
     },
     {
       "id": "handoff-final-question",
-      "pattern": "Then make the final user-facing sentence exactly: \u201cWould you like to pick up this issue with issueflow",
+      "pattern": "Then make the final user-facing sentence exactly: “Would you like to pick up this issue with issueflow",
       "rationale": "Verified create-only completion ends with an explicit pickup decision after reporting the result."
     },
     {
@@ -46,13 +46,13 @@
     },
     {
       "id": "handoff-claude",
-      "pattern": "Claude Code: `/issueflow <verified-issue-number> --repo <publication-repository>`",
+      "pattern": "Claude Code: `/issueflow <verified-issue-number> --repo '<verified-local-checkout-path>'`",
       "rationale": "Claude Code keeps its slash invocation and verified context."
     },
     {
       "id": "handoff-codex",
       "pattern": "Codex:",
-      "rationale": "Codex uses $issueflow with the verified issue number and publication repository; the completion contract test asserts the full invocation."
+      "rationale": "Codex uses $issueflow with the verified issue number and matching local checkout path; the completion contract test asserts the full invocation."
     }
   ],
   "split": {
