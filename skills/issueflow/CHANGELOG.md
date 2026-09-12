@@ -5,6 +5,24 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-09-12
+
+### Added
+
+- **New runs require a reviewed verification contract.** Schema-4 runs bind acceptance criteria, allowed paths, regression checks, full-suite checks and CI policy to the approved plan. The controller executes the checks and retains actual process results before accepting implementation or marking a PR ready.
+- **Native workers have explicit attempts and recovery.** Immutable completion envelopes and parent-observed worker lifecycles distinguish completed work from interrupted or stale output. Cancelled work retains its history and must receive a fresh attempt.
+- **Run evidence survives review and repair.** Remote-operation journals confirm GitHub effects by read-back, while review fixes require fresh verification at the reviewed commit. Review context and usage records retain provenance and report missing measurements as unknown.
+
+### Fixed
+
+- **A green-looking report can no longer substitute for executed checks in new runs.** Zero-test results, failing required suites, stale receipts and changed verification inputs refuse advancement. Missing CI requires an explicitly reviewed policy rather than silently counting as green.
+- **Reopened plans cannot reuse their old approvals.** Pre-PR amendments and migration archive earlier evidence and require fresh independent review without resetting the original limits.
+
+### Compatibility
+
+- **Existing schema-3 runs retain their original evidence strength.** They are not silently upgraded or represented as strict verification. Explicit migration is limited to eligible, quiescent pre-PR runs. Claude configuration paths and shared plugin metadata remain supported.
+- Live validation for this candidate focuses on Codex. No cross-host speedup, complete token/cost measurement, or arbitrary-code isolation is claimed.
+
 ## [0.15.0] - 2026-09-12
 
 ### Added
@@ -60,7 +78,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Implementation gates reject blocked or incomplete result reports, and
   liveness checks ignore unrelated files from a containing parent checkout.
 
-## [Unreleased]
+## Development notes (archived)
+
+These implementation notes were incorporated into releases through 0.16.0.
+They are retained as historical detail; the versioned entries above are the
+release notes.
 
 ### Strict harness
 
