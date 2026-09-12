@@ -182,8 +182,9 @@ for (const file of ['skills/alpha/CHANGELOG.md','skills/alpha/skills/alpha/packa
   assert.equal(r.ok,false); assert.match(r.error,/toctou/); assert.deepEqual(state().calls,[]);
 });
 for (const onMain of [false,true]) test(`unbracketed release headings work on prepared branch and main: ${onMain}`, (t) => {
-  const f=fixture(t); const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.'); assert.equal(p.ok,true);
+  const f=fixture(t); const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.',{date:'2026-09-12'}); assert.equal(p.ok,true);
   const file='skills/alpha/CHANGELOG.md'; put(p.worktree,file,readFileSync(join(p.worktree,file),'utf8').replace('## [0.2.0] - 2026-09-12','## 0.2.0 (2026-09-12)'));
+  assert.match(readFileSync(join(p.worktree,file),'utf8'),/^## 0\.2\.0 \(2026-09-12\)$/m);
   git(p.worktree,'add',file); git(p.worktree,'commit','-m','chore: unbracketed heading');
   if(onMain) git(p.worktree,'push','origin','HEAD:main');
   fakeGh(t,f); assert.equal(cut(f.repo,f.config,'alpha',cutOptions).done,true);
