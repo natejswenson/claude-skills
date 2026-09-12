@@ -56,10 +56,20 @@ if(a[0] === 'api') {
  const p = a[1];
  if(p.includes('/pulls?')) { const u = new URL('https://fixture/' + p); const head = u.searchParams.get('head').split(':').at(-1); const base = u.searchParams.get('base'); save(s.prs.filter(r=>!r.merged && r.head.ref===head && r.base.ref===base)); }
  else if(/\/pulls\/\d+$/.test(p)) { const pr = s.prs.find(r=>r.number===Number(p.split('/').at(-1))); if(pr && pr.head.ref==='integration') { git('push', 'origin', 'integration:main'); pr.merged=true; } save(pr); }
- else if(p.endsWith('/protection')) save({required_status_checks:{contexts:['ci / alpha', 'ci / beta']}});
- else if(p.includes('/rules/branches/')) save([{type:'required_status_checks',parameters:{required_status_checks:[{context:'ci / rules'}]}}]);
- else if(p.includes('/check-runs')) save({check_runs:(s.mode==='missing'?['ci / alpha']:['ci / alpha','ci / beta','ci / rules']).map(name=>({name,status:'completed',conclusion:s.mode==='failed' && name==='ci / beta'?'failure':'success'}))});
- else if(p.endsWith('/status')) save({statuses:[]});
+ else if(p.endsWith('/protection')) save({required_status_checks:{contexts:['ci / alpha', 'ci / beta'],checks:s.mode.startsWith('app-')?[{context:'ci / alpha',app_id:42}]:[]}});
+ else if(p.includes('/rules/branches/')) save([{type:'required_status_checks',parameters:{required_status_checks:[{context:'ci / rules',integration_id:s.mode.startsWith('app-')?42:null}]}}]);
+ else if(p.includes('/check-runs')) {
+  const page=Number(new URL('https://fixture/'+p).searchParams.get('page'));
+  let names=s.mode==='missing'?['ci / alpha']:['ci / alpha','ci / beta','ci / rules'];
+  if(s.mode==='paged-checks') names=page===1?Array.from({length:100},(_,i)=>'extra-'+i):names;
+  if(s.mode==='paged-statuses') names=[];
+  save({check_runs:names.map(name=>({name,status:'completed',conclusion:s.mode==='failed' && name==='ci / beta'?'failure':'success',app:{id:s.mode==='app-wrong'?7:42}}))});
+ }
+ else if(p.includes('/status?')) {
+  const page=Number(new URL('https://fixture/'+p).searchParams.get('page'));
+  const names=s.mode==='paged-statuses'?(page===1?Array.from({length:100},(_,i)=>'extra-'+i):['ci / alpha','ci / beta','ci / rules']):[];
+  save({statuses:names.map(context=>({context,state:'success'}))});
+ }
  else if(p.includes('/releases/tags/')) save({html_url:'https://example.invalid/release',body:'- Requested notes.'});
  else if(p.includes('/labels/')) save({});
  else {save({error:'unexpected api',p});process.exit(1);}
@@ -148,4 +158,42 @@ test('legacy cut resumes after its feature branch was merged and deleted', (t) =
   git(f.repo,'worktree','remove',p.worktree);git(f.repo,'branch','-D',p.branch);
   const state=fakeGh(t,f);const r=cut(f.repo,f.config,'alpha',cutOptions);assert.equal(r.done,true,JSON.stringify(r));
   assert.deepEqual(state().calls.filter(a=>a[0]==='pr'&&a[1]==='create').map(a=>a[a.indexOf('--head')+1]),['integration']);
+});
+
+for (const mode of ['paged-checks', 'paged-statuses', 'app-correct', 'app-wrong']) test(`required checks preserve pagination and app binding: ${mode}`, (t) => {
+  const f=fixture(t); assert.equal(prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.').ok,true);
+  const state=fakeGh(t,f,mode); const r=cut(f.repo,f.config,'alpha',cutOptions);
+  assert.equal(r.done,mode!=='app-wrong',JSON.stringify(r));
+  assert.equal(state().calls.some(a=>a[0]==='pr'&&a[1]==='merge'),mode!=='app-wrong');
+});
+for (const legacy of [false,true]) test(`configured main checks do not override actual base requirements: legacy=${legacy}`, (t) => {
+  const f=fixture(t,{legacy}); f.config.requiredChecks=['main-only'];
+  if(!legacy) f.config.protectionOwner='external';
+  assert.equal(prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.').ok,true);
+  fakeGh(t,f); assert.equal(cut(f.repo,f.config,'alpha',cutOptions).done,true);
+});
+for (const file of ['skills/alpha/CHANGELOG.md','skills/alpha/skills/alpha/package.json']) test(`approved prepared commit rejects mutation of ${file}`, (t) => {
+  const f=fixture(t); const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.'); assert.equal(p.ok,true);
+  const approved=readStatus(f.repo,f.config,'alpha');
+  put(p.worktree,file,readFileSync(join(p.worktree,file),'utf8')+'\n');
+  git(p.worktree,'add',file); git(p.worktree,'commit','-m','chore: change approved source');
+  const state=fakeGh(t,f);
+  const r=cut(f.repo,f.config,'alpha',{...cutOptions,skipHashCheck:false,expectStatusHash:approved.statusHash});
+  assert.equal(r.ok,false); assert.match(r.error,/toctou/); assert.deepEqual(state().calls,[]);
+});
+for (const onMain of [false,true]) test(`unbracketed release headings work on prepared branch and main: ${onMain}`, (t) => {
+  const f=fixture(t); const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.'); assert.equal(p.ok,true);
+  const file='skills/alpha/CHANGELOG.md'; put(p.worktree,file,readFileSync(join(p.worktree,file),'utf8').replace('## [0.2.0] - 2026-09-12','## 0.2.0 (2026-09-12)'));
+  git(p.worktree,'add',file); git(p.worktree,'commit','-m','chore: unbracketed heading');
+  if(onMain) git(p.worktree,'push','origin','HEAD:main');
+  fakeGh(t,f); assert.equal(cut(f.repo,f.config,'alpha',cutOptions).done,true);
+});
+
+test('preparing the same component version in two repositories keeps both worktrees', (t) => {
+  const first=fixture(t), second=fixture(t);
+  const a=prepare(first.repo,first.config,'alpha','0.2.0','- Requested notes.'); assert.equal(a.ok,true);
+  const b=prepare(second.repo,second.config,'alpha','0.2.0','- Requested notes.'); assert.equal(b.ok,true);
+  assert.notEqual(a.worktree,b.worktree);
+  assert.equal(git(a.worktree,'rev-parse','HEAD'),git(first.repo,'rev-parse',a.branch));
+  assert.equal(git(b.worktree,'rev-parse','HEAD'),git(second.repo,'rev-parse',b.branch));
 });

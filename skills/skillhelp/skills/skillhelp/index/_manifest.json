@@ -244,7 +244,7 @@
       "name": "release",
       "version": "0.2.0",
       "stack": "node",
-      "cardHash": "3ea13e17316e401b",
+      "cardHash": "701e945062f7a0c7",
       "facts": 60,
       "sections": {
         "setup": 12,
@@ -276,7 +276,7 @@
       "name": "shipflow",
       "version": "0.6.0",
       "stack": "node",
-      "cardHash": "34c4071db2c35c68",
+      "cardHash": "910b8570e57b2d88",
       "facts": 71,
       "sections": {
         "setup": 12,
@@ -308,7 +308,7 @@
       "name": "skillfactory",
       "version": "0.4.0",
       "stack": "node",
-      "cardHash": "acb9837ef7841e31",
+      "cardHash": "7d5da3cf2cb94af3",
       "facts": 58,
       "sections": {
         "setup": 8,
