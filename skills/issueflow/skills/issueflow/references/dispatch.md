@@ -98,18 +98,20 @@ agent. The brief still closes with a host-specific instruction — Claude sends
 `main` the output path and a short result, while Codex finishes with that
 summary and returns it to the parent automatically. With native agent waiting,
 completion means run next immediately; no second shell settle is needed.
-`next` still checks artifact freshness and completeness. Hosts without native
-completion use the fallback wait line once:
+`next` still checks artifact freshness and completeness. Strict runs additionally
+require the attempt-specific atomic completion envelope described in
+`harness.md`; a settled file alone cannot authorize advancement. Hosts without
+native completion use the printed fallback wait line once:
 
 ```
-sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 5; done; <…then until the output's size has held still for 20s>'
+sh -c 'end=$(( $(date +%s) + 1800 )); until [ <output> -nt <brief> ]; do [ $(date +%s) -ge $end ] && exit 124; sleep 1; done; <…then until the output's size has held still for 2s>'
 ```
 
 The fallback requires output *newer than the brief that dispatched it*, then *unchanged in size
-for twenty seconds* — a subagent writes its artifact in passes, and the first
+for two seconds* — a subagent writes its artifact in passes, and the first
 real 0.7.0 run briefed the red team on a plan that was 409 of its 823 lines
-long. A re-dispatch over an existing artifact does not fire instantly, no sentinel the subagent could
-forget is needed, and exit 124 at the deadline is a stall the orchestrator reads
+long. A re-dispatch over an existing artifact does not fire instantly. In legacy
+runs no completion envelope is required; strict runs require it. Exit 124 at the deadline is a stall the orchestrator reads
 without guessing. The deadline is three times this repo's own median for the
 step, else thirty minutes — plain POSIX `sh` and `date +%s`, because GNU
 `timeout` is not on a stock Mac, which the first real run of 0.7.0 found
@@ -120,7 +122,8 @@ The wait's stall threshold and the run's time allowance are separate clocks.
 Dispatch/wait output shows elapsed, allowance, remaining time and expiry. A
 worker already in flight may complete after budget expiry; `next` processes
 the result through its normal gate and checkpoint before refusing a successor
-dispatch. Only explicit `resume --budget-seconds` grants a new time window.
+dispatch. Autonomous windows renew within the original cumulative cap; manual
+runs require explicit `resume --budget-seconds`. Neither route enlarges the cap.
 
 ## The declarations are the contract
 

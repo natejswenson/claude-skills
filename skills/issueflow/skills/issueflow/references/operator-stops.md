@@ -70,13 +70,14 @@ Budget stops prevent `brief`, `review-brief`, `review-verify`, and
 candidates remain intact when verification cannot yet dispatch. In-flight
 workers may finish and their delivered results can still be processed.
 
-For the default mode, only on explicit user direction, run:
+In manual mode, only on explicit user direction, run:
 
 ```bash
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Default runs never auto-renew because `next` printed this command. The positive integer
+Autonomous runs renew bounded windows within their original cumulative cap.
+Manual runs never auto-renew because `next` printed this command. The positive integer
 grants a full allowance from the renewal timestamp, even if the prior deadline
 expired hours ago. The original creation time, complexity, artifacts, evidence,
 commits, stage approvals, checkpoint identity and runtime remain intact; review

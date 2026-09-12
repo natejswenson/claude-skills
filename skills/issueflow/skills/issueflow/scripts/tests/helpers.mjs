@@ -14,6 +14,8 @@ import { accept, artifactPath, blockers, evidencePath, findStep, saveRun } from 
 import { ensureWorktree } from '../lib/worktree.mjs';
 import { nextRound, registerReview, reviewPath } from '../lib/reviews.mjs';
 
+export const DOCS_CONTRACT = '\n```issueflow-contract\n' + JSON.stringify({ schema: 1, risk: 'docs', criteria: [{ id: 'D1', description: 'requested documentation edit' }], nonGoals: [], allowedPaths: ['README.md'], checks: [{ id: 'docs', type: 'command', argv: [process.execPath, '--version'], criteria: ['D1'] }] }) + '\n```\n';
+
 /** Write an artifact that satisfies the stage's required sections. */
 export function writeGood(dir, run, stageId, lane = null) {
   const step = findStep(run, stageId, lane);
@@ -21,7 +23,7 @@ export function writeGood(dir, run, stageId, lane = null) {
   const declared = STAGES.find((s) => s.id === stageId);
   const path = artifactPath(dir, step);
   mkdirSync(join(path, '..'), { recursive: true });
-  writeFileSync(path, declared.requires.map((r) => `## ${r}\n\nsomething real about ${r.toLowerCase()}.\n`).join('\n'));
+  writeFileSync(path, declared.requires.map((r) => `## ${r}\n\nsomething real about ${r.toLowerCase()}.\n`).join('\n') + (run.harness && stageId === 'investigate' ? DOCS_CONTRACT : ''));
   return step;
 }
 

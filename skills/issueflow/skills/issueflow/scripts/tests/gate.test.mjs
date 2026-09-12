@@ -279,7 +279,7 @@ test('split stacks each lane on the one below it, bottom on the base branch', ()
     'feature/issue-3-rotate-secrets',
     'feature/issue-3-decommission-host',
   ]);
-  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null, maxRounds: 2 });
+  for (const lane of run.lanes) assert.deepEqual(lane.review, { rounds: [], converged: false, draft: null, maxRounds: run.complexity.reviewRounds });
   cleanup();
 });
 

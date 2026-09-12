@@ -71,6 +71,13 @@ export function generate() {
   // This historical fixture exercises the optional human plan gate. New runs
   // are autonomous unless the operator explicitly asks for `--review-plan`.
   artifacts['start.txt'] = cli(['start', ...common, '--issue', '133', '--issue-json', at('issue-133.json'), '--review-plan']);
+  // Replay the historical schema-3 contract, without inventing a reviewed
+  // machine contract that the real #133 plan never contained. Strict CLI
+  // creation and acceptance are tested separately by harness/verification cases.
+  const historical = loadRun(runDir);
+  historical.schema = 3;
+  delete historical.harness;
+  writeFileSync(join(runDir, 'run.json'), JSON.stringify(historical, null, 2));
 
   // `next` at each state of the plan gate. Frozen because the driver's output
   // is what the orchestrator copies: a wait line that stopped naming the
@@ -152,6 +159,10 @@ export function generate() {
     const reviewSandbox = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
     const reviewDir = join(reviewSandbox, 'issue-132');
     cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json'), '--auto']);
+    const historicalReview = loadRun(reviewDir);
+    historicalReview.schema = 3;
+    delete historicalReview.harness;
+    writeFileSync(join(reviewDir, 'run.json'), JSON.stringify(historicalReview, null, 2));
     cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
     cpSync(at('artifacts', 'investigate-132.md'), join(reviewDir, 'shared', 'investigate.md'));
     cli(['brief', '--review', '--stage', 'investigate', '--run-dir', reviewDir]);

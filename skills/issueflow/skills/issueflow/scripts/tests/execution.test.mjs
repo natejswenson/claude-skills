@@ -24,6 +24,7 @@ import { decide, renderAction, sh } from '../lib/next.mjs';
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const shLiteral = (value) => `'${value.replaceAll("'", `'"'"'`)}'`;
 function codexChild(workspaceRoot, source, tree, paths) {
+  assert.ok(!process.env.ISSUEFLOW_NATIVE_HOST || ['claude', 'codex'].includes(process.env.ISSUEFLOW_NATIVE_HOST), 'unsupported native host; this smoke supports claude and codex');
   const [artifact, evidence, progress] = paths;
   const script = join(workspaceRoot, 'codex-child.sh');
   writeFileSync(script, [
@@ -38,13 +39,16 @@ function codexChild(workspaceRoot, source, tree, paths) {
   ].join('\n'));
   chmodSync(script, 0o700);
   const prompt = `Run exactly this command, then finish:\n/bin/sh ${shLiteral(script)}`;
-  let result = spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
-    '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 });
-  // CI is intentionally offline and does not install the Codex CLI. Keep its
-  // filesystem/Git fixture covered by running the exact child script there;
-  // hosts with Codex continue to exercise the workspace-write smoke.
-  if (result.error?.code === 'ENOENT') result = spawnSync('/bin/sh', [script], { encoding: 'utf8', timeout: 120000 });
-  assert.equal(result.status, 0, result.stderr || result.stdout);
+  // Native execution must be explicitly requested. CLI installation must never
+  // turn the ordinary offline suite into a paid model run. Missing native tools
+  // fail the requested smoke rather than silently falling back to simulation.
+  const result = process.env.ISSUEFLOW_NATIVE_HOST === 'codex'
+    ? spawnSync('codex', ['exec', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'workspace-write',
+      '-C', tree, '--add-dir', workspaceRoot, prompt], { encoding: 'utf8', timeout: 120000 })
+    : process.env.ISSUEFLOW_NATIVE_HOST === 'claude'
+      ? spawnSync(process.env.ISSUEFLOW_CLAUDE_BIN ?? 'claude', ['-p', prompt, '--output-format', 'json', '--max-budget-usd', '1', '--no-session-persistence', '--strict-mcp-config', '--tools', 'Bash', '--allowedTools', 'Bash(/bin/sh *)', '--add-dir', workspaceRoot], { cwd: tree, encoding: 'utf8', timeout: 120000, env: { ...process.env, NODE_TEST_CONTEXT: undefined } })
+      : spawnSync('/bin/sh', [script], { encoding: 'utf8', timeout: 120000 });
+  assert.equal(result.status, 0, result.error?.message || result.stderr || result.stdout);
   for (const path of paths) assert.equal(readFileSync(path, 'utf8'), 'child output\n');
   assert.equal(git(['show', 'HEAD:child.txt'], tree), 'child commit');
   assert.equal(git(['log', '-1', '--format=%s'], tree), 'child');

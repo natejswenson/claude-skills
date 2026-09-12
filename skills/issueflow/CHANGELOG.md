@@ -5,6 +5,24 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-09-12
+
+### Added
+
+- **New runs require a reviewed verification contract.** Schema-4 runs bind acceptance criteria, allowed paths, regression checks, full-suite checks and CI policy to the approved plan. The controller executes the checks and retains actual process results before accepting implementation or marking a PR ready.
+- **Native workers have explicit attempts and recovery.** Immutable completion envelopes and parent-observed worker lifecycles distinguish completed work from interrupted or stale output. Cancelled work retains its history and must receive a fresh attempt.
+- **Run evidence survives review and repair.** Remote-operation journals confirm GitHub effects by read-back, while review fixes require fresh verification at the reviewed commit. Review context and usage records retain provenance and report missing measurements as unknown.
+
+### Fixed
+
+- **A green-looking report can no longer substitute for executed checks in new runs.** Zero-test results, failing required suites, stale receipts and changed verification inputs refuse advancement. Missing CI requires an explicitly reviewed policy rather than silently counting as green.
+- **Reopened plans cannot reuse their old approvals.** Pre-PR amendments and migration archive earlier evidence and require fresh independent review without resetting the original limits.
+
+### Compatibility
+
+- **Existing schema-3 runs retain their original evidence strength.** They are not silently upgraded or represented as strict verification. Explicit migration is limited to eligible, quiescent pre-PR runs. Claude configuration paths and shared plugin metadata remain supported.
+- Live validation for this candidate focuses on Codex. No cross-host speedup, complete token/cost measurement, or arbitrary-code isolation is claimed.
+
 ## [0.15.0] - 2026-09-12
 
 ### Added
@@ -60,7 +78,46 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Implementation gates reject blocked or incomplete result reports, and
   liveness checks ignore unrelated files from a containing parent checkout.
 
-## [Unreleased]
+## Development notes (archived)
+
+These implementation notes were incorporated into releases through 0.16.0.
+They are retained as historical detail; the versioned entries above are the
+release notes.
+
+### Strict harness
+
+- New schema-4 runs require a reviewed criteria/scope/check contract, controller-run
+  red/green and full-suite receipts, and observed-scope risk escalation. Ignored
+  runtime inputs are fingerprinted and copied locally into base snapshots.
+- Add revision-conflict protection, controller ownership, immutable attempt
+  envelopes, explicit cancelled-wave recovery, bounded repair, and conservative
+  host-observed capacity. Repaired reports invalidate prior attempt receipts.
+- Journal push, PR-create, checkpoint, review/thread/reply/resolve, summary, and ready intents with read-back. Bind readiness to the
+  reviewed/verified head; absent CI needs a reviewed reason. Offline runs cannot
+  claim remote readiness. Automatically reverify fixer commits before another review.
+- Add source/guidance/plan/hash-bound review context caching, unknown-preserving host usage adapters,
+  attempt-deduplicated telemetry, and explicit Claude/Codex native smoke commands.
+- Add explicit pre-PR migration/amendment with archived evidence and fresh review,
+  per-lane obligations, native worker observation, and quiescent review cancellation.
+  Historical reviews cannot authorize amended plans, even with identical bytes.
+- Preserve legacy evidence strength. Live cross-host lifecycle and paired speed
+  validation remain open; these changes are not a release or an established speedup.
+
+### Evaluation
+
+- Add an offline harness evaluator with immutable source snapshots, pinned-commit
+  baseline capture, independent regression/control oracles, both-host CLI fixtures,
+  real plan/review corpus replay, process receipts, and JSON/Markdown reports.
+  Failed and inconclusive evaluations return nonzero; selected-case coverage and
+  unverified capabilities remain explicit. Offline timings make no agent-speed claim.
+- Separate native Codex execution from the ordinary offline test suite. Native
+  smoke runs now require `npm run test:native:codex`; missing host support fails
+  the requested smoke instead of silently substituting a shell simulation.
+
+- Correct telemetry's missing-duration coercion and aggregation. Unknown or invalid
+  numeric usage remains unknown; known subtotals and missing-sample counts are
+  explicit. Summed worker durations use `workerWallTimeMs`; end-to-end `wallTimeMs`
+  remains unknown until an actual run interval is recorded.
 
 ### Fixed
 

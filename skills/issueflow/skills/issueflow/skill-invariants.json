@@ -226,6 +226,30 @@
   "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and — see review-round-golden — a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
   "baseline": [
     {
+      "id": "strict-lifecycle-recovery",
+      "kind": "trap",
+      "test": "scripts/tests/harness-lifecycle.test.mjs",
+      "fixtures": ["scripts/tests/fixtures/harness-gh.cjs"],
+      "update_command": "node --test scripts/tests/harness-lifecycle.test.mjs",
+      "rationale": "Actual CLI, Git, regression processes and persisted fake GitHub state exercise review correction, fresh execution receipts, migration/amendment with independent review, cancellation and duplicate-free resume. Worker deliveries and remote responses are explicitly synthetic, not native-model quality evidence."
+    },
+    {
+      "id": "installed-strict-harness",
+      "kind": "trap",
+      "test": "scripts/tests/packaging.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/packaging.test.mjs",
+      "rationale": "Real pre/post-pack hooks run only in a scratch copy, then offline tarball installation must include runtime files and start strict Claude and Codex profiles outside the checkout. This does not attest native plugin-manager discovery."
+    },
+    {
+      "id": "harness-evaluator",
+      "kind": "trap",
+      "test": "scripts/tests/harness-eval.test.mjs",
+      "fixtures": ["evals/harness/cases.json"],
+      "update_command": "node --test scripts/tests/harness-eval.test.mjs",
+      "rationale": "The evaluator must reject wrong repository results, unknown and empty cases, unexecuted oracles, and network/model calls. Real CLI runs and real red/green test processes prove the success path; incompatible comparisons and unavailable native evaluation stay inconclusive. Frozen real-run suites retain their own two-sided baselines and receive explicit execution floors."
+    },
+    {
       "id": "codex-execution-storage",
       "kind": "trap",
       "test": "scripts/tests/execution.test.mjs",

@@ -141,7 +141,10 @@ export const reviewProgressPath = (dir, step, round) => activePath(dir, 'progres
 export const nextRound = (step) => (step.stage.review?.rounds.length ?? 0) + 1;
 
 /** The most recent registered round, or null before any review has run. */
-export const latestRound = (step) => step.stage.review?.rounds.at(-1) ?? null;
+export const latestRound = (step) => {
+  const latest = step.stage.review?.rounds.at(-1);
+  return latest?.supersededBy ? null : latest ?? null;
+};
 
 /** True when the cap is spent: the normal cap plus one directed recovery are blocked. */
 export const roundsExhausted = (step) => {

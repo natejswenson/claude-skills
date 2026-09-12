@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "scope": "foundation",
+  "minimumCases": 12,
+  "cases": [
+    { "id": "E01", "kind": "regression", "title": "Handwritten summaries cannot establish execution", "probe": "invented-evidence" },
+    { "id": "E02", "kind": "regression", "title": "Zero passing tests cannot establish a green test run", "probe": "zero-tests" },
+    { "id": "E03", "kind": "regression", "title": "Nonzero process status cannot be hidden by a green summary", "probe": "exit-conflict" },
+    { "id": "R01", "kind": "regression", "title": "Copy corruption is not documentation work", "probe": "copy-risk" },
+    { "id": "M01", "kind": "regression", "title": "Missing agent time stays unknown", "probe": "unknown-time" },
+    { "id": "M02", "kind": "regression", "title": "Summed concurrent worker time is not run elapsed time", "probe": "concurrent-time" },
+    { "id": "C01", "kind": "control", "title": "Recognize a real process red then green", "probe": "real-evidence" },
+    { "id": "C02", "kind": "control", "title": "Reject a real process green-only result", "probe": "green-only" },
+    { "id": "CLI01", "kind": "synthetic-workflow", "title": "Claude CLI persists and resumes offline state", "probe": "cli", "host": "claude" },
+    { "id": "CLI02", "kind": "synthetic-workflow", "title": "Codex CLI persists its host and requests execution storage", "probe": "cli", "host": "codex" },
+    { "id": "REPLAY01", "kind": "real-run-replay", "title": "Frozen real plan and stage corpus", "probe": "replay", "test": "baseline.test.mjs", "minimumTests": 23 },
+    { "id": "REPLAY02", "kind": "real-run-replay", "title": "Frozen real review rounds", "probe": "replay", "test": "review-round.test.mjs", "minimumTests": 3 }
+  ],
+  "notCovered": [
+    "controller-owned verification receipts",
+    "task contracts and scope amendments",
+    "crash recovery and remote-effect reconciliation",
+    "native Claude and Codex worker lifecycle",
+    "installed-plugin discovery",
+    "live W01-W06 outcome and performance campaign"
+  ]
+}

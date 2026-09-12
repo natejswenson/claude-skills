@@ -25,6 +25,8 @@ import { join } from 'node:path';
 import { HandBack, RunError, laneTree, saveRun } from './run.mjs';
 import { GQL, graphql } from './gh.mjs';
 import { dispatchProfile } from './runtime.mjs';
+import { reconcileReply, reconcileReview, reviewGateway } from './remote-review.mjs';
+import { verifyContextPacket, verifyContextSources } from './context.mjs';
 
 /**
  * Four rounds. A round costs two to five opus finders, up to eight opus
@@ -67,6 +69,11 @@ const VERDICTS_PRIOR = ['fixed', 'still-open', 'withdrawn'];
 // Where a round lives on disk.
 // ---------------------------------------------------------------------------
 export const reviewDir = (dir, lane, round) => activePath(dir, lane.slug, 'review', `r${round}`);
+export const contextPath = (dir, lane, round) => {
+  const current = join(reviewDir(dir, lane, round), 'context.json');
+  const legacy = activePath(dir, lane.slug, 'review', String(round), 'context.json');
+  return !existsSync(current) && existsSync(legacy) ? legacy : current;
+};
 export const diffPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'diff.patch');
 /** Round 2+: what the last fix changed, with context — the finders' primary read. */
 export const fixPatchPath = (dir, lane, round) => join(reviewDir(dir, lane, round), 'fix.patch');
@@ -87,7 +94,7 @@ export const reviewExhausted = (lane) => {
   const rounds = lane.review?.rounds ?? [];
   const last = rounds.at(-1);
   const cap = lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
-  return rounds.length >= cap && Boolean(last?.registered) && last.verdict !== 'converged';
+  return rounds.length >= cap && (Boolean(last?.cancelled) || Boolean(last?.registered) && last.verdict !== 'converged');
 };
 
 /** The persisted lane cap, with the legacy four-round default for old runs. */
@@ -498,10 +505,21 @@ export const findingId = (lane, f) =>
  * Refuses when the cap is spent, and when the head the loop would review is
  * not the head GitHub has — the caller passes what `gh pr view` reported.
  */
+export function cancelReview(dir, run, lane, { workersReleased, reason }) {
+  if (!run.harness || !workersReleased || typeof reason !== 'string' || !reason.trim()) throw new RunError('review-cancel requires a strict run, --workers-released and --reason');
+  if (run.dispatch?.queue) throw new RunError('cancel or drain the active wave first');
+  const entry = currentRound(lane);
+  if (!entry || entry.registered) throw new RunError('only an unregistered review can be cancelled; retain published findings');
+  entry.cancelled ??= { at: new Date().toISOString(), reason: reason.trim() };
+  for (const [output, attempt] of Object.entries(run.harness.attempts ?? {})) if (output.startsWith(`${lane.slug}/review/r${entry.round}/`)) attempt.state = 'cancelled';
+  saveRun(dir, run);
+  return entry;
+}
+
 export function openRound(dir, run, lane, { head, remoteHead = null, prHead = null, diffText, deltaText = null, anotherRound = null, deferSave = false, now = () => new Date().toISOString() }) {
   if (!lane.pr) throw new RunError(`cannot review ${lane.slug}: no pull request — ship first`);
   const last = currentRound(lane);
-  if (last && !last.registered) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it (or its finders never delivered) before starting another`);
+  if (last && !last.registered && !last.cancelled) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it, or use review-cancel after all workers are terminal`);
   if (reviewExhausted(lane)) {
     // The cap hands the open majors to a person. Two answers exist, and both
     // are typed by the person, never by `next`: rule on the majors
@@ -511,7 +529,7 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
       lane.review.overrides.push({ round: nextReviewRound(lane), reason: anotherRound.trim(), at: now() });
     } else {
       throw new HandBack(
-        `the review loop on ${lane.slug} has run ${MAX_REVIEW_ROUNDS} rounds and a major is still open — ` +
+        `the review loop on ${lane.slug} has spent its ${reviewCap(lane)}-round allowance without an accepted final review — ` +
           'stop, and put the open majors in front of the user; never ready a pull request over one. ' +
           'The user rules with `review-rule --finding <id> --fixed|--withdrawn --note "<what they checked>"`, ' +
           'or directs one more round with `review-brief --another-round "<why>"`',
@@ -653,9 +671,16 @@ export function readVerdicts(dir, lane, round) {
 export function registerRound(dir, run, lane, round, { tree, now = () => new Date().toISOString() } = {}) {
   const entry = lane.review.rounds.find((r) => r.round === round);
   if (!entry) throw new RunError(`no round ${round} on ${lane.slug}`);
+  if (entry.cancelled) throw new RunError(`round ${round} of ${lane.slug} was cancelled; its artifacts are historical`);
   if (entry.registered) throw new RunError(`round ${round} of ${lane.slug} is already registered`);
   const workdir = tree ?? laneTree(dir, run, lane);
   const head = headOf(workdir);
+  if (run.harness) {
+    const path = contextPath(dir, lane, round);
+    if (!existsSync(path)) throw new RunError('review context packet missing; cancel the unregistered round and rebrief');
+    const packet = JSON.parse(readFileSync(path, 'utf8'));
+    if (!verifyContextPacket(packet, entry.contextHash) || !verifyContextSources(packet, workdir) || packet.head !== head) throw new RunError('review context inputs changed after briefing; rebrief before registration');
+  }
   if (head !== entry.head) {
     throw new RunError(`cannot register round ${round} of ${lane.slug}: the branch moved (reviewed ${entry.head.slice(0, 12)}, now ${head.slice(0, 12)}) — the verdicts are about code that is no longer HEAD`);
   }
@@ -912,6 +937,10 @@ export function postRound(dir, run, lane, round, { prNodeId, now = () => new Dat
   if (entry.posted) throw new RunError(`round ${round} of ${lane.slug} was already posted (${entry.posted.url})`);
   const record = JSON.parse(readFileSync(registeredPath(dir, lane, round), 'utf8'));
   let payload = buildPayload(dir, lane, round, record);
+  if (run.harness) {
+    if (run.offline) throw new RunError('offline runs cannot post a remote review');
+    return reconcileReview(dir, run, lane, entry, payload, reviewGateway(run.repo.path, join(reviewDir(dir, lane, round), 'graphql.json'), prNodeId, entry.head));
+  }
   const cwd = run.repo.path;
   const input = join(reviewDir(dir, lane, round), 'graphql.json');
 
@@ -980,6 +1009,11 @@ export function applyFixReport(dir, run, lane, round) {
   if (!entry?.registered) throw new RunError(`round ${round} of ${lane.slug} is not registered — there is nothing to fix yet`);
   const path = fixReportPath(dir, lane, round);
   if (!existsSync(path)) throw new RunError(`no fix report at ${path} — the fixer has not delivered`);
+  const reportHash = createHash('sha256').update(readFileSync(path)).digest('hex');
+  if (run.harness && entry.fix?.reported) {
+    if (entry.fix.reportHash !== reportHash) throw new RunError('fix report changed after registration; require a new reviewed attempt');
+    return entry.fix.replies;
+  }
   let data;
   try {
     data = JSON.parse(readDelivery(dir, path, run));
@@ -1017,6 +1051,7 @@ export function applyFixReport(dir, run, lane, round) {
   // already pushed — a stale dispatch printed on every round of the first
   // real loop.
   entry.fix = { ...(entry.fix ?? {}), reported: true, fixed: replies.filter((r) => r.body.startsWith('Addressed')).length, notChanged: replies.filter((r) => r.body.startsWith('Not changed')).length, fixedNits };
+  if (run.harness) Object.assign(entry.fix, { reportHash, replies, pendingReplies: replies.some((r) => r.threadId) });
   saveRun(dir, run);
   if (disputed.length > 0) {
     throw new HandBack(
@@ -1030,6 +1065,17 @@ export function applyFixReport(dir, run, lane, round) {
 /** Post the fix report's replies on their threads. Failures are rows, never throws. */
 export function postFixReplies(dir, run, lane, round, replies) {
   const input = join(reviewDir(dir, lane, round), 'graphql.json');
+  if (run.harness) {
+    if (run.offline) throw new RunError('offline runs cannot post remote replies');
+    const entry = lane.review.rounds.find((r) => r.round === round);
+    const gateway = reviewGateway(run.repo.path, input, lane.pr.nodeId, headOf(laneTree(dir, run, lane)));
+    const rows = replies.map((r) => {
+      if (!r.threadId) return { id: r.id, state: 'no thread' };
+      reconcileReply(dir, run, { ...r, target: `${lane.pr.url}/fix/${round}` }, gateway);
+      return { id: r.id, state: 'replied' };
+    });
+    entry.fix.pendingReplies = false; saveRun(dir, run); return rows;
+  }
   return replies.map((r) => {
     if (!r.threadId) return { id: r.id, state: 'no thread', detail: 'the finding was body-only' };
     try {
@@ -1042,13 +1088,14 @@ export function postFixReplies(dir, run, lane, round, replies) {
 }
 
 /** Mark the lane converged: the only path to `ready`. */
-export function converge(dir, run, lane, now = () => new Date().toISOString()) {
+export function converge(dir, run, lane, now = () => new Date().toISOString(), { persist = true } = {}) {
   const last = currentRound(lane);
   if (!last?.registered) throw new RunError(`cannot ready ${lane.slug}: no registered review round`);
   if (last.verdict !== 'converged') {
     throw new RunError(`cannot ready ${lane.slug}: round ${last.round} left ${openMajors(lane).length} major(s) open — never ready a pull request over an open major`);
   }
   if (!last.posted && !run.offline) throw new RunError(`cannot ready ${lane.slug}: round ${last.round} is registered but not posted — the record on the pull request comes first`);
+  if (!persist) return last;
   lane.review.converged = true;
   lane.review.convergedAt = now();
   saveRun(dir, run);
@@ -1103,10 +1150,15 @@ export function ruleFinding(dir, run, lane, { id, ruling, note, head = null, now
   if (ruling === 'fixed' && head) f.fixedAt = head;
   last.rulings = [...(last.rulings ?? []), { id, ruling, note: note.trim(), at: f.ruledAt }];
   recount(lane, last);
+  const body = `${ruling === 'fixed' ? '✅ Fixed' : 'Withdrawn'} — ruled by the author after round ${last.round} (the loop's cap): ${note.trim()}`;
+  if (run.harness && f.threadId) {
+    lane.review.pendingRulings ??= [];
+    lane.review.pendingRulings.push({ id, threadId: f.threadId, body, resolve: true, target: `${lane.pr.url}/ruling/${last.round}` });
+  }
   saveRun(dir, run);
   return {
     finding: f,
-    body: `${ruling === 'fixed' ? '✅ Fixed' : 'Withdrawn'} — ruled by the author after round ${last.round} (the loop's cap): ${note.trim()}`,
+    body,
   };
 }
 

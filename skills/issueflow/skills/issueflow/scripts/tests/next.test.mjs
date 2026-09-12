@@ -15,12 +15,13 @@ import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimes
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { accept, artifactPath, briefPath, createRun, findStep, loadRun, markBriefed, saveRun } from '../lib/run.mjs';
+import { accept, artifactPath, briefPath, createRun, findStep, loadRun, markBriefed, saveRun, workItemsFromPlan } from '../lib/run.mjs';
 import { markReviewBriefed, registerReview, reviewBriefPath, reviewPath } from '../lib/reviews.mjs';
 import { candidatesPath, currentRound, fixBriefPath, fixReportPath, headOf, laneDiff, openRound, planVerification, readCandidates, registerRound, verdictsPath } from '../lib/prreview.mjs';
 import { decide, renderAction, timeoutFor, waitLine } from '../lib/next.mjs';
 import { prepareCheckout, prepareExecution, releaseSourceLease } from '../lib/execution.mjs';
 import { ensureWorktree } from '../lib/worktree.mjs';
+import { completeAttempt } from '../lib/attempts.mjs';
 import { approveImplement, approvePlan, redTeamBlock, redTeamPass, writeGood, writeReview } from './helpers.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -491,11 +492,13 @@ test('decide: finders wait → verify → verifiers wait → register → fix br
 
 test('next (CLI): a converged review with red CI briefs a fixer and accepts its report', () => {
   const { dir, run, repoPath, cleanup } = loopFixture();
+  run.offline = false; // This fixture deliberately supplies a local fake hosted-CI adapter.
   const lane = run.lanes[0];
   openRound(dir, run, lane, { head: headOf(repoPath), diffText: laneDiff(repoPath, 'dev') });
   writeFileSync(candidatesPath(dir, lane, 1, 1), JSON.stringify({ candidates: [], notExamined: [] }));
   planVerification(dir, run, lane, 1, []);
   registerRound(dir, run, lane, 1, { tree: repoPath });
+  currentRound(lane).posted = true;
   assert.equal(currentRound(lane).verdict, 'converged');
   saveRun(dir, run);
 
@@ -756,6 +759,7 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-cli-'));
   const repoPath = repo();
   cpSync(join(INPUTS, 'repo'), repoPath, { recursive: true });
+  git(['branch', 'main'], repoPath); // Frozen repo metadata declares main as the base.
   cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json'), '--review-plan']);
 
   let r = cli(['next', '--run-dir', dir]);
@@ -770,7 +774,10 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   assert.match(r.out, /^next: wait/m, 'nothing delivered yet → wait, no new brief');
 
   // the plan lands (newer than the brief)
-  writeFileSync(join(dir, 'shared', 'investigate.md'), readFileSync(join(INPUTS, 'artifacts', 'investigate.md')));
+  const planText = readFileSync(join(INPUTS, 'artifacts', 'investigate.md'), 'utf8');
+  const lanes = Object.fromEntries(workItemsFromPlan(planText).map((item) => [item.slug, { criteria: ['D1'], checks: ['docs'], allowedPaths: ['README.md'] }]));
+  writeFileSync(join(dir, 'shared', 'investigate.md'), planText + '\n```issueflow-contract\n' + JSON.stringify({ schema: 1, risk: 'docs', criteria: [{ id: 'D1', description: 'document descriptions' }], nonGoals: [], allowedPaths: ['README.md'], checks: [{ id: 'docs', type: 'command', argv: [process.execPath, '--version'], criteria: ['D1'] }], lanes }) + '\n```\n');
+  completeAttempt(loadRun(dir).harness.attempts['shared/investigate.md'].manifest);
   r = cli(['next', '--run-dir', dir]);
   assert.match(r.out, /▶ brief — the plan is delivered — briefing red-team round 1/);
   assert.match(r.out, /next: dispatch \(brief\)/);
@@ -779,6 +786,7 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   // the red team lands
   mkdirSync(join(dir, 'reviews'), { recursive: true });
   writeFileSync(join(dir, 'reviews', 'investigate-r1.findings.json'), readFileSync(join(INPUTS, 'artifacts', 'review-investigate-r1.findings.json')));
+  completeAttempt(loadRun(dir).harness.attempts['reviews/investigate-r1.findings.json'].manifest);
   r = cli(['next', '--run-dir', dir]);
   assert.match(r.out, /▶ review/);
   assert.match(r.out, /Round 1 of 3 on investigate: PASS/);
@@ -787,7 +795,8 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   assert.equal(r.code, 0, 'the human stop is not an error');
 
   // the human approves; the plan has work items → split → brief the first lane
-  cli(['accept', '--stage', 'investigate', '--run-dir', dir]);
+  const accepted = cli(['accept', '--stage', 'investigate', '--run-dir', dir]);
+  assert.equal(accepted.code, 0, accepted.err);
   r = cli(['next', '--run-dir', dir, '--no-worktree']);
   assert.equal(r.code, 0, r.err);
   assert.match(r.out, /▶ split/);

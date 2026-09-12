@@ -13,7 +13,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gateSteps } from './run.mjs';
-import { createPr } from './gh.mjs';
+import { assertVerified } from './verification.mjs';
+import { createPr, prOperationView, prsForBranch } from './gh.mjs';
+import { operation } from './operations.mjs';
 import { dispatchProfile, modelLabel } from './runtime.mjs';
 
 export class ShipError extends Error {}
@@ -82,16 +84,17 @@ export function prBody(dir, run, lane) {
           (s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} | ${s.stage.review?.rounds.length ?? 0} |`,
         ),
         '',
-        'Every stage above was gated by an adversarial red-team review — every',
-        'blocking finding resolved before approval, no human in the loop until this',
-        'pull request.',
+        'The plan passed independent red-team review before implementation.',
+        'Implementation acceptance checks its required evidence; independent code',
+        'review follows on this pull request.',
       ]
     : [
         '| Stage | Model | State |',
         '|---|---|---|',
         ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} |`),
         '',
-        'Every stage above was approved by a human before the next one started.',
+        'The independently reviewed plan was approved by a human before implementation.',
+        'Implementation acceptance checks its required evidence.',
       ];
   const lines = [
     `Closes #${run.issue.number}.`,
@@ -106,7 +109,12 @@ export function prBody(dir, run, lane) {
     '',
   ];
   const proved = own.find((s) => s.stage.evidence);
-  if (proved) {
+  if (run.harness && lane.verification) {
+    const batch = assertVerified(dir, run, lane);
+    lines.push(`Controller-observed verification at \`${batch.head}\`.`, '',
+      ...batch.receipts.map((r) => `- \`${r.check}\`: passed (receipt \`${r.hash}\`).`), '',
+      'Raw command logs remain in the local run; hashes detect changes, not origin.');
+  } else if (proved) {
     if (proved.stage.result) lines.push(`\`${proved.stage.result}\``, '');
     const output = readFileSync(proved.stage.evidence, 'utf8').trim().split('\n');
     const tail = output.slice(-25);
@@ -135,6 +143,8 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
         'a pull request over an unapproved stage is a change nobody signed off',
     );
   }
+  if (run.offline && !dryRun) throw new ShipError('offline run: remote shipping is disabled; use --dry-run to inspect the proposed PR');
+  if (run.harness) for (const lane of run.lanes) assertVerified(dir, run, lane);
 
   const repo = run.repo.path;
   const results = [];
@@ -151,10 +161,28 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
       results.push({ lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: '(dry run)' });
       continue;
     }
-    git(['push', '-u', 'origin', lane.branch], gitStore(dir, run));
+    const head = git(['rev-parse', `refs/heads/${lane.branch}`], gitStore(dir, run));
+    if (run.harness) operation(dir, run, { kind: 'push', target: lane.branch, intent: { head }, retrySafe: true,
+      read: () => git(['ls-remote', 'origin', `refs/heads/${lane.branch}`], gitStore(dir, run)).split(/\s+/)[0] === head ? { head } : null,
+      write: () => git(['push', '-u', 'origin', lane.branch], gitStore(dir, run)),
+    });
+    else git(['push', '-u', 'origin', lane.branch], gitStore(dir, run));
     const bodyFile = join(dir, lane.slug, 'pr-body.md');
     writeFileSync(bodyFile, prBody(dir, run, lane));
-    const opened = createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+    const opened = run.harness ? operation(dir, run, { kind: 'create-pr', target: lane.branch, intent: { head, base: lane.base, title },
+      read: (key) => {
+        const candidates = prsForBranch(repo, lane.branch).filter((p) => p.state === 'OPEN' && p.baseRefName === lane.base);
+        if (!candidates.length) return null;
+        if (candidates.length !== 1) throw new ShipError('multiple matching pull requests; reconcile before continuing');
+        const pr = prOperationView(repo, candidates[0].number);
+        if (pr.headRefOid !== head || !pr.body?.includes(`<!-- issueflow:operation ${key} -->`)) throw new ShipError('matching branch has an unowned or changed PR; reconcile before continuing');
+        return { url: pr.url, draft: pr.isDraft };
+      },
+      write: (key) => {
+        writeFileSync(bodyFile, prBody(dir, run, lane) + `\n<!-- issueflow:operation ${key} -->\n`);
+        createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+      },
+    }) : createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
     results.push({
       lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: opened.url,
       number: prNumberFromUrl(opened.url), draft: opened.draft, title,
