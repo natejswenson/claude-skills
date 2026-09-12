@@ -78,7 +78,9 @@ Creation publishes immediately and requires prior authorization. It records a du
 
 See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host setup.
 
-Local drafting needs neither authentication nor issueflow installed. Issueflow handoff is an optional next step. Publication receipts stay in the chosen output directory; no credentials are bundled or copied into the plugin.
+After a verified create-only request, issuecreator shows the issue URL, a short summary, and any limitations, then ends with: “Would you like to pick up this issue with issueflow?” Accepting starts `/issueflow` in Claude Code or `$issueflow` in Codex with the verified issue number and publication repository. Declining or leaving the question unanswered does not start implementation. An explicit request to create and pick up the issue starts the verified handoff without asking again.
+
+Local drafting needs neither authentication nor issueflow installed. Unpublished drafts and failed or unverified publications do not offer or start issueflow; in a partial batch, only individually verified issues are candidates. Publication receipts stay in the chosen output directory; no credentials are bundled or copied into the plugin.
 
 ## Development
 

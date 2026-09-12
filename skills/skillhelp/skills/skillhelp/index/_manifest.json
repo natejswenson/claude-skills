@@ -164,14 +164,14 @@
       "name": "issuecreator",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "3779eac17dc1f5ed",
-      "facts": 40,
+      "cardHash": "ad821743b5d7f036",
+      "facts": 49,
       "sections": {
-        "setup": 8,
+        "setup": 9,
         "usage": 12,
         "commands": 10,
         "architecture": 7,
-        "troubleshooting": 3
+        "troubleshooting": 11
       },
       "emptySections": [],
       "secretsRefused": 0
