@@ -202,16 +202,83 @@ def run(trusted: Path) -> Path:
     return destination
 
 
+def legacy_research(home: Path, legacy: Path) -> Path:
+    """Follow the installed Claude job across plugin-cache updates, read-only."""
+    directories = set()
+    for plist in sorted((home / "Library/LaunchAgents").glob("*linkedin-release-radar*.plist")):
+        try:
+            agent = plistlib.loads(plist.read_bytes())
+            if not isinstance(agent, dict) or agent.get("Disabled", False):
+                continue
+            log = Path(agent.get("StandardOutPath", ""))
+            if log.is_absolute() and log.name == ".radar.log" and log.parent.is_dir():
+                directories.add(log.parent.resolve())
+        except (OSError, ValueError, TypeError):
+            continue
+    if len(directories) > 1:
+        raise ValueError("Multiple enabled legacy radar directories; repair the radar installation")
+    return next(iter(directories)) if directories else legacy / "research"
+
+
+def legacy_run_states(text: str, *, trusted: bool = False) -> tuple[dict, str]:
+    """Track the target across midnight; historical model output is unverified."""
+    states, active, latest = {}, None, "unknown"
+    # Older runners appended errors directly after CLI output without a newline.
+    # Recover negative evidence only; embedded success text never earns trust.
+    text = re.sub(r"(?<!\n)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}  ERROR:)",
+                  r"\n\1", text)
+    for line in text.splitlines():
+        event = re.fullmatch(
+            r"(\d{4}-\d{2}-\d{2}) \d{2}:\d{2}:\d{2}  "
+            r"(Release radar starting|Release radar done|ERROR:)(.*)", line)
+        if not event:
+            continue
+        target = re.search(r"release-radar-(\d{4}-\d{2}-\d{2})\.md", event[3])
+        key = target[1] if target else active or event[1]
+        if event[2] == "Release radar starting":
+            active, latest = key, "running"
+            # New runners stage candidates; an in-flight retry cannot invalidate
+            # the last promoted digest. Old runners wrote directly to the target.
+            if not trusted:
+                states[key] = "running"
+        elif event[2] == "Release radar done":
+            states[key] = "ok" if trusted else "unverified"
+            active, latest = None, states[key]
+        else:
+            latest = "failed"
+            if active and not trusted:
+                states[active] = "failed"
+            active = None
+    return states, latest
+
+
 def discover(home: Path, legacy: Path) -> dict:
     root = root_for(home)
     config_path = root / "trusted/install.json"
     config = read_json(config_path) if config_path.exists() else {}
     backend = config.get("backend", "claude")
-    directory = root / "data/digests" if backend == "codex" else legacy / "research"
-    log = root / "data/.radar.log" if backend == "codex" else legacy / "research/.radar.log"
+    directory = root / "data/digests" if backend == "codex" else legacy_research(home, legacy)
+    log = root / "data/.radar.log" if backend == "codex" else directory / ".radar.log"
+    health = log.read_text() if log.exists() else "No run log"
+    events = directory / ".radar-events.log"
+    states, latest = ({}, "unknown")
+    if backend == "claude":
+        states, latest = legacy_run_states(health)
+        if events.exists():
+            modern, latest = legacy_run_states(events.read_text(), trusted=True)
+            states.update(modern)
     digests = sorted(directory.glob("release-radar-*.md"))
-    return {"backend": backend, "root": str(root), "digest": str(digests[-1]) if digests else None,
-            "log": str(log), "health": log.read_text()[-4000:] if log.exists() else "No run log",
+    excluded = [p for p in digests if states.get(p.stem.removeprefix("release-radar-"))
+                in ("running", "failed") or not p.stat().st_size]
+    usable = [p for p in digests if p not in excluded]
+    digest = usable[-1] if usable else None
+    return {"backend": backend, "root": str(root), "digest": str(digest) if digest else None,
+            "digest_date": digest.stem.removeprefix("release-radar-") if digest else None,
+            "current": bool(digest and digest.stem == f"release-radar-{date.today()}"
+                            and (backend == "codex" or states.get(str(date.today())) == "ok")),
+            "last_run_status": latest,
+            "excluded_digests": [str(p) for p in excluded],
+            "log": str(log), "health": health[-4000:],
             "repair": "bash scripts/install_radar.sh"}
 
 

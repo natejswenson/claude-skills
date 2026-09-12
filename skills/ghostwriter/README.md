@@ -77,11 +77,48 @@ python3 scripts/linkedin_post.py --dry-run   # see the payload without posting
 
 Then just ask:
 
+- *"Refresh ghostwriter's trending ideas."* — fresh research without starting a draft or requiring LinkedIn setup.
 - *"Write me a LinkedIn post about something trending in my field."*
 - *"Draft a post on &lt;your topic&gt;."*
 - *"Give me a post from my interests."*
 
 For first-time setup, say **"set up ghostwriter"**.
+
+Idea requests fetch current signals each time. If a source fails, the remaining
+sources still contribute and the result names the gap. Saved boards are useful
+history; their old signals are not presented as a new refresh. The terminal flow
+shows compact choices, one readable draft, and the decision needed next.
+Codex Default always shows the same inline columns: **# · Idea · Angle / signal ·
+Status**, initially three ideas. “More” shows all rows; “fewer” restores three.
+Every menu includes **Choose your own topic**: type the topic directly, or reply
+“own topic” to be asked what you want to write about. Claude keeps its supported native selector. Assistant messages omit
+execution commands; visibility of native tool cards remains controlled by the host.
+The radar stays entirely in the terminal. In a directly interactive terminal,
+**Ctrl+T** or **t** expands the same table from three rows to the full board;
+press again to collapse. Use arrows or j/k to navigate, Enter to select, and q to
+exit. Long boards scroll, and selection survives collapse. Watchlist/stale ideas
+cannot be selected. Nothing in the radar publishes.
+The bundled `scripts/radar_terminal.py --file <board.json>` reads a dated board
+with an `ideas` array (`id`, `title`, `angle`, `lane`, `signal`, `status`).
+When the host cannot attach user keyboard input, choices stay in terminal chat:
+reply “more” or “fewer.” Chat tables are static; no browser is opened.
+
+Firecrawl is optional and is not used by the trend collector. Interactive research
+uses the host's browser tools. The default digest schedule is Monday and Thursday
+at 7:53 a.m. local time, not daily; each scheduled Claude run has a $1 budget cap.
+Live source checks during an ideas session do not themselves regenerate the saved
+scheduled digest. A failed scheduled run leaves the last completed digest in place.
+
+To inspect research health directly, run `python3 scripts/trending.py --json` or
+`python3 scripts/release_radar_runtime.py discover`. Trend receipts include the
+refresh timestamp and `ok`, `partial`, or `failed` status. Legacy radar discovery
+follows the installed job's output directory and excludes failed or unfinished
+digests. Updated Claude runners stage output before promotion, preserve completed
+research on failed retries, and keep runner events separate from model output.
+Historical digests remain readable with `unverified` status. Disabled job plists
+are skipped; conflicting enabled output directories produce a repair message.
+A radar budget failure is reported separately from a moved installation;
+reinstalling does not resolve budget exhaustion.
 
 ## Triggers
 
@@ -153,7 +190,8 @@ The conversational flow is built around the fewest possible round trips:
   **Interests** (your hot takes and story bank, minus what is already published)
   and **Projects** (your two or three most recent Claude repos, each anchored to
   the one real thing shipped) — flattens them into a single ranked list, and asks
-  ONE question: the top 3 plus "Show more ideas." Every gathered idea persists to
+  ONE question: the top 3 plus "Show more ideas," with an explicit **Choose your
+  own topic** action. Every gathered idea persists to
   an on-deck board that resurfaces next run, and your pick is echoed back as a
   one-glance brief before drafting starts. There is no interview.
 - **LinkedIn-true draft view.** The draft is shown with the ~210-character

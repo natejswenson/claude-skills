@@ -56,6 +56,14 @@ place.
 
 ## Decide which mode you're in
 
+- **Ideas / refresh** — the user asks for trending items, fresh ideas, or a radar
+  status without requesting a draft. Run the requested research lane from Generate
+  step 2 now, show up to three grounded choices with dated signals, and stop at
+  that choice. This does not require LinkedIn credentials, an outcome check-in,
+  or a publish/visual dialog. A specific request for trends keeps trends visible
+  rather than replacing them with the default projects-first ranking; items with
+  no owned angle stay on the Watchlist. Missing interests use the seeded queries
+  and disclose that once, without fabricating personal relevance.
 - **Setup** — `~/.claude/ghostwriter/.env` has no `LINKEDIN_ACCESS_TOKEN`, or
   `~/.claude/ghostwriter/voice/voice-profile.md` is missing, or the user says "set up",
   "configure", "connect my LinkedIn". → Run **Setup**.
@@ -66,8 +74,16 @@ Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/v
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
 If not, switch to Setup.
 
-**Keep this invisible, and never narrate commands.** The user should not see bash command
-lines in chat at any point in the run; they see one status line per step or gate. Nate,
+**Never narrate or paste execution commands.** Assistant messages contain no Python
+invocations, shell commands, heredocs, tool payloads, or raw file dumps during a
+normal run. The user sees one status line per slow step, then the result. Native
+tool cards are rendered by the host, not controlled by this skill: do not claim
+they are hidden or invent a setting to hide them. Reduce visible machinery by
+calling existing bundled scripts directly, requesting only needed output, and
+batching independent work; never replace a small operation with an inline Python
+program or dump whole skills/configs to orient yourself. Do not inspect credentials
+in ideas-only mode. Command examples below are execution instructions, not chat copy.
+Nate,
 2026-08-28: "no need for the skill to print and show all the bash commands, it makes it very
 messy." Do the setup check (and any other bookkeeping — idea-board/radar
 freshness, directory orientation) in as few, terse tool calls as possible: one chained
@@ -79,17 +95,57 @@ results appear as the idea menu and one provenance line, never as raw collector 
 
 ## Run presentation
 
+Use the available host controls, not a simulated terminal application. In Claude Code,
+use `AskUserQuestion` previews when supported. **Codex Default mode uses inline
+choices:** the live September 11 test showed that an accepted asynchronous question
+did not produce a usable idea selector. Do not use that asynchronous selector again
+for this flow, and never call a Plan-only tool in Default mode. Show the options in
+the assistant's final message and wait for a normal reply. All references below to
+`AskUserQuestion` inherit this host mapping, including outcomes and visual choices.
+A preselected option or elapsed time is not consent.
+Honor a topic, format, or action already specified by the user instead of asking again.
+If the user says exit, stop, or asks to edit the skill, discard the pending selection
+and return to that request. A late selector response must not resume an exited run.
+
 The transcript is part of the product. Keep the user oriented with one stable stage
 label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
 `ghostwriter · visual`, or `ghostwriter · publish`. Under it, show only the result
 that advances the run and the one decision currently needed.
 
-- **Selectable controls first.** Whenever the client exposes a question tool with
-  selectable responses, use it for every menu, approval, and format choice. Do not make
-  the user type a number that the UI can present as a button. If selectable controls are
-  unavailable, use one compact Markdown table with `Choice` and `What you get` columns,
-  followed by one short reply instruction. Never render the same choices once in prose
-  and again in a dialog.
+- **Consistent idea table.** Every inline idea menu uses exactly these columns,
+  in this order: `#`, `Idea`, `Angle / signal`, `Status`. This applies on the first
+  display, after “more,” and after “fewer”; never switch to `Choice` / `What you get`.
+  Initially show three recommendations. “More” shows the full saved board and
+  “fewer” returns to three, preserving IDs, columns, dated signals, and statuses.
+  Label Ready, Watchlist, and Stale explicitly; only Ready ideas proceed to drafting.
+  Keep URLs in saved research or short source links, not long option labels.
+  Beneath every menu, show **Choose your own topic — type your topic, or reply
+  “own topic” and I’ll ask what you want to write about.** This is a separate
+  action, not a research row, and is always available, including an empty board.
+  If they provide the topic, go directly to grounding and drafting; if they only
+  choose “own topic,” ask one concise topic question and wait. Do not ask them to
+  choose a research lane or re-confirm a topic already supplied.
+  End with the available actions: idea number, own topic, more/fewer, or exit.
+  Claude's supported selector remains available, with the custom-topic action
+  explicitly described beside it; never rely on an unexplained automatic Other.
+- **Terminal-only expandable radar.** Keep the entire ideas interface in the terminal;
+  never open a browser or generate HTML for the radar. Save the complete board to
+  `research/idea-board-YYYY-MM-DD.view.json` with `date` and an `ideas` array. Each
+  idea has a unique positive integer `id`, `title`, `angle`, `lane`, `signal`, and
+  `status` (`Ready`, `Watchlist`, or `Stale`). Put three recommendations first,
+  retain all remaining ideas with their status, and exclude confidential content.
+  For a user-attached interactive terminal, run the bundled
+  `scripts/radar_terminal.py --file <board.json>` using the skill's Python runtime.
+  Ctrl+T or t expands/collapses the same terminal table; arrows or j/k navigate,
+  Enter selects a Ready idea, and q exits. Rows exceeding screen height scroll as
+  the cursor moves; no ideas are dropped. Selection survives collapse. The chosen
+  ID is returned as text on exit and never authorizes publishing.
+  Only launch when the host provides direct user keyboard input to the process:
+  an agent-owned PTY alone does not mean the user can interact with it. Otherwise
+  show the compact table in terminal chat and accept “more” / “fewer” to display
+  all rows / three rows. Do not claim chat messages can expand in place or bind
+  the host's Ctrl+T. Never switch to a browser as a fallback. Claude's supported
+  native selector remains available for ordinary choices.
 - **Tables for comparison, prose for conclusions.** When the user must compare three or
   more ideas, formats, outcomes, or candidates, use a compact table or the selection
   tool's option previews. Keep each preview to the hook/result, the angle, and the signal;
@@ -106,6 +162,15 @@ that advances the run and the one decision currently needed.
 - **Narrate only slow gates.** Source checks, image generation, rendering, and publishing
   get one lowercase progress line when they start and one concise completion line.
   Quiet bookkeeping stays quiet.
+
+**Research tools.** The trend collector calls public endpoints directly with the
+Python standard library; it does not use Firecrawl. Interactive source checks use
+the host's available browser tools first. Firecrawl is optional: use it only when
+the user requests it or it is already configured and a specific page needs it.
+Do not check for, install, authenticate, or load an optional scraper merely to
+start an ideas run. The scheduled Claude radar uses its own WebSearch/WebFetch;
+the Codex radar uses its bundled retrieval path. Name the tools actually used if
+the user asks, not every tool mentioned in the skill catalog.
 
 ---
 
@@ -197,7 +262,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → ONE flat idea question, pick and go.** Gather concrete, ready-to-write
+2. **No topic given → ONE flat idea question, pick and go.** Apply the host mapping
+   in Run presentation: Codex Default presents the actual menu inline in the final
+   response; Claude uses its supported selector. Gather concrete, ready-to-write
    ideas from the four lanes below *yourself*, then **flatten them into a single ranked list**
    (lane priority order below, bent by outcome history) and present the **top 3** as **ONE
    single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
@@ -209,14 +276,17 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      with its lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`,
      `Radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview alone.
    - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
-     or dismiss.** The auto "Other" on the question takes a typed topic directly (same
-     short-circuit as step 1).
-   - **Picking "Show more ideas" asks exactly ONE follow-up single-select question** with the
+     or dismiss.** Always explain the **Choose your own topic** action. A typed topic
+     (including via Other) follows step 1; choosing that action without a topic
+     asks only what they want to write about.
+   - **In Codex inline menus, “more” shows all rows in the same four-column format;
+     “fewer” restores three.** Keep the custom-topic action visible in both views.
+   - **In Claude, picking "Show more ideas" asks exactly ONE follow-up single-select question** with the
      next batch (the remaining candidates, up to 3 + auto "Other"), same preview format. This is
      the only path that costs a second round trip, and only because the user explicitly asked.
    - **One provenance line total in chat**, not per lane (radar date + job health, live-search
      date, repo names) — don't dump a duplicate board into chat; the question options carry the
-     ideas.
+     ideas (the inline table carries them in Codex Default).
    - **When the outcome check-in is due** it rides as the first question in the SAME call (see
      above); the flat idea question is the second. Still one dialog, one round trip.
 
@@ -238,18 +308,34 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      item beats a generic theme; label each `interests · <theme or story>`. The personal/life
      lane rides here (voice-notes → Topic lean: ~1 post in 4).
    - **Trending now (live, run-day — VERIFIED trending, not vibes).** Run
-     `python3 scripts/trending.py` — one measured sweep of Hacker News (Algolia), Lobsters,
+     `python3 scripts/trending.py --json` — one measured sweep of Hacker News (Algolia), Lobsters,
      Google News (last ~2 days), and GitHub star velocity, filtered by the user's own
      `~/.claude/ghostwriter/voice/trending-queries.json` (seeded on first run; edit it when the
      lanes drift) and pre-deduped against `published.jsonl` and the last 3 idea boards. The
-     table's signal strings go verbatim into the option previews
+     receipt's signal strings go verbatim into the option previews
      (`trending · HN 612 pts / 340 comments · Jul 18`); the JSON sidecar is the board's receipt.
      A surface the script reports as failed is named in the provenance line, not silently
      absent. No citable signal → the item doesn't go in the lane; fewer real trending items
-     beat padded ones. **The angle gate (below) applies hardest here: every scored post ever
+     beat padded ones. Run a new sweep on every open-ended idea request, including
+     when a recent board exists. Check `generated_at` and `status` in this run's
+     receipt; never serve an old sidecar as a successful refresh. `partial` means
+     use the surviving sources and name the unavailable ones. `failed` or exit 2
+     means refresh unavailable: continue with grounded projects/interests and
+     report that limitation once. Do not re-label old ideas as “trending now.”
+     Zero candidates after filtering means no new matches, not permission to
+     recycle old news. **The angle gate (below) applies hardest here: every scored post ever
      sourced from this lane flopped when it shipped as reaction-to-news.**
    - **Release radar — current through TODAY, not through the last digest.** Run
      `python3 scripts/release_radar_runtime.py discover` and read its selected digest and log.
+     Discovery follows the installed Claude launch agent's output path across
+     plugin updates and excludes digests from failed or unfinished legacy runs.
+     Updated Claude runners stage new output and record shell events separately
+     in `.radar-events.log`; a failed retry preserves the last promoted digest.
+     Historical combined logs can only yield `unverified`, never verified success.
+     Use `digest_date`, `current`, and `last_run_status` together; re-check sources
+     before treating an unverified historical digest as current. Disabled launch
+     agents are skipped; multiple enabled output directories require install repair.
+     A dated filename alone is not evidence of a successful refresh.
      A configured Codex radar uses `~/.claude/ghostwriter/radar/data/digests/` and
      `data/.radar.log`; otherwise discovery selects legacy `research/release-radar-*.md`
      and `research/.radar.log`. State provenance in
@@ -262,7 +348,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      digest's **Discussion radar** items feed opinion/hot-take slots the same way. Skip items
      already published (check `published.jsonl`). **Radar stale (>4 days) or missing** → say so,
      note whether the log shows the job failing, and run the lane fully live; if the job is broken
-     (e.g. exit 127 — usually the repo moved), offer to repair it: `bash scripts/install_radar.sh`
+     (e.g. exit 127 — usually the repo moved), offer the matching repair. A budget
+     failure needs a bounded research scope or an explicitly approved budget change;
+     reinstalling does not fix budget exhaustion. For a moved install: `bash scripts/install_radar.sh`
      preserves an installed Codex backend and durable digest root, copying updated trusted
      assets from the loaded plugin. First-time Codex setup uses
      `bash scripts/install_radar.sh --backend codex` and requires Codex authentication
@@ -282,7 +370,8 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    priority and the outcome history, and say so in the provenance line when it bends the order
    ("build stories lead; your last news post flopped").
 
-   **Persist the full list — research the user paid for doesn't evaporate.** Whether or not it
+   **Persist the full list — research the user paid for doesn't evaporate.** Follow
+   Run presentation's in-place expansion requirement as well. Whether or not it
    was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
    surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
    open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
@@ -292,8 +381,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    re-verified fresh that day — the boards are a menu, not a museum.
 
    **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
-   `Locked in: <idea> · <lane>`, then one line each for the angle, the real anchor, the save
-   (the thing a reader keeps), and the sources you'll verify against. Then straight to
+   `Locked in: <idea> · <lane>`, with at most one sentence naming the real anchor
+   if it was not already in the option. Keep the angle, save, and source plan in the
+   saved board rather than repeating the selected preview. Then straight to
    grounding + draft (step 3); no second drill. A release-how-to pick follows the **How-to
    posts** playbook below; a topic typed via "Other" is the short-circuit path (step 1).
 3. **Confirm the anchor, then draft.** Every post still needs **one concrete, real, first-person
@@ -321,7 +411,8 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    is *generated from* sources).** Do this after Save (you need the slug) and before showing the
    draft. List every **external/world claim** the draft makes — a vendor shipped X, a research
    finding, a statistic, a definition; anything about the outside world, not the user's own
-   first-person experience. For each, **research it** (WebSearch / firecrawl / WebFetch) and
+   first-person experience. For each, **research it** with the host's available web
+   search and page-reading tools and
    **actually read the source to confirm it supports the claim** — a live URL is not enough, the
    content has to back the statement. Prefer **primary/authoritative** sources (official docs,
    release notes, the vendor's own announcement, standards bodies, reputable engineering writing);
@@ -338,11 +429,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `~/.claude/ghostwriter/voice/voice-notes.md` covers these. Be honest: if the post mixes a
      real external claim into a personal story, it is *not*
      `external_claims:false`.
-   - **Narrate the gate — it's the slow step; never go silent through it.** Emit one short status
-     line per claim as it resolves — `checking: "Sonnet 5 ships computer-use GA" → vendor
-     announcement + docs ✓` — and one close line when the gate passes: `3 claims · 5 distinct
-     hosts · gate passed`. One line each, no tables; the user should see the research happening,
-     not a minute of dead air followed by a draft.
+   - **Narrate the gate — it's the slow step; never go silent through it.** Start
+     with one line (“checking the draft's sources…”), then give a concise update
+     if research runs long or a claim needs changing. Put the combined source/voice
+     result below the draft; keep per-claim diagnostics in the sidecar.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
      sidecar before publishing. (The AI-fingerprint gate in step 7 re-runs on every edit too.)
@@ -355,9 +445,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      paragraphs) plus a cost-capped LLM judge (`claude -p`, Haiku, ≤$0.10 a call) that scores
      AI-likeness 0–10 against the real voice files and quotes the phrases it read as AI. **Any
      `FAIL`, or a judge score under 7, means rewrite and re-run** until the close line reads
-     `ai-tells: clean · judge N/10`; a `WARN` is a smell to weigh, not a block. Narrate it like the
-     source gate: one line per finding as you fix it, then the close line, which also goes under
-     the draft's metadata line when you show it. **Re-run the gate after every edit** in the
+     `ai-tells: clean · judge N/10`; a `WARN` is a smell to weigh, not a block.
+     Keep routine rewrites quiet; report a blocker if it needs user input.
+     Put the final gate result under the draft's metadata line when you show it.
+     **Re-run the gate after every edit** in the
      show→edit→re-show loop; an edit is how a tell gets back in. Passing the gate is the floor:
      the checks below are the judgment layer on top of it, not a substitute for it.
    Then verify against `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
@@ -399,31 +490,26 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
-   **Chat text is NOT a reliable approval view.** The Claude Code client collapses the
-   assistant message immediately preceding a tool call to "(summarized)", so a post printed in
-   chat right before the dialog is routinely never seen (real session, 2026-08-28: "it says it
-   is printed but it is not", with a screenshot showing the collapsed message). Immediately
-   before EVERY approval dialog, **open the draft file on the user's own screen**:
-   `open drafts/YYYY-MM-DD-slug.md` (macOS; `xdg-open` on Linux) so the complete text is in a
-   window the dialog cannot hide, and say so in the question ("the draft is open in your
-   editor"). The preview-pane / plain-print rules below are additive, not a substitute. Then
-   ask with a single `AskUserQuestion` — options **Publish** / **Edit** (the auto "Other"
-   takes typed edit instructions directly) / **Scrap** — and wait for the answer. **The user
-   must be able to read every line of the final post at the moment of decision — both real
-   failure modes are known, pick the mechanism by line count:**
-   - **Post fits the preview pane unclipped (≤ ~9 lines): the complete, final post text goes
-     in the approval dialog** (verbatim, no fold marker, no metadata line) as the `preview` of
-     the Publish option. A real session (2026-08-11) reached the approval question twice
-     without the user ever having seen the whole post because it lived only in scrollback —
-     the dialog takes focus over chat.
-   - **Post longer than ~9 lines — which feed-native posts usually are: the preview WILL clip
-     (a real session, 2026-08-19, hid 11 of 13 lines this way).** Print the complete post
-     plainly in the chat message immediately before the dialog (no fold marker, no fence), and
-     make the question itself name the line count and the final line ("the full post is
-     printed above — 13 lines, ends with …") so the user can verify they saw all of it before
-     answering. Never put text the pane will clip in the preview and call it shown.
-   The Publish tap on a dialog whose text the user has verifiably seen in full is the explicit
-   approval; an edited draft is re-shown and re-asked the same way. Do not publish unprompted.
+   **Choose one readable approval view for the host.** The full final post must
+   remain accessible while the user decides; never mistake a clipped preview or
+   collapsed message for a view they can read.
+   - **Claude Code:** chat immediately preceding a dialog can collapse. Open the
+     saved draft for each approval with `open` (macOS) or `xdg-open` (Linux). Say it is open only
+     if the opener succeeds; otherwise provide its actionable file link. When the
+     post fits the pane (roughly 9 lines), the complete final post text goes in
+     the approval dialog as the Publish option's `preview`, without fold markers
+     or metadata. Longer posts use the opened file; name the line count and final
+     line in the question rather than pasting a second, clipped copy.
+   - **Codex:** show the complete draft once, with its actionable file link. If the
+     client collapses that text or lacks an unclipped preview, open the saved file
+     and check the opener result as above. Do not assume Claude's `preview` field
+     exists, or force an editor launch when the full draft is already readable.
+   Ask once about that exact draft: **Publish** / **Edit** / **Scrap**. Typed edit
+   instructions go straight to the edit; no extra confirmation. If the host has no
+   eligible question tool, ask one concise chat question and wait. An unanswered
+   or preselected Publish option is not approval. An edited draft is re-shown and
+   re-approved; never publish unprompted. This approves the text; a subsequently
+   chosen visual still needs its own preview and approval before publishing.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
@@ -815,11 +901,11 @@ for that exact draft.
 - **Never publish without explicit approval** of the specific text. Editing the draft → re-show
   → re-confirm.
 - **The user must be able to read the ENTIRE post at the moment of approval** — first show and
-  every re-show. A post that fits the preview pane unclipped (≤ ~9 lines) rides in the approval
-  dialog itself; a longer post is printed complete in the message immediately before the dialog,
-  with the question naming the line count and final line so the user can verify nothing is
-  hidden. Text the preview pane clips does not count as shown, and neither does text left only
-  in distant scrollback (see Generate step 7 — both failure modes came from real sessions).
+  every re-show. Follow Generate step 7's host-specific readable view. In Codex
+  Default, show the complete draft and the approval question in the final message;
+  do not place approval behind the failed asynchronous selector. Claude retains
+  its unclipped short preview or opened full draft. Clipped panes and distant
+  scrollback do not count as a readable approval view.
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that
   way. Don't echo the access token or client secret in chat.
 - **Don't fabricate facts** in posts — no invented metrics, quotes, or events. **Every
