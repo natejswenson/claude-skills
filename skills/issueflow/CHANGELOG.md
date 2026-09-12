@@ -62,6 +62,41 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Strict harness
+
+- New schema-4 runs require a reviewed criteria/scope/check contract, controller-run
+  red/green and full-suite receipts, and observed-scope risk escalation. Ignored
+  runtime inputs are fingerprinted and copied locally into base snapshots.
+- Add revision-conflict protection, controller ownership, immutable attempt
+  envelopes, explicit cancelled-wave recovery, bounded repair, and conservative
+  host-observed capacity. Repaired reports invalidate prior attempt receipts.
+- Journal push, PR-create, checkpoint, review/thread/reply/resolve, summary, and ready intents with read-back. Bind readiness to the
+  reviewed/verified head; absent CI needs a reviewed reason. Offline runs cannot
+  claim remote readiness. Automatically reverify fixer commits before another review.
+- Add source/guidance/plan/hash-bound review context caching, unknown-preserving host usage adapters,
+  attempt-deduplicated telemetry, and explicit Claude/Codex native smoke commands.
+- Add explicit pre-PR migration/amendment with archived evidence and fresh review,
+  per-lane obligations, native worker observation, and quiescent review cancellation.
+  Historical reviews cannot authorize amended plans, even with identical bytes.
+- Preserve legacy evidence strength. Live cross-host lifecycle and paired speed
+  validation remain open; these changes are not a release or an established speedup.
+
+### Evaluation
+
+- Add an offline harness evaluator with immutable source snapshots, pinned-commit
+  baseline capture, independent regression/control oracles, both-host CLI fixtures,
+  real plan/review corpus replay, process receipts, and JSON/Markdown reports.
+  Failed and inconclusive evaluations return nonzero; selected-case coverage and
+  unverified capabilities remain explicit. Offline timings make no agent-speed claim.
+- Separate native Codex execution from the ordinary offline test suite. Native
+  smoke runs now require `npm run test:native:codex`; missing host support fails
+  the requested smoke instead of silently substituting a shell simulation.
+
+- Correct telemetry's missing-duration coercion and aggregation. Unknown or invalid
+  numeric usage remains unknown; known subtotals and missing-sample counts are
+  explicit. Summed worker durations use `workerWallTimeMs`; end-to-end `wallTimeMs`
+  remains unknown until an actual run interval is recorded.
+
 ### Fixed
 
 - Keep Codex artifacts, progress, evidence and lane Git administration inside a

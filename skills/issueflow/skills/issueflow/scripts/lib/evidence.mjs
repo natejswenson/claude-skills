@@ -3,9 +3,9 @@
  *
  * The gate used to accept any non-empty file as proof a suite ran. That is a
  * check on the existence of a file, not on the existence of a test run — a
- * stage that wrote `ok` passed it. This module is what turns the evidence back
- * into a fact: it finds a real runner's own summary lines, or it finds nothing
- * and the gate refuses.
+ * stage that wrote `ok` passed it. This module reads summary syntax, not
+ * provenance. Strict runs require controller-observed verification receipts;
+ * matching text cannot prove execution.
  *
  * Since 0.7.0 it reads EVERY result in the file, in file order, not only the
  * last. The implement stage owes a two-sided proof — the test seen failing
@@ -153,12 +153,16 @@ export function parseAllEvidence(text) {
     return hits.map((hit, i) => {
       const from = i === 0 ? 0 : hits[i - 1].index;
       const block = text.slice(from, hit.index);
-      const green = hit.failed === null ? null : hit.failed === 0;
+      const end = hits[i + 1]?.index ?? text.length;
+      const exits = RUNNERS.at(-1).all(text.slice(hit.index, end));
+      const conflict = exits.some((exit) => exit.exitCode !== 0);
+      const exitCode = hit.exitCode ?? (conflict ? exits.find((exit) => exit.exitCode !== 0).exitCode : null);
+      const green = conflict ? false : hit.failed === null ? null : hit.failed === 0;
       return {
         runner: runner.id,
         passed: hit.passed,
         failed: hit.failed,
-        exitCode: hit.exitCode ?? null,
+        exitCode,
         green,
         loadError: green === false && LOAD_ERROR.test(block),
       };
@@ -188,6 +192,7 @@ export function twoSided(results) {
   if (last.green !== true) {
     return { ok: false, reason: `the last run in it ${last.green === false ? 'failed' : 'does not say whether it passed'} — the green half must come last` };
   }
+  if (last.passed === 0) return { ok: false, reason: 'the final run executed zero passing tests' };
   const reds = results.slice(0, -1).filter((r) => r.green === false);
   if (reds.length === 0) {
     return { ok: false, reason: 'holds no failing run before the passing one — a test never seen red proves the suite runs, not that the issue is fixed' };

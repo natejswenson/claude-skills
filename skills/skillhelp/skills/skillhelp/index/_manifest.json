@@ -164,12 +164,12 @@
       "name": "issueflow",
       "version": "0.15.0",
       "stack": "node",
-      "cardHash": "c6faaf56884bf484",
-      "facts": 64,
+      "cardHash": "6e67076e041d1c44",
+      "facts": 72,
       "sections": {
-        "setup": 10,
+        "setup": 12,
         "usage": 12,
-        "commands": 10,
+        "commands": 16,
         "architecture": 16,
         "troubleshooting": 16
       },

@@ -15,6 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { PER_ITEM_STAGES } from './stages.mjs';
 import { evidencePath, laneTree, readEvidence } from './run.mjs';
 import { summarize, twoSided } from './evidence.mjs';
+import { assertVerified } from './verification.mjs';
 
 const git = (args, cwd) => {
   try {
@@ -54,6 +55,13 @@ export function verify(dir, run, step) {
   }
 
   if (PER_ITEM_STAGES.includes(step.stage.id)) {
+    if (run.harness) {
+      const batch = assertVerified(dir, run, lane);
+      rows.push(['verification', `${batch.receipts.length} required controller-observed obligations passed`]);
+      rows.push(['verified head', batch.head]);
+      rows.push(['evidence strength', 'captured process results; repository commands retain host permissions']);
+      return rows;
+    }
     const proof = step.stage.evidence ?? evidencePath(dir, step);
     const results = readEvidence(proof);
     rows.push(['test result', summarize(results.at(-1) ?? null)]);
