@@ -16,6 +16,8 @@ const json = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const put = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000 }).trim();
 
+export const escapeReportCell = (value) => String(value).replace(/[\\|]/g, '\\$&').replace(/[\r\n]+/g, ' ');
+
 export function loadCases(path = join(here, 'harness/cases.json')) {
   return validateManifest(json(path));
 }
@@ -220,11 +222,10 @@ export async function evaluate({ out, ref = null, selected = null, manifest = lo
     performance: { verdict: 'inconclusive', reason: 'offline process durations are not live-agent time-to-success measurements' },
   };
   put(join(out, 'report.json'), report);
-  const escape = (value) => String(value).replace(/\|/g, '\\|').replace(/[\r\n]+/g, ' ');
   writeFileSync(join(out, 'report.md'), [
     '# Issueflow foundation evaluation', '', `Verdict: ${report.verdict}. Baseline capture: ${report.baselineCapture}.`,
     `Coverage: ${cases.length}/${manifest.cases.length} foundation cases. ${manifest.notCovered.length} broader capability groups are unverified.`,
-    '', '| Case | Result | Evidence |', '|---|---|---|', ...results.map((r) => `| ${r.id} | ${r.status} | ${escape(r.detail)} |`),
+    '', '| Case | Result | Evidence |', '|---|---|---|', ...results.map((r) => `| ${r.id} | ${r.status} | ${escapeReportCell(r.detail)} |`),
     '', `Performance: ${report.performance.reason}.`, '', 'Not covered:', ...manifest.notCovered.map((s) => `- ${s}`), '',
   ].join('\n'), { flag: 'wx' });
   return report;

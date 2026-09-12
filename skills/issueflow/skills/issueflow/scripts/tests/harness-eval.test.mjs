@@ -5,11 +5,18 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { compare, evaluate, loadCases } from '../../evals/harness.mjs';
+import { compare, evaluate, loadCases, escapeReportCell } from '../../evals/harness.mjs';
 import { judge, reportVerdict, repositoryOutcome, verdictExit } from '../../evals/harness/oracles.mjs';
 
 const harness = fileURLToPath(new URL('../../evals/harness.mjs', import.meta.url));
 const guard = fileURLToPath(new URL('../../evals/harness/offline.cjs', import.meta.url));
+
+test('report cells escape existing backslashes before pipe delimiters', () => {
+  assert.equal(escapeReportCell(String.raw`before\|after`), String.raw`before\\\|after`);
+  assert.equal(escapeReportCell(String.raw`a\\|b|c`), String.raw`a\\\\\|b\|c`);
+  assert.equal(escapeReportCell('a\r\nb\nc'), 'a b c');
+  assert.equal(escapeReportCell(42), '42');
+});
 const temporary = (t) => {
   const path = mkdtempSync(join(tmpdir(), "issueflow eval's "));
   t.after(() => rmSync(path, { recursive: true, force: true }));
