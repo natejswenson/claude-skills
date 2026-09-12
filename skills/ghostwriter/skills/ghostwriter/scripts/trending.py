@@ -22,6 +22,8 @@ Standard library only.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 import json
 import shutil
 import sys
@@ -108,7 +110,7 @@ def sweep_lobsters(cfg: dict, get) -> list[dict]:
     return out
 
 
-def sweep_gnews(cfg: dict, get) -> list[dict]:
+def sweep_gnews(cfg: dict, get, failures: list[str] | None = None) -> list[dict]:
     out = []
     window = cfg.get("news", {}).get("window", "2d")
     for interest in cfg.get("interests", []):
@@ -120,7 +122,13 @@ def sweep_gnews(cfg: dict, get) -> list[dict]:
             + urllib.parse.quote(f"{query} when:{window}")
             + "&hl=en-US&gl=US&ceid=US:en"
         )
-        root = ET.fromstring(get(url))
+        try:
+            root = ET.fromstring(get(url))
+        except Exception as exc:  # one query must not discard other interests
+            if failures is None:
+                raise
+            failures.append(f"news ({interest['name']}): {exc}")
+            continue
         for item in root.iter("item"):
             title = item.findtext("title") or ""
             out.append(
@@ -210,15 +218,25 @@ def build_candidates(cfg: dict, get, haystack: str, limit: int, include_all: boo
     candidates: list[dict] = []
     surface_counts: dict[str, int] = {}
     failures: list[str] = []
-    for name, sweep in SURFACES.items():
-        try:
-            found = sweep(cfg, get)
-        except Exception as exc:  # noqa: BLE001 — a dead surface must not kill the sweep
-            failures.append(f"{name}: {exc}")
-            surface_counts[name] = 0
-            continue
-        surface_counts[name] = len(found)
-        candidates.extend(found)
+    # Collect in declaration order so equal-ranked output and diagnostics remain
+    # deterministic, even when HTTP requests finish in a different order.
+    news_failures: list[str] = []
+    with ThreadPoolExecutor(max_workers=len(SURFACES)) as pool:
+        pending = {
+            name: pool.submit(sweep, cfg, get, news_failures) if sweep is sweep_gnews
+            else pool.submit(sweep, cfg, get)
+            for name, sweep in SURFACES.items()
+        }
+        for name, future in pending.items():
+            try:
+                found = future.result()
+            except Exception as exc:  # a dead surface must not kill the sweep
+                failures.append(f"{name}: {exc}")
+                surface_counts[name] = 0
+                continue
+            surface_counts[name] = len(found)
+            candidates.extend(found)
+    failures.extend(news_failures)
 
     for c in candidates:
         c.setdefault("matched_interest", match_interest(c["title"], cfg.get("interests", [])))
@@ -227,7 +245,26 @@ def build_candidates(cfg: dict, get, haystack: str, limit: int, include_all: boo
     if not include_all:
         fresh = [c for c in fresh if c["matched_interest"]]
     fresh.sort(key=lambda c: (-c["rank"], c["title"]))
-    return fresh[:limit], surface_counts, failures
+    # The same story can appear on several surfaces or interest queries. Keep
+    # its strongest measured signal, without spending multiple menu slots on it.
+    unique = []
+    urls, titles = set(), set()
+    for c in fresh:
+        try:
+            parts = urllib.parse.urlsplit(c["url"])
+            url = urllib.parse.urlunsplit((parts.scheme.lower(), parts.netloc.lower(),
+                                          parts.path or "/", parts.query, "")) if c["url"] else ""
+        except ValueError:
+            # A malformed source URL must not discard the whole sweep. It still
+            # needs to pass the separate source verification gate before use.
+            url = c["url"]
+        title = c["title"].lower().strip()
+        if (url and url in urls) or (title and title in titles):
+            continue
+        urls.add(url)
+        titles.add(title)
+        unique.append(c)
+    return unique[:limit], surface_counts, failures
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -237,7 +274,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--published-log", default=str(PUBLISHED_LOG), help=argparse.SUPPRESS)
     ap.add_argument("--limit", type=int, default=12, help="Max candidates in the table.")
     ap.add_argument("--all", action="store_true", help="Include candidates matching no interest.")
+    ap.add_argument("--json", action="store_true", help="Print one machine-readable refresh receipt.")
     args = ap.parse_args(argv)
+    if args.limit < 1:
+        ap.error("--limit must be at least 1")
 
     cfg = load_config(Path(args.config))
     haystack = known_text(Path(args.published_log), Path(args.research_dir))
@@ -249,19 +289,29 @@ def main(argv: list[str] | None = None) -> int:
         print(f"WARN surface failed — {failure}", file=sys.stderr)
 
     counts = " · ".join(f"{k}:{v}" for k, v in surface_counts.items())
-    if not any(surface_counts.values()):
+    broken = not any(surface_counts.values())
+    receipt = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "status": "failed" if broken else "partial" if failures else "ok",
+        "counts": surface_counts, "failures": failures, "candidates": fresh,
+    }
+    # Replace today's receipt even when the refresh fails. A previous successful
+    # same-day sweep must never masquerade as the result of this attempt.
+    sidecar = Path(args.research_dir) / f".trending-{time.strftime('%Y-%m-%d')}.json"
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    sidecar.write_text(json.dumps(receipt, indent=1), encoding="utf-8")
+    if args.json:
+        print(json.dumps({**receipt, "sidecar": str(sidecar)}))
+    if broken:
         print(f"ERROR: every surface returned nothing ({counts}) — the sweep is broken, not quiet.", file=sys.stderr)
         return 2
+
+    if args.json:
+        return 0
 
     print(f"trending sweep {time.strftime('%Y-%m-%d')} · raw {counts} · {len(fresh)} fresh candidates\n")
     print(render(fresh))
 
-    sidecar = Path(args.research_dir) / f".trending-{time.strftime('%Y-%m-%d')}.json"
-    sidecar.parent.mkdir(parents=True, exist_ok=True)
-    sidecar.write_text(
-        json.dumps({"counts": surface_counts, "failures": failures, "candidates": fresh}, indent=1),
-        encoding="utf-8",
-    )
     print(f"\nsidecar: {sidecar}")
     return 0
 
