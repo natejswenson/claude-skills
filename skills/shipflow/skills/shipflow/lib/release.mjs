@@ -836,7 +836,10 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   }
   const deadline = Date.now() + waitSeconds * 1000;
   const log = [];
-  const sourceRef = target.via === 'prepared-branch' ? branch : `origin/${mainBranch}`;
+  const preparedExists = Boolean(revParse(repoPath, branch));
+  const onBase = readVersionAt(repoPath, component, `origin/${policy.base}`);
+  const baseHasVersion = onBase.ok && onBase.version === targetVersion;
+  const sourceRef = target.via === 'prepared-branch' ? (preparedExists ? branch : `origin/${policy.base}`) : `origin/${mainBranch}`;
   const expectedNotes = notesAt(repoPath, component, sourceRef, targetVersion);
   const note = (stage, msg) => log.push({ stage, msg });
 
@@ -857,12 +860,12 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   }
 
   // 1. push the prepared branch
-  if (!revParse(repoPath, branch)) {
+  if (!preparedExists && !baseHasVersion) {
     return { ok: false, error: `branch ${branch} does not exist — run release-prepare first` };
   }
   const dir = worktreeDir(name, targetVersion);
   const pushCwd = existsSync(dir) ? dir : repoPath;
-  if (!revParse(repoPath, `origin/${branch}`)) {
+  if (preparedExists && !baseHasVersion && !revParse(repoPath, `origin/${branch}`)) {
     const pushed = git(['push', '-u', 'origin', branch], { cwd: pushCwd });
     if (pushed.status !== 0) return { ok: false, error: `git push failed: ${pushed.stderr}` };
     note('push', `pushed ${branch}`);
