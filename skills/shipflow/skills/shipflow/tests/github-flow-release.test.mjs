@@ -141,3 +141,11 @@ test('legacy custom integration cut retains promotion before dispatch', (t) => {
   const f=fixture(t,{legacy:true});const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.');assert.equal(p.ok,true,p.error);const state=fakeGh(t,f);const r=cut(f.repo,f.config,'alpha',cutOptions);assert.equal(r.done,true,JSON.stringify(r));
   assert.deepEqual(state().calls.filter(a=>a[0]==='pr'&&a[1]==='create').map(a=>a[a.indexOf('--base')+1]),['integration','main']);
 });
+
+test('legacy cut resumes after its feature branch was merged and deleted', (t) => {
+  const f=fixture(t,{legacy:true});const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.');assert.equal(p.ok,true,p.error);
+  git(f.repo,'push','origin',`${p.branch}:integration`);git(f.repo,'fetch','origin','integration:integration');
+  git(f.repo,'worktree','remove',p.worktree);git(f.repo,'branch','-D',p.branch);
+  const state=fakeGh(t,f);const r=cut(f.repo,f.config,'alpha',cutOptions);assert.equal(r.done,true,JSON.stringify(r));
+  assert.deepEqual(state().calls.filter(a=>a[0]==='pr'&&a[1]==='create').map(a=>a[a.indexOf('--head')+1]),['integration']);
+});
