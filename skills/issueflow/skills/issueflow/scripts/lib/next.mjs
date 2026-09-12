@@ -42,6 +42,7 @@ import { readTimings } from './timings.mjs';
 import { dispatchLabel, dispatchProfile, rollingWave, runtimeOf, startWave, waveState } from './runtime.mjs';
 import { DISPATCHES, budgetStatus, budgetStop } from './budget.mjs';
 import { stageTimeout } from './codex-policy.mjs';
+import { verificationCurrent } from './verification.mjs';
 
 const DEFAULT_TIMEOUT_S = 1800;
 const STALL_FACTOR = 3;
@@ -230,6 +231,9 @@ function decideImplement(dir, run, step, ctx) {
     }
     return wait(step.key, { pairs: [[artifact, brief]], timeout });
   }
+  if (run.harness && !verificationCurrent(dir, run, step.lane)) {
+    return act('verify-run', { lane: step.laneSlug }, 'implementation delivered — executing reviewed verification obligations');
+  }
   return act('accept', { stage: step.stage.id, lane: step.laneSlug, auto: run.auto }, `${step.key} delivered — running the gate`);
 }
 
@@ -246,6 +250,9 @@ function allPresent(dir, paths) {
  * reads it and rules, or buys one more round. `next` never does either.
  */
 const exhaustedStop = (lane) =>
+  currentRound(lane)?.cancelled ? stop('exhausted', `${lane.slug}: ${reviewCap(lane)} review rounds consumed, including abandoned reviews; no final review accepted`, {
+    command: `review-brief --lane ${lane.slug} --another-round "<user direction authorizing one more independent review>"`,
+  }) :
   stop('exhausted', `${lane.slug}: ${reviewCap(lane)} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
     command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
     alternative: `review-brief --lane ${lane.slug} --another-round "<why one more round>"`,
@@ -253,6 +260,8 @@ const exhaustedStop = (lane) =>
 
 function decideLoop(dir, run, lane, ctx) {
   const entry = currentRound(lane);
+  if (entry?.cancelled) return reviewExhausted(lane) ? exhaustedStop(lane) : act('review-brief', { lane: lane.slug }, 'cancelled review retained — starting fresh independent review within the original cap');
+  if (run.harness && entry?.fix?.pendingReplies && !ctx.offline) return act('review-fix-report', { lane: lane.slug }, 'reconciling pending fixer replies before another review');
   const tree = laneTree(dir, run, lane);
   const head = git(['rev-parse', 'HEAD'], tree);
 
@@ -310,6 +319,7 @@ function decideLoop(dir, run, lane, ctx) {
     // report/push/re-review lifecycle before fresh check state can become
     // pending or green and accidentally ready an unreviewed head.
     if (entry.fix?.briefed) return afterFixBrief(dir, run, lane, entry, head, ctx);
+    if (run.harness && !verificationCurrent(dir, run, lane)) return act('verify-run', { lane: lane.slug, phase: 'review' }, 'reviewed HEAD needs fresh execution receipts before readiness');
     const checks = ctx.checks(lane);
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
@@ -378,6 +388,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
     }
   }
   if (reviewExhausted(lane)) return exhaustedStop(lane);
+  if (run.harness && !verificationCurrent(dir, run, lane)) return act('verify-run', { lane: lane.slug, phase: 'review' }, 'fixer changed HEAD — executing reviewed obligations before another review');
   return act('review-brief', { lane: lane.slug }, `${lane.slug}: fix pushed — opening round ${entry.round + 1}`);
 }
 
@@ -462,6 +473,9 @@ function decideAction(dir, run, c) {
     // the fan-out path would re-brief already-completed lanes.
     const delivered = ready.filter((step) => deliveredSince(dir, step));
     if (delivered.length > 1) {
+      // Strict lanes must each traverse verification and the normal bounded
+      // repair path; a bulk accept must not skip receipt creation.
+      if (run.harness) return decideImplement(dir, run, delivered[0], c);
       return act('accept-ready', { steps: delivered.map((step) => ({ stage: step.stage.id, lane: step.laneSlug ?? null })) }, `accepting ${delivered.length} delivered implementation lane${delivered.length === 1 ? '' : 's'}`);
     }
     if (delivered.length === 1) return decideImplement(dir, run, delivered[0], c);
@@ -472,6 +486,7 @@ function decideAction(dir, run, c) {
   }
 
   // Every gate step approved: ship what is not shipped.
+  if (run.harness && (run.offline || c.offline) && run.lanes.some((l) => !l.pr)) return stop('offline', 'Required local implementation gates passed. Remote PR, code review and CI remain unverified; this offline run cannot ship.', { command: 'ship --dry-run' });
   if (run.lanes.some((l) => !l.pr)) return act('ship', {}, 'every stage is approved — opening the pull request(s) as drafts');
 
   // Review loops, bottom lane first; a lane above waits for the one below to converge.

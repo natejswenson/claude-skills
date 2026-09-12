@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { SETTLE_S, POLL_S, waitLine } from '../lib/next.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SKILL = join(HERE, '..', '..');
@@ -40,7 +41,9 @@ test('budget: help and operator guidance document explicit recovery without chan
 test('budget: completion guidance sends native completion straight to next with one fallback settle', () => {
   const dispatch = read('references/dispatch.md').replace(/\s+/g, ' ');
   assert.match(dispatch, /native.*completion.*next immediately/i);
-  assert.match(dispatch, /fallback.*twenty seconds/i);
+  assert.match(dispatch, /fallback.*two seconds/i);
+  assert.equal(SETTLE_S, 2); assert.equal(POLL_S, 1);
+  assert.ok(waitLine({ pairs: [['result', 'brief']], timeout: 5 }).includes(`sleep ${SETTLE_S}`));
   assert.match(dispatch, /no second.*settle/i);
   assert.match(read('SKILL.md'), /Do not add a second\s+20-second shell settle/);
 });

@@ -15,12 +15,17 @@ import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { EVIDENCE_FILE, PER_ITEM_STAGES, PLAN_STAGE, SHARED_STAGES, stage } from './stages.mjs';
 import { branchFor, slugify } from './policy.mjs';
 import { parseAllEvidence, summarize, twoSided, RUNNER_IDS } from './evidence.mjs';
 import { assertRuntime, dispatchPolicy, dispatchProfile, modelLabel, runtimeOf } from './runtime.mjs';
 import { validateWorktree, WorktreeError } from './worktree.mjs';
 import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCurrent, gitStore, persistedExecution, rawRun, readDelivery, sourceTree, validateExecution } from './execution.mjs';
+import { contractFromPlan, gitText, hash } from './contracts.mjs';
+import { assertVerified } from './verification.mjs';
+import { StateConflict, withStateLock } from './state-lock.mjs';
+import { authorizeAmendment } from './evolution.mjs';
 
 /**
  * Schema 3: two stages instead of four, and a review loop on every lane. A
@@ -29,7 +34,7 @@ import { activePath, approveArtifact, archiveExecution, archivedPath, deliveryCu
  * would be the loader rewriting history. `runs` names the mismatch and the
  * remedy for any that remain.
  */
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 
 /** A gate refusal: the work is not done, send it back. Exit code 2. */
 export class RunError extends Error {}
@@ -67,13 +72,15 @@ const laneReviewEntry = (complexity = null) => ({ rounds: [], converged: false, 
 
 export function classifyIssue(issue) {
   const text = `${issue.title ?? ''}\n${issue.body ?? ''}`;
-  const docs = /\b(doc|docs|documentation|readme|copy|wording|typo|guide|changelog)\b/i.test(text);
+  const docs = /\b(doc|docs|documentation|readme|wording|typo|guide|changelog)\b/i.test(text);
   const shippedContract = /\b(test|tests|template|generated|workflow|manifest|plugin\.json|package\.json|api|auth|security|migration|acceptance criteria|all \d+)/i.test(text);
   // CI/automation issues may mention docs in their explanation, but changing
   // an installer, workflow or release path is operational work and must not
   // take the cheap documentation profile.
   const operational = /\b(ci|workflow|install(?:er|ation)?|marketplace|release|deploy(?:ment)?|pipeline|automation|smoke test)\b/i.test(text);
+  const sensitive = /\b(auth(?:entication|orization)?|security|persist(?:ence|ent)?|concurren\w*|corrupt\w*|data loss|race condition|migration|credentials?)\b/i.test(text);
   if (operational) return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'CI, automation or operational change' };
+  if (sensitive) return { kind: 'deep', reviewRounds: 4, budgetSeconds: 1800, reason: 'security, persistence or concurrency change' };
   if (docs && !shippedContract) return { kind: 'fast-docs', reviewRounds: 1, budgetSeconds: 900, reason: 'documentation-only wording change' };
   if (docs) return { kind: 'standard', reviewRounds: 2, budgetSeconds: 1800, reason: 'documentation with shipped-contract impact' };
   return { kind: 'deep', reviewRounds: 2, budgetSeconds: 1800, reason: 'code or operational change' };
@@ -92,12 +99,13 @@ const laneEntry = (policy, issue, { slug, title, base }, runtime = 'claude', com
 });
 
 /** A fresh run for one issue, with a single unsplit lane. */
-export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime, host, childSlots, now = () => new Date().toISOString() }) {
+export function createRun({ repo, issue, policy, offline = false, auto = false, autonomous = false, runtime, host, childSlots, strict = false, now = () => new Date().toISOString() }) {
   if (host && runtime && host !== runtime) throw new RunError('--host and --runtime disagree');
   const resolvedRuntime = assertRuntime(host ?? runtime);
   const complexity = classifyIssue(issue);
   return {
-    schema: SCHEMA,
+    schema: strict ? SCHEMA : 3,
+    ...(strict ? { harness: { version: 1, contract: null, contractHash: null, bases: {}, amendments: [] } } : {}),
     repo,
     issue: { number: issue.number, title: issue.title, url: issue.url },
     policy,
@@ -130,6 +138,20 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
 
 export function saveRun(dir, run) {
   try {
+    mkdirSync(dir, { recursive: true });
+    return withStateLock(dir, () => saveLocked(dir, run));
+  } catch (error) {
+    if (error instanceof StateConflict || error instanceof WorktreeError || !run.execution) throw error;
+    throw new WorktreeError(`could not persist ${dir}: ${error.message}; retain outputs at ${run.execution.path} and retry`);
+  }
+}
+
+function saveLocked(dir, run) {
+  const current = existsSync(statePath(dir)) ? JSON.parse(readFileSync(statePath(dir), 'utf8')) : null;
+  if ((current?.revision ?? 0) !== (run.revision ?? 0)) throw new StateConflict('stale controller state; reload the run before retrying this transition');
+  if (!run.execution && current && isDeepStrictEqual(current, JSON.parse(JSON.stringify(run)))) return run;
+  const revision = run.revision ?? 0;
+  try {
     archiveExecution(dir, run);
     mkdirSync(join(dir, SHARED_DIR), { recursive: true });
     for (const lane of run.lanes) mkdirSync(join(dir, lane.slug), { recursive: true });
@@ -137,10 +159,12 @@ export function saveRun(dir, run) {
       writeFileSync(join(dir, 'execution-owner.json'), JSON.stringify(run.execution.owner), { flag: 'wx' });
     }
     const pending = statePath(dir) + `.${randomUUID()}.pending`;
+    run.revision = revision + 1;
     writeFileSync(pending, `${JSON.stringify(run, null, 2)}\n`, { flag: 'wx' });
     renameSync(pending, statePath(dir));
     persistedExecution(dir);
   } catch (err) {
+    run.revision = revision;
     if (!run.execution) throw err;
     throw new WorktreeError(`could not persist ${dir}: ${err.message}; retain outputs at ${run.execution.path} and retry`);
   }
@@ -187,7 +211,7 @@ export function loadRun(dir, { host, childSlots } = {}) {
     throw new RunError(`no run at ${dir} — start one with \`issueflow start --issue <number>\``);
   }
   const run = JSON.parse(readFileSync(statePath(dir), 'utf8'));
-  if (run.schema !== SCHEMA) {
+  if (![3, SCHEMA].includes(run.schema) || run.schema === SCHEMA && run.harness?.version !== 1) {
     throw new RunError(
       `the run at ${dir} is schema ${run.schema} and this issueflow speaks ${SCHEMA} — ` +
         'its artifacts are still on disk, but the state machine cannot resume it; start the issue again',
@@ -507,6 +531,11 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     if (/\b(?:blocked|incomplete|not performed)\b/i.test(resultSection(readDelivery(dir, artifactPath(dir, step), run, { dispatched: false })))) {
       throw new RunError(`cannot accept ${step.key}: blocked or incomplete result (the implementation reports blocked, incomplete, or not performed work)`);
     }
+    if (run.harness) {
+      const batch = assertVerified(dir, run, step.lane);
+      step.stage.result = `${batch.receipts.length} controller-observed obligations passed at ${batch.head.slice(0, 12)}`;
+      step.stage.verificationBatch = batch.batchId;
+    } else {
     const proof = evidence ?? evidencePath(dir, step);
     if (!hasContent(proof)) {
       throw new RunError(
@@ -546,6 +575,7 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
     }
     step.stage.evidence = proof;
     step.stage.result = summarize(results.at(-1));
+    }
   }
 
   // The plan is red-teamed on every run. A human may approve a plan the red
@@ -555,11 +585,21 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   // bypass: every refusal above ran first, and this adds the verdict on top.
   if (step.stage.id === PLAN_STAGE) {
     const latest = step.stage.review?.rounds.at(-1) ?? null;
-    if (!latest) {
+    if (!latest || latest.supersededBy) {
       throw new RunError(
         `cannot accept ${step.key}: no red-team review is registered — ` +
           'the plan is attacked before anyone approves it; brief the reviewer first',
       );
+    }
+    if (run.harness) {
+      if (latest.artifactSha !== sha256OfFile(artifact)) throw new RunError('task contract changed after review; re-review the current plan');
+      const contract = contractFromPlan(text);
+      const expectedLanes = (run.split ? run.lanes : hasSection(text, 'Work items') ? workItemsFromPlan(text) : []).map((lane) => lane.slug).sort();
+      if (expectedLanes.length && JSON.stringify(Object.keys(contract.lanes ?? {}).sort()) !== JSON.stringify(expectedLanes)) throw new RunError('contract lanes must match reviewed work items; an amended split must preserve existing lane topology');
+      authorizeAmendment(run, contract);
+      run.harness.contract = contract;
+      run.harness.contractHash = hash(contract);
+      for (const lane of run.lanes) run.harness.bases[lane.slug] ??= gitText(gitStore(dir, run), 'rev-parse', `${lane.base}^{commit}`);
     }
     if (auto) {
       if (!run.auto) {
@@ -594,6 +634,12 @@ export function accept(dir, run, step, { evidence = null, auto = false, now = ()
   }
 
   step.stage.state = 'approved';
+  if (step.stage.id === PLAN_STAGE && run.harness?.pendingAmendment) {
+    const entry = run.harness.amendments.find((a) => a.id === run.harness.pendingAmendment.id);
+    entry.approvedContractHash = run.harness.contractHash;
+    entry.approvedAt = now();
+    delete run.harness.pendingAmendment;
+  }
   // The artifact's mtime is when the subagent finished; `approved` is when the
   // gate said yes. Keeping both apart is what lets the run report stage time
   // separately from review time instead of blaming the model for the wait.
@@ -700,6 +746,7 @@ export function markBriefed(dir, run, step, now = () => new Date().toISOString()
     at.briefed = at.briefed ?? now();
   }
   step.stage.at = at;
+  if (run.harness && step.lane && !run.harness.bases[step.lane.slug]) run.harness.bases[step.lane.slug] = gitText(gitStore(dir, run), 'rev-parse', `${step.lane.base}^{commit}`);
   saveRun(dir, run);
   return run;
 }
@@ -764,6 +811,7 @@ export function split(dir, run, items, { parallel = false } = {}) {
   );
   if (started) throw new RunError('cannot split a run whose implementation has delivered — its commits belong to no lane');
   if (items.length < 2) throw new RunError(`a split needs at least 2 work items, got ${items.length}`);
+  if (run.harness && hash(Object.keys(run.harness.contract?.lanes ?? {}).sort()) !== hash(items.map((i) => slugify(i.slug ?? i.title)).sort())) throw new RunError('strict split requires reviewed lane-specific criteria, scope and check assignments for every work item');
 
   const seen = new Set();
   const issue = { number: run.issue.number };

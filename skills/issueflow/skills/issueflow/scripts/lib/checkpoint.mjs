@@ -25,8 +25,10 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { addIssueComment, commentIdFromUrl, issueComments, updateIssueComment } from './gh.mjs';
+import { addIssueComment, commentIdFromUrl, issueComments, issueCommentsAll, updateIssueComment, viewerLogin } from './gh.mjs';
 import { artifactPath, board, gateSteps, saveRun } from './run.mjs';
+import { operation } from './operations.mjs';
+import { hash } from './contracts.mjs';
 
 /** How much artifact prose the sticky comment may carry, in characters. */
 const ARTIFACT_BUDGET = 20000;
@@ -190,9 +192,9 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
   // `run.auto` so the frozen (gated) golden stays byte-identical.
   const approvedBy = run.auto
     ? [
-        'Each stage below ran as its own subagent and was gated by an adversarial',
-        'red-team review — every blocking finding resolved before approval. This',
-        'comment is rewritten at every gate.',
+        'The plan requires an independent red-team review. Implementation has an',
+        'evidence gate; code review happens on the pull request. The board below',
+        'records completed gates. This comment is rewritten at every gate.',
       ]
     : [
         'Each stage below ran as its own subagent and was approved by a human before',
@@ -312,9 +314,15 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
  */
 function adoptComment(repoPath, run) {
   const mine = marker(run);
-  for (const c of issueComments(repoPath, run.issue.number)) {
+  const comments = run.harness ? issueCommentsAll(repoPath, run.repo.owner, run.repo.name, run.issue.number) : issueComments(repoPath, run.issue.number);
+  const viewer = run.harness ? viewerLogin(repoPath) : null;
+  for (const c of comments) {
+    if (run.checkpoint?.preservedComments?.includes(c.commentId)) continue;
     const body = String(c.body ?? '');
-    if (body.includes(mine) && !finishedIn(body) && c.commentId) return { commentId: c.commentId, url: c.url };
+    if (body.includes(mine) && !finishedIn(body) && c.commentId) {
+      if (run.harness && c.author !== viewer) throw new Error('checkpoint belongs to another author; preserve it and resolve ownership before writing');
+      return { commentId: c.commentId, url: c.url };
+    }
   }
   return null;
 }
@@ -329,12 +337,29 @@ function adoptComment(repoPath, run) {
 export function checkpoint(dir, run, { offline = false, push = true, comment = true } = {}) {
   if (run.execution) saveRun(dir, run);
   if (offline || run.offline) return [{ action: 'checkpoint', state: 'offline', detail: 'nothing sent' }];
+  if (run.harness) { run.checkpoint.pending = true; saveRun(dir, run); }
 
   const repoPath = run.repo.path;
   const rows = [];
 
   if (push) {
     for (const lane of run.lanes) {
+      if (run.harness) {
+        const store = gitStore(dir, run);
+        const branch = execFileSync('git', ['for-each-ref', '--format=%(refname)', `refs/heads/${lane.branch}`], { cwd: store, encoding: 'utf8' }).trim();
+        if (!branch) continue;
+        try {
+          const head = execFileSync('git', ['rev-parse', branch], { cwd: store, encoding: 'utf8', stdio: 'pipe' }).trim();
+          operation(dir, run, { kind: 'checkpoint-push', target: lane.branch, intent: { head }, retrySafe: true,
+            read: () => {
+              const remote = execFileSync('git', ['ls-remote', 'origin', branch], { cwd: store, encoding: 'utf8', stdio: 'pipe', timeout: 60000 }).trim().split(/\s+/)[0];
+              return remote === head ? { head } : null;
+            }, write: () => { const result = pushLane(store, lane); if (result.state !== 'pushed') throw new Error(result.detail ?? 'branch not pushed'); } });
+          run.checkpoint.pushed[lane.slug] = head;
+          rows.push({ action: `push ${lane.slug}`, state: 'pushed', detail: `origin/${lane.branch} @ ${head}` });
+        } catch (err) { rows.push({ action: `push ${lane.slug}`, state: 'failed', detail: String(err.message).split('\n')[0] }); }
+        continue;
+      }
       const result = pushLane(gitStore(dir, run), lane);
       if (result.state === 'pushed') {
         run.checkpoint.pushed[lane.slug] = result.sha;
@@ -354,13 +379,28 @@ export function checkpoint(dir, run, { offline = false, push = true, comment = t
           run.checkpoint.commentUrl = found.url;
         }
       }
-      const body = renderComment(dir, run);
+      const body = renderComment(dir, run) + (run.harness ? `\n<!-- issueflow:instance ${hash(run.createdAt)} -->\n` : '');
       const bodyFile = join(dir, 'checkpoint.md');
       mkdirSync(dir, { recursive: true });
       writeFileSync(bodyFile, body);
 
       let result;
-      if (run.checkpoint.commentId) {
+      if (run.harness) {
+        const viewer = viewerLogin(repoPath);
+        const target = `${run.repo.owner}/${run.repo.name}#${run.issue.number}`;
+        result = operation(dir, run, { kind: 'checkpoint-comment', target, intent: { bodyHash: hash(body) }, retrySafe: Boolean(run.checkpoint.commentId),
+          read: () => {
+            const matches = issueCommentsAll(repoPath, run.repo.owner, run.repo.name, run.issue.number).filter((c) => c.author === viewer && c.body?.trimEnd() === body.trimEnd() && (!run.checkpoint.commentId || c.commentId === run.checkpoint.commentId));
+            if (matches.length > 1) throw new Error('multiple checkpoint comments match; reconcile before writing');
+            return matches[0] ?? null;
+          }, write: () => {
+            if (run.checkpoint.commentId) {
+              const inputFile = join(dir, 'checkpoint.json'); writeFileSync(inputFile, JSON.stringify({ body }));
+              updateIssueComment(repoPath, { owner: run.repo.owner, name: run.repo.name, commentId: run.checkpoint.commentId, inputFile });
+            } else addIssueComment(repoPath, { number: run.issue.number, bodyFile });
+          } });
+        rows.push({ action: 'issue comment', state: 'confirmed', detail: result.url });
+      } else if (run.checkpoint.commentId) {
         const inputFile = join(dir, 'checkpoint.json');
         writeFileSync(inputFile, `${JSON.stringify({ body })}\n`);
         result = updateIssueComment(repoPath, {
@@ -378,6 +418,7 @@ export function checkpoint(dir, run, { offline = false, push = true, comment = t
     }
   }
 
+  if (run.harness) run.checkpoint.pending = rows.some((r) => r.state === 'failed');
   saveRun(dir, run);
   return rows.length > 0 ? rows : [{ action: 'checkpoint', state: 'nothing to send', detail: '—' }];
 }

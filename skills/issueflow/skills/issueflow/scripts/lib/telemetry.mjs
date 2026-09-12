@@ -7,6 +7,8 @@ import { activePath } from './execution.mjs';
 export const TELEMETRY_SCHEMA = 1;
 
 const digest = (value) => createHash('sha256').update(String(value)).digest('hex');
+// Do not coerce null, false, empty strings or malformed usage into measured zero.
+const measured = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 const safeRole = (value) => ['investigate', 'implement', 'redTeam', 'finder', 'verifier', 'fixer', 'fixerEscalated'].includes(value) ? value : 'unknown';
 const safeEffort = (value) => ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(value) ? value : 'unknown';
 const safePath = (value) => {
@@ -32,12 +34,13 @@ export function telemetryEvent(run, event, fields = {}, now = new Date().toISOSt
     }
     if (key === 'role') out.role = safeRole(value);
     else if (key === 'reasoning' || key === 'reasoningEffort') out.reasoningEffort = safeEffort(value);
-    else if (key === 'agentTimeMs' || key === 'wallTimeMs' || key === 'promptBytes' || key === 'artifactBytes' || key === 'retry' || key === 'queueOccupancy') out[key] = Number.isFinite(Number(value)) ? Number(value) : null;
-    else if (key === 'tokens') out.tokens = Number.isFinite(Number(value)) ? Number(value) : null;
+    else if (key === 'agentTimeMs' || key === 'wallTimeMs' || key === 'promptBytes' || key === 'artifactBytes' || key === 'retry' || key === 'queueOccupancy') out[key] = measured(value) ? value : null;
+    else if (key === 'tokens') out.tokens = measured(value) ? value : null;
     else if (key === 'files') out.files = Array.isArray(value) ? value.map(safePath).filter(Boolean).map(digest) : [];
     else if (key === 'success' || key === 'confirmed') out[key] = Boolean(value);
     else if (key === 'reason') out.reason = String(value).slice(0, 240);
     else if (key === 'unknown') out.unknown = Boolean(value);
+    else if (key === 'attemptId' && typeof value === 'string') out.attemptId = digest(value);
   }
   return out;
 }
@@ -64,14 +67,37 @@ export function readTelemetry(dir, run) {
   } catch { return []; }
 }
 
-export function summarizeTelemetry(events) {
+export function summarizeTelemetry(events, run = null) {
+  const seen = new Set();
+  events = events.filter((e) => {
+    if (!e.attemptId) return true;
+    const key = `${e.event}:${e.attemptId}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
   const workers = events.filter((e) => e.event === 'worker');
-  const durations = workers.map((e) => e.wallTimeMs).filter(Number.isFinite);
+  const durations = workers.map((e) => e.wallTimeMs).filter(measured);
   const total = durations.reduce((sum, n) => sum + n, 0);
+  // Earlier records may carry a coerced zero together with an explicit unknown
+  // marker. Preserve that marker when reading historical telemetry too.
+  const agentDurations = workers.filter((e) => e.unknown !== true).map((e) => e.agentTimeMs).filter(measured);
+  const agentTotal = agentDurations.reduce((sum, n) => sum + n, 0);
   const successful = workers.filter((e) => e.success === true).length;
+  const attempts = [...new Map([...(run?.harness?.attemptHistory ?? []), ...Object.values(run?.harness?.attempts ?? {})].map((a) => [a.id, a])).values()];
+  const native = attempts.filter((a) => a.native?.terminalAt).map((a) => a.native);
+  const tokenFields = ['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens'];
+  const usage = Object.fromEntries(tokenFields.map((field) => {
+    const known = native.map((n) => n.usage?.totals?.[field]).filter(measured);
+    const subtotal = known.reduce((a, b) => a + b, 0);
+    return [field, { total: native.length && native.length === attempts.length && known.length === native.length ? subtotal : null, knownSubtotal: subtotal, missingAttempts: attempts.length - known.length }];
+  }));
   const result = {
     schema: TELEMETRY_SCHEMA,
     events: events.length,
+    nativeObservedWorkers: native.length,
+    missingNativeObservations: attempts.length - native.length,
+    usage,
+    costUsd: null,
     workers: workers.length,
     successfulWorkers: successful,
     failedWorkers: workers.filter((e) => e.success === false).length,
@@ -79,9 +105,16 @@ export function summarizeTelemetry(events) {
     gateRefusals: events.filter((e) => e.event === 'gate-refusal').length,
     findingsProposed: events.filter((e) => e.event === 'finding' && e.confirmed !== true).length,
     findingsConfirmed: events.filter((e) => e.event === 'finding' && e.confirmed === true).length,
-    wallTimeMs: total,
-    agentTimeMs: workers.reduce((sum, e) => sum + (Number.isFinite(e.agentTimeMs) ? e.agentTimeMs : 0), 0),
-    unknownAgentTime: workers.some((e) => !Number.isFinite(e.agentTimeMs)),
+    // Worker intervals may overlap. They do not establish end-to-end elapsed time.
+    wallTimeMs: run?.finished && Number.isFinite(Date.parse(run.finished.at)) && Number.isFinite(Date.parse(run.createdAt))
+      ? Math.max(0, Date.parse(run.finished.at) - Date.parse(run.createdAt)) : null,
+    workerWallTimeMs: workers.length > 0 && durations.length === workers.length ? total : null,
+    knownWorkerWallTimeMs: total,
+    missingWorkerTimeSamples: workers.length - durations.length,
+    agentTimeMs: workers.length > 0 && agentDurations.length === workers.length ? agentTotal : null,
+    knownAgentTimeMs: agentTotal,
+    missingAgentTimeSamples: workers.length - agentDurations.length,
+    unknownAgentTime: workers.length === 0 || agentDurations.length !== workers.length,
   };
   return result;
 }

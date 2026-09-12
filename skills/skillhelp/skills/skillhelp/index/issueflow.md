@@ -9,43 +9,51 @@
 
 ## Setup
 
-- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:234`
-- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:235`
-- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:236`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:238`
-- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:240`
-- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:241`
-- **A git repo with a GitHub remote.** `skills/issueflow/README.md:243`
+- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:237`
+- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:238`
+- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:239`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:241`
+- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:243`
+- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:244`
+- **A git repo with a GitHub remote.** `skills/issueflow/README.md:246`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
-- Reads environment variable LC_ALL. `skills/issueflow/skills/issueflow/scripts/tests/durability.test.mjs:629`
-- Reads environment variable PATH. `skills/issueflow/skills/issueflow/scripts/tests/checkout-ownership.test.mjs:214`
+- Reads environment variable ISSUEFLOW_CLAUDE_BIN. `skills/issueflow/skills/issueflow/scripts/tests/execution.test.mjs:49`
+- Reads environment variable ISSUEFLOW_FAKE_GH_ROOT. `skills/issueflow/skills/issueflow/scripts/tests/fixtures/harness-gh.cjs:4`
+- Reads environment variable ISSUEFLOW_HARNESS_KEEP. `skills/issueflow/skills/issueflow/scripts/tests/harness-lifecycle.test.mjs:36`
+- Reads environment variable ISSUEFLOW_HARNESS_SOURCE. `skills/issueflow/skills/issueflow/scripts/tests/harness-lifecycle.test.mjs:16`
 
 ## Usage
 
 - Triggers on: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "tak… `skills/issueflow/skills/issueflow/SKILL.md:3`
 - An agent that takes an issue and hands back a pull request is easy to build and hard to trust: the stages run to completion, and the first thing a human sees is a diff nobody chose. issueflow inverts… `skills/issueflow/README.md:15`
 - **The plan is attacked before any code exists.** One high-capability subagent investigates and plans in a single document: root cause, evidence, unknowns, the approach and what was rejected, the file… `skills/issueflow/README.md:20`
-- **The implementation proves itself, mechanically.** One implementation subagent per lane makes the change and writes the test, and accept reads the whole evidence file: no failing run before the pass… `skills/issueflow/README.md:29`
-- **Then the review loop, on the pull request.** The pull request opens as a draft. Round 1 reviews the change: one to five efficient finders, sized by semantic review load — each dealt angles from ref… `skills/issueflow/README.md:35`
-- The plan red team follows the same bounded principle: three blocked rounds stop the autonomous loop, and one user-directed recovery round is the absolute final attempt. Further overrides are refused… `skills/issueflow/README.md:52`
-- **One command drives all of it.** next performs every deterministic step it can and prints exactly one thing to do: a dispatch with the wait line that tells you when it is done, a wait, or a stop nam… `skills/issueflow/README.md:57`
-- One pull request per issue is the default. A plan may split genuinely large, independently reviewable work into stacked pull requests, reviewed bottom first. `skills/issueflow/README.md:65`
-- Path — What it provides `skills/issueflow/README.md:70`
-- skills/issueflow/SKILL.md — What the agent reads: triggers, the flow, and the one rule. `skills/issueflow/README.md:72`
-- skills/issueflow/scripts/ — The deterministic half — next, board, start, brief, accept, review, split, ship, the six review-* round commands, ready, status, runs, finish. `skills/issueflow/README.md:73`
-- skills/issueflow/references/review-method.md — The review loop's angle catalogue, the verifier's contract, the severity definitions and the fixer's rule — the source every review brief is rendered fr… `skills/issueflow/README.md:74`
+- **The controller verifies the implementation.** New runs approve a machine-readable task contract, then execute every required check themselves. Regression assertions run unchanged against the base a… `skills/issueflow/README.md:29`
+- **Then the review loop, on the pull request.** The pull request opens as a draft. Round 1 reviews the change: one to five efficient finders, sized by semantic review load — each dealt angles from ref… `skills/issueflow/README.md:37`
+- The plan red team follows the same bounded principle: three blocked rounds stop the autonomous loop, and one user-directed recovery round is the absolute final attempt. Further overrides are refused… `skills/issueflow/README.md:54`
+- **One command drives all of it.** next performs every deterministic step it can and prints exactly one thing to do: a dispatch with the wait line that tells you when it is done, a wait, or a stop nam… `skills/issueflow/README.md:59`
+- One pull request per issue is the default. A plan may split genuinely large, independently reviewable work into stacked pull requests, reviewed bottom first. `skills/issueflow/README.md:67`
+- Path — What it provides `skills/issueflow/README.md:72`
+- skills/issueflow/SKILL.md — What the agent reads: triggers, the flow, and the one rule. `skills/issueflow/README.md:74`
+- skills/issueflow/scripts/ — The deterministic half — next, board, start, brief, accept, review, split, ship, the six review-* round commands, ready, status, runs, finish. `skills/issueflow/README.md:75`
+- skills/issueflow/references/review-method.md — The review loop's angle catalogue, the verifier's contract, the severity definitions and the fixer's rule — the source every review brief is rendered fr… `skills/issueflow/README.md:76`
 
 ## Commands
 
-- node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:50`
-- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> `skills/issueflow/skills/issueflow/SKILL.md:51`
-- node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:52`
-- node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:53`
-- node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800 `skills/issueflow/skills/issueflow/SKILL.md:59`
-- npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:40`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:42`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issueflow/skills/issueflow/package.json:41`
+- node "$SKILL_DIR/scripts/issueflow.js" board --repo <path> `skills/issueflow/skills/issueflow/SKILL.md:54`
+- node "$SKILL_DIR/scripts/issueflow.js" start --repo <path> --issue <n> --runtime codex --workspace-root <approved-root> `skills/issueflow/skills/issueflow/SKILL.md:55`
+- node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:56`
+- node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:57`
+- node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800 `skills/issueflow/skills/issueflow/SKILL.md:63`
+- node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:270`
+- node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:271`
+- node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:272`
+- npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:43`
+- npm run eval:harness — node evals/harness.mjs run --mode offline `skills/issueflow/skills/issueflow/package.json:40`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:45`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issueflow/skills/issueflow/package.json:44`
 - npm run test — node --test "scripts/**/*.test.mjs" `skills/issueflow/skills/issueflow/package.json:39`
+- npm run test:native:claude — ISSUEFLOW_NATIVE_HOST=claude node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:42`
+- npm run test:native:codex — ISSUEFLOW_NATIVE_HOST=codex node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:41`
 - Binary "issueflow" → scripts/issueflow.js `skills/issueflow/skills/issueflow/package.json:24`
 
 ## Architecture

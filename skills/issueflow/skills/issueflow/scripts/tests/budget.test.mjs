@@ -192,8 +192,10 @@ for (const runtime of ['claude', 'codex']) {
     const result = cli(dir, ['resume', '--budget-seconds', '1800']);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const after = loadRun(dir);
-    const { budgetRenewals, ...unchanged } = after;
-    assert.deepEqual(unchanged, before);
+    const { budgetRenewals, revision, ...unchanged } = after;
+    const { revision: previousRevision, ...previous } = before;
+    assert.deepEqual(unchanged, previous);
+    assert.equal(revision, previousRevision + 1, 'one renewal is one durable state transition');
     assert.equal(budgetRenewals.length, 1);
     assert.equal(budgetRenewals[0].budgetSeconds, 1800);
     assert.ok(Date.parse(budgetRenewals[0].at) >= start && Date.parse(budgetRenewals[0].at) <= Date.now());

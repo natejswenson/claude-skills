@@ -26,11 +26,13 @@ findings only count once the registrar has checked every citation resolves.
 The registered, hash-bound red-team pass approves the plan automatically.
 Use `--review-plan` only when you explicitly want one human plan gate.
 
-**The implementation proves itself, mechanically.** One implementation subagent per lane
-makes the change and writes the test, and `accept` reads the whole evidence
-file: no failing run before the passing one, or a red that is only an import
-error, and the stage goes back. A tree with uncommitted work goes back too —
-the pull request is opened from the commits.
+**The controller verifies the implementation.** New runs approve a machine-readable
+task contract, then execute every required check themselves. Regression assertions
+run unchanged against the base and fixed code; import errors, zero tests, actual
+nonzero exits, missing required checks, and stale receipts cannot establish success.
+Legacy runs retain their historical text-evidence strength. See the
+[strict harness contract](skills/issueflow/references/harness.md) for recovery and
+the explicit limits of this local trust boundary.
 
 **Then the review loop, on the pull request.** The pull request opens as a
 draft. Round 1 reviews the change: one to five efficient finders, sized by semantic
@@ -189,7 +191,8 @@ On explicit user direction to extend the budget:
 node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800
 ```
 
-Default runs never auto-renew. The manual command grants 1,800 seconds from
+Autonomous runs renew windows within the original cumulative cap; manual runs
+never auto-renew. The manual command grants 1,800 seconds from
 resume time, preserves artifacts,
 commits, gates, runtime and checkpoint identity, and prints the next command
 without dispatching work. Review limits stay unchanged. It rejects
@@ -252,6 +255,31 @@ npm test
 Node skill. `ci / issueflow` runs the same tests plus the house lints on
 every pull request, and `skillfactory verify --skill issueflow` reports which rung
 of the ladder it has reached.
+
+The ordinary suite is offline. Native execution uses explicit smoke tests:
+`npm run test:native:codex` or `npm run test:native:claude`. Each requires its authenticated CLI and may
+use model credits; an unavailable CLI fails that smoke instead of falling back.
+The shell-based ordinary fixture verifies filesystem/Git behavior, not native host
+compatibility.
+
+The foundation evaluator captures an immutable source snapshot, real command
+outputs, and independent outcome checks. From the same skill directory, use new
+output directories outside the skill source:
+
+```bash
+node evals/harness.mjs baseline --ref <commit> --out <new-output-directory>
+node evals/harness.mjs run --mode offline --out <different-new-output-directory>
+node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json
+```
+
+Exit codes are `0` for passing selected cases, `1` for failed cases, and `2` for
+inconclusive or invalid evaluation. Capturing a known-bad baseline returns `1` and
+retains its failures. `--cases E01,C01` selects cases; reports always name omitted
+cases and broader capabilities not covered. Offline timing is not live-agent
+performance. The native campaign and W01–W06 speed comparison remain future work;
+requesting native mode fails explicitly. The evaluator itself is covered by
+`npm test`; the scorecard distinguishes these foundation cases from the separate
+receipt/recovery tests and unfinished broader campaign. No speedup is claimed.
 
 ## Changelog
 

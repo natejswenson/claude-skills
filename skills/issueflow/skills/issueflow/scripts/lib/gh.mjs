@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 
 const run = (args, cwd) =>
-  execFileSync('gh', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 });
+  execFileSync('gh', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000, maxBuffer: 32 * 1024 * 1024 });
 
 export class GhError extends Error {}
 
@@ -120,6 +120,14 @@ export function issueComments(cwd, number) {
   return (JSON.parse(raw).comments ?? []).map((c) => ({ ...c, commentId: commentIdFromUrl(c.url) }));
 }
 
+/** Full REST pagination; partial comment inventories cannot prove absence. */
+export function issueCommentsAll(cwd, owner, name, number) {
+  const pages = JSON.parse(gh(['api', `repos/${owner}/${name}/issues/${number}/comments?per_page=100`, '--paginate', '--slurp'], cwd));
+  if (!Array.isArray(pages) || pages.some((p) => !Array.isArray(p))) throw new GhError('incomplete issue comment pagination');
+  return pages.flat().map((c) => ({ body: c.body, commentId: c.id, url: c.html_url, author: c.user?.login }));
+}
+export const viewerLogin = (cwd) => gh(['api', 'user', '--jq', '.login'], cwd).trim();
+
 /** Post the run's sticky comment for the first time. Returns its id and URL. */
 export function addIssueComment(cwd, { number, bodyFile }) {
   const url = gh(['issue', 'comment', String(number), '--body-file', bodyFile], cwd)
@@ -159,8 +167,12 @@ export function updateIssueComment(cwd, { owner, name, commentId, inputFile }) {
 
 /** The pull request the loop reviews: node id for GraphQL, head sha for binding, draft state. */
 export function prView(cwd, number) {
-  const raw = gh(['pr', 'view', String(number), '--json', 'id,number,url,headRefOid,headRefName,baseRefName,isDraft,title,state'], cwd);
+  const raw = gh(['pr', 'view', String(number), '--json', 'id,number,url,headRefOid,headRefName,baseRefName,isDraft,title,state,labels'], cwd);
   return JSON.parse(raw);
+}
+
+export function prOperationView(cwd, number) {
+  return JSON.parse(gh(['pr', 'view', String(number), '--json', 'number,url,body,headRefOid,headRefName,baseRefName,isDraft,state'], cwd));
 }
 
 /**

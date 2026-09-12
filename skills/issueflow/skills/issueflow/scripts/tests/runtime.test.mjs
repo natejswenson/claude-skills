@@ -426,7 +426,8 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.runtime, 'codex');
   assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
-  assert.match(output, /Auto run: every stage is gated by a red-team review instead of a human/);
+  assert.match(output, /Auto run: the plan has independent red-team review; implementation has an evidence gate/);
+  assert.doesNotMatch(output, /every stage is gated by a red-team review/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
   const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8' });
   assert.match(next, /model override omitted.*reasoning_effort `high`.*role `worker`.*fork_turns `none`/);

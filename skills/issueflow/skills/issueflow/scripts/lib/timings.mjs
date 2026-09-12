@@ -76,7 +76,7 @@ export function readTimings(runDir) {
     // are still real durations of this repo's own stages — the three frozen
     // runs the expectation line was measured against are schema 2. Schema 1
     // predates `at` and is skipped.
-    if (![2, SCHEMA].includes(run?.schema)) continue;
+    if (![2, 3, SCHEMA].includes(run?.schema)) continue;
 
     let samples;
     try {
