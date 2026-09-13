@@ -42,7 +42,7 @@
 - detect --repo <path> [--main <name>] [--dev <name>] — Inspect live repo state: branch protection, CI checks, release conventions `skills/shipflow/README.md:128`
 - plan --repo <path> — Diff .github/shipflow.json against live state; prints what would change plus a state hash `skills/shipflow/README.md:129`
 - apply --repo <path> --expect-state-hash <hash> [--dry-run] [--force <id> --force-reason <text>] — Apply a confirmed plan `skills/shipflow/README.md:130`
-- releases --repo <path> — List dev → main promotions still labeled release-pending `skills/shipflow/README.md:131`
+- releases --repo <path> — List merged main PR reminders (mergedPrs for GitHub flow, promotions for legacy consumers) `skills/shipflow/README.md:131`
 - release-dispatch --repo <path> --pr <n> --workflow-file <f>... --ref <ref> — Dispatch each changed skill's release workflow; clear the label on success `skills/shipflow/README.md:132`
 - rename-default-branch --repo <path> --branch <old> --to <new> — One-time bootstrap: rename a repo's default branch `skills/shipflow/README.md:133`
 - Every command prints JSON to stdout. `skills/shipflow/README.md:135`
@@ -53,9 +53,9 @@
 - npx -y @natjswenson/shipflow@latest apply --repo <path> --expect-state-hash <hash-from-step-8> `skills/shipflow/skills/shipflow/SKILL.md:131`
 - npx -y @natjswenson/shipflow@latest releases --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:147`
 - npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main `skills/shipflow/skills/shipflow/SKILL.md:155`
-- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:176`
-- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:206`
-- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:217`
+- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:194`
+- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:224`
+- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:235`
 - npx -y @natjswenson/shipflow@latest detect --repo . --main main --dev dev `skills/shipflow/README.md:64`
 - npm run audit — npm audit --audit-level=moderate `skills/shipflow/skills/shipflow/package.json:44`
 

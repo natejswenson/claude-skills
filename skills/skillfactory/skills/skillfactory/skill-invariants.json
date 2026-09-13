@@ -35,9 +35,9 @@
       "rationale": "press's `<name>-readme` target anchors its masthead on `^# <name>$`. A decorated H1 does not error \u2014 it detaches the region silently, and the next `press emit --init` splices a SECOND masthead below the first. Nothing but a rendered page shows that, so the rule has to survive as prose."
     },
     {
-      "id": "never-pr-into-main",
-      "pattern": "Never open a PR into `main`",
-      "rationale": "The only path to main is a dev -> main promotion. A feature PR against main bypasses the integration branch and, because releases here are publish-on-merge, can cut a tag from an unreviewed state."
+      "id": "follow-target-branch-policy",
+      "pattern": "Follow the target repository branch policy",
+      "rationale": "Explicit GitHub flow sends features directly to configured main; legacy two-branch consumers retain their integration base. Caller generation must preserve stack CI and dispatch-only releases for both patterns."
     },
     {
       "id": "never-weaken-a-check",

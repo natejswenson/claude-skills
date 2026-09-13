@@ -117,7 +117,7 @@ detection is ambiguous or the repo is greenfield.
 3. **`shipflow apply`** — only after you confirm — renders the resolved pattern's
    workflow files and makes the confirmed mutations. Nothing happens outside what
    the plan showed.
-4. Ongoing: promotions auto-merge once required checks pass; a durable
+4. Ongoing: eligible PRs auto-merge once required checks pass; a durable
    `release-pending` label survives the async gap until a later
    `shipflow releases` check asks whether to cut a release.
 
@@ -128,7 +128,7 @@ detection is ambiguous or the repo is greenfield.
 | `detect --repo <path> [--main <name>] [--dev <name>]` | Inspect live repo state: branch protection, CI checks, release conventions |
 | `plan --repo <path>` | Diff `.github/shipflow.json` against live state; prints what would change plus a state hash |
 | `apply --repo <path> --expect-state-hash <hash> [--dry-run] [--force <id> --force-reason <text>]` | Apply a confirmed plan |
-| `releases --repo <path>` | List `dev → main` promotions still labeled `release-pending` |
+| `releases --repo <path>` | List merged main PR reminders (`mergedPrs` for GitHub flow, `promotions` for legacy consumers) |
 | `release-dispatch --repo <path> --pr <n> --workflow-file <f>... --ref <ref>` | Dispatch each changed skill's release workflow; clear the label on success |
 | `rename-default-branch --repo <path> --branch <old> --to <new>` | One-time bootstrap: rename a repo's default branch |
 
@@ -172,3 +172,10 @@ See [`CHANGELOG.md`](CHANGELOG.md). Releases are cut by a version bump, tagged
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
+
+Component releases honor the selected branch pattern. GitHub flow prepares and
+merges its version/changelog PR directly into configured main; two-branch repos
+retain promotion. `release-status` discovers pending components without labels.
+`release-cut --version <x.y.z>` checks required CI, verifies the intended version
+and notes on fetched main, explicitly dispatches one workflow, and proves the
+remote tag. A merge or push alone does not release a component.

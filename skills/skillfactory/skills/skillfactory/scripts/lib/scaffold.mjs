@@ -161,7 +161,7 @@ export function planEdits(spec, house) {
 
 export function planScaffold(spec, house, { today, pins }) {
   return {
-    files: [...planFiles(spec, today, house.marketplaceName), file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins))],
+    files: [...planFiles(spec, today, house.marketplaceName), file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins, house.branchPolicy))],
     edits: planEdits(spec, house),
   };
 }

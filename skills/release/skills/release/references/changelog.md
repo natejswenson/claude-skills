@@ -68,7 +68,7 @@ typed. A release note says what changed for the reader.
 **The version bump and its CHANGELOG entry land in the same change.** `_release.yml`
 reads the notes off whatever is on `main` at the moment the release is dispatched,
 and skips a tag that already exists. So a CHANGELOG entry that arrives in a later
-promotion than its version bump is notes the release will never carry, and no
+change than its version bump is notes the release will never carry, and no
 retry fixes it — the tag is already there, so the workflow no-ops. Repairing it
 afterwards means `gh release edit <tag> --notes-file`, because re-cutting means
 deleting a published tag, which is worse.
