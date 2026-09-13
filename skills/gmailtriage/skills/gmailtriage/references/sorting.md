@@ -23,10 +23,14 @@ A `label` rule performs both, unless it says `keepInInbox: true`.
   "id": "sort-chase",
   "action": "label",
   "label": "Finance/Chase",
-  "match": { "from": "@chase.com" },
+  "match": { "fromDomain": "chase.com" },
   "note": "statements and alerts — read monthly, not daily"
 }
 ```
+
+`fromDomain` selects only that exact domain; subdomains need separate rules.
+Use `fromAddress` for one mailbox. Existing `from` rules remain substrings,
+including display names. See `rules.md` for the supported sender grammar.
 
 `Parent/Child` is how Gmail nests. The `/` is part of the name, not a path
 separator the skill invents — `Finance/Chase` and `Chase` are two different
@@ -173,7 +177,7 @@ before a rule can be built:
   "id": "sort-recruiting-northwind",
   "action": "label",
   "label": "Recruiting/Northwind",
-  "match": { "from": "@ashbyhq.com", "subjectContains": "Northwind" },
+  "match": { "fromDomain": "ashbyhq.com", "subjectContains": "Northwind" },
   "note": "Ashby hosts many employers, so the subject is what names this one"
 }
 ```

@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
-import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
+import { normalizeSearchThreads, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
@@ -306,7 +306,10 @@ async function cmdPropose(args) {
       withheld.slice(0, Number(args.showWithheld ?? 8)).map((w) => [w.from, w.count, w.why])));
     // State the real count. "most of these can still be sorted" is a claim,
     // and when it is 2 of 16 it is a wrong one.
-    console.log(`withheld from TRASHING, not from sorting — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
+    const withholding = withheld.some((w) => w.kind === 'uncertain-sender')
+      ? 'uncertain senders are withheld from both trashing and sorting'
+      : 'withheld from TRASHING, not from sorting';
+    console.log(`${withholding} — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
   }
 
   console.log('');
@@ -1105,12 +1108,23 @@ async function cmdIngest(args) {
 
   const inbox = normalizeSearchThreads(readJson(args.inbox, 'ingest: --inbox'), '--inbox');
   const nolabel = args.nolabel ? normalizeSearchThreads(readJson(args.nolabel, 'ingest: --nolabel'), '--nolabel') : [];
-  const promoIds = args.promos ? threadIds(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
-  const updateIds = args.updates ? threadIds(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
+  const promos = args.promos ? normalizeSearchThreads(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
+  const updates = args.updates ? normalizeSearchThreads(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
   const merged = mergeThreadSources(inbox, nolabel);
-  const threads = applyCategories(merged, promoIds, updateIds);
+  const selectedSenders = new Map(merged.map((t) => [t.id, t.from]));
+  // Category fetches establish membership without expanding scope, but any
+  // sender evidence they supply must still constrain exact sender selection.
+  const categorySenders = [...promos, ...updates].filter((t) => selectedSenders.has(t.id))
+    .map((t) => ({ id: t.id, from: t.from,
+      ...(t.senderAmbiguous ? { senderAmbiguous: true } : {}) }));
+  // Category evidence may withhold an exact match, but must not fill a missing
+  // selected sender and thereby change legacy matching or ingest validation.
+  const withSenderEvidence = mergeThreadSources(merged, categorySenders)
+    .map((t) => ({ ...t, from: selectedSenders.get(t.id) }));
+  const threads = applyCategories(withSenderEvidence,
+    promos.map((t) => t.id), updates.map((t) => t.id));
 
   console.log(table(['Source', 'Threads', 'New'], [
     ['in:inbox', inbox.length, inbox.length],

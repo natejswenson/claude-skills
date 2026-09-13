@@ -13,6 +13,7 @@
  */
 
 import { resolveCategory, isBulkCategory } from './category.mjs';
+import { parseAddress, parseDomain, resolveSender } from './sender.mjs';
 
 export const ACTIONS = ['trash', 'label', 'keep'];
 
@@ -149,7 +150,9 @@ export const isAncestorLabel = (parent, child) => {
 
 /** Every matcher a rule may declare. Anything else is a typo, not a feature. */
 export const FIELDS = [
-  'from',            // substring or @domain
+  'from',            // legacy substring, including display names
+  'fromAddress',     // exact parsed mailbox
+  'fromDomain',      // exact parsed domain (no implicit subdomains)
   'list',            // List-Id / mailing list
   'subjectContains',
   'category',        // promotions | social | updates | forums
@@ -247,6 +250,15 @@ export function validateRule(rule, where = 'rule') {
       throw new RuleProblem(`${w}: unknown match field "${k}" — a typo here is a rule that never fires; known fields are ${FIELDS.join(', ')}`);
     }
   }
+  const senderFields = ['from', 'fromAddress', 'fromDomain'].filter((f) => Object.hasOwn(rule.match, f));
+  if (senderFields.length > 1) {
+    throw new RuleProblem(`${w}: choose only one of from, fromAddress or fromDomain — sender modes are mutually exclusive`);
+  }
+  for (const [field, parse] of [['fromAddress', parseAddress], ['fromDomain', parseDomain]]) {
+    if (Object.hasOwn(rule.match, field) && !parse(rule.match[field])) {
+      throw new RuleProblem(`${w}: ${field} must be a valid bare ${field === 'fromAddress' ? 'mailbox address' : 'domain (no @ or wildcard)'} — see references/rules.md for supported syntax`);
+    }
+  }
   const named = assertConstrained(rule.match, w);
 
   if (rule.match.category !== undefined && !CATEGORIES.includes(rule.match.category)) {
@@ -281,6 +293,42 @@ export function validateRule(rule, where = 'rule') {
 export const archives = (rule) => rule.action === 'label' && rule.keepInInbox !== true;
 
 const str = (v) => String(v ?? '').trim().toLowerCase();
+// Legacy needles preserve whitespace just as matches() does.
+const needle = (v) => String(v ?? '').toLowerCase();
+const senderFields = ['from', 'fromAddress', 'fromDomain'];
+const hasSender = (m) => senderFields.some((f) => m[f] !== undefined);
+
+function senderSubsumes(a, b) {
+  if (a.from !== undefined) {
+    const guaranteed = b.from !== undefined ? needle(b.from)
+      : b.fromAddress !== undefined ? parseAddress(b.fromAddress)?.address
+        : b.fromDomain !== undefined ? '@' + (parseDomain(b.fromDomain) ?? '') : null;
+    return guaranteed != null && guaranteed.includes(needle(a.from));
+  }
+  if (a.fromAddress !== undefined) {
+    const address = parseAddress(a.fromAddress)?.address;
+    return !!address && address === parseAddress(b.fromAddress)?.address;
+  }
+  if (a.fromDomain !== undefined) {
+    const domain = parseDomain(a.fromDomain);
+    return !!domain && domain === (b.fromDomain !== undefined
+      ? parseDomain(b.fromDomain) : parseAddress(b.fromAddress)?.domain);
+  }
+  return true;
+}
+
+function senderOverlap(a, b) {
+  if (!hasSender(a) || !hasSender(b)) return false;
+  // Legacy substrings may coexist in display-name text even when neither
+  // implies the other. Preserve the historical trimmed-needle warning.
+  if (a.from !== undefined && b.from !== undefined) {
+    return str(a.from).includes(str(b.from)) || str(b.from).includes(str(a.from));
+  }
+  // An arbitrary display name can satisfy the substring alongside any exact
+  // mailbox/domain; implication is intentionally stricter than possible overlap.
+  if (a.from !== undefined || b.from !== undefined) return true;
+  return senderSubsumes(a, b) || senderSubsumes(b, a);
+}
 
 /**
  * Does `a` take every thread `b` would? Answered from the matchers alone.
@@ -300,7 +348,8 @@ const str = (v) => String(v ?? '').trim().toLowerCase();
 export function subsumes(a, b) {
   const A = a?.match ?? {};
   const B = b?.match ?? {};
-  for (const f of ['from', 'list', 'subjectContains']) {
+  if (!senderSubsumes(A, B)) return false;
+  for (const f of ['list', 'subjectContains']) {
     if (A[f] === undefined) continue;
     // `matches` does `haystack.includes(needle)`, so a's needle must be inside
     // b's for every thread b accepts to have already satisfied a.
@@ -374,24 +423,20 @@ export function lintRuleSet(rules = []) {
   const warnings = [];
   for (const r of rules) {
     const f = r?.match?.from;
-    if (typeof f === 'string' && f.trim() !== '' && !f.includes('@')) {
+    if (typeof f === 'string' && f.trim() !== '') {
       warnings.push({
-        ruleId: r.id, kind: 'bare-domain-from',
-        text: `from "${f}" is a bare substring — it also matches lookalike domains ("${f.trim()}.evil.example"). Anchor it with "@${f.trim()}" if it is a domain.`,
+        ruleId: r.id, kind: f.includes('@') ? 'substring-from' : 'bare-domain-from',
+        text: `from "${f}" is a substring of the full sender, including display names and lookalikes; an @ prefix is not an exact boundary. Choose fromAddress for one mailbox or fromDomain for one exact domain; saved from rules are unchanged.`,
       });
     }
   }
   for (let i = 0; i < rules.length; i += 1) {
     const a = rules[i];
     if (a?.action !== 'trash') continue;
-    const af = str(a.match?.from);
-    if (!af) continue;
     for (let j = i + 1; j < rules.length; j += 1) {
       const b = rules[j];
       if (b?.action !== 'label') continue;
-      const bf = str(b.match?.from);
-      if (!bf) continue;
-      if (af.includes(bf) || bf.includes(af)) {
+      if (senderOverlap(a.match ?? {}, b.match ?? {})) {
         warnings.push({
           ruleId: a.id, kind: 'trash-shadows-sort', otherId: b.id,
           text: `trash rule ahead of sort rule "${b.id}" for the same sender — the order is load-bearing: reordering the file, or broadening this match, would trash mail "${b.id}" deliberately files.`,
@@ -516,6 +561,10 @@ export function toGmailQuery(rule, { scope = DEFAULT_SCOPE } = {}) {
   const m = rule.match ?? {};
   const parts = [];
   if (m.from) parts.push(`from:${quote(m.from)}`);
+  // Gmail sender search is candidate retrieval, never proof of equality.
+  // A validated hostname is safe even when the local part contains query syntax.
+  const senderDomain = m.fromAddress !== undefined ? parseAddress(m.fromAddress)?.domain : parseDomain(m.fromDomain);
+  if (senderDomain) parts.push(`from:${senderDomain}`);
   if (m.list) parts.push(`list:${quote(m.list)}`);
   if (m.subjectContains) parts.push(`subject:${quote(m.subjectContains)}`);
   if (m.category) parts.push(`category:${m.category}`);
@@ -549,6 +598,12 @@ export function matches(rule, thread, now = new Date(), { ignoreFiled = false } 
   const subject = String(thread.subject ?? '').toLowerCase();
 
   if (m.from && !from.includes(String(m.from).toLowerCase())) return false;
+  if (Object.hasOwn(m, 'fromAddress') || Object.hasOwn(m, 'fromDomain')) {
+    const sender = resolveSender(thread);
+    if (!sender.address) return false;
+    if (Object.hasOwn(m, 'fromAddress') && sender.address !== parseAddress(m.fromAddress)?.address) return false;
+    if (Object.hasOwn(m, 'fromDomain') && sender.domain !== parseDomain(m.fromDomain)) return false;
+  }
   if (m.list && !String(thread.list ?? '').toLowerCase().includes(String(m.list).toLowerCase())) return false;
   if (m.subjectContains && !subject.includes(String(m.subjectContains).toLowerCase())) return false;
   if (m.category || m.hasUnsubscribe) {

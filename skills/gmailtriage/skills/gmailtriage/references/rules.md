@@ -8,7 +8,7 @@ sentence cannot be re-read next month to explain why something vanished.
 {
   "id": "support-npmjs-com",
   "action": "trash",
-  "match": { "from": "support@npmjs.com", "hasUnsubscribe": true },
+  "match": { "fromAddress": "support@npmjs.com", "hasUnsubscribe": true },
   "note": "publish notifications — 9 in the sample"
 }
 ```
@@ -18,7 +18,7 @@ sentence cannot be re-read next month to explain why something vanished.
   "id": "sort-chase",
   "action": "label",
   "label": "Finance/Chase",
-  "match": { "from": "@chase.com" },
+  "match": { "fromDomain": "chase.com" },
   "note": "statements and alerts — read monthly, not daily"
 }
 ```
@@ -29,7 +29,7 @@ sentence cannot be re-read next month to explain why something vanished.
 | `action` | `trash`, `label` (needs `label`), or `keep` |
 | `label` | **label rules only.** The destination folder. `Parent/Child` nests. See `sorting.md` |
 | `keepInInbox` | **label rules only**, default `false`. `true` tags the thread and leaves it in the inbox instead of moving it |
-| `match` | at least one of `from`, `list`, `subjectContains`, `category`, `olderThanDays`, `hasUnsubscribe` |
+| `match` | at least one of `from`, `fromAddress`, `fromDomain`, `list`, `subjectContains`, `category`, `olderThanDays`, `hasUnsubscribe` |
 | `note` | what it is meant to catch. Required — a rule nobody can interpret is a rule nobody will dare edit |
 
 **A label rule archives by default.** "Move it to a folder" is what a person
@@ -41,12 +41,54 @@ automatically for any cluster that ever delivered a code or a receipt.
 else matched it, and the first matching action rule owns a thread so attribution
 is never ambiguous.
 
+## Sender modes
+
+Choose at most one sender matcher; other fields still combine with it using AND.
+
+| Matcher | Meaning |
+|---|---|
+| `from` | Legacy case-insensitive substring of the entire sender string, including display-name text. Saved rules keep this behavior without migration |
+| `fromAddress` | One exact parsed mailbox, e.g. `offers@shop.example`, regardless of display name or address case |
+| `fromDomain` | One exact parsed domain, e.g. `shop.example`. Subdomains such as `news.shop.example` need their own explicit rule |
+
+An `@` prefix does not make `from` exact: `@shop.example` also matches
+`offers@shop.example.evil.example` and a display name containing that text.
+Even `from: "offers@shop.example"` is a substring. Lint warns about every legacy
+sender rule and suggests the two exact alternatives. Change saved rules only
+when the user explicitly chooses to; newly generated single-sender proposals use
+`fromAddress`, and subdivision proposals use `fromDomain`.
+
+Exact rule values must be bare addresses/domains. Surrounding whitespace is
+trimmed and comparison is case-insensitive; validation does not rewrite the
+stored value. The conservative parser accepts an ASCII dot-atom mailbox (including
+ordinary `+` tags) with hostname labels, or one complete optional display name
+followed by `<mailbox>`. Quoted display names may contain commas and escaped
+printable characters. Unquoted names cannot contain mailbox structural punctuation.
+Multiple addresses, comments, unmatched quotes/brackets, trailing tokens, controls,
+internal address whitespace, invalid dots/hostname labels, quoted local parts,
+domain literals and internationalized addresses are unsupported and cannot match.
+The parser reads the whole field and never extracts a plausible address suffix.
+
+Ingest keeps the historical first-message sender and first nonmissing source's
+raw `from` text. Malformed supplied senders, conflicting duplicate mailbox
+addresses, or any supplied `senderAmbiguous` marker retain a bounded
+`senderAmbiguous: true` marker through normalization, merge and final snapshots.
+Agreeing addresses with different display names/case do not conflict; missing
+data alone contributes no competing sender. A malformed persisted marker also
+fails closed. Exact matching and proposal grouping skip uncertain senders, and
+re-ingestion cannot erase uncertainty. Legacy `from` still reads the retained
+raw text.
+
+Exact selection describes an address, **not sender authentication**: it does not
+check SPF, DKIM or DMARC.
+
 ## What validation refuses, and why
 
 | Refused | Because |
 |---|---|
 | a match naming no field | it would take the entire mailbox |
 | `trash` constrained only by `olderThanDays` | that is every old message you have — pair it with a sender, list or category |
+| more than one of `from`, `fromAddress`, `fromDomain`, or an invalid exact value | sender modes are mutually exclusive and exact values must satisfy the supported grammar |
 | an unknown match field | a typo is a rule that silently never fires |
 | an unknown rule key | `keepInbox` for `keepInInbox` reads as "leave it alone" and does the opposite, with nothing saying so |
 | `from`/`list`/`subjectContains` under 2 characters | a one-character match is an accident |
@@ -68,7 +110,7 @@ file, let alone a plan.
 by a broader one is dead. Detecting that needs an implication test rather than
 an equality test: `{from: "acme.example"}` takes everything
 `{from: "careers@jobs.acme.example", subjectContains: "code"}` would, because
-matching is substring containment.
+legacy `from` matching is substring containment.
 
 Two tiers, because the two cases cost differently:
 
@@ -93,6 +135,12 @@ not there, because a rule wrongly declared dead is a rule someone deletes.
 `@acme.example` is **not** a substring of `careers@jobs.acme.example`, so those two
 are unrelated as far as this check is concerned, and a `trash` rule for codes
 `olderThanDays: 7` does not shadow the `label` rule that keeps fresh ones.
+
+Exact-domain rules cover that same domain and exact addresses on it; exact-address
+rules cover only the same mailbox. A legacy substring covers an exact rule only
+when the guaranteed mailbox/domain text contains the unchanged needle, including
+its whitespace. Exact rules never imply coverage of a legacy substring that can
+match display names. Unproven implication is not treated as a shadow.
 
 ## Category evidence and the bulk proxy
 
@@ -126,9 +174,12 @@ than proof of headers. Rules relying only on sender/subject data remain eligible
 
 ## The compiled query
 
-Every rule prints the Gmail query it compiles to. That is the point: a user who
-cannot see the query cannot tell an over-broad rule from a precise one. Read it
-before accepting a rule, and treat `category:promotions OR category:updates`
+Every rule prints the Gmail query it compiles to. Read it before accepting a
+rule. Queries retrieve candidates; only local matching authorizes planned actions.
+Exact sender modes retrieve broadly with a validated domain term such as
+`from:shop.example`, which can include lookalikes or other mailboxes. The local
+plan always enforces the full exact matcher. If a sender value cannot be safely
+represented, the query omits that filter rather than guessing. Treat `category:promotions OR category:updates`
 (what `hasUnsubscribe` compiles to) as the approximation it is.
 
 The query is scoped to a slice of the mailbox — `in:inbox` unless a run says

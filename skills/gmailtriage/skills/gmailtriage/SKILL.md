@@ -61,7 +61,7 @@ step whose command does not exist fails `skillfactory verify`.
 | decide whether a folder is several things or still one | four employers in `Recruiting` want splitting; four notices from one bank in `Statements` do not, and a sub-label holding everything its parent holds is worse than no sub-label. The counts look identical either way |
 | **decide whether an unmanaged folder should be adopted or deleted** | a folder holding real mail with no rule behind it wants a rule; an empty one is scaffolding someone made once and wants deleting. The remedies are opposite and the thread count only tells you which is *likely* — a folder emptied last week still means something |
 | decide which of two spellings is the right one | `audit` says two folders are one folder; it cannot say whether the user's word is `Receipts` or `Reciepts`, and folding mail into the misspelling is worse than leaving both |
-| word each rule so a reader six months later can tell what it was meant to catch | a Gmail query is precise and unreadable, and a rule nobody can interpret is a rule nobody will dare to edit |
+| word each rule so a reader six months later can tell what it was meant to catch | a Gmail query is a retrieval hint, and a rule nobody can interpret is a rule nobody will dare to edit |
 | judge when a plan looks wrong and should be questioned rather than applied | a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which |
 
 ## The flow
@@ -264,12 +264,18 @@ It prints only the rules just added or changed — plus any shadow or lint
 warning that involves them — and backs up the previous rule file before
 writing. Show the compiled Gmail query for each, and **for every sort rule say
 where it files to and whether the thread leaves the inbox.** A user who cannot
-see the query cannot tell an over-broad rule from a precise one, and a user who
-does not know a rule archives will be surprised the first time their mail is
-not there. **Read the warnings out loud**: a bare-domain `from` also matches
-lookalike domains, and a trash rule standing ahead of a sort rule for the same
-sender is safe only by file order — both are the user's call to fix, not yours
-to fix silently.
+see the query cannot assess the fetch, and a user who does not know a rule
+archives will be surprised the first time their mail is not there. Queries
+retrieve candidates; the local plan must enforce every matcher before any action.
+New single-sender rules use `fromAddress`; domain clusters use `fromDomain`
+with explicit rules for subdomains. Exact modes parse one complete mailbox,
+exclude display names, and withhold malformed or ambiguous sender evidence.
+They select an address, not SPF/DKIM/DMARC authentication. See `references/rules.md`.
+**Read the warnings out loud**: every legacy `from` remains a substring,
+including display names and lookalikes, even with an `@` prefix or a full address.
+A trash rule ahead of an overlapping sort rule makes the order load-bearing.
+Changing saved substring rules is the user's explicit choice; do not migrate them
+silently.
 
 ### 3b. Reconcile the folders — before anything moves
 
