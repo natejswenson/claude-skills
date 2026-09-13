@@ -55,8 +55,8 @@ covering the newest consumer first. Run it in the same PR that adds the targets.
 - **The `pull_request` trigger is un-filtered.** Every `ci / <skill>` check
   reports on every PR — running real tests when that skill changed, and
   short-circuiting to success via `dorny/paths-filter` when it did not. This is
-  what makes the required-check set always satisfiable, so a `dev → main`
-  promotion can auto-merge no matter which skills it touched. Path-filtering it
+  what makes the required-check set always satisfiable, so a PR into the configured release branch
+  receives every required context no matter which skills it touched. Path-filtering it
   makes the check *pending forever* on unrelated PRs, which blocks every merge.
 - **`permissions: pull-requests: read`** is what lets `paths-filter` see changes
   under the restricted default token. Dropping it red-lines the required check on
@@ -106,3 +106,13 @@ Two consequences that survive the change:
 - **To hold a release, simply do not dispatch.** A bump can sit on `main` as
   `untagged-bump-on-main` indefinitely; that is a normal, safe state, not a
   problem to clear.
+
+## Branch policy
+
+`readHouse` reads the target repository's `.github/shipflow.json`; `planScaffold`
+passes it to the caller renderer. Explicit GitHub flow uses configured main plus
+`feature/**` as PR bases. Two-branch configurations keep integration, main and
+feature-stack bases. Push CI and the dispatch guard use configured main too.
+The historical default dev/main golden remains unchanged; it records an older
+run whose comments predate dispatch-only releases, while its release guard is
+still dispatch-only. No historical fixture is evidence of live branch policy.

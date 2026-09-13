@@ -21,9 +21,8 @@
 //      config->params mapping (which render.test.mjs never exercises).
 //   2. sha256(golden) equals the hash the real apply run recorded. Catches a
 //      golden fixture that was hand-edited to make check 1 pass.
-//   3. The frozen golden still equals the repo's LIVE committed workflow. Catches
-//      the fixture going stale — without this, checks 1 and 2 would keep agreeing
-//      with each other long after they stopped describing reality.
+//   3. The active pattern renders the currently committed workflow and hash.
+//      Historical dev/main goldens remain meaningful after a repository cutover.
 //
 // Check 3 reads outside the skill directory. That is safe: package.json's `files`
 // excludes tests/ and evals/, so this never ships to npm — it only ever runs
@@ -36,6 +35,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { renderTemplate } from '../lib/render.mjs';
+import { resolvePattern } from '../lib/pattern-registry.mjs';
 import * as devMainPromotion from '../lib/patterns/dev-main-promotion/index.mjs';
 
 const SKILL_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -97,23 +97,16 @@ test('baseline: the golden matches the hash the real apply run recorded', () => 
   );
 });
 
-test('baseline: the frozen golden still matches the live committed workflow', () => {
-  const livePath = join(REPO_ROOT, '.github', 'workflows', 'dev-to-main-automerge.yml');
-  assert.ok(
-    existsSync(livePath),
-    `Expected the dogfooded workflow at ${livePath}. This check is what keeps the ` +
-      `frozen fixture honest; if the file genuinely moved, update this path rather ` +
-      `than deleting the check.`
-  );
-  assert.equal(
-    readFileSync(livePath, 'utf8'),
-    FROZEN_GOLDEN,
-    `The repo's live dev-to-main-automerge.yml no longer matches the frozen baseline.\n` +
-      `Either someone hand-edited the workflow (CLAUDE.md forbids this — edit\n` +
-      `.github/shipflow.json and re-run shipflow apply), or a legitimate re-render\n` +
-      `landed without refreshing this fixture. Refresh with:\n` +
-      `  node evals/baseline/update.mjs`
-  );
+test('baseline: active policy renders the committed workflow with its recorded hash', () => {
+  const config = JSON.parse(readFileSync(join(REPO_ROOT, '.github/shipflow.json'), 'utf8'));
+  for (const entry of resolvePattern(config).templates(config)) {
+    const livePath = join(REPO_ROOT, entry.targetPath);
+    assert.ok(existsSync(livePath), 'missing active managed workflow');
+    const live = readFileSync(livePath, 'utf8');
+    assert.equal(live, renderTemplate(readFileSync(entry.templateSourcePath, 'utf8'), entry.params),
+      'active workflow drift: apply the configured pattern and refresh its recorded hash');
+    assert.equal(sha256(live), config.renderedTemplateHashes[entry.targetPath]);
+  }
 });
 
 // ---------------------------------------------------------------- two-sided half

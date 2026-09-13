@@ -534,7 +534,7 @@ ${ref.is}
  * Action pins come from `readActionPins` — the SHAs this repo already trusts,
  * never a remembered one.
  */
-export const caller = (spec, pins) => {
+export const caller = (spec, pins, policy = null) => {
   const pin = (a) => pins[a] ?? `# UNRESOLVED — run: ghfactory resolve ${a}`;
   const setup =
     spec.stack === 'node'
@@ -572,7 +572,7 @@ export const caller = (spec, pins) => {
         working-directory: skills/${spec.name}/skills/${spec.name}
 `;
 
-  return `name: ${spec.name}
+  const workflow = `name: ${spec.name}
 
 # Per-skill CI + release for the ${spec.name} skill. The \`pull_request\` trigger is
 # deliberately UN-filtered so \`ci / ${spec.name}\` reports on every PR — running real
@@ -649,4 +649,12 @@ ${tier2}
     permissions:
       contents: write
 `;
+  if (!policy || (!policy.workflowPattern && (policy.branches?.main ?? 'main') === 'main' && (policy.branches?.dev ?? 'dev') === 'dev')) return workflow; // Preserve historical default scaffold bytes.
+  const main = policy.branches?.main ?? 'main';
+  const bases = policy.workflowPattern === 'github-flow'
+    ? [main, 'feature/**'] : [policy.branches?.dev ?? 'dev', main, 'feature/**'];
+  return workflow.replace('branches: [main]', `branches: [${JSON.stringify(main)}]`)
+    .replace("branches: [dev, main, 'feature/**']", `branches: [${[...new Set(bases)].map((b) => JSON.stringify(b)).join(', ')}]`)
+    .replace("github.ref == 'refs/heads/main'", `github.ref == 'refs/heads/${main.replaceAll("'", "''")}'`)
+    .replace('which is what keeps the required-check set always satisfiable for a dev -> main\n# PR. The `push` trigger IS path-filtered so the skill only releases when its own\n# files changed.', 'which keeps required checks available on every supported PR base.\n# Push CI is path-filtered; only explicit workflow_dispatch can release.');
 };
