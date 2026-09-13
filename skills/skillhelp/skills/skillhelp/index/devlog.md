@@ -16,10 +16,10 @@
 - **GitHub CLI** (gh), authenticated with gh auth login — used to create your dev-log repo and push entries. `skills/devlog/README.md:105`
 - **Claude Code** (/devlog) or **Codex** ($devlog) to run the skill. `skills/devlog/README.md:107`
 - Concept drafts use independent agents for review/adaptation when available; missing capabilities retain the draft with explicit uncompleted checks. `skills/devlog/README.md:108`
-- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:284`
-- Field — Type — Description `skills/devlog/README.md:286`
-- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:288`
-- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:289`
+- ~/.claude/skills/devlog/config.json: `skills/devlog/README.md:381`
+- Field — Type — Description `skills/devlog/README.md:383`
+- targetRepo — "<owner>/<repo>" — Repo where entries are published. Must match ^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$. `skills/devlog/README.md:385`
+- branch — string (optional) — Branch in the dev-log repo. Defaults to main. Must not contain .. or start with -. `skills/devlog/README.md:386`
 
 ## Usage
 
@@ -48,16 +48,16 @@
 - devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:139`
 - devlog lint-guide <file> [--voice] — Post checks plus a unique top-of-post implementation handoff `skills/devlog/README.md:140`
 - devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:141`
-- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:152`
-- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:153`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:454`
+- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:161`
+- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:162`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:463`
 - npx @natjswenson/devlog init # create the repo, install the Claude skill, write config `skills/devlog/README.md:68`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
-- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:366`
-- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:367`
-- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:368`
-- npm run audit — npm audit --audit-level=moderate `skills/devlog/skills/devlog/package.json:50`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/devlog/skills/devlog/package.json:52`
+- npx -y @natjswenson/devlog@0.14.1 config --json `skills/devlog/README.md:232`
+- npx -y @natjswenson/devlog@0.14.1 add-project --yes \ `skills/devlog/README.md:255`
+- npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:463`
+- node evals/run_eval.mjs --mock # $0, runs in CI; deterministic layer only `skills/devlog/README.md:464`
+- node evals/run_eval.mjs --live # LLM judge on golden fixtures; quotes spend, hard cap $0.50 `skills/devlog/README.md:465`
 
 ## Architecture
 
