@@ -78,6 +78,17 @@ export function mergeThreadSources(...sources) {
     for (const t of list ?? []) {
       const prev = byId.get(t.id);
       if (!prev) { byId.set(t.id, { ...t }); continue; }
+      // A later duplicate contributes evidence, including uncertainty; neither
+      // source gets to overwrite or silently discard the other's category.
+      const categorySources = [resolveCategory(prev), resolveCategory(t)];
+      const evidence = resolveCategory(
+        categorySources.some((e) => e.invalid) ? { categoryEvidence: { status: 'unknown', categories: [] } } : {},
+        categorySources.flatMap((e) => e.categories),
+      );
+      prev.category = evidence.category;
+      if (evidence.status === 'conflict' || evidence.invalid) {
+        prev.categoryEvidence = { status: evidence.status, categories: evidence.categories };
+      } else delete prev.categoryEvidence;
       prev.labelIds = [...new Set([...(prev.labelIds ?? []), ...(t.labelIds ?? [])])];
       prev.from ??= t.from;
       prev.subject ??= t.subject;

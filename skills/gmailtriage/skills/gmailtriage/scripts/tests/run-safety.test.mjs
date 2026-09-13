@@ -225,3 +225,44 @@ test('category flow: proxy trash and label plans reject ambiguous legacy true bo
       [['promo', action], ['update', action]]);
   }
 });
+
+test('category flow: duplicate raw sources preserve category evidence in either order', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gt-category-duplicates-'));
+  const evidence = [
+    { id: 'agree', category: 'promotions' },
+    { id: 'social', category: 'social' },
+    { id: 'conflict', categoryEvidence: { status: 'conflict', categories: ['promotions', 'social'] } },
+    { id: 'unknown', categoryEvidence: { status: 'unknown', categories: [] } },
+    { id: 'invalid', category: 'secret-token' },
+  ];
+  const raw = (name, entries) => {
+    const path = join(dir, name);
+    writeFileSync(path, JSON.stringify({ threads: entries.map((t) => ({ ...t, messages: [{
+      sender: 'offers@shop.example', subject: 'Offers', date: '2026-08-01',
+      labelIds: ['INBOX'], snippet: 'secret-token',
+    }] })) }));
+    return path;
+  };
+  const plain = raw('plain.json', evidence.map(({ id }) => ({ id })));
+  const observed = raw('observed.json', evidence);
+  const files = { dir, threads: join(dir, 'threads.json'), labels: join(dir, 'labels.json') };
+  for (const [inbox, nolabel] of [[plain, observed], [observed, plain]]) {
+    const result = categoryCli(['ingest', '--inbox', inbox, '--nolabel', nolabel, '--promos', plain,
+      '--labels', join(CATEGORY_FIXTURES, 'raw-labels.json'),
+      '--out-threads', files.threads, '--out-labels', files.labels]);
+    const snapshot = readCategoryJson(files.threads);
+    assert.deepEqual(snapshot.map((t) => [t.id, t.category, t.hasUnsubscribe]),
+      evidence.map(({ id }) => [id, id === 'agree' ? 'promotions' : null, id === 'agree']));
+    assert.match(result.stderr, /category evidence: unknown=2 conflict=2/);
+    assert.ok(!readFileSync(files.threads, 'utf8').includes('secret-token'));
+    assert.deepEqual(categoryPlan(files).taken.map((t) => t.threadId), ['agree']);
+    for (const action of ['trash', 'label']) {
+      const rules = join(dir, 'proxy-rules.json');
+      writeFileSync(rules, JSON.stringify({ version: 1, rules: [{
+        id: 'bulk', action, ...(action === 'label' ? { label: 'Filed' } : {}),
+        match: { from: 'offers@shop.example', hasUnsubscribe: true }, note: 'Duplicate evidence regression',
+      }] }));
+      assert.deepEqual(categoryPlan(files, rules).taken.map((t) => [t.threadId, t.action]), [['agree', action]]);
+    }
+  }
+});
