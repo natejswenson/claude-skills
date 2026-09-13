@@ -32,6 +32,14 @@ test('repair omission cannot launder a blocker, independent resolution needs res
  assert.throws(()=>reconcilePlanFindings(run,[],[{id,status:'resolved',evidence:'a:2'}],{round:2,artifactSha:'b'}),/lacks/);
  run.harness.planFindings=reconcilePlanFindings(run,[],[{id,status:'resolved',evidence:'a:2'}],{round:2,artifactSha:'b',responses:[response]});assert.equal(openPlanFindings(run).length,0);
  assert.throws(()=>reconcilePlanFindings(run,[{...items[0]}],[],{round:3,artifactSha:'c'}),/reopening/);
+ const judgment={id,status:'resolved',evidence:'repair still present'};
+ assert.throws(()=>reconcilePlanFindings(run,[],[{...judgment,evidence:123}],{round:3,artifactSha:'c'}),/invalid or contradictory resolution/);
+ assert.throws(()=>reconcilePlanFindings(run,[],[{...judgment,status:'open',reopeningReason:123}],{round:3,artifactSha:'c'}),/reopening requires/);
+ assert.throws(()=>reconcilePlanFindings(run,[],[judgment,judgment],{round:3,artifactSha:'c'}),/contradictory resolution/);
+ assert.throws(()=>reconcilePlanFindings(run,[],[{id,status:'open',evidence:'new failure'}],{round:3,artifactSha:'c'}),/reopening/);
+ run.harness.planFindings=reconcilePlanFindings(run,[],[{id,status:'open',evidence:'new failure',reopeningReason:'repair does not cover the new case'}],{round:3,artifactSha:'c'});
+ assert.equal(openPlanFindings(run).length,1);
+ assert.throws(()=>reconcilePlanFindings(run,[],[judgment],{round:4,artifactSha:'d'}),/lacks a complete repair response/);
 });
 test('endpoint exclusions override stored authority; observing merges precedes asking for more authority',()=>{
  const run={schema:5,repo:{owner:'a',name:'b'},completion:completionIntent({endpoint:'merged'}),lanes:[{slug:'root',pr:{number:1,url:'fixture'},verification:{head:'a'}}]};
