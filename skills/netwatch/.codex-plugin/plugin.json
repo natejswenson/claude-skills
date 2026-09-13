@@ -1,7 +1,7 @@
 {
   "name": "netwatch",
-  "version": "0.2.0",
-  "description": "Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch.",
+  "version": "0.3.0",
+  "description": "Interactive network security investigation: inspect processes, compare connections, capture scoped packets, and stop user-selected processes with confirmation.",
   "author": {
     "name": "Nate Swenson"
   },
@@ -10,8 +10,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "netwatch",
-    "shortDescription": "Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process beh",
-    "longDescription": "Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch.",
+    "shortDescription": "Interactive network security investigation: inspect processes, compare connections, capture scoped packets, and stop use",
+    "longDescription": "Interactive network security investigation: inspect processes, compare connections, capture scoped packets, and stop user-selected processes with confirmation.",
     "developerName": "Nate Swenson",
     "category": "Productivity",
     "capabilities": [],

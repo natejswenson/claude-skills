@@ -63,6 +63,7 @@ function v4ToInt(ip) {
   if (parts.length !== 4) return null;
   let n = 0;
   for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return null;
     const o = Number(p);
     if (!Number.isInteger(o) || o < 0 || o > 255) return null;
     n = (n * 256) + o;
@@ -103,7 +104,7 @@ function v6ToGroups(ip) {
   const right = side(sides[1]);
   if (left === null || right === null) return null;
   const fill = 8 - left.length - right.length;
-  if (fill < 0) return null;
+  if (fill < 1) return null;
   return [...left, ...new Array(fill).fill(0), ...right];
 }
 
@@ -131,7 +132,10 @@ function v6PrefixEqual(a, b, bits) {
  */
 export function ipInCidr(host, cidr) {
   if (typeof cidr !== 'string' || !cidr.includes('/')) return false;
+  if (typeof host !== 'string' || cidr.split('/').length !== 2) return false;
+  host = host.split('%')[0];
   const [base, bitsRaw] = cidr.split('/');
+  if (!/^\d+$/.test(bitsRaw)) return false;
   const bits = Number(bitsRaw);
 
   if (base.includes(':')) {
@@ -159,11 +163,10 @@ export function lookupProvider(host) {
 
   // IPv6 — only the structural prefixes have stable, meaningful names.
   if (host.includes(':')) {
-    const h = host.toLowerCase();
-    if (h === '::1') return { owner: 'Loopback (this machine)', category: 'local' };
-    if (h.startsWith('fe80:')) return { owner: 'Link-local (the LAN)', category: 'local' };
-    if (h.startsWith('ff')) return { owner: 'Multicast', category: 'local' };
-    if (h.startsWith('fc') || h.startsWith('fd')) return { owner: 'Private (unique-local)', category: 'private' };
+    if (ipInCidr(host, '::1/128')) return { owner: 'Loopback (this machine)', category: 'local' };
+    if (ipInCidr(host, 'fe80::/10')) return { owner: 'Link-local (the LAN)', category: 'local' };
+    if (ipInCidr(host, 'ff00::/8')) return { owner: 'Multicast', category: 'local' };
+    if (ipInCidr(host, 'fc00::/7')) return { owner: 'Private (unique-local)', category: 'private' };
     return { owner: 'unknown network (IPv6)', category: 'unknown' };
   }
 

@@ -15,13 +15,13 @@
     },
     {
       "path": "report.html",
-      "bytes": 12293,
-      "sha256": "00660ab1f156b6aac47f251fcf351443be31da77ce5025897bea03d62bf4ba8e"
+      "bytes": 36014,
+      "sha256": "3bb8c0d0e4bc5af33f77cfe454fe8e5df6635b1008fc67fe005f1c33fe31bfab"
     },
     {
       "path": "report.txt",
-      "bytes": 2062,
-      "sha256": "f2fa3a2c1bef2ecfd5107357ca124358df1b1fa583c96124784a2595e99dfe04"
+      "bytes": 8448,
+      "sha256": "b8a2ff30316b9db1b820f76b3f9ae85a2e5e4a358110b31d6794e11904f9e9d3"
     }
   ]
 }
