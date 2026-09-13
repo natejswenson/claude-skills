@@ -3,8 +3,8 @@ name: ghfactory
 # Per-skill CI + release for the ghfactory skill. The `pull_request` trigger is
 # deliberately UN-filtered so `ci / ghfactory` reports on every PR — running real
 # tests when this skill changed and short-circuiting to success when it didn't —
-# which is what keeps the required-check set always satisfiable for a dev -> main
-# PR. The `push` trigger IS path-filtered so the skill only releases when its own
+# which is what keeps the required-check set always satisfiable for a feature -> main
+# PR. The `push` trigger IS path-filtered so the skill only runs push CI when its own
 # files changed.
 on:
   push:
@@ -15,7 +15,7 @@ on:
       - "tools/lint_plugin.py"
       - ".github/workflows/ghfactory.yml"
   pull_request:
-    branches: [dev, main, 'feature/**']
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 jobs:
@@ -85,7 +85,7 @@ jobs:
     with:
       skill: ghfactory
       # Deliberately NOT npm-publish. ghfactory depends on @natjswenson/press ^0.8.0,
-      # and both release from the same promotion with no ordering guarantee — a
+      # and can be dispatched independently with no ordering guarantee — a
       # ghfactory tarball could reach npm before the press version it requires exists
       # there, making it uninstallable. The skill runs `node bin/ghfactory.js` from
       # the plugin checkout anyway, so publishing buys nothing today. Turn this on

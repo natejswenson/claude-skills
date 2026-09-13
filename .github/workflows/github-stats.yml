@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths: ["skills/github-stats/**", "tools/score_skill.py", "tools/lint_plugin.py", ".github/workflows/github-stats.yml"]
   pull_request:
-    branches: [dev, main, 'feature/**']
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 jobs:
@@ -57,7 +57,7 @@ jobs:
     needs: ci
     # workflow_dispatch ONLY. A push to main must never cut a tag: the /release
     # skill is the single release path, and it dispatches this workflow itself
-    # after the promotion lands. A dev -> main merge DOES fire push events
+    # after the release PR lands. A feature -> main merge DOES fire push events
     # (confirmed 2026-08-02: shipflow-v0.4.0 was tagged and published to npm by
     # a promotion merging, with no dispatch), so gating on the event is what
     # actually stops it -- the push trigger above still runs `ci`, nothing more.

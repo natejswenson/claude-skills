@@ -7,8 +7,10 @@ tool and session handling explicitly conditional. A change is not compatible
 merely because one host can load it.
 
 Read [CLAUDE.md](CLAUDE.md) for the shared branch, release, testing, and branding
-conventions. They also apply to Codex. Feature PRs target `dev`; releases are
-explicitly dispatched after promotion to `main`.
+conventions. They also apply to Codex. Feature PRs target `main`; stacked
+layers target the layer below, with the bottom on `main`. Releases are explicitly
+dispatched from `main` after the reviewed version/changelog PR lands. Keep draft
+implementation PRs draft until review and the authorized merge decision.
 
 Each `skills/<name>` is a plugin with a shared `skills/<name>/SKILL.md` entrypoint.
 Codex manifests are generated from the existing release metadata. After adding a

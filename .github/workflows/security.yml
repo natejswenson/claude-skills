@@ -18,7 +18,7 @@ name: Security
 #   workflows  — the GitHub Actions attack surface, via ghfactory's own ladder
 #
 # The `pull_request` trigger is deliberately UN-filtered. The per-skill callers
-# list `[dev, main, 'feature/**']` because they only need to satisfy the
+# list `[main, 'feature/**']` because they only need to satisfy the
 # required-check set; this one is a security gate, so "every PR" means every PR,
 # including bases nobody has thought of yet.
 #

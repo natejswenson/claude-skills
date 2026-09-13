@@ -136,16 +136,22 @@ ln -sfn "$PWD/skills/issuecreator/skills/issuecreator" ~/.claude/skills/issuecre
 
 ## Branch & release flow
 
-`dev` is the unprotected integration branch; `main` is the protected release branch — the only way in is a green, auto-merged `dev → main` PR.
+Use short-lived feature branches from `main` and reviewed, CI-gated PRs directly into
+`main`. Stacked layers target the layer below; the bottom targets main. Keep implementation
+PRs draft until review and the authorized merge decision because native auto-merge is enabled
+for eligible main PRs.
 
-This repo's own `dev → main` automation is managed by the `shipflow` skill it ships, dogfooded on itself: [`.github/shipflow.json`](.github/shipflow.json) is the policy source of truth (branch names, cleanup, release mode), and `.github/workflows/dev-to-main-automerge.yml` is *rendered* from it — never hand-edited. Branch protection stays separately owned by [`.github/repo-settings.sh`](.github/repo-settings.sh).
+[`.github/shipflow.json`](.github/shipflow.json) declares GitHub flow and renders
+`main-automerge.yml`. [`.github/repo-settings.sh`](.github/repo-settings.sh) owns main
+protection and verifies its writes. Every skill check reports on main and feature-stack PRs.
 
-1. Branch off `dev`, land work there (PR or direct push — `dev` is unprotected).
-2. Open a `dev → main` PR to release. It auto-merges once every `ci / <skill>` check passes.
-3. On merge, a `release-pending` label survives the async gap until a later `shipflow releases` check finds it and asks whether to cut a release per changed skill.
-4. To cut a release: bump the skill's version + add a `CHANGELOG.md` entry, then `shipflow release-dispatch`.
+A merge or push publishes nothing. `/release <skill>` (Claude) or `$release <skill>` (Codex)
+prepares that skill's version and changelog in a main-based PR, then explicitly dispatches
+its workflow after merge and verifies the remote namespaced tag. Versions remain independent.
 
-Full step-by-step process: [`CLAUDE.md`](CLAUDE.md). Always invoke shipflow pinned to `@latest` — `npx -y @natjswenson/shipflow@latest <command>` — an unpinned call can silently resolve a stale local install instead of the current version.
+The [cutover runbook](docs/github-flow-cutover.md) records the audited retirement of the old
+integration branch, remaining live steps, and recovery commands. Draft PRs do not apply
+live settings or retire branches.
 
 ## Repo layout
 
@@ -159,7 +165,7 @@ Full step-by-step process: [`CLAUDE.md`](CLAUDE.md). Always invoke shipflow pinn
 | `skills/<name>/skills/<name>/SKILL.md` | The actual skill, nested one level deeper — Claude Code's plugin auto-discovery only scans `skills/<subdir>/SKILL.md` |
 | `.github/workflows/` | Reusable release workflow, one CI caller per skill (path-filtered), and the shipflow-rendered auto-merge workflow |
 | `.github/repo-settings.sh` | Repo + branch-protection config, as code |
-| `.github/shipflow.json` | shipflow's policy config for this repo's own `dev → main` automation |
+| `.github/shipflow.json` | shipflow's GitHub-flow policy and manual per-skill releases |
 
 ## License
 
