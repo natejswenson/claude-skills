@@ -309,10 +309,18 @@ about. **If a rule suddenly takes many times its usual volume, say so and stop**
 — that is either a sender gone rogue or a rule that drifted, and nothing in the
 count says which.
 
-**Always pass `--labels`.** `search_threads` returns opaque label ids
-(`Label_10`) and rules are written in words (`Recruiting`), so without the map
-the planner cannot tell it has already filed a thread. Every run then re-proposes
-everything the last one filed, and a second run never converges.
+**Always pass `--labels`** to resolve opaque Gmail IDs and detect existing
+destination labels. Plans accept only `in:inbox` (the default) or one
+`label:<Folder>` scope; quote folder values containing spaces, for example
+`--scope 'label:"Work Mail/Recruiting"'`. Scope membership is enforced before
+matching rules. The summary retains the full scanned count and reports in-scope
+and excluded rows with reasons. Inbox plans exclude archived, sent-only, trash
+and spam rows, including trash/spam rows that also carry INBOX.
+
+A supplied empty label array means no membership. Missing or malformed label
+metadata, unresolved IDs needed for a folder pass, ambiguous folder mappings,
+and unsupported searches refuse the plan before writing output. Re-fetch thread
+labels and supply a fresh `--labels` map; do not broaden the scope to bypass it.
 
 ### 4b. The retroactive pass — applying new rules to mail already filed
 
@@ -325,11 +333,12 @@ node $SKILL_DIR/scripts/gmailtriage.js plan --threads filed.json --labels labels
   --scope 'label:<Folder>' --out plan.json
 ```
 
-`--scope` replaces `in:inbox` in every compiled query — the same rules, a
-different slice of the mailbox. Two things to say out loud about this run:
-**"would leave the inbox" will be 0**, because these threads already left it;
-and **nothing is unlabelled**, because the parent stays. It is purely additive,
-which is why it is safe to run over mail the user has already organised by hand.
+The planner checks exact membership of the named folder; a descendant label
+alone is not membership. Keep rules still win. Only label rules participate,
+and excluded trash or other nonadditive rules are reported separately.
+**"Would leave the inbox" is always 0**, even for folder members still in INBOX.
+Only missing destination labels are added; **nothing is trashed, unlabelled or
+archived**. Existing parent labels and INBOX membership stay intact.
 
 Then re-run the same command afterwards. **It must take zero threads the second
 time.** If it does not, the labels did not resolve and the run has not converged.

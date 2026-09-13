@@ -27,7 +27,7 @@
 
 | Authorised | To trash | To file | Labels to add | To archive | Refused |
 |------------|----------|---------|---------------|------------|---------|
-| 66         | 19       | 47      | 68            | 2          | 0       |
+| 66         | 19       | 47      | 68            | 45         | 0       |
 
 TRASH exactly these thread ids and nothing else:
 thr-1a2e41a4
@@ -159,9 +159,50 @@ thr-1a329b40
 thr-1a32ba2f
 
 then REMOVE the INBOX label from exactly these thread ids — this is the "move":
+thr-1a2b5b3c
+thr-1a2b7a2b
+thr-1a2b991a
+thr-1a2bb809
+thr-1a2bd6f8
+thr-1a2bf5e7
+thr-1a2c14d6
+thr-1a2c33c5
+thr-1a2c52b4
+thr-1a2c71a3
+thr-1a2c9092
+thr-1a2caf81
+thr-1a2cce70
+thr-1a2ced5f
+thr-1a2d0c4e
+thr-1a2d2b3d
+thr-1a2d4a2c
+thr-1a2d691b
+thr-1a2d880a
+thr-1a2da6f9
+thr-1a2dc5e8
+thr-1a2de4d7
+thr-1a2e03c6
 thr-1a2e22b5
+thr-1a30cb3f
+thr-1a30ea2e
+thr-1a31091d
+thr-1a31280c
+thr-1a3146fb
+thr-1a3165ea
+thr-1a3184d9
+thr-1a31a3c8
+thr-1a31c2b7
+thr-1a31e1a6
 thr-1a320095
+thr-1a321f84
+thr-1a323e73
+thr-1a325d62
+thr-1a327c51
+thr-1a329b40
+thr-1a32ba2f
+thr-1a32d91e
+thr-1a32f80d
+thr-1a3316fc
+thr-1a3335eb
 
 2 filed thread(s) stay in the inbox by rule. Do NOT remove INBOX from those.
-
-43 filed thread(s) had already left the inbox — this run only adds labels to them.

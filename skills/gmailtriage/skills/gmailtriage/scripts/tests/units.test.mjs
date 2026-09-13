@@ -534,7 +534,7 @@ test('a retroactive pass adds only what the thread does not already carry', () =
   ] };
   const filed = { id: 't1', from: 'a@globex.example', subject: 'Interview', labels: ['Recruiting'] };
   const fresh = { id: 't2', from: 'b@globex.example', subject: 'Interview', labels: ['INBOX'] };
-  const p = plan([filed, fresh], doc);
+  const p = { taken: [...plan([filed], doc, { scope: 'label:Recruiting' }).taken, ...plan([fresh], doc).taken] };
 
   assert.deepEqual(p.taken[0].adds, ['Recruiting/Globex'], 'it would re-add a label the thread already had');
   assert.deepEqual(p.taken[1].adds, ['Recruiting', 'Recruiting/Globex']);
@@ -559,11 +559,12 @@ test('an archiving rule cannot archive mail that already left the inbox', () => 
   const filed = { id: 't2', from: 'b@globex.example', subject: 'S', labelIds: ['Label_10'], labels: ['Recruiting'] };
   const p = plan([inbox, filed], doc);
   assert.equal(p.taken.find((t) => t.threadId === 't1').archive, true);
-  assert.equal(p.taken.find((t) => t.threadId === 't2').archive, false);
+  assert.equal(p.taken.some((t) => t.threadId === 't2'), false);
+  const retro = plan([filed], doc, { scope: 'label:Recruiting', labelIndex: new Map([['Label_10', 'Recruiting']]) });
+  assert.equal(retro.taken[0].archive, false);
 
-  // and a fetch that supplied no labels at all cannot claim otherwise
-  const blind = plan([{ id: 't3', from: 'c@globex.example', subject: 'S' }], doc);
-  assert.equal(blind.taken[0].archive, true, 'absence of evidence became evidence of absence');
+  // Missing metadata cannot authorise a mailbox operation.
+  assert.throws(() => plan([{ id: 't3', from: 'c@globex.example', subject: 'S' }], doc), /missing label metadata/);
 });
 
 test('the scope is a parameter, not a hardcoded inbox', () => {

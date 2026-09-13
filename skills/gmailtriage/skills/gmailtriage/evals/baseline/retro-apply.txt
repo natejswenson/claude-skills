@@ -30,4 +30,4 @@ thr-1a2caf81
 LABEL "Recruiting/Soylent" onto exactly these thread ids and nothing else:
 thr-1a2cce70
 
-13 filed thread(s) had already left the inbox — this run only adds labels to them.
+Additive folder pass: existing labels and INBOX membership are preserved.

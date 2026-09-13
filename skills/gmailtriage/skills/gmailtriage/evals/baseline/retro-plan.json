@@ -1,6 +1,10 @@
 {
   "scanned": 13,
   "scope": "label:Recruiting",
+  "additive": true,
+  "inScope": 13,
+  "excluded": [],
+  "excludedRules": [],
   "taken": [
     {
       "ruleId": "sort-globex",
