@@ -76,8 +76,8 @@ node scripts/skillfactory.js verify --skill <name>
 | 1 | house lints pass — `score_skill 100`, `lint_plugin`, `lint_baseline` | `skillfactory verify` |
 | 2 | the skill's own tests pass | `npm test` in the skill |
 | **3** | **a real run is frozen as the baseline** | `skillfactory freeze` |
-| 4 | CI green on the `feature/* → dev` PR | GitHub |
-| 5 | released — the tag is cut | version bump + promotion |
+| 4 | CI green on the PR into the configured base | GitHub |
+| 5 | released — the tag is cut | version bump + explicit release dispatch |
 
 **Never call a skill done below rung 3.** Rungs 0–2 mean the scaffolding is
 correct, which is not the same as the skill working — the exact conflation ghfactory
@@ -236,10 +236,16 @@ highest rung reached. Report that line verbatim. Do not round it up.
 
 ### 10. Ship it
 
-Branch `feature/<name>`, PR into `dev`, never into `main`. The version bump and
-the `CHANGELOG.md` entry go in the **same** change: releases here are
-publish-on-merge, so a follow-up promotion to fix release notes is too late — the
-tag is already cut.
+Branch `feature/<name>` from the target repository's configured base. Read
+`.github/shipflow.json`: GitHub flow uses configured main, while legacy two-branch
+repos use their integration branch. Stack layers target the layer beneath them;
+the bottom layer targets that configured base. The scaffolder reads this policy
+from the target repository and keeps `feature/**` CI coverage.
+
+The version bump and `CHANGELOG.md` entry go in the **same** change. Merging
+creates no tag: `/release` explicitly dispatches the component workflow once the
+version and notes are on main. Keep implementation PRs draft until review and
+the authorized merge decision are complete.
 
 Two things skillfactory writes but cannot apply, and must be said out loud:
 
@@ -252,8 +258,8 @@ Two things skillfactory writes but cannot apply, and must be said out loud:
 
 - **Never call a skill done below rung 3.** Say which rung you reached.
 - **Never hand-write a brand value.** Regions are generated; edit `tokens.json`.
-- **Never open a PR into `main`.** Feature work goes to `dev`; only `dev → main`
-  promotes.
+- **Follow the target repository branch policy.** Explicit GitHub flow targets
+  main; legacy two-branch consumers retain their integration and promotion flow.
 - **Never weaken a check to get green.** `check-spec` and the baseline trap exist
   to be argued with, not edited. Fix the input.
 - **Never overwrite an existing skill.** A directory that already exists is far

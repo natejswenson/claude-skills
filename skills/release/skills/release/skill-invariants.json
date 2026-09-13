@@ -75,7 +75,7 @@
       },
       {
         "step": "whether the collateral releases are acceptable",
-        "why": "a promotion is atomic, so releasing one component releases every other bumped one — only the user can say whether shipping those today is fine"
+        "why": "a two-branch promotion moves every bumped component to main, but each still requires a separate explicit release dispatch; GitHub flow has no promotion collateral"
       }
     ]
   },

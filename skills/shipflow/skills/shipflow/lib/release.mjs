@@ -12,13 +12,14 @@
 //   prepare()     — local writes only, in a THROWAWAY WORKTREE (see below)
 //   cut()         — the only irreversible one, gated on a status hash
 //
-// Why a throwaway worktree: `prepare` has to branch off dev and commit, and a
+// Why a throwaway worktree: `prepare` branches from the configured base and commits, and a
 // real repo's working tree routinely has unrelated in-flight work in it (this
 // monorepo's own tree did while this was written). Checking out a branch under
 // that, or staging from it, is how another session's uncommitted work gets
 // swept into a release commit. A `git worktree` is a clean, isolated checkout
-// of dev that cannot see the user's dirt at all, so there is nothing to sweep.
+// of that base that cannot see the user's dirt at all, so there is nothing to sweep.
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -332,9 +333,19 @@ function revParse(repoPath, ref) {
 }
 
 function dirtyPaths(repoPath, relPaths) {
-  const r = git(['status', '--porcelain', '--', ...relPaths], { cwd: repoPath });
+  const r = spawnSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', ...relPaths], {
+    cwd: repoPath, encoding: 'utf8', timeout: 30_000,
+  });
   if (r.status !== 0 || !r.stdout) return [];
-  return r.stdout.split('\n').map((l) => l.slice(3).trim()).filter(Boolean);
+  const records = r.stdout.split('\0');
+  const paths = [];
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+    if (!record) continue;
+    paths.push(record.slice(3));
+    if (/[RC]/.test(record.slice(0, 2))) i++; // rename/copy source follows destination
+  }
+  return paths;
 }
 
 // Every OTHER component whose version at `dev` carries no tag. A promotion is
@@ -369,20 +380,28 @@ export function collateralComponents(repoPath, config, exceptName, devRef) {
   return out;
 }
 
+// An explicit pattern is authoritative even during a migration with stale dev fields.
+function branchPolicy(config) {
+  const workflowPattern = config?.workflowPattern ?? 'dev-main-promotion';
+  const main = config?.branches?.main ?? 'main';
+  const dev = workflowPattern === 'github-flow' ? null : (config?.branches?.dev ?? 'dev');
+  return { workflowPattern, main, dev, base: dev ?? main };
+}
+
 export function readStatus(repoPath, config, name) {
   const component = resolveComponent(repoPath, config, name);
-  const mainBranch = config?.branches?.main ?? 'main';
-  const devBranch = config?.branches?.dev ?? 'dev';
+  const policy = branchPolicy(config);
+  const { main: mainBranch, dev: devBranch } = policy;
 
   // Read from the REMOTE-tracking refs, not the local branches: a local `main`
   // that has not been fetched in a week would compute a bump against a stale
   // baseline and silently propose a version that is already tagged.
   const fetched = git(['fetch', 'origin', '--tags', '--prune'], { cwd: repoPath });
   const mainRef = revParse(repoPath, `origin/${mainBranch}`) ? `origin/${mainBranch}` : mainBranch;
-  const devRef = revParse(repoPath, `origin/${devBranch}`) ? `origin/${devBranch}` : devBranch;
+  const devRef = devBranch ? (revParse(repoPath, `origin/${devBranch}`) ? `origin/${devBranch}` : devBranch) : null;
 
   const onMain = readVersionAt(repoPath, component, mainRef);
-  const onDev = readVersionAt(repoPath, component, devRef);
+  const onDev = devRef ? readVersionAt(repoPath, component, devRef) : { ok: false, version: null };
   const lastVersion = latestVersionTagged(repoPath, component);
   const lastTag = lastVersion ? tagFor(component, lastVersion) : null;
 
@@ -407,7 +426,7 @@ export function readStatus(repoPath, config, name) {
     notes.push(`could not fetch origin (${fetched?.stderr || 'unknown error'}) — versions and tags below may be stale`);
   }
   if (!onMain.ok) blockers.push({ id: 'version-unreadable-on-main', detail: onMain.error });
-  if (!onDev.ok) blockers.push({ id: 'version-unreadable-on-dev', detail: onDev.error });
+  if (devBranch && !onDev.ok) blockers.push({ id: 'version-unreadable-on-dev', detail: onDev.error });
 
   const changelogAbs = join(repoPath, component.changelog);
   if (!existsSync(changelogAbs)) {
@@ -473,17 +492,26 @@ export function readStatus(repoPath, config, name) {
   const suggestion = suggestBump(since.commits, onMain.version ?? '0.0.0');
   const nextVersion = suggestion.bump && onMain.ok ? bumpSemver(onMain.version, suggestion.bump) : null;
 
-  const collateral = collateralComponents(repoPath, config, name, devRef);
+  const collateral = devRef ? collateralComponents(repoPath, config, name, devRef) : [];
+  const pendingComponents = collateralComponents(repoPath, config, name, mainRef);
 
   // The TOCTOU guard for cut(). Everything that could change the meaning of a
   // release decision between the moment it is shown to a human and the moment
   // it is acted on: both branch heads, the versions, the last tag, and who
   // else is riding along.
+  const preparedBranches = git(['for-each-ref', '--format=%(refname)',
+    `refs/heads/feature/release-${name}-v*`, `refs/remotes/origin/feature/release-${name}-v*`], { cwd: repoPath })
+    .stdout.split('\n').filter(Boolean).sort().map((ref) => {
+      const version = readVersionAt(repoPath, component, ref).version;
+      return { ref, sha: revParse(repoPath, ref), version, notes: notesAt(repoPath, component, ref, version) };
+    });
   const statusHash = sha256(
     JSON.stringify({
       component: name,
+      preparedBranches,
       mainSha: revParse(repoPath, mainRef),
-      devSha: revParse(repoPath, devRef),
+      workflowPattern: policy.workflowPattern,
+      devSha: devRef ? revParse(repoPath, devRef) : null,
       versionOnMain: onMain.version,
       versionOnDev: onDev.version,
       lastTag,
@@ -500,6 +528,12 @@ export function readStatus(repoPath, config, name) {
       paths: component.paths,
       inferredLayout: component.inferredLayout,
     },
+    workflowPattern: policy.workflowPattern,
+    releaseBase: policy.base,
+    mainBranch,
+    devBranch,
+    pendingComponents,
+    preparedBranches,
     state,
     versionOnMain: onMain.version,
     versionOnDev: onDev.version,
@@ -520,6 +554,13 @@ export function readStatus(repoPath, config, name) {
 
 // ─── prepare ─────────────────────────────────────────────────────────────────
 function writeVersionInto(relPath, text, version) {
+  if (relPath.endsWith('package-lock.json')) {
+    const data = JSON.parse(text);
+    if (!data.version) return null;
+    data.version = version;
+    if (data.packages?.['']?.version) data.packages[''].version = version;
+    return JSON.stringify(data, null, 2) + '\n';
+  }
   if (relPath.endsWith('.json')) {
     // Line-targeted rather than JSON.parse → JSON.stringify: reserializing
     // would reformat the whole file (key order, indentation, trailing
@@ -585,11 +626,12 @@ export function spliceChangelog(existing, version, notes, date) {
 }
 
 export const releaseBranchName = (name, version) => `feature/release-${name}-v${version}`;
-const worktreeDir = (name, version) => join(tmpdir(), `shipflow-release-${name}-${version}`);
+const worktreeDir = (repoPath, name, version) => join(tmpdir(), `shipflow-release-${sha256(resolve(repoPath)).slice(0, 16)}-${name}-${version}`);
 
 export function prepare(repoPath, config, name, version, notes, { date, featureBranchPrefix } = {}) {
   const component = resolveComponent(repoPath, config, name);
-  const devBranch = config?.branches?.dev ?? 'dev';
+  const policy = branchPolicy(config);
+  const devBranch = policy.base;
   const tag = tagFor(component, version);
   const stamp = date ?? new Date().toISOString().slice(0, 10);
 
@@ -608,7 +650,7 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
   if (featureBranchPrefix && !branch.startsWith(featureBranchPrefix)) {
     return { ok: false, error: `release branch ${branch} does not start with the configured featureBranchPrefix ${featureBranchPrefix}` };
   }
-  const dir = worktreeDir(name, version);
+  const dir = worktreeDir(repoPath, name, version);
 
   // A leftover worktree from an aborted run must not silently become the base
   // for this one — remove it, then re-create from the CURRENT dev.
@@ -620,7 +662,9 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
   if (added.status !== 0) return { ok: false, error: `git worktree add failed: ${added.stderr}` };
 
   const changed = [];
+  const dualHost = component.versionFiles.includes(`skills/${name}/.codex-plugin/plugin.json`);
   try {
+    if (dualHost) checkDualHost(dir, true);
     for (const relPath of component.versionFiles) {
       const abs = join(dir, relPath);
       if (!existsSync(abs)) continue;
@@ -645,6 +689,16 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
     writeFileSync(clAbs, spliced.content);
     changed.push(component.changelog);
 
+    if (dualHost) {
+      const catalog = readFileSync(join(dir, '.agents/plugins/marketplace.json'), 'utf8');
+      checkDualHost(dir, false);
+      if (readFileSync(join(dir, '.agents/plugins/marketplace.json'), 'utf8') !== catalog) throw new Error('unexpected generated catalog edit during version-only preparation');
+      const allowed = new Set([...changed, '.agents/plugins/marketplace.json']);
+      const actual = dirtyPaths(dir, ['.']);
+      const unexpected = actual.filter((path) => !allowed.has(path));
+      if (unexpected.length) throw new Error(`unexpected generated edits: ${unexpected.join(', ')}`);
+      changed.push(...actual.filter((path) => !changed.includes(path)));
+    }
     // Explicit pathspecs, never `git add -A`. The worktree should contain
     // nothing else, but "should" is not a guarantee worth a release commit.
     const staged = git(['add', '--', ...changed], { cwd: dir });
@@ -656,6 +710,21 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
     return { ok: true, branch, worktree: dir, tag, version, changed, diffstat: diff.stdout };
   } catch (e) {
     return { ok: false, error: String(e?.message ?? e) };
+  }
+}
+
+// Fixed adapter for this repository's declared dual-host layout. Ordinary
+// consumers never execute Python. Refuse pre-existing drift before rewriting.
+function checkDualHost(dir, before) {
+  for (const file of ['tools/sync_codex.py', 'tools/check_compatibility.py']) {
+    if (!existsSync(join(dir, file))) throw new Error(`dual-host preparation requires ${file}`);
+  }
+  const commands = before
+    ? [['tools/sync_codex.py', '--check'], ['tools/check_compatibility.py']]
+    : [['tools/sync_codex.py'], ['tools/sync_codex.py', '--check'], ['tools/check_compatibility.py']];
+  for (const args of commands) {
+    const result = spawnArgs('python3', args, { cwd: dir, env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } });
+    if (result.status !== 0) throw new Error(`dual-host ${args.join(' ')} failed: ${result.stderr || result.stdout}`);
   }
 }
 
@@ -675,9 +744,18 @@ export function prepare(repoPath, config, name, version, notes, { date, featureB
 // releases a version which isn't actually on the branch being dispatched.
 export function resolveReleaseTarget(status, requestedVersion = null) {
   const { state, versionOnMain, versionOnDev, devAhead, component } = status;
+  if (requestedVersion && !parseSemver(requestedVersion)) return { ok: false, error: 'requested version is not valid semver' };
+  if (status.preparedVersion && requestedVersion === status.preparedVersion) {
+    return { ok: true, version: requestedVersion, via: 'prepared-branch' };
+  }
+  if (requestedVersion && ![versionOnMain, versionOnDev].includes(requestedVersion)) {
+    return { ok: false, error: `requested version ${requestedVersion} is not on main, dev, or a verified prepared branch` };
+  }
+
 
   if (state === 'untagged-bump-on-main') {
     if (!devAhead) {
+      if (requestedVersion && requestedVersion !== versionOnMain) return { ok: false, error: 'requested version does not match main' };
       // The common, unambiguous case: whatever is on main is the only
       // candidate, dev has nothing higher.
       return { ok: true, version: versionOnMain, via: 'dispatch-on-main' };
@@ -705,7 +783,7 @@ export function resolveReleaseTarget(status, requestedVersion = null) {
   // Every other state (`clean`, `bump-on-dev-unpromoted`, `version-behind-tag`)
   // already has a single unambiguous candidate — dev, when it carries the
   // prepared bump, else main — matching what `cut()` used before this existed.
-  return { ok: true, version: versionOnDev ?? versionOnMain, via: 'prepared-branch' };
+  return { ok: true, version: requestedVersion ?? versionOnDev ?? versionOnMain, via: 'prepared-branch' };
 }
 
 // ─── cut ─────────────────────────────────────────────────────────────────────
@@ -730,8 +808,8 @@ function sleepSync(ms) {
 
 export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHash = null, skipHashCheck = false, ownerRepo, pollSeconds = 15, version = null } = {}) {
   const component = resolveComponent(repoPath, config, name);
-  const mainBranch = config?.branches?.main ?? 'main';
-  const devBranch = config?.branches?.dev ?? 'dev';
+  const policy = branchPolicy(config);
+  const { main: mainBranch, dev: devBranch } = policy;
   const owner = ownerRepo.split('/')[0];
 
   const status = readStatus(repoPath, config, name);
@@ -749,13 +827,28 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   // three-way state (#173: main has an untagged bump AND dev carries
   // something higher) is refused here rather than acted on by the fast path
   // below.
+  if (version && parseSemver(version)) {
+    const preparedRef = releaseBranchName(name, version);
+    const prepared = readVersionAt(repoPath, component, preparedRef);
+    if (prepared.ok && prepared.version === version && version !== status.versionOnMain) status.preparedVersion = version;
+  }
   const target = resolveReleaseTarget(status, version);
   if (!target.ok) return { ok: false, error: target.error };
   const targetVersion = target.version;
   const tag = tagFor(component, targetVersion);
   const branch = releaseBranchName(name, targetVersion);
+  const released = tagExistsOnRemote(repoPath, tag);
+  if (released.ok && released.exists) {
+    const rel = ghApiJson(`repos/${ownerRepo}/releases/tags/${tag}`);
+    return { ok: true, done: true, stage: 'tag', tag, targetVersion, releaseUrl: rel.ok ? rel.data?.html_url ?? null : null, note: 'already released' };
+  }
   const deadline = Date.now() + waitSeconds * 1000;
   const log = [];
+  const preparedExists = Boolean(revParse(repoPath, branch));
+  const onBase = readVersionAt(repoPath, component, `origin/${policy.base}`);
+  const baseHasVersion = onBase.ok && onBase.version === targetVersion;
+  const sourceRef = target.via === 'prepared-branch' ? (preparedExists ? branch : `origin/${policy.base}`) : `origin/${mainBranch}`;
+  const expectedNotes = notesAt(repoPath, component, sourceRef, targetVersion);
   const note = (stage, msg) => log.push({ stage, msg });
 
   // Fast path: the bump is already on main and simply was never tagged (a
@@ -765,6 +858,8 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
     if (already.ok && already.exists) {
       return { ok: true, done: true, stage: 'tag', tag, targetVersion, note: 'already released' };
     }
+    const verified = verifyDispatch(repoPath, component, mainBranch, targetVersion, expectedNotes);
+    if (!verified.ok) return verified;
     const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
     if (d.status !== 0) return { ok: false, error: `workflow dispatch failed: ${d.stderr}` };
     note('dispatch', `dispatched ${component.workflowFile} on ${mainBranch}`);
@@ -773,44 +868,46 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   }
 
   // 1. push the prepared branch
-  if (!revParse(repoPath, branch)) {
+  if (!preparedExists && !baseHasVersion) {
     return { ok: false, error: `branch ${branch} does not exist — run release-prepare first` };
   }
-  const dir = worktreeDir(name, targetVersion);
+  const dir = worktreeDir(repoPath, name, targetVersion);
   const pushCwd = existsSync(dir) ? dir : repoPath;
-  if (!revParse(repoPath, `origin/${branch}`)) {
+  if (preparedExists && !baseHasVersion && !revParse(repoPath, `origin/${branch}`)) {
     const pushed = git(['push', '-u', 'origin', branch], { cwd: pushCwd });
     if (pushed.status !== 0) return { ok: false, error: `git push failed: ${pushed.stderr}` };
     note('push', `pushed ${branch}`);
   }
 
-  // 2. open the feature → dev PR
-  let featurePr = prNumberFor(ownerRepo, `${owner}:${branch}`, devBranch);
+  const featureBase = policy.base;
+
+  // 2. open the feature PR against the configured base
+  let featurePr = prNumberFor(ownerRepo, `${owner}:${branch}`, featureBase);
   if (!featurePr) {
-    const devHasIt = readVersionAt(repoPath, component, `origin/${devBranch}`);
+    const devHasIt = readVersionAt(repoPath, component, `origin/${featureBase}`);
     if (devHasIt.ok && cmpSemver(devHasIt.version, targetVersion) >= 0) {
       note('feature-merged', `${targetVersion} is already on ${devBranch}`);
     } else {
       const created = spawnArgs('gh', [
-        'pr', 'create', '--repo', ownerRepo, '--base', devBranch, '--head', branch,
+        'pr', 'create', '--repo', ownerRepo, '--base', featureBase, '--head', branch,
         '--title', `chore(${name}): release v${targetVersion}`,
-        '--body', `Release ${tag}.\n\nVersion bump and CHANGELOG entry land together, in this one change — releases here are publish-on-merge, so a follow-up promotion to fix notes is too late.`,
+        '--body', `Release ${tag}.\n\nVersion bump and CHANGELOG entry land together, in this one change — an explicit dispatch reads both from main before creating the tag.`,
       ]);
       if (created.status !== 0) return { ok: false, error: `gh pr create failed: ${created.stderr}` };
-      featurePr = prNumberFor(ownerRepo, `${owner}:${branch}`, devBranch);
+      featurePr = prNumberFor(ownerRepo, `${owner}:${branch}`, featureBase);
       note('feature-pr', `opened #${featurePr}`);
     }
   }
 
   // 3. wait for its checks, then squash it into dev
   if (featurePr) {
-    const gate = waitForChecks(ownerRepo, featurePr, deadline, pollSeconds, log);
+    const gate = waitForChecks(ownerRepo, featurePr, featureBase, config, deadline, pollSeconds, log);
     if (!gate.ok) return gate;
     if (!gate.done) return { ok: true, done: false, stage: 'feature-pr', featurePr, tag, targetVersion, log, next: 'call release-cut again — waiting on the feature PR’s checks' };
-    const method = config?.mergeMethod?.featureToDevMethod ?? 'squash';
+    const method = (devBranch ? config?.mergeMethod?.featureToDevMethod : config?.mergeMethod?.devToMainMethod) ?? 'squash';
     const merged = spawnArgs('gh', ['pr', 'merge', String(featurePr), '--repo', ownerRepo, `--${method}`, '--delete-branch']);
     if (merged.status !== 0) return { ok: false, error: `gh pr merge failed on the feature PR: ${merged.stderr}` };
-    note('feature-merged', `merged #${featurePr} into ${devBranch} (${method})`);
+    note('feature-merged', `merged #${featurePr} into ${featureBase} (${method})`);
     rmSync(dir, { recursive: true, force: true });
     git(['worktree', 'prune'], { cwd: repoPath });
   }
@@ -818,25 +915,28 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   // 4. open (or find) the dev → main promotion. shipflow's rendered auto-merge
   //    workflow turns on native auto-merge from here; nothing polls for it.
   git(['fetch', 'origin', '--prune'], { cwd: repoPath });
-  let promotion = prNumberFor(ownerRepo, `${owner}:${devBranch}`, mainBranch);
-  if (!promotion) {
-    const created = spawnArgs('gh', [
-      'pr', 'create', '--repo', ownerRepo, '--base', mainBranch, '--head', devBranch,
-      '--title', `release: ${name} v${targetVersion}`,
-      '--body', releaseBody(name, targetVersion, status.collateral),
-    ]);
-    if (created.status !== 0) return { ok: false, error: `gh pr create failed on the promotion: ${created.stderr}` };
+  let promotion = null;
+  if (devBranch) {
     promotion = prNumberFor(ownerRepo, `${owner}:${devBranch}`, mainBranch);
-    note('promotion-open', `opened promotion #${promotion}`);
-  } else {
-    note('promotion-open', `promotion #${promotion} already open`);
-  }
+    if (!promotion) {
+      const created = spawnArgs('gh', [
+        'pr', 'create', '--repo', ownerRepo, '--base', mainBranch, '--head', devBranch,
+        '--title', `release: ${name} v${targetVersion}`,
+        '--body', releaseBody(name, targetVersion, status.collateral),
+      ]);
+      if (created.status !== 0) return { ok: false, error: `gh pr create failed on the promotion: ${created.stderr}` };
+      promotion = prNumberFor(ownerRepo, `${owner}:${devBranch}`, mainBranch);
+      note('promotion-open', `opened promotion #${promotion}`);
+    } else {
+      note('promotion-open', `promotion #${promotion} already open`);
+    }
 
-  // 5. wait for the promotion to auto-merge, then for the tag to appear
-  const landed = waitForMerge(ownerRepo, promotion, deadline, pollSeconds, log);
-  if (!landed.ok) return landed;
-  if (!landed.done) {
-    return { ok: true, done: false, stage: 'promotion-open', promotion, tag, targetVersion, log, next: 'call release-cut again — waiting on the promotion to auto-merge' };
+    // 5. wait for the promotion to auto-merge, then for the tag to appear
+    const landed = waitForMerge(ownerRepo, promotion, deadline, pollSeconds, log);
+    if (!landed.ok) return landed;
+    if (!landed.done) {
+      return { ok: true, done: false, stage: 'promotion-open', promotion, tag, targetVersion, log, next: 'call release-cut again — waiting on the promotion to auto-merge' };
+    }
   }
 
   // 6. The promotion landing cuts NOTHING on its own. Every caller's release
@@ -855,6 +955,8 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   //    an in-flight one.
   const already = tagExistsOnRemote(repoPath, tag);
   if (!(already.ok && already.exists)) {
+    const verified = verifyDispatch(repoPath, component, mainBranch, targetVersion, expectedNotes);
+    if (!verified.ok) return verified;
     const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
     if (d.status !== 0) {
       return { ok: false, error: `the promotion merged but dispatching ${component.workflowFile} failed: ${d.stderr}. Nothing is tagged; re-run release-cut to retry the dispatch.` };
@@ -863,6 +965,27 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   }
   const result = waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, promotion);
   return { ...result, targetVersion };
+}
+
+function notesAt(repoPath, component, ref, version) {
+  const result = git(['show', `${ref}:${component.changelog}`], { cwd: repoPath });
+  if (result.status !== 0) return null;
+  const lines = result.stdout.split('\n');
+  const start = lines.findIndex((line) => line.startsWith('## ') && (line.slice(3).split(/\s+/)[0] === version || line.slice(3).split(/\s+/)[0] === `[${version}]`));
+  if (start < 0) return null;
+  const end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
+  return lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim() || null;
+}
+
+function verifyDispatch(repoPath, component, mainBranch, version, expectedNotes) {
+  const fetched = git(['fetch', 'origin', '--tags', '--prune'], { cwd: repoPath });
+  if (fetched.status !== 0) return { ok: false, error: 'cannot fetch main before dispatch' };
+  const current = readVersionAt(repoPath, component, `origin/${mainBranch}`);
+  if (!current.ok || current.version !== version) return { ok: false, error: `main version changed before dispatch; expected ${version}` };
+  if (!expectedNotes || notesAt(repoPath, component, `origin/${mainBranch}`, version) !== expectedNotes) {
+    return { ok: false, error: 'main changelog missing or changed before dispatch' };
+  }
+  return { ok: true };
 }
 
 function releaseBody(name, version, collateral) {
@@ -875,25 +998,60 @@ function releaseBody(name, version, collateral) {
   return `Promotes \`${name}\` v${version} to main.${extra}`;
 }
 
-function waitForChecks(ownerRepo, prNumber, deadline, pollSeconds, log) {
+function waitForChecks(ownerRepo, prNumber, base, config, deadline, pollSeconds, log) {
+  const protection = ghApiJson(`repos/${ownerRepo}/branches/${encodeURIComponent(base)}/protection`);
+  if (!protection.ok && !/404/.test(protection.stderr)) return { ok: false, error: 'could not read required branch checks' };
+  const rules = ghApiJson(`repos/${ownerRepo}/rules/branches/${encodeURIComponent(base)}`);
+  if (!rules.ok) return { ok: false, error: 'could not read branch rules' };
+  const checks = protection.data?.required_status_checks?.checks ?? [];
+  const required = [
+    ...checks.map((c) => ({ context: c.context, appId: c.app_id })),
+    ...(protection.data?.required_status_checks?.contexts ?? [])
+      .filter((context) => !checks.some((c) => c.context === context))
+      .map((context) => ({ context })),
+    ...(rules.data ?? []).filter((r) => r.type === 'required_status_checks')
+      .flatMap((r) => (r.parameters?.required_status_checks ?? []).map((c) => ({ context: c.context, appId: c.integration_id }))),
+    ...(base === branchPolicy(config).main && config?.protectionOwner !== 'external' ? config?.requiredChecks ?? [] : [])
+      .map((context) => ({ context })),
+  ];
+  const matchesRun = (required, run) => run.name === required.context &&
+    (required.appId == null || required.appId === -1 || run.app?.id === required.appId);
+  const matchesStatus = (required, status) => status.context === required.context &&
+    (required.appId == null || required.appId === -1);
   for (;;) {
     const r = ghApiJson(`repos/${ownerRepo}/pulls/${prNumber}`);
     if (!r.ok) return { ok: false, error: `could not read PR #${prNumber}: ${r.stderr}` };
     const sha = r.data?.head?.sha;
-    const cr = ghApiJson(`repos/${ownerRepo}/commits/${sha}/check-runs?per_page=100`);
-    if (!cr.ok) return { ok: false, error: `could not read check runs: ${cr.stderr}` };
-    const runs = cr.data?.check_runs ?? [];
+    const runs = [];
+    const contexts = [];
+    for (let page = 1; ; page++) {
+      const cr = ghApiJson(`repos/${ownerRepo}/commits/${sha}/check-runs?per_page=100&page=${page}`);
+      if (!cr.ok) return { ok: false, error: `could not read check runs: ${cr.stderr}` };
+      const batch = cr.data?.check_runs ?? [];
+      runs.push(...batch);
+      if (batch.length < 100) break;
+    }
+    for (let page = 1; ; page++) {
+      const cs = ghApiJson(`repos/${ownerRepo}/commits/${sha}/status?per_page=100&page=${page}`);
+      if (!cs.ok) return { ok: false, error: 'could not read commit statuses' };
+      const batch = cs.data?.statuses ?? [];
+      contexts.push(...batch);
+      if (batch.length < 100) break;
+    }
+    const missing = required.filter((r) => !runs.some((c) => matchesRun(r, c) && c.status === 'completed' && ['success', 'neutral', 'skipped'].includes(c.conclusion)) && !contexts.some((c) => matchesStatus(r, c) && c.state === 'success'));
+    const failedStatuses = contexts.filter((c) => required.some((r) => matchesStatus(r, c)) && ['failure', 'error'].includes(c.state));
+    if (failedStatuses.length) return { ok: false, error: `required statuses failed: ${failedStatuses.map((c) => c.context).join(', ')}` };
     const pending = runs.filter((c) => c.status !== 'completed');
     const failed = runs.filter((c) => c.status === 'completed' && !['success', 'neutral', 'skipped'].includes(c.conclusion));
     if (failed.length > 0) {
       return { ok: false, error: `checks failed on PR #${prNumber}: ${failed.map((c) => c.name).join(', ')} — fix them, then call release-cut again` };
     }
-    if (runs.length > 0 && pending.length === 0) {
+    if ((runs.length > 0 || contexts.length > 0) && pending.length === 0 && missing.length === 0) {
       log.push({ stage: 'feature-pr', msg: `${runs.length} checks green` });
       return { ok: true, done: true };
     }
     if (Date.now() + pollSeconds * 1000 > deadline) {
-      log.push({ stage: 'feature-pr', msg: `${pending.length}/${runs.length} checks still running` });
+      log.push({ stage: 'feature-pr', msg: `${pending.length}/${runs.length} checks still running; missing required checks: ${missing.map((r) => r.context).join(', ')}` });
       return { ok: true, done: false };
     }
     sleepSync(pollSeconds * 1000);
