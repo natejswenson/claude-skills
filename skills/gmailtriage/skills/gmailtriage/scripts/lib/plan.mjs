@@ -10,18 +10,11 @@ import {
   matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE,
   isNearDuplicateLabel, SYSTEM_LABELS, reconcileDestinations,
 } from './rules.mjs';
+import { parseSender, resolveSender } from './sender.mjs';
 
 // ── proposing ───────────────────────────────────────────────────────────────
 
-const domainOf = (from) => {
-  const m = /<?([^<>@\s]+)@([^<>\s]+)>?\s*$/.exec(String(from ?? '').trim());
-  return m ? m[2].toLowerCase() : null;
-};
-
-const addressOf = (from) => {
-  const m = /<?([^<>\s]+@[^<>\s]+)>?\s*$/.exec(String(from ?? '').trim());
-  return m ? m[1].toLowerCase() : null;
-};
+const domainOf = (from) => parseSender(from)?.domain ?? null;
 
 /**
  * Senders this skill never proposes a trash rule for, however bulky they look.
@@ -165,7 +158,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   // sitting in front of their sort rule.
   const claimedBy = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
+    const addr = resolveSender(t).address;
     if (!addr) continue;
     const rule = (rules ?? []).find((r) => matches(r, t, new Date(), { ignoreFiled: true }));
     if (!rule) continue;
@@ -177,7 +170,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
 
   const byAddr = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
+    const addr = resolveSender(t).address;
     if (!addr) continue;
     // Excluded here rather than filtered out of `threads` up front, so
     // `sampled` still reports what was actually read.
@@ -320,7 +313,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
 export const candidateToRule = (c) => ({
   id: c.id,
   action: 'trash',
-  match: { from: c.from, hasUnsubscribe: true },
+  match: { fromAddress: c.from, hasUnsubscribe: true },
   note: `bulk mail from ${c.from} — ${c.count} in the sample, e.g. "${String(c.sample).slice(0, 60)}"`,
 });
 
@@ -344,7 +337,7 @@ export const candidateToSortRule = (c, destination = c.destination) => {
     id: c.id,
     action: 'label',
     label: destination,
-    match: { from: c.from },
+    match: { fromAddress: c.from },
     note: `file mail from ${c.from} — ${c.count} in the sample, e.g. "${String(c.sample).slice(0, 60)}"`,
   };
   if (c.keepInInbox) {
@@ -453,8 +446,7 @@ export function subdivide(threads, { parent, labels = [], minCount = 1 } = {}) {
 
   const byDomain = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
-    const domain = domainOf(t.from);
+    const { address: addr, domain } = resolveSender(t);
     if (!addr || !domain) continue;
     if (!byDomain.has(domain)) byDomain.set(domain, []);
     byDomain.get(domain).push({ ...t, _addr: addr });
@@ -537,7 +529,7 @@ export const clusterToSubRule = (c, destination = c.destination, subjectContains
       'a sender-only rule would file all of them into one folder. Give it a subjectContains naming the organisation.',
     );
   }
-  const match = { from: c.from };
+  const match = { fromDomain: c.domain };
   if (subjectContains) match.subjectContains = subjectContains;
   return {
     id: c.id,
@@ -641,7 +633,7 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
 
     const byAddr = new Map();
     for (const t of rest) {
-      const addr = addressOf(t.from);
+      const addr = resolveSender(t).address;
       if (!addr) continue;
       if (!byAddr.has(addr)) byAddr.set(addr, []);
       byAddr.get(addr).push(t);

@@ -20,8 +20,8 @@
     },
     {
       "path": "candidates.json",
-      "bytes": 12687,
-      "sha256": "47989ae5e8d6191e8e64120556ea580866032ad350ee1c3617803124fae4384d"
+      "bytes": 12736,
+      "sha256": "0460e0328e2fbe273e7c19e8144588d3674e9f1ad0050cd060c098923d631538"
     },
     {
       "path": "ingest.txt",
@@ -110,8 +110,8 @@
     },
     {
       "path": "subdivide-candidates.json",
-      "bytes": 1704,
-      "sha256": "05c4f913e0570abd36f4bb85c94b7b465e7d34b77239a26998cafa3d21530cb4"
+      "bytes": 1714,
+      "sha256": "4c71a29f1fc1c316ed71707c8398835f1a1178af7c62aaa54e6f1cd896d006b6"
     },
     {
       "path": "subdivide.txt",

@@ -6,7 +6,7 @@
       "action": "label",
       "label": "Recruiting/Globex",
       "match": {
-        "from": "@globex.example"
+        "fromDomain": "globex.example"
       },
       "note": "file mail from @globex.example — 7 already in Recruiting, e.g. \"Interview loop with Globex — stage 1\""
     },
@@ -15,7 +15,7 @@
       "action": "label",
       "label": "Recruiting/Initech",
       "match": {
-        "from": "@recruiting.initech.example"
+        "fromDomain": "recruiting.initech.example"
       },
       "note": "file mail from @recruiting.initech.example — 4 already in Recruiting, e.g. \"Principal Engineer opening at Initech — req 2300\""
     }

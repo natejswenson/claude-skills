@@ -207,8 +207,9 @@ test('subdivide never names a cluster after the vendor that hosts it', () => {
   // tempting their domain looks.
   assert.ok(cands.sortCandidates.length >= 1, 'no cluster was housed at all — the child matcher has stopped matching');
   for (const r of cands.sortCandidates) {
-    assert.ok(!/greenhouse|workable|lever|ashby/.test(r.match.from),
-      `a vendor-hosted cluster reached the ready-to-add list: ${r.match.from}`);
+    assert.equal(typeof r.match.fromDomain, 'string', 'a ready domain cluster must name its exact domain');
+    assert.ok(!/greenhouse|workable|lever|ashby/.test(r.match.fromDomain),
+      `a vendor-hosted cluster reached the ready-to-add list: ${r.match.fromDomain}`);
   }
   assert.ok(cands.unhoused.length >= 2, 'the vendor-hosted clusters stopped being held back');
 });

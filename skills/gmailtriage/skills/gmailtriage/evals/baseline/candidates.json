@@ -4,7 +4,7 @@
       "id": "support-packages-example",
       "action": "trash",
       "match": {
-        "from": "support@packages.example",
+        "fromAddress": "support@packages.example",
         "hasUnsubscribe": true
       },
       "note": "bulk mail from support@packages.example — 9 in the sample, e.g. \"Package published: build 1\""
@@ -13,7 +13,7 @@
       "id": "outreach-leadgen-example",
       "action": "trash",
       "match": {
-        "from": "outreach@leadgen.example",
+        "fromAddress": "outreach@leadgen.example",
         "hasUnsubscribe": true
       },
       "note": "bulk mail from outreach@leadgen.example — 4 in the sample, e.g. \"Quick question, #1\""
@@ -22,7 +22,7 @@
       "id": "secure-esignature-example",
       "action": "trash",
       "match": {
-        "from": "secure@esignature.example",
+        "fromAddress": "secure@esignature.example",
         "hasUnsubscribe": true
       },
       "note": "bulk mail from secure@esignature.example — 4 in the sample, e.g. \"Signing complete: document 1\""
@@ -31,7 +31,7 @@
       "id": "deals-shopfront-example",
       "action": "trash",
       "match": {
-        "from": "deals@shopfront.example",
+        "fromAddress": "deals@shopfront.example",
         "hasUnsubscribe": true
       },
       "note": "bulk mail from deals@shopfront.example — 3 in the sample, e.g. \"20% off this week only\""
@@ -40,7 +40,7 @@
       "id": "news-readinglist-example",
       "action": "trash",
       "match": {
-        "from": "news@readinglist.example",
+        "fromAddress": "news@readinglist.example",
         "hasUnsubscribe": true
       },
       "note": "bulk mail from news@readinglist.example — 3 in the sample, e.g. \"Your weekly picks, issue 1\""
@@ -52,7 +52,7 @@
       "action": "label",
       "label": "Recruiting",
       "match": {
-        "from": "careers@recruiting.initech.example"
+        "fromAddress": "careers@recruiting.initech.example"
       },
       "note": "file mail from careers@recruiting.initech.example — 4 in the sample, e.g. \"Principal Engineer opening at Initech — req 2300\""
     },
@@ -61,7 +61,7 @@
       "action": "label",
       "label": "Statements",
       "match": {
-        "from": "edocuments@statements.northbank.example"
+        "fromAddress": "edocuments@statements.northbank.example"
       },
       "note": "file mail from edocuments@statements.northbank.example — 4 in the sample, e.g. \"New statement available (1)\" — tagged in place, never archived: this sender also delivers codes or receipts",
       "keepInInbox": true

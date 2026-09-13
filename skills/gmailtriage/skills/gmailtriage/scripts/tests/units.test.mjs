@@ -1029,14 +1029,17 @@ test('ingest: normalize, dedupe, category intersection, and the field allowlist'
   assert.throws(() => normalizeLabels({ nope: true }), /verbatim/);
 });
 
-test('lintRuleSet warns on a bare-domain from, and only on one', async () => {
+test('lintRuleSet warns on every legacy sender substring', async () => {
   const { lintRuleSet } = await import('../lib/rules.mjs');
   const bare = lintRuleSet([rule({ id: 'a', match: { from: 'northbank.example' } })]);
   assert.equal(bare.length, 1);
   assert.equal(bare[0].kind, 'bare-domain-from');
-  // Two-sided: anchoring silences it, and so does a full address.
-  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { from: '@northbank.example' } })]), []);
-  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { from: 'alerts@northbank.example' } })]), []);
+  // An @ prefix and a full-looking address are still substrings.
+  for (const from of ['@northbank.example', 'alerts@northbank.example']) {
+    assert.equal(lintRuleSet([rule({ id: 'a', match: { from } })])[0].kind, 'substring-from');
+  }
+  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { fromDomain: 'northbank.example' } })]), []);
+  assert.deepEqual(lintRuleSet([rule({ id: 'a', match: { fromAddress: 'alerts@northbank.example' } })]), []);
 });
 
 test('lintRuleSet warns when a trash rule stands ahead of a sort rule for the same sender', async () => {
@@ -1045,15 +1048,16 @@ test('lintRuleSet warns when a trash rule stands ahead of a sort rule for the sa
     rule({ id: 'bin-old', match: { from: 'careers@org.example', subjectContains: 'code' } }),
     rule({ id: 'file-it', action: 'label', label: 'Jobs', match: { from: '@org.example' } }),
   ];
-  const w = lintRuleSet(trashFirst);
+  const overlapWarnings = (rules) => lintRuleSet(rules).filter((w) => w.kind === 'trash-shadows-sort');
+  const w = overlapWarnings(trashFirst);
   assert.equal(w.length, 1);
   assert.equal(w[0].kind, 'trash-shadows-sort');
   assert.equal(w[0].ruleId, 'bin-old');
   assert.equal(w[0].otherId, 'file-it');
   // Two-sided: sort-before-trash is the safe order and earns no warning,
   // and unrelated senders never pair up.
-  assert.deepEqual(lintRuleSet([trashFirst[1], trashFirst[0]]), []);
-  assert.deepEqual(lintRuleSet([
+  assert.deepEqual(overlapWarnings([trashFirst[1], trashFirst[0]]), []);
+  assert.deepEqual(overlapWarnings([
     rule({ id: 'bin', match: { from: '@a.example' } }),
     rule({ id: 'file', action: 'label', label: 'B', match: { from: '@b.example' } }),
   ]), []);
