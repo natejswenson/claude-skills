@@ -1,0 +1,658 @@
+{
+  "schema": 1,
+  "repository": "natejswenson/fuzzy-boom-snicker",
+  "base": "1e4dcd1128ee3a45854da754d899044e23cbd3ed",
+  "host": "codex",
+  "result": "completed requested PR outcomes with operator interventions and local repairs; live release readiness remains incomplete",
+  "sources": {
+    "candidate": {
+      "path": "/private/tmp/issueflow-completion-live-20260912/source.json",
+      "manifestHash": "c3f071838751fd67bc699101b403e8baeebbcd568f965ebf3862d89733369243",
+      "aggregateHash": "6488e8ac0a6b7ed92127caa481b31f1136cd242e4083b60226a4a24168db288b",
+      "fileCount": 251,
+      "modifiedSinceCapture": []
+    },
+    "repaired": {
+      "path": "/private/tmp/issueflow-completion-live-20260912/repaired-source.json",
+      "manifestHash": "424ae03999349b6d05e97518667e0a5ff3a7a710771e64d08c5e7d931477bfc7",
+      "aggregateHash": "80e2035567facf9c36ff2983e9440c4fdacd4ea89e100e8b15d084f232f176b1",
+      "fileCount": 249,
+      "modifiedSinceCapture": []
+    },
+    "final-candidate": {
+      "path": "/private/tmp/issueflow-completion-live-20260912/final-source.json",
+      "manifestHash": "a903ee7968c065d8afbb253bed7af88608daaba8a27ada9d0ff3721502b45cd0",
+      "aggregateHash": "3dd7a1b20fdc4eed5d404ca056dfb702f05dd0bdd319776fd6047785debaae7e",
+      "fileCount": 246,
+      "modifiedSinceCapture": []
+    },
+    "final-candidate-v2": {
+      "path": "/private/tmp/issueflow-completion-live-20260912/final-v2-source.json",
+      "manifestHash": "a3720331893a2d384773d37c9bc5c8788383cae3410e40523e59d8bb6d8baaaa",
+      "aggregateHash": "c419705e4eb49b60b240314091754385701aa6146ad74773fc55cad90a56dee5",
+      "fileCount": 246,
+      "modifiedSinceCapture": []
+    },
+    "final-candidate-v3": {
+      "path": "/private/tmp/issueflow-completion-live-20260912/final-v3-source.json",
+      "manifestHash": "59e3fbe21c36342e66e023a330e83bf5d5568ed1afe633a20cda1c61e61fd083",
+      "aggregateHash": "096860d03b9d24533c20b0e292dfbcf70a3993a5fd739933721c89661c3deaf7",
+      "fileCount": 246,
+      "modifiedSinceCapture": []
+    }
+  },
+  "eval": {
+    "contractClauses": 109,
+    "automaticallyExtractedClauses": 106,
+    "manuallyAnchoredClauses": 3,
+    "coverage": {
+      "examined": 9,
+      "unexamined": 100,
+      "probeExamined": 6,
+      "judgmentExamined": 3,
+      "probesApplied": [
+        "announce-once",
+        "pipeline-reshaping",
+        "pr-into-main",
+        "unobserved-test-claim"
+      ],
+      "probesUnbound": [
+        "brand-bypass",
+        "done-without-freeze",
+        "file-contents-in-chat",
+        "question-budget"
+      ]
+    },
+    "machineFindings": [],
+    "judgmentFindings": [
+      {
+        "id": "live-cold-preflight",
+        "clauseId": "manual-da21bbb6",
+        "eventId": "e481",
+        "severity": "high",
+        "detail": "Cold planner guessed the execution directory because its complete brief omitted the executable canonical-run preflight command; actual preflight exited 2 and required parent clarification."
+      },
+      {
+        "id": "live-excluded-handoff",
+        "clauseId": "manual-571cd790",
+        "eventId": "e738",
+        "severity": "medium",
+        "detail": "The ready handoff asked the user to approve/merge even though the persisted issue endpoint explicitly excluded merge; no merge was performed."
+      },
+      {
+        "id": "live-stale-heartbeat",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e858",
+        "severity": "high",
+        "detail": "The controller immediately labeled the newly briefed amendment implementation stalled for 12 minutes by measuring the prior attempt progress file, not the current dispatch age."
+      },
+      {
+        "id": "live-autonomous-window",
+        "clauseId": "manual-c73f2a9b",
+        "eventId": "e960",
+        "severity": "high",
+        "detail": "Prepared autonomous run stopped at its 1800-second window before registering a delivered review, although its recorded 14400-second cumulative cap remained available; next bypassed automatic renewal."
+      }
+    ],
+    "window": {
+      "start": "2026-09-13T04:01:15.604Z",
+      "end": "2026-09-13T04:48:22.480Z",
+      "note": "Parent/children captured through this cutoff, not a closed conversation. Earlier parent events excluded; full-source drop counts retained."
+    },
+    "events": 606,
+    "eventKinds": {
+      "user": 19,
+      "assistant": 50,
+      "tool-use": 269,
+      "tool-result": 268
+    },
+    "captureCount": 19,
+    "manualAnchors": [
+      {
+        "id": "manual-da21bbb6",
+        "file": "skills/issueflow/skills/issueflow/scripts/lib/brief.mjs",
+        "line": 218,
+        "endLine": 220,
+        "rawExcerpt": "    'You are running cold: you cannot see the conversation that dispatched you, and',\n    'nothing you were not handed here exists for you. Everything you need is below or',\n    'named by a path below.',",
+        "fileSha256": "49248685a16a67f32af99a325dc53cc0b2e6b874801be586cdd31c2172755284",
+        "reason": "Verbatim committed contract/template wording missed by automatic extraction; manually anchored, not a new rule."
+      },
+      {
+        "id": "manual-571cd790",
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 85,
+        "endLine": 85,
+        "rawExcerpt": "60 seconds. Persist the requested endpoint and existing authority; exclusions prevail.",
+        "fileSha256": "7177f033121b852d90a607add3b6bd5c773f7e814c5943b39a0adf3dc8af973b",
+        "reason": "Verbatim committed contract/template wording missed by automatic extraction; manually anchored, not a new rule."
+      },
+      {
+        "id": "manual-c73f2a9b",
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 75,
+        "endLine": 76,
+        "rawExcerpt": "`start` is autonomous unless `--review-plan` is present. Auto runs also renew\ntheir bounded time windows automatically; `--autonomous` remains a compatible",
+        "fileSha256": "7177f033121b852d90a607add3b6bd5c773f7e814c5943b39a0adf3dc8af973b",
+        "reason": "Verbatim committed contract/template wording missed by automatic extraction; manually anchored, not a new rule."
+      }
+    ]
+  },
+  "cases": {
+    "count": {
+      "issue": 11,
+      "pr": "https://github.com/natejswenson/fuzzy-boom-snicker/pull/15",
+      "head": "00b748874b51792accf183ca80afb61b59727bfc",
+      "base": "dev",
+      "draft": false,
+      "mergedAt": null,
+      "reviewIds": [
+        "PRR_kwDOUXlCb88AAAABNVGrGg"
+      ],
+      "reviewUrls": [
+        "https://github.com/natejswenson/fuzzy-boom-snicker/pull/15#pullrequestreview-5189511962"
+      ],
+      "reviewRounds": 1,
+      "reviewCoverageGaps": [
+        [
+          "Hosted GitHub test check status; this local code review did not query GitHub.",
+          "Sparse-array and input-validation semantics, explicitly excluded by the issue."
+        ]
+      ],
+      "ci": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-13T04:15:41Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/natejswenson/fuzzy-boom-snicker/actions/runs/34737464356/job/103671254899",
+          "name": "test",
+          "startedAt": "2026-09-13T04:15:34Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "remoteCapturedAt": "2026-09-13T04:43:07.629548+00:00",
+      "verificationBatch": "c1093cd1-bb3a-46ff-adf5-388db5da7b09",
+      "receipts": [
+        {
+          "id": "c1fe62dd-6a55-4fb4-b803-5d7f0a16fa62",
+          "check": "targeted",
+          "contractHash": "7a22856fbed2c0a59cfbf83489c2c9f1dd1648d02265976a126c5eb29e6a4613",
+          "head": "00b748874b51792accf183ca80afb61b59727bfc",
+          "passed": true,
+          "greenSummaries": [
+            {
+              "runner": "node --test",
+              "passed": 6,
+              "failed": 0,
+              "exitCode": null,
+              "green": true,
+              "loadError": false
+            }
+          ],
+          "red": {
+            "exitCode": 1,
+            "summaries": [
+              {
+                "runner": "node --test",
+                "passed": 3,
+                "failed": 3,
+                "exitCode": null,
+                "green": false,
+                "loadError": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "e7be4a0c-eed5-497b-9207-3725c75a84da",
+          "check": "suite",
+          "contractHash": "7a22856fbed2c0a59cfbf83489c2c9f1dd1648d02265976a126c5eb29e6a4613",
+          "head": "00b748874b51792accf183ca80afb61b59727bfc",
+          "passed": true,
+          "greenSummaries": [
+            {
+              "runner": "node --test",
+              "passed": 7,
+              "failed": 0,
+              "exitCode": null,
+              "green": true,
+              "loadError": false
+            }
+          ],
+          "red": null
+        }
+      ],
+      "reviewEndpointStops": [
+        {
+          "commandId": "e99e4737-79a0-4b7c-9538-a9dd6ccc6f9d",
+          "elapsedSeconds": 789.032,
+          "endedAt": "2026-09-13T04:19:03.072123+00:00"
+        },
+        {
+          "commandId": "9fa76bb4-e07f-42ce-b513-f205992cb5e3",
+          "elapsedSeconds": 2508.482,
+          "endedAt": "2026-09-13T04:47:42.522357+00:00"
+        }
+      ],
+      "completion": {
+        "schema": 1,
+        "endpoint": "reviewed-pr",
+        "source": "User requested actual Issueflow verification in fuzzy-boom-snicker; prior campaign scope retained",
+        "excluded": [
+          "merge",
+          "deploy",
+          "close-issue"
+        ],
+        "deployments": [],
+        "companions": [],
+        "authorizations": [],
+        "obligations": {},
+        "state": "complete",
+        "completedAt": "2026-09-13T04:47:38.240Z"
+      },
+      "cumulativeCapSeconds": 14400,
+      "budgetRenewals": []
+    },
+    "cap": {
+      "issue": 12,
+      "pr": "https://github.com/natejswenson/fuzzy-boom-snicker/pull/14",
+      "head": "0255e978bc0bd1587904893a252b85ae3ca6d1c3",
+      "base": "dev",
+      "draft": false,
+      "mergedAt": null,
+      "reviewIds": [
+        "PRR_kwDOUXlCb88AAAABNVGrOQ"
+      ],
+      "reviewUrls": [
+        "https://github.com/natejswenson/fuzzy-boom-snicker/pull/14#pullrequestreview-5189511993"
+      ],
+      "reviewRounds": 1,
+      "reviewCoverageGaps": [
+        [
+          "Hosted GitHub CI on the reviewed head; parent owns CI observation.",
+          "Independent frozen-base regression replay; inspected the supplied verification evidence and confirmed the zero assertion contradicts the deleted fallback."
+        ]
+      ],
+      "ci": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-13T04:15:06Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/natejswenson/fuzzy-boom-snicker/actions/runs/34737438990/job/103671198165",
+          "name": "test",
+          "startedAt": "2026-09-13T04:15:01Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "remoteCapturedAt": "2026-09-13T04:43:06.961310+00:00",
+      "verificationBatch": "a098412c-0471-4743-8aa3-913e9c345c6e",
+      "receipts": [
+        {
+          "id": "2d25d2e3-4eb7-475a-b05b-1b9954a66311",
+          "check": "targeted",
+          "contractHash": "418d2015805551ce15cc817ab5e7b02b8270fbce8a928ca90d9bd2a64165d1f5",
+          "head": "0255e978bc0bd1587904893a252b85ae3ca6d1c3",
+          "passed": true,
+          "greenSummaries": [
+            {
+              "runner": "node --test",
+              "passed": 9,
+              "failed": 0,
+              "exitCode": null,
+              "green": true,
+              "loadError": false
+            }
+          ],
+          "red": {
+            "exitCode": 1,
+            "summaries": [
+              {
+                "runner": "node --test",
+                "passed": 8,
+                "failed": 1,
+                "exitCode": null,
+                "green": false,
+                "loadError": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "ccef13d4-8ec2-4924-bfdd-c993b4c385c0",
+          "check": "suite",
+          "contractHash": "418d2015805551ce15cc817ab5e7b02b8270fbce8a928ca90d9bd2a64165d1f5",
+          "head": "0255e978bc0bd1587904893a252b85ae3ca6d1c3",
+          "passed": true,
+          "greenSummaries": [
+            {
+              "runner": "node --test",
+              "passed": 10,
+              "failed": 0,
+              "exitCode": null,
+              "green": true,
+              "loadError": false
+            }
+          ],
+          "red": null
+        }
+      ],
+      "reviewEndpointStops": [
+        {
+          "commandId": "be5bd8b9-65e4-47ba-8106-6075da8f663d",
+          "elapsedSeconds": 760.509,
+          "endedAt": "2026-09-13T04:19:04.389951+00:00"
+        },
+        {
+          "commandId": "6f7682f9-6858-471f-b274-f93f36bb2db0",
+          "elapsedSeconds": 2449.444,
+          "endedAt": "2026-09-13T04:47:13.325212+00:00"
+        }
+      ],
+      "completion": {
+        "schema": 1,
+        "endpoint": "reviewed-pr",
+        "source": "User requested actual Issueflow verification in fuzzy-boom-snicker; prior campaign scope retained",
+        "excluded": [
+          "merge",
+          "deploy",
+          "close-issue"
+        ],
+        "deployments": [],
+        "companions": [],
+        "authorizations": [],
+        "obligations": {},
+        "state": "complete",
+        "completedAt": "2026-09-13T04:47:08.632Z"
+      },
+      "cumulativeCapSeconds": 14400,
+      "budgetRenewals": []
+    },
+    "docs": {
+      "issue": 13,
+      "pr": "https://github.com/natejswenson/fuzzy-boom-snicker/pull/16",
+      "head": "f23a5cf9426b3153692dc96f229927c64d1b70f2",
+      "base": "dev",
+      "draft": true,
+      "mergedAt": null,
+      "reviewIds": [
+        "PRR_kwDOUXlCb88AAAABNVHKdw",
+        "PRR_kwDOUXlCb88AAAABNVJcHQ"
+      ],
+      "reviewUrls": [
+        "https://github.com/natejswenson/fuzzy-boom-snicker/pull/16#pullrequestreview-5189519991",
+        "https://github.com/natejswenson/fuzzy-boom-snicker/pull/16#pullrequestreview-5189557277"
+      ],
+      "reviewRounds": 2,
+      "reviewCoverageGaps": [
+        [
+          "Hosted GitHub PR draft status and CI were not queried; review used the supplied local diff, checkout, and evidence packet.",
+          "Did not rerun npm test; supplied verification receipts report both checks passed."
+        ],
+        [
+          "Unchanged implementation outside amendment regression scope; round 1 reviewed the initial README change.",
+          "Live GitHub draft status and hosted CI; parent owns remote completion gates."
+        ]
+      ],
+      "ci": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-13T04:34:28Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/natejswenson/fuzzy-boom-snicker/actions/runs/34738201838/job/103673279760",
+          "name": "test",
+          "startedAt": "2026-09-13T04:34:20Z",
+          "status": "COMPLETED",
+          "workflowName": "CI"
+        }
+      ],
+      "remoteCapturedAt": "2026-09-13T04:43:08.199434+00:00",
+      "verificationBatch": "26028479-6db4-4772-bf6d-476d0f3dad75",
+      "receipts": [
+        {
+          "id": "f0783ce2-5460-4a3c-aeef-55ed58d039bc",
+          "check": "readme-content",
+          "contractHash": "28603631dd7e3cf4395866eb162922206954fe6d2082743d32167c66fac4a7bd",
+          "head": "f23a5cf9426b3153692dc96f229927c64d1b70f2",
+          "passed": true,
+          "greenSummaries": [],
+          "red": null
+        },
+        {
+          "id": "7724e4fa-5a70-4599-8f0e-5b17b554ec89",
+          "check": "full-suite",
+          "contractHash": "28603631dd7e3cf4395866eb162922206954fe6d2082743d32167c66fac4a7bd",
+          "head": "f23a5cf9426b3153692dc96f229927c64d1b70f2",
+          "passed": true,
+          "greenSummaries": [
+            {
+              "runner": "node --test",
+              "passed": 2,
+              "failed": 0,
+              "exitCode": null,
+              "green": true,
+              "loadError": false
+            }
+          ],
+          "red": null
+        },
+        {
+          "id": "1e656fa6-6122-489c-b52c-c134ac512063",
+          "check": "troubleshooting-content",
+          "contractHash": "28603631dd7e3cf4395866eb162922206954fe6d2082743d32167c66fac4a7bd",
+          "head": "f23a5cf9426b3153692dc96f229927c64d1b70f2",
+          "passed": true,
+          "greenSummaries": [],
+          "red": null
+        }
+      ],
+      "reviewEndpointStops": [
+        {
+          "commandId": "c12d0b9b-318d-4f5f-84fb-c0694c2c4fc0",
+          "elapsedSeconds": 996.647,
+          "endedAt": "2026-09-13T04:23:04.981279+00:00"
+        },
+        {
+          "commandId": "963b088b-0adf-4e61-9b21-79b426e138d7",
+          "elapsedSeconds": 2079.209,
+          "endedAt": "2026-09-13T04:41:07.542901+00:00"
+        },
+        {
+          "commandId": "3ad6c13a-7ad3-4606-8234-419dc6b4eb33",
+          "elapsedSeconds": 2425.977,
+          "endedAt": "2026-09-13T04:46:54.311332+00:00"
+        }
+      ],
+      "completion": {
+        "schema": 1,
+        "endpoint": "reviewed-pr",
+        "source": "Draft-only negative control for actual Issueflow verification",
+        "excluded": [
+          "ready",
+          "merge",
+          "deploy",
+          "close-issue"
+        ],
+        "deployments": [],
+        "companions": [],
+        "authorizations": [],
+        "obligations": {},
+        "state": "complete",
+        "completedAt": "2026-09-13T04:46:50.752Z"
+      },
+      "cumulativeCapSeconds": 14400,
+      "budgetRenewals": [
+        {
+          "at": "2026-09-13T04:40:51.620Z",
+          "budgetSeconds": 1800,
+          "automatic": true
+        }
+      ]
+    }
+  },
+  "replayIdentity": {
+    "14": {
+      "reviews": true,
+      "comments": true
+    },
+    "15": {
+      "reviews": true,
+      "comments": true
+    }
+  },
+  "limitations": [
+    "Codex only; no Claude native runs",
+    "Three unpaired candidate cases, not the planned 18-run paired performance pilot",
+    "No merge, deployment, retarget, optional-skipped CI or lost GitHub write response exercised",
+    "No finder candidates, so verifier/fixer dispute convergence unexercised",
+    "Token/cost usage unknown; native identity recorded separately from telemetry wave IDs",
+    "Review completion required parent clarifications and controller repairs; not hands-off passes"
+  ],
+  "tests": {
+    "issueflow": {
+      "passed": 542,
+      "failed": 0
+    },
+    "eval": {
+      "passed": 88,
+      "failed": 0
+    },
+    "compatibility": "passed",
+    "codexManifestDrift": "passed",
+    "skillhelpIndex": "current"
+  },
+  "remaining": [
+    "Docs risk classification changes when an otherwise identical npm test code fence gains the sh label.",
+    "A completed terminal review reached after a window expires is checkpointed but exits 4 instead of success."
+  ],
+  "evidenceRoot": "/private/tmp/issueflow-completion-live-20260912",
+  "citations": [
+    {
+      "finding": "live-autonomous-window",
+      "event": "e960",
+      "rawSession": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+      "sourceHash": "8d4f13c66a153db932bb267bf1f86320c161f4f46015121ba57b21bdd31c311f",
+      "rawLine": 2421,
+      "timestamp": "2026-09-13T04:38:00.620Z",
+      "clause": "manual-c73f2a9b",
+      "contractText": "Auto runs also renew their bounded time windows automatically",
+      "contractSource": {
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 75
+      }
+    },
+    {
+      "finding": "live-cold-preflight",
+      "event": "e481",
+      "rawSession": "01a098f2-83bb-7ff2-8672-89afd5cbe407",
+      "sourceHash": "f21f8091bd7e2f1b5ab269a0792579fb3e94a278b5a30acc4021741ed2aa0a24",
+      "rawLine": 47,
+      "timestamp": "2026-09-13T04:08:34.492Z",
+      "clause": "manual-da21bbb6",
+      "contractText": "You are running cold: you cannot see the conversation that dispatched you, and nothing you were not handed here exists for you. Everything you need is below or named by a path below.",
+      "contractSource": {
+        "file": "skills/issueflow/skills/issueflow/scripts/lib/brief.mjs",
+        "line": 218
+      }
+    },
+    {
+      "finding": "live-excluded-handoff",
+      "event": "e738",
+      "rawSession": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+      "sourceHash": "8d4f13c66a153db932bb267bf1f86320c161f4f46015121ba57b21bdd31c311f",
+      "rawLine": 1988,
+      "timestamp": "2026-09-13T04:19:36.561Z",
+      "clause": "manual-571cd790",
+      "contractText": "Persist the requested endpoint and existing authority; exclusions prevail.",
+      "contractSource": {
+        "file": "skills/issueflow/skills/issueflow/SKILL.md",
+        "line": 85
+      }
+    },
+    {
+      "finding": "live-stale-heartbeat",
+      "event": "e858",
+      "rawSession": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+      "sourceHash": "8d4f13c66a153db932bb267bf1f86320c161f4f46015121ba57b21bdd31c311f",
+      "rawLine": 2198,
+      "timestamp": "2026-09-13T04:31:26.179Z",
+      "clause": "inv-594a0c05",
+      "contractText": "Never claim a result you did not observe",
+      "contractSource": {
+        "file": "skills/issueflow/skills/issueflow/skill-invariants.json",
+        "line": 1
+      }
+    }
+  ],
+  "unresolvedEvidence": [
+    {
+      "id": "3b335ac9-cf12-42aa-97cf-c7d05aa9f99c",
+      "case": "docs",
+      "argv": [
+        "node",
+        "/private/tmp/issueflow-completion-live-20260912/candidate/skills/issueflow/skills/issueflow/scripts/issueflow.js",
+        "next",
+        "--workers-released",
+        "--available-child-slots",
+        "1",
+        "--run-dir",
+        "/private/tmp/issueflow-completion-live-20260912/runs/docs",
+        "--session-id",
+        "01a0987e-5484-7b10-b8c4-4e66494ce64b"
+      ],
+      "exitCode": 2,
+      "stdout": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/3b335ac9-cf12-42aa-97cf-c7d05aa9f99c.stdout",
+        "sha256": "ce880ea59c73efe141ebdcce2e6362e1467d9e8d9e46761e4422c1a76067bc2e"
+      },
+      "stderr": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/3b335ac9-cf12-42aa-97cf-c7d05aa9f99c.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "6f7682f9-6858-471f-b274-f93f36bb2db0",
+      "case": "cap",
+      "argv": [
+        "node",
+        "/private/tmp/issueflow-completion-live-20260912/final-candidate-v3/skills/issueflow/skills/issueflow/scripts/issueflow.js",
+        "next",
+        "--run-dir",
+        "/private/tmp/issueflow-completion-live-20260912/runs/cap",
+        "--session-id",
+        "01a0987e-5484-7b10-b8c4-4e66494ce64b"
+      ],
+      "exitCode": 4,
+      "stdout": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/6f7682f9-6858-471f-b274-f93f36bb2db0.stdout",
+        "sha256": "3de3f46595edfbf250d496ad2787dc44a6be7099003930d079d91802927069ff"
+      },
+      "stderr": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/6f7682f9-6858-471f-b274-f93f36bb2db0.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "9fa76bb4-e07f-42ce-b513-f205992cb5e3",
+      "case": "count",
+      "argv": [
+        "node",
+        "/private/tmp/issueflow-completion-live-20260912/final-candidate-v3/skills/issueflow/skills/issueflow/scripts/issueflow.js",
+        "next",
+        "--run-dir",
+        "/private/tmp/issueflow-completion-live-20260912/runs/count",
+        "--session-id",
+        "01a0987e-5484-7b10-b8c4-4e66494ce64b"
+      ],
+      "exitCode": 4,
+      "stdout": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/9fa76bb4-e07f-42ce-b513-f205992cb5e3.stdout",
+        "sha256": "5f8e1337787f095b1d6670aaa8e922f203b2df3962e1d3a5364f5a87ea9bae4c"
+      },
+      "stderr": {
+        "path": "/private/tmp/issueflow-completion-live-20260912/logs/9fa76bb4-e07f-42ce-b513-f205992cb5e3.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ]
+}

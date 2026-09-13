@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "scope": "Individual recheck of 20 provisional test-execution alerts. Resolved does not certify full issue completion. Missing child receipts remain unknown; no raw transcripts included.",
+  "alerts": [
+    {
+      "issue": 265,
+      "alertId": "f-dcf88f30",
+      "event": "e534",
+      "claimLine": 1589,
+      "sourceFile": "rollout-2026-09-10T20-55-43-01a08e2d-88ec-7c31-8378-da1815a07939.jsonl",
+      "sourceSha256": "9b151817cfa3966f6f1aa7620d4089c81eaf0a87a40a35d95295c2314c792af1",
+      "evidenceLine": 1570,
+      "status": "cannot-decide",
+      "reason": "74 tests are reported by the fixer; parent result has no independently matched test-process receipt."
+    },
+    {
+      "issue": 269,
+      "alertId": "f-07f100c6",
+      "event": "e693",
+      "claimLine": 2145,
+      "sourceFile": "rollout-2026-09-10T14-27-43-01a08cca-4c1c-75d2-aa8a-668df5b60a14.jsonl",
+      "sourceSha256": "6479bb43c660e18b4087f1a89b141e37e8887eaaf55f86b80d9d340b232592b4",
+      "evidenceLine": 2140,
+      "status": "resolved-test-observation",
+      "reason": "Observed 81-test normalization/runtime run, zero failures."
+    },
+    {
+      "issue": 269,
+      "alertId": "f-4d420479",
+      "event": "e213",
+      "claimLine": 608,
+      "sourceFile": "rollout-2026-09-10T14-27-43-01a08cca-4c1c-75d2-aa8a-668df5b60a14.jsonl",
+      "sourceSha256": "6479bb43c660e18b4087f1a89b141e37e8887eaaf55f86b80d9d340b232592b4",
+      "evidenceLine": 602,
+      "status": "cannot-decide",
+      "reason": "Explicitly attributed worker report; the count/suite and child execution receipt remain uncorrelated."
+    },
+    {
+      "issue": 269,
+      "alertId": "f-81b3ca26",
+      "event": "e433",
+      "claimLine": 1346,
+      "sourceFile": "rollout-2026-09-10T14-27-43-01a08cca-4c1c-75d2-aa8a-668df5b60a14.jsonl",
+      "sourceSha256": "6479bb43c660e18b4087f1a89b141e37e8887eaaf55f86b80d9d340b232592b4",
+      "evidenceLine": 1299,
+      "status": "resolved-test-observation",
+      "reason": "Observed 448-test suite, zero failures; does not certify later hosted CI."
+    },
+    {
+      "issue": 269,
+      "alertId": "f-ed1df889",
+      "event": "e428",
+      "claimLine": 1318,
+      "sourceFile": "rollout-2026-09-10T14-27-43-01a08cca-4c1c-75d2-aa8a-668df5b60a14.jsonl",
+      "sourceSha256": "6479bb43c660e18b4087f1a89b141e37e8887eaaf55f86b80d9d340b232592b4",
+      "evidenceLine": 1299,
+      "status": "resolved-test-observation",
+      "reason": "Observed 448-test suite; actual process output was inside a wrapped result."
+    },
+    {
+      "issue": 270,
+      "alertId": "f-014126ae",
+      "event": "e173",
+      "claimLine": 513,
+      "sourceFile": "rollout-2026-09-09T08-03-44-01a08644-6692-7963-aadb-5f01367bff17.jsonl",
+      "sourceSha256": "c0dba5ad1a1fff7667e67b28af2e83463a1dce5663edacbc206d3bbd3abee95d",
+      "evidenceLine": 504,
+      "status": "cannot-decide",
+      "reason": "Controller proceeded into PR review; the claimed 18-test fixer process is absent from the parent excerpt."
+    },
+    {
+      "issue": 270,
+      "alertId": "f-0607b27d",
+      "event": "e399",
+      "claimLine": 1199,
+      "sourceFile": "rollout-2026-09-09T08-03-44-01a08644-6692-7963-aadb-5f01367bff17.jsonl",
+      "sourceSha256": "c0dba5ad1a1fff7667e67b28af2e83463a1dce5663edacbc206d3bbd3abee95d",
+      "evidenceLine": 1190,
+      "status": "cannot-decide",
+      "reason": "Round-three dispatch is observed; the 64-test child execution remains uncorrelated."
+    },
+    {
+      "issue": 270,
+      "alertId": "f-8743d9a1",
+      "event": "e503",
+      "claimLine": 1511,
+      "sourceFile": "rollout-2026-09-09T08-03-44-01a08644-6692-7963-aadb-5f01367bff17.jsonl",
+      "sourceSha256": "c0dba5ad1a1fff7667e67b28af2e83463a1dce5663edacbc206d3bbd3abee95d",
+      "evidenceLine": 1465,
+      "status": "cannot-decide",
+      "reason": "Fixer output delivery is awaited; the 68/143 test summaries need the corresponding child receipts."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-06bd166b",
+      "event": "e967",
+      "claimLine": 3113,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 3108,
+      "status": "resolved-test-observation",
+      "reason": "Observed targeted 36-test driver run with zero failures."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-17ca395b",
+      "event": "e700",
+      "claimLine": 2261,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 2256,
+      "status": "resolved-test-observation",
+      "reason": "Observed targeted 36-test state-machine run with zero failures."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-17cc11b0",
+      "event": "e1072",
+      "claimLine": 3455,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 3449,
+      "status": "cannot-decide",
+      "reason": "Native terminal summary reports 378 tests and smoke; summary alone does not prove the test process."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-97caa093",
+      "event": "e251",
+      "claimLine": 782,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 782,
+      "status": "cannot-decide",
+      "reason": "Broad suite-green statement needs the exact final run after intervening fixes; not cleared from a command mention."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-aa09f16e",
+      "event": "e604",
+      "claimLine": 1929,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 1910,
+      "status": "cannot-decide",
+      "reason": "Full suite actually failed; the narrower changed-behavior claim needs individual assertion/command matching."
+    },
+    {
+      "issue": 273,
+      "alertId": "f-d1ecada6",
+      "event": "e818",
+      "claimLine": 2602,
+      "sourceFile": "rollout-2026-09-09T20-08-27-01a088db-e47e-78b3-81cb-9d21e8fdc7d8.jsonl",
+      "sourceSha256": "fad6692221647c60fa5e58543424d354534b8d633fd70bdb9a0f75ed18021550",
+      "evidenceLine": 2531,
+      "status": "cannot-decide",
+      "reason": "Artifact timestamp was observed; a timestamp alone cannot establish the claimed 357-test result."
+    },
+    {
+      "issue": 274,
+      "alertId": "f-8dd1903b",
+      "event": "e437",
+      "claimLine": 1475,
+      "sourceFile": "rollout-2026-09-08T19-28-34-01a08391-05d4-7871-9274-001f81558044.jsonl",
+      "sourceSha256": "f85c248d6d35e546a70ca7a2c740db927605aa87191a10c81db70f0c43190847",
+      "evidenceLine": 1449,
+      "status": "resolved-test-observation",
+      "reason": "Observed 261-test suite with zero failures; other checks have separate evidence."
+    },
+    {
+      "issue": 360,
+      "alertId": "f-5df448fd",
+      "event": "e232",
+      "claimLine": 705,
+      "sourceFile": "rollout-2026-09-12T14-04-13-01a09701-8098-7950-85ab-e632eeb30d62.jsonl",
+      "sourceSha256": "8a9560b5d15358c9175dc414a032ed508652e6452c19143d29d559978e2888be",
+      "evidenceLine": 702,
+      "status": "cannot-decide",
+      "reason": "Git bundle backup is observed, but the worker-run test claim lacks a matching controller receipt."
+    },
+    {
+      "issue": 360,
+      "alertId": "f-c2e36cfd",
+      "event": "e692",
+      "claimLine": 2195,
+      "sourceFile": "rollout-2026-09-12T14-04-13-01a09701-8098-7950-85ab-e632eeb30d62.jsonl",
+      "sourceSha256": "8a9560b5d15358c9175dc414a032ed508652e6452c19143d29d559978e2888be",
+      "evidenceLine": 2125,
+      "status": "cannot-decide",
+      "reason": "Reviewer mentions 181 tests on one date and an alternate-date failure; current patch test result remains uncorrelated. The separate stale-CI finding is retained."
+    },
+    {
+      "issue": 364,
+      "alertId": "f-01196086",
+      "event": "e259",
+      "claimLine": 802,
+      "sourceFile": "rollout-2026-09-12T19-36-36-01a09831-d186-7dd3-a869-a78005888f08.jsonl",
+      "sourceSha256": "d69995443edb20df4ba512b25b22760a64dc74f92453943b22d203878919b677",
+      "evidenceLine": 802,
+      "status": "cannot-decide",
+      "reason": "Combined 288-test devlog and 46-test website claims need separately correlated child receipts."
+    },
+    {
+      "issue": 364,
+      "alertId": "f-13019a24",
+      "event": "e249",
+      "claimLine": 766,
+      "sourceFile": "rollout-2026-09-12T19-36-36-01a09831-d186-7dd3-a869-a78005888f08.jsonl",
+      "sourceSha256": "d69995443edb20df4ba512b25b22760a64dc74f92453943b22d203878919b677",
+      "evidenceLine": 697,
+      "status": "cannot-decide",
+      "reason": "Worker start is observed; the first-five-tests result needs the actual child process receipt."
+    },
+    {
+      "issue": 364,
+      "alertId": "f-e0c79dae",
+      "event": "e364",
+      "claimLine": 1166,
+      "sourceFile": "rollout-2026-09-12T19-36-36-01a09831-d186-7dd3-a869-a78005888f08.jsonl",
+      "sourceSha256": "d69995443edb20df4ba512b25b22760a64dc74f92453943b22d203878919b677",
+      "evidenceLine": 1161,
+      "status": "cannot-decide",
+      "reason": "Worker completion is observed and the claim is attributed; the 289-test process result remains uncorrelated."
+    }
+  ]
+}

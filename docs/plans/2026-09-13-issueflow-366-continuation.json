@@ -1,0 +1,1022 @@
+{
+  "schema": 1,
+  "date": "2026-09-13",
+  "userDirection": "continue; make sure everything learned goes back into the issueflow skill",
+  "outcome": "repair-verified-independent-review-pending",
+  "issue": "https://github.com/natejswenson/claude-skills/issues/366",
+  "pr": {
+    "baseRefName": "main",
+    "baseRefOid": "900b735fe46a23a5575adfebd95abea6e9a49674",
+    "headRefOid": "55d403d7121c836f309799622ba7220deb0a9cc1",
+    "isDraft": true,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:18Z",
+        "conclusion": "FAILURE",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817424/job/103751843435",
+        "name": "auto-merge",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "auto-merge to main"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:12:11Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817431/job/103751843781",
+        "name": "security / codeql (python)",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "Security"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:28Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817615/job/103751843917",
+        "name": "ci / appletv",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "appletv"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817668/job/103751844004",
+        "name": "ci / brandreport",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "brandreport"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817634/job/103751844077",
+        "name": "ci / city-report",
+        "startedAt": "2026-09-13T16:11:22Z",
+        "status": "COMPLETED",
+        "workflowName": "city-report"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:28Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817474/job/103751843457",
+        "name": "codex / marketplace",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "codex marketplace"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:23Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817704/job/103751844097",
+        "name": "ci / devlog",
+        "startedAt": "2026-09-13T16:11:19Z",
+        "status": "COMPLETED",
+        "workflowName": "devlog"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817578/job/103751843810",
+        "name": "ci / eval",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "eval"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817705/job/103751844170",
+        "name": "ci / ghfactory",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "ghfactory"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817726/job/103751844148",
+        "name": "ci / ghostwriter",
+        "startedAt": "2026-09-13T16:11:22Z",
+        "status": "COMPLETED",
+        "workflowName": "ghostwriter"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817672/job/103751843869",
+        "name": "ci / ghostwriter-x",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "ghostwriter-x"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817681/job/103751844107",
+        "name": "ci / github-stats",
+        "startedAt": "2026-09-13T16:11:20Z",
+        "status": "COMPLETED",
+        "workflowName": "github-stats"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817592/job/103751843994",
+        "name": "ci / gmailtriage",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "gmailtriage"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:22Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817594/job/103751843847",
+        "name": "ci / issuecreator",
+        "startedAt": "2026-09-13T16:11:15Z",
+        "status": "COMPLETED",
+        "workflowName": "issuecreator"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:19Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817657/job/103751843955",
+        "name": "ci / issueflow",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "issueflow"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:24Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817427/job/103751843353",
+        "name": "ci / marketplace",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "marketplace"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817655/job/103751843919",
+        "name": "ci / netwatch",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "netwatch"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:29Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817719/job/103751844171",
+        "name": "ci / pluginsync",
+        "startedAt": "2026-09-13T16:11:22Z",
+        "status": "COMPLETED",
+        "workflowName": "pluginsync"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817581/job/103751843790",
+        "name": "ci / press",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "press"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817613/job/103751843947",
+        "name": "ci / release",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "release"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817622/job/103751843895",
+        "name": "ci / resume",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "resume"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:28Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817659/job/103751844022",
+        "name": "ci / shipflow",
+        "startedAt": "2026-09-13T16:11:22Z",
+        "status": "COMPLETED",
+        "workflowName": "shipflow"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817610/job/103751843889",
+        "name": "ci / shipreport",
+        "startedAt": "2026-09-13T16:11:14Z",
+        "status": "COMPLETED",
+        "workflowName": "shipreport"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817661/job/103751844042",
+        "name": "ci / skillfactory",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "skillfactory"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:23Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817591/job/103751843865",
+        "name": "ci / skillhelp",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "skillhelp"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:12:35Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817431/job/103751843705",
+        "name": "security / codeql (javascript-typescript)",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "Security"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:28Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817615/job/103751882333",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:29Z",
+        "status": "COMPLETED",
+        "workflowName": "appletv"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:11Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817424/job/103751844219",
+        "name": "label-release-pending",
+        "startedAt": "2026-09-13T16:11:11Z",
+        "status": "COMPLETED",
+        "workflowName": "auto-merge to main"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817668/job/103751865232",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "brandreport"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817634/job/103751878622",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:27Z",
+        "status": "COMPLETED",
+        "workflowName": "city-report"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:23Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817704/job/103751871529",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:24Z",
+        "status": "COMPLETED",
+        "workflowName": "devlog"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817578/job/103751864527",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "eval"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817705/job/103751876588",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:26Z",
+        "status": "COMPLETED",
+        "workflowName": "ghfactory"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817726/job/103751876951",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:26Z",
+        "status": "COMPLETED",
+        "workflowName": "ghostwriter"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817672/job/103751863895",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "ghostwriter-x"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817681/job/103751879294",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:28Z",
+        "status": "COMPLETED",
+        "workflowName": "github-stats"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:27Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817592/job/103751879506",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:28Z",
+        "status": "COMPLETED",
+        "workflowName": "gmailtriage"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:22Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817594/job/103751868173",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:22Z",
+        "status": "COMPLETED",
+        "workflowName": "issuecreator"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:19Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817657/job/103751861616",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:20Z",
+        "status": "COMPLETED",
+        "workflowName": "issueflow"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817655/job/103751864347",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "netwatch"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:29Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817719/job/103751883601",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:29Z",
+        "status": "COMPLETED",
+        "workflowName": "pluginsync"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817581/job/103751864450",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "press"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817613/job/103751863446",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:20Z",
+        "status": "COMPLETED",
+        "workflowName": "release"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:20Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817622/job/103751863551",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:20Z",
+        "status": "COMPLETED",
+        "workflowName": "resume"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:28Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817659/job/103751882483",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:29Z",
+        "status": "COMPLETED",
+        "workflowName": "shipflow"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817610/job/103751865665",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "shipreport"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:26Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817661/job/103751876246",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:26Z",
+        "status": "COMPLETED",
+        "workflowName": "skillfactory"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:23Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817591/job/103751870449",
+        "name": "release",
+        "startedAt": "2026-09-13T16:11:24Z",
+        "status": "COMPLETED",
+        "workflowName": "skillhelp"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:18Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817431/job/103751843670",
+        "name": "security / deps",
+        "startedAt": "2026-09-13T16:11:14Z",
+        "status": "COMPLETED",
+        "workflowName": "Security"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817581/job/103751864470",
+        "name": "propagate",
+        "startedAt": "2026-09-13T16:11:21Z",
+        "status": "COMPLETED",
+        "workflowName": "press"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:21Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817431/job/103751843657",
+        "name": "security / secrets",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "Security"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:11:39Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34767817431/job/103751843521",
+        "name": "security / workflows",
+        "startedAt": "2026-09-13T16:11:13Z",
+        "status": "COMPLETED",
+        "workflowName": "Security"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-09-13T16:12:05Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/natejswenson/claude-skills/runs/103751957473",
+        "name": "CodeQL",
+        "startedAt": "2026-09-13T16:12:02Z",
+        "status": "COMPLETED",
+        "workflowName": ""
+      }
+    ],
+    "url": "https://github.com/natejswenson/claude-skills/pull/373"
+  },
+  "completion": {
+    "schema": 1,
+    "endpoint": "reviewed-pr",
+    "source": "User requested actual Issueflow retry #366; repository requires draft until merge authorization",
+    "excluded": [
+      "ready",
+      "merge",
+      "deploy",
+      "close-issue"
+    ],
+    "deployments": [],
+    "companions": [],
+    "authorizations": [],
+    "obligations": {},
+    "state": "pending"
+  },
+  "review": {
+    "roundsUsed": 3,
+    "baseAllowance": 2,
+    "overrides": [
+      {
+        "round": 3,
+        "reason": "User authorized continuation and one additional independent review round after the two-round exhaustion; verify repair 24f4886 and retain prior findings and history.",
+        "at": "2026-09-13T15:54:59.828Z"
+      }
+    ],
+    "openFindings": [
+      {
+        "id": "f-a32800bf",
+        "file": "skills/gmailtriage/skills/gmailtriage/scripts/lib/ingest.mjs",
+        "line": 81,
+        "side": "RIGHT",
+        "category": "intent",
+        "severity": "major",
+        "verdict": "CONFIRMED",
+        "introduced_by_diff": true,
+        "short_summary": "CLI normalization drops existing category evidence",
+        "summary": "The CLI normalization step discards explicit category and persisted ambiguity before the new resolver can combine them with search evidence.",
+        "failure_scenario": "A raw threads object containing id t, category social, a conflict marker with social/promotions, and a messages array with sender/subject/date/INBOX is passed through normalizeSearchThreads then applyCategories with promoIds [t]. Observed output is category promotions, hasUnsubscribe true and no marker; a sender-plus-hasUnsubscribe trash match returns true. The new references/gmail.md promise that ingest accepts existing explicit fields and that re-ingesting markers cannot erase uncertainty does not hold through this CLI path. The stripping line predates the diff; this is a candidate missing integration under the approved plan's existing-evidence policy, whose applicability to raw inputs should be verified.",
+        "quote": "out.push({\n      id: t.id,\n      from: first.sender ?? null,\n      subject: first.subject ?? null,\n      date: first.date ?? null,\n      labelIds: [...new Set(msgs.flatMap((m) => m?.labelIds ?? []))],\n    });",
+        "suggestion": null,
+        "inline": false,
+        "status": "open",
+        "firstRound": 2,
+        "lastRound": 3,
+        "head": "4fb905870d5a1e879a6bbf1373b688d889967307",
+        "stillOpenRounds": 1,
+        "disputes": 0,
+        "dispute": null,
+        "threadId": null,
+        "posted": false,
+        "demoted": null,
+        "history": [
+          {
+            "round": 3,
+            "verdict": "still-open",
+            "quote": "prev.labelIds = [...new Set([...(prev.labelIds ?? []), ...(t.labelIds ?? [])])];",
+            "note": "The exact single-source normalize/apply example is now fixed by lines 47\u201356, but the same CLI evidence-loss failure remains at the next normalization boundary for ordinary duplicate sources: later explicit social or persisted conflict/unknown evidence is discarded by mergeThreadSources before applyCategories and can still authorize a proxy-constrained action; the fix does not preserve evidence through the complete ingest path."
+          }
+        ]
+      }
+    ],
+    "round3Review": "https://github.com/natejswenson/claude-skills/pull/373#pullrequestreview-5191290160"
+  },
+  "verification": {
+    "batch": "4e6acf72-dd7a-44da-bbc8-95d5d4ea0551",
+    "checks": [
+      {
+        "check": "T9",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [
+          {
+            "runner": "node --test",
+            "passed": 18,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "sha256": "cfa508753b7d58b771253ebc823845bd862494ef81f77fae36defb2bc85ad0dc",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/0d119c51-2f2d-4114-b8ca-e985502a14a5/receipt.json"
+      },
+      {
+        "check": "T3",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [
+          {
+            "runner": "node --test",
+            "passed": 131,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "sha256": "0c0e9319f410c1166d261794dc47ad796c35a3ad3787fdeaf2f5f34a4e034b55",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/1973e0e2-7420-44c6-92a7-2719ab8eb697/receipt.json"
+      },
+      {
+        "check": "T4",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [],
+        "sha256": "2a4a1993769ed60307cfee26ac8e270ee869a6adcb957f6da9ada21fee9617d5",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/24095540-b573-4b74-a163-de009e4d93b6/receipt.json"
+      },
+      {
+        "check": "T8",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [],
+        "sha256": "81caa4d54d0237e491d9dd1d077d315dc321a65fc21c9b668150a011150f9c4e",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/4b5af989-b2e4-4e28-9f16-dfa19bb199b3/receipt.json"
+      },
+      {
+        "check": "T2",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": 1,
+        "green": [
+          {
+            "runner": "node --test",
+            "passed": 12,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "sha256": "49d33f63ec4b45fb49fe3eb1071aae51257e4d6927ab66544ae02c6e71214e54",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/7618151b-b24b-4701-ae07-eaa1643c055e/receipt.json"
+      },
+      {
+        "check": "T6",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [],
+        "sha256": "1c9271c89934469695d1ae21f6b2f6b2d342b79cacbed446e84e4f299ebb05e5",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/8e5bbceb-9b22-4cf3-8e9b-a8801063581f/receipt.json"
+      },
+      {
+        "check": "T7",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [],
+        "sha256": "9e23603a72837b10439f68bfe4d032abb6b0ac2a5dd6844d357c8d45f2802671",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/c403307c-5d7b-4205-a5f8-7b0d8e35678f/receipt.json"
+      },
+      {
+        "check": "T5",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": null,
+        "green": [],
+        "sha256": "4d5846cf9dd5ae06a886c4e6f5d4b2c69a415435ae16d8b307c29a1acad95a4f",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/d3fed033-2cc6-47d1-bb99-fd4a26c0183e/receipt.json"
+      },
+      {
+        "check": "T1",
+        "passed": true,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "redExit": 1,
+        "green": [
+          {
+            "runner": "node --test",
+            "passed": 86,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "sha256": "72f173a0782181ab5a6d550b58221dd63328948eef98033129e992aedbe8b193",
+        "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/d996836c-661e-491f-87d0-4a0485b18fc0/receipt.json"
+      }
+    ],
+    "gmailtriageTests": 131,
+    "skillhelpTests": 18
+  },
+  "issueflowValidation": {
+    "tests": 555,
+    "pass": 555,
+    "fail": 0,
+    "log": "/private/tmp/issueflow-366-live-20260913/evals/lessons-final-suite.log",
+    "logSha256": "0dcf91cf465a10c833e7d6e8d9cc4f9f1f6b5670c0cfa9cb1f7bb4f61c793c66",
+    "compatibility": "passed",
+    "codexMetadata": "passed",
+    "skillScore": 100,
+    "pluginLint": "passed",
+    "baselineDeclarations": "passed",
+    "skillhelpIndex": "21 cards current"
+  },
+  "ci": {
+    "counts": {
+      "FAILURE": 1,
+      "SUCCESS": 29,
+      "SKIPPED": 23
+    },
+    "failedLog": "/private/tmp/issueflow-366-live-20260913/captures/continuation/pr-373-r3-auto-merge-failure.log",
+    "reason": "GitHub refused enabling auto-merge on a draft PR",
+    "completionGateReached": false
+  },
+  "controllerSources": [
+    {
+      "sha256": "a97cb26dafdb583ced71eeaf6fec7c273ee5cd8b31d7bfdf482c9b36a03f0afd",
+      "capturedAt": "2026-09-13T14:21:59.327119+00:00",
+      "version": "v6"
+    },
+    {
+      "sha256": "5c19b235ee74c6c34ef02232490798e3ab7a2c4c0caf411c6fe5d7ac8eb81075",
+      "capturedAt": "2026-09-13T16:06:08.669741+00:00",
+      "version": "v7"
+    },
+    {
+      "sha256": "d9e3ebec4fc02fc56f3c25c51f45493c148177d00fee2d97e13d6e0f1357b8fd",
+      "capturedAt": "2026-09-13T16:17:12.275646+00:00",
+      "version": "v8"
+    }
+  ],
+  "nativeWorkersThisContinuation": {
+    "dispatched": 4,
+    "completed": 3,
+    "cancelled": 1
+  },
+  "nativeWorkersEntireRetry": {
+    "dispatched": 15,
+    "completed": 11,
+    "cancelled": 4
+  },
+  "eval": {
+    "events": 805,
+    "sources": 16,
+    "machineFindings": 0,
+    "judgmentFindings": 0,
+    "coverage": {
+      "examined": 2,
+      "unexamined": 103,
+      "probesApplied": [
+        "pr-into-main",
+        "unobserved-test-claim"
+      ],
+      "probesUnbound": [
+        "announce-once",
+        "brand-bypass",
+        "done-without-freeze",
+        "file-contents-in-chat",
+        "pipeline-reshaping",
+        "question-budget"
+      ]
+    },
+    "cannotDecide": [
+      {
+        "id": "f-6e037324",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e824",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-3eb03476",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1155",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-4587b4e5",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1231",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-24668ff9",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1241",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-ecef6263",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1262",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-6fcbbe43",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1464",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      }
+    ],
+    "rawCapture": {
+      "capturedAt": "2026-09-13T16:15:08.091356+00:00",
+      "rootScopeStartsAtRawLine": 2710,
+      "entries": [
+        {
+          "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+          "agentPath": null,
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/12/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "sha256": "0350af8e4925b234e848544c6b0fe0b97ac816635a10e0e6e6e0d8c5a4f86cde",
+          "lines": 4440
+        },
+        {
+          "sessionId": "01a09b85-63c3-7311-8f3f-781b560603d7",
+          "agentPath": "/root/issue366_r3_fixer_repaired_handoff",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-06-45-01a09b85-63c3-7311-8f3f-781b560603d7.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T11-06-45-01a09b85-63c3-7311-8f3f-781b560603d7.jsonl",
+          "sha256": "e1eeeaba1f48f4811dc869fee6769a70fb7c6e040f0dd841ffa302cb05c48f96",
+          "lines": 148
+        },
+        {
+          "sessionId": "01a09b2c-9c03-7d03-a141-4942992e79f3",
+          "agentPath": "/root/issue366_r2_fixer",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "sha256": "3944fdfa1985083df6fcde9b9d31e090616ed75e03018ae0ca0ee69532744b1a",
+          "lines": 96
+        },
+        {
+          "sessionId": "01a09b12-2727-72d0-acfc-86bcf07a88ab",
+          "agentPath": "/root/issue366_retry_plan_repair",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "sha256": "2ea10896f17e6467d2ce8309f5cde7daafc9cfeef7d72a519dba57e3a6289e9d",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b",
+          "agentPath": "/root/issue366_r3_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T10-55-06-01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T10-55-06-01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b.jsonl",
+          "sha256": "2c2aa50afc7242044821b771e5d382e5c230465dcdc7f4773acef4b6746bfb7d",
+          "lines": 60
+        },
+        {
+          "sessionId": "01a09b7d-43dc-7793-8a36-8345e4bbe260",
+          "agentPath": "/root/issue366_r3_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T10-57-52-01a09b7d-43dc-7793-8a36-8345e4bbe260.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T10-57-52-01a09b7d-43dc-7793-8a36-8345e4bbe260.jsonl",
+          "sha256": "8a75dd487ffcc78fce8ce9492474bfb54f5d5157a7d5584238445f5de0bad27c",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164",
+          "agentPath": "/root/issue366_r1_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "sha256": "1314fac893a623ffdc6e00a81e0f68e5bb6028ed480715c789d1827267fe1bbd",
+          "lines": 66
+        },
+        {
+          "sessionId": "01a09b28-d263-7140-8041-5c58a7f08b68",
+          "agentPath": "/root/issue366_r2_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "sha256": "453a3bbf02ce6c0dfe45cb4efa649bbaef4d6856de07a8ee6e3403435f76a482",
+          "lines": 67
+        },
+        {
+          "sessionId": "01a09b18-27f5-7060-acaa-1517f25b2223",
+          "agentPath": "/root/issue366_retry_implement",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "sha256": "c7c8fb7547acc71874e697c913315862c06c501903e08751c023376829e7bf13",
+          "lines": 128
+        },
+        {
+          "sessionId": "01a09b15-1e90-7441-8aa2-2c39cf9640a0",
+          "agentPath": "/root/issue366_retry_plan_review",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "sha256": "9e4605aa03d8a2ba14e58afc6294109f7576cac5cbcf3e4dd755ce0d69f5ea57",
+          "lines": 71
+        },
+        {
+          "sessionId": "01a09b1f-565a-7460-98ef-3de67ce4220f",
+          "agentPath": "/root/issue366_r1_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "sha256": "4281ef4997f3bb81225a0ff3df620ad4656707d75fec644b5240dddfc0cc01b2",
+          "lines": 76
+        },
+        {
+          "sessionId": "01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2",
+          "agentPath": "/root/issue366_retry_plan",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "sha256": "a3504d15fb254a7b7c37f3cab35c2f2966c33b26b49ff7a7059a172667c27283",
+          "lines": 181
+        },
+        {
+          "sessionId": "01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2",
+          "agentPath": "/root/issue366_r1_finder3",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "sha256": "428e2ba859d0a761fde30b97fee321915c2dd067060295d8d3802aab11bf239b",
+          "lines": 89
+        },
+        {
+          "sessionId": "01a09b80-235d-76b3-aff5-18ab41dca569",
+          "agentPath": "/root/issue366_r3_fixer",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-01-01-01a09b80-235d-76b3-aff5-18ab41dca569.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T11-01-01-01a09b80-235d-76b3-aff5-18ab41dca569.jsonl",
+          "sha256": "530486b2226b62a3bf9452e8a5b80bd3730f92e8661cfb1f53e1c4aac0f950ff",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b25-d334-7763-990d-9445870beb7e",
+          "agentPath": "/root/issue366_r2_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "sha256": "69f0279f120ba4b7b612bd27297ccae10aef38555ca1fad864d5ba004854a1c2",
+          "lines": 69
+        },
+        {
+          "sessionId": "01a09b25-ebf0-7f92-9981-197e66d74234",
+          "agentPath": "/root/issue366_r2_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/continuation/eval-sources/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "sha256": "71e9783cb1fda6447e90585235a5e2c4a22ff381d38d0a4b0075e0daa31bc681",
+          "lines": 63
+        }
+      ]
+    },
+    "report": "/private/tmp/issueflow-366-live-20260913/evals/continuation-report/report.md"
+  },
+  "skillFeedback": {
+    "reference": "skills/issueflow/skills/issueflow/references/run-lessons.md",
+    "newRegressions": [
+      "scripts/tests/guidance-scope.test.mjs",
+      "scripts/tests/fixer-handoff.test.mjs"
+    ],
+    "nativeFixture": "evals/inputs/retry-366/fixer-handoff.json",
+    "nativeFreezeCommand": "evals/freeze-handoff.mjs",
+    "behavior": [
+      "scope guidance to root or known contract paths",
+      "lead repeated-finding repair with latest verifier evidence",
+      "report actual rounds and authorized extensions"
+    ],
+    "instructions": [
+      "evaluate CI eligibility against requested endpoint before approval",
+      "trace evidence through public input, normalization, merging and final decision",
+      "retain coverage gaps, failed attempts, source versions and unknown cost"
+    ],
+    "status": "local source updated; unreleased"
+  },
+  "evidence": {
+    "archive": "/private/tmp/issueflow-366-live-20260913/captures/continuation/final",
+    "staleFixer": "/private/tmp/issueflow-366-live-20260913/captures/continuation/stale-fixer-r3.md",
+    "latestVerifier": "/private/tmp/issueflow-366-live-20260913/captures/continuation/verdicts-r3.json",
+    "badHandoffRed": "/private/tmp/issueflow-366-live-20260913/evals/fixer-handoff-before-validated.log",
+    "handoffGreen": "/private/tmp/issueflow-366-live-20260913/evals/fixer-handoff-review-suite-valid.log",
+    "guidanceRed": "/private/tmp/issueflow-366-live-20260913/evals/guidance-scope-before-validated.log",
+    "guidanceGreen": "/private/tmp/issueflow-366-live-20260913/evals/guidance-scope-after-validated.log",
+    "exhaustion": "/private/tmp/issueflow-366-live-20260913/logs/20260913T161715-509696Z-next-b8d73ea0.stdout"
+  }
+}

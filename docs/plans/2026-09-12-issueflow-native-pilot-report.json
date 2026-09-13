@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "runs": [],
+  "coverage": {
+    "claude": {
+      "observed": 0,
+      "required": 18,
+      "status": "unverified"
+    },
+    "codex": {
+      "observed": 0,
+      "required": 18,
+      "status": "unverified"
+    }
+  },
+  "incompletePairs": [],
+  "releasePerformanceClaim": "unverified"
+}
