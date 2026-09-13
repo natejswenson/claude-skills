@@ -115,7 +115,9 @@ anything went live. Set with `set siteUrl 'https://example.com'`, clear with
 
 For **add-project**: inspect validated config first with `config --json`, then
 resolve the user's absolute repository path and compare key, label, path, remote,
-pathFilter and tagPrefix. Preserve a matching existing row unchanged and skip the
+pathFilter, tagPrefix and the effective private value (omitted means false). A private
+repository requires private: true; report a privacy mismatch for correction before
+considering setup complete. Preserve a matching existing row unchanged and skip the
 add. Run add-project only when the key is absent. Report a mismatch instead of
 removing/recreating the existing row automatically; duplicate-key rejection remains
 intentional. Detect the default key from the directory basename and remote with
@@ -125,7 +127,7 @@ values with the user before adding; values already supplied or authorized need n
 second confirmation. For **remove-project**, confirm once before running; tell the
 user published entries are not deleted.
 
-Complete the [producer and website onboarding guide](../../README.md#producer-and-website-onboarding)
+Complete the [producer and website onboarding guide](#producer-and-website-onboarding)
 before declaring setup complete. It covers the exact Issue Flow monorepo fields,
 retained shared configuration, and the website registry-plus-manifest requirement.
 Registration does not publish an article; preserve any existing website content.
@@ -143,6 +145,106 @@ otherwise scan as public.
 If any command prints `{"error": "config-missing", ...}`, tell the user to run
 `npx @natjswenson/devlog init` first. On `config-invalid`, show the message and offer to
 fix the named field via `set`.
+
+## Producer and website onboarding
+
+Registering a source project makes releases discoverable; it does not publish an
+article or finish website onboarding. Use this checklist before the first publication
+and when checking an existing integration. Invoke `/devlog` in Claude Code or
+`$devlog` in Codex; both retain personal configuration at
+`~/.claude/skills/devlog/config.json`. Keep that file outside the plugin.
+
+### Inspect and preserve the producer registration
+
+Run the host-independent CLI to inspect validated configuration first:
+
+```sh
+npx -y @natjswenson/devlog@0.14.1 config --json
+```
+
+For Issue Flow in the monorepo, compare the existing row with this example.
+Replace the example path with the user's absolute monorepo checkout path:
+
+```json
+{
+  "key": "issueflow",
+  "label": "Issue Flow",
+  "path": "/absolute/path/to/claude-skills",
+  "remote": "natejswenson/claude-skills",
+  "pathFilter": "skills/issueflow",
+  "tagPrefix": "issueflow-v"
+}
+```
+
+Compare all six fields above and the effective private value (omitted means false).
+This public Issue Flow example expects private: false; a private repository requires
+private: true and --private when adding it. If exactly one row matches, preserve it
+unchanged and skip add-project. Report any mismatch, including privacy, for correction
+before considering setup complete;
+do not remove and recreate it automatically. Direct duplicate adds are rejected.
+Only when the key is absent, run:
+
+```sh
+npx -y @natjswenson/devlog@0.14.1 add-project --yes \
+  --path '/absolute/path/to/claude-skills' --key issueflow --label 'Issue Flow' \
+  --remote natejswenson/claude-skills --path-filter skills/issueflow \
+  --tag-prefix issueflow-v
+npx -y @natjswenson/devlog@0.14.1 config --json
+```
+
+Then inspect release discovery with
+`npx -y @natjswenson/devlog@0.14.1 scan --json --project issueflow`.
+Expect only `issueflow-v` release tags and `skills/issueflow` commit/diff history;
+other skills' releases and changes must remain outside this project. An empty
+new-release list may mean entries already exist; inspect scan status and skipped
+reasons before concluding that registration failed.
+
+### Register the website and its manifest together
+
+In `natejswenson/natejswenson.io`, inspect the current remote branch before editing:
+a stale local checkout can omit an integration that already exists upstream.
+Check `PROJECTS` in `src/data/site.js` for exactly one `issueflow` row labeled
+`Issue Flow`, and check `content/devlog/issueflow/manifest.json`. Preserve an
+existing registry row and populated manifest; never replace published entries
+with the empty example below.
+
+For a new project, add its PROJECTS row and a valid manifest in the same change.
+Match neighboring registry fields. Before any article exists, the manifest is:
+
+```json
+{"entries": []}
+```
+
+The loader visits registered projects only and requires every manifest. A directory
+alone is insufficient; a missing manifest fails the build. An empty entries array
+allows the project route to render its empty state. Source, config and documentation
+changes follow the website's own PR flow, even when content publishing has a separate
+flow. Keep existing content intact and link the companion website PR from the
+producer setup PR. Consult the website README and contributor instructions for its
+current branch policy.
+
+For this target, verify `targetRepo`, `targetDir: content/devlog`, and the publishing
+branch in shared config. Set `siteUrl` from a working public page: the repository
+name is not necessarily the served domain. Do not change these settings just to
+register another source project.
+
+### Verify both halves
+
+Run the website's `npm run test:ci`, `npm run build`, and relevant
+`npm run test:e2e` checks. In a disposable fixture or preview, verify an empty
+manifest builds with an Issue Flow project route and other projects still available.
+Use an existing article or a temporary representative fixture to check the Issue Flow
+listing/filter and tag search, hash restoration, project/article links, canonical/OG
+metadata and a successful cover response (including the established fallback).
+Inspect generated sitemap routes and RSS; the RSS feed includes only the latest 30
+entries, so use a latest-dated fixture when specifically testing inclusion.
+Never commit or publish a fake article for setup, or empty a populated production
+manifest to test the pre-publication state.
+
+Record the checked commits and command outcomes in both PRs. A local producer config
+row alone is not evidence that the website integration is complete. Publishing new
+articles, backfilling old releases and merging/deploying website changes are separate
+actions from this onboarding check.
 
 ## Status mode
 
@@ -492,7 +594,7 @@ content on disk that the registry doesn't list is built right past, and the entr
 while every command in this skill reports success. Publishing a project's first entry is
 therefore a two-part job, and the CLI can only do the first part.
 
-Follow the [producer and website onboarding guide](../../README.md#producer-and-website-onboarding)
+Follow the [producer and website onboarding guide](#producer-and-website-onboarding)
 even before the first article. When `firstEntryForProject` is true, **before the push**:
 
 1. Inspect the current website branch and find its registry in the clone. Search the

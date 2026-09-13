@@ -4,6 +4,7 @@ import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'nod
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const readmeUrl = new URL('../../../README.md', import.meta.url);
 const skillUrl = new URL('../SKILL.md', import.meta.url);
@@ -44,19 +45,20 @@ function assertGuide(document) {
   return guide;
 }
 
-function assertGuideLink(text) {
-  const links = [...text.matchAll(/\[[^\]]+\]\(([^)]+#producer-and-website-onboarding)\)/g)];
+function assertGuideLink(text, loadedSkillUrl = skillUrl) {
+  const links = [...text.matchAll(/\[[^\]]+\]\(([^)]*#producer-and-website-onboarding)\)/g)];
   assert.ok(links.length > 0, 'workflow must link to paired onboarding guide');
   for (const [, href] of links) {
-    const target = new URL(href, skillUrl);
+    const target = new URL(href, loadedSkillUrl);
     target.hash = '';
-    assert.equal(target.href, readmeUrl.href);
+    assert.equal(target.href, loadedSkillUrl.href);
     assertGuide(readFileSync(target, 'utf8'));
   }
 }
 
 test('onboarding guidance pairs concrete producer registration with website manifest setup', () => {
-  assertGuide(readFileSync(readmeUrl, 'utf8'));
+  assertGuide(readFileSync(skillUrl, 'utf8'));
+  assert.match(readFileSync(readmeUrl, 'utf8'), /SKILL\.md#producer-and-website-onboarding/);
 });
 
 test('onboarding guidance configures idempotently and links both entry points to the guide', () => {
@@ -66,15 +68,17 @@ test('onboarding guidance configures idempotently and links both entry points to
   assert.match(configure, /Preserve a matching existing row unchanged and skip the\s+add/);
   assert.match(configure, /Run add-project only when the key is absent/);
   assert.match(configure, /Report a mismatch instead of\s+removing\/recreating/);
-  for (const field of ['key', 'label', 'path', 'remote', 'pathFilter', 'tagPrefix']) {
+  for (const field of ['key', 'label', 'path', 'remote', 'pathFilter', 'tagPrefix', 'private']) {
     assert.ok(configure.includes(field));
   }
+  assert.match(configure, /effective private value \(omitted means false\)/);
+  assert.match(configure, /private: true; report a privacy mismatch for correction before\s+considering setup complete/);
   assertGuideLink(configure);
   assertGuideLink(section(skill, '### Step 5b: Register a project the site has never rendered before'));
 });
 
 test('onboarding guidance assertions reject a missing manifest obligation and wrong release namespace', () => {
-  const readme = readFileSync(readmeUrl, 'utf8');
+  const readme = readFileSync(skillUrl, 'utf8');
   assertGuide(readme);
   const missingManifest = readme.replace('content/devlog/issueflow/manifest.json', 'content/devlog/issueflow/');
   assert.notEqual(missingManifest, readme);
@@ -82,6 +86,30 @@ test('onboarding guidance assertions reject a missing manifest obligation and wr
   const wrongPrefix = readme.replace('"tagPrefix": "issueflow-v"', '"tagPrefix": "devlog-v"');
   assert.notEqual(wrongPrefix, readme);
   assert.throws(() => assertGuide(wrongPrefix), { code: 'ERR_ASSERTION' });
+});
+
+test('onboarding guidance resolves from standalone and packed npm entrypoints', (t) => {
+  // Assert the documentation contract before creating fixtures so a pre-fix base
+  // fails by assertion, rather than a packaging or filesystem error.
+  assertGuideLink(section(readFileSync(skillUrl, 'utf8'), '## Configure mode'));
+  const dir = mkdtempSync(join(tmpdir(), 'onboarding-layouts-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const standalone = join(dir, '.claude', 'skills', 'devlog', 'SKILL.md');
+  mkdirSync(dirname(standalone), { recursive: true });
+  // init installs this exact entrypoint without the plugin-root README.
+  writeFileSync(standalone, readFileSync(skillUrl));
+  const packed = spawnSync('npm', ['pack', '--ignore-scripts', '--offline', '--json',
+    '--pack-destination', dir, '--cache', join(dir, 'cache')], {
+    cwd: fileURLToPath(new URL('../', import.meta.url)), encoding: 'utf8',
+  });
+  assert.equal(packed.status, 0, packed.stderr);
+  const unpack = spawnSync('tar', ['-xzf', join(dir, JSON.parse(packed.stdout)[0].filename), '-C', dir], { encoding: 'utf8' });
+  assert.equal(unpack.status, 0, unpack.stderr);
+  for (const path of [standalone, join(dir, 'package', 'SKILL.md')]) {
+    const text = readFileSync(path, 'utf8');
+    assertGuideLink(section(text, '## Configure mode'), pathToFileURL(path));
+    assertGuideLink(section(text, '### Step 5b: Register a project the site has never rendered before'), pathToFileURL(path));
+  }
 });
 
 // Runtime imports/fixtures stay inside these callbacks: the unchanged-base
