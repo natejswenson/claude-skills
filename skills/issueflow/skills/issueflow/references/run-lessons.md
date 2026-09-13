@@ -91,6 +91,25 @@ not establish that the earlier autonomous CI gate passed or that the built-in
 merge adapter gained atomic target-context support. Keep those distinctions in
 the evaluation instead of asking again for permission already given.
 
+## #367 and #368: immutable amendment recovery
+
+Retained draft PRs #377 and #375 exposed three controller gaps: repeated
+confirmation of a resolved plan finding demanded a second repair response; a
+rejected review could not obtain a new immutable attempt; and amendment capacity
+ignored an explicitly directed future code-review round. The controller now
+preserves existing resolutions idempotently, archives rejected attempts before
+an explicit quiescent retry, and records one future round with `amend --plan
+... --another-round "<existing user decision>"`. Automatic `next` consumes that
+round once, including on unchanged heads, without resetting cumulative counts.
+Expired autonomous windows renew only within the original total time cap.
+
+`scripts/tests/amendment-recovery.test.mjs` reproduces all four failures through
+the public CLI for both host adapters. It uses synthetic prior run state and
+review output with real local Git, immutable attempts, verification and controller
+transitions; it does not establish native review quality or remote CI success.
+CI freshness still advances at amendment application, including a CI-only change:
+the retained old checks do not establish completion under the amended contract.
+
 ## Release CI: isolate controller credentials
 
 PR #374's first GitHub run (34771030742) failed 13 of 557 tests after the same

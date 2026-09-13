@@ -67,6 +67,8 @@ finding: `{id, response, evidence, disposition: "addressed"|"unresolved"}`. The
 independent reviewer returns `resolutions: [{id, status: "resolved"|"open",
 evidence}]`. Omitting a blocker keeps it open. A reopened resolved finding requires
 `reopeningReason`. Three blocked rounds plus one directed recovery remain the cap.
+Confirming an already resolved ID retains its existing repair history. An open or
+reopened blocker still requires its complete repair response before resolution.
 
 Before PR creation, the existing `amend --reason ... --workers-released` reopens
 planning. Published work uses `amend --plan <file> --reason ... --authority-source
@@ -76,7 +78,34 @@ an independent amendment reviewer; `amend-register` binds its delivery to the
 proposal hash. After observing reviewer termination, `amend-apply
 --workers-released` applies it. Prior PRs, findings, receipts and rounds remain
 recorded. Every implementation receipt and code-review conclusion is invalidated
-conservatively, including unchanged lanes. Budgets never renew through amendment.
+conservatively, including unchanged lanes. An unchanged amended head receives a
+fresh review of the full diff. The base round allowances and cumulative time cap
+stay fixed. Expired autonomous windows may renew within that existing cap at
+proposal, dispatch or application; manual runs still require explicit `resume`.
+
+If code-review capacity is exhausted, an existing user decision for exactly one
+future round can be recorded with the proposal: add `--lane <slug> --another-round
+"<the user's decision>"` to `amend --plan ...`. A single-lane run may omit `--lane`.
+The hash-bound proposal and review brief carry that authority. `next` consumes the
+recorded round after application without another extension flag; a consumed or
+duplicate authorization grants no further round, even after convergence followed
+by a CI fix. Retain the same decision when
+retrying a rejected proposal, without passing the extension flag again. This does
+not increase the independent plan-review allowance or authorize another lane.
+
+After `amend-register` rejects an unregistered delivery, observe native workers
+terminal and drain the queue with `next --workers-released` (a repeated gate
+refusal retains the release). Then use `amend-review-brief --retry
+--workers-released --reason "<why the output needs replacement>"`. If a worker
+was cancelled without a complete delivery, use the existing explicit `cancel-wave`
+recovery first. Record native terminal status with `worker-observe` when a native
+worker identity was recorded. Retry archives the old output and attempt, retains
+their original bytes and proposal identity, and prints fresh immutable paths.
+It changes neither registered round counts nor the total time cap. It cannot
+replace a registered review or clear a blocking finding. Register the new delivery
+normally; malformed resolution entries are gate refusals too. Storage failures
+retain their infrastructure recovery path. Never edit an existing completion
+envelope or output to repair it.
 
 `retarget` adds `--base <branch> --strategy target-only|merge|rebase` to that
 proposal flow. Merge/rebase prepare disposable candidate worktrees; conflicts
