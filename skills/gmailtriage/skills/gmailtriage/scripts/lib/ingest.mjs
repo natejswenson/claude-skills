@@ -42,11 +42,18 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
     if (!isObj(t) || !t.id) throw new Error(`${what}: a thread without an id — this is not a search_threads response`);
     const msgs = Array.isArray(t.messages) ? t.messages : [];
     const first = msgs[0] ?? {};
+    // Preserve existing evidence through the raw-response boundary, using only
+    // bounded resolver tokens so malformed fields cannot leak into snapshots.
+    const evidence = resolveCategory(t);
     out.push({
       id: t.id,
       from: first.sender ?? null,
       subject: first.subject ?? null,
       date: first.date ?? null,
+      ...(evidence.category ? { category: evidence.category } : {}),
+      ...(evidence.status === 'conflict' || evidence.invalid ? {
+        categoryEvidence: { status: evidence.status, categories: evidence.categories },
+      } : {}),
       labelIds: [...new Set(msgs.flatMap((m) => m?.labelIds ?? []))],
     });
   }

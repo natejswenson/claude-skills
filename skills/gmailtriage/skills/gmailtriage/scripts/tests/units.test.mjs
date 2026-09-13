@@ -1187,3 +1187,30 @@ test('category evidence: ingest preserves ambiguity, strips raw evidence and nev
   const [agree] = applyCategories([categoryThread({ category: 'promotions' })], ['t1']);
   assert.equal(agree.category, 'promotions');
 });
+
+test('category evidence: raw normalization preserves explicit and persisted evidence before search matching', async () => {
+  const { normalizeSearchThreads, applyCategories } = await import('../lib/ingest.mjs');
+  for (const [source, expected] of [
+    [{ category: 'promotions' }, 'promotions'],
+    [{ category: 'social' }, null],
+    [{ category: null, categoryEvidence: { status: 'conflict', categories: ['social', 'promotions'] } }, null],
+    [{ category: 'promotions', categoryEvidence: { status: 'unknown', categories: [] } }, null],
+    [{ category: 'secret-token' }, null],
+    [{ categoryEvidence: { status: 'known', categories: ['promotions'], snippet: 'secret-token' } }, null],
+  ]) {
+    const raw = { threads: [{ id: 't1', ...source, messages: [{
+      sender: 'offers@shop.example', subject: 'Offers', date: '2026-08-01',
+      labelIds: ['INBOX'], snippet: 'secret-token',
+    }] }] };
+    const normalized = normalizeSearchThreads(raw);
+    assert.ok(!JSON.stringify(normalized).includes('secret-token'));
+    const [snapshot] = applyCategories(normalized, ['t1']);
+    assert.equal(snapshot.category, expected, JSON.stringify(source));
+    assert.equal(snapshot.hasUnsubscribe, expected === 'promotions');
+    for (const action of ['trash', 'label']) {
+      const r = rule({ action, label: 'Filed', match: { from: 'offers@shop.example', hasUnsubscribe: true } });
+      assert.equal(matches(r, snapshot), expected === 'promotions');
+      assert.equal(plan([snapshot], { rules: [r] }).taken.length, expected === 'promotions' ? 1 : 0);
+    }
+  }
+});
