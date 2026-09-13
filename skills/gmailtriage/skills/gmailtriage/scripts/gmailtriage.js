@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
-import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
+import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { resolveCategory } from './lib/category.mjs';
 
@@ -1035,7 +1035,7 @@ async function cmdIngest(args) {
   // stale, and re-supplying four thread files to refresh one snapshot is how a
   // "verbatim" raw file ends up hand-edited instead. One re-fetch, one flag.
   if (args.labelsOnly) {
-    if (args.inbox || args.nolabel || args.promos || args.updates) {
+    if (args.inbox || args.nolabel || args.promos || args.updates || args.manifest || args.outCoverage || args.outThreads) {
       throw new Error('ingest --labels-only: refreshes the label snapshot alone — drop the thread-file flags, or drop --labels-only');
     }
     const doc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
@@ -1050,12 +1050,17 @@ async function cmdIngest(args) {
     return;
   }
 
-  if (!args.inbox || args.inbox === true) throw new Error('ingest: --inbox <raw.json> is required — write the search_threads result to a file verbatim');
-
-  const inbox = normalizeSearchThreads(readJson(args.inbox, 'ingest: --inbox'), '--inbox');
-  const nolabel = args.nolabel ? normalizeSearchThreads(readJson(args.nolabel, 'ingest: --nolabel'), '--nolabel') : [];
-  const promoIds = args.promos ? threadIds(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
-  const updateIds = args.updates ? threadIds(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
+  if (args.manifest && SOURCE_NAMES.some(name => args[name])) throw new Error('ingest: --manifest cannot be mixed with thread-file flags');
+  if (args.manifest === true || args.outCoverage === true) throw new Error('ingest: --manifest and --out-coverage require a file path');
+  if (!args.manifest && (!args.inbox || args.inbox === true)) throw new Error('ingest: --inbox <raw.json> or --manifest <manifest.json> is required');
+  const manifest = args.manifest ? readJson(args.manifest, 'ingest: --manifest') : null;
+  if (args.manifest) validateManifest(manifest);
+  const legacy = {};
+  if (!manifest) for (const name of SOURCE_NAMES) if (args[name]) legacy[name] = readJson(args[name], name);
+  const { sources, coverage } = ingestSources(manifest,
+    path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy);
+  const { inbox, nolabel } = sources;
+  const promoIds = sources.promos.map(t => t.id), updateIds = sources.updates.map(t => t.id);
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
   const merged = mergeThreadSources(inbox, nolabel);
@@ -1084,6 +1089,12 @@ async function cmdIngest(args) {
     return upper && !SYSTEM_LABELS.includes(upper) && !upper.startsWith('CATEGORY_');
   }).length;
 
+  if (args.outCoverage) console.error('wrote ' + writeJson(args.outCoverage, coverage, args));
+  console.error(table(['Source', 'Pages', 'Unique threads', 'State', 'Reason'],
+    SOURCE_NAMES.map(name => { const c = coverage.sources[name]; return [name, c.pages, c.uniqueThreads, c.state, c.reason]; })));
+  if (['promos', 'updates'].some(name => coverage.sources[name].state !== 'complete')) {
+    console.error('category coverage incomplete: absent membership remains unknown');
+  }
   const outThreads = writeJson(args.outThreads ?? 'threads.json', threads, args);
   const outLabels = writeJson(args.outLabels ?? 'labels.json', labelsDoc, args);
   console.error(`wrote ${outThreads}`);
@@ -1118,7 +1129,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage setup     [--file <rules.json>]
   gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
                         [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
-  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
+  gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]

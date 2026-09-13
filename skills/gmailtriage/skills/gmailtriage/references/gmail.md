@@ -76,6 +76,65 @@ would lose adds `categoryEvidence`, whose schema contains no message content.
 This is worth knowing before adding a match field: if Gmail cannot express it as
 a query, the skill cannot match on it either.
 
+## Paginated input and source coverage
+
+`ingest --manifest manifest.json --labels raw-labels.json --out-coverage coverage.json`
+accepts this separately authored metadata; each `path` points to an unchanged,
+verbatim raw response, relative to the manifest's directory or absolute:
+
+```json
+{
+  "schema": 1,
+  "sources": {
+    "inbox": {
+      "query": "in:inbox",
+      "maxPages": 2,
+      "maxThreads": 100,
+      "pages": [
+        { "path": "raw-inbox-001.json", "pageToken": null },
+        { "path": "raw-inbox-002.json", "pageToken": "token-returned-by-page-1" }
+      ]
+    }
+  }
+}
+```
+
+The other source keys are `nolabel`, `promos`, and `updates`, using the queries
+and views in step 1 of SKILL.md. Each source requires a nonempty query, positive
+integer maxPages/maxThreads and an ordered pages array. A failed attempt uses
+`{ "failed": true, "pageToken": "token-returned-by-page-1" }`, with no path or
+raw error text. Missing sources remain unknown. Unknown source keys, malformed
+records, mixed manifest/legacy thread flags, and over-cap inputs are refused.
+The labels-only refresh accepts neither manifest nor thread/coverage output flags.
+
+Count a failed attempt against maxPages and stop that source. Stop before another
+request once attempts or unique threads reach their cap; request at most 50 and
+no more than the remaining unique-thread allowance. Stop on repeated page tokens.
+Do not splice pages, edit raw responses or fetch after mailbox mutations begin.
+Fetch all intended category pages too: later-page membership is applied to the
+inbox/nolabel sample, but category-only IDs do not enlarge that sample.
+
+Coverage JSON has `{ "schema": 1, "sources": { ... } }`. Every source contains
+`pages` (successful pages consumed), `uniqueThreads` (distinct returned IDs),
+`state` and a bounded `reason`; manifest sources also carry maxPages/maxThreads.
+The same counts/states appear in ingest's stderr coverage table; stdout remains
+compatible. Coverage never copies tokens, raw paths, snippets, errors or estimates.
+
+| State | Evidence |
+|---|---|
+| complete | Initial null request token, every continuation matches, and a successful terminal page has no nextPageToken. An empty terminal page or a terminal page reaching the cap still completes the chain. |
+| capped | A continuation remains at the explicit page/thread cap, with no interruption evidence. This is an intentional sample. |
+| interrupted | Retained continuation below caps, missing/unreadable/failed/malformed page, broken or repeated token, absent initial page, unexpected page after exhaustion, or no successful pages. These conditions outrank capped. |
+| unknown | Source omitted, or legacy single-response inputs without request-chain provenance. No claim of exhaustion. |
+
+Valid pages still contribute data across a gap, but a later terminal page cannot
+repair the missing chain. An invalid response is not a successful empty page;
+the connector's genuine empty object `{}` is supported. Complete describes the
+supplied query at fetch time; concurrent mailbox activity can still change it.
+Incomplete category coverage never proves nonmembership. Even complete category
+fetches do not create primary evidence or change rule semantics. Carry this
+coverage into the final run report using the saved `coverage.json`.
+
 ## Snippets carry secrets, and the estimate lies
 
 Two facts about `search_threads` responses that shape how a run must handle

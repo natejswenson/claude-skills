@@ -111,19 +111,44 @@ rule ever claimed sits outside the inbox forever, invisible to every other
 command here. Skipping it is what makes a skill that only ever re-checks its own
 existing work.
 
-**Write each tool result to a scratchpad file VERBATIM** — `raw-inbox.json`,
-`raw-nolabel.json`, `raw-promos.json`, `raw-updates.json`, and `list_labels`
-to `raw-labels.json`. Byte-for-byte, exactly as the tool returned it: never
-transcribe a tool response by hand, never trim it, never restructure it. Then
-one command does all the reshaping:
+**Claude and Codex use the same bounded fetch procedure.** Default per source:
+`maxPages=1` and `maxThreads=50`; choose explicit larger positive integer caps
+only when the run calls for a larger sample. Do not fetch an entire mailbox by
+default. For each of the four queries above:
+
+1. Before each request, stop if page attempts or distinct returned thread IDs
+   have reached the configured cap. Request `pageSize=min(50, remaining unique-thread allowance)`.
+   Count actual distinct IDs, never the requested size or `resultCountEstimate`.
+2. Start without a page token. For each continuation use the exact returned
+   `nextPageToken` as the next request's `pageToken`. Stop on a repeated token
+   without another call; never infer exhaustion from a short page.
+3. **Write each tool result to a scratchpad file VERBATIM** — new numbered files, verbatim,
+   such as `raw-inbox-001.json`, `raw-inbox-002.json`, and likewise for
+   nolabel/promos/updates. Byte-for-byte, exactly as the tool returned it: never
+   transcribe a tool response by hand, never trim it, never restructure it or
+   overwrite an earlier page. Save `list_labels` to `raw-labels.json`.
+4. Record each attempt in a separate schema-1 `manifest.json`: source query,
+   maxPages/maxThreads, ordered raw paths and request pageToken (null initially).
+   A failed attempt counts against maxPages; record `failed: true` with its
+   request token, omit the path and raw error text, then stop that source.
+   See `references/gmail.md` for the complete manifest example and state rules.
+5. Fetch all intended sources/pages and ingest coverage before any create_label,
+   trash, label or archive operation can disturb pagination. Ingest refuses
+   over-cap inputs; it never silently drops a supplied page to meet a cap.
+
+Then one command does all the reshaping:
 
 ```bash
 node $SKILL_DIR/scripts/gmailtriage.js ingest \
-  --inbox raw-inbox.json --nolabel raw-nolabel.json \
-  --promos raw-promos.json --updates raw-updates.json \
-  --labels raw-labels.json \
-  --out-threads threads.json --out-labels labels.json
+  --manifest manifest.json --labels raw-labels.json \
+  --out-threads threads.json --out-labels labels.json \
+  --out-coverage coverage.json
 ```
+
+Legacy single-response `--inbox`/`--nolabel`/`--promos`/`--updates` inputs remain
+supported, exclusively of `--manifest`. Their coverage is conservatively unknown
+because request-chain provenance is absent. The source coverage table is on
+stderr so existing stdout tables stay compatible.
 
 It dedupes across the fetches, unions label ids, and combines positive category
 search membership with existing category evidence. `hasUnsubscribe` remains a
@@ -388,6 +413,14 @@ Threads listed under a `keepInInbox` rule are labelled and **stay in the inbox**
 `apply` says how many. Do not archive those.
 
 ### 6. Report, and say the undo
+
+Read the saved `coverage.json` from step 1 and include a concise source coverage
+table: successful pages, observed unique threads and complete/capped/interrupted/
+unknown for inbox, nolabel, promos and updates. Describe capped sources as an
+intentional sample and interrupted/unknown sources as incomplete. Disclose
+incomplete category coverage: absence from those pages does not prove
+nonmembership, primary status or permission for a bulk rule. Complete means the
+query chain was exhausted when fetched, not an atomic mailbox snapshot.
 
 One table — rule, action, destination, threads — then the receipt path (under
 `~/.gmailtriage/receipts/`, where it outlives this session). Say plainly that
