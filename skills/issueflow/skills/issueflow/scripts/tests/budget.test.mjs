@@ -338,7 +338,7 @@ test('budget: autonomous runs renew an expired window but stop at the cumulative
   saveRun(dir, renewed);
   const waiting = cli(dir, ['next']);
   assert.equal(waiting.status, 0, waiting.stderr);
-  assert.match(waiting.stdout, /next: wait/);
+  assert.match(waiting.stdout, /next: stop — workspace/);
   assert.equal(loadRun(dir).budgetRenewals.length, 1);
   const stopped = cli(dir, ['brief', '--stage', 'plan']);
   assert.equal(stopped.status, 4, stopped.stderr);

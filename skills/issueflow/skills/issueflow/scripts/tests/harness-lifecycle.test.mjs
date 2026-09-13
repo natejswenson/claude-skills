@@ -30,7 +30,7 @@ function plan(docs = false) {
   return '# Synthetic offline plan\n\n## Root cause\n' + (docs ? 'README.md needs clearer local wording.' : 'count.cjs:1 subtracts one from the length.') + '\n\n## Evidence\n' + (docs ? 'The existing local description is imprecise.' : 'Three items return 2 and empty arrays return -1.') + '\n\n## Unknowns\nNative workers untested.\n\n## Approach\n' + (docs ? 'Clarify README.md only.' : 'Correct the helper and test three-item and empty arrays; preserve every element.') + '\n\n## Rejected\nChanging unrelated code is outside scope.\n\n## Files\n' + c.allowedPaths.join(', ') + '\n\n## Proof\nController executes the approved relevant checks.\n\n```issueflow-contract\n' + JSON.stringify(c) + '\n```\n';
 }
 
-function fixture(t, { legacy = false } = {}) {
+function fixture(t, { legacy = false, staleReviewBase = false } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-harness-lifecycle-'));
   t.diagnostic(`Synthetic local lifecycle evidence: ${root}`);
   t.after(() => { if (!process.env.ISSUEFLOW_HARNESS_KEEP) rmSync(root, { recursive: true, force: true }); });
@@ -57,6 +57,7 @@ function fixture(t, { legacy = false } = {}) {
     command(process.execPath, [join(source, 'scripts/complete-worker.mjs'), attempt.manifest]);
     return attempt;
   };
+  put(join(repo,'.issueflow/completion.json'),{schema:1,readyCanMerge:false,source:'Synthetic fixture has no merge automation'});
   put(join(repo, legacy ? 'README.md' : 'count.cjs'), legacy ? 'Old local documentation.\n' : 'module.exports=items=>items.length-1;\n');
   for (const args of [['init', '-qb', 'dev'], ['config', 'user.name', 'Synthetic offline fixture'], ['config', 'user.email', 'offline@example.invalid'], ['add', '.'], ['commit', '-qm', 'Synthetic base defect']]) git(args);
   if (legacy) {
@@ -65,8 +66,11 @@ function fixture(t, { legacy = false } = {}) {
     put(join(dir, 'inputs/issue.json'), { number: 2, title: 'Clarify local docs', body: 'Synthetic legacy issue: clarify README.md local wording only.', comments: [], labels: [] });
   } else {
     git(['init', '--bare', '-q', join(root, 'remote.git')]); git(['remote', 'add', 'origin', join(root, 'remote.git')]); git(['push', '-u', 'origin', 'dev']);
+    const oldBase=git(['rev-parse','HEAD']);
+    if(staleReviewBase){put(join(repo,'already-landed.md'),'Already on the PR base.\n');git(['add','already-landed.md']);git(['commit','-qm','Advance base before issue work']);git(['push','origin','dev']);}
     put(join(root, 'fake-gh-state.json'), { issue: { number: 1, title: 'Fix array item count', body: 'Count every item, including falsy values. Three items returns 3; empty returns 0. Preserve CommonJS.', state: 'OPEN', url: 'https://example.invalid/offline/count-prflow/issues/1', labels: [], comments: [], author: { login: 'offline' } }, comments: [], pr: null, prComments: [], reviews: [], threads: [], graphql: [], ci: [] });
     invoke('start', '--repo', repo, '--issue', '1', '--runtime', 'codex', '--workspace-root', join(root, 'workspace'));
+    if(staleReviewBase)git(['update-ref','refs/remotes/origin/dev',oldBase],join(state().execution.path,'git-store'));
   }
   return { root, repo, dir, command, invoke, state, tree, git, deliver, remote: () => json(join(root, 'fake-gh-state.json')) };
 }
@@ -82,11 +86,40 @@ function throughImplementation(f) {
   assert.equal(f.remote().pr.isDraft, true);
 }
 
+test('PR review refreshes a stale cached target before sizing and briefing the actual diff', {timeout:60000}, t => {
+  const f=fixture(t,{staleReviewBase:true});throughImplementation(f);
+  const r=f.state(),lane=r.lanes[0],round=lane.review.rounds[0];
+  const diff=readFileSync(join(r.execution.path,'artifacts/root/review/r1/diff.patch'),'utf8');
+  assert.doesNotMatch(diff,/already-landed\.md/,'already merged base changes are not issue findings');
+  assert.equal(f.git(['rev-parse','refs/remotes/origin/dev'],f.tree()),r.repositorySnapshot.sha);
+  assert.equal(round.baseHead,r.repositorySnapshot.sha,'review records the observed target SHA');
+});
+
+test('delivered plan preflight refusal rebriefs its author without spending an independent review round', {timeout:60000}, t => {
+  const f=fixture(t,{legacy:true});
+  put(join(f.repo,'.issueflow/preflight.json'),{schema:1,generators:[{name:'fixture docs',inputs:['README.md'],outputs:['docs/generated.md']}]});
+  put(join(f.repo,'docs/generated.md'),'Local documentation.\n');
+  f.git(['add','.issueflow/preflight.json','docs/generated.md']);f.git(['commit','-qm','Declare generated documentation']);
+  f.invoke('migrate-run','--workers-released','--reason','exercise fresh plan preflight');
+  f.invoke('next','--workers-released');
+  const original=f.deliver('shared/investigate.md',plan(true));
+  const refused=f.command(process.execPath,[cli,'next','--run-dir',f.dir,'--offline','--workers-released'],{expected:2});
+  assert.match(refused.stdout,/gate refused: preflight: generated output missing/);
+  assert.match(refused.stdout,/next: dispatch \(send-back\)/);
+  const repaired=f.state();
+  assert.notEqual(repaired.harness.attempts['shared/investigate.md'].id,original.id);
+  assert.equal(repaired.stages[0].repairs,1);
+  assert.equal(repaired.stages[0].review.rounds.length,1,'historical round remains the only round');
+  const corrected=plan(true).replace('"allowedPaths":["README.md"]','"allowedPaths":["README.md","docs/generated.md"]');
+  f.deliver('shared/investigate.md',corrected);f.invoke('next','--workers-released');
+  assert.ok(f.state().harness.attempts['reviews/investigate-r2.findings.json'],'fresh independent review follows corrected preflight');
+});
+
 test('strict CLI lifecycle: real proof, synthetic PR fix/review, automatic fresh receipts, resumable readiness', { timeout: 180000 }, t => {
   const f = fixture(t); throughImplementation(f);
   const initial = structuredClone(f.state().lanes[0].verification);
   assert.equal(initial.complete, true);
-  assert.match(readFileSync(f.state().harness.attempts['root/review/r1/candidates-1.json'].brief, 'utf8'), /Round 1 of at most 2\./);
+  assert.match(readFileSync(f.state().harness.attempts['root/review/r1/candidates-1.json'].brief, 'utf8'), /Round 1 \(base allowance 2; authorized extensions 0\)\./);
   f.deliver('root/review/r1/candidates-1.json', { candidates: [{ file: 'count.cjs', line: 1, side: 'RIGHT', category: 'line-by-line', summary: 'filter(Boolean) drops zero and false array elements.', short_summary: 'Falsy elements are dropped from the count', failure_scenario: 'count([0]) returns 0 instead of 1.', introduced_by_diff: true }], notExamined: ['Synthetic finder, no live reviewer'] });
   f.invoke('next', '--workers-released');
   f.deliver('root/review/r1/verdicts-1.json', { verdicts: [{ id: 'c-1-1', verdict: 'CONFIRMED', severity: 'major', quote: 'module.exports=items=>items.filter(Boolean).length;', introduced_by_diff: true, explanation: 'Synthetic verifier: zero is filtered out.' }] });
@@ -112,7 +145,7 @@ test('strict CLI lifecycle: real proof, synthetic PR fix/review, automatic fresh
   assert.match(interrupted.stderr, /Synthetic interruption/); assert.equal(f.remote().pr.isDraft, false);
   f.invoke('next');
   const stable = f.remote(); const repeated = f.invoke('next');
-  assert.match(repeated.stdout, /stop — shipped/); assert.deepEqual(f.remote(), stable, 'repeated next has no remote effects');
+  assert.match(repeated.stdout, /stop — reviewed/); assert.deepEqual(f.remote(), stable, 'repeated next has no remote effects');
   assert.equal(stable.pr.state, 'OPEN'); assert.equal(stable.pr.isDraft, false); assert.equal(stable.reviews.length, 2); assert.equal(stable.reviews.filter(r => r.submitted).length, 2);
   assert.equal(stable.threads.length, 1); assert.equal(stable.threads[0].isResolved, true); assert.equal(stable.threads[0].comments.nodes.length, 3); assert.equal(stable.prComments.length, 1);
   const calls = readFileSync(join(f.root, 'fake-gh-calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
@@ -135,7 +168,7 @@ test('strict CLI lifecycle: real proof, synthetic PR fix/review, automatic fresh
 test('migration and identical-byte amendment require fresh independent review while retaining history', { timeout: 60000 }, t => {
   const f = fixture(t, { legacy: true }), before = f.state();
   f.invoke('migrate-run', '--workers-released', '--reason', 'Synthetic offline strict migration');
-  const migrated = f.state(); assert.equal(migrated.schema, 4); assert.equal(migrated.stages[0].state, 'pending'); assert.equal(migrated.harness.contract, null);
+  const migrated = f.state(); assert.equal(migrated.schema, 5); assert.equal(migrated.stages[0].state, 'pending'); assert.equal(migrated.harness.contract, null);
   assert.equal(migrated.createdAt, before.createdAt); assert.deepEqual(migrated.complexity, before.complexity); assert.equal(migrated.stages[0].review.rounds.length, 1);
   f.invoke('next', '--workers-released');
   assert.ok(f.state().harness.attempts['shared/investigate.md'], 'next must issue a new plan instead of accepting historical review');

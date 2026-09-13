@@ -759,12 +759,14 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-next-cli-'));
   const repoPath = repo();
   cpSync(join(INPUTS, 'repo'), repoPath, { recursive: true });
+  git(['add','.'],repoPath);git(['commit','-qm','frozen citation sources'],repoPath);
   git(['branch', 'main'], repoPath); // Frozen repo metadata declares main as the base.
   cli(['start', '--repo', repoPath, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json'), '--review-plan']);
 
   let r = cli(['next', '--run-dir', dir]);
   assert.equal(r.code, 0, r.err);
   assert.match(r.out, /▶ brief/);
+  assert.equal(r.code,0,r.err);
   assert.match(r.out, /next: dispatch \(brief\)/);
   assert.match(r.out, /Dispatch ONE subagent, model `opus`/);
   assert.match(r.out, /wait: sh -c 'end=\$\(\( \$\(date \+%s\) \+ \d+ \)\); until \[ .*investigate\.md.* -nt .*briefs\/investigate\.md/);
@@ -775,11 +777,12 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
 
   // the plan lands (newer than the brief)
   const planText = readFileSync(join(INPUTS, 'artifacts', 'investigate.md'), 'utf8');
-  const lanes = Object.fromEntries(workItemsFromPlan(planText).map((item) => [item.slug, { criteria: ['D1'], checks: ['docs'], allowedPaths: ['README.md'] }]));
-  writeFileSync(join(dir, 'shared', 'investigate.md'), planText + '\n```issueflow-contract\n' + JSON.stringify({ schema: 1, risk: 'docs', criteria: [{ id: 'D1', description: 'document descriptions' }], nonGoals: [], allowedPaths: ['README.md'], checks: [{ id: 'docs', type: 'command', argv: [process.execPath, '--version'], criteria: ['D1'] }], lanes }) + '\n```\n');
+  const lanes = Object.fromEntries(workItemsFromPlan(planText).map((item) => [item.slug, { criteria: ['D1'], checks: ['docs'], allowedPaths: ['README.md','description.test.cjs'] }]));
+  writeFileSync(join(dir, 'shared', 'investigate.md'), planText + '\n```issueflow-contract\n' + JSON.stringify({ schema: 1, risk: 'standard', criteria: [{ id: 'D1', description: 'document descriptions' }], nonGoals: [], allowedPaths: ['README.md','description.test.cjs'], checks: [{ id: 'docs', type: 'regression', testFiles:['description.test.cjs'], argv: [process.execPath, '--test','description.test.cjs'], criteria: ['D1'] }], lanes }) + '\n```\n');
   completeAttempt(loadRun(dir).harness.attempts['shared/investigate.md'].manifest);
   r = cli(['next', '--run-dir', dir]);
   assert.match(r.out, /▶ brief — the plan is delivered — briefing red-team round 1/);
+  assert.equal(r.code,0,r.err);
   assert.match(r.out, /next: dispatch \(brief\)/);
   assert.match(r.out, /review-investigate-r1\.md/);
 
@@ -801,6 +804,7 @@ test('next (CLI): --review-plan drives a fresh run through review and stops once
   assert.equal(r.code, 0, r.err);
   assert.match(r.out, /▶ split/);
   assert.match(r.out, /▶ brief — descriptions\/implement is ready to be briefed/);
+  assert.equal(r.code,0,r.err);
   assert.match(r.out, /next: dispatch \(brief\)/);
   rmSync(dir, { recursive: true, force: true });
   rmSync(repoPath, { recursive: true, force: true });

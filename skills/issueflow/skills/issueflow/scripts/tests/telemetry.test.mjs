@@ -111,6 +111,7 @@ test('telemetry excludes raw paths and tolerates malformed lines', () => {
   assert.deepEqual(summarizeTelemetry(events), {
     schema: 1, events: 1, workers: 1, successfulWorkers: 0, failedWorkers: 1,
     nativeObservedWorkers: 0, missingNativeObservations: 0, costUsd: null,
+    elapsed:{wallTimeMs:null,unknownTimeMs:null},milestones:{'implementation-start':null,'reviewed-pr':null,endpoint:null},
     usage: Object.fromEntries(['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens'].map((field) => [field, { total: null, knownSubtotal: 0, missingAttempts: 0 }])),
     retries: 0, gateRefusals: 0, findingCountsSource: 'legacy-finding-events', findingsProposed: 0, findingsConfirmed: 0,
     wallTimeMs: null, workerWallTimeMs: null, knownWorkerWallTimeMs: 0, missingWorkerTimeSamples: 1,

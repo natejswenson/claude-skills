@@ -207,8 +207,9 @@ export function ensureWorktree(repoPath, dir, lane, { offline = false, lanes = [
       // the base is a sibling lane's branch — a stacked lane's base is local-only
       // until that lane ships, so origin has no ref for it to fetch.
       const stacked = lanes.some((l) => l.branch === lane.base);
-      if (!offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
-      git(['worktree', 'add', '-b', lane.branch, path, startPoint(repoPath, lane)], repoPath);
+      const pinned = executionRun?.harness?.bases?.[lane.slug];
+      if (!pinned && !offline && !stacked && originConfigured(repoPath)) fetchBase(repoPath, lane.base);
+      git(['worktree', 'add', '-b', lane.branch, path, pinned ?? startPoint(repoPath, lane)], repoPath);
     }
     validateWorktree(repoPath, dir, lane, executionRun);
     const admin = git(['rev-parse', '--absolute-git-dir'], path);

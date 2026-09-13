@@ -61,14 +61,14 @@ export function viewIssue(cwd, number) {
  * a billing tier. The caller learns which happened through `draft` in the
  * result and labels the pull request instead.
  */
-export function createPr(cwd, { head, base, title, bodyFile, draft }) {
+export function createPr(cwd, { head, base, title, bodyFile, draft, allowNormalFallback = true }) {
   const args = ['pr', 'create', '--head', head, '--base', base, '--title', title, '--body-file', bodyFile];
   if (draft) {
     try {
       const url = gh([...args, '--draft'], cwd).trim().split('\n').filter(Boolean).pop() ?? '';
       return { url, draft: true };
     } catch (err) {
-      if (!/draft/i.test(String(err.message))) throw err;
+      if (!/draft/i.test(String(err.message)) || !allowNormalFallback) throw err;
     }
   }
   const url = gh(args, cwd).trim().split('\n').filter(Boolean).pop() ?? '';
@@ -167,7 +167,7 @@ export function updateIssueComment(cwd, { owner, name, commentId, inputFile }) {
 
 /** The pull request the loop reviews: node id for GraphQL, head sha for binding, draft state. */
 export function prView(cwd, number) {
-  const raw = gh(['pr', 'view', String(number), '--json', 'id,number,url,headRefOid,headRefName,baseRefName,isDraft,title,state,labels'], cwd);
+  const raw = gh(['pr', 'view', String(number), '--json', 'id,number,url,headRefOid,headRefName,baseRefName,baseRefOid,isDraft,title,state,labels'], cwd);
   return JSON.parse(raw);
 }
 
@@ -266,3 +266,59 @@ export const GQL = {
     }
   }`,
 };
+
+/** REST adapters use argv and JSON files; transcripts are never executed. */
+export function apiRead(cwd, path) { return JSON.parse(gh(['api',path],cwd)); }
+export function apiPages(cwd,path,key=null) {
+  const pages=JSON.parse(gh(['api','--paginate','--slurp',path],cwd));
+  if (!Array.isArray(pages)) throw new GhError('incomplete paginated response');
+  return pages.flatMap(page=>{
+    const rows=key?page[key]:page;
+    if (!Array.isArray(rows)) throw new GhError('invalid paginated response');
+    return rows;
+  });
+}
+export function apiWrite(cwd,path,method,body,file) {
+  writeFileSync(file,JSON.stringify(body),{flag:'wx'});
+  return JSON.parse(gh(['api','--method',method,path,'--input',file],cwd));
+}
+
+// API contracts: https://docs.github.com/en/rest/repos/rules#get-rules-for-a-branch
+// https://docs.github.com/en/rest/checks/runs#list-check-runs-for-a-git-reference
+export function observeCi(cwd,repo,number) {
+  const prefix=`repos/${repo.owner}/${repo.name}`;
+  const pr=apiRead(cwd,`${prefix}/pulls/${number}`);
+  if (!pr.head?.sha || !pr.base?.sha || !pr.base?.ref) throw new GhError('PR context is unavailable');
+  const branch=encodeURIComponent(pr.base.ref);
+  const rules=apiPages(cwd,`${prefix}/rules/branches/${branch}?per_page=100`);
+  const branchInfo=apiRead(cwd,`${prefix}/branches/${branch}`);
+  let classic=null;
+  if (branchInfo.protected) {
+    try { classic=apiRead(cwd,`${prefix}/branches/${branch}/protection`); }
+    catch(error) { if (!/Branch not protected/i.test(error.message)) throw error; }
+  }
+  const required=[];
+  const requiredRules=rules.filter(r=>r.type==='required_status_checks');
+  for (const rule of requiredRules) for (const check of rule.parameters?.required_status_checks??[]) required.push({name:check.context,appId:check.integration_id??null});
+  const old=classic?.required_status_checks;
+  for (const check of old?.checks??[]) required.push({name:check.context,appId:check.app_id??null});
+  for (const name of old?.contexts??[]) if (!required.some(r=>r.name===name)) required.push({name});
+  const checks=[];
+  for (const ref of new Set([pr.head.sha,...(pr.merge_commit_sha?[pr.merge_commit_sha]:[])])) {
+    for (const check of apiPages(cwd,`${prefix}/commits/${ref}/check-runs?filter=latest&per_page=100`,'check_runs')) {
+      const context=(check.pull_requests??[]).find(p=>p.number===number);
+      checks.push({name:check.name,appId:check.app?.id,id:check.id,head:check.head_sha,
+        conclusion:check.status==='completed'?check.conclusion:'pending',startedAt:check.started_at,
+        baseRef:context?.base?.ref,baseSha:context?.base?.sha,url:check.html_url});
+    }
+    for (const check of apiPages(cwd,`${prefix}/commits/${ref}/statuses?per_page=100`)) checks.push({name:check.context,appId:null,id:check.id,head:ref,conclusion:check.state,startedAt:check.created_at,url:check.target_url});
+  }
+  const latest=new Map();
+  for (const check of checks.sort((a,b)=>Date.parse(a.startedAt??0)-Date.parse(b.startedAt??0))) latest.set(`${check.name}:${check.appId??''}:${check.head}`,check);
+  // Prefer the current merge-result observation over a duplicate head observation.
+  const selected=[...latest.values()].filter(c=>c.head===pr.merge_commit_sha || ![...latest.values()].some(other=>other.name===c.name&&other.appId===c.appId&&other.head===pr.merge_commit_sha));
+  return {requirementsAvailable:true,required,checks:selected,head:pr.head.sha,baseRef:pr.base.ref,baseSha:pr.base.sha,
+    mergeSha:pr.merge_commit_sha,strict:!!old?.strict||requiredRules.some(r=>r.parameters?.strict_required_status_checks_policy),
+    mergeable:pr.mergeable,mergeableState:pr.mergeable_state,autoMerge:pr.auto_merge,pr,
+    policySources:{rules,classic},observedAt:new Date().toISOString()};
+}

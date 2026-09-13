@@ -336,6 +336,18 @@ function quiescent(run) {
     });
 }
 
+/** Storage layout validation is not a claim about host write authorization. */
+export function validateWorkspaceRoot(repo, dir, workspaceRoot, host) {
+  if (!workspaceRoot) return;
+  if (host !== 'codex') fail('--workspace-root is only for Codex runs');
+  if (!existsSync(resolve(workspaceRoot))) fail(`workspace root does not exist: ${workspaceRoot}; create the host-writable directory and retry start`);
+  const root = realpathSync(resolve(workspaceRoot));
+  const info = sourceInfo({ repo: { path: repo } });
+  const durable = existsSync(dir) ? realpathSync(dir) : resolve(dir);
+  if (within(durable, root) || within(join(homedir(), '.claude'), root) || within(info.common, root) ||
+      within(root, info.path) || within(info.path, root)) fail(`unsupported execution storage layout: ${root}; choose a separate host-writable root`);
+}
+
 /** The host supplies an actual approved root. Naming a path never grants child authority. */
 export function prepareExecution(dir, run, { workspaceRoot } = {}) {
   try { return prepare(dir, run, { workspaceRoot }); }
@@ -364,7 +376,7 @@ function prepare(dir, run, { workspaceRoot }) {
   const info = sourceInfo(run);
   const root = realpathSync(resolve(workspaceRoot ?? previous.root));
   if (within(realpathSync(dir), root) || within(join(homedir(), '.claude'), root) || within(info.common, root) ||
-      within(root, info.path) || within(info.path, root)) fail(`not an approved workspace root: ${root}`);
+      within(root, info.path) || within(info.path, root)) fail(`unsupported execution storage layout: ${root}; choose a separate host-writable root`);
   const owner = ownerOf(dir, run);
   const generation = randomUUID();
   const key = digest(JSON.stringify(owner));
@@ -387,6 +399,11 @@ function prepare(dir, run, { workspaceRoot }) {
   try { worktreeConfig = git(['config', '--bool', 'extensions.worktreeConfig'], info.path) === 'true'; } catch (err) { if (err.status !== 1) throw err; }
   if (existsSync(join(info.path, '.gitmodules')) || lfs || worktreeConfig) {
     fail(`submodule, LFS or worktree-specific configuration requires explicit migration at ${info.path}`);
+  }
+  if(run.initialization?.phase==='initializing') {
+    run.initialization.allocations??=[];
+    if(run.initialization.allocations.length>=3)fail('three incomplete allocations retained; inspect recorded roots before explicit recovery');
+    run.initialization.allocations.push({path,generation,owner,state:'allocating'});saveRun(dir,run);
   }
   mkdirSync(path, { recursive: true });
   writeFileSync(join(path, 'owner.json'), JSON.stringify({ ...owner, generation, source: info.path, common: info.common }), { flag: 'wx' });
@@ -418,6 +435,7 @@ function prepare(dir, run, { workspaceRoot }) {
   }
   e.priorRoots = [...(previous?.priorRoots ?? []), previous?.path ?? realpathSync(dir)];
   const restored = previous ? run.lanes.filter((lane) => !lane.landed && run.checkout?.mode !== 'source' && began(lane)) : legacy;
+  const allocation=run.initialization?.allocations?.find(a=>a.generation===generation);if(allocation)allocation.state='prepared';
   const staged = { ...run, execution: e };
   for (const lane of restored) ensureWorktree(store, dir, lane, { offline: true, lanes: run.lanes, executionRun: staged });
   saveRun(dir, staged);
@@ -485,6 +503,15 @@ export function sourceTree(dir, run, lane) {
 
 /** A persisted mode is sticky. Missing legacy mode never grants source access. */
 export function prepareCheckout(dir, run, lane, { noWorktree = false, reserve = false } = {}) {
+  if(run.schema>=5&&!reserve&&!run.harness.bases[lane.slug]) {
+    const parent=run.lanes.find(p=>p.branch===lane.base);
+    if(parent) {
+      if(parent.stages.some(s=>s.state!=='approved'))fail('stacked lane requires an approved parent before freezing its base');
+      const tip=git(['rev-parse',`${parent.branch}^{commit}`],gitStore(dir,run));
+      if(parent.verification?.head&&parent.verification.head!==tip)fail('parent moved beyond its verified head; reconcile before freezing child base');
+      run.harness.bases[lane.slug]=tip;
+    } else if(run.repositorySnapshot)run.harness.bases[lane.slug]=run.repositorySnapshot.sha;
+  }
   if (run.checkout && !['source', 'worktree'].includes(run.checkout.mode)) {
     throw new WorktreeError('unknown checkout mode; restore the run record');
   }
@@ -506,7 +533,7 @@ export function prepareCheckout(dir, run, lane, { noWorktree = false, reserve = 
   // one from a branch would conceal the loss.
   if (run.runtime === 'codex' && !(run.autonomous && run.offline && !run.execution)) validateExecution(dir, run);
   if (began(lane)) validateWorktree(gitStore(dir, run), dir, lane);
-  const tree = ensureWorktree(gitStore(dir, run), dir, lane, { offline: run.offline, lanes: run.lanes }).path;
+  const tree = ensureWorktree(gitStore(dir, run), dir, lane, { offline: run.offline, lanes: run.lanes, executionRun:run }).path;
   run.checkout = { mode: 'worktree' };
   saveRun(dir, run);
   return tree;
@@ -529,4 +556,15 @@ export function releaseSourceLease(dir, run) {
   } finally {
     if (lock) rmdirSync(lock);
   }
+}
+
+export function planningTree(dir, run) {
+  if (!run.repositorySnapshot) return run.repo.path;
+  const store=gitStore(dir,run), root=run.execution?.path??dir;
+  const path=join(root,'planning',run.repositorySnapshot.sha);
+  mkdirSync(join(root,'planning'),{recursive:true});
+  if (!existsSync(path)) git(['worktree','add','--detach',path,run.repositorySnapshot.sha],store);
+  if (git(['rev-parse','HEAD'],path)!==run.repositorySnapshot.sha || git(['status','--porcelain','--untracked-files=all'],path)) fail('planning snapshot changed; preserve edits and restore the frozen base before continuing');
+  run.auxiliaryTrees??=[];if(!run.auxiliaryTrees.some(t=>t.path===path))run.auxiliaryTrees.push({path,head:run.repositorySnapshot.sha,kind:'planning'});
+  return path;
 }

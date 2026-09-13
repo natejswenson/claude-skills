@@ -5,12 +5,13 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRun, loadRun, saveRun, artifactPath } from '../lib/run.mjs';
+import { createRun, loadRun, saveRun, artifactPath, findStep } from '../lib/run.mjs';
 import { evolveRun, authorizeAmendment } from '../lib/evolution.mjs';
 import { contractForLane, validateContract, hash } from '../lib/contracts.mjs';
 import { approvePlan } from './helpers.mjs';
 import { decide } from '../lib/next.mjs';
 import { latestRound, nextRound } from '../lib/reviews.mjs';
+import { renderBrief } from '../lib/brief.mjs';
 
 const contract = { schema: 1, risk: 'docs', criteria: [{ id: 'D1', description: 'docs accurate' }], nonGoals: [], allowedPaths: ['README.md'], checks: [{ id: 'docs', type: 'command', argv: ['node', '--version'], criteria: ['D1'] }] };
 function fixture(t, strict = false) {
@@ -34,7 +35,7 @@ test('legacy migration is explicit, preserves history and caps, and never invent
   assert.equal(invoke('--reason', 'strict proof').status, 2);
   const r = invoke('--workers-released', '--reason', 'strict proof'); assert.equal(r.status, 0, r.stderr);
   const run = loadRun(f.dir); const record = run.harness.amendments[0];
-  assert.equal(run.schema, 4); assert.equal(run.stages[0].state, 'pending'); assert.equal(run.harness.contract, null);
+  assert.equal(run.schema, 5); assert.equal(run.stages[0].state, 'pending'); assert.equal(run.harness.contract, null);
   assert.equal(run.createdAt, JSON.parse(old).createdAt); assert.deepEqual(run.complexity, JSON.parse(old).complexity);
   assert.equal(JSON.parse(readFileSync(join(record.archive, 'run.json'))).schema, 3);
   assert.deepEqual(readFileSync(join(record.archive, record.artifacts[0].archive)), bytes);
@@ -66,6 +67,70 @@ test('migration refuses live queues, completed runs and unresolved remote outcom
     const run = { ...f.run, [key]: value };
     assert.throws(() => evolveRun(f.dir, run, { kind: 'migrate', reason: 'test', workersReleased: true }), pattern);
   }
+});
+
+test('explicit pre-implementation migration selects current policy while retaining the prior base and review history', (t) => {
+  const f=fixture(t), cli=fileURLToPath(new URL('../issueflow.js',import.meta.url));
+  execFileSync('git',['branch','dev'],{cwd:f.repo});
+  mkdirSync(join(f.repo,'.github'));
+  writeFileSync(join(f.repo,'.github/shipflow.json'),JSON.stringify({branches:{main:'main'}}));
+  writeFileSync(join(f.repo,'AGENTS.md'),'Feature PRs target `main`.\n');
+  execFileSync('git',['add','AGENTS.md','.github/shipflow.json'],{cwd:f.repo});
+  execFileSync('git',['-c','user.name=test','-c','user.email=test@example.invalid','commit','-qm','main policy'],{cwd:f.repo});
+  const dirtyPolicy=JSON.stringify({branches:{main:'main',dev:'dev'}});
+  writeFileSync(join(f.repo,'.github/shipflow.json'),dirtyPolicy);
+  f.run.policy.base='dev';f.run.lanes[0].base='dev';saveRun(f.dir,f.run);
+  const before=readFileSync(join(f.dir,'run.json'),'utf8');
+  const invoke=(...args)=>spawnSync(process.execPath,[cli,'migrate-run','--run-dir',f.dir,'--workers-released','--reason','retry issue against current policy','--base','main',...args],{encoding:'utf8'});
+  const missing=invoke();assert.equal(missing.status,2,missing.stdout+missing.stderr);
+  assert.equal(readFileSync(join(f.dir,'run.json'),'utf8'),before);
+  const result=invoke('--authority-source','User chose main for this retry');assert.equal(result.status,0,result.stdout+result.stderr);
+  const after=loadRun(f.dir),record=after.harness.amendments.at(-1);
+  assert.equal(after.policy.base,'main');assert.equal(after.lanes[0].base,'main');
+  assert.equal(after.repositorySnapshot.sha,execFileSync('git',['rev-parse','HEAD'],{cwd:f.repo,encoding:'utf8'}).trim());
+  assert.equal(after.harness.bases.root,after.repositorySnapshot.sha);
+  assert.equal(JSON.parse(readFileSync(join(record.archive,'run.json'),'utf8')).policy.base,'dev');
+  assert.equal(after.stages[0].review.rounds.length,f.run.stages[0].review.rounds.length);
+  assert.equal(after.createdAt,f.run.createdAt);assert.deepEqual(after.complexity,f.run.complexity);
+  assert.equal(record.baseTransition.authoritySource,'User chose main for this retry');
+  assert.equal(readFileSync(join(f.repo,'.github/shipflow.json'),'utf8'),dirtyPolicy,'unrelated working policy stays untouched');
+});
+
+test('base selection during migration refuses implemented or published lanes', (t) => {
+  const f=fixture(t);
+  for(const change of [{pr:{number:1}},{stages:[{id:'implement',state:'briefed',at:{briefed:'now'}}]}]) {
+    const run=structuredClone(f.run);Object.assign(run.lanes[0],change);
+    assert.throws(()=>evolveRun(f.dir,run,{kind:'migrate',reason:'test',workersReleased:true,controller:{base:'main',authoritySource:'user'}}),/before implementation/);
+  }
+});
+
+test('migration carries legacy blockers into repair without altering archived reviews or replenishing rounds', (t) => {
+  const f=fixture(t);
+  const prior=f.run.stages[0].review.rounds[0];
+  prior.verdict='blocked';
+  prior.items=[{severity:'high',disposition:'fixable',cite:'plan proof',text:'Conflicting category sources must not authorize an action.'}];
+  const original=structuredClone(prior);
+  const record=evolveRun(f.dir,f.run,{kind:'migrate',reason:'retry with retained blockers',workersReleased:true});
+  const findings=Object.values(f.run.harness.planFindings);
+  assert.equal(findings.length,1);assert.equal(findings[0].status,'open');
+  assert.equal(findings[0].text,original.items[0].text);
+  assert.equal(findings[0].origin.round,original.round);
+  assert.equal(findings[0].origin.artifactSha,original.artifactSha);
+  assert.deepEqual(JSON.parse(readFileSync(join(record.archive,'run.json'),'utf8')).stages[0].review.rounds[0],original);
+  assert.deepEqual(f.run.stages[0].review.rounds[0].items,original.items);
+  assert.equal(nextRound({stage:f.run.stages[0]}),2);
+});
+
+test('migration without an approved contract requests fresh scope while a real amendment preserves its allowlist', (t) => {
+  const f=fixture(t);
+  evolveRun(f.dir,f.run,{kind:'migrate',reason:'retry incomplete planning',workersReleased:true});
+  const render=()=>renderBrief(f.dir,f.run,findStep(f.run,'investigate'),JSON.parse(readFileSync(join(f.dir,'inputs/issue.json'),'utf8')),f.repo);
+  const migrated=render();
+  assert.match(migrated,/No prior approved contract/);
+  assert.match(migrated,/required generated outputs/);
+  assert.doesNotMatch(migrated,/preserve the previous objective and allowed paths/);
+  f.run.harness.pendingAmendment.previousContract=contract;
+  assert.match(render(),/preserve the previous objective and allowed paths/);
 });
 
 test('lane obligation partition covers every check without expanding scope', () => {

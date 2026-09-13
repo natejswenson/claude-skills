@@ -117,7 +117,7 @@ function cliCase(source, dir, host, env) {
   const output = readFileSync(join(dir, 'next.stdout'), 'utf8');
   const persisted = state.runtime === host && state.offline === true && state.issue.number === 1;
   const next = host === 'claude' ? state.stages[0].state === 'briefed' && existsSync(join(run, 'briefs/investigate.md'))
-    : /approved Codex workspace/.test(output) && state.stages[0].state === 'pending';
+    : /approved Codex workspace|next: stop — workspace/.test(output) && state.stages[0].state === 'pending';
   return { pass: persisted && next, detail: host === 'claude' ? 'real CLI persisted state and delivered a plan brief' : 'real CLI preserved Codex identity and withheld dispatch without prepared storage' };
 }
 

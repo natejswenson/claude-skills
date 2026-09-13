@@ -1,0 +1,46 @@
+{
+  "source": "natejswenson/claude-skills#366",
+  "reviewUrl": "https://github.com/natejswenson/claude-skills/pull/373#pullrequestreview-5191290160",
+  "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+  "round": 3,
+  "finding": {
+    "id": "f-a32800bf",
+    "file": "skills/gmailtriage/skills/gmailtriage/scripts/lib/ingest.mjs",
+    "line": 81,
+    "side": "RIGHT",
+    "category": "intent",
+    "severity": "major",
+    "verdict": "CONFIRMED",
+    "introduced_by_diff": true,
+    "short_summary": "CLI normalization drops existing category evidence",
+    "summary": "The CLI normalization step discards explicit category and persisted ambiguity before the new resolver can combine them with search evidence.",
+    "failure_scenario": "A raw threads object containing id t, category social, a conflict marker with social/promotions, and a messages array with sender/subject/date/INBOX is passed through normalizeSearchThreads then applyCategories with promoIds [t]. Observed output is category promotions, hasUnsubscribe true and no marker; a sender-plus-hasUnsubscribe trash match returns true. The new references/gmail.md promise that ingest accepts existing explicit fields and that re-ingesting markers cannot erase uncertainty does not hold through this CLI path. The stripping line predates the diff; this is a candidate missing integration under the approved plan's existing-evidence policy, whose applicability to raw inputs should be verified.",
+    "quote": "out.push({\n      id: t.id,\n      from: first.sender ?? null,\n      subject: first.subject ?? null,\n      date: first.date ?? null,\n      labelIds: [...new Set(msgs.flatMap((m) => m?.labelIds ?? []))],\n    });",
+    "suggestion": null,
+    "inline": false,
+    "status": "open",
+    "firstRound": 2,
+    "lastRound": 3,
+    "head": "4fb905870d5a1e879a6bbf1373b688d889967307",
+    "stillOpenRounds": 1,
+    "disputes": 0,
+    "dispute": null,
+    "demoted": null,
+    "history": [
+      {
+        "round": 3,
+        "verdict": "still-open",
+        "quote": "prev.labelIds = [...new Set([...(prev.labelIds ?? []), ...(t.labelIds ?? [])])];",
+        "note": "The exact single-source normalize/apply example is now fixed by lines 47–56, but the same CLI evidence-loss failure remains at the next normalization boundary for ordinary duplicate sources: later explicit social or persisted conflict/unknown evidence is discarded by mergeThreadSources before applyCategories and can still authorize a proxy-constrained action; the fix does not preserve evidence through the complete ingest path."
+      }
+    ]
+  },
+  "verdictSources": [
+    {
+      "name": "verdicts-1.json",
+      "sha256": "c2d2d467c4a92c402e2bff0c5091b58d878787a3352d29841402db4e2b111d61"
+    }
+  ],
+  "briefSha256": "eb71b8f27466189aafc82c849be0fb57a1388d9583953ae0e7b91f3f4431d5b6",
+  "projection": "Exact registered finding and round identity; no rewritten verifier prose."
+}

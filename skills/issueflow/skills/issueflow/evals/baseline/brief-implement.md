@@ -147,6 +147,10 @@ Do not go beyond the approved plan. A better idea found mid-implementation goes 
 | work item | descriptions — the eight description-string rewrites, the interpret.tsb_zone docstring… |
 | evidence file | <RUN>/descriptions/test-output.txt |
 
+Before inspecting or changing a newly selected path, read its applicable
+CLAUDE.md, AGENTS.md (or AGENTS.override.md), and REVIEW.md from root to leaf.
+The guidance below covers the known scope; unrelated fixture and scratch instructions are not repository-wide rules.
+
 ## Deliver
 
 Write your answer to `<RUN>/descriptions/implement.md`.

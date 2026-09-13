@@ -5,6 +5,29 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - Unreleased
+
+- Carry the latest registered verifier quote and explanation into repeated-finding fixer briefs, keeping superseded reproductions explicitly historical; pin the real #366 handoff as a regression.
+- Limit stage guidance to root or known contract paths while requiring workers to load new applicable scopes; preserve nested directory guidance on both hosts.
+- Put completion intent, workflow eligibility and full input-path evidence checks into planning/review briefs; retain run lessons and evidence limitations inside the packaged skill.
+- Report actual rounds used separately from the base allowance and authorized extensions in review briefs, registration and exhaustion output.
+- Resume CI stops through `next`, preserving draft-only endpoint exclusions instead of suggesting `ready`.
+- Preserve legacy plan blockers during explicit migration; allow a recorded user choice of current repository base before implementation, retaining old policy, evidence and cumulative limits.
+- Rebuild migration scope from the frozen issue and current preflight when no contract was approved; retain the old allowlist restriction for actual amendments.
+- Send delivered plans that fail preflight back to their author within the existing repair cap, without consuming independent review rounds.
+- Refresh both PR refs before review and bind the diff/context to the observed target SHA, preventing stale cached bases from adding already-landed changes to the review.
+- Live Codex evaluation: supply an executable canonical-run preflight command to cold planners, explain context-packet hashing, respect completion exclusions in readiness handoffs, and start reopened workers' heartbeat clocks at their new dispatch.
+- Renew authorized autonomous windows when `next` reaches its budget decision, including prepared execution and post-amendment review; retain manual stops and the original cumulative cap.
+- Persist the observed reviewed-PR endpoint before returning its terminal handoff; keep draft-only guidance consistent after posting a review.
+
+- Recover initialization under a durable controller identity and use one frozen base for planning, implementation and verification.
+- Preflight generated scope and package checks; add schema-2 cwd, isolated builds and verified output dependencies.
+- Normalize effective required CI, optional expected skips and retarget freshness across controller decisions.
+- Retain stable plan blockers and review published amendments without resetting PR identity, evidence history or cumulative limits.
+- Persist reviewed/merged/deployed endpoints, exclusions, scoped authority and provider receipts; reconcile uncertain writes before cleanup.
+- Add factual status/heartbeat output, correlated transcript evidence, interval metrics and a separate native-pilot importer.
+- Keep schema-3/4 continuation and installed Claude/Codex coverage. Native performance remains unverified; automatic GitHub merge stays pending when target-context preconditions are unsupported.
+
 ## [0.16.0] - 2026-09-12
 
 ### Added

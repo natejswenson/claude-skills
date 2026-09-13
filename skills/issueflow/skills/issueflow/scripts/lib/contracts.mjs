@@ -11,7 +11,7 @@ export const safeRelative = (s) => typeof s === 'string' && s.length > 0 && !s.s
 export const allowsPath = (paths, file) => paths.some((p) => file === p || p.endsWith('/') && file.startsWith(p));
 
 export function validateContract(value) {
-  if (!value || value.schema !== 1) fail('expected schema 1');
+  if (!value || ![1, 2].includes(value.schema)) fail('expected schema 1 or 2');
   const { criteria, allowedPaths, checks, nonGoals } = value;
   if (!Array.isArray(criteria) || !criteria.length || criteria.some((c) => !id(c.id) || typeof c.description !== 'string' || !c.description.trim())) fail('nonempty criteria with stable IDs and descriptions are required');
   if (new Set(criteria.map((c) => c.id)).size !== criteria.length) fail('duplicate criterion ID');
@@ -22,6 +22,15 @@ export function validateContract(value) {
   for (const c of checks) {
     if (!id(c.id) || !['regression', 'test', 'command'].includes(c.type)) fail('each check needs a stable ID and type: regression, test, or command');
     if (!Array.isArray(c.argv) || !c.argv.length || c.argv.some((s) => typeof s !== 'string' || !s || s.includes('\0'))) fail(`${c.id}: argv must be a nonempty string array; shell syntax is not interpolated`);
+    if (value.schema === 1 && ['cwd', 'mode', 'outputs', 'inputsFrom'].some(key => c[key] != null)) fail(`${c.id}: execution fields require contract schema 2`);
+    if (value.schema === 2) {
+      if (c.cwd != null && c.cwd !== '.' && !safeRelative(c.cwd)) fail(`${c.id}: cwd must be a repository-relative directory or .`);
+      if (c.mode != null && !['read-only', 'isolated-build'].includes(c.mode)) fail(`${c.id}: unsupported execution mode`);
+      if (c.mode === 'isolated-build' && (!Array.isArray(c.outputs) || !c.outputs.length || c.outputs.some(p => !safeRelative(p)))) fail(`${c.id}: isolated-build requires explicit relative outputs`);
+      if (c.mode !== 'isolated-build' && c.outputs?.length) fail(`${c.id}: writable outputs require isolated-build`);
+      if (c.outputs?.some(p => (c.testFiles ?? []).some(f => allowsPath([p], f)))) fail(`${c.id}: test files cannot be build outputs`);
+      if (c.inputsFrom != null && (!Array.isArray(c.inputsFrom) || c.inputsFrom.some(dep => !checks.slice(0, checks.indexOf(c)).some(prior => prior.id === dep && prior.mode === 'isolated-build')))) fail(`${c.id}: inputsFrom must name preceding isolated builds`);
+    }
     if (c.timeoutMs != null && (!Number.isSafeInteger(c.timeoutMs) || c.timeoutMs < 1 || c.timeoutMs > 120000)) fail(`${c.id}: timeoutMs must be 1–120000`);
     if (!Array.isArray(c.criteria) || !c.criteria.length || c.criteria.some((s) => !criteria.some((v) => v.id === s))) fail(`${c.id}: unknown or missing criterion coverage`);
     c.criteria.forEach((s) => covered.add(s));
@@ -32,9 +41,10 @@ export function validateContract(value) {
   if (!['docs', 'standard', 'sensitive'].includes(value.risk)) fail('risk must be docs, standard, or sensitive');
   if (value.risk !== 'docs' && !checks.some((c) => c.type === 'regression')) fail('behavioral work requires a regression check');
   if (value.ci != null) {
+    if (value.ci.optionalChecks != null && (!Array.isArray(value.ci.optionalChecks) || value.ci.optionalChecks.some(c=>!c.name || !c.reason?.trim() || !Array.isArray(c.acceptConclusions) || !c.acceptConclusions.length || c.acceptConclusions.some(s=>!['skipped','neutral','failure','cancelled'].includes(s))))) fail('optional CI conclusions need an explicit named policy and reason');
     if (!['required', 'none'].includes(value.ci.mode)) fail('ci.mode must be required or none');
     if (value.ci.mode === 'none' && (typeof value.ci.reason !== 'string' || !value.ci.reason.trim())) fail('no-CI policy requires an explicit reviewed reason');
-    if (value.ci.requiredChecks != null && (!Array.isArray(value.ci.requiredChecks) || !value.ci.requiredChecks.length || value.ci.requiredChecks.some((s) => typeof s !== 'string' || !s.trim()))) fail('ci.requiredChecks must contain check names');
+    if (value.ci.requiredChecks != null && (!Array.isArray(value.ci.requiredChecks) || !value.ci.requiredChecks.length || value.ci.requiredChecks.some((s) => typeof s === 'string' ? !s.trim() : !s?.name?.trim() || (s.appId!=null&&(!Number.isSafeInteger(s.appId)||s.appId<0))))) fail('ci.requiredChecks must contain check names');
     if (value.ci.mode === 'none' && value.ci.requiredChecks) fail('no-CI policy cannot also require checks');
   }
   if (value.lanes != null) {

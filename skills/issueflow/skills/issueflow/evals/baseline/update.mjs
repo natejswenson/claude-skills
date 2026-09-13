@@ -47,7 +47,7 @@ const cli = (args) =>
  */
 const normalize = (text, runDir) =>
   text.replaceAll(runDir, '<RUN>').replaceAll(REPO, '<REPO>').replaceAll(SKILL, '<SKILL>')
-    .replace(/budget: elapsed \d+s total; allowance (\d+)s; remaining \d+s;/g, 'budget: elapsed <ELAPSED>s total; allowance $1s; remaining <REMAINING>s;');
+    .replace(/^Controller continuation:.*\n/gm,'').replace(/budget: elapsed \d+s total; allowance (\d+)s; remaining \d+s;/g, 'budget: elapsed <ELAPSED>s total; allowance $1s; remaining <REMAINING>s;');
 
 const sha = (text) => createHash('sha256').update(text).digest('hex').slice(0, 16);
 
@@ -77,6 +77,7 @@ export function generate() {
   const historical = loadRun(runDir);
   historical.schema = 3;
   delete historical.harness;
+  delete historical.initialization; delete historical.repositorySnapshot; delete historical.completion;
   writeFileSync(join(runDir, 'run.json'), JSON.stringify(historical, null, 2));
 
   // `next` at each state of the plan gate. Frozen because the driver's output
@@ -158,10 +159,10 @@ export function generate() {
   {
     const reviewSandbox = mkdtempSync(join(tmpdir(), 'issueflow-baseline-review-'));
     const reviewDir = join(reviewSandbox, 'issue-132');
-    cli(['start', '--repo', REPO, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json'), '--auto']);
+    cli(['start', '--repo', repoPath, '--repo-json', at('repo.json'), '--run-dir', reviewDir, '--issue', '132', '--issue-json', at('issue-132.json'), '--auto']);
     const historicalReview = loadRun(reviewDir);
     historicalReview.schema = 3;
-    delete historicalReview.harness;
+    delete historicalReview.harness; delete historicalReview.initialization; delete historicalReview.repositorySnapshot; delete historicalReview.completion;
     writeFileSync(join(reviewDir, 'run.json'), JSON.stringify(historicalReview, null, 2));
     cli(['brief', '--stage', 'investigate', '--run-dir', reviewDir]);
     cpSync(at('artifacts', 'investigate-132.md'), join(reviewDir, 'shared', 'investigate.md'));

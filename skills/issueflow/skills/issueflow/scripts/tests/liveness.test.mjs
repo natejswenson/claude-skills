@@ -212,7 +212,7 @@ test('unreadable-run-row: a schema-1 run names the reason and the remedy', () =>
   assert.equal(r.code, 0, `runs exited ${r.code}: ${r.err}`);
   assert.doesNotMatch(r.out, /\(unreadable run\)/, 'the row still says nothing — the catch was not bound');
   assert.match(r.out, /schema 1/, 'the reason lost which schema the run is');
-  assert.match(r.out, /start the issue again/, 'the remedy loadRun already wrote got discarded');
+  assert.match(r.out, /compatible binary or explicit migration/, 'the remedy loadRun already wrote got discarded');
   rmSync(root, { recursive: true, force: true });
 });
 

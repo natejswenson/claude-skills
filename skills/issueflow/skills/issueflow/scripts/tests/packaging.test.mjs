@@ -40,7 +40,7 @@ test('offline packed install includes strict harness and starts both host profil
     const run = join(dir, host);
     invoke(process.execPath, [cli, 'start', '--repo', repo, '--repo-json', meta, '--issue-json', issue, '--issue', '1', '--runtime', host, '--run-dir', run]);
     const state = JSON.parse(readFileSync(join(run, 'run.json')));
-    assert.equal(state.schema, 4); assert.equal(state.runtime, host); assert.equal(state.offline, true);
+    assert.equal(state.schema, 5); assert.equal(state.runtime, host); assert.equal(state.offline, true);
     assert.match(invoke(process.execPath, [cli, 'doctor', '--run-dir', run]), /controller receipts required/);
   }
 });

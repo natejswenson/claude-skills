@@ -22,7 +22,7 @@ import { generate } from '../../evals/baseline/update.mjs';
 import { STAGES } from '../lib/stages.mjs';
 import { dispatchProfile } from '../lib/runtime.mjs';
 import { REVIEWS } from '../lib/reviews.mjs';
-import { createRun, gateSteps } from '../lib/run.mjs';
+import { createRun, saveRun, gateSteps } from '../lib/run.mjs';
 import { renderBrief, renderReviewBrief } from '../lib/brief.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -387,7 +387,8 @@ const cli = (args) => {
 function trapRun() {
   const dir = mkdtempSync(join(tmpdir(), 'issueflow-trap-'));
   const repo = join(INPUTS, 'repo');
-  cli(['start', '--repo', repo, '--repo-json', join(INPUTS, 'repo.json'), '--run-dir', dir, '--issue', '133', '--issue-json', join(INPUTS, 'issue-133.json')]);
+  const issue=JSON.parse(readFileSync(join(INPUTS,'issue-133.json')));
+  saveRun(dir,createRun({strict:false,repo:{path:repo,owner:'natejswenson',name:'local-fitness'},issue,policy:{base:'main',featurePrefix:'feature/'},offline:true}));
   mkdirSync(join(dir, 'shared'), { recursive: true });
   writeFileSync(join(dir, 'shared', 'investigate.md'), readFileSync(join(INPUTS, 'artifacts', 'investigate.md')));
   mkdirSync(join(dir, 'reviews'), { recursive: true });
