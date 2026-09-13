@@ -221,7 +221,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter0@globex.example",
       "subject": "Interview loop with Globex — stage 1"
     },
@@ -235,7 +235,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter1@globex.example",
       "subject": "Interview loop with Globex — stage 2"
     },
@@ -249,7 +249,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter2@globex.example",
       "subject": "Interview loop with Globex — stage 3"
     },
@@ -263,7 +263,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter3@globex.example",
       "subject": "Interview loop with Globex — stage 4"
     },
@@ -277,7 +277,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter4@globex.example",
       "subject": "Interview loop with Globex — stage 5"
     },
@@ -291,7 +291,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter5@globex.example",
       "subject": "Interview loop with Globex — stage 6"
     },
@@ -305,7 +305,7 @@
         "Recruiting/Globex"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "recruiter6@globex.example",
       "subject": "Interview loop with Globex — stage 7"
     },
@@ -319,7 +319,7 @@
         "Recruiting/Initech"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "careers@recruiting.initech.example",
       "subject": "Principal Engineer opening at Initech — req 2300"
     },
@@ -333,7 +333,7 @@
         "Recruiting/Initech"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "careers@recruiting.initech.example",
       "subject": "Principal Engineer opening at Initech — req 2301"
     },
@@ -347,7 +347,7 @@
         "Recruiting/Initech"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "careers@recruiting.initech.example",
       "subject": "Principal Engineer opening at Initech — req 2302"
     },
@@ -361,7 +361,7 @@
         "Recruiting/Initech"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "careers@recruiting.initech.example",
       "subject": "Principal Engineer opening at Initech — req 2303"
     },
@@ -375,7 +375,7 @@
         "Recruiting/Umbrella"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "no-reply@greenhouse.example",
       "subject": "Thanks for applying to Umbrella Corp!"
     },
@@ -389,7 +389,7 @@
         "Recruiting/Soylent"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "noreply@candidates.workable.example",
       "subject": "Thanks for applying to Soylent Industries"
     },
@@ -402,7 +402,7 @@
         "Statements"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "edocuments@statements.northbank.example",
       "subject": "New statement available (1)"
     },
@@ -415,7 +415,7 @@
         "Statements"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "edocuments@statements.northbank.example",
       "subject": "New statement available (2)"
     },
@@ -428,7 +428,7 @@
         "Statements"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "edocuments@statements.northbank.example",
       "subject": "New statement available (3)"
     },
@@ -441,7 +441,7 @@
         "Statements"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "edocuments@statements.northbank.example",
       "subject": "New statement available (4)"
     },
@@ -454,7 +454,7 @@
         "Medical"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "mychart@valleyhealth.example",
       "subject": "New message from your clinic"
     },
@@ -467,7 +467,7 @@
         "Medical"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "mychart@valleyhealth.example",
       "subject": "You have a new statement"
     },
@@ -480,7 +480,7 @@
         "Banking"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "alerts@notify.southbank.example",
       "subject": "Insufficient funds notice"
     },
@@ -493,7 +493,7 @@
         "Banking"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "alerts@notify.southbank.example",
       "subject": "Your balance is at or below zero"
     },
@@ -506,7 +506,7 @@
         "School"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "centralschools@parentvendor.example",
       "subject": "Bus registration reminder 1"
     },
@@ -519,7 +519,7 @@
         "School"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "centralschools@parentvendor.example",
       "subject": "Bus registration reminder 2"
     },
@@ -572,7 +572,7 @@
         "Receipts/Cloud Vendor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "billing@cloudvendor.example",
       "subject": "Your receipt from Cloud Vendor #2563"
     },
@@ -586,7 +586,7 @@
         "Receipts/Bookstore"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "donotreply@bookstore.example",
       "subject": "Thanks, your order is complete"
     },
@@ -599,7 +599,7 @@
         "Financial Advisor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "advisor0@wealthpartners.example",
       "subject": "Re: your annual review (1)"
     },
@@ -612,7 +612,7 @@
         "Financial Advisor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "advisor1@wealthpartners.example",
       "subject": "Re: your annual review (2)"
     },
@@ -625,7 +625,7 @@
         "Financial Advisor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "advisor0@wealthpartners.example",
       "subject": "Re: your annual review (3)"
     },
@@ -638,7 +638,7 @@
         "Financial Advisor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "advisor1@wealthpartners.example",
       "subject": "Re: your annual review (4)"
     },
@@ -651,7 +651,7 @@
         "Financial Advisor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "advisor0@wealthpartners.example",
       "subject": "Re: your annual review (5)"
     },
@@ -664,7 +664,7 @@
         "Realty"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "agent@realty.example",
       "subject": "Off boarding"
     },
@@ -677,7 +677,7 @@
         "Realty"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "agent@realty.example",
       "subject": "Re: paperwork"
     },
@@ -690,7 +690,7 @@
         "Briefings"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "me@mailprovider.example",
       "subject": "Morning brief — Wednesday"
     },
@@ -717,7 +717,7 @@
         "Home Claim/Contractor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "invoices@billingplatform.example",
       "subject": "Invoice 1250 from Roofing Co"
     },
@@ -731,7 +731,7 @@
         "Home Claim/Contractor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "invoices@billingplatform.example",
       "subject": "Invoice 1251 from Roofing Co"
     },
@@ -745,7 +745,7 @@
         "Home Claim/Contractor"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "invoices@billingplatform.example",
       "subject": "Invoice 1252 from Roofing Co"
     },
@@ -759,7 +759,7 @@
         "Home Claim/Insurance"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "claims@insurepay.example",
       "subject": "A digital payment was issued for your claim"
     },
@@ -773,7 +773,7 @@
         "Home Claim/Insurance"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "claims@insurepay.example",
       "subject": "Payment confirmation"
     },
@@ -787,7 +787,7 @@
         "Home Claim/Insurance"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "correspondence@insurer.example",
       "subject": "Insurance claim 01006543"
     },
@@ -800,7 +800,7 @@
         "Paperwork"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "secure@esignature.example",
       "subject": "Signing complete: document 1"
     },
@@ -813,7 +813,7 @@
         "Paperwork"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "secure@esignature.example",
       "subject": "Signing complete: document 2"
     },
@@ -826,7 +826,7 @@
         "Paperwork"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "secure@esignature.example",
       "subject": "Signing complete: document 3"
     },
@@ -839,7 +839,7 @@
         "Paperwork"
       ],
       "removed": [],
-      "archived": false,
+      "archived": true,
       "from": "secure@esignature.example",
       "subject": "Signing complete: document 4"
     }

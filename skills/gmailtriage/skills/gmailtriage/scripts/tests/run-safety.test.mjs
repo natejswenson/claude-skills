@@ -8,6 +8,7 @@
  * ways a run stopped being undoable.
  */
 import test from 'node:test';
+import { prepareInbox } from '../../evals/baseline/prepare-inbox.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -66,7 +67,7 @@ test('mailbox data is refused inside a git repository, and --allow-repo override
 test('apply --update-threads makes a re-plan converge without re-fetching', () => {
   const out = mkdtempSync(join(tmpdir(), 'gt-update-'));
   const threads = join(out, 'threads.json');
-  writeFileSync(threads, readFileSync(join(BASELINE, 'threads.json')));
+  writeFileSync(threads, JSON.stringify(prepareInbox(JSON.parse(readFileSync(join(BASELINE, 'threads.json'), 'utf8')))));
   sh(`node scripts/gmailtriage.js plan --threads ${threads} --labels evals/baseline/labels.json --rules evals/baseline/rules.json --out ${out}/plan.json > ${out}/plan1.txt`);
   sh(`node scripts/gmailtriage.js apply --plan ${out}/plan.json --receipt ${out}/receipt.json --update-threads ${threads} --at 2026-08-13T12:00:00Z > ${out}/apply.txt`);
   // The receipt is untouched by the snapshot update — it is the undo.
@@ -87,7 +88,9 @@ test('receipts default to the durable store, and undo --last finds the newest', 
   const home = mkdtempSync(join(tmpdir(), 'gt-home-'));
   const out = mkdtempSync(join(tmpdir(), 'gt-receipts-'));
   const env = { ...process.env, HOME: home };
-  sh(`node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules.json --out ${out}/plan.json > /dev/null`, { env });
+  const threads = join(out, 'threads.json');
+  writeFileSync(threads, JSON.stringify(prepareInbox(JSON.parse(readFileSync(join(BASELINE, 'threads.json'), 'utf8')))));
+  sh(`node scripts/gmailtriage.js plan --threads ${threads} --labels evals/baseline/labels.json --rules evals/baseline/rules.json --out ${out}/plan.json > /dev/null`, { env });
   sh(`node scripts/gmailtriage.js apply --plan ${out}/plan.json --at 2026-08-13T12:00:00Z > /dev/null`, { env });
   sh(`node scripts/gmailtriage.js apply --plan ${out}/plan.json --at 2026-08-13T13:00:00Z > /dev/null`, { env });
   const dir = join(home, '.gmailtriage', 'receipts');

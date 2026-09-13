@@ -30,8 +30,8 @@
 | Recruiting/Soylent  | 1       | 1                 |
 reconcile these against your real labels with `labels` before applying.
 
-| Scope            | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
-|------------------|---------|-------------|------------|-----------------------|---------------------|----------|
-| label:Recruiting | 13      | 0           | 13         | 0                     | 0                   | 0        |
+| Scope            | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps | In scope | Excluded |
+|------------------|---------|-------------|------------|-----------------------|---------------------|----------|----------|----------|
+| label:Recruiting | 13      | 0           | 13         | 0                     | 0                   | 0        | 13       | 0        |
 
 nothing has moved — this is what the rules would do.

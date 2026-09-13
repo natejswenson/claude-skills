@@ -739,13 +739,10 @@ async function cmdLabels(args) {
 async function cmdPlan(args) {
   const raw = readJson(args.threads ?? '', 'plan: --threads <file.json>');
   const scope = args.scope ?? DEFAULT_SCOPE;
-  // Resolving `labelIds` to names is what makes a re-run converge: a rule
-  // cannot tell it has already filed a thread while the thread's labels are
-  // opaque ids (`Label_10`) and the rule is written in words (`Recruiting`).
-  const threads = args.labels ? resolveThreadLabels(raw, readLabelIndex(args.labels)) : raw;
+  const labelIndex = args.labels ? readLabelIndex(args.labels) : new Map();
   const doc = readJson(args.rules ?? defaultRules(), 'plan: rule file');
   validateRuleSet(doc, { scope });
-  const p = plan(threads, doc, { scope });
+  const p = plan(raw, doc, { scope, labelIndex });
 
   const byRule = new Map();
   for (const t of p.taken) byRule.set(t.ruleId, (byRule.get(t.ruleId) ?? 0) + 1);
@@ -798,7 +795,7 @@ async function cmdPlan(args) {
   }
 
   console.log('');
-  console.log(table(['Scope', 'Scanned', 'Would trash', 'Would file', 'Would leave the inbox', 'Kept by a keep rule', 'Overlaps'],
+  console.log(table(['Scope', 'Scanned', 'Would trash', 'Would file', 'Would leave the inbox', 'Kept by a keep rule', 'Overlaps', 'In scope', 'Excluded'],
     [[
       p.scope ?? DEFAULT_SCOPE,
       p.scanned,
@@ -807,7 +804,15 @@ async function cmdPlan(args) {
       p.taken.filter((t) => t.action === 'label' && t.archive).length,
       p.spared.length,
       p.overlaps.length,
+      p.inScope,
+      p.excluded.length,
     ]]));
+  for (const reason of new Set(p.excluded.map((e) => e.reason))) {
+    console.log(p.excluded.filter((e) => e.reason === reason).length + ' thread(s) excluded: ' + reason);
+  }
+  if (p.excludedRules.length) {
+    console.log('Rules excluded (additive-only): ' + p.excludedRules.map((r) => r.ruleId + ' (' + r.action + ')').join(', '));
+  }
   console.log('\nnothing has moved — this is what the rules would do.');
 
   if (args.out) console.error(`wrote ${writeJson(args.out, p, args)}`);
@@ -925,11 +930,11 @@ async function cmdApply(args) {
     console.log('\nthen REMOVE the INBOX label from exactly these thread ids — this is the "move":');
     console.log(toArchive.map((e) => e.threadId).join('\n'));
   }
-  // Two different reasons a thread is not archived, and calling both "stays in
-  // the inbox by rule" is wrong on a retroactive pass — a run over mail already
-  // filed reported 13 threads staying in an inbox none of them were in.
-  const stays = filed.filter((e) => !e.archive && e.wouldArchive !== true);
-  const alreadyOut = filed.filter((e) => !e.archive && e.wouldArchive === true);
+  // Folder mode preserves membership regardless of where the thread started.
+  // Historical plans without this mode retain their existing explanations.
+  if (p.additive && filed.length) console.log('\nAdditive folder pass: existing labels and INBOX membership are preserved.');
+  const stays = filed.filter((e) => !p.additive && !e.archive && e.wouldArchive !== true);
+  const alreadyOut = filed.filter((e) => !p.additive && !e.archive && e.wouldArchive === true);
   if (stays.length) {
     console.log(`\n${stays.length} filed thread(s) stay in the inbox by rule. Do NOT remove INBOX from those.`);
   }
@@ -1115,7 +1120,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
-  gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope <query>] [--preview N] [--out <plan.json>]
+  gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope in:inbox|label:<Folder>] [--preview N] [--out <plan.json>]
   gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>]
                         [--receipt <f.json>] [--at <iso>]
   gmailtriage undo      --receipt <f.json> | --last
@@ -1125,11 +1130,13 @@ written to files verbatim, and produces the thread and label snapshots every
 other command reads — never transcribe a tool response by hand.
 
 Receipts default to ~/.gmailtriage/receipts/, which is what makes \`undo --last\`
-work across sessions. \`--scope\` is the slice of the mailbox the rules are
-evaluated against, and defaults to \`${DEFAULT_SCOPE}\`. A retroactive pass over
-mail already filed is \`--scope 'label:Recruiting'\` — pass \`--labels\` with it,
-or the planner cannot see which threads it has already filed and will never
-converge.
+work across sessions. Plan scopes are limited to \`in:inbox\` (the default)
+and a single \`label:<Folder>\`, such as \`--scope 'label:Recruiting'\` or
+\`--scope 'label:"Work Mail/Recruiting"'\`. Folder passes only add missing
+labels, preserving all existing labels and INBOX membership. The summary
+counts in-scope and excluded threads and lists excluded nonadditive rules.
+Pass \`--labels\` to resolve opaque IDs. Missing or malformed label metadata,
+unresolved folder IDs, and unsupported searches are refused before plan output.
 
 Data outputs are refused inside a git repository (--allow-repo overrides):
 a mailbox snapshot in a working tree is one \`git add\` away from public.

@@ -1,12 +1,12 @@
 {
   "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
   "label": "the-real-run",
-  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules-none.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules.json --min-count 2 --show-claimed 20 > $OUT/propose-covered.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" > $OUT/retro-converged.txt && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json > $OUT/audit-before.txt || true && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json > $OUT/audit-after.txt && node scripts/gmailtriage.js merge --from Reciepts --to Receipts --threads evals/baseline/mailbox-before.json --labels evals/baseline/mailbox-before-labels.json --receipt $OUT/merge-receipt.json --at 2026-08-07T12:00:00Z > $OUT/merge.txt && node scripts/gmailtriage.js ingest --inbox evals/baseline/raw-inbox.json --nolabel evals/baseline/raw-nolabel.json --promos evals/baseline/raw-promos.json --updates evals/baseline/raw-updates.json --labels evals/baseline/raw-labels.json --out-threads $OUT/ingested-threads.json --out-labels $OUT/ingested-labels.json > $OUT/ingest.txt",
+  "command": "node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules-none.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules.json --min-count 2 --show-claimed 20 > $OUT/propose-covered.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node evals/baseline/prepare-inbox.mjs evals/baseline/threads.json > $OUT/inbox-input.json && node scripts/gmailtriage.js plan --threads $OUT/inbox-input.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && rm $OUT/inbox-input.json && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope \"label:Recruiting\" > $OUT/retro-converged.txt && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json > $OUT/audit-before.txt || true && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json > $OUT/audit-after.txt && node scripts/gmailtriage.js merge --from Reciepts --to Receipts --threads evals/baseline/mailbox-before.json --labels evals/baseline/mailbox-before-labels.json --receipt $OUT/merge-receipt.json --at 2026-08-07T12:00:00Z > $OUT/merge.txt && node scripts/gmailtriage.js ingest --inbox evals/baseline/raw-inbox.json --nolabel evals/baseline/raw-nolabel.json --promos evals/baseline/raw-promos.json --updates evals/baseline/raw-updates.json --labels evals/baseline/raw-labels.json --out-threads $OUT/ingested-threads.json --out-labels $OUT/ingested-labels.json > $OUT/ingest.txt",
   "artifacts": [
     {
       "path": "apply.txt",
-      "bytes": 5161,
-      "sha256": "ea0f225e466d6e35393a10866b32d732689affe8611c52cf3e66ab04556d0a36"
+      "bytes": 5634,
+      "sha256": "cb39bfc823b56df939e81ecc43395dd1581db70f5ca4e2b92aaf4e757a33023e"
     },
     {
       "path": "audit-after.txt",
@@ -55,13 +55,13 @@
     },
     {
       "path": "plan.json",
-      "bytes": 29966,
-      "sha256": "bb015f5afbaf6f75c9a9383f87f9e55a91f2c10e28bd20ce4b277078fc4c2011"
+      "bytes": 30002,
+      "sha256": "80d64b75bd1d210db2d9ce92a3c51e2b41401d7dc542477f2a2291153c3b765f"
     },
     {
       "path": "plan.txt",
-      "bytes": 5403,
-      "sha256": "3f18f4b08d5e66f3ba966bfb4d785e825b51425f0bf78a5d93ddbc78d081d1b9"
+      "bytes": 5469,
+      "sha256": "b4c4c4fac6bd7a4418bc42b6ff959efb9180754b22a864870cbb9dba68057dbe"
     },
     {
       "path": "propose-covered.txt",
@@ -75,18 +75,18 @@
     },
     {
       "path": "receipt.json",
-      "bytes": 21458,
-      "sha256": "d70b4629842b08f8bde358a197514481b32cc3d47e44c8edc3ab3031eadc2c7a"
+      "bytes": 21415,
+      "sha256": "ca1c3eb61a24723a0177ccf9eb2e7c12f9be6ab07c8b5cf4f5b6688e5bafccc1"
     },
     {
       "path": "retro-apply.txt",
-      "bytes": 1205,
-      "sha256": "6f92870c4956b7edf64bcfdcccbc13e09fa2eaf37e8f5e6097e9b6ec91e68588"
+      "bytes": 1194,
+      "sha256": "b3f867ecb46e1af9f1a65b3451448815812609856247176d0b294b7196b7bfde"
     },
     {
       "path": "retro-converged.txt",
-      "bytes": 403,
-      "sha256": "a5dbd5fabb9964a14ca54da4e75b0340738cbfafdb82a1472ea45f60442a221c"
+      "bytes": 469,
+      "sha256": "fb484059d3fb7d69212d2f0c0eaf351a35eb0dc7030efde7e0c53fb041a7d4e3"
     },
     {
       "path": "retro-labels.txt",
@@ -95,13 +95,13 @@
     },
     {
       "path": "retro-plan.json",
-      "bytes": 6700,
-      "sha256": "081eadecd7486b1e9838b39dd3d5b2d237c11ef229405c73d0c1e311869d800d"
+      "bytes": 6778,
+      "sha256": "ec8c97bc2567a6cd06641cdd73ece28782c0e9fedce61ed0154b993d222fabe2"
     },
     {
       "path": "retro-plan.txt",
-      "bytes": 3158,
-      "sha256": "a6b93042482af03189416590caecf5bfad74d24224123bf7aa8b6943a076117f"
+      "bytes": 3224,
+      "sha256": "02ab4468633abd8f591839a2a8fd255a9d861d18a4806296118e25ab4dde5fba"
     },
     {
       "path": "retro-receipt.json",

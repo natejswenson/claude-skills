@@ -1,6 +1,10 @@
 {
   "scanned": 68,
   "scope": "in:inbox",
+  "additive": false,
+  "inScope": 68,
+  "excluded": [],
+  "excludedRules": [],
   "taken": [
     {
       "ruleId": "sort-globex",
@@ -17,7 +21,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -35,7 +39,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -53,7 +57,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -71,7 +75,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -89,7 +93,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -107,7 +111,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -125,7 +129,7 @@
         "Recruiting",
         "Recruiting/Globex"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -143,7 +147,7 @@
         "Recruiting",
         "Recruiting/Initech"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -161,7 +165,7 @@
         "Recruiting",
         "Recruiting/Initech"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -179,7 +183,7 @@
         "Recruiting",
         "Recruiting/Initech"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -197,7 +201,7 @@
         "Recruiting",
         "Recruiting/Initech"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -215,7 +219,7 @@
         "Recruiting",
         "Recruiting/Umbrella"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -233,7 +237,7 @@
         "Recruiting",
         "Recruiting/Soylent"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -249,7 +253,7 @@
       "adds": [
         "Statements"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -265,7 +269,7 @@
       "adds": [
         "Statements"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -281,7 +285,7 @@
       "adds": [
         "Statements"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -297,7 +301,7 @@
       "adds": [
         "Statements"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -313,7 +317,7 @@
       "adds": [
         "Medical"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -329,7 +333,7 @@
       "adds": [
         "Medical"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -345,7 +349,7 @@
       "adds": [
         "Banking"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -361,7 +365,7 @@
       "adds": [
         "Banking"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -377,7 +381,7 @@
       "adds": [
         "School"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -393,7 +397,7 @@
       "adds": [
         "School"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -687,7 +691,7 @@
         "Receipts",
         "Receipts/Cloud Vendor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -705,7 +709,7 @@
         "Receipts",
         "Receipts/Bookstore"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -721,7 +725,7 @@
       "adds": [
         "Financial Advisor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -737,7 +741,7 @@
       "adds": [
         "Financial Advisor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -753,7 +757,7 @@
       "adds": [
         "Financial Advisor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -769,7 +773,7 @@
       "adds": [
         "Financial Advisor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -785,7 +789,7 @@
       "adds": [
         "Financial Advisor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -801,7 +805,7 @@
       "adds": [
         "Realty"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -817,7 +821,7 @@
       "adds": [
         "Realty"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -833,7 +837,7 @@
       "adds": [
         "Briefings"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -867,7 +871,7 @@
         "Home Claim",
         "Home Claim/Contractor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -885,7 +889,7 @@
         "Home Claim",
         "Home Claim/Contractor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -903,7 +907,7 @@
         "Home Claim",
         "Home Claim/Contractor"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -921,7 +925,7 @@
         "Home Claim",
         "Home Claim/Insurance"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -939,7 +943,7 @@
         "Home Claim",
         "Home Claim/Insurance"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -957,7 +961,7 @@
         "Home Claim",
         "Home Claim/Insurance"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -973,7 +977,7 @@
       "adds": [
         "Paperwork"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -989,7 +993,7 @@
       "adds": [
         "Paperwork"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -1005,7 +1009,7 @@
       "adds": [
         "Paperwork"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     },
     {
@@ -1021,7 +1025,7 @@
       "adds": [
         "Paperwork"
       ],
-      "archive": false,
+      "archive": true,
       "wouldArchive": true
     }
   ],

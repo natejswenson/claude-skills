@@ -756,28 +756,87 @@ const newLabelsFor = (rule, thread) => {
   return path.filter((l) => !have.has(normaliseLabel(l)));
 };
 
-/** Is this thread currently in the inbox, as far as the fetch could tell? */
+// Audit retains its historical display inference; planning requires explicit evidence.
 const inInbox = (t) => {
   const ids = [...(t.labelIds ?? []), ...(t.labels ?? [])].map((l) => String(l).toUpperCase());
-  // A fetch that supplied no labels at all cannot say otherwise, and the
-  // historical scope of this skill is the inbox — so absence means "yes".
   return ids.length === 0 ? true : ids.includes('INBOX');
 };
 
-export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE } = {}) {
+/** Only these locally evaluable scopes can authorise a plan. */
+const parseScope = (scope) => {
+  const value = typeof scope === 'string' ? scope.trim() : '';
+  if (value === DEFAULT_SCOPE) return { scope: value, folder: null };
+  const match = /^label:(?:"([^"\r\n]+)"|([^\s":(){}]+))$/.exec(value);
+  const folder = match?.[1] ?? match?.[2];
+  if (!folder || folder.split('/').some((s) => !s.trim())) {
+    throw new Error('Unsupported scope — use in:inbox or label:<Folder> (quote folder names containing spaces); combined searches are not supported.');
+  }
+  return { scope: value, folder: normaliseLabel(folder) };
+};
+
+/** Combine both representations; a known empty list is not missing evidence. */
+const scopeThreads = (threads, boundary, labelIndex, rules) => {
+  const names = new Map();
+  for (const [id, name] of labelIndex) {
+    if (typeof name !== 'string' || !name.trim()) throw new Error('Invalid label map — provide --labels from list_labels.');
+    const key = normaliseLabel(name);
+    if (names.has(key) && names.get(key) !== id) {
+      throw new Error('Ambiguous folder names in --labels — re-fetch list_labels and resolve duplicate folder mappings.');
+    }
+    names.set(key, id);
+  }
+  // apply --update-threads also stores newly added destination names in labelIds.
+  const knownNames = new Set([...names.keys(), boundary.folder,
+    ...rules.filter((r) => r.action === 'label').flatMap((r) => labelPath(r.label).map(normaliseLabel))]);
+  const isSystem = (name) => SYSTEM_LABELS.includes(name.toUpperCase()) || /^CATEGORY_/i.test(name);
+  const included = [], excluded = [];
+  for (const t of threads) {
+    const refuse = (why) => { throw new Error('Thread ' + t.id + ': ' + why + ' — re-fetch thread labels and provide --labels from list_labels.'); };
+    const supplied = ['labels', 'labelIds'].filter((key) => t[key] !== undefined);
+    if (!supplied.length) refuse('missing label metadata needed to evaluate scope');
+    for (const key of supplied) {
+      if (!Array.isArray(t[key]) || t[key].some((v) => typeof v !== 'string' || !v.trim())) refuse('malformed ' + key);
+    }
+    // `labels` contains resolved names, even when a name resembles a Gmail ID.
+    const resolved = [...(t.labels ?? [])];
+    for (const id of t.labelIds ?? []) {
+      if (labelIndex.has(id)) resolved.push(labelIndex.get(id));
+      else if (isSystem(id) || knownNames.has(normaliseLabel(id))) resolved.push(id);
+      else if (boundary.folder) refuse('unresolved label id ' + id);
+    }
+    const have = new Set(resolved.map(normaliseLabel));
+    const reason = boundary.folder
+      ? (have.has(boundary.folder) ? null : 'not-in-folder')
+      : have.has('trash') ? 'trash' : have.has('spam') ? 'spam' : have.has('inbox') ? null : 'not-in-inbox';
+    if (reason) excluded.push({ threadId: t.id, reason });
+    else included.push({ ...t, labels: [...new Set(resolved)] });
+  }
+  return { included, excluded };
+};
+
+export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE, labelIndex = new Map() } = {}) {
+  const boundary = parseScope(scope);
+  scope = boundary.scope;
+  const additive = boundary.folder !== null;
   const rules = ruleDoc.rules ?? [];
+  const { included, excluded } = scopeThreads(threads, boundary, labelIndex, rules);
   const keeps = rules.filter((r) => r.action === 'keep');
-  const actors = rules.filter((r) => r.action !== 'keep');
+  const excludedRules = rules.filter((r) => additive && !['keep', 'label'].includes(r.action))
+    .map((r) => ({ ruleId: r.id, action: r.action, reason: 'additive-only' }));
+  const eligible = rules.filter((r) => !additive || ['keep', 'label'].includes(r.action));
+  const actors = eligible.filter((r) => r.action !== 'keep');
 
   const taken = [];
   const spared = [];
   const claims = new Map();
 
-  for (const t of threads) {
+  for (const t of included) {
     const keptBy = keeps.find((r) => matches(r, t, now));
     if (keptBy) { spared.push({ threadId: t.id, from: t.from, subject: t.subject, ruleId: keptBy.id }); continue; }
     for (const r of actors) {
       if (!matches(r, t, now)) continue;
+      const adds = r.action === 'label' ? newLabelsFor(r, t) : [];
+      if (additive && adds.length === 0) continue;
       taken.push({
         ruleId: r.id, action: r.action, threadId: t.id, from: t.from, subject: t.subject,
         // Carried on every taken row so `apply` never has to re-read the rule
@@ -794,18 +853,12 @@ export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE
         // strip `Recruiting` when it is reversed. Only computable when the
         // fetch resolved label names; without them the two are the same list,
         // which is what this skill did before nesting existed.
-        adds: r.action === 'label' ? newLabelsFor(r, t) : [],
-        // A rule that archives cannot archive a thread that is already out of
-        // the inbox. Reporting otherwise inflates the one number the user
-        // actually reads — "would leave the inbox" — on exactly the run where
-        // it should be zero: a retroactive pass over mail already filed.
-        archive: archives(r) && inInbox(t),
-        // What the RULE wanted, separately from what this thread allows. The
-        // two reasons a thread is not archived are not interchangeable: one is
-        // a rule saying "tag it in place", the other is a thread that already
-        // left the inbox, and reporting the second as the first tells a
-        // retroactive run that 13 threads are staying in an inbox none of them
-        // were in.
+        adds,
+        // Only inbox mode can archive; every row reaching it proved INBOX
+        // membership. Folder mode preserves INBOX even when it is present.
+        archive: !additive && archives(r),
+        // Preserve the rule's intent for older plan/apply consumers; effective
+        // operations always follow archive and adds.
         wouldArchive: archives(r),
       });
       if (!claims.has(t.id)) claims.set(t.id, []);
@@ -815,7 +868,7 @@ export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE
   }
 
   const overlaps = [];
-  for (const t of threads) {
+  for (const t of included) {
     const all = actors.filter((r) => matches(r, t, now)).map((r) => r.id);
     if (all.length > 1) overlaps.push({ threadId: t.id, subject: t.subject, ruleIds: all });
   }
@@ -823,6 +876,10 @@ export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE
   return {
     scanned: threads.length,
     scope,
+    additive,
+    inScope: included.length,
+    excluded,
+    excludedRules,
     taken,
     spared,
     overlaps,
@@ -830,7 +887,7 @@ export function plan(threads, ruleDoc, { now = new Date(), scope = DEFAULT_SCOPE
     // a nested destination implies — so the destinations can be reconciled
     // against the real mailbox before a single thread moves.
     destinations: [...new Set(taken.filter((t) => t.action === 'label').flatMap((t) => t.labels ?? [t.label]))],
-    queries: rules.map((r) => ({ ruleId: r.id, query: toGmailQuery(r, { scope }), action: r.action, label: r.label ?? null })),
+    queries: eligible.map((r) => ({ ruleId: r.id, query: toGmailQuery(r, { scope }), action: r.action, label: r.label ?? null })),
   };
 }
 
