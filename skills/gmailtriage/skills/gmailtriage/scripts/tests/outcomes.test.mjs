@@ -238,7 +238,22 @@ test('pending snapshot image recovers before another receipt replays', () => {
   f.pass(add, '--begin'); f.pass(add);
   const ledgerPath = f.path('threads') + '.receipt-state.json', ledger = read(ledgerPath);
   ledger.pending = read(f.path('threads')); write(ledgerPath, ledger);
+  write(f.path('threads'), [{ ...JSON.parse(f.original)[0], id: 'new-thread' }]);
+  const fresh = readFileSync(f.path('threads'), 'utf8'), pending = readFileSync(ledgerPath, 'utf8');
+  f.ok('plan', '--threads', f.path('threads'), '--labels', f.path('labels'), '--rules', f.path('rules'), '--out', f.path('fresh-plan'));
+  for (const prepare of [
+    ['apply', '--plan', f.path('fresh-plan')],
+    ['merge', '--threads', f.path('threads'), '--labels', f.path('labels'), '--from', 'Old', '--to', 'Filed'],
+  ]) {
+    const rejected = f.run(...prepare, '--receipt', f.path('unusable'), '--update-threads', f.path('threads'));
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /outstanding pending replay; no run prepared/);
+    assert.throws(() => readFileSync(f.path('unusable')), /ENOENT/);
+    assert.equal(readFileSync(f.path('threads'), 'utf8'), fresh);
+    assert.equal(readFileSync(ledgerPath, 'utf8'), pending);
+  }
   writeFileSync(f.path('threads'), f.original);
+  f.ok('record', '--receipt', f.path('receipt'), '--recover');
   finishMerge(f, 'Old', 'Filed');
   const t = read(f.path('threads'))[0];
   assert.ok(t.labelIds.includes('Filed/Child') && !t.labelIds.includes('Label_old'));

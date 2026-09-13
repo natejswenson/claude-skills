@@ -842,7 +842,10 @@ function receiptOptions(args) {
     if (existsSync(ledgerPath)) {
       const ledger = readJson(ledgerPath, 'snapshot receipt state');
       const snapshotHash = createHash('sha256').update(JSON.stringify(current)).digest('hex');
-      if (!ledger.pending && ledger.applied.length && ledger.snapshotHash !== snapshotHash) {
+      if (ledger.pending) {
+        throw new Error('snapshot has an outstanding pending replay; no run prepared. Recover the existing receipt against its original snapshot before planning another run. For a fresh mailbox sample, ingest --out-threads <new-unused-path>, re-plan, and bind --update-threads to that new path.');
+      }
+      if (ledger.applied.length && ledger.snapshotHash !== snapshotHash) {
         throw new Error('snapshot was refreshed outside its application ledger; no run prepared. For a fresh mailbox sample, ingest --out-threads <new-unused-path>, re-plan, and bind --update-threads to that new path. Keep the old snapshot and ledger for existing receipt recovery.');
       }
     }
