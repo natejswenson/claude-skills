@@ -25,7 +25,7 @@ that does not exist.
 ## The receipt
 
 Every `apply` writes a receipt naming each thread it authorised, the rule that
-took it, **what was done to it**, and the sender and subject. The receipt is the
+took it, **the pending operations it permits**, and the sender and subject. Confirmed outcomes determine the
 undo, and it defaults to the durable store — `~/.gmailtriage/receipts/<timestamp>.json`
 — precisely so it outlives the session that wrote it:
 
@@ -53,12 +53,18 @@ action and not merely the thread id — and why a receipt written by 0.1.0, whic
 carries no action because trashing was all it could do, is still read correctly
 as a trash.
 
-Nothing else is touched, and a receipt that records no threads is an error
-rather than a silent no-op.
+Version-2 undo emits only inverses of confirmed effects. Zero confirmations
+means zero undo operations, with incomplete counts. Legacy receipts remain
+readable with their historical inverses and the explicit warning
+“legacy: execution evidence unavailable”; reading never upgrades them.
 
 **A refused run writes no receipt.** If `apply` rejects even one thread, it
 throws before writing anything — so a receipt on disk always means an
-authorised run, never a partial one.
+authorised run, which may have zero or partial execution. Before each Gmail
+call, `record --begin` durably marks the attempt unknown. Record definite outcomes
+per operation; reconcile uncertainty from a fresh host read before any retry.
+Confirmed receipts persist before snapshot replay; `record --recover` repairs an
+interrupted replay without inventing effects. See `gmail.md` for the envelope.
 
 ## What the working files contain, and where they may live
 

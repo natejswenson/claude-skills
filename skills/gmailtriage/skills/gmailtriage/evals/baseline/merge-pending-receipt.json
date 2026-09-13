@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "runId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "at": "2026-08-07T12:00:00Z",
+  "count": 2,
+  "entries": [
+    {
+      "threadId": "thr-1a30cb3f",
+      "ruleId": "merge:Reciepts→Receipts",
+      "action": "unlabel",
+      "label": "Reciepts",
+      "added": [],
+      "removed": [
+        "Reciepts"
+      ],
+      "archived": false,
+      "from": "billing@cloudvendor.example",
+      "subject": "Your receipt from Cloud Vendor #2563"
+    },
+    {
+      "threadId": "thr-1a30ea2e",
+      "ruleId": "merge:Reciepts→Receipts",
+      "action": "unlabel",
+      "label": "Reciepts",
+      "added": [],
+      "removed": [
+        "Reciepts"
+      ],
+      "archived": false,
+      "from": "donotreply@bookstore.example",
+      "subject": "Thanks, your order is complete"
+    }
+  ],
+  "operations": [
+    {
+      "id": "38a277e2cec1f42c279a719e",
+      "threadId": "thr-1a30cb3f",
+      "action": "remove",
+      "label": "Reciepts",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "7a1e688e9064dbf52b10a1bc",
+      "threadId": "thr-1a30ea2e",
+      "action": "remove",
+      "label": "Reciepts",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    }
+  ],
+  "snapshot": null,
+  "labelIndex": {
+    "CHAT": "CHAT",
+    "SENT": "SENT",
+    "INBOX": "INBOX",
+    "IMPORTANT": "IMPORTANT",
+    "TRASH": "TRASH",
+    "DRAFT": "DRAFT",
+    "SPAM": "SPAM",
+    "STARRED": "STARRED",
+    "UNREAD": "UNREAD",
+    "Label_10": "Recruiting",
+    "Label_15": "Recruiting/Globex",
+    "Label_16": "Recruiting/Initech",
+    "Label_17": "Recruiting/Umbrella",
+    "Label_18": "Recruiting/Soylent",
+    "Label_11": "Statements",
+    "Label_12": "Medical",
+    "Label_13": "Banking",
+    "Label_14": "School",
+    "Label_30": "Receipts",
+    "Label_31": "Reciepts",
+    "Label_40": "Old Roof Job",
+    "Label_23": "Security",
+    "Label_5": "Briefings",
+    "Label_41": "Financial Advisor",
+    "Label_42": "Realty",
+    "Label_43": "Paperwork",
+    "Label_44": "Scratch",
+    "Label_45": "Reading List"
+  }
+}

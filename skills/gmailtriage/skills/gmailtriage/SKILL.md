@@ -50,8 +50,8 @@ step whose command does not exist fails `skillfactory verify`.
 | validate, store and remove rules, compiling each to a Gmail query, refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns, and backing the file up before every write | `node scripts/gmailtriage.js rules` |
 | reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists | `node scripts/gmailtriage.js labels` |
 | evaluate the stored rules against the inbox and enumerate exactly which threads each would take, where each goes, and which leave the inbox, without touching any of them | `node scripts/gmailtriage.js plan` |
-| authorise exactly the threads the plan named, per action, refuse anything it did not, and write a receipt of every move | `node scripts/gmailtriage.js apply` |
-| reverse every move listed in a previous run's receipt — untrash, unlabel, and put back in the inbox | `node scripts/gmailtriage.js undo` |
+| authorise exactly the planned threads and prepare a durable pending receipt | `node scripts/gmailtriage.js apply` |
+| reverse only confirmed effects in a new receipt; mark legacy execution evidence unavailable | `node scripts/gmailtriage.js undo` |
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
@@ -163,7 +163,7 @@ first question can never see. **Run it every time**, and read out what it finds:
 
 | It says | It means | The fix |
 |---|---|---|
-| `SAME AS X` | two spellings of one folder, with mail split across both | `merge`, then delete the empty one |
+| `SAME AS X` | two spellings of one folder, with mail split across both | `merge`, then separately verify whole-mailbox emptiness before authorized deletion |
 | `UNMANAGED — holds mail` | a folder that stays sorted only while the user sorts it by hand | write a rule — this is an *adopt* |
 | `UNMANAGED — and empty` | scaffolding someone made once and never used | delete it; there is no mail in it to lose |
 | `RULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST` | the folder was deleted (or never created) but the rule survived | re-create the folder, or `rules --remove` / redirect the rule — **which is the user's call** |
@@ -298,8 +298,8 @@ it.** And since `audit` now proves every destination resolves, an audit that
 came back clean already implies this passes. It stays mandatory before any
 `apply`.
 Do not skip to `plan` on a non-zero exit: a folder Gmail does not have is a
-failed call on thread 27 of 50, with 26 threads already moved and a receipt
-describing a mailbox that no longer exists.
+failed call on thread 27 of 50, with 26 threads already moved and an incomplete receipt requiring individual
+outcome recording and reconciliation.
 
 ### 4. Plan — always, every run
 
@@ -344,37 +344,50 @@ and excluded trash or other nonadditive rules are reported separately.
 Only missing destination labels are added; **nothing is trashed, unlabelled or
 archived**. Existing parent labels and INBOX membership stay intact.
 
-Then re-run the same command afterwards. **It must take zero threads the second
-time.** If it does not, the labels did not resolve and the run has not converged.
+After recording all confirmed label effects, re-run the same command. **It must take zero threads after confirmation.** Before confirmation, the snapshot remains unchanged.
 
 ### 5. Apply, then perform exactly what it authorised
 
 ```bash
-node $SKILL_DIR/scripts/gmailtriage.js apply --plan plan.json --update-threads threads.json
+node $SKILL_DIR/scripts/gmailtriage.js apply --plan plan.json --update-threads threads.json --labels labels.json
 ```
 
 **Do not pass `--receipt`.** The receipt defaults to
 `~/.gmailtriage/receipts/<timestamp>.json` — the durable store `undo --last`
 reads — and the path is printed. Every receipt a run steered into a session
 scratchpad died with the session, and those runs are permanently un-undoable.
-`--update-threads` replays the authorised moves onto the snapshot, so a
-re-plan after a mid-run rule addition converges without re-fetching or
-hand-editing anything.
+`--update-threads` binds the working snapshot but leaves it unchanged at authorization.
+The version-2 receipt contains immutable authorized entries and individual pending
+operations: trash, add each label, and remove each label (including INBOX).
+Entries describe intent; only confirmed operations describe execution.
 
-It prints separate instruction blocks and writes one receipt. Perform them
-exactly, and nothing else:
+**Claude Code and Codex follow the same outcome protocol.** Read
+[the outcome envelope](references/gmail.md#recording-host-outcomes) before calling Gmail:
 
-| Block | Call |
-|---|---|
-| TRASH these ids | `apply_sensitive_thread_label`, `labelOption: TRASH`, one per id |
-| LABEL "X" onto these ids | `label_thread` with X, one per id |
-| REMOVE the INBOX label from these ids | `unlabel_thread` removing `INBOX` — this is the "move" |
+1. Copy the receipt's `runId` and the selected operations' exact
+   `id/threadId/action/label` tuples into `outcomes.json`. Run
+   `record --receipt <path> --outcomes outcomes.json --begin` **before** the calls.
+   It marks attempts unknown durably and refuses unconfirmed dependencies.
+2. Execute only the begun operations through the host Gmail tools: trash with
+   `apply_sensitive_thread_label`, add with `label_thread`, remove with
+   `unlabel_thread`. Parallel calls within one block are allowed; persist results
+   serially through one receipt writer. Confirm all target additions for a thread
+   before beginning its archive or merge source removal.
+3. Record each operation's bounded outcome with
+   `record --receipt <path> --outcomes outcomes.json`. Definite success is
+   `confirmed/success`; definite no-effect failure is `failed/no-effect`.
+   Timeout and ambiguous or malformed responses are `unknown/timeout` or
+   `unknown/ambiguous`. Empty results never establish success.
+4. Inspect `record --receipt <path> --status`. Unknown and failed operations
+   require a fresh host membership read and `--reconcile`. Only after fresh
+   no-effect evidence may `--retry` explicitly prepare a pending operation.
+   Never re-run apply or merge as a retry. If snapshot replay failed, restore
+   its bound path and use `--recover`; status is read-only.
 
-The MCP has no batch call, but you do: **issue each block's calls in parallel,
-in one message** — a real run spent thirty sequential round-trips on
-seventeen threads. Parallelise within a block, never across blocks: every
-LABEL call lands before the first REMOVE-INBOX call, so a thread is never out
-of the inbox and not yet in its folder.
+The receipt is committed before confirmed effects replay atomically onto the
+snapshot. Duplicate confirmation is idempotent; an interrupted replay can recover.
+A lock refuses concurrent writers; if a writer died, verify it is stopped before
+removing its stale `<receipt>.lock` directory. Never discard an uncertain receipt.
 
 **A thread you touch that the plan did not name has no rule behind it**, which is
 the one thing this skill exists to refuse. And the blocks are not
@@ -389,7 +402,9 @@ Threads listed under a `keepInInbox` rule are labelled and **stay in the inbox**
 
 ### 6. Report, and say the undo
 
-One table — rule, action, destination, threads — then the receipt path (under
+Report confirmed operations and affected threads separately from pending, failed,
+and unknown operations, using `record --status`. Zero Gmail calls means zero
+confirmed operations; authorization alone cannot report success. Then show the receipt path (under
 `~/.gmailtriage/receipts/`, where it outlives this session). Say plainly that
 **nothing was deleted**: trash is recoverable for 30 days, and a filed thread
 is one label away from where it was. Offer `undo --last`; do not bury it.
@@ -402,13 +417,14 @@ is one label away from where it was. Offer `undo --last`; do not bury it.
 | `gmailtriage ingest` | take the raw output of the four `search_threads` fetches and `list_labels`, written to files verbatim, and produce the thread and label snapshots every other command reads — deduping threads across fetches, unioning label ids, deriving the category and bulk-mail markers, counting self-sent mail, refusing a metadata-only fetch by name, and never writing a snippet to disk. Ends hand-transcribed JSON, which was the slowest and least reliable step of every real run |
 | `gmailtriage propose` | read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is left — returning two tables, bulk mail worth trashing and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name, plus the senders it excluded and which rule claims each. So a first run starts from the user's own mail and own folders rather than generic defaults, and a later run can never re-propose or contradict a rule they already wrote. Proposes only; writes no rule and moves nothing. |
 | `gmailtriage audit` | read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holding mail and empty scaffolding), every rule that files into a folder that no longer exists, every pair of labels that are one folder spelled two ways, and every thread no rule claims, each matched to a folder that already exists or flagged as needing a name. Returns a coverage percentage and exits non-zero while anything is outstanding, so a system that is quietly rotting cannot read as clean. Reads only; moves nothing. |
-| `gmailtriage merge` | fold one folder into another, returning the operations in the only safe order — apply the target label first, remove the source second, delete the source folder last — plus a receipt so the fold can be reversed. A merge that moves no mail is still recorded, because the folder it deleted still has to come back. |
+| `gmailtriage merge` | prepare pending target additions and source removals in the shared receipt lifecycle. Confirm target additions before source removal. Separate folder deletion needs a fresh whole-mailbox empty check and user authorization. |
 | `gmailtriage subdivide` | read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needing a name, and each sender that hosts mail for many organisations flagged as needing a subject matcher too, with its distinct subjects printed. Says plainly when a folder is still one thing and should be left alone. Proposes only; writes no rule and moves nothing. |
 | `gmailtriage rules` | read, validate, write and remove rules — `--add` prints only the rules just added with any warning that involves them, `--remove <id[,id]>` deletes exactly the named rules and refuses an id that does not exist, and every write lands a timestamped backup of the previous file first. The table shows rule id, action, destination, whether the thread leaves the inbox, and the compiled Gmail query, so an over-broad rule is visible before it ever runs. |
 | `gmailtriage labels` | reconcile every folder the rules file into against the mailbox's real label list, returning a table of destination, whether it exists, and which rules use it — and exit non-zero naming exactly what must be created, so a run never fails halfway with some mail moved and some not. |
 | `gmailtriage plan` | evaluate every rule against the inbox and return the exact set of threads each rule would take, where each one goes, and how many leave the inbox, as tables of rule, destination and count plus any thread matched by more than one rule. Reads only; moves nothing. |
-| `gmailtriage apply` | authorise exactly the threads a named plan listed, per action, refusing any thread the plan did not name for that action, and write a receipt recording every move so the run can be undone. Returns the threads to trash, the threads to label with which label, and the threads to take out of the inbox, as three separate blocks. |
-| `gmailtriage undo` | read a receipt from a previous apply — or find the newest one itself with `--last`, since receipts live in `~/.gmailtriage/receipts/` — and reverse every move it made: untrash what was trashed, remove the label from what was filed, and put back in the inbox what was archived, returning a table of thread id, what happened to it, and the rule that did it, so a run the user regrets is reversible without hunting through Gmail by hand. |
+| `gmailtriage apply` | authorise exactly the threads a named plan listed, per action, refusing any thread the plan did not name for that action, and write a pending receipt; snapshots and undo depend on confirmed outcomes. Returns the threads to trash, the threads to label with which label, and the threads to take out of the inbox, as three separate blocks. |
+| `gmailtriage record` | record host outcomes; `--begin`, `--status`, `--reconcile`, `--retry`, and `--recover` manage the durable lifecycle without Gmail calls. |
+| `gmailtriage undo` | read a receipt from a previous apply — or find the newest one itself with `--last`, since receipts live in `~/.gmailtriage/receipts/` — and reverse only confirmed effects in version-2 receipts (legacy receipts explicitly lack execution evidence): untrash what was trashed, remove the label from what was filed, and put back in the inbox what was archived, returning a table of thread id, what happened to it, and the rule that did it, so a run the user regrets is reversible without hunting through Gmail by hand. |
 
 ## Rules that are not negotiable
 
@@ -479,7 +495,7 @@ is one label away from where it was. Offer `undo --last`; do not bury it.
   makes every move attributable.
 - **Never apply against an unreconciled folder.** If `labels` exits non-zero,
   create what it names and re-run it. A missing label fails mid-run, and a
-  half-applied run is the one state the receipt cannot describe.
+  partial run remains incomplete until each outcome is recorded or reconciled.
 - **Never re-print a snippet or a code from a tool result.** `search_threads`
   returns message snippets beside the subjects, and on a real mailbox those
   snippets have carried live verification codes — twice. `ingest` structurally

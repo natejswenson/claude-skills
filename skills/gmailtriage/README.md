@@ -78,7 +78,8 @@ gmailtriage labels    # reconcile every destination against your real labels; ex
 gmailtriage plan      # exactly which threads each rule takes, where each goes, and how many leave
                       # the inbox. Reads only. `--scope 'label:X'` applies your rules to the mail
                       # already in a folder, instead of only to what arrives next.
-gmailtriage apply     # authorise exactly what the plan named, per action, and write a receipt
+gmailtriage apply     # authorise planned actions and prepare a pending receipt
+gmailtriage record    # begin attempts, record outcomes, reconcile and recover
 gmailtriage undo      # reverse a whole run — untrash, unlabel, and put back in the inbox
 ```
 
@@ -112,6 +113,7 @@ your receipts and still find the code you are waiting for.
 
 - **Claude Code:** Connect Gmail tools for thread search, label listing/creation, label/unlabel, trash and untrash.
 - **Codex:** Connect and authenticate Gmail in Codex with those read and write capabilities; Claude Gmail connections are not imported. The bundled CLI processes saved tool results and never authenticates or accesses Gmail itself.
+- **Receipts:** Apply and merge prepare pending operations. Both hosts record outcomes; only confirmed effects update snapshots or enter new-format undo. Status separates confirmed and incomplete counts.
 - **Personal data:** Both hosts retain rules, backups and receipts in `~/.gmailtriage/`; mailbox snapshots stay in the run scratchpad.
 
 See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.

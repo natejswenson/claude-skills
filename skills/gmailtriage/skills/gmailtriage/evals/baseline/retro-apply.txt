@@ -8,6 +8,8 @@
 | Authorised | To trash | To file | Labels to add | To archive | Refused |
 |------------|----------|---------|---------------|------------|---------|
 | 13         | 0        | 13      | 13            | 0          | 0       |
+runId=00000000-0000-4000-8000-000000000000 confirmed=0 affectedThreads=0 pending=13 failed=0 unknown=0 incomplete=13
+Authorization alone is not completion. Before each call, record --begin; then record its outcome. Unknown/failed operations require fresh membership reconciliation.
 
 LABEL "Recruiting/Globex" onto exactly these thread ids and nothing else:
 thr-1a2b5b3c
