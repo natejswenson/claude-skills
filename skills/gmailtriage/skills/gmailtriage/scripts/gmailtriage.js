@@ -17,7 +17,7 @@ import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubR
 import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -867,11 +867,15 @@ async function cmdRecord(args) {
             delete ledger.pending;
             writeJson(ledgerPath, ledger, { ...args, atomic: true });
           }
+          const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+          if (ledger.applied.length && ledger.snapshotHash !== hash(snapshot)) {
+            throw new Error('snapshot does not match its application ledger; reconcile the snapshot and ledger before recovery');
+          }
           const key = (o) => next.runId + ':' + o.id;
           const operations = next.operations.filter((o) => o.status === 'confirmed' && !ledger.applied.includes(key(o)));
           if (!operations.length) return;
           const updated = replay({ ...next, operations }, snapshot);
-          ledger = { applied: [...ledger.applied, ...operations.map(key)], pending: updated };
+          ledger = { applied: [...ledger.applied, ...operations.map(key)], snapshotHash: hash(updated), pending: updated };
           writeJson(ledgerPath, ledger, { ...args, atomic: true });
           writeJson(next.snapshot, updated, { ...args, atomic: true });
           delete ledger.pending;

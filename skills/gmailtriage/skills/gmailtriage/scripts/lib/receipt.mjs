@@ -93,7 +93,7 @@ export function replay(r, snapshot) {
     const change = (labels, ids) => {
       let result = [...(labels ?? [])];
       for (const o of ops) {
-        const name = (v) => ids ? (r.labelIndex[v] ?? v) : v;
+        const name = (v) => ids && Object.hasOwn(r.labelIndex, v) ? r.labelIndex[v] : v;
         if (o.action === 'add' && !result.some((v) => normaliseLabel(name(v)) === normaliseLabel(o.label))) result.push(o.label);
         if (o.action === 'remove') result = result.filter((v) => normaliseLabel(name(v)) !== normaliseLabel(o.label));
       }

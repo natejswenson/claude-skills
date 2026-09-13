@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { pendingReceipt, replay } from '../lib/receipt.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, renameSync, mkdirSync, rmdirSync, statSync } from 'node:fs';
@@ -268,5 +269,41 @@ for (const target of ['Filed', 'New']) {
     const undo = f.ok('undo', '--receipt', f.path('second'));
     assert.match(undo, /INBOX/); assert.match(undo, /ADD it back to exactly these thread ids:/);
     assert.ok(!read(f.path('threads'))[0].labelIds.includes('INBOX'));
+  });
+}
+
+for (const kind of ['apply', 'merge']) {
+  test(kind + ': restored older snapshot cannot reuse an applied-operation ledger', () => {
+    const f = fixture(kind), add = f.ops().filter((o) => o.action === 'add');
+    f.pass(add, '--begin'); f.pass(add);
+    const removal = f.ops().filter((o) => o.action === 'remove');
+    f.pass(removal, '--begin');
+    renameSync(f.path('threads'), f.path('saved'));
+    assert.match(f.record(removal).stderr, /receipt preserved; snapshot replay incomplete/);
+    writeFileSync(f.path('threads'), f.original);
+    const ledgerPath = f.path('threads') + '.receipt-state.json';
+    const ledger = readFileSync(ledgerPath, 'utf8');
+    const recovery = f.run('record', '--receipt', f.path('receipt'), '--recover');
+    assert.notEqual(recovery.status, 0);
+    assert.match(recovery.stderr, /snapshot does not match its application ledger; reconcile/);
+    assert.doesNotMatch(recovery.stdout, /incomplete=0/);
+    assert.equal(readFileSync(f.path('threads'), 'utf8'), f.original);
+    assert.equal(readFileSync(ledgerPath, 'utf8'), ledger);
+    renameSync(f.path('saved'), f.path('threads'));
+    f.ok('record', '--receipt', f.path('receipt'), '--recover');
+    const t = read(f.path('threads'))[0];
+    assert.ok(t.labelIds.includes('Filed/Child'));
+    assert.ok(!t.labelIds.includes(kind === 'apply' ? 'INBOX' : 'Label_old'));
+  });
+}
+for (const label of ['constructor', 'toString', '__proto__']) {
+  test('confirmed removal recognizes literal label ' + label, () => {
+    const receipt = pendingReceipt([{ threadId: 't', action: 'unlabel', removed: [label], added: [] }],
+      { labelIndex: { Label_new: 'New' } });
+    receipt.operations[0].status = 'confirmed';
+    const snapshot = [{ id: 't', labelIds: [label, 'Label_new', 'New'] }];
+    const result = replay(receipt, snapshot);
+    assert.deepEqual(result[0].labelIds, ['Label_new', 'New']);
+    assert.deepEqual(replay(receipt, result), result);
   });
 }
