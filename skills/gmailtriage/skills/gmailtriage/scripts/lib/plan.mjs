@@ -175,7 +175,8 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     if (!addr) {
       // These threads cannot safely form sender clusters, but still belong in
       // the reported sample. Keep each separate from any valid sender group.
-      withheld.push({ from: String(t.from ?? '(missing sender)'), count: 1,
+      withheld.push({ from: typeof t.from === 'string' ? t.from :
+        (t.from == null ? '(missing sender)' : '(malformed sender)'), count: 1,
         bulkCount: t.hasUnsubscribe ? 1 : 0, sample: t.subject ?? '',
         kind: 'uncertain-sender',
         why: 'sender is missing, malformed or ambiguous — no trash or sort proposal; inspect the sender evidence' });
