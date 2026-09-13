@@ -6,6 +6,7 @@
  * model behaving well: which threads a rule takes, whether a thread was
  * authorised, and what was actually moved.
  */
+import { pendingReceipt, confirmedEntries, checkReceipt } from './receipt.mjs';
 import {
   matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE,
   isNearDuplicateLabel, SYSTEM_LABELS, reconcileDestinations,
@@ -945,28 +946,24 @@ export function authorise(planDoc, requested, action = 'trash') {
  * Entries written by 0.1.0 carry no `action`. They are read as trash, because
  * that is the only thing 0.1.0 could do — an old receipt must still undo.
  */
-export const buildReceipt = (entries, { at }) => ({
-  at,
-  count: entries.length,
-  entries: entries.map((e) => ({
+export const buildReceipt = (entries, options) => pendingReceipt(entries.map((e) => ({
     threadId: e.threadId,
     ruleId: e.ruleId,
     action: e.action ?? 'trash',
     label: e.label ?? null,
-    // Exactly the labels this run PUT on the thread, which is not the same as
+    // Authorized additions, pending until host outcomes confirm them; not
     // the labels the thread ends up with. Filing into `Recruiting/Globex`
     // mail that already sat in `Recruiting` adds one label, and an undo that
     // removed both would take away a label the user filed by hand.
     added: e.action === 'label' ? (e.adds ?? (e.label ? [e.label] : [])) : (e.added ?? []),
-    // Labels this run took OFF the thread, which only a merge does. Recorded
+    // Authorized removals, pending until host outcomes confirm them. Recorded
     // for the same reason `added` is: an undo has to know what to put back, and
     // "the rule's destination" does not answer that.
     removed: e.removed ?? [],
     archived: e.action === 'label' ? e.archive === true : false,
     from: e.from,
     subject: e.subject,
-  })),
-});
+  })), options);
 
 /**
  * What `undo` must actually reverse, grouped by the operation that reverses it.
@@ -977,7 +974,8 @@ export const buildReceipt = (entries, { at }) => ({
  * its single `label`, so an old receipt still undoes.
  */
 export function undoPlan(receipt) {
-  const entries = receipt.entries ?? [];
+  const modern = checkReceipt(receipt);
+  const entries = confirmedEntries(receipt);
   const untrash = entries.filter((e) => (e.action ?? 'trash') === 'trash');
   const labelled = entries.filter((e) => e.action === 'label');
   const merged = entries.filter((e) => e.action === 'unlabel');
@@ -988,7 +986,7 @@ export function undoPlan(receipt) {
   for (const e of [...labelled, ...merged]) {
     const added = Array.isArray(e.added) && e.added.length
       ? e.added
-      : (e.action === 'label' && e.label ? [e.label] : []);
+      : (!modern && e.action === 'label' && e.label ? [e.label] : []);
     // Innermost first: removing a parent while a child of it is still on the
     // thread leaves the thread filed under a folder Gmail will keep showing.
     for (const label of [...added].reverse()) {

@@ -28,6 +28,8 @@
 | Authorised | To trash | To file | Labels to add | To archive | Refused |
 |------------|----------|---------|---------------|------------|---------|
 | 66         | 19       | 47      | 68            | 45         | 0       |
+runId=00000000-0000-4000-8000-000000000000 confirmed=0 affectedThreads=0 pending=132 failed=0 unknown=0 incomplete=132
+Authorization alone is not completion. Before each call, record --begin; then record its outcome. Unknown/failed operations require fresh membership reconciliation.
 
 TRASH exactly these thread ids and nothing else:
 thr-1a2e41a4
@@ -158,7 +160,7 @@ thr-1a327c51
 thr-1a329b40
 thr-1a32ba2f
 
-then REMOVE the INBOX label from exactly these thread ids — this is the "move":
+after confirmed additions, REMOVE the INBOX label from exactly these thread ids — this is the "move":
 thr-1a2b5b3c
 thr-1a2b7a2b
 thr-1a2b991a

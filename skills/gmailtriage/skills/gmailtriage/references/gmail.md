@@ -95,3 +95,51 @@ both, which is also why it must never be used for the main fetches.
 **`resultCountEstimate` is an estimate in the way weather is a forecast.** A
 real fetch reported 68 and returned 6. Never repeat it as a count of anything;
 the only numbers a run may claim are counts of threads actually returned.
+
+## Recording host outcomes
+
+Both Claude Code and Codex call Gmail on the host side. The Node CLI accepts only
+this bounded envelope, never a raw tool body, snippet, error message, or credential:
+
+```json
+{
+  "runId": "<receipt runId>",
+  "outcomes": [
+    {
+      "id": "<authorized operation id>",
+      "threadId": "<authorized thread>",
+      "action": "add",
+      "label": "Receipts",
+      "status": "confirmed",
+      "evidence": "success"
+    }
+  ]
+}
+```
+
+Copy exact tuples from `receipt.operations`; `action` is `trash`, `add`, or
+`remove`, and trash uses `label: null`. For `--begin` and `--retry`, omit status
+and evidence. Never mark a whole block successful because its header succeeded.
+
+| Observed host result | status / evidence |
+|---|---|
+| Definite success for this effect | confirmed / success |
+| Definite failure establishing no effect | failed / no-effect |
+| Timeout or lost response | unknown / timeout |
+| Malformed, empty, or otherwise ambiguous response | unknown / ambiguous |
+| Fresh read establishes the authorized effect occurred | confirmed / read-present, with --reconcile |
+| Fresh read establishes the authorized effect did not occur | failed / read-absent, with --reconcile |
+
+“read-present” means the **effect** is present: target membership exists for add,
+source membership is absent for remove, or TRASH membership exists for trash.
+“read-absent” means the opposite postcondition. Resolve opaque IDs through a fresh
+label list. Read the affected thread after uncertainty; a cached snapshot cannot
+reconcile Gmail. A failed operation also needs this fresh read before explicit
+`--retry`. Confirmed effects are monotonic. After a timeout is recorded, ordinary
+success recording is refused until reconciliation. Empty outcome arrays do not
+complete anything.
+
+Use the printed durable receipt path for every command; outcomes may live in the
+session scratchpad. Pass `--labels labels.json` when binding opaque snapshots,
+especially for merge source removal. Recovery replays only into that bound path.
+Status/recovery show incomplete counts and never dispatch uncertain operations.

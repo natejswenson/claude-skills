@@ -38,6 +38,13 @@ node "$SKILL_DIR/scripts/issueflow.js" review-brief --another-round "<why>" --la
 
 The orchestrator never runs those commands on its own judgment.
 
+For a published amendment that will invalidate code review, the same existing
+user decision can reserve one future round with `amend --plan <file> --lane
+<lane> --another-round "<what they decided>"` and the usual amendment authority,
+reason and release flags. `next` consumes that recorded round after amendment
+application. Do not repeat the flag to reuse the same authorization. See
+[completion.md](completion.md) for immutable amendment-review retry recovery.
+
 ## Dispute
 
 A fixer may report `not-changed` once with a reason. The next verifier rules.

@@ -69,7 +69,7 @@ const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.u
  * positional would quietly eat it as its value — a boolean that sometimes is
  * not one is exactly the kind of parser surprise a gate flag cannot afford.
  */
-const BOOLEAN_FLAGS = new Set(['auto', 'autonomous', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased']);
+const BOOLEAN_FLAGS = new Set(['auto', 'autonomous', 'reviewPlan', 'review', 'ready', 'parallel', 'dryRun', 'force', 'takeOver', 'offline', 'closeIssue', 'noWorktree', 'noDraft', 'version', 'fixed', 'withdrawn', 'workersReleased', 'retry']);
 
 function argv(args) {
   const out = { _: [] };
@@ -1344,7 +1344,7 @@ async function cmdReviewBrief(args) {
   // Round 2+ reviews the fix: the delta since the last round's head sizes the
   // fleet and is what the finders read first. Round 1 has no previous head.
   const last = currentRound(lane);
-  const deltaText = last?.registered ? fixDiff(tree, last.head, head) : null;
+  const deltaText = last?.registered && !last.supersededBy ? fixDiff(tree, last.head, head) : null;
   guardDispatch(dir, run, args);
   const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound, deferSave: Boolean(run.execution) });
   const entry = currentRound(lane);
@@ -1938,9 +1938,12 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow preflight --run-dir <run> [--plan <path>]
   issueflow status --run-dir <run> --json
   issueflow amend --plan <path> --reason "<why>" --authority-source "<existing direction>" --workers-released
+                     [--lane <slug> --another-round "<existing user decision for one future code-review round>"]
   issueflow retarget --plan <path> --base <branch> --strategy target-only|merge|rebase
                      --reason "<why>" --authority-source "<existing direction>" --workers-released
   issueflow amend-review-brief | amend-register | amend-apply --workers-released
+  issueflow amend-review-brief --retry --workers-released --reason "<why the rejected output needs replacement>"
+                                                archive an unregistered rejected attempt; retain proposal, rounds and total budget
   issueflow completion-intent --file <endpoint.json>
   issueflow completion-authorize --action merge|deploy --authority-source "<existing direction>"
                                 [--lane <slug>] [--head <sha>] [--environment <name>]
@@ -1983,6 +1986,7 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
   --parallel           on split: place approved independent work items on the same base branch
   --review             brief the red-team reviewer of the delivered plan
   --another-round "<reason>"  re-open a rounds-capped stage — or, on review-brief, a capped review loop — on the user's direction
+                       on amend --plan: reserve exactly one future round for one capped lane, consumed by next
   --budget-seconds <positive-integer>  on resume: grant seconds from now, preserving all gates and review limits;
                        reject invalid allowances and active/completed runs. Never auto-renew.
   --ready              brief EVERY stage whose gate is open, for parallel dispatch
@@ -2069,7 +2073,7 @@ async function main() {
         const { dir } = locate(args); const run = loadRun(dir);
         if(cmd==='retarget'&&(!args.plan||!args.base))throw new RunError('retarget requires --plan and --base for a reviewed Git transition');
         if (args.plan && cmd !== 'migrate-run') {
-          const record=proposePublishedAmendment(dir,run,{plan:readFileSync(args.plan,'utf8'),reason:args.reason,authoritySource:args.authoritySource??args.authorityNote,workersReleased:Boolean(args.workersReleased),base:args.base??null,strategy:args.strategy??'target-only',rewriteAuthoritySource:args.rewriteAuthoritySource});
+          const record=proposePublishedAmendment(dir,run,{plan:readFileSync(args.plan,'utf8'),reason:args.reason,authoritySource:args.authoritySource??args.authorityNote,workersReleased:Boolean(args.workersReleased),base:args.base??null,strategy:args.strategy??'target-only',rewriteAuthoritySource:args.rewriteAuthoritySource,anotherRound:args.anotherRound,lane:args.lane});
           console.log(`Amendment ${record.id} proposed; next dispatches independent review before application.`);return;
         }
         const record = evolveRun(dir, run, { kind: cmd === 'amend' ? 'amend' : 'migrate', reason: args.reason, workersReleased: args.workersReleased === true, authorityNote: args.authorityNote ?? null, controller:args });
@@ -2162,7 +2166,7 @@ main();
 
 function cmdAmendReview(args) {
   const {dir}=locate(args),run=loadRun(dir);guardDispatch(dir,run,args);
-  const info=briefPublishedAmendment(dir,run);
+  const info=briefPublishedAmendment(dir,run,{retry:args.retry===true,workersReleased:args.workersReleased===true,reason:args.reason});
   printDispatch([{...dispatchProfile(run,'redTeam'),prompt:info.brief,artifact:info.output}], 'amendment reviewer',dir,run);
 }
 function cmdAmendRegister(args) {const {dir}=locate(args),run=loadRun(dir);const result=registerPublishedAmendment(dir,run);console.log(`Amendment ${result.id}: ${result.phase}`);}

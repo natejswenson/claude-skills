@@ -50,7 +50,7 @@ thread lands in would depend on nothing but when it arrived.
 
 The cost is one extra `label_thread` call per thread, and labelling is
 idempotent in Gmail. `plan` reports which labels are actually new to each
-thread, and the receipt records only those — so undoing a run that added
+thread, and the receipt authorizes only those — so undoing a run that added
 `Finance/Chase` to mail already sitting in `Finance` gives back `Finance`, not
 nothing.
 
@@ -125,14 +125,14 @@ Exits non-zero naming every destination the rules need and the mailbox does not
 have. Create those with `create_label`, re-fetch, re-run.
 
 Skipping this does not make the run smaller; it makes it fail on thread 27 of
-50, with 26 threads already moved and a receipt describing a mailbox state that
-no longer exists. `apply` is all-or-nothing about authorisation, but it cannot
+50, with 26 threads already moved and an incomplete receipt needing per-operation outcomes. `apply` is all-or-nothing about authorisation, but it cannot
 make Gmail atomic.
 
 ## Sorting is as reversible as trashing
 
-The receipt records, per thread, the action, the label, and whether `INBOX` was
-removed. `undo` turns that back into three separate operations, because
+The receipt prepares pending per-label operations. Host results recorded with
+`record` establish which labels changed. If label addition succeeds but archive
+fails, only the addition replays; INBOX stays and undo removes only that addition. `undo` turns that back into three separate operations, because
 reversing a trash and reversing a move are not the same call:
 
 | Was | Reversed by |
@@ -142,8 +142,8 @@ reversing a trash and reversing a move are not the same call:
 | filed **and** archived | remove the label, then add `INBOX` back |
 
 Removing `TRASH` from a thread that was filed restores nothing, and hides the
-fact that it is still out of the inbox. That is why the receipt records what was
-done and not merely to what.
+fact that it is still out of the inbox. Confirmed operations are the execution evidence; authorized entries alone
+never establish that anything moved. Legacy receipts visibly lack that evidence.
 
 ## Splitting a folder that already has mail in it
 
