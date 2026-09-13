@@ -66,6 +66,97 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
 export const threadIds = (raw, what = 'category fetch') =>
   normalizeSearchThreads(raw, what).map((t) => t.id);
 
+export const SOURCE_NAMES = ['inbox', 'nolabel', 'promos', 'updates'];
+const token = (v) => v === null || (typeof v === 'string' && v.length > 0);
+const onlyKeys = (value, keys) => Object.keys(value).every(key => keys.includes(key));
+
+/** Validate the authored metadata separately from the immutable raw responses. */
+export function validateManifest(manifest) {
+  if (!isObj(manifest) || manifest.schema !== 1 || !isObj(manifest.sources)
+    || !onlyKeys(manifest, ['schema', 'sources'])) {
+    throw new Error('ingest: expected manifest schema 1 with sources');
+  }
+  for (const [name, source] of Object.entries(manifest.sources)) {
+    if (!SOURCE_NAMES.includes(name)) throw new Error('ingest: unknown manifest source');
+    if (!isObj(source) || !onlyKeys(source, ['query', 'maxPages', 'maxThreads', 'pages'])
+      || typeof source.query !== 'string' || !source.query.trim()
+      || !Number.isSafeInteger(source.maxPages) || source.maxPages < 1
+      || !Number.isSafeInteger(source.maxThreads) || source.maxThreads < 1
+      || !Array.isArray(source.pages)) throw new Error(`ingest: invalid ${name} query, limits or pages`);
+    if (source.pages.length > source.maxPages) throw new Error(`ingest: ${name} exceeds maxPages`);
+    for (const p of source.pages) {
+      if (!isObj(p) || !onlyKeys(p, ['pageToken', 'path', 'failed']) || !token(p.pageToken)
+        || (p.failed === true ? Object.hasOwn(p, 'path')
+          : (Object.hasOwn(p, 'failed') || typeof p.path !== 'string' || !p.path))) {
+        throw new Error(`ingest: invalid ${name} page record`);
+      }
+    }
+  }
+}
+
+/** A failed/gapped chain still contributes valid pages, but never proves exhaustion. */
+export function ingestSources(manifest, readPage, legacy = {}) {
+  if (manifest) validateManifest(manifest);
+  const sources = {}, coverage = { schema: 1, sources: {} };
+  for (const name of SOURCE_NAMES) {
+    const source = manifest?.sources[name];
+    const c = { pages: 0, uniqueThreads: 0, state: 'unknown', reason: 'source-not-supplied' };
+    coverage.sources[name] = c;
+    sources[name] = [];
+    if (!source) {
+      if (Object.hasOwn(legacy, name)) {
+        sources[name] = mergeThreadSources(normalizeSearchThreads(legacy[name], name));
+        Object.assign(c, { pages: 1, uniqueThreads: sources[name].length, reason: 'legacy-chain-unavailable' });
+      }
+      continue;
+    }
+    Object.assign(c, { maxPages: source.maxPages, maxThreads: source.maxThreads });
+    let expected = null, adverse = null;
+    const requested = new Set(), returned = new Set();
+    for (const [index, p] of source.pages.entries()) {
+      if (sources[name].length >= source.maxThreads) throw new Error(`ingest: ${name} exceeds maxThreads fetch bound`);
+      const interrupt = (reason) => { adverse ??= reason; };
+      if (index > 0 && expected === null) interrupt('page-after-exhaustion');
+      if (p.pageToken !== expected) interrupt('broken-token-chain');
+      if (requested.has(p.pageToken)) interrupt('repeated-request-token');
+      requested.add(p.pageToken);
+      if (p.failed) { interrupt('failed-page'); expected = undefined; continue; }
+      let raw, threads;
+      try {
+        raw = readPage(p.path);
+        // {} is the connector's legitimate empty response. Error envelopes and
+        // malformed thread/token fields must not masquerade as that response.
+        if (!isObj(raw) || ['error', 'errors', 'isError', 'status'].some(k => Object.hasOwn(raw, k))
+          || (Object.keys(raw).length && !['threads', 'nextPageToken', 'resultCountEstimate'].some(k => Object.hasOwn(raw, k)))
+          || (Object.hasOwn(raw, 'resultCountEstimate')
+            && !(Number.isSafeInteger(raw.resultCountEstimate) && raw.resultCountEstimate >= 0)
+            && !(typeof raw.resultCountEstimate === 'string' && /^[0-9]+$/.test(raw.resultCountEstimate)))
+          || (Object.hasOwn(raw, 'threads') && !Array.isArray(raw.threads))
+          || (Object.hasOwn(raw, 'nextPageToken') && !token(raw.nextPageToken))) throw new Error('invalid response');
+        threads = normalizeSearchThreads(raw, name);
+        if (threads.some(t => typeof t.id !== 'string')) throw new Error('invalid thread id');
+      } catch { interrupt('unreadable-or-invalid-page'); expected = undefined; continue; }
+      sources[name] = mergeThreadSources(sources[name], threads);
+      c.pages += 1;
+      c.uniqueThreads = sources[name].length;
+      if (c.uniqueThreads > source.maxThreads) throw new Error(`ingest: ${name} exceeds maxThreads`);
+      const next = raw.nextPageToken ?? null;
+      if (next !== null) {
+        if (returned.has(next) || requested.has(next)) interrupt('repeated-continuation-token');
+        returned.add(next);
+      }
+      expected = next;
+    }
+    if (adverse) Object.assign(c, { state: 'interrupted', reason: adverse });
+    else if (!c.pages) Object.assign(c, { state: 'interrupted', reason: 'no-successful-pages' });
+    else if (expected === null) Object.assign(c, { state: 'complete', reason: 'query-exhausted' });
+    else if (source.pages.length === source.maxPages || c.uniqueThreads === source.maxThreads) {
+      Object.assign(c, { state: 'capped', reason: 'configured-limit' });
+    } else Object.assign(c, { state: 'interrupted', reason: 'continuation-not-fetched' });
+  }
+  return { sources, coverage };
+}
+
 /**
  * Union the fetches, deduped by thread id.
  *
