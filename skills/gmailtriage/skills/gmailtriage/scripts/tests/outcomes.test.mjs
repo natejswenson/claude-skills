@@ -312,3 +312,42 @@ for (const label of ['constructor', 'toString', '__proto__']) {
     assert.deepEqual(read(f.path('literal')), result);
   });
 }
+
+for (const kind of ['apply', 'merge']) {
+  test(kind + ': refreshed snapshot refuses preparation before creating an unusable receipt', () => {
+    const f = fixture(kind);
+    for (const action of ['add', 'remove']) {
+      const ops = f.ops().filter((o) => o.action === action);
+      f.pass(ops, '--begin'); f.pass(ops);
+    }
+    const oldReceipt = readFileSync(f.path('receipt'), 'utf8');
+    const ledgerPath = f.path('threads') + '.receipt-state.json';
+    const oldLedger = readFileSync(ledgerPath, 'utf8');
+    write(f.path('raw'), { threads: JSON.parse(f.original).map((t) => ({ id: t.id, messages: [{ sender: t.from, subject: t.subject, labelIds: t.labelIds }] })) });
+    const ingest = (target) => f.ok('ingest', '--inbox', f.path('raw'), '--labels', f.path('labels'), '--out-threads', target, '--out-labels', f.path('fresh-labels'));
+    ingest(f.path('threads'));
+    const fresh = readFileSync(f.path('threads'), 'utf8');
+    const prepare = (snapshot, receipt) => {
+      if (kind === 'merge') return f.run('merge', '--threads', snapshot, '--labels', f.path('labels'), '--from', 'Old', '--to', 'Filed/Child', '--receipt', receipt, '--update-threads', snapshot);
+      f.ok('plan', '--threads', snapshot, '--labels', f.path('labels'), '--rules', f.path('rules'), '--out', f.path('fresh-plan'));
+      return f.run('apply', '--plan', f.path('fresh-plan'), '--receipt', receipt, '--update-threads', snapshot);
+    };
+    const rejected = prepare(f.path('threads'), f.path('unusable'));
+    assert.notEqual(rejected.status, 0);
+    assert.match(rejected.stderr, /no run prepared.*ingest --out-threads <new-unused-path>/);
+    assert.throws(() => readFileSync(f.path('unusable')), /ENOENT/);
+    assert.equal(readFileSync(f.path('threads'), 'utf8'), fresh);
+    assert.equal(readFileSync(ledgerPath, 'utf8'), oldLedger);
+    assert.equal(readFileSync(f.path('receipt'), 'utf8'), oldReceipt);
+    ingest(f.path('fresh'));
+    const prepared = prepare(f.path('fresh'), f.path('new-receipt'));
+    assert.equal(prepared.status, 0, prepared.stderr);
+    const next = read(f.path('new-receipt'));
+    const outcomes = next.operations.filter((o) => o.action === 'add').map(({ id, threadId, action, label }) => ({ id, threadId, action, label }));
+    write(f.path('new-outcomes'), { runId: next.runId, outcomes });
+    f.ok('record', '--receipt', f.path('new-receipt'), '--outcomes', f.path('new-outcomes'), '--begin');
+    write(f.path('new-outcomes'), { runId: next.runId, outcomes: outcomes.map((o) => ({ ...o, status: 'confirmed', evidence: 'success' })) });
+    f.ok('record', '--receipt', f.path('new-receipt'), '--outcomes', f.path('new-outcomes'));
+    assert.ok(read(f.path('fresh'))[0].labelIds.includes('Filed/Child'));
+  });
+}

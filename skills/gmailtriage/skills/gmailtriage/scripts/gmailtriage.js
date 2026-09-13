@@ -836,7 +836,17 @@ async function cmdPlan(args) {
 function receiptOptions(args) {
   if (args.receipt && args.updateThreads && resolve(args.receipt) === resolve(args.updateThreads)) throw new Error('receipt and snapshot must be separate paths');
   const snapshot = args.updateThreads ? resolve(args.updateThreads) : null;
-  if (snapshot) readJson(snapshot, '--update-threads');
+  if (snapshot) {
+    const current = readJson(snapshot, '--update-threads');
+    const ledgerPath = snapshot + '.receipt-state.json';
+    if (existsSync(ledgerPath)) {
+      const ledger = readJson(ledgerPath, 'snapshot receipt state');
+      const snapshotHash = createHash('sha256').update(JSON.stringify(current)).digest('hex');
+      if (!ledger.pending && ledger.applied.length && ledger.snapshotHash !== snapshotHash) {
+        throw new Error('snapshot was refreshed outside its application ledger; no run prepared. For a fresh mailbox sample, ingest --out-threads <new-unused-path>, re-plan, and bind --update-threads to that new path. Keep the old snapshot and ledger for existing receipt recovery.');
+      }
+    }
+  }
   return { at: args.at ?? new Date().toISOString(), snapshot,
     labelIndex: args.labels ? Object.fromEntries(readLabelIndex(args.labels)) : {} };
 }
