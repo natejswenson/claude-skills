@@ -76,6 +76,12 @@ test('coverage distinguishes exhaustion, caps and interruptions while retaining 
     [[f.record('empty.json', {}), terminal], {}, 'interrupted', 2, 0],
     [[f.record('malformed.json', { error: 'invented-private-sentinel' })], {}, 'interrupted', 0, 0],
     [[f.record('bad-threads.json', { threads: null })], {}, 'interrupted', 0, 0],
+    ...['not-a-count', -1, 1.5, null, {}, true].map((estimate, i) =>
+      [[f.record('bad-estimate-' + i + '.json', { resultCountEstimate: estimate })], { maxPages: 1, maxThreads: 50 }, 'interrupted', 0, 0]),
+    [[f.record('failed-estimate.json', { resultCountEstimate: 'not-a-count', status: 'failed' })], { maxPages: 1, maxThreads: 50 }, 'interrupted', 0, 0],
+    [[f.record('failed-status.json', { resultCountEstimate: 0, status: 'failed' })], {}, 'interrupted', 0, 0],
+    ...[{}, { threads: [] }, { resultCountEstimate: 0 }, { resultCountEstimate: '0' }].map((raw, i) =>
+      [[f.record('valid-empty-' + i + '.json', raw)], {}, 'complete', 1, 0]),
     [[], {}, 'interrupted', 0, 0],
   ];
   for (const [pages, caps, state, count, unique] of cases) {

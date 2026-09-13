@@ -124,8 +124,11 @@ export function ingestSources(manifest, readPage, legacy = {}) {
         raw = readPage(p.path);
         // {} is the connector's legitimate empty response. Error envelopes and
         // malformed thread/token fields must not masquerade as that response.
-        if (!isObj(raw) || ['error', 'errors', 'isError'].some(k => Object.hasOwn(raw, k))
+        if (!isObj(raw) || ['error', 'errors', 'isError', 'status'].some(k => Object.hasOwn(raw, k))
           || (Object.keys(raw).length && !['threads', 'nextPageToken', 'resultCountEstimate'].some(k => Object.hasOwn(raw, k)))
+          || (Object.hasOwn(raw, 'resultCountEstimate')
+            && !(Number.isSafeInteger(raw.resultCountEstimate) && raw.resultCountEstimate >= 0)
+            && !(typeof raw.resultCountEstimate === 'string' && /^[0-9]+$/.test(raw.resultCountEstimate)))
           || (Object.hasOwn(raw, 'threads') && !Array.isArray(raw.threads))
           || (Object.hasOwn(raw, 'nextPageToken') && !token(raw.nextPageToken))) throw new Error('invalid response');
         threads = normalizeSearchThreads(raw, name);
