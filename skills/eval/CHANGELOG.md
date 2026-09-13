@@ -5,6 +5,16 @@ All notable changes to the **eval** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Recognize an explicitly named skill in a combined skill announcement; unrelated mentions and repeated announcements still fail the probe.
+
+- Preserve source anchors, native call identities and structured process results
+  before clipping transcript output. Import explicitly linked parent/child bundles
+  without interpreting embedded JavaScript or shell text.
+- Bind loaded reference contracts to captured hashes. Report missing execution
+  evidence as `cannotDecide`; retain historical positional fixture compatibility.
+
 ## [0.3.0] - 2026-08-03
 
 Measured against 47 real session transcripts rather than argued. eval scored

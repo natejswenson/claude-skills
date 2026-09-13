@@ -11,6 +11,8 @@
  * before it will touch a worktree or a branch — the only path to
  * `git branch -D` is a merge GitHub confirmed, never a guess.
  */
+import { existsSync } from 'node:fs';
+import { laneTree, worktreePath } from './run.mjs';
 import { execFileSync } from 'node:child_process';
 import { closeIssue, issueState } from './gh.mjs';
 import { landings } from './reconcile.mjs';
@@ -62,6 +64,8 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
     );
   }
 
+  if (run.completion && run.completion.endpoint!=='reviewed-pr' && run.completion.state!=='complete') throw new FinishError('completion obligations remain; reconcile merge/deployment before deleting its worktrees');
+  if(Object.values(run.operations??{}).some(o=>o.state!=='confirmed'))throw new FinishError('reconcile uncertain remote operations before cleanup');
   const repo = run.repo.path;
   if (run.execution) saveRun(dir, run);
   const store = gitStore(dir, run);
@@ -79,6 +83,9 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
       continue;
     }
 
+    const expectedTree=run.checkout?.mode==='source'?run.repo.path:worktreePath(dir,lane,run);
+    const tree=existsSync(expectedTree)?laneTree(dir,run,lane):expectedTree;
+    if(existsSync(tree)&&git(['status','--porcelain','--untracked-files=all'],tree))throw new FinishError(`dirty worktree retained: ${tree}`,rows);
     removeWorktree(store, dir, lane);
     pruneWorktrees(store);
     try {
@@ -108,6 +115,12 @@ export function finish(dir, run, { offline = false, closeIssueFlag = false, now 
         git(['branch', '-D', leftover.branch], store);
       }
       pruneWorktrees(store);
+    }
+    for(const item of run.auxiliaryTrees??[]) {
+      if(!existsSync(item.path))continue;
+      if(git(['rev-parse','HEAD'],item.path)!==item.head||git(['status','--porcelain','--untracked-files=all'],item.path))throw new FinishError(`changed auxiliary worktree retained: ${item.path}`,rows);
+      const registered=git(['worktree','list','--porcelain'],store);if(!registered.split('\n').includes(`worktree ${item.path}`))throw new FinishError('auxiliary worktree is no longer registered to this run repository',rows);
+      git(['worktree','remove',item.path],store);
     }
     let issueClosed = false;
     if (closeIssueFlag) {

@@ -100,6 +100,10 @@ export const reviewExhausted = (lane) => {
 /** The persisted lane cap, with the legacy four-round default for old runs. */
 export const reviewCap = (lane) => lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
 
+/** Presentation only: extensions do not change the persisted base allowance. */
+export const reviewRoundLabel = (lane, round) =>
+  `${round} (base allowance ${reviewCap(lane)}; authorized extensions ${lane.review?.overrides?.length ?? 0})`;
+
 /** Every finding still open on the lane, majors first. */
 export const openFindings = (lane) =>
   (lane.review?.findings ?? []).filter((f) => f.status === 'open').sort((a, b) => SEVERITIES.indexOf(a.severity) - SEVERITIES.indexOf(b.severity));

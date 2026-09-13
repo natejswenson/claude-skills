@@ -78,6 +78,7 @@ export function buildProbeReport({ contract, trace, probed, skill, judgment = []
       probesUnbound: probed.unbound ?? [],
     },
     findings: probed.findings,
+    ...(probed.cannotDecide?.length?{cannotDecide:probed.cannotDecide}:{}),
     rejected: probed.rejected,
     judgment,
     handedToJudgment: applicable
@@ -108,6 +109,7 @@ export function renderReport({ contract, trace, probed, skill, judgment = [] }) 
 
   const out = [];
   out.push(`# eval — ${skill}`);
+  if(probed.cannotDecide?.length)out.push('', 'Unresolved evidence: '+probed.cannotDecide.map(f=>`${f.eventId}: ${f.detail}`).join('; '));
   out.push('');
   out.push(
     table(

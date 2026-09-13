@@ -121,7 +121,7 @@ function section(source, headingRe) {
  * optional source, because a skill that ships no invariants file still has a
  * SKILL.md worth grading.
  */
-export function extractContract(repo, name, { houseFile = 'CLAUDE.md' } = {}) {
+export function extractContract(repo, name, { houseFile = 'CLAUDE.md', references = [] } = {}) {
   const skillDir = join(repo, 'skills', name, 'skills', name);
   const skillMdPath = join(skillDir, 'SKILL.md');
   if (!existsSync(skillMdPath)) {
@@ -184,6 +184,16 @@ export function extractContract(repo, name, { houseFile = 'CLAUDE.md' } = {}) {
     }
   }
 
+  const referenceSources=[];
+  for(const ref of references) {
+    if(!ref.path||!ref.sha256||!ref.loadedAt)throw new Error('reference must identify the loaded file, sha256 and loading event');
+    const text=readFileSync(ref.path,'utf8'),digest=createHash('sha256').update(text).digest('hex');
+    if(digest!==ref.sha256)throw new Error('loaded contract reference hash mismatch');
+    const label=ref.label??ref.path; sources.push(label); referenceSources.push({file:label,sha256:digest,loadedAt:ref.loadedAt});
+    clauses.push(...boldClauses(text,label,{tag:'reference',severity:'high'}));
+    text.split('\n').forEach((line,i)=>{const value=norm(line.replace(/^\s*[-*]\s+/,''));if(value.length>=MIN_CLAUSE&&value.length<=MAX_CLAUSE&&isRule(value))clauses.push({id:clauseId('reference',value),tag:'reference',severity:'high',text:value,source:{file:label,line:i+1}})});
+  }
+
   // Two committed files can state the same rule; one clause, cited once.
   const seen = new Set();
   let unique = clauses.filter((c) => (seen.has(c.id) ? false : seen.add(c.id)));
@@ -201,7 +211,7 @@ export function extractContract(repo, name, { houseFile = 'CLAUDE.md' } = {}) {
 
   unique.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  return { name, sources, clauses: unique };
+  return { name, sources, clauses: unique, ...(referenceSources.length?{referenceSources}: {}) };
 }
 
 export const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };

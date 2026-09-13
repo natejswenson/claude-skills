@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createRun, saveRun } from '../lib/run.mjs';
+import { prepareCheckout } from '../lib/execution.mjs';
+import { renderFixBrief } from '../lib/reviewbrief.mjs';
+
+const captured=JSON.parse(readFileSync(new URL('../../evals/inputs/retry-366/fixer-handoff.json',import.meta.url),'utf8'));
+test('real #366 fixer receives the latest verifier mechanism, with the superseded example labeled as history',t=>{
+  const dir=mkdtempSync(join(tmpdir(),'issueflow-fixer-handoff-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  const repo=join(dir,'repo');mkdirSync(repo);
+  execFileSync('git',['init','-qb','main'],{cwd:repo});
+  execFileSync('git',['-c','user.name=test','-c','user.email=test@example.invalid','commit','--allow-empty','-qm','base'],{cwd:repo});
+  const issue={number:366,title:'Preserve category evidence',body:'Preserve evidence through ingest.'};
+  const run=createRun({repo:{path:repo,owner:'test',name:'fixture'},issue,policy:{base:'main'},host:'codex',offline:true});
+  saveRun(dir,run);prepareCheckout(dir,run,run.lanes[0],{noWorktree:true});
+  const lane=run.lanes[0];lane.pr={number:373,url:captured.reviewUrl};
+  const entry={round:captured.round,head:captured.head};
+  const render=finding=>renderFixBrief(dir,run,lane,entry,{items:[finding],checks:[],issue});
+  const text=render(captured.finding),latest=captured.finding.history.at(-1);
+  assert.equal(latest.verdict,'still-open');
+  assert.match(latest.note,/mergeThreadSources/,'real fixture must retain the missed boundary');
+  assert.ok(text.includes(latest.note),'latest verifier explanation must cross the cold dispatch');
+  assert.ok(text.includes(latest.quote),'current quote must cross the cold dispatch');
+  assert.ok(text.indexOf(latest.note)<text.indexOf(captured.finding.failure_scenario),'current evidence precedes the original report');
+  assert.match(text,/Original report \(historical\)/);
+  const first={...captured.finding,history:[],stillOpenRounds:0};
+  const initial=render(first);
+  assert.ok(initial.includes(first.failure_scenario),'first-round finding keeps its complete reproduction');
+  assert.doesNotMatch(initial,/Original report \(historical\)/);
+});

@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "base": "effa0c7259395ed2f036fa7341c6140cabc95b08",
+  "branch": "feature/issueflow-completion-improvements",
+  "suites": {
+    "issueflow": {
+      "passed": 557,
+      "failed": 0,
+      "sha256": "72efe6b1ff320a5d101d34be32a0878bed7d339b8f5c6de69f72e3fb2afb3002",
+      "localLog": "/private/tmp/issueflow-improvements-issueflow-tests.log"
+    },
+    "eval": {
+      "passed": 88,
+      "failed": 0,
+      "sha256": "8e9c1083d30adfbbebf5624c98b3daeafbd4a5ee71f6b5ed1319da74e954f44e",
+      "localLog": "/private/tmp/issueflow-improvements-eval-tests.log"
+    },
+    "skillhelp": {
+      "passed": 18,
+      "failed": 0,
+      "sha256": "388773ac57732713ed1005367ec4bc96e29c38d5d771a9770520eba7fcc7d2bb",
+      "localLog": "/private/tmp/issueflow-improvements-skillhelp-tests.log"
+    }
+  },
+  "integrationReview": {
+    "findingCount": 0,
+    "scope": "Current-main integration: branch policy, CLI wiring, packaged modules, retained tests, startup/migration/retargeting/CI/completion/cleanup",
+    "type": "independent native agent, read-only"
+  },
+  "checks": [
+    "Claude/Codex compatibility",
+    "Codex metadata drift",
+    "21 baseline declarations",
+    "Issueflow score 100",
+    "Issueflow and eval plugin lint",
+    "21 Skillhelp cards current",
+    "Issueflow and eval PRESS README regions",
+    "git diff --check"
+  ],
+  "releaseDispatched": false
+}

@@ -36,9 +36,10 @@ const readJson = (path) => {
  * `defaultBranch` is the remote's default, supplied by the caller because only
  * `gh` knows it — passing it in keeps this function pure and testable.
  */
-export function resolvePolicy(repoPath, defaultBranch = 'main', { remoteBranches = null } = {}) {
+export function resolvePolicy(repoPath, defaultBranch = 'main', { remoteBranches = null, configOverride = undefined } = {}) {
   const configPath = join(repoPath, '.github', 'shipflow.json');
-  const config = existsSync(configPath) ? readJson(configPath) : null;
+  const config = configOverride !== undefined ? configOverride : existsSync(configPath) ? readJson(configPath) : null;
+  if(configOverride === undefined && existsSync(configPath)&&!config)throw new Error('invalid repository branch policy at .github/shipflow.json; reconcile before planning');
 
   if (!config) {
     // No shipflow config, but the remote has a `dev` branch beside the

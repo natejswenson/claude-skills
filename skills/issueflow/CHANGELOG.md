@@ -5,6 +5,26 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-09-13
+
+### Added
+
+- **Runs can track the intended completion endpoint and recover interrupted work.** Durable controller ownership, explicit recovery, scoped authority and provider receipts preserve the distinction between a reviewed PR, an observed merge and a verified deployment.
+- **Verification contracts can describe package checks and generated outputs.** Schema-2 contracts support working directories, isolated builds and verified output dependencies, with preflight checks before implementation.
+- **Status and evaluation retain stronger evidence.** Heartbeats, correlated execution records and interval measurements expose observed progress and missing coverage. Lessons from the actual issue #366 retry ship with the skill.
+
+### Fixed
+
+- **Reviewers and fixers receive current evidence.** Review refreshes both PR refs, binds the diff to the observed target, and carries the latest verifier reproduction into repeated-finding fixes. Nested repository guidance remains available on both hosts.
+- **Recoverable stops preserve the run's history.** Delivered plans that fail preflight return to their author within the repair allowance; migration and amendments retain blockers, PR identity, evidence and cumulative limits. Authorized autonomous windows renew when the controller reaches its budget decision.
+- **CI and completion handoffs respect the selected endpoint.** Effective required checks, expected optional skips and retarget freshness inform the decision; CI stops resume through `next`, and draft-only exclusions survive readiness handoffs. Uncertain remote writes are reconciled before cleanup.
+- **Offline tests and evals own their controller identity.** Fixtures no longer depend on an inherited Codex or Claude session, and an unrelated continuation credential cannot take over the offline evaluator.
+
+### Compatibility
+
+- Existing schema-3/4 runs retain their original continuation behavior and evidence strength; migration stays explicit. Claude configuration paths, slash invocations and the shared Codex package remain supported.
+- The issue #366 retry reached a user-authorized merge and verified cleanup. It does not establish unattended completion, a cross-host speedup or complete usage measurements. Automatic merge remains pending where atomic target-context preconditions are unsupported.
+
 ## [0.16.0] - 2026-09-12
 
 ### Added

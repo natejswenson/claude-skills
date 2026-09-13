@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "merge": {
+    "baseRefName": "main",
+    "headRefOid": "55d403d7121c836f309799622ba7220deb0a9cc1",
+    "mergeCommit": {
+      "oid": "effa0c7259395ed2f036fa7341c6140cabc95b08"
+    },
+    "mergedAt": "2026-09-13T17:06:03Z",
+    "number": 373,
+    "state": "MERGED",
+    "url": "https://github.com/natejswenson/claude-skills/pull/373"
+  },
+  "execution": "Explicit user-directed GitHub merge with expected head; observed and reconciled afterward by Issueflow completion and finish",
+  "completion": {
+    "schema": 1,
+    "endpoint": "merged",
+    "source": "User: ok merge the pr and then open a pr for the issueflow improvments as well",
+    "excluded": [
+      "deploy",
+      "close-issue"
+    ],
+    "deployments": [],
+    "companions": [],
+    "authorizations": [
+      {
+        "source": "User: ok merge the pr and then open a pr for the issueflow improvments as well",
+        "action": "merge",
+        "repo": "natejswenson/claude-skills",
+        "pr": 373,
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "environment": null
+      }
+    ],
+    "obligations": {
+      "merge:root": {
+        "expected": {
+          "repo": "natejswenson/claude-skills",
+          "pr": 373,
+          "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+          "base": "main",
+          "adapter": "github-merge",
+          "version": 1
+        },
+        "observed": {
+          "repo": "natejswenson/claude-skills",
+          "pr": 373,
+          "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+          "base": "main",
+          "commit": "effa0c7259395ed2f036fa7341c6140cabc95b08",
+          "mergedAt": "2026-09-13T17:06:03Z"
+        }
+      }
+    },
+    "state": "complete",
+    "completedAt": "2026-09-13T17:06:42.253Z"
+  },
+  "finished": {
+    "at": "2026-09-13T17:07:36.623Z",
+    "issueClosed": false
+  },
+  "checkpoint": "https://github.com/natejswenson/claude-skills/issues/366#issuecomment-5650446897"
+}

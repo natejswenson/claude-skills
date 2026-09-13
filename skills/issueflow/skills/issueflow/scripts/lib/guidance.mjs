@@ -9,11 +9,12 @@ export function resolveGuidance(tree, files = null) {
   if (!existsSync(requestedRoot)) return [];
   const root = realpathSync(requestedRoot);
   const dirs = new Set(['.']);
-  if (files === null) {
-    const walk = (dir) => {
+  const walk = (dir) => {
       if (!existsSync(join(root, dir))) return;
       let entries;
       try {
+        const target = relative(root, realpathSync(join(root, dir)));
+        if (target === '..' || target.startsWith(`..${sep}`) || isAbsolute(target)) return;
         entries = readdirSync(join(root, dir), { withFileTypes: true });
       } catch {
         // An unrelated cache or backup subtree must not prevent a worker from
@@ -25,7 +26,8 @@ export function resolveGuidance(tree, files = null) {
         const child = join(dir, entry.name);
         dirs.add(child); walk(child);
       }
-    };
+  };
+  if (files === null) {
     walk('.');
   } else {
     for (const file of files) {
@@ -33,7 +35,11 @@ export function resolveGuidance(tree, files = null) {
       if (!path) continue;
       const rel = relative(root, resolve(root, path));
       if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error(`guidance path escapes checkout: ${path}`);
-      let dir = dirname(rel);
+      // A directory allowlist authorizes descendants too. Include that scope
+      // and its nested guidance, without traversing unrelated sibling trees.
+      const directory = path.endsWith('/');
+      let dir = directory ? rel : dirname(rel);
+      if (directory) { dirs.add(dir); walk(dir); }
       while (dir !== '.') { dirs.add(dir); dir = dirname(dir); }
     }
   }
