@@ -5,7 +5,7 @@ name: codex marketplace
 # both catalogs and the Claude compatibility gate.
 on:
   pull_request:
-    branches: [dev, main, 'feature/**']
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 permissions:

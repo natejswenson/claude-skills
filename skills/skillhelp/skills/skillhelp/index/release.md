@@ -9,17 +9,17 @@
 
 ## Setup
 
-- **Claude Code:** Allow gh and shipflow to access the target repository. `skills/release/README.md:88`
-- **Codex:** Use the same authenticated gh CLI and shipflow installation; Claude app connections are not imported. `skills/release/README.md:89`
-- **Personal data:** Release configuration remains in the target repository; no private ~/.claude/release store is required. `skills/release/README.md:90`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/release/README.md:92`
-- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/release/README.md:94`
-- [shipflow](../shipflow) **≥ 0.4.0** — every step that changes anything is one of its release-* commands. This skill resolves it, gates its version, and shapes its output; it reimplements none of it. `skills/release/README.md:95`
-- gh, authenticated with write access to the repo being released. `skills/release/README.md:98`
-- A repo with .github/shipflow.json. One with no release.components block gets a single component inferred from its root, so a single-project repo needs no extra configuration. `skills/release/README.md:99`
-- **shipflow ≥ 0.4.0.** Every mutating step is one of its release-* commands, which did not exist before then. release.js checks this at startup and stops with a plain message rather than failing obscu… `skills/release/skills/release/SKILL.md:176`
-- **gh, authenticated** with repo write access. Every check is a gh API call. `skills/release/skills/release/SKILL.md:179`
-- **A repo with .github/shipflow.json.** A repo with no release.components block gets one component inferred from its root, so a single-project repo needs no extra config. `skills/release/skills/release/SKILL.md:180`
+- **Claude Code:** Allow gh and shipflow to access the target repository. `skills/release/README.md:87`
+- **Codex:** Use the same authenticated gh CLI and shipflow installation; Claude app connections are not imported. `skills/release/README.md:88`
+- **Personal data:** Release configuration remains in the target repository; no private ~/.claude/release store is required. `skills/release/README.md:89`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/release/README.md:91`
+- Node 18+ (the bundled scripts are ESM, no dependencies). `skills/release/README.md:93`
+- [shipflow](../shipflow) **≥ 0.4.0** — every step that changes anything is one of its release-* commands. This skill resolves it, gates its version, and shapes its output; it reimplements none of it. `skills/release/README.md:94`
+- gh, authenticated with write access to the repo being released. `skills/release/README.md:97`
+- A repo with .github/shipflow.json. One with no release.components block gets a single component inferred from its root, so a single-project repo needs no extra configuration. `skills/release/README.md:98`
+- **shipflow ≥ 0.6.0.** Every mutating step is one of its release-* commands, which did not exist before then. release.js checks this at startup and stops with a plain message rather than failing obscu… `skills/release/skills/release/SKILL.md:195`
+- **gh, authenticated** with repo write access. Every check is a gh API call. `skills/release/skills/release/SKILL.md:198`
+- **A repo with .github/shipflow.json.** A repo with no release.components block gets one component inferred from its root, so a single-project repo needs no extra config. `skills/release/skills/release/SKILL.md:199`
 - Requires Node >=18 (package.json engines). `skills/release/skills/release/package.json:33`
 
 ## Usage
@@ -28,21 +28,21 @@
 - Cutting a release is rarely the hard part — deciding *what* the release is, is. Which bump. What the notes say. Whether the version files agree. Whether the tag actually got cut, or whether a green c… `skills/release/README.md:15`
 - Say **"release devlog"** and this reads the commits on main since devlog-v0.13.0, proposes a bump with its reason, drafts the CHANGELOG entry for you to rewrite, and then drives the whole path — bump… `skills/release/README.md:19`
 - Two things it refuses to do quietly: `skills/release/README.md:26`
-- **It names the collateral.** A dev → main promotion is one merge of the whole branch and cannot be made selective, so releasing one component releases every other one sitting bumped-but-untagged. Tha… `skills/release/README.md:28`
-- **It will not call a release done without the tag.** A dispatched workflow exits 0 for a run that fails a minute later. A promotion can merge while the release job errors. The tag, fetched from origi… `skills/release/README.md:32`
-- Path — What it provides `skills/release/README.md:38`
-- skills/release/SKILL.md — What the agent reads: triggers, the flow, and the one rule. `skills/release/README.md:40`
-- skills/release/scripts/ — The deterministic half — preflight, changelog-draft, prepare, cut. `skills/release/README.md:41`
-- skills/release/references/anatomy.md — The shape of a release run — the four stages, what each one proves, and what may never be reported as a release. `skills/release/README.md:42`
-- skills/release/references/changelog.md — The Keep-a-Changelog house style every entry follows, and the extractor in _release.yml it has to survive. `skills/release/README.md:43`
-- skills/release/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/release/README.md:44`
+- **It names pending work.** GitHub flow releases directly from main without a dev branch or promotion. Two-branch consumers still see every collateral bump a promotion moves to main. Those components… `skills/release/README.md:28`
+- **It will not call a release done without the tag.** A dispatched workflow exits 0 for a run that fails a minute later. A promotion can merge while the release job errors. The tag, fetched from origi… `skills/release/README.md:31`
+- Path — What it provides `skills/release/README.md:37`
+- skills/release/SKILL.md — What the agent reads: triggers, the flow, and the one rule. `skills/release/README.md:39`
+- skills/release/scripts/ — The deterministic half — preflight, changelog-draft, prepare, cut. `skills/release/README.md:40`
+- skills/release/references/anatomy.md — The shape of a release run — the four stages, what each one proves, and what may never be reported as a release. `skills/release/README.md:41`
+- skills/release/references/changelog.md — The Keep-a-Changelog house style every entry follows, and the extractor in _release.yml it has to survive. `skills/release/README.md:42`
+- skills/release/skill-invariants.json — The prose guardrails and the baseline eval declaration. `skills/release/README.md:43`
 
 ## Commands
 
 - node scripts/release.js preflight --repo <path> [--component <name>] `skills/release/skills/release/SKILL.md:70`
 - node scripts/release.js changelog-draft --repo <path> --component <name> --version <x.y.z> `skills/release/skills/release/SKILL.md:114`
 - node scripts/release.js prepare --repo <path> --component <name> \ `skills/release/skills/release/SKILL.md:123`
-- node scripts/release.js cut --repo <path> --component <name> \ `skills/release/skills/release/SKILL.md:147`
+- node scripts/release.js cut --repo <path> --component <name> \ `skills/release/skills/release/SKILL.md:159`
 - npm run audit — npm audit --audit-level=moderate `skills/release/skills/release/package.json:38`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/release/skills/release/package.json:40`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/release/skills/release/package.json:39`
@@ -51,17 +51,17 @@
 
 ## Architecture
 
-- scripts/release.js — the CLI: preflight, changelog-draft, prepare, cut `skills/release/skills/release/SKILL.md:211`
-- references/anatomy.md — the four stages of a run, what each proves, and what may never be reported as a release `skills/release/skills/release/SKILL.md:212`
-- references/changelog.md — the Keep-a-Changelog house style, and the extractor in _release.yml an entry has to survive `skills/release/skills/release/SKILL.md:213`
-- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/release/skills/release/SKILL.md:217`
+- scripts/release.js — the CLI: preflight, changelog-draft, prepare, cut `skills/release/skills/release/SKILL.md:230`
+- references/anatomy.md — the four stages of a run, what each proves, and what may never be reported as a release `skills/release/skills/release/SKILL.md:231`
+- references/changelog.md — the Keep-a-Changelog house style, and the extractor in _release.yml an entry has to survive `skills/release/skills/release/SKILL.md:232`
+- skill-invariants.json names what must not silently disappear, declares which half of this skill is code, and lists the baseline eval set. The baseline is pinned against a real run — see its update_co… `skills/release/skills/release/SKILL.md:236`
 - Deterministic: read every component's release state, blockers and collateral — node scripts/release.js preflight `skills/release/skills/release/skill-invariants.json:51`
 - Deterministic: group the commits since the last tag into changelog sections — node scripts/release.js changelog-draft `skills/release/skills/release/skill-invariants.json:55`
 - Deterministic: write the version into every version file and splice the CHANGELOG — node scripts/release.js prepare `skills/release/skills/release/skill-invariants.json:59`
 - Deterministic: drive the branch to a tag and read the tag back from the remote — node scripts/release.js cut `skills/release/skills/release/skill-invariants.json:63`
 - Model judgment: which bump this release actually is — commit types are a suggestion, not a decision — only a person knows whether a refactor broke someone, and whether an 0.x component is ready to cl… `skills/release/skills/release/skill-invariants.json:69`
 - Model judgment: what the CHANGELOG entry says — grouped commit subjects are raw material; a release note explains why a change was made and what breaks, which no commit message reliably records `skills/release/skills/release/skill-invariants.json:73`
-- Model judgment: whether the collateral releases are acceptable — a promotion is atomic, so releasing one component releases every other bumped one — only the user can say whether shipping those today… `skills/release/skills/release/skill-invariants.json:77`
+- Model judgment: whether the collateral releases are acceptable — a two-branch promotion moves every bumped component to main, but each still requires a separate explicit release dispatch; GitHub flow… `skills/release/skills/release/skill-invariants.json:77`
 
 ## Troubleshooting
 
@@ -73,11 +73,11 @@
 - Never ask about anything in that table — The whole preflight table is fact: the version on main, the last tag, the unreleased commit count, the blockers. Asking the user to confirm any of it is the U… `skills/release/skills/release/skill-invariants.json:34`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/release/skills/release/skill-invariants.json:39`
 - it never reimplements a single thing shipflow does — Every mutating step belongs to shipflow; this skill resolves the binary, gates its version, and shapes its output. The moment release.js grows its… `skills/release/skills/release/skill-invariants.json:44`
-- **A release is done only when the tag is read back from the remote — a dispatched workflow, a merged PR and a green check are all still not done, and none of them may be reported as a release.** `skills/release/skills/release/SKILL.md:186`
-- **Never run cut without naming the collateral list to the user first.** `skills/release/skills/release/SKILL.md:189`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/release/skills/release/SKILL.md:190`
-- **shipflow-too-old** — the installed shipflow predates the release-* commands. Say the version found and the version needed. Do not attempt the steps by hand with gh; the guards are what make this sa… `skills/release/skills/release/SKILL.md:195`
-- **component-files-dirty** — this component's own version files or CHANGELOG have uncommitted edits. Unrelated dirt elsewhere is reported as a note and is deliberately not a blocker. `skills/release/skills/release/SKILL.md:198`
-- **version-unreadable-on-main** — the version files disagree with each other. A disagreement is a hard refusal, never a "pick the highest": releasing from a disagreeing set tags one version and ships… `skills/release/skills/release/SKILL.md:201`
-- **Checks failed on the release PR** — cut stops and names them. Fix them and call cut again; it resumes from live state, so nothing needs undoing. `skills/release/skills/release/SKILL.md:204`
-- **Never claim a result you did not observe.** Say what you verified and what you `skills/release/skills/release/SKILL.md:190`
+- **A release is done only when the tag is read back from the remote — a dispatched workflow, a merged PR and a green check are all still not done, and none of them may be reported as a release.** `skills/release/skills/release/SKILL.md:205`
+- **Never run cut without naming the collateral list to the user first.** `skills/release/skills/release/SKILL.md:208`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/release/skills/release/SKILL.md:209`
+- **shipflow-too-old** — the installed shipflow predates the release-* commands. Say the version found and the version needed. Do not attempt the steps by hand with gh; the guards are what make this sa… `skills/release/skills/release/SKILL.md:214`
+- **component-files-dirty** — this component's own version files or CHANGELOG have uncommitted edits. Unrelated dirt elsewhere is reported as a note and is deliberately not a blocker. `skills/release/skills/release/SKILL.md:217`
+- **version-unreadable-on-main** — the version files disagree with each other. A disagreement is a hard refusal, never a "pick the highest": releasing from a disagreeing set tags one version and ships… `skills/release/skills/release/SKILL.md:220`
+- **Checks failed on the release PR** — cut stops and names them. Fix them and call cut again; it resumes from live state, so nothing needs undoing. `skills/release/skills/release/SKILL.md:223`
+- **Never claim a result you did not observe.** Say what you verified and what you `skills/release/skills/release/SKILL.md:209`

@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "phase": "pre-cutover-read-only",
+  "repository": "natejswenson/claude-skills",
+  "capturedAt": "2026-09-12T20:38:37.993656+00:00",
+  "sourceAuditHash": "46c82d298d3b81d9c104892095dee0ef844d951bdce4079c881dddaee91fad01",
+  "branches": {
+    "main": "d5e40e27bd016928471e82716b7587e90e8b30b0",
+    "dev": "60ec51dd5d20c6d8280ad0ca7c730d44240bcf2c"
+  },
+  "uniqueDevCommits": 1,
+  "openPRs": [
+    {
+      "number": 318,
+      "base": "feature/issue-271-ghostwriter-x-codex-radar",
+      "head": "feature/issue-271-codex-release-facts-brochure"
+    },
+    {
+      "number": 317,
+      "base": "dev",
+      "head": "feature/issue-271-ghostwriter-x-codex-radar"
+    },
+    {
+      "number": 315,
+      "base": "dev",
+      "head": "feature/issueflow-migrate-approvals"
+    }
+  ],
+  "pendingReminderCount": 57,
+  "components": [
+    {
+      "name": "appletv",
+      "versionOnMain": "0.1.1",
+      "tag": "appletv-v0.1.1",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "brandreport",
+      "versionOnMain": "0.1.0",
+      "tag": "brandreport-v0.1.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "city-report",
+      "versionOnMain": "0.4.0",
+      "tag": "city-report-v0.4.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "devlog",
+      "versionOnMain": "0.14.1",
+      "tag": "devlog-v0.14.1",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "eval",
+      "versionOnMain": "0.3.0",
+      "tag": "eval-v0.3.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "ghfactory",
+      "versionOnMain": "0.2.1",
+      "tag": "ghfactory-v0.2.1",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "ghostwriter",
+      "versionOnMain": "0.23.0",
+      "tag": "ghostwriter-v0.23.0",
+      "tagExists": true,
+      "changedSinceTag": false,
+      "pending": false
+    },
+    {
+      "name": "ghostwriter-x",
+      "versionOnMain": "0.2.1",
+      "tag": "ghostwriter-x-v0.2.1",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "github-stats",
+      "versionOnMain": "0.1.1",
+      "tag": "github-stats-v0.1.1",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "gmailtriage",
+      "versionOnMain": "0.7.0",
+      "tag": "gmailtriage-v0.7.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "issuecreator",
+      "versionOnMain": "0.1.0",
+      "tag": "issuecreator-v0.1.0",
+      "tagExists": true,
+      "changedSinceTag": false,
+      "pending": false
+    },
+    {
+      "name": "issueflow",
+      "versionOnMain": "0.16.0",
+      "tag": "issueflow-v0.16.0",
+      "tagExists": true,
+      "changedSinceTag": false,
+      "pending": false
+    },
+    {
+      "name": "netwatch",
+      "versionOnMain": "0.2.0",
+      "tag": "netwatch-v0.2.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "pluginsync",
+      "versionOnMain": "0.1.0",
+      "tag": "pluginsync-v0.1.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "press",
+      "versionOnMain": "0.10.0",
+      "tag": "press-v0.10.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "release",
+      "versionOnMain": "0.2.0",
+      "tag": "release-v0.2.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "resume",
+      "versionOnMain": "2.0.0",
+      "tag": "resume-v2.0.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "shipflow",
+      "versionOnMain": "0.6.0",
+      "tag": "shipflow-v0.6.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "shipreport",
+      "versionOnMain": "0.2.0",
+      "tag": "shipreport-v0.2.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "skillfactory",
+      "versionOnMain": "0.4.0",
+      "tag": "skillfactory-v0.4.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    },
+    {
+      "name": "skillhelp",
+      "versionOnMain": "0.1.0",
+      "tag": "skillhelp-v0.1.0",
+      "tagExists": true,
+      "changedSinceTag": true,
+      "pending": true
+    }
+  ],
+  "settings": {
+    "default_branch": "main",
+    "allow_auto_merge": true,
+    "allow_squash_merge": true,
+    "allow_merge_commit": true,
+    "allow_rebase_merge": true,
+    "delete_branch_on_merge": true
+  },
+  "requiredChecks": [
+    "ci / devlog",
+    "ci / resume",
+    "ci / ghostwriter",
+    "ci / github-stats",
+    "ci / ghostwriter-x",
+    "ci / city-report",
+    "ci / shipflow",
+    "ci / press",
+    "ci / ghfactory",
+    "ci / skillfactory",
+    "ci / eval",
+    "ci / release",
+    "ci / pluginsync",
+    "ci / issueflow",
+    "ci / shipreport",
+    "ci / gmailtriage",
+    "ci / skillhelp",
+    "ci / brandreport",
+    "ci / netwatch"
+  ],
+  "rulesetCount": 0,
+  "activeRunCount": 0,
+  "renderedWorkflowHash": "c3d9150170792d69390ad4816e83b1a4e7340da55369816b3fa77c6ebc287174",
+  "execution": "not performed; requires merged code and separate authorization"
+}
