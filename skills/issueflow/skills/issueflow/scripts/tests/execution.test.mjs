@@ -298,8 +298,8 @@ test('missing in-flight staging reports unexported work and never recreates appr
 
 test('unapproved roots and changed ownership refuse before dispatch', () => {
   const { dir, source, workspaceRoot, run } = fixture();
-  assert.throws(() => prepareExecution(dir, run, { workspaceRoot: join(source, '.git') }), /approved workspace root/);
-  assert.throws(() => prepareExecution(dir, run, { workspaceRoot: source }), /approved workspace root/);
+  assert.throws(() => prepareExecution(dir, run, { workspaceRoot: join(source, '.git') }), /unsupported execution storage layout/);
+  assert.throws(() => prepareExecution(dir, run, { workspaceRoot: source }), /unsupported execution storage layout/);
   prepareExecution(dir, run, { workspaceRoot });
   writeFileSync(join(run.execution.path, 'owner.json'), '{}');
   assert.throws(() => prepareExecution(dir, run), /mismatched execution owner/);

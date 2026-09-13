@@ -138,3 +138,15 @@ stage cannot drift between what it is told to do and what it is checked for,
 because both come from the same object — and the corpus baseline goes red if
 any declaration loses a field, since a state machine missing a stage still
 renders as a complete-looking board.
+
+Stage briefs start with root guidance until paths are known. Plan reviewers use
+the proposed contract scope; implementers use their approved lane scope. Workers
+load applicable nested instructions before inspecting newly selected paths.
+Directory allowlists include descendant guidance, but unrelated fixture and
+scratch instructions do not become repository-wide rules.
+
+A repeated finding's latest registered verifier quote and explanation must lead
+the fixer handoff. Preserve the original report as labeled history; it may now
+describe a passing example while the same defect remains in another boundary.
+The orchestrator does not reconstruct this evidence or decide its disposition.
+See `run-lessons.md` for the #366 reproduction and permanent regression.

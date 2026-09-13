@@ -1,3 +1,4 @@
+import { assertRepairComplete, reconcilePlanFindings } from './plan-repair.mjs';
 import { activePath, readDelivery } from './execution.mjs';
 /**
  * The red team, declared once — the reviewer contract, the finding shape,
@@ -182,7 +183,8 @@ export function parseFindings(text) {
     if (!DISPOSITIONS.includes(disposition)) return { error: `${where}.disposition must be one of ${DISPOSITIONS.join('|')}` };
     if (typeof f.cite !== 'string' || !f.cite.trim()) return { error: `${where}.cite is missing — a finding that cites nothing is an opinion` };
     if (typeof f.text !== 'string' || !f.text.trim()) return { error: `${where}.text is missing` };
-    findings.push({ severity: f.severity, disposition, cite: f.cite.trim().replace(/^`+|`+$/g, ''), text: f.text.trim() });
+    if (f.id != null && (typeof f.id !== 'string' || !/^PF-[a-f0-9-]{36}$/.test(f.id))) return { error: `${where}: invalid stable finding id` };
+    findings.push({ ...(f.id ? { id: f.id } : {}), ...(f.reopeningReason ? { reopeningReason: f.reopeningReason } : {}), severity: f.severity, disposition, cite: f.cite.trim().replace(/^`+|`+$/g, ''), text: f.text.trim() });
   }
   const notExamined = Array.isArray(data.notExamined)
     ? data.notExamined.map((s) => String(s).trim()).filter(Boolean)
@@ -192,7 +194,7 @@ export function parseFindings(text) {
   if (notExamined === null) return { error: 'has no `notExamined` list — a review names what nobody looked at' };
   const verdict = typeof data.verdict === 'string' ? data.verdict.trim().toLowerCase() : null;
   if (verdict !== 'pass' && verdict !== 'blocked' && verdict !== 'decision') return { error: '`verdict` must be "pass", "blocked" or "decision"' };
-  return { findings, notExamined, verdict };
+  return { findings, notExamined, verdict, ...(data.resolutions != null ? { resolutions: data.resolutions } : {}) };
 }
 
 /**
@@ -285,7 +287,7 @@ export function markReviewBriefed(dir, run, step, round, now = () => new Date().
   return run;
 }
 
-export function registerReview(dir, run, step, { now = () => new Date().toISOString() } = {}) {
+export function registerReview(dir, run, step, { now = () => new Date().toISOString(), workdir = null } = {}) {
   if (!reviewable(step)) {
     throw new RunError(`cannot review ${step.key}: only the plan is red-teamed on disk — code is reviewed on its pull request`);
   }
@@ -325,7 +327,7 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
   }
 
   const artifactText = readDelivery(dir, artifact, run, { dispatched: false });
-  const roots = [run.repo.path, activePath(dir, step.laneSlug ?? 'shared'), join(dir, step.laneSlug ?? 'shared')];
+  const roots = [workdir ?? run.repo.path, activePath(dir, step.laneSlug ?? 'shared'), join(dir, step.laneSlug ?? 'shared')];
   const aliases = (run.execution?.priorRoots ?? []).map((root) => [
     root === run.execution.owner.dir ? root : join(root, 'artifacts'), activePath(dir),
   ]);
@@ -339,6 +341,7 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
     }
   }
 
+  const ledger = run.schema >= 5 ? reconcilePlanFindings(run, findings, parsed.resolutions ?? [], { round, artifactSha: sha256OfFile(artifact), responses: assertRepairComplete(run, artifactText) }) : null;
   const derived = deriveVerdict(findings);
   if (declared !== derived) {
     throw new RunError(
@@ -364,6 +367,7 @@ export function registerReview(dir, run, step, { now = () => new Date().toISOStr
   writeFileSync(verdictPath(dir, step, round), `${JSON.stringify(verdict, null, 2)}\n`);
 
   // `at` lives on the run entry only — the verdict file stays timestamp-free.
+  if (ledger) run.harness.planFindings = ledger;
   step.stage.review.rounds.push({ ...verdict, items: findings, notExamined, at: now() });
   step.stage.review.feedback = derived === 'blocked' ? verdict.review : null;
   saveRun(dir, run);

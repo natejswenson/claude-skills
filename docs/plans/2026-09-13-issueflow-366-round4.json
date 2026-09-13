@@ -1,0 +1,505 @@
+{
+  "schema": 1,
+  "capturedAt": "2026-09-13T16:39:00.166932+00:00",
+  "outcome": "code-review-converged-completion-ci-blocked",
+  "issue": "https://github.com/natejswenson/claude-skills/issues/366",
+  "previousTestRepository": "natejswenson/fuzzy-boom-snicker",
+  "pr": {
+    "url": "https://github.com/natejswenson/claude-skills/pull/373",
+    "headRefOid": "55d403d7121c836f309799622ba7220deb0a9cc1",
+    "baseRefName": "main",
+    "state": "OPEN",
+    "isDraft": true,
+    "mergedAt": null
+  },
+  "review": {
+    "registeredRound": 4,
+    "verdict": "converged",
+    "url": "https://github.com/natejswenson/claude-skills/pull/373#pullrequestreview-5191354710",
+    "openMajors": 0,
+    "fixedFinding": "f-a32800bf",
+    "baseAllowance": 2,
+    "overrides": [
+      {
+        "round": 3,
+        "reason": "User authorized continuation and one additional independent review round after the two-round exhaustion; verify repair 24f4886 and retain prior findings and history.",
+        "at": "2026-09-13T15:54:59.828Z"
+      },
+      {
+        "round": 4,
+        "reason": "User authorized round four by replying continue to the request to independently verify repair 55d403d; retain all prior reviews, findings, and cumulative budget.",
+        "at": "2026-09-13T16:23:05.848Z"
+      }
+    ],
+    "laneEndpointConverged": false
+  },
+  "completion": {
+    "schema": 1,
+    "endpoint": "reviewed-pr",
+    "source": "User requested actual Issueflow retry #366; repository requires draft until merge authorization",
+    "excluded": [
+      "ready",
+      "merge",
+      "deploy",
+      "close-issue"
+    ],
+    "deployments": [],
+    "companions": [],
+    "authorizations": [],
+    "obligations": {},
+    "state": "pending"
+  },
+  "ci": {
+    "observedAt": "2026-09-13T16:35:46.873Z",
+    "completionGateReached": true,
+    "remoteRequiredChecks": 21,
+    "allRemoteRequiredPassing": true,
+    "providerRowCounts": {
+      "FAILURE": 1,
+      "SUCCESS": 29,
+      "SKIPPED": 23
+    },
+    "controllerIdentityCounts": {
+      "skipped": 3,
+      "success": 29,
+      "failure": 1
+    },
+    "decision": {
+      "ready": false,
+      "blockers": [
+        "CI is not passing: label-release-pending (skipped)",
+        "CI is not passing: auto-merge (failure)",
+        "CI is not passing: release (skipped)",
+        "CI is not passing: propagate (skipped)"
+      ],
+      "limitations": [],
+      "policyHash": "bd49ae406e1f13c1e81cfe303cedba73c8e9ab379994c1f1c310829c26779416",
+      "context": {
+        "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+        "baseRef": "main",
+        "baseSha": "900b735fe46a23a5575adfebd95abea6e9a49674",
+        "mergeSha": "610aa9fd9af8e27b4774a53313c1c6ee4072b2e2",
+        "observedAt": "2026-09-13T16:35:46.873Z"
+      }
+    },
+    "providerSnapshot": "/private/tmp/issueflow-366-live-20260913/captures/round4/pr-373.json",
+    "policy": {
+      "mode": "required",
+      "requiredChecks": [
+        "ci / gmailtriage",
+        "ci / skillhelp"
+      ]
+    }
+  },
+  "verification": {
+    "batchId": "4e6acf72-dd7a-44da-bbc8-95d5d4ea0551",
+    "head": "55d403d7121c836f309799622ba7220deb0a9cc1",
+    "checks": [
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/d996836c-661e-491f-87d0-4a0485b18fc0/receipt.json",
+        "hash": "72f173a0782181ab5a6d550b58221dd63328948eef98033129e992aedbe8b193",
+        "check": "T1",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/7618151b-b24b-4701-ae07-eaa1643c055e/receipt.json",
+        "hash": "49d33f63ec4b45fb49fe3eb1071aae51257e4d6927ab66544ae02c6e71214e54",
+        "check": "T2",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/1973e0e2-7420-44c6-92a7-2719ab8eb697/receipt.json",
+        "hash": "0c0e9319f410c1166d261794dc47ad796c35a3ad3787fdeaf2f5f34a4e034b55",
+        "check": "T3",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/24095540-b573-4b74-a163-de009e4d93b6/receipt.json",
+        "hash": "2a4a1993769ed60307cfee26ac8e270ee869a6adcb957f6da9ada21fee9617d5",
+        "check": "T4",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/d3fed033-2cc6-47d1-bb99-fd4a26c0183e/receipt.json",
+        "hash": "4d5846cf9dd5ae06a886c4e6f5d4b2c69a415435ae16d8b307c29a1acad95a4f",
+        "check": "T5",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/8e5bbceb-9b22-4cf3-8e9b-a8801063581f/receipt.json",
+        "hash": "1c9271c89934469695d1ae21f6b2f6b2d342b79cacbed446e84e4f299ebb05e5",
+        "check": "T6",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/c403307c-5d7b-4205-a5f8-7b0d8e35678f/receipt.json",
+        "hash": "9e23603a72837b10439f68bfe4d032abb6b0ac2a5dd6844d357c8d45f2802671",
+        "check": "T7",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/4b5af989-b2e4-4e28-9f16-dfa19bb199b3/receipt.json",
+        "hash": "81caa4d54d0237e491d9dd1d077d315dc321a65fc21c9b668150a011150f9c4e",
+        "check": "T8",
+        "passed": true
+      },
+      {
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/4e6acf72-dd7a-44da-bbc8-95d5d4ea0551/0d119c51-2f2d-4114-b8ca-e985502a14a5/receipt.json",
+        "hash": "cfa508753b7d58b771253ebc823845bd862494ef81f77fae36defb2bc85ad0dc",
+        "check": "T9",
+        "passed": true
+      }
+    ],
+    "passed": 9,
+    "gmailtriageTests": 131,
+    "skillhelpTests": 18,
+    "reusedUnchangedReceipts": true
+  },
+  "nativeWorkers": {
+    "thisRound": {
+      "dispatched": 2,
+      "completed": 2,
+      "cancelled": 0
+    },
+    "retryTotal": {
+      "dispatched": 17,
+      "completed": 13,
+      "cancelled": 4
+    },
+    "rawSourcesIncludingRoot": 18,
+    "dollarCost": null,
+    "completeTokenTotal": null
+  },
+  "controller": {
+    "reviewSource": "d9e3ebec4fc02fc56f3c25c51f45493c148177d00fee2d97e13d6e0f1357b8fd",
+    "handoffSource": "555fec1d10348922ad127bfe960315f029103f9efd32d3edaa0fd7a0a7992479",
+    "sourceReleased": false,
+    "tests": {
+      "passed": 555,
+      "failed": 0,
+      "log": "/private/tmp/issueflow-366-live-20260913/evals/round4-final-suite.log"
+    },
+    "checks": [
+      "Claude/Codex compatibility",
+      "Codex metadata drift",
+      "plugin lint",
+      "skill score 100",
+      "21 baseline declarations",
+      "21 Skillhelp cards current"
+    ],
+    "handoffReplay": "/private/tmp/issueflow-366-live-20260913/evals/round4-ci-handoff-replay.json",
+    "corrections": [
+      "Review briefs/registration separate actual round, base allowance, extensions",
+      "CI stops resume through next, preserving draft exclusions"
+    ]
+  },
+  "eval": {
+    "machineFindings": 0,
+    "judgmentFindings": 0,
+    "coverage": {
+      "examined": 2,
+      "unexamined": 103,
+      "probesApplied": [
+        "pr-into-main",
+        "unobserved-test-claim"
+      ],
+      "probesUnbound": [
+        "announce-once",
+        "brand-bypass",
+        "done-without-freeze",
+        "file-contents-in-chat",
+        "pipeline-reshaping",
+        "question-budget"
+      ]
+    },
+    "clauses": 105,
+    "events": 924,
+    "sources": 18,
+    "drops": {
+      "unparsed": 0,
+      "bookkeeping": 3972,
+      "thinking": 622,
+      "inherited": 0
+    },
+    "scope": {
+      "rootSession": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+      "minRootRawLine": 2710,
+      "childSources": "all explicit retry children",
+      "fullBundleEvents": 1603
+    },
+    "trace": "/private/tmp/issueflow-366-live-20260913/captures/round4/trace.json",
+    "capture": {
+      "capturedAt": "2026-09-13T16:36:22.799988+00:00",
+      "rootScopeStartsAtRawLine": 2710,
+      "entries": [
+        {
+          "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+          "agentPath": null,
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/12/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "sha256": "cd73ed7834ea486a6843a285152d2d096e4e3574583bd4363f683f7f1a48d49c",
+          "lines": 4770
+        },
+        {
+          "sessionId": "01a09b85-63c3-7311-8f3f-781b560603d7",
+          "agentPath": "/root/issue366_r3_fixer_repaired_handoff",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-06-45-01a09b85-63c3-7311-8f3f-781b560603d7.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T11-06-45-01a09b85-63c3-7311-8f3f-781b560603d7.jsonl",
+          "sha256": "e1eeeaba1f48f4811dc869fee6769a70fb7c6e040f0dd841ffa302cb05c48f96",
+          "lines": 148
+        },
+        {
+          "sessionId": "01a09b2c-9c03-7d03-a141-4942992e79f3",
+          "agentPath": "/root/issue366_r2_fixer",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "sha256": "3944fdfa1985083df6fcde9b9d31e090616ed75e03018ae0ca0ee69532744b1a",
+          "lines": 96
+        },
+        {
+          "sessionId": "01a09b12-2727-72d0-acfc-86bcf07a88ab",
+          "agentPath": "/root/issue366_retry_plan_repair",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "sha256": "2ea10896f17e6467d2ce8309f5cde7daafc9cfeef7d72a519dba57e3a6289e9d",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b94-7498-71a3-b595-df276e574533",
+          "agentPath": "/root/issue366_r4_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-23-12-01a09b94-7498-71a3-b595-df276e574533.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T11-23-12-01a09b94-7498-71a3-b595-df276e574533.jsonl",
+          "sha256": "cf70733714ba2e2eee9c5518f9452181ee72c3468e5e6bde73c496409435640e",
+          "lines": 56
+        },
+        {
+          "sessionId": "01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b",
+          "agentPath": "/root/issue366_r3_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T10-55-06-01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T10-55-06-01a09b7a-b97b-70e0-a02a-bb9a08ac9c0b.jsonl",
+          "sha256": "2c2aa50afc7242044821b771e5d382e5c230465dcdc7f4773acef4b6746bfb7d",
+          "lines": 60
+        },
+        {
+          "sessionId": "01a09b7d-43dc-7793-8a36-8345e4bbe260",
+          "agentPath": "/root/issue366_r3_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T10-57-52-01a09b7d-43dc-7793-8a36-8345e4bbe260.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T10-57-52-01a09b7d-43dc-7793-8a36-8345e4bbe260.jsonl",
+          "sha256": "8a75dd487ffcc78fce8ce9492474bfb54f5d5157a7d5584238445f5de0bad27c",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164",
+          "agentPath": "/root/issue366_r1_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "sha256": "1314fac893a623ffdc6e00a81e0f68e5bb6028ed480715c789d1827267fe1bbd",
+          "lines": 66
+        },
+        {
+          "sessionId": "01a09b28-d263-7140-8041-5c58a7f08b68",
+          "agentPath": "/root/issue366_r2_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "sha256": "453a3bbf02ce6c0dfe45cb4efa649bbaef4d6856de07a8ee6e3403435f76a482",
+          "lines": 67
+        },
+        {
+          "sessionId": "01a09b18-27f5-7060-acaa-1517f25b2223",
+          "agentPath": "/root/issue366_retry_implement",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "sha256": "c7c8fb7547acc71874e697c913315862c06c501903e08751c023376829e7bf13",
+          "lines": 128
+        },
+        {
+          "sessionId": "01a09b15-1e90-7441-8aa2-2c39cf9640a0",
+          "agentPath": "/root/issue366_retry_plan_review",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "sha256": "9e4605aa03d8a2ba14e58afc6294109f7576cac5cbcf3e4dd755ce0d69f5ea57",
+          "lines": 71
+        },
+        {
+          "sessionId": "01a09b1f-565a-7460-98ef-3de67ce4220f",
+          "agentPath": "/root/issue366_r1_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "sha256": "4281ef4997f3bb81225a0ff3df620ad4656707d75fec644b5240dddfc0cc01b2",
+          "lines": 76
+        },
+        {
+          "sessionId": "01a09b98-86ff-7a43-b471-dd7a29d0a1d7",
+          "agentPath": "/root/issue366_r4_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-27-39-01a09b98-86ff-7a43-b471-dd7a29d0a1d7.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T11-27-39-01a09b98-86ff-7a43-b471-dd7a29d0a1d7.jsonl",
+          "sha256": "1a84d50121ebb469776b27414fe57d0036f00a000193a41648f268ae833d72f7",
+          "lines": 65
+        },
+        {
+          "sessionId": "01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2",
+          "agentPath": "/root/issue366_retry_plan",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "sha256": "a3504d15fb254a7b7c37f3cab35c2f2966c33b26b49ff7a7059a172667c27283",
+          "lines": 181
+        },
+        {
+          "sessionId": "01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2",
+          "agentPath": "/root/issue366_r1_finder3",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "sha256": "428e2ba859d0a761fde30b97fee321915c2dd067060295d8d3802aab11bf239b",
+          "lines": 89
+        },
+        {
+          "sessionId": "01a09b80-235d-76b3-aff5-18ab41dca569",
+          "agentPath": "/root/issue366_r3_fixer",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T11-01-01-01a09b80-235d-76b3-aff5-18ab41dca569.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T11-01-01-01a09b80-235d-76b3-aff5-18ab41dca569.jsonl",
+          "sha256": "530486b2226b62a3bf9452e8a5b80bd3730f92e8661cfb1f53e1c4aac0f950ff",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b25-d334-7763-990d-9445870beb7e",
+          "agentPath": "/root/issue366_r2_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "sha256": "69f0279f120ba4b7b612bd27297ccae10aef38555ca1fad864d5ba004854a1c2",
+          "lines": 69
+        },
+        {
+          "sessionId": "01a09b25-ebf0-7f92-9981-197e66d74234",
+          "agentPath": "/root/issue366_r2_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "sha256": "71e9783cb1fda6447e90585235a5e2c4a22ff381d38d0a4b0075e0daa31bc681",
+          "lines": 63
+        }
+      ]
+    },
+    "anchors": {
+      "e1563": {
+        "sessionId": "01a09b98-86ff-7a43-b471-dd7a29d0a1d7",
+        "line": 62,
+        "timestamp": "2026-09-13T16:29:04.909Z",
+        "kind": "assistant",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-13T11-27-39-01a09b98-86ff-7a43-b471-dd7a29d0a1d7.jsonl",
+        "sha256": "1a84d50121ebb469776b27414fe57d0036f00a000193a41648f268ae833d72f7"
+      },
+      "e1572": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "line": 4649,
+        "timestamp": "2026-09-13T16:30:35.203Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/round4/eval-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+        "sha256": "cd73ed7834ea486a6843a285152d2d096e4e3574583bd4363f683f7f1a48d49c"
+      }
+    },
+    "report": "/private/tmp/issueflow-366-live-20260913/evals/round4-report/report.md",
+    "cannotDecide": [
+      {
+        "id": "f-6e037324",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e824",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-3eb03476",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1155",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-4587b4e5",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1231",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-24668ff9",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1241",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-ecef6263",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1262",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-6fcbbe43",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1464",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-f6d8751a",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1497",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      }
+    ]
+  },
+  "budget": {
+    "originalCapSeconds": 14400,
+    "renewals": [
+      {
+        "at": "2026-09-13T03:38:40.010Z",
+        "budgetSeconds": 1800
+      },
+      {
+        "at": "2026-09-13T13:52:55.059Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      },
+      {
+        "at": "2026-09-13T14:25:22.136Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      },
+      {
+        "at": "2026-09-13T15:54:58.595Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      },
+      {
+        "at": "2026-09-13T16:27:32.547Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      }
+    ],
+    "reviewHistoryReset": false,
+    "newRecoveryAuthorized": false
+  },
+  "operatorErrorsRetained": [
+    "Presentation test still expected old table wording; corrected expectation, full 555 suite passed",
+    "One multi-file apply_patch failed atomically on context; corrected patch applied",
+    "Two wrong helper CLI forms were corrected; supported validation commands passed",
+    "Initial source comparison included generated Python caches; manifest/source parity then passed excluding caches",
+    "First workflow read used dirty development checkout; eligibility evidence was then read from the reviewed commit"
+  ],
+  "evidence": {
+    "campaign": "/private/tmp/issueflow-366-live-20260913",
+    "checkpoint": "https://github.com/natejswenson/claude-skills/issues/366#issuecomment-5650446897",
+    "reviewRegistrationLog": "/private/tmp/issueflow-366-live-20260913/logs/20260913T163020-655235Z-next-9fa69cac.stdout",
+    "correctedLiveStopLog": "/private/tmp/issueflow-366-live-20260913/logs/20260913T163542-233665Z-next-3d19533d.stdout",
+    "runCapture": "/private/tmp/issueflow-366-live-20260913/captures/round4/run-after-handoff-fix.json"
+  },
+  "remaining": "Independent CI-policy recovery under explicitly extended cumulative plan/code-review capacity; draft, merge, deploy and close exclusions retained"
+}

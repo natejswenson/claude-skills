@@ -27,7 +27,7 @@ run; do not manufacture another pass.
 
 ## Review exhaustion
 
-Round four may land a fixer commit that has not been re-verified. Show the last
+The last permitted round may land a fixer commit that has not been re-verified. Show the last
 fix commit and every open major/thread, not a prose summary. Only the user may:
 
 ```bash
@@ -98,3 +98,13 @@ If GitHub, the filesystem sandbox, or another host boundary requires authority,
 request the narrowest reusable permission that covers the Issueflow lifecycle.
 Do not split one known lifecycle into repeated per-subcommand asks. A standing
 workflow approval never bypasses the host's security controls.
+
+## Completion, retargeting and ownership
+
+Use [completion.md](completion.md) for schema-5 initialization recovery, ownership
+transfer, CI policy uncertainty, published amendments and endpoint obligations.
+A published retarget always needs a concrete plan and base, independent review,
+and a candidate Git transition before application. Retain uncertain provider
+operations and dirty owned worktrees; retry through the controller so observations
+can reconcile the existing operation. A deployment failure keeps the successful
+merge receipt and the pending cleanup obligation.

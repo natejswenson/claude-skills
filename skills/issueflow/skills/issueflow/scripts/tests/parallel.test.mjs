@@ -13,6 +13,7 @@
  * missing PATCH under `--issue-json` would pass byte-for-byte with the bug
  * fully present.
  */
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -41,7 +42,7 @@ const cli = (args, env = {}) => {
     const out = execFileSync(process.execPath, [CLI, ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, NODE_TEST_CONTEXT: undefined, ...env },
+      env: { ...controllerTestEnv('parallel-controller'), ...env },
     });
     return { code: 0, out, err: '' };
   } catch (e) {
@@ -182,7 +183,7 @@ test('start twice into one run directory leaves the first run byte-identical and
   const postedOnce = commentCalls(f.log).length;
 
   const second = f.start();
-  assert.equal(second.code, 4, `the second start must hand back, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `the same-session retry must retain its run, got ${second.code}: ${second.err || second.out}`);
   assert.equal(readFileSync(join(f.runDir, 'run.json'), 'utf8'), before, 'the second session reset the first');
   assert.equal(commentCalls(f.log).length, postedOnce, 'the second start must not touch the checkpoint comment');
   assert.equal(postedOnce, 1);
@@ -200,7 +201,7 @@ test('--take-over overwrites a local run too — the case it is most needed for'
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start(['--take-over']);
-  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err || second.out}`);
   assert.equal(
     JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8')).stages[0].state,
     'pending',
@@ -217,8 +218,8 @@ test('a run `loadRun` refuses is refused with its own reason and `--take-over`, 
   const f = online();
   assert.equal(f.start().code, 0);
   const loadable = f.start();
-  assert.match(loadable.err, /next --run-dir/, 'a resumable run gets the resume command');
-  assert.doesNotMatch(loadable.err, /--take-over/, 'and is not first offered the destructive override');
+  assert.match(loadable.out, /next --run-dir/, 'a resumable run gets the resume command');
+  assert.doesNotMatch(loadable.out, /--take-over/, 'and is not first offered the destructive override');
 
   const state = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
   state.schema = 99;
@@ -325,7 +326,7 @@ test('start reads a pre-0.8.0 finished comment as done, not as a stranger\'s liv
   f.cleanup();
 });
 
-test('a failed source reservation releases its fresh claim so start can retry after lease contention', (t) => {
+test('a failed source reservation retains its recoverable claim so start can retry after lease contention', (t) => {
   const f = online();
   t.after(f.cleanup);
   const holderDir = mkdtempSync(join(tmpdir(), 'issueflow-source-holder-'));
@@ -340,8 +341,8 @@ test('a failed source reservation releases its fresh claim so start can retry af
 
   const blocked = f.start(['--no-worktree']);
   assert.equal(blocked.code, 3, `lease contention must be infrastructure failure, got ${blocked.code}: ${blocked.err}`);
-  assert.equal(existsSync(join(f.runDir, 'run.json')), false, 'a failed reservation must not leave an unresumable claim');
-  assert.equal(existsSync(join(f.runDir, 'inputs', 'issue.json')), false, 'the absent claim has no misleading frozen input');
+  assert.equal(JSON.parse(readFileSync(join(f.runDir,'run.json'))).initialization.phase,'initializing');
+  assert.equal(JSON.parse(readFileSync(join(f.runDir,'inputs/issue.json'))).number,NUMBER,'retry retains frozen issue identity');
 
   releaseSourceLease(holderDir, holder);
   const retry = f.start(['--no-worktree']);
@@ -392,7 +393,7 @@ test('start on a local run marked finished proceeds without --take-over, and res
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start();
-  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err || second.out}`);
   const fresh = JSON.parse(readFileSync(join(f.runDir, 'run.json'), 'utf8'));
   assert.equal(fresh.stages[0].state, 'pending', 'the reopened issue gets a fresh state machine');
   assert.equal(fresh.finished, null, 'a fresh run is not finished');
@@ -482,7 +483,7 @@ test('--take-over clears the previous run\'s artifacts, worktree and branch — 
   );
 
   const second = f.start(['--take-over']);
-  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err || second.out}`);
   assert.equal(existsSync(join(f.runDir, 'shared', 'investigate.md')), false, 'the displaced artifact must be gone');
   assert.equal(existsSync(wt), false, 'the displaced worktree must be gone');
   let branchGone = false;
@@ -519,7 +520,7 @@ test('a displaced run\'s artifacts move to superseded/, they are not deleted', (
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start();
-  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err || second.out}`);
   const archive = archiveOf(f.runDir);
   assert.ok(archive, 'the displaced run left no archive at all');
   assert.equal(
@@ -614,7 +615,7 @@ test('--take-over still clears the worktree and branch when run.json cannot be p
   writeFileSync(join(f.runDir, 'run.json'), raw.slice(0, Math.floor(raw.length / 2)));
 
   const second = f.start(['--take-over']);
-  assert.equal(second.code, 0, `--take-over must proceed even over unparseable state, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `--take-over must proceed even over unparseable state, got ${second.code}: ${second.err || second.out}`);
   assert.equal(existsSync(wt), false, 'the displaced worktree must be gone');
   let branchGone = false;
   try {
@@ -715,7 +716,7 @@ test('--take-over cleans a lane git still has registered from BEFORE a split eve
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start(['--take-over']);
-  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err || second.out}`);
   assert.equal(existsSync(wt), false, 'the pre-split worktree must be gone, not left for the fresh run to collide with');
   let branchGone = false;
   try {
@@ -771,7 +772,7 @@ test('--take-over falls back to the checkout it was actually pointed at when the
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start(['--take-over']);
-  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `--take-over must proceed, got ${second.code}: ${second.err || second.out}`);
   assert.equal(existsSync(wt), false, 'the displaced worktree must be gone, not left behind by the stale path\'s empty catch');
   let branchGone = false;
   try {
@@ -819,7 +820,7 @@ test('a plain start on a finished run does not force-delete a branch recreated a
   const manualTip = git(['rev-parse', lane.branch], f.repoPath);
 
   const second = f.start();
-  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err || second.out}`);
   const stillThere = git(['rev-parse', '--verify', '--quiet', `refs/heads/${lane.branch}`], f.repoPath);
   assert.equal(stillThere, manualTip, 'a plain start with no flag must never force-delete a branch carrying commits this run never made');
   f.cleanup();
@@ -866,7 +867,7 @@ test('a reopened issue gets its own comment — the finished run\'s record on th
   writeFileSync(join(f.runDir, 'run.json'), `${JSON.stringify(state, null, 2)}\n`);
 
   const second = f.start();
-  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err}`);
+  assert.equal(second.code, 0, `a finished run must not need --take-over, got ${second.code}: ${second.err || second.out}`);
   assert.deepEqual(
     commentCalls(f.log).filter((l) => l.includes('-X PATCH')), [],
     'the finished run\'s comment must never be adopted and rewritten',

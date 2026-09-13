@@ -186,3 +186,23 @@ test('invalid completion can recover only after explicit native worker release a
   assert.equal(decide(f.dir, run, { offline: true }).command, 'brief');
   assert.equal(run.harness.cancelledWaves.length, 1);
 });
+
+test('schema 2 isolated build outputs feed a later check and cannot mask source mutation', t=>{
+  const f=fixture(t,c=>({...c,schema:2,checks:[...c.checks,{id:'build',type:'command',criteria:['C1'],mode:'isolated-build',outputs:['dist/'],argv:[process.execPath,'-e',"const fs=require('node:fs');fs.mkdirSync('dist');fs.writeFileSync('dist/answer.txt',String(require('./answer.cjs')))"]},{id:'consume',type:'command',criteria:['C1'],inputsFrom:['build'],argv:[process.execPath,'-e',"require('node:assert/strict').equal(require('node:fs').readFileSync('dist/answer.txt','utf8'),'42')"]}]}));
+  verifyLane(f.dir,f.run,f.lane);assertVerified(f.dir,f.run,f.lane);
+  assert.equal(f.lane.verification.receipts.length,4);
+  assert.equal(execFileSync('git',['status','--porcelain'],{cwd:f.tree,encoding:'utf8'}),'','build leaves implementation lane unchanged');
+  const receipt=JSON.parse(readFileSync(f.lane.verification.receipts[2].path));
+  assert.equal(receipt.passed,true);
+  const second=fixture(t,c=>({...c,schema:2,checks:[...c.checks,{id:'mutate',type:'command',criteria:['C1'],mode:'isolated-build',outputs:['dist/'],argv:[process.execPath,'-e',"require('node:fs').writeFileSync('answer.cjs','module.exports=0')"]}]}));
+  assert.throws(()=>verifyLane(second.dir,second.run,second.lane),/mutat|input|failed|stale/);
+  assert.match(readFileSync(join(second.tree,'answer.cjs'),'utf8'),/42/,'source stays intact outside isolated snapshot');
+});
+
+test('schema 2 missing regression cwd and mutated read-only inputs never count as red assertions',t=>{
+  const f=fixture(t,c=>({...c,schema:2,checks:c.checks.map(check=>({...check,cwd:'missing'}))}));
+  assert.throws(()=>verifyLane(f.dir,f.run,f.lane),/missing|failed|directory/);
+  const g=fixture(t,c=>({...c,schema:2,checks:[...c.checks,{id:'rewrite',type:'command',criteria:['C1'],mode:'read-only',argv:[process.execPath,'-e',"require('node:fs').writeFileSync('answer.cjs','module.exports=0')"]}]}));
+  assert.throws(()=>verifyLane(g.dir,g.run,g.lane),/mutat|input|failed|stale/);
+  assert.throws(()=>assertVerified(g.dir,g.run,g.lane),/failed|stale|complete/);
+});

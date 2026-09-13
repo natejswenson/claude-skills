@@ -27,6 +27,7 @@ export function telemetryEvent(run, event, fields = {}, now = new Date().toISOSt
     host: run?.runtime === 'codex' ? 'codex' : 'claude',
   };
   for (const [key, value] of Object.entries(fields)) {
+    if(['category','start','end'].includes(key)) { if(key==='category'&&['human','ci','worker','controller'].includes(value)||key!=='category'&&Number.isFinite(Date.parse(value)))out[key]=value; continue; }
     if (key === 'prompt' || key === 'artifact' || key === 'path') {
       const path = safePath(value);
       if (path) out[`${key}PathHash`] = digest(path);
@@ -120,6 +121,8 @@ export function summarizeTelemetry(events, run = null) {
     missingNativeObservations: attempts.length - native.length,
     usage,
     costUsd: null,
+    elapsed: elapsedBreakdown([...events.filter(e=>e.event==='interval').map(e=>({category:e.category,start:e.start,end:e.end})),...native.map(n=>({category:'worker',start:n.startedAt,end:n.terminalAt}))], {start:run?.createdAt,end:run?.finished?.at}),
+    milestones: Object.fromEntries(['implementation-start','reviewed-pr','endpoint'].map(name=>[name,events.find(e=>e.event===name)?.at??null])),
     workers: workers.length,
     successfulWorkers: successful,
     failedWorkers: workers.filter((e) => e.success === false).length,
@@ -140,4 +143,15 @@ export function summarizeTelemetry(events, run = null) {
     unknownAgentTime: workers.length === 0 || agentDurations.length !== workers.length,
   };
   return result;
+}
+
+/** Union overlapping intervals; report unobserved time instead of assigning it to the controller. */
+export function elapsedBreakdown(intervals, {start, end} = {}) {
+  const lo=Date.parse(start),hi=Date.parse(end),categories=['human','ci','worker','controller'];
+  if(!Number.isFinite(lo)||!Number.isFinite(hi)||hi<lo)return {wallTimeMs:null,unknownTimeMs:null};
+  const valid=intervals.filter(i=>categories.includes(i.category)&&Number.isFinite(Date.parse(i.start))&&Number.isFinite(Date.parse(i.end))&&Date.parse(i.end)>=Date.parse(i.start));
+  const points=[...new Set([lo,hi,...valid.flatMap(i=>[Math.max(lo,Math.min(hi,Date.parse(i.start))),Math.max(lo,Math.min(hi,Date.parse(i.end)))])])].sort((a,b)=>a-b);
+  const exclusive=Object.fromEntries(categories.map(c=>[c,0]));let unknown=0;
+  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];const category=categories.find(c=>valid.some(v=>v.category===c&&Date.parse(v.start)<=a&&Date.parse(v.end)>=b));if(category)exclusive[category]+=b-a;else unknown+=b-a;}
+  return {wallTimeMs:hi-lo,exclusiveMs:exclusive,unknownTimeMs:unknown,overlapPriority:categories,invalidIntervals:intervals.length-valid.length};
 }

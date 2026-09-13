@@ -1,3 +1,5 @@
+import { evaluateCi } from './readiness.mjs';
+import { completionAction } from './completion.mjs';
 import { activePath, deliveryCurrent } from './execution.mjs';
 /**
  * `next` — the one next action, computed from state.
@@ -118,7 +120,10 @@ const activityMtime = (dir, run, step) => {
 };
 const heartbeatAge = (dir, run, step, now) => {
   const last = activityMtime(dir, run, step);
-  return last == null ? null : Math.max(0, Date.parse(now) - last) / 1000;
+  // Reopened stages retain their prior logs as evidence. The new worker's
+  // inactivity clock cannot start before its own brief was issued.
+  const briefed = Date.parse(step.stage.at?.briefed ?? '');
+  return last == null ? null : Math.max(0, Date.parse(now) - Math.max(last, Number.isFinite(briefed) ? briefed : 0)) / 1000;
 };
 const silentStop = (dir, run, step, now) => {
   const age = heartbeatAge(dir, run, step, now);
@@ -253,7 +258,7 @@ const exhaustedStop = (lane) =>
   currentRound(lane)?.cancelled ? stop('exhausted', `${lane.slug}: ${reviewCap(lane)} review rounds consumed, including abandoned reviews; no final review accepted`, {
     command: `review-brief --lane ${lane.slug} --another-round "<user direction authorizing one more independent review>"`,
   }) :
-  stop('exhausted', `${lane.slug}: ${reviewCap(lane)} rounds and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
+  stop('exhausted', `${lane.slug}: ${lane.review.rounds.length} rounds used (base allowance ${reviewCap(lane)}; ${lane.review.overrides?.length ?? 0} authorized extension(s)) and ${openMajors(lane).length} major(s) still open — read the last fix and each open thread, then rule`, {
     command: `review-rule --lane ${lane.slug} --finding <id> --fixed|--withdrawn --note "<what you checked>"`,
     alternative: `review-brief --lane ${lane.slug} --another-round "<why one more round>"`,
   });
@@ -312,6 +317,7 @@ function decideLoop(dir, run, lane, ctx) {
   }
 
   // Registered. Post it, unless offline.
+  if (entry.supersededBy) return reviewExhausted(lane) ? exhaustedStop(lane) : act('review-brief', {lane:lane.slug}, 'amendment requires fresh code review; prior rounds retained');
   if (!entry.posted && !run.offline && !ctx.offline) return act('review-post', { lane: lane.slug }, `${lane.slug} round ${entry.round}: registered — posting the review`);
 
   if (entry.verdict === 'converged') {
@@ -320,6 +326,22 @@ function decideLoop(dir, run, lane, ctx) {
     // pending or green and accidentally ready an unreviewed head.
     if (entry.fix?.briefed) return afterFixBrief(dir, run, lane, entry, head, ctx);
     if (run.harness && !verificationCurrent(dir, run, lane)) return act('verify-run', { lane: lane.slug, phase: 'review' }, 'reviewed HEAD needs fresh execution receipts before readiness');
+    if (run.schema>=5 && !ctx.offline && ctx.ci) {
+      const observation=ctx.ci(lane);
+      const decision=evaluateCi({checks:observation.checks,expectedHead:lane.verification.head,observedHead:observation.head,expectedBase:lane.base,policy:run.harness.contract.ci,observation,epoch:lane.ciEpoch});
+      lane.ciDecision=decision;lane.ciObservation=observation;
+      if (!decision.ready) {
+        if(decision.blockers.every(reason=>/^CI is not passing: .+ \(failure\)$/.test(reason))) {
+          const failures=observation.checks.filter(c=>c.conclusion==='failure').map(c=>({...c,bucket:'fail'}));
+          if(ciFailureFingerprint(failures)===lane.review?.lastCiFailure)return stop('dispute','The same CI failure survived a fixer round; retain its evidence before another attempt');
+          return act('review-fix-brief',{lane:lane.slug},'required CI failed on the reviewed context; repair and re-review');
+        }
+        if(decision.blockers.every(reason=>/\(pending\)/.test(reason)))return {kind:'wait',what:`${lane.slug}: pending required CI`,wait:`gh pr checks ${lane.pr.number} --watch --fail-fast`,note:decision.blockers.join('; ')};
+        return stop('ci',decision.blockers.join('; '),{command:'next',limitations:decision.limitations});
+      }
+      if(run.completion?.excluded.includes('ready')) { lane.review.converged=true; return decideAction(dir,run,ctx); }
+      return act('ready',{lane:lane.slug},`${lane.slug}: required CI observed for the reviewed context`);
+    }
     const checks = ctx.checks(lane);
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
@@ -405,7 +427,9 @@ export function decide(dir, run, ctx = {}) {
   const c = {
     now: ctx.now ?? (() => new Date().toISOString()),
     offline: ctx.offline ?? run.offline,
+    workersReleased: Boolean(ctx.workersReleased),
     checks: ctx.checks ?? (() => []),
+    ci: ctx.ci,
     remoteHead: ctx.remoteHead ?? (() => null),
     landings: ctx.landings ?? (() => []),
   };
@@ -446,6 +470,18 @@ function decideAction(dir, run, c) {
       });
     }
     return wait('Codex worker wave', { pairs: wave.items.map((item) => [item.writes ?? item.artifact, item.prompt]), timeout: DEFAULT_TIMEOUT_S });
+  }
+
+  const amendment=run.harness?.publishedAmendment;
+  if (amendment && amendment.phase!=='applied') {
+    if (amendment.phase==='proposed') return act('amend-review-brief',{},'dispatching independent amendment review');
+    if (amendment.phase==='reviewing') return deliveryCurrent(dir,amendment.review.output,run)
+      ? act('amend-register',{},'registering the observed amendment review')
+      : wait('amendment reviewer',{pairs:[[amendment.review.output,amendment.review.brief]],timeout:DEFAULT_TIMEOUT_S});
+    if (['reviewed','applying'].includes(amendment.phase)) return c.workersReleased
+      ? act('amend-apply',{},'applying the reviewed amendment while retaining PR history')
+      : stop('worker-release','Observe the amendment reviewer termination before applying its result',{command:'amend-apply --workers-released'});
+    return stop('amendment',`Amendment ${amendment.id} needs repair; its findings and previous contract are retained`);
   }
 
   // The plan first.
@@ -494,6 +530,15 @@ function decideAction(dir, run, c) {
     if (lane.landed) continue;
     if (lane.review?.converged) continue;
     return decideLoop(dir, run, lane, c);
+  }
+
+  if (run.completion) {
+    if(run.completion.endpoint==='reviewed-pr'&&!run.offline&&!c.offline&&c.ci)for(const lane of run.lanes.filter(l=>!l.landed)) {
+      const observation=c.ci(lane);const decision=evaluateCi({checks:observation.checks,expectedHead:lane.verification?.head,observedHead:observation.head,expectedBase:lane.base,policy:run.harness.contract.ci,observation,epoch:lane.ciEpoch});
+      lane.ciDecision=decision;lane.ciObservation=observation;
+      if(!decision.ready)return stop('ci',decision.blockers.join('; '),{command:`ready --lane ${lane.slug}`});
+    }
+    return completionAction(run);
   }
 
   // Everything converged: finish what has merged.

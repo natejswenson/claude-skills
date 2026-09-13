@@ -1,3 +1,4 @@
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -14,7 +15,7 @@ import { GOOD_EVIDENCE, approvePlan } from './helpers.mjs';
 const CLI = join(dirname(fileURLToPath(import.meta.url)), '..', 'issueflow.js');
 const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const cli = (dir, ...args) => spawnSync(process.execPath, [CLI, ...args, '--run-dir', dir], {
-  encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+  encoding: 'utf8', env: controllerTestEnv('checkout-ownership-controller'),
 });
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), "issueflow owner's space "));

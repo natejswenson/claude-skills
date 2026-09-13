@@ -95,7 +95,17 @@ test('offline guard observes and rejects model, shell, network and Git transport
   assert.equal(readFileSync(log, 'utf8').trim().split('\n').length, 5);
 });
 
+function isolatedControllerEnvironment(t, hostile = false) {
+  for (const key of ['ISSUEFLOW_SESSION_ID', 'CODEX_THREAD_ID', 'CLAUDE_SESSION_ID', 'ISSUEFLOW_CONTINUATION_FILE']) {
+    const original = process.env[key];
+    t.after(() => { if (original === undefined) delete process.env[key]; else process.env[key] = original; });
+    if (hostile) process.env[key] = 'unrelated-controller-with-no-token-file';
+    else delete process.env[key];
+  }
+}
+
 test('real candidate CLI and test processes execute offline with immutable captured outputs', async (t) => {
+  isolatedControllerEnvironment(t);
   const dir = temporary(t);
   const out = join(dir, 'results');
   const report = await evaluate({ out, selected: ['C01', 'C02', 'CLI01', 'CLI02'] });
@@ -112,6 +122,12 @@ test('real candidate CLI and test processes execute offline with immutable captu
   await assert.rejects(() => evaluate({ out, selected: ['C01'] }), /EEXIST/);
   await assert.rejects(() => evaluate({ out: join(dir, 'empty'), selected: [] }), /empty case/);
   assert.equal(existsSync(join(dir, 'empty')), false);
+});
+
+test('offline CLI evals cannot borrow an ambient host session or continuation file', async (t) => {
+  isolatedControllerEnvironment(t, true);
+  const report = await evaluate({ out: join(temporary(t), 'results'), selected: ['CLI01', 'CLI02'] });
+  assert.equal(report.verdict, 'pass', JSON.stringify(report.results));
 });
 
 test('CLI refuses native claims before running an unsupported campaign', (t) => {

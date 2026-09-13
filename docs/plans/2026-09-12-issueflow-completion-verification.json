@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "date": "2026-09-12",
+  "status": "local implementation validated; unreleased",
+  "issueflowTests": {
+    "tests": 537,
+    "pass": 537,
+    "fail": 0,
+    "skipped": 0,
+    "log": "/private/tmp/issueflow-completion-implementation-l8de5ghw/shared-complete-suite.log",
+    "sha256": "f74bb88c19d238195d4746d859c407bc91acfcb899243e9a12998b1396d13a2b"
+  },
+  "evalTests": {
+    "tests": 87,
+    "pass": 87,
+    "fail": 0,
+    "skipped": 0,
+    "log": "/private/tmp/issueflow-completion-implementation-l8de5ghw/eval-complete-suite.log",
+    "sha256": "4557272ceeed73783d2fb3ec6c1865fcb320808c037bd274699e25562b7e59fd"
+  },
+  "evalSource": "Candidate eval files copied byte-for-byte and verified against applied-files.json; test processes ran in the isolated candidate.",
+  "foundation": {
+    "baseline": {
+      "commit": "d587ac3e056e733d906ed708531890e17ae561f0",
+      "snapshotHash": "cf4d6b82a77920c7b99876f585b85a7d2ef0c3b44075f8892c2d33c58fc9c0d4",
+      "files": 169,
+      "version": "0.16.0",
+      "dirtySnapshot": false
+    },
+    "candidate": {
+      "commit": "9782fa49e2c12380d3f3e727d9d66fac3ea720d9",
+      "snapshotHash": "f509a493680981146b8b40e6753d40d436701e649505271caf8bbe0833647bf0",
+      "files": 191,
+      "version": "0.17.0",
+      "dirtySnapshot": true
+    },
+    "comparison": {
+      "verdict": "pass",
+      "coverage": {
+        "selected": 12,
+        "available": 12,
+        "notSelected": [],
+        "notCovered": [
+          "controller-owned verification receipts",
+          "task contracts and scope amendments",
+          "crash recovery and remote-effect reconciliation",
+          "native Claude and Codex worker lifecycle",
+          "installed-plugin discovery",
+          "live W01-W06 outcome and performance campaign"
+        ]
+      },
+      "changes": [
+        {
+          "id": "E01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "E02",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "E03",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "R01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "M01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "M02",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "C01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "C02",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "CLI01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "CLI02",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "REPLAY01",
+          "before": "pass",
+          "after": "pass"
+        },
+        {
+          "id": "REPLAY02",
+          "before": "pass",
+          "after": "pass"
+        }
+      ],
+      "performance": "inconclusive",
+      "reason": "foundation behavior compared; live-agent performance is not measured"
+    }
+  },
+  "checks": {
+    "codexMetadata": "pass",
+    "claudeCodexCompatibility": "pass",
+    "issueflowStructuralScore": 100,
+    "evalStructuralScore": 100,
+    "pluginVersionLint": "pass",
+    "brandTargets": [
+      "issueflow-readme: pass",
+      "eval-readme: pass"
+    ],
+    "generatedHelp": "21 skills current; rebuilt against shared checkout",
+    "gitDiffCheck": "pass"
+  },
+  "provisionalAlerts": {
+    "total": 20,
+    "resolvedWithTestObservation": 6,
+    "cannotDecide": 14
+  },
+  "nativePilot": {
+    "claudeRuns": 0,
+    "codexRuns": 0,
+    "performance": "unverified",
+    "quality": "unverified"
+  },
+  "providerLimit": "Built-in GitHub merge cannot atomically bind the base/policy context; automatic submission remains pending.",
+  "appliedFiles": [
+    {
+      "path": "docs/plans/2026-09-12-issueflow-alert-adjudication.json",
+      "sha256": "b76648b3cb0029d201b57fb174ca51c0f5d0007efdeb611fb7a2c01ef3965cd1"
+    },
+    {
+      "path": "docs/plans/2026-09-12-issueflow-alert-adjudication.md",
+      "sha256": "2562ad3af602b424fa8334df937d7927abcafef78a308a737d630d7f2f3fd871"
+    },
+    {
+      "path": "docs/plans/2026-09-12-issueflow-native-pilot-manifest.json",
+      "sha256": "252ed55c88393149b1d59e0d3ae66db2b375aa22811c143b6977fbc894537f1a"
+    },
+    {
+      "path": "docs/plans/2026-09-12-issueflow-native-pilot-report.json",
+      "sha256": "5b94f56f399fd108c95a94fa6420e69050eff07931fbdb9baaad50de922e27a9"
+    },
+    {
+      "path": "skills/eval/CHANGELOG.md",
+      "sha256": "3259ba3b57b296c4bf4cb24899516a5ff17247c7c2f7d3dd08bb1d5e57dac2d9"
+    },
+    {
+      "path": "skills/eval/README.md",
+      "sha256": "4d60689e5179f3ebc467df1624d76a60edac9f00840392728fd3b937982524b8"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/eval.js",
+      "sha256": "4be3cd7bdb3d1aab956144d4953b3a92d179fdb72a5160eecd5e744ba96dcd35"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/lib/contract.mjs",
+      "sha256": "f11de1d75016d0ea64360b84c1ec50f55aa5920d87ba73159329634c62ba5554"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/lib/probes.mjs",
+      "sha256": "646083aec84f6a0c5046bc8b1d4460389da241ad172d4e4e3231de0154192014"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/lib/report.mjs",
+      "sha256": "f8a98bfa6afb2b7e166e8eeba61bd38161c10e18832ac5457dd66da2051dbb3d"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/lib/trace.mjs",
+      "sha256": "da32b27ac47b98ecfc1360b9028cb65588622ac04c5980fe43823d084ddf4811"
+    },
+    {
+      "path": "skills/eval/skills/eval/scripts/tests/correlation.test.mjs",
+      "sha256": "f682860935bf680dfd1dbe83f5e9a4d7922ac98c27e1dadde258b86277feb47e"
+    },
+    {
+      "path": "skills/issueflow/.claude-plugin/plugin.json",
+      "sha256": "324b9b30cc43d61b7869579fb131a3774366c4963071ea80e4e5b4b1e8901347"
+    },
+    {
+      "path": "skills/issueflow/.codex-plugin/plugin.json",
+      "sha256": "974aefd7eae81e3b832862e4acbddc1185494188dd7f5ece2b54cd0618427d46"
+    },
+    {
+      "path": "skills/issueflow/CHANGELOG.md",
+      "sha256": "d7e557d4cbb6eaaf35e8b8fd256401d0c726934131a7e0cb4505705fa5ff8658"
+    },
+    {
+      "path": "skills/issueflow/README.md",
+      "sha256": "aaefe87593ac22d524b6f88979d67a3819fff9435d2bc5d34562e98660bd0c48"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/SKILL.md",
+      "sha256": "7177f033121b852d90a607add3b6bd5c773f7e814c5943b39a0adf3dc8af973b"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/evals/baseline/update.mjs",
+      "sha256": "a18ee612e8eab20d1a0d5bfd80ec68a0fdc9b5c188b234a5bb47909f61eafb62"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/evals/harness.mjs",
+      "sha256": "02a7019bb8d7f8aafa3e41eacd86520366f2870b8a82adf7fee8723236eed256"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/evals/native-pilot.mjs",
+      "sha256": "49fd7037c0390b5ed3a401a0c3a24477d2fe9d117d98e402d6223ebb79aa43b4"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/package.json",
+      "sha256": "bed4a01bd574a6939530fc37fdfde8eaa0ced19203266708cf9bfff5115cb594"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/references/completion.md",
+      "sha256": "04527a91f47a7dcc21197a05a65b5ee049b76a184822858bd788a8bf232dff8b"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/references/harness.md",
+      "sha256": "671cbed067fbde88e748dbcd3f8188527e47857a453ed5714ac0649ffcff50a3"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/references/native-pilot.md",
+      "sha256": "eb2d501c1219b52a3a671fe50a7b43d549b4ed7e71130de6260af09fa17f2886"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/references/operator-stops.md",
+      "sha256": "4fab54189db979464799d7e9dcfbfad50d47bdc5fcdfb1b28920dc444d1d0e05"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/issueflow.js",
+      "sha256": "8556fe144b01e1806aa28ef052bd5699473381c27ee39eb3297f1c9d8bcc5e84"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/adapters/claude-skills.mjs",
+      "sha256": "4dd2bb707479f25968aeb0a792de1322a58228a613da6053ba84d99dffa0249b"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/brief.mjs",
+      "sha256": "49248685a16a67f32af99a325dc53cc0b2e6b874801be586cdd31c2172755284"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/checkpoint.mjs",
+      "sha256": "479adaaa7dc52d4089be54d8bd50a0afe12e0d88858f5a2e62553f526ffded0b"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/completion.mjs",
+      "sha256": "044f360aa62b2184c45ce14db868472316ff3f8f8be818ef8163d064e05919e8"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/contracts.mjs",
+      "sha256": "463c25be8f078d1f728dd5c25e0a3825935dc144928a7b8e991c48ddbdfb5533"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/evolution.mjs",
+      "sha256": "3e1e306db092d0ce4c5558be52ae93aa7f3ddffd9af41f4543ed4b3ad6a7837b"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/execution.mjs",
+      "sha256": "3e9bcdbc54c98497abe542969dbbb013cb9a8d8ac540a9d30def689e03bf68b0"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/finish.mjs",
+      "sha256": "1ed3d4c80894632d6c70cfa7574e48c949030295a94d4305b4612e92cadbba66"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/gh.mjs",
+      "sha256": "d4690323ecf694591c31e0049118620c285bcf7d245aa0329670527b19a2a2e6"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs",
+      "sha256": "62b840127ac964fdc0a9c3857b035ad265285bf1f3ad334d5fdce59ee77b4e3d"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/next.mjs",
+      "sha256": "ba6c16adaed8bf58b587a37ff4b953f0c1e260ee19efb9d6891ee785e180d178"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/plan-repair.mjs",
+      "sha256": "bc41ff8723f34447ed23c7e04d2a4bdc9bff57e6fc9c528b94eefc0fffd05db2"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/policy.mjs",
+      "sha256": "d210cd6a27ae0d4c6708130f890987c52d7247e07d255edbe5d0a97fbb95d43e"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/preflight.mjs",
+      "sha256": "1b6c18c1cf778ca2092df4f54f39531bf118d8efbe149079890221e7670b6ad7"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/published-amendment.mjs",
+      "sha256": "80c4911091f2c2fa4d87ae765ff11e6630cac6e0488a523e5fa16e59a55916ae"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/readiness.mjs",
+      "sha256": "5365df5cd39f74944e29a9d96ca8306be14adb70b0abfde5b9cf3f1c825dd556"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/repository.mjs",
+      "sha256": "39cdbe5a8da8f55481180de9c37ef348ff9bf583dece40713fcec497f43bbd66"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/reviews.mjs",
+      "sha256": "555e98bee382aa49545b0409deae12b63886c0d4b0c4b713cb7fb9588861e416"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/run.mjs",
+      "sha256": "2cb0a5a2f4d444eee9e47616e32e75b46386e07b873a5694e5e2d35355d1257a"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/ship.mjs",
+      "sha256": "5c325bb4aa601ff39b27665482758c0aff21d3edd48ed46f3aebebe6b8b29d8d"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/status.mjs",
+      "sha256": "d91bc224e631ac2630bc2ed54ca3e37e3bc97c295d64bc92fdb4a99efd608bee"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/telemetry.mjs",
+      "sha256": "3b1a5b9d42b67c3483750341d8d5cb8822a45d1e39c748438d2c0679ca602605"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/verification.mjs",
+      "sha256": "b5d5a4ffd85269ae6141cf42ef789f9157e7c735b9a45dc1c046767a1b0759af"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/lib/worktree.mjs",
+      "sha256": "fc679d4aafb45b30281bc6bcc50c57c493d3a7fc172e802634d63256af0b2d10"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/baseline.test.mjs",
+      "sha256": "c635fa8c21fd323d053bdc2e2a8977bfab484400093ab7a78c3538754691810c"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/budget.test.mjs",
+      "sha256": "643d5cdf543d9ebc7724cec3c90c86ede92138c3d0974c43a23e2427d2b36487"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/completion-controls.test.mjs",
+      "sha256": "b65668a14b031a34f21b091fccace48f7531bbebb69296286910339dd3919b47"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/completion-forward.test.mjs",
+      "sha256": "1bd07033444b55d308061392696cc1489ffe0e665509cf5b491c3cde28b5a893"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/completion-startup.test.mjs",
+      "sha256": "8ec44f05403c121ce2e36398b26c17ed8fc1591b1ce2a22df35f48eb0165f018"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/evolution.test.mjs",
+      "sha256": "308d3b97d117f257871974be6ed3ec9bc42b6de507fd9427d36d7b6e4bea16ca"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/execution.test.mjs",
+      "sha256": "1aa1434211cd54c84d9c055dc6e2282ef89e354dea71e27da0c3a1e07113219e"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/fixtures/completion-forward.py",
+      "sha256": "f7d33b23b8291f214d036be8fc5097b2800a67baf50713dbea1d52f61d74bd4a"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/fixtures/harness-gh.cjs",
+      "sha256": "fba59bda8147c764a33b83ef97e3df7b26b0fbc9519e0148e324701d0fdfd501"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/fixtures/issueflow-completion-forward-templates.json",
+      "sha256": "d5188c378af3cbb0e0a1d8ca37b846ec0da22a35f8b644997e86e0c40439b86a"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/harness-lifecycle.test.mjs",
+      "sha256": "11df6f15bfb86a4e2b521c21acd7080e4f75717084e2e97973ebb7c192533db9"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/liveness.test.mjs",
+      "sha256": "4f5d777cb5c2674471c66f820726bdef4694906d07fc9d0182c8c17c927c83a7"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/next.test.mjs",
+      "sha256": "e20b9529557b76f48fe9e5ec0953fe4d45d35501ecfdb5631295327d70389ed9"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/packaging.test.mjs",
+      "sha256": "10156e2a1032decbf4064ab7e871b414c51276dddc4f01a6af32d9fabaee7848"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/parallel.test.mjs",
+      "sha256": "cf091fe51fa282305b440fa3d520e78f834c0e958c77de5233e6f1147ea29001"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/retarget.test.mjs",
+      "sha256": "c64f0532b9a9dcab5841587cefef594cdb1b840670ce0ecdb85c845550214fab"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/runtime.test.mjs",
+      "sha256": "54f9153ca359f3062f7fbadd59cc9b1c0633c3d98414814054680975b92153bb"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/telemetry.test.mjs",
+      "sha256": "b1b9f59396d20825207c8b2b649ef7d6f81bf1505028cd3dfb5a5ba0e313db53"
+    },
+    {
+      "path": "skills/issueflow/skills/issueflow/scripts/tests/verification.test.mjs",
+      "sha256": "bf3da5d0a47b851c29e3aab570512fa40e5772ea9e824cdb3f933150c0c52ffa"
+    },
+    {
+      "path": "skills/skillhelp/skills/skillhelp/index/_manifest.json",
+      "sha256": "0bf1406c543dd3a2f21876e3e161e1496163239d002eb0eec88ed2d0ba9f6f40"
+    },
+    {
+      "path": "skills/skillhelp/skills/skillhelp/index/issueflow.md",
+      "sha256": "d943094cc32ad1859521ec17ecc1f7452a79973e5b31d2a057ca9fcf9df38b7f"
+    }
+  ],
+  "evidenceDirectory": "/private/tmp/issueflow-completion-implementation-l8de5ghw"
+}

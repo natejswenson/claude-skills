@@ -245,6 +245,21 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
   pull request.
 - **A git repo with a GitHub remote.**
 
+## Completion and recovery
+
+New runs freeze one base and issue input, validate plan scope and check cwd before
+review, and retain interrupted startup for the same controller. Published plan
+amendments preserve the PR while requiring new verification and review. Expected
+optional release skips no longer masquerade as required CI failures.
+
+Endpoints are explicit: reviewed PR, observed merge, or observed deployment.
+Draft-only exclusions and existing user authorization persist. Unknown provider
+outcomes remain pending and retry through the operation journal. GitHub automatic
+merge submission remains unavailable when the reviewed base context cannot be
+atomically enforced. Local tests do not establish native speed or reviewer quality.
+See [controller reference](skills/issueflow/references/completion.md) and
+[native pilot](skills/issueflow/references/native-pilot.md).
+
 ## Development
 
 ```bash

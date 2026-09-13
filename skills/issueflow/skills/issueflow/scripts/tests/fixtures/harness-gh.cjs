@@ -4,12 +4,13 @@ const fs=require('node:fs');const cp=require('node:child_process');const path=re
 const root=process.env.ISSUEFLOW_FAKE_GH_ROOT;
 if(!root)throw Error('ISSUEFLOW_FAKE_GH_ROOT must name an isolated synthetic fixture');const statePath=path.join(root,'fake-gh-state.json');
 const state=JSON.parse(fs.readFileSync(statePath));const args=process.argv.slice(2);const val=x=>args[args.indexOf(x)+1];
+if(args[0]==='api'&&args[1]?.startsWith('--')){const i=args.findIndex(a=>a.startsWith('repos/'));if(i>1)args.splice(1,0,args.splice(i,1)[0]);}
 const remote=path.join(root,'remote.git');
 const git=(...a)=>cp.execFileSync('git',a,{cwd:remote,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
 const save=()=>fs.writeFileSync(statePath,JSON.stringify(state,null,2));
 const out=x=>{save();console.log(typeof x==='string'?x:JSON.stringify(x));};
 fs.appendFileSync(path.join(root,'fake-gh-calls.jsonl'),JSON.stringify({at:new Date().toISOString(),cwd:process.cwd(),args})+'\n');
-const pr=()=>{if(!state.pr)throw Error('no synthetic PR');return {...state.pr,headRefOid:git('rev-parse',state.pr.headRefName)};};
+const pr=()=>{if(!state.pr)throw Error('no synthetic PR');return {...state.pr,headRefOid:git('rev-parse',state.pr.headRefName),baseRefOid:git('rev-parse',state.pr.baseRefName)};};
 try{
 if(args[0]==='repo'&&args[1]==='view')out({owner:{login:'offline'},name:'count-prflow',defaultBranchRef:{name:'dev'}});
 else if(args[0]==='issue'&&args[1]==='view')out({...state.issue,comments:state.comments.map(c=>({body:c.body,url:c.html_url,author:{login:'offline'}}))});
@@ -27,6 +28,11 @@ else if(args[0]==='pr'&&args[1]==='checks'){
  out([{name:'test',bucket:check.exit===0?'pass':'fail',state:check.exit===0?'SUCCESS':'FAILURE',link:`https://example.invalid/ci/${head}`}]);
 }else if(args[0]==='pr'&&args[1]==='ready'){state.pr.isDraft=false;out(state.pr.url);}
 else if(args[0]==='pr'&&args[1]==='comment'){state.prComments.push(fs.readFileSync(val('--body-file'),'utf8'));out(state.pr.url+'#issuecomment-'+(200+state.prComments.length));}
+else if(args[0]==='api'&&/\/pulls\/42$/.test(args[1])){const p=pr();out({state:'open',head:{sha:p.headRefOid},base:{ref:p.baseRefName,sha:git('rev-parse',p.baseRefName)},merge_commit_sha:null,auto_merge:null,mergeable:true});}
+else if(args[0]==='api'&&args[1].includes('/rules/branches/'))out([[]]);
+else if(args[0]==='api'&&args[1].includes('/branches/'))out({protected:false});
+else if(args[0]==='api'&&args[1].includes('/check-runs')){const head=pr().headRefOid;let check=state.ci.find(c=>c.head===head);if(!check){const cwd=fs.mkdtempSync(path.join(root,'ci-'));for(const f of ['count.cjs','count.test.cjs'])fs.writeFileSync(path.join(cwd,f),git('show',`${head}:${f}`)+'\n');const result=cp.spawnSync(process.execPath,['--test','--test-reporter=tap'],{cwd,encoding:'utf8'});check={head,cwd,exit:result.status,stdout:result.stdout,stderr:result.stderr};state.ci.push(check);}out([{check_runs:[{name:'test',head_sha:head,app:{id:1},status:'completed',conclusion:check.exit===0?'success':'failure',started_at:new Date().toISOString()}]}]);}
+else if(args[0]==='api'&&args[1].includes('/statuses'))out([[]]);
 else if(args[0]==='api'&&args[1]==='user')out('offline');
 else if(args[0]==='api'&&args[1].includes('/issues/1/comments'))out(args.includes('--slurp')?[state.comments]:state.comments);
 else if(args[0]==='api'&&args[1].includes('/issues/42/comments')){if(state.failSummaryReadOnce){state.failSummaryReadOnce=false;throw Error('Synthetic interruption after ready, before summary');}const comments=state.prComments.map((body,i)=>({id:201+i,body,html_url:state.pr.url+'#issuecomment-'+(201+i),user:{login:'offline'}}));out(args.includes('--slurp')?[comments]:comments);}

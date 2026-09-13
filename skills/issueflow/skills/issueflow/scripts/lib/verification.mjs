@@ -3,14 +3,14 @@
  * This is not an OS sandbox. Never grant additional permissions to run a check.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { RunError, laneTree, saveRun } from './run.mjs';
 import { budgetStatus } from './budget.mjs';
-import { checkScope, contractForLane, gitText, hash } from './contracts.mjs';
+import { allowsPath, checkScope, contractForLane, gitText, hash } from './contracts.mjs';
 import { parseAllEvidence, twoSided } from './evidence.mjs';
 
 const fail = (s) => { throw new RunError(`verification receipt: ${s}`); };
@@ -68,7 +68,14 @@ function snapshot(tree, revision, target) {
   }
 }
 
-function execute(check, cwd, phase, dir, maxMs) {
+function execute(check, root, phase, dir, maxMs) {
+  const requested = join(root, check.cwd ?? '.');
+  let cwd = requested;
+  if (existsSync(requested)) {
+    cwd = realpathSync(requested);
+    const path = relative(realpathSync(root), cwd);
+    if (path === '..' || path.startsWith('../') || isAbsolute(path) || !lstatSync(cwd).isDirectory()) fail(`check cwd escapes its snapshot: ${check.cwd}`);
+  }
   const startedAt = new Date().toISOString();
   const start = performance.now();
   const result = spawnSync(check.argv[0], check.argv.slice(1), { cwd, encoding: 'utf8', shell: false,
@@ -87,8 +94,9 @@ function execute(check, cwd, phase, dir, maxMs) {
 }
 
 export function verifyLane(dir, run, lane, { now = () => new Date().toISOString() } = {}) {
-  if (run.harness?.version !== 1) fail('legacy runs require explicit migration before receipt verification');
+  if (![1, 2].includes(run.harness?.version)) fail('legacy runs require explicit migration before receipt verification');
   const contract = contractForLane(run.harness.contract, lane.slug);
+  if (contract.schema === 2 && run.schema < 5) fail('contract schema 2 requires explicit run migration');
   if (hash(run.harness.contract) !== run.harness.contractHash) fail('contract changed after approval');
   const tree = laneTree(dir, run, lane);
   if (gitText(tree, 'status', '--porcelain', '--untracked-files=all')) fail('commit all implementation and test inputs before verification');
@@ -104,7 +112,9 @@ export function verifyLane(dir, run, lane, { now = () => new Date().toISOString(
   const generation = run.execution?.generation ?? run.createdAt;
   const attempt = attemptIdentity(run, lane);
   if (!attempt) fail('implementation has not been dispatched');
+  if (verificationCurrent(dir, run, lane)) return lane.verification;
   const receipts = [];
+  const artifacts = new Map();
   const batchId = randomUUID();
   // Canonical storage, deliberately outside child-facing execution artifacts.
   const root = join(dir, 'verification', batchId);
@@ -116,10 +126,15 @@ export function verifyLane(dir, run, lane, { now = () => new Date().toISOString(
     const store = join(root, id);
     mkdirSync(store);
     const common = { schema: 1, id, batchId, check: check.id, type: check.type, criteria: check.criteria, head, base,
-      contractHash: run.harness.contractHash, inputHash, generation, attempt, environmentHash: envIdentity() };
+      contractHash: run.harness.contractHash, inputHash, generation, attempt, environmentHash: envIdentity(), recipeHash: hash(check) };
     let red = null;
     let testHash = null;
     let redTestsUnchanged = true;
+    let isolatedUnchanged = true;
+    const writing = check.mode === 'isolated-build';
+    const consumed = (check.inputsFrom ?? []).flatMap(id => {
+      const value = artifacts.get(id); if (!value) fail(`missing build artifacts from ${id}`); return value;
+    });
     if (check.type === 'regression') {
       const scratch = mkdtempSync(join(run.execution ? join(run.execution.path, 'tmp') : tmpdir(), 'issueflow-red-'));
       snapshot(tree, base, scratch);
@@ -127,19 +142,32 @@ export function verifyLane(dir, run, lane, { now = () => new Date().toISOString(
       const tests = check.testFiles.map((file) => [file, readFileSync(join(tree, file))]);
       testHash = hash(tests.map(([file, bytes]) => [file, hash(bytes)]));
       for (const [file, bytes] of tests) { mkdirSync(dirname(join(scratch, file)), { recursive: true }); writeFileSync(join(scratch, file), bytes); }
+      copyConsumed(consumed, scratch);
+      assertOutputRoles(scratch, check.outputs ?? []);
+      const before = snapshotIdentity(scratch, check.outputs ?? []);
       red = execute(check, scratch, 'red', store, (remaining?.remainingSeconds ?? 120) * 1000);
+      isolatedUnchanged = before === snapshotIdentity(scratch, check.outputs ?? []);
       redTestsUnchanged = testIdentity(scratch, check.testFiles) === testHash;
     }
     const nextBudget = budgetStatus(run, now());
     if (nextBudget?.expired) fail('time allowance expired after red execution; retained output is not a passing receipt');
-    const green = execute(check, tree, 'green', store, (nextBudget?.remainingSeconds ?? 120) * 1000);
-    const unchanged = inputHash === inputIdentity(tree) && redTestsUnchanged && (!testHash || testIdentity(tree, check.testFiles) === testHash);
+    let greenRoot = tree;
+    if (writing || consumed.length) {
+      greenRoot = join(store, 'snapshot'); snapshot(tree, head, greenRoot); copyRuntimeInputs(tree, greenRoot); copyConsumed(consumed, greenRoot);
+      assertOutputRoles(greenRoot, check.outputs ?? []);
+    }
+    const greenBefore = greenRoot !== tree ? snapshotIdentity(greenRoot, check.outputs ?? []) : null;
+    const green = execute(check, greenRoot, 'green', store, (nextBudget?.remainingSeconds ?? 120) * 1000);
+    if (greenBefore !== null) isolatedUnchanged &&= greenBefore === snapshotIdentity(greenRoot, check.outputs ?? []);
+    const outputs = writing ? outputArtifacts(greenRoot, check.outputs, store) : [];
+    const unchanged = isolatedUnchanged && inputHash === inputIdentity(tree) && redTestsUnchanged && (!testHash || testIdentity(tree, check.testFiles) === testHash);
     const redSummary = red?.summaries.at(-1);
     const assertionFailure = red && /ERR_ASSERTION|AssertionError|assert(?:ion)?\s+(?:failed|failure)|Expected:|expected .* (?:to|equal)|--- FAIL:/i.test(readFileSync(red.outputPath, 'utf8'));
     const redValid = !red || red.exitCode !== 0 && red.exitCode != null && !red.signal && !red.error && redSummary?.failed > 0 && !redSummary.loadError && assertionFailure;
     const paired = !red || twoSided([redSummary ?? {}, green.summaries.at(-1) ?? {}]).ok;
     const failure = !unchanged ? 'verification changed its inputs' : red && !redValid ? `red check did not produce an assertion failure (exit ${red.exitCode}); inspect ${red.outputPath}` : !green.passed ? `green check failed (exit ${green.exitCode}); inspect ${green.outputPath}` : !paired ? 'red/green summaries do not establish a regression' : null;
-    const receipt = { ...common, testHash, red, green, unchanged, failure, passed: green.passed && redValid && paired && unchanged };
+    const receipt = { ...common, testHash, red, green, outputs, consumed, unchanged, failure, passed: green.passed && redValid && paired && unchanged };
+    if (receipt.passed && writing) artifacts.set(check.id, outputs);
     const path = join(store, 'receipt.json');
     writeFileSync(path, JSON.stringify(receipt, null, 2), { flag: 'wx' });
     receipts.push({ path, hash: hash(readFileSync(path)), check: check.id, passed: receipt.passed });
@@ -166,6 +194,8 @@ export function assertVerified(dir, run, lane) {
     if (!record || !existsSync(record.path) || hash(readFileSync(record.path)) !== record.hash) fail(`missing or tampered receipt for ${check.id}`);
     const receipt = JSON.parse(readFileSync(record.path, 'utf8'));
     if (receipt.batchId !== batch.batchId || receipt.head !== batch.head || receipt.contractHash !== run.harness.contractHash || receipt.generation !== (run.execution?.generation ?? run.createdAt) || receipt.attempt !== attemptIdentity(run, lane) || !receipt.passed) fail(`failed or stale obligation ${check.id}${receipt.failure ? ': ' + receipt.failure : ''}`);
+    if (receipt.recipeHash && receipt.recipeHash !== hash(check)) fail(`changed check recipe ${check.id}`);
+    for (const output of [...(receipt.outputs ?? []), ...(receipt.consumed ?? [])]) if (!existsSync(output.path) || hash(readFileSync(output.path)) !== output.hash) fail(`tampered build artifact for ${check.id}`);
     if (receipt.environmentHash !== envIdentity()) fail(`changed runtime environment for ${check.id}; rerun verify-run`);
     for (const result of [receipt.red, receipt.green].filter(Boolean)) {
       if (!existsSync(result.outputPath) || hash(readFileSync(result.outputPath)) !== result.outputHash) fail(`tampered command output for ${check.id}`);
@@ -176,4 +206,33 @@ export function assertVerified(dir, run, lane) {
 
 export function verificationCurrent(dir, run, lane) {
   try { assertVerified(dir, run, lane); return true; } catch { return false; }
+}
+
+function snapshotFiles(root, path = root) {
+  return readdirSync(path, { withFileTypes: true }).flatMap(entry => {
+    const full = join(path, entry.name), key = relative(root, full);
+    if (entry.isDirectory()) return snapshotFiles(root, full);
+    if (entry.isSymbolicLink()) return [[key, 'symlink', internalLink(root, key)]];
+    if (!entry.isFile()) fail(`unsupported snapshot input ${key}`);
+    return [[key, lstatSync(full).mode & 0o777, hash(readFileSync(full))]];
+  }).sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function snapshotIdentity(root, outputs) { return hash(snapshotFiles(root).filter(([file])=>!allowsPath(outputs,file))); }
+function assertOutputRoles(root, outputs) {
+  for (const [file] of snapshotFiles(root)) if (allowsPath(outputs, file)) fail(`output role overlaps a committed or dependency input: ${file}`);
+}
+function outputArtifacts(root, outputs, store) {
+  return snapshotFiles(root).filter(([file])=>allowsPath(outputs,file)).map(([file,mode,digest])=> {
+    if (mode === 'symlink') fail(`build output cannot be a symlink: ${file}`);
+    const path = join(store, 'outputs', file); mkdirSync(dirname(path), {recursive:true});
+    writeFileSync(path, readFileSync(join(root,file)), {flag:'wx', mode});
+    return {file,path,hash:digest,mode};
+  });
+}
+function copyConsumed(outputs, root) {
+  for (const output of outputs) {
+    if (hash(readFileSync(output.path)) !== output.hash) fail(`build artifact changed: ${output.file}`);
+    const path = join(root,output.file); mkdirSync(dirname(path),{recursive:true});
+    writeFileSync(path,readFileSync(output.path),{flag:'wx',mode:output.mode});
+  }
 }

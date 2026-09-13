@@ -52,7 +52,7 @@
     {
       "id": "reconcile-before-advancing",
       "pattern": "Never advance over drift you have not shown the user",
-      "rationale": "A run holds a model of the world it built at `start` and never checks again. On the measured run the change was pushed, merged, promoted and the issue closed while the run sat at a gate — and it then approved that stage, briefed the next one and dispatched a subagent against a branch whose pull request had already merged. Asking before advancing is the difference between a stale run and a wrong one."
+      "rationale": "A run holds a model of the world it built at `start` and never checks again. On the measured run the change was pushed, merged, promoted and the issue closed while the run sat at a gate \u2014 and it then approved that stage, briefed the next one and dispatched a subagent against a branch whose pull request had already merged. Asking before advancing is the difference between a stale run and a wrong one."
     },
     {
       "id": "the-orchestrator-does-no-stage-work",
@@ -61,7 +61,7 @@
     },
     {
       "id": "the-red-team-is-dispatched",
-      "pattern": "the red team is the gate, and it is a dispatched subagent — never you",
+      "pattern": "the red team is the gate, and it is a dispatched subagent \u2014 never you",
       "rationale": "The plan's gate must have the same independence a human would: a reviewer that shares the orchestrator's context has already been told the conclusion it is supposed to attack. This extends the-orchestrator-does-no-stage-work to the review itself, and to every finder and verifier on the pull request."
     },
     {
@@ -77,7 +77,7 @@
     {
       "id": "no-autoship-over-blocking-findings",
       "pattern": "Never auto-ship over an open blocking finding",
-      "rationale": "The rounds cap stops the loop; this stops the loop's failure from being laundered into a pull request. An exhausted plan surfaces its findings to the user and the run ends there — an auto run that ships anyway has turned the red team into decoration."
+      "rationale": "The rounds cap stops the loop; this stops the loop's failure from being laundered into a pull request. An exhausted plan surfaces its findings to the user and the run ends there \u2014 an auto run that ships anyway has turned the red team into decoration."
     },
     {
       "id": "review-what-github-has",
@@ -87,12 +87,12 @@
     {
       "id": "auto-never-forces",
       "pattern": "Auto mode never touches `--force`",
-      "rationale": "`--force` exists so a human who has re-read the drift can overrule it. An unattended run has nobody who re-read anything: blocking drift, like an exhausted stage, stops the run and surfaces — the flag is the one gate bypass in the CLI, and auto mode is exactly the caller that must never hold it."
+      "rationale": "`--force` exists so a human who has re-read the drift can overrule it. An unattended run has nobody who re-read anything: blocking drift, like an exhausted stage, stops the run and surfaces \u2014 the flag is the one gate bypass in the CLI, and auto mode is exactly the caller that must never hold it."
     },
     {
       "id": "auto-never-takes-over",
       "pattern": "Auto mode never passes `--take-over`",
-      "rationale": "`--take-over` is strictly more destructive than `--force`: it republishes an empty board over another session's checkpoint comment (the one artifact of a run that leaves the machine), removes that run's worktrees, and force-deletes its local branches with `git branch -D`, so a lane's unpushed commits go with them. Its artifacts are moved to `superseded/<timestamp>/` rather than deleted — the one part of the cost that stays recoverable, and the reason the documented cost has to name the other parts. `--force` already has `auto-never-forces`; without a matching entry the guardrail on the worse flag could be reworded or deleted with nothing failing."
+      "rationale": "`--take-over` is strictly more destructive than `--force`: it republishes an empty board over another session's checkpoint comment (the one artifact of a run that leaves the machine), removes that run's worktrees, and force-deletes its local branches with `git branch -D`, so a lane's unpushed commits go with them. Its artifacts are moved to `superseded/<timestamp>/` rather than deleted \u2014 the one part of the cost that stays recoverable, and the reason the documented cost has to name the other parts. `--force` already has `auto-never-forces`; without a matching entry the guardrail on the worse flag could be reworded or deleted with nothing failing."
     },
     {
       "id": "the-fixer-notes-the-skip",
@@ -132,11 +132,11 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" brief"
       },
       {
-        "step": "enforce the gate — required sections, the red-before-green evidence rule, a clean tree, a registered red-team round",
+        "step": "enforce the gate \u2014 required sections, the red-before-green evidence rule, a clean tree, a registered red-team round",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" accept"
       },
       {
-        "step": "register a red-team review of the plan — validate every citation, derive the verdict from the severities, bind it to the plan's hash",
+        "step": "register a red-team review of the plan \u2014 validate every citation, derive the verdict from the severities, bind it to the plan's hash",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review"
       },
       {
@@ -148,7 +148,7 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" ship"
       },
       {
-        "step": "open a review round — the diff at the pushed head (from round 2, the fix since the last round), the finder briefs sized to it",
+        "step": "open a review round \u2014 the diff at the pushed head (from round 2, the fix since the last round), the finder briefs sized to it",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-brief"
       },
       {
@@ -156,11 +156,11 @@
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-verify"
       },
       {
-        "step": "the registrar — assign ids once, classify every citation against the diff's hunks, apply the convergence rules, bind the round to its head",
+        "step": "the registrar \u2014 assign ids once, classify every citation against the diff's hunks, apply the convergence rules, bind the round to its head",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-register"
       },
       {
-        "step": "post one GitHub review per round — a thread per inline finding, a reply and a resolve on every prior thread",
+        "step": "post one GitHub review per round \u2014 a thread per inline finding, a reply and a resolve on every prior thread",
         "command": "node \"$SKILL_DIR/scripts/issueflow.js\" review-post"
       },
       {
@@ -195,41 +195,43 @@
       },
       {
         "step": "whether this issue is one change or several, and where the seams fall",
-        "why": "size signals suggest a split, they never locate it — only reading the code tells you which parts can land and be reviewed alone"
+        "why": "size signals suggest a split, they never locate it \u2014 only reading the code tells you which parts can land and be reviewed alone"
       },
       {
         "step": "the implementation, and the test that proves it",
         "why": "matching a codebase's idiom is imitation no rule set encodes, and only reading the issue against the assertions says whether they test the reported behaviour"
       },
       {
-        "step": "what the plan missed — the red team's hunt",
+        "step": "what the plan missed \u2014 the red team's hunt",
         "why": "the registrar checks that a finding cites something real; only a reviewer reading the plan finds the alternate root cause nobody ruled out or the file the plan forgot"
       },
       {
-        "step": "what the diff gets wrong — the finders' hunt",
+        "step": "what the diff gets wrong \u2014 the finders' hunt",
         "why": "the registrar knows which lines are in a hunk; only a reader knows which one is off by one"
       },
       {
-        "step": "whether a candidate is real, and whether a fix fixed it — the verifier's ruling",
+        "step": "whether a candidate is real, and whether a fix fixed it \u2014 the verifier's ruling",
         "why": "CONFIRMED, PLAUSIBLE and REFUTED are judgments about behaviour; the code enforces only that each is made, quoted, and made about a line that exists"
       },
       {
-        "step": "how to change the work so a finding no longer holds — the fixer's change",
+        "step": "how to change the work so a finding no longer holds \u2014 the fixer's change",
         "why": "the finding names the failure; the fix is the fixer's"
       },
       {
         "step": "whether the plan is good enough to approve",
-        "why": "this is the user's call and the whole point of the human stop — or, on an auto run, the red team's, registered and hash-bound"
+        "why": "this is the user's call and the whole point of the human stop \u2014 or, on an auto run, the red team's, registered and hash-bound"
       }
     ]
   },
-  "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and — see review-round-golden — a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
+  "_baseline_comment": "Pinned against real runs of this skill: natejswenson/local-fitness#133 (its real open issue list, its real issue payload, and the plan a real opus subagent produced), the real round-3 red-team review from the first auto-mode run (#132), this repo's own recorded stage timings, and \u2014 see review-round-golden \u2014 a real pull request review round. Offline and $0 by construction: frozen gh payloads are fed in through --repo-json/--issues-json/--issue-json, and posting is driven against a stubbed gh, so CI cannot spend and cannot flake.",
   "baseline": [
     {
       "id": "strict-lifecycle-recovery",
       "kind": "trap",
       "test": "scripts/tests/harness-lifecycle.test.mjs",
-      "fixtures": ["scripts/tests/fixtures/harness-gh.cjs"],
+      "fixtures": [
+        "scripts/tests/fixtures/harness-gh.cjs"
+      ],
       "update_command": "node --test scripts/tests/harness-lifecycle.test.mjs",
       "rationale": "Actual CLI, Git, regression processes and persisted fake GitHub state exercise review correction, fresh execution receipts, migration/amendment with independent review, cancellation and duplicate-free resume. Worker deliveries and remote responses are explicitly synthetic, not native-model quality evidence."
     },
@@ -245,7 +247,9 @@
       "id": "harness-evaluator",
       "kind": "trap",
       "test": "scripts/tests/harness-eval.test.mjs",
-      "fixtures": ["evals/harness/cases.json"],
+      "fixtures": [
+        "evals/harness/cases.json"
+      ],
       "update_command": "node --test scripts/tests/harness-eval.test.mjs",
       "rationale": "The evaluator must reject wrong repository results, unknown and empty cases, unexecuted oracles, and network/model calls. Real CLI runs and real red/green test processes prove the success path; incompatible comparisons and unavailable native evaluation stay inconclusive. Frozen real-run suites retain their own two-sided baselines and receive explicit execution floors."
     },
@@ -300,7 +304,7 @@
         "evals/baseline/next-4-approved.txt"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and — the expensive one — a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Pins the sticky issue comment, the ONLY artifact of a run that leaves the machine, and since 0.7.0 pins `next`'s output at four states — a driver that stopped printing its wait line, or that started dispatching before the red team had run, would otherwise regress in prose nobody diffs. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
+      "rationale": "The state machine is re-run over the frozen inputs and byte-compared, so this fails when behaviour changes rather than when a fixture is edited. Catches the pick-table's columns or the run board drifting, and \u2014 the expensive one \u2014 a stage brief that silently stopped carrying the artifact it inherits, which is invisible at the call site and shows up only as a subagent redoing work already done. Pins the sticky issue comment, the ONLY artifact of a run that leaves the machine, and since 0.7.0 pins `next`'s output at four states \u2014 a driver that stopped printing its wait line, or that started dispatching before the red team had run, would otherwise regress in prose nobody diffs. A floor of 3 issue rows on the frozen board, an assertion that the Detail column still reports more than one value, and a 5 000-byte floor plus an empty-Took assertion on the comment stop a fixture refresh that collapsed every input to 'nothing to report' from passing this golden over nothing."
     },
     {
       "id": "unapproved-stage-trap",
@@ -311,7 +315,7 @@
         "evals/inputs/artifacts/review-investigate-r1.findings.json"
       ],
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose plan is real, complete and red-teamed clean on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero — plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
+      "rationale": "The known-bad side, without which the golden goes green the day the gate stops refusing anything. Drives a run whose plan is real, complete and red-teamed clean on disk and whose ONLY defect is that nobody approved it, then asserts brief, accept and ship all exit non-zero \u2014 plus that a skipped stage is still not a pass. Verified non-vacuous: stubbing blockers() to return [] turns eight tests red across this file and gate.test.mjs."
     },
     {
       "id": "dependency-graph-pair",
@@ -327,7 +331,7 @@
       "test": "scripts/tests/gate.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/gate.test.mjs\"",
-      "rationale": "0.7.0 folded the test stage into implement, which removed the one independent pair of eyes that checked the red run. This is its mechanical replacement, two-sided: a green-only evidence file is refused, a green-then-red file is refused, a red whose only failure is a load/import error is refused — and the same file with a real assertion failure as the red half passes, with the LAST result reported. Without the refusing half, the gate quietly becomes 'a green suite ran', which is the failure this whole skill exists to prevent."
+      "rationale": "0.7.0 folded the test stage into implement, which removed the one independent pair of eyes that checked the red run. This is its mechanical replacement, two-sided: a green-only evidence file is refused, a green-then-red file is refused, a red whose only failure is a load/import error is refused \u2014 and the same file with a real assertion failure as the red half passes, with the LAST result reported. Without the refusing half, the gate quietly becomes 'a green suite ran', which is the failure this whole skill exists to prevent."
     },
     {
       "id": "offline-means-offline",
@@ -335,7 +339,7 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network — spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 — and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
+      "rationale": "Checkpointing at every gate puts `gh` and `git push` on the path of `accept`, which every eval also calls. The stub IS the assertion: a `gh` on PATH that records being run, and an offline run that must never produce that file. Without it the baseline evals would quietly start reaching the network \u2014 spending money, flaking, and breaking the promise that `ci / issueflow` costs $0 \u2014 and would still go green. A second case pins that the flag lives on the RUN rather than the invocation, so a later bare `accept --run-dir` cannot dial out either."
     },
     {
       "id": "checkout-ownership",
@@ -351,7 +355,7 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the two-sided proof's revert-and-rerun is only safe for the same reason — before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo. Since 0.8.0 it also covers the base a lane is cut from (#251), against a real bare origin: a lane created after a commit lands on origin's base contains that commit, a base that was force-pushed still cuts a lane (the forced refspec), an offline run cuts from what the checkout already had with origin unreachable, and a failed fetch is a `FetchError` that `brief` surfaces as exit 3 rather than warning past. The seven origin-less cases above are the regression floor — an unconditional fetch would break all of them."
+      "rationale": "Concurrent lanes are only safe because each works in its own checkout, and the two-sided proof's revert-and-rerun is only safe for the same reason \u2014 before 0.2.0 it ran in the user's live tree. Drives a real temporary git repository: a lane's worktree is on its own branch and outside the repo, a second provisioning does not disturb work in progress, a commit made in the worktree is visible to the main checkout (the property `ship` depends on), and removing the worktree keeps the branch. The last case is the one that found a real bug: `git` walks upwards to find a repository, so a run pointed at a subdirectory created a branch in the ENCLOSING repo. Since 0.8.0 it also covers the base a lane is cut from (#251), against a real bare origin: a lane created after a commit lands on origin's base contains that commit, a base that was force-pushed still cuts a lane (the forced refspec), an offline run cuts from what the checkout already had with origin unreachable, and a failed fetch is a `FetchError` that `brief` surfaces as exit 3 rather than warning past. The seven origin-less cases above are the regression floor \u2014 an unconditional fetch would break all of them."
     },
     {
       "id": "parallel-sessions",
@@ -359,7 +363,7 @@
       "test": "scripts/tests/parallel.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/parallel.test.mjs\"",
-      "rationale": "A second session must not be able to reset or republish over a run it does not own, and the board must say an issue is taken before anyone picks it (#251). Driven ONLINE against a recording `gh` stub, because `checkpoint()` returns before any `gh` call on an offline run — an assertion about a missing PATCH under `--issue-json` would pass with the bug fully present. Two-sided throughout: a claimed issue refuses and posts nothing, an unclaimed one still starts and still posts, `--take-over` proceeds and does republish, a second `start` leaves `run.json` byte-identical, a run `loadRun` refuses is given `--take-over` while a loadable one is given `next --run-dir`, and `claimRunDir` loses the race a read-then-write check cannot close. The board half pins `claimed`, a run's state, `unreadable` and `—`, plus the hermeticity pair that proves a `--issues-json` board reads no run root at all — this machine holds a run for issue 132, which is a row in the frozen board."
+      "rationale": "A second session must not be able to reset or republish over a run it does not own, and the board must say an issue is taken before anyone picks it (#251). Driven ONLINE against a recording `gh` stub, because `checkpoint()` returns before any `gh` call on an offline run \u2014 an assertion about a missing PATCH under `--issue-json` would pass with the bug fully present. Two-sided throughout: a claimed issue refuses and posts nothing, an unclaimed one still starts and still posts, `--take-over` proceeds and does republish, a second `start` leaves `run.json` byte-identical, a run `loadRun` refuses is given `--take-over` while a loadable one is given `next --run-dir`, and `claimRunDir` loses the race a read-then-write check cannot close. The board half pins `claimed`, a run's state, `unreadable` and `\u2014`, plus the hermeticity pair that proves a `--issues-json` board reads no run root at all \u2014 this machine holds a run for issue 132, which is a row in the frozen board."
     },
     {
       "id": "stage-contract-corpus",
@@ -368,7 +372,7 @@
       "corpus_glob": "evals/baseline/stage-*.json",
       "min_corpus": 2,
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "Every shipped stage frozen with its full contract — model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 2 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer files than ship must go red rather than report the remainder as clean."
+      "rationale": "Every shipped stage frozen with its full contract \u2014 model, agent, artifact, asks, requires, forbids. Catches a stage losing a field, and specifically a stage changing model, which changes what every run of it costs and how good it is while nothing else in the repo notices. The floor of 2 is the anti-vacuity rule: a state machine that lost a stage still renders as a complete-looking board, so a resolver matching fewer files than ship must go red rather than report the remainder as clean."
     },
     {
       "id": "run-terminal-state",
@@ -376,7 +380,7 @@
       "test": "scripts/tests/durability.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/durability.test.mjs\"",
-      "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched — the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again. `--close-issue` closes an open issue and reports an already-closed one honestly, and an offline run refuses outright."
+      "rationale": "Both fully-shipped runs `finish` was written to close still reported `ready to ship` forever, because nothing recorded that `ship` or `finish` had ever run (#219). Two-sided over a real temporary git repository with a stubbed `gh`: a lane whose pull request GitHub reports MERGED gets its worktree removed, its local branch deleted, and the landing recorded; a lane whose pull request is still OPEN, has none at all, or whose `gh` call fails is left completely untouched \u2014 the only path to `git branch -D` is a merge GitHub confirmed. A partially-landed split run finishes the merged lane, leaves the open one intact, and completes when `finish` runs again. `--close-issue` closes an open issue and reports an already-closed one honestly, and an offline run refuses outright."
     },
     {
       "id": "unreadable-run-row",
@@ -392,7 +396,7 @@
       "test": "scripts/tests/liveness.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/liveness.test.mjs\"",
-      "rationale": "`Took` used to answer only after a human typed `accept` (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+`; the same step once an artifact lands — still unaccepted — shows a `delivered` display state and a real duration. Since 0.7.0 a third case pins that a RE-BRIEFED stage does not read `delivered` off the previous round's artifact — before it, 'round 2 running' and 'round 2 finished' rendered identically. Two purity guards close the loop: `observe()` never writes `run.json` and predicts what `accept()` later persists, and `board(run)` with no `now` renders no `+` anywhere."
+      "rationale": "`Took` used to answer only after a human typed `accept` (#223). Two-sided: a step that is briefed with no artifact on disk shows a live elapsed `Took` suffixed `+`; the same step once an artifact lands \u2014 still unaccepted \u2014 shows a `delivered` display state and a real duration. Since 0.7.0 a third case pins that a RE-BRIEFED stage does not read `delivered` off the previous round's artifact \u2014 before it, 'round 2 running' and 'round 2 finished' rendered identically. Two purity guards close the loop: `observe()` never writes `run.json` and predicts what `accept()` later persists, and `board(run)` with no `now` renders no `+` anywhere."
     },
     {
       "id": "review-verdict-two-sided",
@@ -400,7 +404,7 @@
       "test": "scripts/tests/review.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/review.test.mjs\"",
-      "rationale": "The registrar is the anti-hallucination gate for the red team, and it needs both sides: a review with a cited note registers hash-bound, while a citation naming a file that does not exist, a heading the artifact lacks, or a line past EOF refuses the WHOLE review and writes no verdict. Also refuses a finding with no citation, no severity or no text, a review that is not JSON, a declared pass over a high finding, and zero findings above an empty notExamined — and, two-sided the other way, ACCEPTS a citation wrapped in backticks, which the 0.6.0 one-line grammar refused twice in twenty-four real rounds. A review of the implement stage is refused: code is reviewed on its pull request."
+      "rationale": "The registrar is the anti-hallucination gate for the red team, and it needs both sides: a review with a cited note registers hash-bound, while a citation naming a file that does not exist, a heading the artifact lacks, or a line past EOF refuses the WHOLE review and writes no verdict. Also refuses a finding with no citation, no severity or no text, a review that is not JSON, a declared pass over a high finding, and zero findings above an empty notExamined \u2014 and, two-sided the other way, ACCEPTS a citation wrapped in backticks, which the 0.6.0 one-line grammar refused twice in twenty-four real rounds. A review of the implement stage is refused: code is reviewed on its pull request."
     },
     {
       "id": "auto-accept-trap",
@@ -408,7 +412,7 @@
       "test": "scripts/tests/review.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/review.test.mjs\"",
-      "rationale": "The plan gate. accept must refuse a plan with no registered round on BOTH paths (the plan is attacked before anyone approves it), and the auto path must additionally refuse a run not started --auto, a blocked round, and an artifact edited after its pass — while a human may still approve over a blocked round, which is what the human stop is for. The good side approves and records autoApproved; an implement stage needs no on-disk review because its review is the pull request loop."
+      "rationale": "The plan gate. accept must refuse a plan with no registered round on BOTH paths (the plan is attacked before anyone approves it), and the auto path must additionally refuse a run not started --auto, a blocked round, and an artifact edited after its pass \u2014 while a human may still approve over a blocked round, which is what the human stop is for. The good side approves and records autoApproved; an implement stage needs no on-disk review because its review is the pull request loop."
     },
     {
       "id": "rounds-cap-trap",
@@ -416,7 +420,7 @@
       "test": "scripts/tests/review.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/review.test.mjs\"",
-      "rationale": "Three blocked rounds is where the plan loop stops converging and must stop running. Drives the real CLI over a run with three registered blocked rounds: a fourth brief of the stage and a fourth review brief both exit non-zero, auto-accept still refuses, and ship still refuses the run — exhaustion surfaces to the user, it never rounds up to shipped. Two-sided: below the cap the loop continues, and the re-brief carries the blocked round's findings verbatim."
+      "rationale": "Three blocked rounds is where the plan loop stops converging and must stop running. Drives the real CLI over a run with three registered blocked rounds: a fourth brief of the stage and a fourth review brief both exit non-zero, auto-accept still refuses, and ship still refuses the run \u2014 exhaustion surfaces to the user, it never rounds up to shipped. Two-sided: below the cap the loop continues, and the re-brief carries the blocked round's findings verbatim."
     },
     {
       "id": "review-contract-corpus",
@@ -425,7 +429,7 @@
       "corpus_glob": "evals/baseline/review-*.json",
       "min_corpus": 1,
       "update_command": "node evals/baseline/update.mjs",
-      "rationale": "The shipped plan reviewer frozen with its full contract, on opus, with at least eight asks — the plan reviewer hunts the investigation AND the design, and fewer than eight means one half fell out. The floor stops a resolver that matches nothing from reporting an unguarded plan gate as reviewed."
+      "rationale": "The shipped plan reviewer frozen with its full contract, on opus, with at least eight asks \u2014 the plan reviewer hunts the investigation AND the design, and fewer than eight means one half fell out. The floor stops a resolver that matches nothing from reporting an unguarded plan gate as reviewed."
     },
     {
       "id": "review-loop-two-sided",
@@ -433,7 +437,7 @@
       "test": "scripts/tests/prreview.test.mjs",
       "fixtures": [],
       "update_command": "node --test \"scripts/tests/prreview.test.mjs\"",
-      "rationale": "Every rule the pull request registrar enforces, paired with the shape it refuses, over a real git repository: a finding on a hunk's context line posts inline beside one outside every hunk that is body-only but KEEPS its severity; a nit posts in round 1 beside one suppressed in round 2 and one over the cap; a fixed prior finding resolves beside a moved line that stays open and escalates the fixer to opus; a PLAUSIBLE major on a line the fix did not touch becomes a note beside a PLAUSIBLE major on a line it did touch that stays a major; a cleanup angle cannot be a major; ids are content-addressed and stable across rewording; a prior finding with no verdict, a citation past EOF, and a branch that moved each refuse the round; the fifth round is a hand-back; converge refuses over an open major; a not-changed major is a dispute and the second dispute hands the run back. Posting is driven against a stubbed gh: exactly one pending review per round, one thread per inline finding, submitted as COMMENT, a refused anchor costing one thread and landing in the body, the fixed finding's thread resolved. Since 0.9.0, the cost rules are pinned the same way, because they were written against two measured runs (local-fitness #241, #242) that spent 83–94% of 1.1B context tokens in this loop: a round handed the fix delta is sized to it (1–3 finders, ≤4 verifiers), writes fix.patch and records fixLines, beside the same lines over the whole change getting the round-1 fleet, and an empty delta refused; a prior nit is never a verifier item — touched file or not — beside a prior major that always is; a nit the fixer reported fixed closes on its word at the next registration beside a major that waits for a verdict; a candidate proposed as a nit after round 1 is recorded and never verified, registered or posted, beside a proposed major that is and an unrated one that is; the fixer gets suggestion-nits in round 1 only; and the round-2 finder brief names fix.patch before diff.patch, lists the open majors and counts the rest. The CLI path is driven too: review-brief --offline on a real round 2 sizes it to the one-line fix."
+      "rationale": "Every rule the pull request registrar enforces, paired with the shape it refuses, over a real git repository: a finding on a hunk's context line posts inline beside one outside every hunk that is body-only but KEEPS its severity; a nit posts in round 1 beside one suppressed in round 2 and one over the cap; a fixed prior finding resolves beside a moved line that stays open and escalates the fixer to opus; a PLAUSIBLE major on a line the fix did not touch becomes a note beside a PLAUSIBLE major on a line it did touch that stays a major; a cleanup angle cannot be a major; ids are content-addressed and stable across rewording; a prior finding with no verdict, a citation past EOF, and a branch that moved each refuse the round; the fifth round is a hand-back; converge refuses over an open major; a not-changed major is a dispute and the second dispute hands the run back. Posting is driven against a stubbed gh: exactly one pending review per round, one thread per inline finding, submitted as COMMENT, a refused anchor costing one thread and landing in the body, the fixed finding's thread resolved. Since 0.9.0, the cost rules are pinned the same way, because they were written against two measured runs (local-fitness #241, #242) that spent 83\u201394% of 1.1B context tokens in this loop: a round handed the fix delta is sized to it (1\u20133 finders, \u22644 verifiers), writes fix.patch and records fixLines, beside the same lines over the whole change getting the round-1 fleet, and an empty delta refused; a prior nit is never a verifier item \u2014 touched file or not \u2014 beside a prior major that always is; a nit the fixer reported fixed closes on its word at the next registration beside a major that waits for a verdict; a candidate proposed as a nit after round 1 is recorded and never verified, registered or posted, beside a proposed major that is and an unrated one that is; the fixer gets suggestion-nits in round 1 only; and the round-2 finder brief names fix.patch before diff.patch, lists the open majors and counts the rest. The CLI path is driven too: review-brief --offline on a real round 2 sizes it to the one-line fix."
     },
     {
       "id": "review-round-golden",
@@ -453,8 +457,8 @@
       ],
       "corpus_glob": "evals/inputs/review-round/r*/verdicts-*.json",
       "min_corpus": 8,
-      "update_command": "node evals/freeze-round.mjs --run-dir <run> --lane <slug> --rounds 1,2 (freezes real rounds out of a finished run — never edit the fixture by hand)",
-      "rationale": "The review loop's whole product is what the registrar decides and what it posts, and both are byte-compared here against two REAL rounds of the first real loop (natejswenson/local-fitness#236): a throwaway repository is rebuilt whose commits carry the files each round could look at, the real finders' candidates and the real verifiers' verdicts are dropped in, and the registrar runs for real — hunk classification against the real diff, citations against the rebuilt trees, ids assigned once, the round-1 fix report applied so round 2's fixed/still-open transitions and resolves are real. Floors: two rounds, ≥3 majors in round 1, ≥8 fixed in round 2, ≥5 new nits suppressed by the round-1 rule, ≥8 inline threads, and a verdict-file corpus of at least 8 — a refresh that collapsed to an empty round, or a registrar that stopped posting inline, cannot pass. A second test asserts no frozen file outside the target repo's own content carries a machine path, which is the rule the first real round broke on the pull request itself."
+      "update_command": "node evals/freeze-round.mjs --run-dir <run> --lane <slug> --rounds 1,2 (freezes real rounds out of a finished run \u2014 never edit the fixture by hand)",
+      "rationale": "The review loop's whole product is what the registrar decides and what it posts, and both are byte-compared here against two REAL rounds of the first real loop (natejswenson/local-fitness#236): a throwaway repository is rebuilt whose commits carry the files each round could look at, the real finders' candidates and the real verifiers' verdicts are dropped in, and the registrar runs for real \u2014 hunk classification against the real diff, citations against the rebuilt trees, ids assigned once, the round-1 fix report applied so round 2's fixed/still-open transitions and resolves are real. Floors: two rounds, \u22653 majors in round 1, \u22658 fixed in round 2, \u22655 new nits suppressed by the round-1 rule, \u22658 inline threads, and a verdict-file corpus of at least 8 \u2014 a refresh that collapsed to an empty round, or a registrar that stopped posting inline, cannot pass. A second test asserts no frozen file outside the target repo's own content carries a machine path, which is the rule the first real round broke on the pull request itself."
     },
     {
       "id": "next-driver",
@@ -481,8 +485,26 @@
       "test": "scripts/tests/liveness.test.mjs",
       "corpus_glob": "evals/inputs/timings/issue-*/run.json",
       "min_corpus": 3,
-      "update_command": "field-project this repo's own current run.json for issue-212/215/219 under evals/inputs/timings/ — schema/repo/issue/stages/lanes[].stages and their `at` timestamps only, no artifact prose and no prompt text; there is no scripted regenerator because these are frozen real runs, not a re-derivable fixture. They are schema 2 and stay schema 2: timings.mjs reads schema 2 and 3 alike, because both record the same `at` shape on the same stage ids",
+      "update_command": "field-project this repo's own current run.json for issue-212/215/219 under evals/inputs/timings/ \u2014 schema/repo/issue/stages/lanes[].stages and their `at` timestamps only, no artifact prose and no prompt text; there is no scripted regenerator because these are frozen real runs, not a re-derivable fixture. They are schema 2 and stay schema 2: timings.mjs reads schema 2 and 3 alike, because both record the same `at` shape on the same stage ids",
       "rationale": "`brief`'s expectation line and `next`'s stall threshold both read real prior-run durations off the run's sibling directories, and the anti-vacuity floor is the whole point: a `readTimings` that matched nothing would silently degrade to `no past timings on this repo` and a 30-minute default, and pass every other assertion. The floor of 3 is this repo's own #212/#215/#219 runs, and a companion test asserts the scan over them finds at least 10 individual stage samples, not just 3 files."
+    },
+    {
+      "id": "current-verifier-handoff",
+      "kind": "trap",
+      "test": "scripts/tests/fixer-handoff.test.mjs",
+      "fixtures": [
+        "evals/inputs/retry-366/fixer-handoff.json"
+      ],
+      "update_command": "node evals/freeze-handoff.mjs --run-dir <canonical-run> --lane root --round 3 --finding f-a32800bf --brief <captured-bad-brief> --out evals/inputs/retry-366/fixer-handoff.json",
+      "rationale": "Actual #366 round-three verifier named the duplicate-source merge, but the old fixer brief only showed the already-repaired normalization example. Assert current evidence is present first and old evidence is labeled history; preserve the initial-round reproduction when no history exists. The real capture failed against the prior renderer."
+    },
+    {
+      "id": "stage-guidance-scope",
+      "kind": "trap",
+      "test": "scripts/tests/guidance-scope.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/guidance-scope.test.mjs",
+      "rationale": "The #366 planning brief imported unrelated fixture and scratch rules. Both hosts must retain root and applicable nested guidance while excluding unrelated instructions; directory scopes must include their own descendants. Observed failing against the previous renderer/resolver."
     }
   ]
 }

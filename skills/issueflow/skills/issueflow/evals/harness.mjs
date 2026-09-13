@@ -117,7 +117,7 @@ function cliCase(source, dir, host, env) {
   const output = readFileSync(join(dir, 'next.stdout'), 'utf8');
   const persisted = state.runtime === host && state.offline === true && state.issue.number === 1;
   const next = host === 'claude' ? state.stages[0].state === 'briefed' && existsSync(join(run, 'briefs/investigate.md'))
-    : /approved Codex workspace/.test(output) && state.stages[0].state === 'pending';
+    : /approved Codex workspace|next: stop — workspace/.test(output) && state.stages[0].state === 'pending';
   return { pass: persisted && next, detail: host === 'claude' ? 'real CLI persisted state and delivered a plan brief' : 'real CLI preserved Codex identity and withheld dispatch without prepared storage' };
 }
 
@@ -180,7 +180,7 @@ export async function evaluate({ out, ref = null, selected = null, manifest = lo
   const source = captureSource(out, ref);
   const networkLog = join(out, 'network-attempts.log');
   const preload = join(here, 'harness/offline.cjs');
-  const env = { ...process.env, NODE_OPTIONS: `--require ${JSON.stringify(preload)}`, ISSUEFLOW_EVAL_NETWORK_LOG: networkLog, ISSUEFLOW_NATIVE_HOST: '', NODE_TEST_CONTEXT: undefined, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' };
+  const env = { ...process.env, NODE_OPTIONS: `--require ${JSON.stringify(preload)}`, ISSUEFLOW_EVAL_NETWORK_LOG: networkLog, ISSUEFLOW_NATIVE_HOST: '', ISSUEFLOW_SESSION_ID: 'offline-eval-controller', CODEX_THREAD_ID: undefined, CLAUDE_SESSION_ID: undefined, ISSUEFLOW_CONTINUATION_FILE: undefined, NODE_TEST_CONTEXT: undefined, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' };
   const start = performance.now();
   const results = [];
   for (const item of cases) {

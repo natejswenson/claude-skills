@@ -1,3 +1,4 @@
+import { controllerTestEnv } from './helpers.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
@@ -137,6 +138,17 @@ test('CLI drains five finder and four verifier briefs through persisted waves an
   }
 });
 
+test('fresh implementation dispatch does not inherit a previous attempt heartbeat age', (t) => {
+  const { dir, cli } = cliFixture(t);
+  const run = loadRun(dir), step = findStep(run, 'implement');
+  writeFileSync(progressPath(dir, step), 'previous implementation completed\n');
+  backdate(progressPath(dir, step), 720);
+  const result = cli('next');
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /root\/implement is in flight/);
+  assert.doesNotMatch(result.stdout, /stalled|re-dispatch/);
+});
+
 for (const activity of ['silent', 'progress', 'evidence', 'checkout']) {
   test(`CLI implementation wave retains heartbeat detection: ${activity}`, (t) => {
     const { dir, tree, cli, ok, implementation } = cliFixture(t);
@@ -205,16 +217,27 @@ for (const role of ['finder', 'verifier', 'fixer']) {
 }
 
 for (const stage of ['investigate', 'implement', 'redTeam']) {
-  test(`${stage} receives scoped guidance from the actual worktree`, () => {
+  test(`${stage} receives scoped guidance from the actual worktree`, (t) => {
     const tree = mkdtempSync(join(tmpdir(), 'issueflow-guidance-'));
+    t.after(() => rmSync(tree, { recursive: true, force: true }));
     mkdirSync(join(tree, 'src'));
     for (const [path, content] of Object.entries({ 'CLAUDE.md': 'ROOT_CLAUDE_RULE', 'AGENTS.md': 'SHADOWED_ROOT_RULE', 'AGENTS.override.md': 'ROOT_OVERRIDE_RULE', 'REVIEW.md': 'ROOT_REVIEW_RULE', 'src/AGENTS.md': 'NESTED_AGENT_RULE', 'src/CLAUDE.md': 'NESTED_CLAUDE_RULE', 'src/REVIEW.md': 'NESTED_REVIEW_RULE' })) writeFileSync(join(tree, path), content);
     const run = createRun({ repo: REPO, issue: ISSUE, policy: POLICY, runtime: 'codex' });
     const step = findStep(run, stage === 'redTeam' ? 'investigate' : stage);
-    const text = stage === 'redTeam' ? renderReviewBrief('/tmp/run', run, step, ISSUE, 1, tree) : renderBrief('/tmp/run', run, step, ISSUE, tree);
-    for (const rule of ['ROOT_CLAUDE_RULE', 'ROOT_OVERRIDE_RULE', 'ROOT_REVIEW_RULE', 'NESTED_AGENT_RULE', 'NESTED_CLAUDE_RULE', 'NESTED_REVIEW_RULE']) assert.ok(text.includes(rule), `missing ${rule}`);
+    const dir = join(tree, 'run');
+    const contract = {schema:1,risk:'docs',criteria:[{id:'C1',description:'scope guidance'}],nonGoals:[],allowedPaths:['src/'],checks:[{id:'T1',type:'command',argv:['node','--version'],criteria:['C1']}]};
+    if (stage === 'implement') run.harness = {contract};
+    if (stage === 'redTeam') {
+      const artifact = artifactPath(dir, step); mkdirSync(join(artifact, '..'), {recursive:true});
+      writeFileSync(artifact, '```issueflow-contract\n' + JSON.stringify(contract) + '\n```\n');
+    }
+    const text = stage === 'redTeam' ? renderReviewBrief(dir, run, step, ISSUE, 1, tree) : renderBrief(dir, run, step, ISSUE, tree);
+    for (const rule of ['ROOT_CLAUDE_RULE', 'ROOT_OVERRIDE_RULE', 'ROOT_REVIEW_RULE']) assert.ok(text.includes(rule), `missing ${rule}`);
+    for (const rule of ['NESTED_AGENT_RULE', 'NESTED_CLAUDE_RULE', 'NESTED_REVIEW_RULE']) {
+      assert.equal(text.includes(rule), stage !== 'investigate', 'nested guidance follows known scope');
+    }
     assert.doesNotMatch(text, /SHADOWED_ROOT_RULE/);
-    assert.ok(text.indexOf('ROOT_OVERRIDE_RULE') < text.indexOf('NESTED_AGENT_RULE'));
+    if (stage !== 'investigate') assert.ok(text.indexOf('ROOT_OVERRIDE_RULE') < text.indexOf('NESTED_AGENT_RULE'));
   });
 }
 
@@ -268,7 +291,7 @@ test('start --runtime codex adopts a pre-artifact legacy run', () => {
   execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-qm', 'base'], { cwd: source });
   const legacy = createRun({ repo: { ...REPO, path: source }, issue: ISSUE, policy: POLICY, offline: true });
   delete legacy.host; delete legacy.runtime; delete legacy.dispatch;
-  saveRun(dir, legacy); writeFileSync(repoJson, JSON.stringify({ ...REPO, path: source })); writeFileSync(issueJson, JSON.stringify(ISSUE));
+  saveRun(dir, legacy); mkdirSync(join(dir,'inputs'),{recursive:true}); writeFileSync(join(dir,'inputs/issue.json'),JSON.stringify(ISSUE)); writeFileSync(repoJson, JSON.stringify({ ...REPO, path: source })); writeFileSync(issueJson, JSON.stringify(ISSUE));
   const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', dir], { encoding: 'utf8' });
   assert.match(output, /Host retained as codex/);
   assert.equal(loadRun(dir).host, 'codex');
@@ -444,26 +467,26 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   writeFileSync(repoJson, `${JSON.stringify({ ...REPO, path: source })}\n`);
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
 
-  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
+  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8', env: controllerTestEnv('runtime-controller') });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.runtime, 'codex');
   assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
   assert.match(output, /Auto run: the plan has independent red-team review; implementation has an evidence gate/);
   assert.doesNotMatch(output, /every stage is gated by a red-team review/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
-  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8' });
+  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8', env: controllerTestEnv('runtime-controller') });
   assert.match(next, /model override omitted.*reasoning_effort `high`.*role `worker`.*fork_turns `none`/);
   assert.match(next, /next: dispatch \(brief\)/);
 
   const reviewDir = join(root, 'review-plan');
-  execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '43', '--runtime', 'codex', '--review-plan', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', reviewDir]);
+  execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '43', '--runtime', 'codex', '--review-plan', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', reviewDir]);
   const reviewPlan = JSON.parse(readFileSync(join(reviewDir, 'run.json'), 'utf8'));
   assert.equal(reviewPlan.auto, false, '--review-plan is the explicit human-gate mode');
   assert.equal(reviewPlan.autonomous, false, '--review-plan also disables automatic budget renewal');
 
   const badDir = join(root, 'bad');
   assert.throws(
-    () => execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'other', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', badDir], { stdio: 'pipe' }),
+    () => execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'other', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', badDir], { stdio: 'pipe' }),
     (err) => /unknown runtime `other`/.test(String(err.stderr)),
   );
   assert.equal(existsSync(join(badDir, 'run.json')), false);
@@ -471,12 +494,13 @@ test('start --runtime codex persists the host contract; an invalid host writes n
 
 test('auto start persists bounded budget automation without a second opt-in flag', () => {
   const root = mkdtempSync(join(tmpdir(), 'issueflow-autonomous-'));
+  const source=join(root,'source');mkdirSync(source);execFileSync('git',['init','-qb','dev'],{cwd:source});execFileSync('git',['-c','user.name=test','-c','user.email=test@example.invalid','commit','--allow-empty','-qm','base'],{cwd:source});
   const runDir = join(root, 'run');
   const repoJson = join(root, 'repo.json');
   const issueJson = join(root, 'issue.json');
   writeFileSync(repoJson, `${JSON.stringify(REPO)}\n`);
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
-  execFileSync('node', [CLI, 'start', '--repo', REPO.path, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
+  execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.autonomous, true);
   assert.ok(persisted.totalBudgetSeconds > persisted.complexity.budgetSeconds);

@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { PLAN_STAGE } from './stages.mjs';
 import { SHARED_DIR, evidencePath, findStep, laneTree } from './run.mjs';
 import {
-  MAX_REVIEW_ROUNDS, NIT_CAP, candidatesPath, diffPath, finderBriefPath, finderProfile, fixBriefPath, contextPath,
+  reviewRoundLabel, NIT_CAP, candidatesPath, diffPath, finderBriefPath, finderProfile, fixBriefPath, contextPath,
   fixPatchPath, fixReportPath, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
@@ -199,7 +199,7 @@ export function renderFinderBrief(dir, run, lane, entry, n, { angles, issue, fil
     `# issueflow review brief — finder ${n} of ${entry.finders} (round ${entry.round})`,
     '',
     `You are a **finder** in the review of pull request #${lane.pr.number} on \`${run.repo.owner}/${run.repo.name}\`,`,
-    `lane \`${lane.slug}\`. Round ${entry.round} of at most ${lane.review.maxRounds ?? MAX_REVIEW_ROUNDS}. Your job is recall: surface every`,
+    `lane \`${lane.slug}\`. Round ${reviewRoundLabel(lane, entry.round)}. Your job is recall: surface every`,
     'candidate defect your angles can reach. A separate verifier decides what is real; you do not.',
     ...(fixRound(entry) ? [
       '',
@@ -302,7 +302,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     `# issueflow review brief — verifier ${n} of ${entry.verifiers} (round ${entry.round})`,
     '',
     `You are a **verifier** in the review of pull request #${lane.pr.number} on \`${run.repo.owner}/${run.repo.name}\`,`,
-    `lane \`${lane.slug}\`. Round ${entry.round} of at most ${lane.review.maxRounds ?? MAX_REVIEW_ROUNDS}. Finders have filed candidates; you`,
+    `lane \`${lane.slug}\`. Round ${reviewRoundLabel(lane, entry.round)}. Finders have filed candidates; you`,
     'decide which are real, and you decide what became of the majors still open from earlier',
     'rounds. Nothing you pass is looked at again before it is posted, and nothing you refute is',
     'looked at again at all.',
@@ -320,7 +320,7 @@ export function renderVerifierBrief(dir, run, lane, entry, n, { items, issue }) 
     );
   }
   out.push(intentBlock(dir, run), '', issueBlock(issue), '', ...(resolvedGuidance(tree, items) ? [resolvedGuidance(tree, items), ''] : []), '## Your items', '');
-  if (run.harness && entry.contextHash) out.push(`Read the complete shared context at \`${contextPath(dir, lane, entry.round)}\` (hash \`${entry.contextHash}\`). It binds the approved criteria and source inputs; read primary files for omitted excerpts.`, '');
+  if (run.harness && entry.contextHash) out.push(`Read the complete shared context at \`${contextPath(dir, lane, entry.round)}\` (packetHash \`${entry.contextHash}\`; validate with verifyContextPacket from scripts/lib/context.mjs, not a raw file checksum). It binds the approved criteria and source inputs; read primary files for omitted excerpts.`, '');
   if (fresh.length > 0) {
     out.push(`### New candidates (${fresh.length})`, '', '```json', JSON.stringify(fresh.map(({ prior: _p, mergedFrom: _m, ...c }) => c), null, 2), '```', '');
   }
@@ -428,16 +428,25 @@ export function renderFixBrief(dir, run, lane, entry, { items, checks, model, is
   if (run.harness) out.push('Keep the approved machine contract, scope, and required checks intact. A fixer commit invalidates execution receipts; the controller reruns all obligations before the next review. Report missing authority or impossible checks instead of weakening them.', '');
   if (guidance) out.splice(out.length - 2, 0, guidance, '');
   for (const f of items) {
+    const latest = f.history?.at(-1);
+    const current = latest?.verdict === 'still-open' ? latest : null;
     out.push(
       `### \`${f.id}\` — ${f.severity} — \`${f.file}:${f.line}\``,
       '',
+      ...(current ? [
+        `**Current verified failure — round ${current.round}.**`, '',
+        ...(current.note ? [current.note, ''] : []),
+        `> ${current.quote.split('\n').join('\n> ')}`, '',
+        'Fix this current mechanism through the complete affected call path. A passing reproduction of the original example alone does not resolve the latest verifier evidence.', '',
+        '**Original report (historical).**', '',
+      ] : []),
       f.summary,
       '',
       `**Failure scenario.** ${f.failure_scenario}`,
     );
     if (f.quote) out.push('', `> ${f.quote.split('\n').join('\n> ')}`);
     if (f.suggestion) out.push('', 'Suggested replacement for that line:', '', '```', f.suggestion.replace(/\n$/, ''), '```');
-    if (f.stillOpenRounds > 0) out.push('', `This finding has survived ${f.stillOpenRounds} fix round${f.stillOpenRounds === 1 ? '' : 's'} already — the previous fix did not remove the mechanism. Read the verifier's quote above before changing anything.`);
+    if (f.stillOpenRounds > 0) out.push('', `This finding has survived ${f.stillOpenRounds} fix round${f.stillOpenRounds === 1 ? '' : 's'} already. Use the current verifier evidence above; the original example may already be repaired.`);
     if (f.disputeRuling) out.push('', `The previous fixer disputed this; the verifier ruled: ${f.disputeRuling}`);
     out.push('');
   }

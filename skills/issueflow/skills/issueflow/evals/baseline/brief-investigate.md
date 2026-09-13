@@ -125,6 +125,10 @@ Do not change a single file, and do not write the implementation. This stage rea
 | base branch | main |
 | work item | the whole issue |
 
+Before inspecting or changing a newly selected path, read its applicable
+CLAUDE.md, AGENTS.md (or AGENTS.override.md), and REVIEW.md from root to leaf.
+The guidance below covers the known scope; unrelated fixture and scratch instructions are not repository-wide rules.
+
 ## Deliver
 
 Write your answer to `<RUN>/shared/investigate.md`.

@@ -74,7 +74,15 @@ export const PROBES = [
     cannot: 'whether an announcement that exists is phrased the way the skill asked for',
     decide: (events, { skill }) => {
       const re = new RegExp(`using the \\*{0,2}${skill}\\*{0,2} skill`, 'i');
-      const hits = said(events).filter((e) => re.test(e.text ?? ''));
+      const hits = said(events).filter((e) => {
+        const text = e.text ?? '';
+        if (re.test(text)) return true;
+        // A combined announcement still names this skill. Require an actual
+        // list before 'skills', not an unrelated later mention of its name.
+        return [...text.matchAll(/\busing\s+(?:the\s+)?([^.!?\n]{1,160}?)\s+skills?\b/gi)]
+          .some((match) => match[1].replace(/\*|`/g, '').split(/\s*(?:,|&|\band\b)\s*/i)
+            .some((name) => name.trim().toLowerCase() === skill.toLowerCase()));
+      });
       const first = said(events)[0];
       if (hits.length === 0) {
         return first ? [{ eventId: first.id, detail: `no "using the ${skill} skill" announcement anywhere in the run` }] : [];
@@ -110,7 +118,8 @@ export const PROBES = [
         if (!claim.test(e.text ?? '')) continue;
         const before = events.slice(0, events.indexOf(e));
         if (!ranAny(before, runner)) {
-          out.push({ eventId: e.id, detail: 'claims tests pass, but no test runner was invoked earlier in the run' });
+          const incomplete=before.some(p=>p.executionUnknown||p.toolKind==='delegation');
+          out.push({ eventId: e.id, ...(incomplete?{cannotDecide:true}:{}), detail: incomplete?'test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete':'claims tests pass, but no test runner was invoked earlier in the run' });
         }
       }
       return out;
@@ -229,6 +238,7 @@ export function runProbes({ contract, events, skill }) {
   const eventIds = new Set(events.map((e) => e.id));
   const examined = new Set();
   const raw = [];
+  const cannotDecide = [];
 
   // One pass per PROBE, not per clause. Deciding once per bound clause meant a
   // single act produced one finding for every clause the probe matched, so no
@@ -244,7 +254,7 @@ export function runProbes({ contract, events, skill }) {
     for (const hit of probe.decide(events, { clause: mostSpecific(bound), clauses: bound, skill })) {
       const narrowed = hit.appliesTo ? bound.filter((c) => hit.appliesTo.test(c.text)) : bound;
       const clause = mostSpecific(narrowed.length > 0 ? narrowed : bound);
-      raw.push({
+      (hit.cannotDecide ? cannotDecide : raw).push({
         id: findingId(probe.id, clause.id, hit.eventId),
         probe: probe.id,
         clauseId: clause.id,
@@ -259,6 +269,7 @@ export function runProbes({ contract, events, skill }) {
   return {
     findings,
     rejected,
+    ...(cannotDecide.length?{cannotDecide}:{}),
     examined: [...examined].sort(),
     unexamined: contract.clauses.filter((c) => !examined.has(c.id)).map((c) => c.id),
     // A probe that found no clause to attach to left no trace in any output,

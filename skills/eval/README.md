@@ -118,6 +118,18 @@ step whose command does not exist fails `skillfactory verify`.
 | which confirmed findings deserve to become permanent eval cases | a case is maintenance forever, and most findings are not worth it |
 | the report prose and the recommended fix for each finding | a fix is a design decision, not a diff |
 
+## Correlated evidence
+
+`trace --bundle <sources.json>` accepts `[{path, sessionId, parentId?}]`
+with explicitly linked parent and child transcripts. Source hashes, line anchors,
+timestamps and native call IDs remain attached to evidence. Structured process
+exit codes survive output clipping; embedded code is never executed. Missing
+child execution evidence is reported as `cannotDecide`.
+
+`contract --references <loaded.json>` accepts the captured reference records
+`[{path, sha256, loadedAt, label?}]`. Use the bytes loaded during the run; changed
+or unavailable reference files are refused instead of silently replaced.
+
 ## Development
 
 ```bash

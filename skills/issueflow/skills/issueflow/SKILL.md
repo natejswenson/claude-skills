@@ -2,7 +2,7 @@
 name: issueflow
 description: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "take this issue to a PR", or asks to list open issues. Runs autonomously by default; use --review-plan only when a human plan gate is explicitly requested.
 user_invocable: true
-version: 0.16.0
+version: 0.17.0
 ---
 
 ## Runtime
@@ -30,7 +30,7 @@ an artifact to clear a gate.
 
 New runs require controller-observed verification receipts and atomic worker
 completion. Read `references/harness.md` before the first strict run or recovery;
-it defines the reviewed JSON contract, native-release acknowledgement, and limits.
+Also read `references/completion.md`: ownership, preflight, amendments, CI and endpoints.
 
 Autoflow is autonomous. A registered, hash-bound red-team pass approves the
 plan; `next` continues. `--review-plan` opts into one human gate. Routine edits,
@@ -80,8 +80,9 @@ destructive cost. Auto mode never takes over.
 
 ## Drive `next`
 
-After `start`, run `next` repeatedly. It performs deterministic work and prints
-exactly one dispatch, wait, or stop.
+After `start`, run `next` repeatedly. It prints one dispatch, wait, or stop.
+Emit semantic milestones; during waits report factual progress at least every
+60 seconds. Persist the requested endpoint and existing authority; exclusions prevail.
 
 - **Dispatch:** Spawn exactly the printed subagents with exactly the printed
   prompt and host adapter fields. Codex fleets are capacity limited; release
@@ -112,7 +113,7 @@ exactly one dispatch, wait, or stop.
 | `budget` | Delivered artifacts reach their gates before expiry blocks new dispatches. Report checkpoint results; resume only on explicit direction. |
 | `stalled` · `unpushed` | Show the named incomplete work and stop; do not manufacture completion. |
 | `offline` | Report local verification only; remote PR, CI, and readiness remain unverified. |
-| `shipped` | Report every PR and review URL. The PR is ready; merge only when authorized. |
+| `shipped` · `reviewed` | Report PRs and immediately present the concrete final authorization, unless already given or excluded. |
 | `done` | Report verified landings and cleanup. |
 
 The flow is plan → red team → implementation with red-before-green proof →
@@ -131,8 +132,8 @@ tests, templates, generated files, manifests, or acceptance criteria use
 preserves the budget. Observed behavioral/sensitive scope escalates review, never the allowance. Elapsed time includes waits; expiry prevents new
 dispatches, including a refused gate's send-back. In-flight work may finish.
 
-Review fanout discounts tests and generated indexes; sensitive changes retain
-multiple finders. Every file remains in the brief. Candidates determine verifiers.
+Review fanout discounts generated indexes; sensitive changes retain multiple finders.
+Every file remains in the brief. Candidates determine verifiers.
 
 ## Safety invariants
 
@@ -163,6 +164,7 @@ multiple finders. Every file remains in the brief. Candidates determine verifier
 | The plan proposes multiple work items | `references/decomposition.md` |
 | Editing briefs, dispatch, completion, or wait behavior | `references/dispatch.md` |
 | Editing or diagnosing PR review behavior | `references/review-method.md` |
+| Learning from a stalled run or maintaining regression coverage | `references/run-lessons.md` |
 | Internal commands beyond `board`, `start`, and `next` | `node "$SKILL_DIR/scripts/issueflow.js" --help` |
 
 The CLI and `skill-invariants.json` are the canonical inventories. Do not

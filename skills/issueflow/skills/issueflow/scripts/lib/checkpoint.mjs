@@ -239,7 +239,7 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
         ['Step', 'Rounds', 'Blocking found', 'Notes'],
         reviewed.map((s) => {
           const rounds = s.stage.review.rounds;
-          const sum = (keys) => rounds.reduce((n, r) => n + keys.reduce((m, k) => m + r.findings[k], 0), 0);
+          const sum = (keys) => rounds.reduce((n, r) => n + keys.reduce((m, k) => m + (r.findings?.[k] ?? (r.items??[]).filter(f=>f.severity===k).length), 0), 0);
           return [s.key, String(rounds.length), String(sum(['critical', 'high'])), String(sum(['medium', 'low']))];
         }),
       ),

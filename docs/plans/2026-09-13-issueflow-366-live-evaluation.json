@@ -1,0 +1,718 @@
+{
+  "schema": 1,
+  "date": "2026-09-13",
+  "outcome": "incomplete-review-exhausted",
+  "issue": "https://github.com/natejswenson/claude-skills/issues/366",
+  "previousTestRepository": "https://github.com/natejswenson/fuzzy-boom-snicker",
+  "baseChoice": "User selected main \u2014 follow current repository policy",
+  "base": "main",
+  "baseHead": "900b735fe46a23a5575adfebd95abea6e9a49674",
+  "pr": {
+    "url": "https://github.com/natejswenson/claude-skills/pull/373",
+    "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+    "draft": true,
+    "state": "OPEN"
+  },
+  "completion": {
+    "schema": 1,
+    "endpoint": "reviewed-pr",
+    "source": "User requested actual Issueflow retry #366; repository requires draft until merge authorization",
+    "excluded": [
+      "ready",
+      "merge",
+      "deploy",
+      "close-issue"
+    ],
+    "deployments": [],
+    "companions": [],
+    "authorizations": [],
+    "obligations": {},
+    "state": "pending"
+  },
+  "review": {
+    "converged": false,
+    "maxRounds": 2,
+    "round1": "cancelled-stale-base",
+    "round2": "major-confirmed-repair-pushed",
+    "openFinding": {
+      "id": "f-a32800bf",
+      "file": "skills/gmailtriage/skills/gmailtriage/scripts/lib/ingest.mjs",
+      "line": 45,
+      "side": "RIGHT",
+      "category": "intent",
+      "severity": "major",
+      "verdict": "CONFIRMED",
+      "introduced_by_diff": true,
+      "short_summary": "CLI normalization drops existing category evidence",
+      "summary": "The CLI normalization step discards explicit category and persisted ambiguity before the new resolver can combine them with search evidence.",
+      "failure_scenario": "A raw threads object containing id t, category social, a conflict marker with social/promotions, and a messages array with sender/subject/date/INBOX is passed through normalizeSearchThreads then applyCategories with promoIds [t]. Observed output is category promotions, hasUnsubscribe true and no marker; a sender-plus-hasUnsubscribe trash match returns true. The new references/gmail.md promise that ingest accepts existing explicit fields and that re-ingesting markers cannot erase uncertainty does not hold through this CLI path. The stripping line predates the diff; this is a candidate missing integration under the approved plan's existing-evidence policy, whose applicability to raw inputs should be verified.",
+      "quote": "out.push({\n      id: t.id,\n      from: first.sender ?? null,\n      subject: first.subject ?? null,\n      date: first.date ?? null,\n      labelIds: [...new Set(msgs.flatMap((m) => m?.labelIds ?? []))],\n    });",
+      "suggestion": null,
+      "inline": false,
+      "status": "open",
+      "firstRound": 2,
+      "lastRound": 2,
+      "head": "4fb905870d5a1e879a6bbf1373b688d889967307",
+      "stillOpenRounds": 0,
+      "disputes": 0,
+      "dispute": null,
+      "threadId": null,
+      "posted": false,
+      "demoted": null
+    },
+    "reviewUrl": "https://github.com/natejswenson/claude-skills/pull/373#pullrequestreview-5191014833",
+    "nextRequired": "User-authorized independent review of final repair"
+  },
+  "budget": {
+    "originalCapSeconds": 14400,
+    "renewals": [
+      {
+        "at": "2026-09-13T03:38:40.010Z",
+        "budgetSeconds": 1800
+      },
+      {
+        "at": "2026-09-13T13:52:55.059Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      },
+      {
+        "at": "2026-09-13T14:25:22.136Z",
+        "budgetSeconds": 1800,
+        "automatic": true
+      }
+    ],
+    "reviewCapReset": false
+  },
+  "baseline": {
+    "schema": 4,
+    "base": "dev",
+    "planRounds": 2,
+    "planVerdicts": [
+      "blocked",
+      "blocked"
+    ],
+    "pr": null,
+    "implementation": "pending",
+    "budgetCapSeconds": 14400
+  },
+  "trialMode": "Actual native Codex retry of the retained run; repaired controller variants during the trial; not a clean paired speed experiment.",
+  "controllerSource": {
+    "initial": "096860d03b9d24533c20b0e292dfbcf70a3993a5fd739933721c89661c3deaf7",
+    "final": "a97cb26dafdb583ced71eeaf6fec7c273ee5cd8b31d7bfdf482c9b36a03f0afd",
+    "patch": "/private/tmp/issueflow-366-live-20260913/evals/retry-controller-repairs.patch",
+    "released": false
+  },
+  "controllerRepairs": [
+    {
+      "id": "M1",
+      "description": "Explicit pre-implementation migration can select the user-chosen current base and archive the previous policy.",
+      "red": "evals/candidate-regression-red.log",
+      "green": "evals/issueflow-suite-final-package.log",
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    },
+    {
+      "id": "M2",
+      "description": "Read migration policy from the selected committed base, preserving unrelated dirty working policy.",
+      "observed": "logs/20260913T135023.stderr",
+      "red": "evals/repaired-candidate-regression-red.log",
+      "green": "evals/migration-selected-policy.log",
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    },
+    {
+      "id": "M3",
+      "description": "Import latest legacy blocked findings into the stable repair ledger without resetting rounds.",
+      "red": "evals/candidate-regression-red.log",
+      "green": "evals/issueflow-suite-final-package.log",
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    },
+    {
+      "id": "M4",
+      "description": "Fresh migration without an approved contract derives the allowlist from issue and preflight; true amendments preserve their approved scope.",
+      "observedWorker": "/root/issue366_retry_plan",
+      "red": "evals/migration-brief-v2-red.log",
+      "green": "evals/issueflow-suite-final-package.log",
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    },
+    {
+      "id": "M5",
+      "description": "A delivered plan failing preflight returns to its author automatically within the existing repair cap before independent review.",
+      "observed": "logs/20260913T140005-970274Z-next-e1580122.stdout",
+      "red": "evals/plan-preflight-v3-red-validated.log",
+      "green": "evals/plan-preflight-after-validated.log",
+      "nativeRecovery": "Parent used supported brief command once before automatic repair change was available.",
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    },
+    {
+      "id": "M6",
+      "description": "Refresh the PR target as well as its head; bind review diff and context to the observed target SHA. A stale origin/main ref added three already-landed commits to the review packet.",
+      "red": "evals/review-base-before.log",
+      "green": "evals/review-base-after.log",
+      "nativeBefore": {
+        "reviewRound": 1,
+        "changedLines": 4187,
+        "finders": 5,
+        "reasoning": "xhigh",
+        "cancelledWorkers": 3
+      },
+      "nativeAfter": {
+        "reviewRound": 2,
+        "changedLines": 502,
+        "finders": 2,
+        "reasoning": "medium",
+        "baseHead": "900b735fe46a23a5575adfebd95abea6e9a49674"
+      },
+      "finalGreen": "evals/issueflow-suite-v6.log"
+    }
+  ],
+  "controllerValidation": {
+    "issueflowTests": 549,
+    "passed": 549,
+    "failed": 0,
+    "compatibility": "passed",
+    "codexMetadata": "passed",
+    "skillhelpIndex": "21 cards current",
+    "suiteLog": "evals/issueflow-suite-v6.log"
+  },
+  "verification": {
+    "batch": "d8dc0930-8a54-462e-8cba-5a5df1847905",
+    "checks": [
+      {
+        "check": "T1",
+        "type": "regression",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": 1,
+        "greenExit": 0,
+        "summaries": [
+          {
+            "runner": "node --test",
+            "passed": 86,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/a72995f6-68ce-4234-80a3-5258e5990cde/receipt.json",
+        "sha256": "3be2121d6975439c324dc30e5b04ff543e8dea81b7fb8e18f327741cdcaec830"
+      },
+      {
+        "check": "T2",
+        "type": "regression",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": 1,
+        "greenExit": 0,
+        "summaries": [
+          {
+            "runner": "node --test",
+            "passed": 11,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/0fd7cec2-7914-4f83-8c87-189230b862e7/receipt.json",
+        "sha256": "7209714b235c47cd25e61a81e75090cfbd236cfccccdd40b8c1040280316931a"
+      },
+      {
+        "check": "T3",
+        "type": "test",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [
+          {
+            "runner": "node --test",
+            "passed": 130,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/c5387961-8b33-40b0-af1c-8479989d0cb7/receipt.json",
+        "sha256": "4863f9e1cf7efe0905608a2a8b421229cdc5ade63166b0eb576b2ab7a8ad2649"
+      },
+      {
+        "check": "T4",
+        "type": "command",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/8288cfca-b653-4c1c-a579-b945d4035db4/receipt.json",
+        "sha256": "8575319a2ac98a97bdd4ec2d2b5e8ecd98e10faf27d68cd37cdd45a51323acf7"
+      },
+      {
+        "check": "T5",
+        "type": "command",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/eae2be33-7320-42a5-9414-096961030a6a/receipt.json",
+        "sha256": "354c89e1f55f5ae87adf58acd720e26b5678ec0adb47030936dfe67cfa7ecb67"
+      },
+      {
+        "check": "T6",
+        "type": "command",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/694c6713-1715-4721-8966-dc4df87b1a99/receipt.json",
+        "sha256": "a13f97fade916eb70aa56eb64cf919df8df132755b2cbfa952e847e5107f104a"
+      },
+      {
+        "check": "T7",
+        "type": "command",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/1adf2635-e509-4efd-ab0c-5e3a5402f47f/receipt.json",
+        "sha256": "9fd461b598b1ed14314dc733c34c820c1393d522206eea7cd7db93faa86fd160"
+      },
+      {
+        "check": "T8",
+        "type": "command",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/45032b77-5a21-42f6-9165-2a1211f0be54/receipt.json",
+        "sha256": "0569be5836a464efe0115703d7d2c74f26b613d3159aeaf41e263f5f09dad85e"
+      },
+      {
+        "check": "T9",
+        "type": "test",
+        "passed": true,
+        "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0",
+        "redExit": null,
+        "greenExit": 0,
+        "summaries": [
+          {
+            "runner": "node --test",
+            "passed": 18,
+            "failed": 0,
+            "exitCode": null,
+            "green": true,
+            "loadError": false
+          }
+        ],
+        "path": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366/verification/d8dc0930-8a54-462e-8cba-5a5df1847905/b2dacb0e-e99a-478d-bc8c-434bd8a013bf/receipt.json",
+        "sha256": "7d70b2d5a9711da5dc583faeedf5ef54365d3292a54da03651429446787a1c71"
+      }
+    ],
+    "gmailtriageTests": 130,
+    "skillhelpTests": 18
+  },
+  "ci": {
+    "counts": {
+      "FAILURE": 1,
+      "SUCCESS": 29,
+      "SKIPPED": 23
+    },
+    "snapshot": "/private/tmp/issueflow-366-live-20260913/captures/pr-373-final-observation.json",
+    "failure": {
+      "success": 29,
+      "skipped": 23,
+      "failure": 1,
+      "failureName": "auto-merge",
+      "reason": "Repository workflow attempted enablePullRequestAutoMerge on the intentionally draft PR; GitHub refused the draft.",
+      "source": "captures/pr-373-final-auto-merge-failure.log",
+      "head": "24f4886402665928b3d2edc4fb39b111cb7d9cc0"
+    },
+    "failedJob": {
+      "__typename": "CheckRun",
+      "completedAt": "2026-09-13T14:32:02Z",
+      "conclusion": "FAILURE",
+      "detailsUrl": "https://github.com/natejswenson/claude-skills/actions/runs/34762935737/job/103738812448",
+      "name": "auto-merge",
+      "startedAt": "2026-09-13T14:31:59Z",
+      "status": "COMPLETED",
+      "workflowName": "auto-merge to main"
+    },
+    "completionCiGateReached": false
+  },
+  "nativeWorkers": {
+    "dispatched": 11,
+    "completed": 8,
+    "cancelled": 3,
+    "sourcesIncludingRoot": 12,
+    "dollarCost": null,
+    "completeTokenTotals": null,
+    "note": "Current retry native counts come from explicit worker receipts; cumulative telemetry includes retained legacy lifecycle records."
+  },
+  "briefMetrics": {
+    "metrics": [
+      {
+        "label": "prior_plan",
+        "path": "/private/tmp/issueflow-366-live-20260913/prior/active-artifacts/briefs/investigate.md",
+        "bytes": 758226,
+        "sha256": "bd34506d92c4bb98cc1722a3a91049ff1a5eb58d8cdd4f8ba7d01746a4231127",
+        "lines": 14090,
+        "fixtureGuidanceHeadings": [
+          "### `skills/skillfactory/skills/skillfactory/evals/baseline/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/baseline/`",
+          "### `skills/skillfactory/skills/skillfactory/evals/inputs/house/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/inputs/house/`",
+          "### `.worktrees/issueflow-redteam-improvements/skills/skillfactory/skills/skillfactory/evals/baseline/CLAUDE.md` \u2014 scope: `.worktrees/issueflow-redteam-improvements/skills/skillfactory/skills/skillfactory/evals/baseline/`",
+          "### `.worktrees/issueflow-redteam-improvements/skills/skillfactory/skills/skillfactory/evals/inputs/house/CLAUDE.md` \u2014 scope: `.worktrees/issueflow-redteam-improvements/skills/skillfactory/skills/skillfactory/evals/inputs/house/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/`",
+          "### `.worktrees/issueflow-redteam-improvements/skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/CLAUDE.md` \u2014 scope: `.worktrees/issueflow-redteam-improvements/skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/`",
+          "### `.worktrees/issueflow-redteam-improvements/skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/CLAUDE.md` \u2014 scope: `.worktrees/issueflow-redteam-improvements/skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/`"
+        ]
+      },
+      {
+        "label": "retry_plan",
+        "path": "/private/tmp/issueflow/57beb330d94f3bcd1380c841db89a0e6f47b405b21401489fdb0b8a42c8b6f3e/2467a018-3b60-4abe-9d76-4063c2af8f91/artifacts/briefs/investigate.md",
+        "bytes": 305190,
+        "sha256": "7b51374b298fda950b5423931789a363aeef8983386183d6106eee82a8a27df1",
+        "lines": 4338,
+        "fixtureGuidanceHeadings": [
+          "### `skills/skillfactory/skills/skillfactory/evals/baseline/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/baseline/`",
+          "### `skills/skillfactory/skills/skillfactory/evals/inputs/house/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/inputs/house/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/`"
+        ]
+      },
+      {
+        "label": "retry_plan_review",
+        "path": "/private/tmp/issueflow/57beb330d94f3bcd1380c841db89a0e6f47b405b21401489fdb0b8a42c8b6f3e/2467a018-3b60-4abe-9d76-4063c2af8f91/artifacts/briefs/review-investigate-r3.md",
+        "bytes": 296278,
+        "sha256": "2eee4c9ed87e95a8a215545cdd13585053d87746d9c3f155dbab16bda690726e",
+        "lines": 4068,
+        "fixtureGuidanceHeadings": [
+          "### `skills/skillfactory/skills/skillfactory/evals/baseline/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/baseline/`",
+          "### `skills/skillfactory/skills/skillfactory/evals/inputs/house/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/inputs/house/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/`"
+        ]
+      },
+      {
+        "label": "retry_implementation",
+        "path": "/private/tmp/issueflow/57beb330d94f3bcd1380c841db89a0e6f47b405b21401489fdb0b8a42c8b6f3e/2467a018-3b60-4abe-9d76-4063c2af8f91/artifacts/briefs/root-implement.md",
+        "bytes": 295817,
+        "sha256": "78d5c59a1b8287e775cef1ced39d665429396a8ab30130a4275032b197918d6d",
+        "lines": 4102,
+        "fixtureGuidanceHeadings": [
+          "### `skills/skillfactory/skills/skillfactory/evals/baseline/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/baseline/`",
+          "### `skills/skillfactory/skills/skillfactory/evals/inputs/house/CLAUDE.md` \u2014 scope: `skills/skillfactory/skills/skillfactory/evals/inputs/house/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r1/`",
+          "### `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/CLAUDE.md` \u2014 scope: `skills/issueflow/skills/issueflow/evals/inputs/review-round/files/r2/`"
+        ]
+      }
+    ],
+    "caveat": "Artifact bytes are observed. Different bases, working-copy states and review history prevent a causal speed claim."
+  },
+  "eval": {
+    "machineFindings": 0,
+    "judgmentFindings": 0,
+    "coverage": {
+      "examined": 2,
+      "unexamined": 103,
+      "probesApplied": [
+        "pr-into-main",
+        "unobserved-test-claim"
+      ],
+      "probesUnbound": [
+        "announce-once",
+        "brand-bypass",
+        "done-without-freeze",
+        "file-contents-in-chat",
+        "pipeline-reshaping",
+        "question-budget"
+      ]
+    },
+    "clauses": 105,
+    "clauseSources": {
+      "house": 5,
+      "inv": 18,
+      "reference": 81,
+      "skill": 1
+    },
+    "events": 581,
+    "eventKinds": {
+      "user": 13,
+      "assistant": 51,
+      "tool-use": 259,
+      "tool-result": 258
+    },
+    "drops": {
+      "unparsed": 0,
+      "bookkeeping": 3124,
+      "thinking": 499,
+      "inherited": 0
+    },
+    "dropScope": "Full 12-source bundle before root time-window filter",
+    "scope": {
+      "rootSession": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+      "minRootRawLine": 2710,
+      "childSources": "all explicit retry children",
+      "fullBundleEvents": 1260
+    },
+    "capture": {
+      "capturedAt": "2026-09-13T14:39:52.937459+00:00",
+      "rootScopeStartsAtRawLine": 2710,
+      "entries": [
+        {
+          "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+          "agentPath": null,
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/12/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl",
+          "sha256": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+          "lines": 3913
+        },
+        {
+          "sessionId": "01a09b2c-9c03-7d03-a141-4942992e79f3",
+          "agentPath": "/root/issue366_r2_fixer",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl",
+          "sha256": "3944fdfa1985083df6fcde9b9d31e090616ed75e03018ae0ca0ee69532744b1a",
+          "lines": 96
+        },
+        {
+          "sessionId": "01a09b12-2727-72d0-acfc-86bcf07a88ab",
+          "agentPath": "/root/issue366_retry_plan_repair",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-00-53-01a09b12-2727-72d0-acfc-86bcf07a88ab.jsonl",
+          "sha256": "2ea10896f17e6467d2ce8309f5cde7daafc9cfeef7d72a519dba57e3a6289e9d",
+          "lines": 64
+        },
+        {
+          "sessionId": "01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164",
+          "agentPath": "/root/issue366_r1_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-15-23-01a09b1f-6e9e-7fc3-baa1-e9a8b9e7b164.jsonl",
+          "sha256": "1314fac893a623ffdc6e00a81e0f68e5bb6028ed480715c789d1827267fe1bbd",
+          "lines": 66
+        },
+        {
+          "sessionId": "01a09b28-d263-7140-8041-5c58a7f08b68",
+          "agentPath": "/root/issue366_r2_verifier1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-25-38-01a09b28-d263-7140-8041-5c58a7f08b68.jsonl",
+          "sha256": "453a3bbf02ce6c0dfe45cb4efa649bbaef4d6856de07a8ee6e3403435f76a482",
+          "lines": 67
+        },
+        {
+          "sessionId": "01a09b18-27f5-7060-acaa-1517f25b2223",
+          "agentPath": "/root/issue366_retry_implement",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-07-26-01a09b18-27f5-7060-acaa-1517f25b2223.jsonl",
+          "sha256": "c7c8fb7547acc71874e697c913315862c06c501903e08751c023376829e7bf13",
+          "lines": 128
+        },
+        {
+          "sessionId": "01a09b15-1e90-7441-8aa2-2c39cf9640a0",
+          "agentPath": "/root/issue366_retry_plan_review",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-04-07-01a09b15-1e90-7441-8aa2-2c39cf9640a0.jsonl",
+          "sha256": "9e4605aa03d8a2ba14e58afc6294109f7576cac5cbcf3e4dd755ce0d69f5ea57",
+          "lines": 71
+        },
+        {
+          "sessionId": "01a09b1f-565a-7460-98ef-3de67ce4220f",
+          "agentPath": "/root/issue366_r1_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-15-17-01a09b1f-565a-7460-98ef-3de67ce4220f.jsonl",
+          "sha256": "4281ef4997f3bb81225a0ff3df620ad4656707d75fec644b5240dddfc0cc01b2",
+          "lines": 76
+        },
+        {
+          "sessionId": "01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2",
+          "agentPath": "/root/issue366_retry_plan",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl",
+          "sha256": "a3504d15fb254a7b7c37f3cab35c2f2966c33b26b49ff7a7059a172667c27283",
+          "lines": 181
+        },
+        {
+          "sessionId": "01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2",
+          "agentPath": "/root/issue366_r1_finder3",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-15-30-01a09b1f-8b4e-7eb2-b5a6-29a49ee593d2.jsonl",
+          "sha256": "428e2ba859d0a761fde30b97fee321915c2dd067060295d8d3802aab11bf239b",
+          "lines": 89
+        },
+        {
+          "sessionId": "01a09b25-d334-7763-990d-9445870beb7e",
+          "agentPath": "/root/issue366_r2_finder1",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-22-22-01a09b25-d334-7763-990d-9445870beb7e.jsonl",
+          "sha256": "69f0279f120ba4b7b612bd27297ccae10aef38555ca1fad864d5ba004854a1c2",
+          "lines": 69
+        },
+        {
+          "sessionId": "01a09b25-ebf0-7f92-9981-197e66d74234",
+          "agentPath": "/root/issue366_r2_finder2",
+          "source": "/Users/natejswenson/.codex/sessions/2026/09/13/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "capture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-22-28-01a09b25-ebf0-7f92-9981-197e66d74234.jsonl",
+          "sha256": "71e9783cb1fda6447e90585235a5e2c4a22ff381d38d0a4b0075e0daa31bc681",
+          "lines": 63
+        }
+      ]
+    },
+    "anchors": {
+      "e763": {
+        "sessionId": "01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2",
+        "source": "a3504d15fb254a7b7c37f3cab35c2f2966c33b26b49ff7a7059a172667c27283",
+        "line": 57,
+        "timestamp": "2026-09-13T13:54:27.026Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl"
+      },
+      "e824": {
+        "sessionId": "01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2",
+        "source": "a3504d15fb254a7b7c37f3cab35c2f2966c33b26b49ff7a7059a172667c27283",
+        "line": 178,
+        "timestamp": "2026-09-13T13:59:12.364Z",
+        "kind": "assistant",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T08-53-03-01a09b0a-fd80-7ac1-aa00-85c5bc0e8fa2.jsonl"
+      },
+      "e1012": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "source": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+        "line": 3500,
+        "timestamp": "2026-09-13T14:15:10.517Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl"
+      },
+      "e1058": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "source": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+        "line": 3535,
+        "timestamp": "2026-09-13T14:16:23.205Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl"
+      },
+      "e1148": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "source": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+        "line": 3672,
+        "timestamp": "2026-09-13T14:23:26.983Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl"
+      },
+      "e1155": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "source": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+        "line": 3677,
+        "timestamp": "2026-09-13T14:23:50.769Z",
+        "kind": "assistant",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl"
+      },
+      "e1230": {
+        "sessionId": "01a09b2c-9c03-7d03-a141-4942992e79f3",
+        "source": "3944fdfa1985083df6fcde9b9d31e090616ed75e03018ae0ca0ee69532744b1a",
+        "line": 76,
+        "timestamp": "2026-09-13T14:31:40.715Z",
+        "kind": "tool-result",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl"
+      },
+      "e1231": {
+        "sessionId": "01a09b2c-9c03-7d03-a141-4942992e79f3",
+        "source": "3944fdfa1985083df6fcde9b9d31e090616ed75e03018ae0ca0ee69532744b1a",
+        "line": 81,
+        "timestamp": "2026-09-13T14:31:45.144Z",
+        "kind": "assistant",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-13T09-29-47-01a09b2c-9c03-7d03-a141-4942992e79f3.jsonl"
+      },
+      "e1241": {
+        "sessionId": "01a0987e-5484-7b10-b8c4-4e66494ce64b",
+        "source": "e4b79b42bbefbef7a8d6697ac073b1682f325a549a0003be08082df1a388dd00",
+        "line": 3832,
+        "timestamp": "2026-09-13T14:33:18.080Z",
+        "kind": "assistant",
+        "rawCapture": "/private/tmp/issueflow-366-live-20260913/captures/initial-evaluation-sources/rollout-2026-09-12T21-00-11-01a0987e-5484-7b10-b8c4-4e66494ce64b.jsonl"
+      }
+    },
+    "cannotDecide": [
+      {
+        "id": "f-6e037324",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e824",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-3eb03476",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1155",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-4587b4e5",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1231",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      },
+      {
+        "id": "f-24668ff9",
+        "probe": "unobserved-test-claim",
+        "clauseId": "inv-594a0c05",
+        "eventId": "e1241",
+        "severity": "high",
+        "detail": "test claim needs correlated command and process evidence; wrapped or delegated execution is incomplete"
+      }
+    ],
+    "manualClaimChecks": [
+      {
+        "claim": "e824",
+        "evidence": "e763",
+        "observed": "122 tests passed before planner claim"
+      },
+      {
+        "claim": "e1155",
+        "evidence": "e1148",
+        "observed": "549 controller tests passed before claim"
+      },
+      {
+        "claim": "e1231",
+        "evidence": "e1230",
+        "observed": "130 tests passed before fixer claim"
+      },
+      {
+        "claim": "e1241",
+        "evidence": "e1230",
+        "observed": "Parent accurately attributed fixer result; later controller batch independently confirmed it"
+      }
+    ],
+    "limitation": "Engineering defects with reproduction logs are not added as skill-contract violation counts without a directly applicable extracted clause. Mechanical coverage remains 2/105 despite manual receipt checks."
+  },
+  "limits": [
+    "Original candidate did not complete this case without controller repairs.",
+    "Not a paired performance comparison: old/new base and baseline test counts differ.",
+    "Native Claude behavior remains untested by this retry.",
+    "Brief includes scoped instructions from irrelevant fixture directories; context-size improvement not verified.",
+    "Final mechanical probe examined 2 of 105 clauses; zero machine findings leave a coverage gap of 103."
+  ],
+  "operatorErrorsRetained": [
+    "Initial migration log naming used a dot in timestamp; fixed before subsequent commands.",
+    "First new brief regression fixture omitted the step output metadata; valid replacement observed red on frozen v2.",
+    "First preflight regression success fixture used an unknown root documentation path; fixed to docs/generated.md.",
+    "Some test commands used wrong working directories; final npm suite used the package prefix and passed."
+  ],
+  "evidence": {
+    "campaign": "/private/tmp/issueflow-366-live-20260913",
+    "canonicalRun": "/Users/natejswenson/.claude/issueflow/natejswenson__claude-skills/issue-366",
+    "finalArchiveManifest": "/private/tmp/issueflow-366-live-20260913/captures/final/manifest.json",
+    "checkpoint": "https://github.com/natejswenson/claude-skills/issues/366#issuecomment-5650446897",
+    "reviewStop": "/private/tmp/issueflow-366-live-20260913/logs/20260913T143314-680019Z-next-4b14a16c.stdout",
+    "finalVerification": "/private/tmp/issueflow-366-live-20260913/logs/20260913T143406-220179Z-verify-run-77d6a49e.stdout",
+    "mechanicalReport": "/private/tmp/issueflow-366-live-20260913/evals/final-report/report.md"
+  }
+}

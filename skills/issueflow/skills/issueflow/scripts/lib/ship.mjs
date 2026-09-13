@@ -97,7 +97,7 @@ export function prBody(dir, run, lane) {
         'Implementation acceptance checks its required evidence.',
       ];
   const lines = [
-    `Closes #${run.issue.number}.`,
+    `${run.schema>=5 && (run.lanes.length>1 || run.completion?.companions.length) ? 'Refs' : 'Closes'} #${run.issue.number}.`,
     '',
     run.split ? `Work item **${lane.slug}** — ${lane.title}` : lane.title,
     '',
@@ -180,9 +180,9 @@ export function ship(dir, run, { dryRun = false, draft = false } = {}) {
       },
       write: (key) => {
         writeFileSync(bodyFile, prBody(dir, run, lane) + `\n<!-- issueflow:operation ${key} -->\n`);
-        createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+        createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft, allowNormalFallback: run.schema < 5 });
       },
-    }) : createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft });
+    }) : createPr(repo, { head: lane.branch, base: lane.base, title, bodyFile, draft, allowNormalFallback: run.schema < 5 });
     results.push({
       lane: lane.slug, branch: lane.branch, base: lane.base, commits: ahead, url: opened.url,
       number: prNumberFromUrl(opened.url), draft: opened.draft, title,

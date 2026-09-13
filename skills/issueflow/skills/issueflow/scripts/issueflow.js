@@ -10,6 +10,18 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { recoverOwner, assertControllerOwner, initializeRecord, resumeInitialization, initializationProblems } from './lib/initialization.mjs';
+import { freezeRepository } from './lib/repository.mjs';
+import { statusSnapshot, progressEvent } from './lib/status.mjs';
+import { assertReadyAuthority, completeRun, completionIntent, recordAuthorization } from './lib/completion.mjs';
+import { proposePublishedAmendment, briefPublishedAmendment, registerPublishedAmendment, applyPublishedAmendment } from './lib/published-amendment.mjs';
+import { dispatchProfile } from './lib/runtime.mjs';
+import { assertRepairComplete } from './lib/plan-repair.mjs';
+import { inspectRepository, assertPreflight } from './lib/preflight.mjs';
+import { observeCi } from './lib/gh.mjs';
+import { contractFromPlan } from './lib/contracts.mjs';
+import { planningTree } from './lib/execution.mjs';
+import { validateWorkspaceRoot } from './lib/execution.mjs';
 import { BOARD_COLUMNS, ISSUE_COLUMNS, boardRows, detailOf, issueRows, positionLine } from './lib/board.mjs';
 import { loadIssue, writeBrief, writeReviewBrief } from './lib/brief.mjs';
 import { MAX_ROUNDS, MAX_TOTAL_ROUNDS, latestRound, markReviewBriefed, nextRound, registerReview, reviewable, roundsExhausted } from './lib/reviews.mjs';
@@ -20,7 +32,7 @@ import { checkpoint, claimedIn } from './lib/checkpoint.mjs';
 import { finish, FinishError } from './lib/finish.mjs';
 import { GQL, GhError, graphql, issueCommentsAll, listIssues, prChecks, prComment, prLabel, prReady, prRetitle, prView, repoInfo, viewIssue, viewerLogin } from './lib/gh.mjs';
 import {
-  MAX_REVIEW_ROUNDS, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
+  reviewRoundLabel, ROUND_COLUMNS, applyFixReport, assertFixRequired, baseRef, converge, currentRound, fixDiff, fixItems, fixerProfile, headOf,
   laneDiff, openFindings, openMajors, openRound, planVerification, postFixReplies, postRound, readCandidates,
   rebaseLane, registerRound, reviewDir, reviewExhausted, roundRows, ruleFinding, cancelReview, contextPath,
 } from './lib/prreview.mjs';
@@ -208,8 +220,18 @@ function reportCheckpoint(rows) {
 
 class BudgetStop extends HandBack {}
 class CheckpointFailure extends Error {}
+function confirmInitialization(dir, run) {
+  const problems = initializationProblems(dir, run);
+  if (problems.length) throw new RunError(problems.join('; '));
+  if (run.initialization && !run.offline && (run.initialization.checkpoint === 'pending' || run.checkpoint.pending)) {
+    const rows = reportCheckpoint(checkpoint(dir, run, {push:run.initialization.checkpoint!=='pending'}));
+    if (rows.some(row => row.state === 'failed')) throw new CheckpointFailure('initial checkpoint is unconfirmed; no worker dispatch is permitted');
+    run.initialization.checkpoint = 'confirmed'; saveRun(dir, run);
+  }
+}
 
-const skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
+
+let skillCommand = `node ${sh(fileURLToPath(import.meta.url))}`;
 
 /** Preserve observations before refusing more work, without approving them. */
 function checkpointBudgetStop(dir, run, args, action = budgetStop(budgetStatus(run))) {
@@ -641,6 +663,16 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
 
 async function cmdStart(args) {
   if (args.auto && args.reviewPlan) throw new Error('choose either autonomous mode or --review-plan, not both');
+  if(args.runDir&&!args.takeOver&&existsSync(join(resolve(args.runDir),'run.json'))) {
+    const dir=resolve(args.runDir);let old;try{old=loadRun(dir)}catch{}
+    if(old?.initialization&&!old.finished) {
+      assertControllerOwner(old,args);
+      if(args.issue!=null&&Number(args.issue)!==old.issue.number||args.repo&&resolve(args.repo)!==old.repo.path)throw new RunError('startup retry identifies another issue or repository');
+      validateWorkspaceRoot(old.repo.path,dir,args.workspaceRoot,old.runtime);
+      const release=claimController(dir,'start');try{resumeInitialization(dir,old,args);confirmInitialization(dir,old)}finally{release()}
+      console.log(`Run retained. Continue with issueflow next --run-dir ${sh(dir)}.`);return;
+    }
+  }
   const repo = resolve(args.repo ?? '.');
   const info = identify(repo, args);
   const number = readIssueNumber(args);
@@ -651,12 +683,23 @@ async function cmdStart(args) {
   const dir = args.runDir ? resolve(args.runDir) : runDir(runRoot(), info.owner, info.name, issue.number);
   if (args.host && args.runtime && args.host !== args.runtime) throw new RunError('--host and --runtime disagree');
   const requestedHost = args.host ?? args.runtime;
+  validateWorkspaceRoot(repo, dir, args.workspaceRoot, requestedHost ?? 'claude');
   // Retain the pre-artifact host-adoption shortcut for a live legacy run, but
   // let a completed run continue through refuseClaimed/resetRunDir so a
   // reopened issue starts fresh instead of silently retaining its finish.
-  if (requestedHost && !args.takeOver && existsSync(join(dir, 'run.json'))) {
-    const existing = loadRun(dir);
-    if (!existing.finished) {
+  if (!args.takeOver && existsSync(join(dir, 'run.json'))) {
+    let existing; try { existing = loadRun(dir); } catch { /* refuseClaimed below retains remote-claim precedence */ }
+    if (existing && !existing.finished && (existing.initialization || requestedHost)) {
+      if (existing.repo.owner !== info.owner || existing.repo.name !== info.name || existing.issue.number !== issue.number) throw new RunError('run/issue identity differs from the existing claim');
+      assertControllerOwner(existing, args);
+      if (existing.initialization) {
+        const release = claimController(dir, 'start');
+        try { resumeInitialization(dir, existing, args); confirmInitialization(dir, existing); }
+        finally { release(); }
+        console.log(`Run retained. Continue with issueflow next --run-dir ${sh(dir)}.`);
+        return;
+      }
+      if (!existsSync(join(dir, 'inputs/issue.json'))) throw new RunError('legacy initialization is incomplete; recover its frozen issue and ownership before continuing');
       const adopted = loadRun(dir, { host: requestedHost, childSlots: args.childSlots });
       console.log(`Host retained as ${runtimeOf(adopted)}. Continue with issueflow next --run-dir ${sh(dir)}.`);
       return;
@@ -687,18 +730,12 @@ async function cmdStart(args) {
   if (finishedCommentId) run.checkpoint.preservedComments = [finishedCommentId];
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
+  freezeRepository(run);
+  initializeRecord(run, issue, args);
   claimRunDir(dir, run, { takeOver });
-  if (args.workspaceRoot) prepareExecution(dir, run, args);
-  if (args.noWorktree) {
-    try {
-      prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
-    } catch (err) {
-      unlinkSync(join(dir, 'run.json'));
-      throw err;
-    }
-  }
-  mkdirSync(join(dir, 'inputs'), { recursive: true });
-  writeFileSync(join(dir, 'inputs', 'issue.json'), `${JSON.stringify(issue, null, 2)}\n`);
+  const release = claimController(dir, 'start');
+  try { resumeInitialization(dir, run, args); confirmInitialization(dir, run); }
+  finally { release(); }
 
   print(
     ['Issue', 'Branch', 'Base'],
@@ -738,8 +775,9 @@ async function cmdStart(args) {
   if (run.runtime === 'codex') {
     console.log('\nCodex run: dispatches include native model, reasoning effort and role fields.');
   }
+  confirmInitialization(dir, run);
   nextLine(run);
-  reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
+  if (!run.initialization) reportCheckpoint(checkpoint(dir, run, { offline: isOffline(args) }));
 }
 
 /**
@@ -787,7 +825,9 @@ async function cmdBrief(args) {
       }
     }
     const round = nextRound(step);
-    const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
+    const workdir = step.lane ? laneTree(dir, run, step.lane) : planningTree(dir, run);
+    if (run.schema >= 5) assertRepairComplete(run, readFileSync(artifactPath(dir, step), 'utf8'));
+    if (run.schema >= 5) assertPreflight(workdir, contractFromPlan(readFileSync(artifactPath(dir, step), 'utf8')), { planText: readFileSync(artifactPath(dir, step), 'utf8') });
     guardDispatch(dir, run, args);
     const info = writeReviewBrief(dir, run, step, loadIssue(dir), round, workdir);
     markReviewBriefed(dir, run, step, round);
@@ -887,11 +927,16 @@ function briefOne(dir, run, step, args) {
     }
   }
 
-  const workdir = step.lane ? prepareCheckout(dir, run, step.lane, args) : null;
+  const workdir = step.lane ? prepareCheckout(dir, run, step.lane, args) : planningTree(dir, run);
+  if (!step.lane && run.schema >= 5) {
+    run.preflight = inspectRepository(workdir);
+    saveRun(dir, run);
+  }
 
   guardDispatch(dir, run, args);
   const info = writeBrief(dir, run, step, loadIssue(dir), workdir);
   markBriefed(dir, run, step);
+  if(step.stage.id==='implement')recordTelemetry(dir,run,'implementation-start');
   return info;
 }
 
@@ -955,7 +1000,7 @@ async function cmdReview(args) {
   const run = observe(dir, loadRun(dir));
   if (!args.stage) throw new Error('name the reviewed stage with --stage <id>');
   const step = findStep(run, args.stage, args.lane ?? null);
-  const workdir = step.lane ? laneTree(dir, run, step.lane) : null;
+  const workdir = step.lane ? laneTree(dir, run, step.lane) : planningTree(dir, run);
 
   const result = registerReview(dir, run, step, { workdir });
   for (const finding of result.items) recordTelemetry(dir, run, 'finding', {
@@ -1022,6 +1067,12 @@ async function cmdSplit(args) {
 async function cmdStatus(args) {
   const { dir } = locate(args);
   const run = observe(dir, loadRun(dir));
+  if (run.schema>=5) {
+    const snapshot=statusSnapshot(run);
+    if(args.json)console.log(JSON.stringify(snapshot,null,2));
+    else print(['State','Completed','Remaining','Next action'],[[snapshot.state,snapshot.completed.join('; ')||'None observed', [...snapshot.remaining,...snapshot.unknown.map(s=>s+' (unknown)')].join('; ')||'None',snapshot.nextAction]]);
+    return;
+  }
   print(
     ['Issue', 'Split', 'Lanes'],
     [[`${run.repo.owner}/${run.repo.name}#${run.issue.number}`, String(run.split), String(run.lanes.length)]],
@@ -1237,7 +1288,7 @@ function prIdentity(run, lane, offline) {
   if (offline) return { nodeId: lane.pr.nodeId ?? null, headRefOid: null, isDraft: lane.review.draft };
   const view = prView(run.repo.path, lane.pr.number);
   lane.pr.nodeId = view.id;
-  return { nodeId: view.id, headRefOid: view.headRefOid, isDraft: view.isDraft, state: view.state };
+  return { nodeId: view.id, headRefOid: view.headRefOid, baseRefName: view.baseRefName, baseRefOid: view.baseRefOid, isDraft: view.isDraft, state: view.state };
 }
 
 function printDispatch(items, kind, dir = null, run = null, { queued = false } = {}) {
@@ -1273,18 +1324,23 @@ async function cmdReviewBrief(args) {
   const head = headOf(tree);
   let remoteHead = null;
   let prHead = null;
+  let baseHead = null;
   if (!offline) {
     // The round reviews what GitHub has. Fetch the branch and compare; a
     // failed fetch is infrastructure, not a refusal.
     try {
-      git(['fetch', '--quiet', 'origin', `+${lane.branch}:refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+      git(['fetch', '--quiet', 'origin', `+refs/heads/${lane.branch}:refs/remotes/origin/${lane.branch}`, `+refs/heads/${lane.base}:refs/remotes/origin/${lane.base}`], gitStore(dir, run));
       remoteHead = git(['rev-parse', `refs/remotes/origin/${lane.branch}`], gitStore(dir, run));
+      baseHead = git(['rev-parse', `refs/remotes/origin/${lane.base}`], gitStore(dir, run));
     } catch (err) {
       throw new GhError(`could not fetch origin/${lane.branch}: ${String(err.stderr ?? err.message).split('\n')[0]}`);
     }
-    prHead = prIdentity(run, lane, offline).headRefOid;
+    const identity=prIdentity(run,lane,offline);
+    if(identity.baseRefName && identity.baseRefName!==lane.base)throw new RunError(`PR target changed to ${identity.baseRefName}; reconcile the target before reviewing ${lane.base}`);
+    if(identity.baseRefOid && identity.baseRefOid!==baseHead)throw new RunError('PR target advanced during review preparation; retry the base observation before dispatch');
+    prHead = identity.headRefOid;
   }
-  const diffText = laneDiff(tree, lane.base);
+  const diffText = laneDiff(tree, baseHead ?? lane.base);
   // Round 2+ reviews the fix: the delta since the last round's head sizes the
   // fleet and is what the finders read first. Round 1 has no previous head.
   const last = currentRound(lane);
@@ -1292,9 +1348,10 @@ async function cmdReviewBrief(args) {
   guardDispatch(dir, run, args);
   const { round, plan, lines, fixLines, files } = openRound(dir, run, lane, { head, remoteHead, prHead, diffText, deltaText, anotherRound: args.anotherRound, deferSave: Boolean(run.execution) });
   const entry = currentRound(lane);
+  if(baseHead)entry.baseHead=baseHead;
   let contextSection = '';
   if (runtimeOf(run) === 'codex' || run.harness) {
-    const contextInput = { issue: loadIssue(dir), base: lane.base, head, files, plan: artifactPath(dir, findStep(run, PLAN_STAGE)), contract: run.harness?.contract, evidence: lane.verification ?? null, priorFindings: openFindings(lane) };
+    const contextInput = { issue: loadIssue(dir), base: baseHead ?? lane.base, head, files, plan: artifactPath(dir, findStep(run, PLAN_STAGE)), contract: run.harness?.contract, evidence: lane.verification ?? null, priorFindings: openFindings(lane) };
     const prepared = run.harness ? prepareReviewContext(join(dir, 'context-cache'), tree, contextInput) : { packet: buildContextPacket(contextInput) };
     const packet = prepared.packet;
     const packetPath = contextPath(dir, lane, round);
@@ -1302,12 +1359,12 @@ async function cmdReviewBrief(args) {
     writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`);
     entry.contextHash = packet.packetHash;
     if (run.harness) entry.contextCache = { key: prepared.key, hit: prepared.hit, bytes: Buffer.byteLength(JSON.stringify(packet)) };
-    contextSection = `\n## Shared context packet\n\nRead \`${packetPath}\` first; its hash is \`${packet.packetHash}\`. Refuse stale packets.\n`;
+    contextSection = `\n## Shared context packet\n\nRead \`${packetPath}\` first; expected packetHash is \`${packet.packetHash}\`. Validate with verifyContextPacket from the bundled scripts/lib/context.mjs: SHA-256 of JSON.stringify(parsed packet without packetHash). It is not the raw file checksum. Refuse stale packets.\n`;
   }
   const briefs = writeFinderBriefs(dir, run, lane, entry, { issue: loadIssue(dir), files, prior: openFindings(lane), contextSection });
   saveRun(dir, run);
   print(['Lane', 'Pull request', 'Round', 'Head', 'Changed lines', 'Fix lines', 'Finders', 'Verifiers (max)'],
-    [[lane.slug, `#${lane.pr.number}`, `${round} of ${lane.review.maxRounds ?? run.complexity?.reviewRounds ?? MAX_REVIEW_ROUNDS}`, head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
+    [[lane.slug, `#${lane.pr.number}`, reviewRoundLabel(lane, round), head.slice(0, 12), String(lines), fixLines == null ? '—' : String(fixLines), String(plan.finders), String(plan.maxVerifiers)]]);
   console.log('');
   if (briefs.some((b) => b.reasoning)) print(['Finder', 'Model', 'Reasoning', 'Role', 'Angles'], briefs.map((b) => [String(b.n), modelLabel(b), b.reasoning, b.agent, b.angles.join(', ')]));
   else print(['Finder', 'Model', 'Angles'], briefs.map((b) => [String(b.n), b.model, b.angles.join(', ')]));
@@ -1368,7 +1425,7 @@ async function cmdReviewRegister(args) {
   }
   const record = registerRound(dir, run, lane, entry.round, { tree });
   const t = record.transitions;
-  console.log(`Round ${record.round} of ${lane.review.maxRounds ?? MAX_REVIEW_ROUNDS} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
+  console.log(`Round ${reviewRoundLabel(lane, record.round)} on ${lane.slug} (#${lane.pr.number}): ${record.verdict.toUpperCase()} — ` +
     `${record.counts.majors} major open, ${record.counts.nits} nit, ${record.counts.preExisting} pre-existing` +
     `${(entry.unverifiedNits?.length ?? 0) > 0 ? `, ${entry.unverifiedNits.length} proposed nit(s) unverified` : ''}`);
   if (record.round > 1) console.log(`Transitions: ${t.fixed.length} fixed, ${t.stillOpen.length} still open, ${t.withdrawn.length} withdrawn, ${t.new.length} new, ${t.suppressed.length} suppressed, ${t.dropped.length} refuted`);
@@ -1403,7 +1460,10 @@ async function cmdReviewPost(args) {
   const posted = postRound(dir, run, lane, entry.round, { prNodeId: nodeId });
   print(['Lane', 'Round', 'Review', 'Threads', 'Unanchored', 'Replies'],
     [[lane.slug, String(entry.round), posted.url, String(posted.threads), String(posted.unanchored), posted.replies.map((r) => r.state).join(', ') || '—']]);
-  if (entry.verdict === 'converged') console.log(`\nConverged — \`issueflow ready --lane ${lane.slug}\` lifts the draft once CI is green.`);
+  if (entry.verdict === 'converged') {
+    if (run.schema >= 5 && run.completion?.excluded?.includes('ready')) console.log('\nReview converged. Run next to reconcile the requested draft endpoint and current CI.');
+    else console.log(`\nConverged — \`issueflow ready --lane ${lane.slug}\` lifts the draft once CI is green.`);
+  }
   else console.log(`\nNext: \`issueflow review-fix-brief --lane ${lane.slug}\``);
 }
 
@@ -1504,16 +1564,23 @@ async function cmdReady(args) {
     if (currentRound(lane)?.head !== lane.verification.head) throw new RunError('cannot ready: review does not cover the verified head');
   }
   if (!offline) {
-    const before = run.harness ? prView(run.repo.path, lane.pr.number) : null;
-    const checks = prChecks(run.repo.path, lane.pr.number);
-    if (run.harness) {
+    if (run.schema >= 5) {
+      const observation = observeCi(run.repo.path,run.repo,lane.pr.number);
+      lane.ciDecision = assertCiReady({checks:observation.checks,expectedHead:lane.verification.head,observedHead:observation.head,policy:run.harness.contract.ci,observation,expectedBase:lane.base,epoch:lane.ciEpoch});
+      lane.ciObservation = observation; saveRun(dir,run);
+      assertReadyAuthority(run,lane,observation);
+      for (const detail of lane.ciDecision.limitations) console.log(detail);
+    }
+    const before = run.harness && run.schema<5 ? prView(run.repo.path, lane.pr.number) : null;
+    const checks = run.schema>=5 ? run.lanes.find(l=>l.slug===lane.slug).ciObservation.checks : prChecks(run.repo.path, lane.pr.number);
+    if (run.harness && run.schema < 5) {
       assertCiReady({ checks, expectedHead: lane.verification.head, observedHead: before.headRefOid, policy: run.harness.contract.ci });
       assertCiReady({ checks, expectedHead: lane.verification.head, observedHead: prView(run.repo.path, lane.pr.number).headRefOid, policy: run.harness.contract.ci });
     }
     const red = checks.filter((c) => c.bucket === 'fail');
     const pending = checks.filter((c) => c.bucket === 'pending');
-    if (red.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${red.map((c) => c.name).join(', ')} failing — a red check is a major`);
-    if (pending.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${pending.map((c) => c.name).join(', ')} still running — wait for CI`);
+    if (!run.harness && red.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${red.map((c) => c.name).join(', ')} failing — a red check is a major`);
+    if (!run.harness && pending.length > 0) throw new RunError(`cannot ready ${lane.slug}: ${pending.map((c) => c.name).join(', ')} still running — wait for CI`);
     if (checks.length === 0) console.log('No checks reported on this pull request — nothing to wait for.');
   }
   const last = converge(dir, run, lane, undefined, { persist: !run.harness });
@@ -1521,12 +1588,16 @@ async function cmdReady(args) {
   if (!offline) {
     const { isDraft } = prIdentity(run, lane, offline);
     if (run.harness) {
-      operation(dir, run, { kind: 'ready', target: lane.pr.url, intent: { head: last.head }, retrySafe: true,
+      operation(dir, run, { kind: 'ready', target: lane.pr.url, intent: { head: last.head, ...(run.schema>=5?{base:lane.base,policyHash:lane.ciDecision.policyHash,epoch:lane.ciEpoch??null}: {}) }, retrySafe: true,
         read: () => {
           const view = prView(run.repo.path, lane.pr.number);
+          if(run.schema>=5) { const fresh=observeCi(run.repo.path,run.repo,lane.pr.number); assertReadyAuthority(run,lane,fresh); const decision=assertCiReady({checks:fresh.checks,expectedHead:last.head,observedHead:fresh.head,expectedBase:lane.base,policy:run.harness.contract.ci,observation:fresh,epoch:lane.ciEpoch}); if(decision.policyHash!==lane.ciDecision.policyHash)throw new RunError('target policy changed while confirming readiness'); }
           if (view.headRefOid !== last.head || view.state !== 'OPEN') throw new RunError('PR changed while confirming readiness');
           return view.isDraft ? null : { head: view.headRefOid, isDraft: false };
-        }, write: () => prReady(run.repo.path, lane.pr.number) });
+        }, write: () => {
+          if (run.schema>=5) {const fresh=observeCi(run.repo.path,run.repo,lane.pr.number);assertReadyAuthority(run,lane,fresh);const decision=assertCiReady({checks:fresh.checks,expectedHead:last.head,observedHead:fresh.head,expectedBase:lane.base,policy:run.harness.contract.ci,observation:fresh,epoch:lane.ciEpoch});if(decision.policyHash!==lane.ciDecision.policyHash)throw new RunError('CI policy changed before readiness');}
+          prReady(run.repo.path, lane.pr.number);
+        } });
       rows.push(['draft', 'confirmed ready']);
     } else if (isDraft) { prReady(run.repo.path, lane.pr.number); rows.push(['draft', 'lifted']); }
     if (lane.review.fallback) {
@@ -1573,12 +1644,14 @@ async function cmdReady(args) {
       rows.push(['summary comment', confirmed.url]);
     } else rows.push(['summary comment', prComment(run.repo.path, lane.pr.number, summary)]);
   }
+  if(!offline)recordTelemetry(dir,run,'reviewed-pr');
   if (run.harness) converge(dir, run, lane);
   else saveRun(dir, run);
   print(['Lane', 'Rounds', 'Head', 'State'], [[lane.slug, String(last.round), last.head.slice(0, 12), 'ready for review']]);
   if (rows.length > 0) { console.log(''); print(['Action', 'Result'], rows); }
-  if (!offline) console.log(`\nUSER ACTION REQUIRED: review and approve/merge PR #${lane.pr.number} (${lane.pr.url}). Issueflow will not merge it.`);
-  nextLine(run);
+  if (!offline && run.schema < 5) console.log(`\nUSER ACTION REQUIRED: review and approve/merge PR #${lane.pr.number} (${lane.pr.url}). Issueflow will not merge it.`);
+  if (run.schema >= 5) console.log(`\nRequested endpoint: ${run.completion?.endpoint ?? 'reviewed-pr'}. Run next to reconcile the recorded completion intent and remaining obligations.`);
+  else nextLine(run);
   reportCheckpoint(checkpoint(dir, run, { offline, push: false }));
 }
 
@@ -1636,6 +1709,8 @@ async function cmdNext(args) {
   const offline = isOffline(args);
   const ctx = {
     offline,
+    workersReleased: Boolean(args.workersReleased),
+    ci: (lane) => {const run=loadRun(dir);return observeCi(run.repo.path,run.repo,lane.pr.number);},
     checks: (lane) => (offline ? [] : prChecks(loadRun(dir).repo.path, lane.pr.number)),
     remoteHead: (lane) => {
       if (offline) return null;
@@ -1650,6 +1725,10 @@ async function cmdNext(args) {
     landings: () => (offline ? [] : landings(loadRun(dir))),
   };
   const perform = {
+    completion: () => {const run=loadRun(dir);completeRun(dir,run);},
+    'amend-review-brief': () => cmdAmendReview(args),
+    'amend-register': () => cmdAmendRegister(args),
+    'amend-apply': () => cmdAmendApply(args),
     'dispatch-wave': () => {
       const run = loadRun(dir);
       guardDispatch(dir, run, args);
@@ -1683,6 +1762,7 @@ async function cmdNext(args) {
   const MAX_DETERMINISTIC_ACTIONS = 64;
   for (let i = 0; i < MAX_DETERMINISTIC_ACTIONS; i += 1) {
     const loaded = loadRun(dir);
+    confirmInitialization(dir, loaded);
     // Offline autonomous runs can exercise budget renewal without claiming a
     // real Codex workspace. Keep this simulation resumable and side-effect
     // free; a real host must prepare execution before dispatch.
@@ -1692,11 +1772,17 @@ async function cmdNext(args) {
         autoRenewBudget(loaded);
         saveRun(dir, loaded);
       }
-      console.log(`\n${renderAction({ kind: 'wait', what: 'approved Codex workspace', budget: budgetStatus(loadRun(dir)) }, { skillCommand, runDir: dir })}`);
+      console.log(`\n${renderAction({ kind: 'stop', reason: 'workspace', detail: 'Codex execution is not prepared; supply a host-writable workspace root', command: 'prepare --workspace-root <path>', budget: budgetStatus(loadRun(dir)) }, { skillCommand, runDir: dir })}`);
       return;
     }
     const run = observe(dir, loaded);
     const action = decide(dir, run, ctx);
+    if (run.schema>=5) {
+      const snapshot=statusSnapshot(run,{action});
+      const event=progressEvent(run.presentation,snapshot);
+      if(event){run.presentation=event;recordTelemetry(dir,run,'progress',{phase:snapshot.state,kind:event.kind,nextAction:snapshot.nextAction});}
+      saveRun(dir,run);
+    }
     if (action.kind !== 'run') {
       if (action.waveRedispatched) recordTelemetry(dir, run, 'retry', { retry: 1, reason: action.reason ?? 'wave redispatch' });
       if (action.kind === 'stop' && action.reason !== 'budget') {
@@ -1709,6 +1795,13 @@ async function cmdNext(args) {
       }
       if (action.waveStarted || action.waveRedispatched) saveRun(dir, run);
       if (action.kind === 'stop' && action.reason === 'budget') {
+        // `decide` can stop before the dispatch handler reaches guardDispatch.
+        // Apply the same recorded autonomous policy on this path, too.
+        if (autoRenewBudget(run)) {
+          saveRun(dir, run);
+          console.log('Autonomous time window renewed within the existing cumulative cap.');
+          continue;
+        }
         checkpointBudgetStop(dir, run, args, action);
         return;
       }
@@ -1737,7 +1830,8 @@ async function cmdNext(args) {
         return;
       }
     } catch (err) {
-      if (['accept', 'verify-run'].includes(action.command) && err instanceof RunError) {
+      const planPreflightRefusal = action.command === 'brief' && action.args.review && err instanceof RunError && err.message.startsWith('preflight:');
+      if ((['accept', 'verify-run'].includes(action.command) || planPreflightRefusal) && err instanceof RunError) {
         recordTelemetry(dir, loadRun(dir), 'gate-refusal', { reason: err.message });
         // The gate refused a delivery: say why, re-render the brief (which
         // resets the stage's clock), and hand the same prompt back with the
@@ -1841,10 +1935,21 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
   issueflow status [--issue <n>]
   issueflow worker-observe --attempt-id <uuid> --worker-id <native-id> --status started|completed|failed|cancelled [--usage-file <host-jsonl>]
                                                 parent records actual native lifecycle and correlated usage
+  issueflow preflight --run-dir <run> [--plan <path>]
+  issueflow status --run-dir <run> --json
+  issueflow amend --plan <path> --reason "<why>" --authority-source "<existing direction>" --workers-released
+  issueflow retarget --plan <path> --base <branch> --strategy target-only|merge|rebase
+                     --reason "<why>" --authority-source "<existing direction>" --workers-released
+  issueflow amend-review-brief | amend-register | amend-apply --workers-released
+  issueflow completion-intent --file <endpoint.json>
+  issueflow completion-authorize --action merge|deploy --authority-source "<existing direction>"
+                                [--lane <slug>] [--head <sha>] [--environment <name>]
+  issueflow completion --run-dir <run>
+  issueflow recover-owner --authority-source "<existing direction>" --workers-released --expected-revision <n>
   issueflow amend --workers-released --reason "<why>" [--authority-note "<explicit user direction>"]
                                                 reopen a pre-PR plan, preserving artifacts, budgets and review limits
-  issueflow migrate-run --workers-released --reason "<why>"
-                                                upgrade a quiescent pre-PR legacy run; re-review and reverify
+  issueflow migrate-run --workers-released --reason "<why>" [--base <current-policy-base> --authority-source "<user choice>"]
+                                                upgrade a quiescent schema-3/4 run; preserve PRs, re-review and reverify
   issueflow doctor [--run-dir <path>]            report host, evidence strength, checkout and budget
   issueflow verify-run [--lane <slug>]          execute all reviewed obligations; retain passing and failing receipts
   issueflow cancel-wave --workers-released --reason "<why>"
@@ -1892,6 +1997,10 @@ Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (g
                        persisted on resume; one active run/lane per Git common directory
                        Worktree failures otherwise stop at exit 3, with no source fallback.
   --run-dir <path>     work against a named run instead of ~/.claude/issueflow
+  --session-id <id>       stable host session identity (or ISSUEFLOW_SESSION_ID)
+  --continuation-file <path>  original private token file when no host session ID is available
+  --endpoint <endpoint>   reviewed-pr (default), merged, or deployed; intent never grants authority
+  --completion-intent <path>  persisted endpoint/companions/deployments/exclusions JSON
   --workspace-root <path>  host-approved writable root for Codex execution
   prepare --run-dir <path> --workspace-root <path>
                        prepare or recover quiescent Codex execution before dispatch
@@ -1907,16 +2016,20 @@ on the issue is rewritten in place, so a run survives losing this machine.
 async function main() {
   const args = argv(process.argv.slice(2));
   const cmd = args._[0];
+  if(args.continuationFile)skillCommand += ` --continuation-file ${sh(args.continuationFile)}`;
+  else if(args.sessionId)skillCommand += ` --session-id ${sh(args.sessionId)}`;
   if (args.version) return console.log(VERSION);
   if (args.help) return console.log(USAGE);
   let releaseController;
   try {
     const mutations = ['prepare', 'brief', 'accept', 'verify-run', 'cancel-wave', 'review', 'split', 'ship', 'review-brief', 'review-verify', 'review-register', 'review-post', 'review-fix-brief', 'review-fix-report', 'review-rule', 'ready', 'rebase', 'next', 'resume', 'finish'];
-    if ([...mutations, 'amend', 'migrate-run', 'worker-observe', 'review-cancel'].includes(cmd)) {
+    if ([...mutations, 'amend', 'retarget', 'amend-review-brief', 'amend-register', 'amend-apply', 'completion', 'completion-intent', 'completion-authorize', 'recover-owner', 'migrate-run', 'worker-observe', 'review-cancel'].includes(cmd)) {
       const { dir } = locate(args);
       const target = loadRun(dir); // Validate before claiming command ownership.
+      if(cmd!=='recover-owner')assertControllerOwner(target, args);
       if (target.offline) args.offline = true; // Persisted offline mode cannot be lost on resume.
       releaseController = claimController(dir, cmd);
+      if (target.initialization && !['recover-owner','prepare','worker-observe','cancel-wave','review-cancel'].includes(cmd)) confirmInitialization(dir, target);
     }
     if (['status', 'doctor', 'telemetry'].includes(cmd)) {
       const { dir } = locate(args);
@@ -1949,12 +2062,31 @@ async function main() {
         console.log(`Native worker ${result.status}; ${result.usage ? result.usage.samples + ' usage samples' : 'usage unknown'}. Slot release remains a separate parent acknowledgement.`);
         return;
       }
+      case 'recover-owner': {const {dir}=locate(args);recoverOwner(dir,loadRun(dir),args);console.log('Controller ownership recovered; state and evidence retained.');return;}
+      case 'retarget':
       case 'amend':
       case 'migrate-run': {
         const { dir } = locate(args); const run = loadRun(dir);
-        const record = evolveRun(dir, run, { kind: cmd === 'amend' ? 'amend' : 'migrate', reason: args.reason, workersReleased: args.workersReleased === true, authorityNote: args.authorityNote ?? null });
+        if(cmd==='retarget'&&(!args.plan||!args.base))throw new RunError('retarget requires --plan and --base for a reviewed Git transition');
+        if (args.plan && cmd !== 'migrate-run') {
+          const record=proposePublishedAmendment(dir,run,{plan:readFileSync(args.plan,'utf8'),reason:args.reason,authoritySource:args.authoritySource??args.authorityNote,workersReleased:Boolean(args.workersReleased),base:args.base??null,strategy:args.strategy??'target-only',rewriteAuthoritySource:args.rewriteAuthoritySource});
+          console.log(`Amendment ${record.id} proposed; next dispatches independent review before application.`);return;
+        }
+        const record = evolveRun(dir, run, { kind: cmd === 'amend' ? 'amend' : 'migrate', reason: args.reason, workersReleased: args.workersReleased === true, authorityNote: args.authorityNote ?? null, controller:args });
         console.log(`Plan reopened; prior evidence retained at ${record.archive}. Run next for fresh planning and independent review. Budget and review caps unchanged.`);
         return;
+      }
+      case 'completion': {const {dir}=locate(args),run=loadRun(dir);const result=completeRun(dir,run);console.log(`Endpoint ${result.endpoint}: ${result.state}`);return;}
+      case 'completion-intent': {const {dir}=locate(args),run=loadRun(dir);const next=completionIntent(JSON.parse(readFileSync(args.file,'utf8')));if(run.completion){next.authorizations=run.completion.authorizations;next.obligations=run.completion.obligations;}run.completion=next;saveRun(dir,run);console.log(`Requested endpoint: ${next.endpoint}`);return;}
+      case 'completion-authorize': {const {dir}=locate(args),run=loadRun(dir),lane=args.lane?findLane(run,args.lane):null;if(!run.completion)run.completion=completionIntent();recordAuthorization(run,{source:args.authoritySource,action:args.action,repo:args.repository??`${run.repo.owner}/${run.repo.name}`,pr:lane?.pr?.number??null,head:args.head??null,environment:args.environment??null});saveRun(dir,run);console.log('Existing user authority recorded; next will reconcile the remaining obligations.');return;}
+      case 'amend-review-brief': return cmdAmendReview(args);
+      case 'amend-register': return cmdAmendRegister(args);
+      case 'amend-apply': return cmdAmendApply(args);
+      case 'preflight': {
+        const { dir } = locate(args); const run = loadRun(dir); const tree = planningTree(dir, run);
+        const text = args.plan ? readFileSync(args.plan, 'utf8') : null;
+        const facts = text ? assertPreflight(tree, contractFromPlan(text), {planText:text}) : inspectRepository(tree);
+        console.log(JSON.stringify(facts,null,2)); return;
       }
       case 'board': return await cmdBoard(args);
       case 'start': return await cmdStart(args);
@@ -1983,8 +2115,10 @@ async function main() {
       case 'doctor': {
         const { dir } = locate(args);
         const run = loadRun(dir);
-        const rows = [['host', runtimeOf(run)], ['schema', String(run.schema)], ['verification', run.harness ? 'controller receipts required' : 'legacy text evidence (historical strength)'], ['network', run.offline ? 'disabled for this run' : 'permitted only within task authority']];
+        const rows = [['revision', String(run.revision??0)], ['host', runtimeOf(run)], ['schema', String(run.schema)], ['verification', run.harness ? 'controller receipts required' : 'legacy text evidence (historical strength)'], ['network', run.offline ? 'disabled for this run' : 'permitted only within task authority']];
         for (const lane of run.lanes.filter((l) => l.stages.some((s) => s.at?.briefed))) rows.push([`checkout ${lane.slug}`, laneTree(dir, run, lane)]);
+        for (const problem of initializationProblems(dir, run)) rows.push(['initialization problem', problem]);
+        if (run.initialization) rows.push(['initialization', run.initialization.phase]);
         const budget = budgetStatus(run);
         rows.push(['budget', budget ? `${Math.ceil(budget.remainingSeconds)}s window; ${budget.totalRemainingSeconds}s unallocated within cap` : 'unknown']);
         print(['Check', 'Observed'], rows);
@@ -2025,3 +2159,11 @@ export function exitCodeFor(err) {
 }
 
 main();
+
+function cmdAmendReview(args) {
+  const {dir}=locate(args),run=loadRun(dir);guardDispatch(dir,run,args);
+  const info=briefPublishedAmendment(dir,run);
+  printDispatch([{...dispatchProfile(run,'redTeam'),prompt:info.brief,artifact:info.output}], 'amendment reviewer',dir,run);
+}
+function cmdAmendRegister(args) {const {dir}=locate(args),run=loadRun(dir);const result=registerPublishedAmendment(dir,run);console.log(`Amendment ${result.id}: ${result.phase}`);}
+function cmdAmendApply(args) {const {dir}=locate(args),run=loadRun(dir);const result=applyPublishedAmendment(dir,run,{workersReleased:Boolean(args.workersReleased)});console.log(`Amendment ${result.id}: ${result.phase}; implementation and verification gates reopened.`);}

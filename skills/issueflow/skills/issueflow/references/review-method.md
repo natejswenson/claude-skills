@@ -46,9 +46,10 @@ remain" is the definition of done, not a to-do list.
 lines the last fix did not touch, a new candidate posts as a major only if
 CONFIRMED — PLAUSIBLE on unchanged code is a note in the body, because fresh
 finders each round will otherwise manufacture a new plausible major forever.
-Four rounds is the cap; the round-4 fix lands unverified and the open majors are
-handed to a human, who rules on each (`review-rule --fixed|--withdrawn --note`)
-or directs a fifth round (`review-brief --another-round "<why>"`). The
+The persisted lane allowance is the cap; a fix in its last permitted round still
+needs independent verification. Open majors are handed to the user, who rules on
+each (`review-rule --fixed|--withdrawn --note`) or directs an additional round
+(`review-brief --another-round "<why>"`). Cancelled rounds remain counted. The
 verifiers rule until the cap; a person rules after it — `review-rule` refuses
 before the cap, and the driver never issues either command.
 
@@ -95,6 +96,13 @@ For each function the diff changes, find its callers (grep for the symbol)
 and check whether the change breaks any call site: a new precondition, a
 changed return shape, a new exception, a timing/ordering dependency. Also
 check callees: does a parallel change in the same diff make a call unsafe?
+
+For evidence-preserving changes, follow a realistic public input through every
+normalization and duplicate-source merge to the final decision. Check conflicting
+duplicates and source order where they affect the result. A helper can preserve
+uncertainty while its caller silently discards it. Cite and reproduce the actual
+boundary that loses evidence, including unchanged integration code needed by the
+approved behavior.
 
 ## angle: intent
 

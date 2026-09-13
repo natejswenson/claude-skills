@@ -1,18 +1,26 @@
 # Strict harness — evidence, recovery, and limits
 
-New CLI runs use state schema 4 and harness contract version 1 on both hosts.
-Schema 3 stays readable at its original evidence strength. Preparing a legacy
-Codex workspace does not upgrade its proof. Quiescent pre-PR runs can explicitly
-use `migrate-run --workers-released --reason "..."`; strict pre-PR contracts use
-`amend --workers-released --reason "..."`. Both archive prior state/artifacts,
-invalidate old approvals and receipts, and require a fresh plan and independent
-review even for identical plan bytes. They retain the original budget, bases and
-cumulative review limits. Changed criteria, expanded paths, or waived CI require
-explicit user direction recorded with `amend --authority-note "..." --reason "..."
---workers-released`. Do not invent that direction. Active queues, dirty work,
-uncertain remote effects and existing PRs must not be silently migrated. Published
-or finished runs stay historical; request a separately authorized follow-up.
-Never edit controller state to bypass gates. Older binaries must reject schema 4.
+New CLI runs use state schema 5 and harness version 2 on both hosts. Schema 3
+and schema 4 remain readable with their original evidence strength; loading is
+never an implicit upgrade. Quiescent `migrate-run --workers-released --reason
+"..."` archives state/artifacts, retains PR identity, budgets and cumulative
+rounds, and requires fresh planning/review/verification. It refuses active queues,
+dirty lanes, uncertain remote effects and landed work. Older binaries must reject
+schema 5. Keep a compatible binary with retained historical run directories.
+
+Before implementation, a single-lane run without an approved strict contract or
+published PR may select current repository policy with `migrate-run --base <base>
+--authority-source "<existing user choice>"` in addition to the required flags.
+The choice must match policy committed on the selected base. Migration freezes that base, imports it into
+prepared Git storage, and archives the previous policy and review evidence.
+Legacy blocked plan findings become open repair obligations; review counts and
+time limits remain cumulative. Implemented or published work requires the reviewed
+retarget path instead.
+
+Read [completion.md](completion.md) for initialization ownership, contract schema
+2, preflight, published amendments, CI policy and endpoint receipts. Never edit
+controller state to bypass gates. A schema-1 contract remains accepted for
+historical/simple checks; execution-mode fields require schema 2.
 
 ## Reviewed obligations
 

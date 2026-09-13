@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join, resolve } from 'node:path';
 
 import { extractContract } from './lib/contract.mjs';
-import { traceFile, counts, literalMatcher } from './lib/trace.mjs';
+import { traceFile, traceBundle, counts, literalMatcher } from './lib/trace.mjs';
 import { runProbes, resolveFindings } from './lib/probes.mjs';
 import { buildProbeReport, coverageOf, renderReport, table } from './lib/report.mjs';
 import { generateCase } from './lib/cases.mjs';
@@ -60,7 +60,7 @@ async function cmdContract(args) {
     mkdirSync(dir, { recursive: true });
     const rows = [];
     for (const name of skillsIn(repo)) {
-      const contract = extractContract(repo, name);
+      const contract = extractContract(repo, name, {references:args.references?JSON.parse(readFileSync(args.references,'utf8')):[]});
       writeJson(join(dir, `${name}.json`), contract);
       rows.push([name, contract.clauses.length, contract.sources.length]);
     }
@@ -69,7 +69,7 @@ async function cmdContract(args) {
   }
 
   const name = need(args, '--skill', 'a contract belongs to exactly one skill');
-  const contract = extractContract(repo, name);
+  const contract = extractContract(repo, name, {references:args.references?JSON.parse(readFileSync(args.references,'utf8')):[]});
   if (args.out) writeJson(resolve(args.out), contract);
 
   // A judgment finding cites a clause id. Finding that id must not require
@@ -106,9 +106,9 @@ async function cmdContract(args) {
 }
 
 async function cmdTrace(args) {
-  const run = resolve(need(args, '--run', 'a trace is one session transcript, normalized'));
-  if (!existsSync(run)) throw new Error(`--run ${run}: no such file`);
-  const trace = traceFile(run);
+  const run = args.bundle?null:resolve(need(args, '--run', 'a trace requires --run or --bundle'));
+  if (run && !existsSync(run)) throw new Error(`--run ${run}: no such file`);
+  const trace = args.bundle?traceBundle(JSON.parse(readFileSync(args.bundle,'utf8'))):traceFile(run,{anchors:true});
   if (args.out) writeJson(resolve(args.out), trace);
 
   // Citing a judgment finding means naming the event it happened at, and
@@ -265,9 +265,10 @@ async function cmdCase(args) {
 
 const USAGE = `eval v${VERSION} — grade a real run of a skill against the contract that skill committed to.
 
-  eval contract --skill <name> [--repo <path>] [--out <file>] [--grep <substr,substr>]
+  eval contract --skill <name> [--repo <path>] [--out <file>] [--references <loaded.json>] [--grep <substr,substr>]
   eval contract --all --out <dir> [--repo <path>]
   eval trace    --run <session.jsonl> [--out <file>] [--grep <substr,substr>]
+  eval trace    --bundle <sources.json> [--out <file>]
   eval probe    --contract <file> --trace <file> [--out <file>]
   eval probe    --contract <file> --trace <file> --check-finding <file>
   eval report   --contract <file> --trace <file> --out <dir> [--judgment <file>]

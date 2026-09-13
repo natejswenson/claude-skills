@@ -12,7 +12,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, fsyncSync, linkSync, openSync, unlinkSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -34,7 +34,7 @@ import { authorizeAmendment } from './evolution.mjs';
  * would be the loader rewriting history. `runs` names the mismatch and the
  * remedy for any that remain.
  */
-export const SCHEMA = 4;
+export const SCHEMA = 5;
 
 /** A gate refusal: the work is not done, send it back. Exit code 2. */
 export class RunError extends Error {}
@@ -105,7 +105,7 @@ export function createRun({ repo, issue, policy, offline = false, auto = false, 
   const complexity = classifyIssue(issue);
   return {
     schema: strict ? SCHEMA : 3,
-    ...(strict ? { harness: { version: 1, contract: null, contractHash: null, bases: {}, amendments: [] } } : {}),
+    ...(strict ? { harness: { version: 2, contract: null, contractHash: null, bases: {}, amendments: [] } } : {}),
     repo,
     issue: { number: issue.number, title: issue.title, url: issue.url },
     policy,
@@ -195,7 +195,10 @@ export function claimRunDir(dir, run, { takeOver = false } = {}) {
     return run;
   }
   try {
-    writeFileSync(statePath(dir), body, { flag: 'wx' });
+    const temporary = join(dir, `.initializing-${randomUUID()}.json`);
+    const fd = openSync(temporary, 'wx', 0o600);
+    try { writeFileSync(fd, body); fsyncSync(fd); } finally { closeSync(fd); }
+    try { linkSync(temporary, statePath(dir)); } finally { unlinkSync(temporary); }
   } catch (err) {
     if (err?.code !== 'EEXIST') throw err;
     throw new HandBack(
@@ -211,10 +214,10 @@ export function loadRun(dir, { host, childSlots } = {}) {
     throw new RunError(`no run at ${dir} — start one with \`issueflow start --issue <number>\``);
   }
   const run = JSON.parse(readFileSync(statePath(dir), 'utf8'));
-  if (![3, SCHEMA].includes(run.schema) || run.schema === SCHEMA && run.harness?.version !== 1) {
+  if (![3, 4, SCHEMA].includes(run.schema) || run.schema === 4 && run.harness?.version !== 1 || run.schema === SCHEMA && run.harness?.version !== 2) {
     throw new RunError(
       `the run at ${dir} is schema ${run.schema} and this issueflow speaks ${SCHEMA} — ` +
-        'its artifacts are still on disk, but the state machine cannot resume it; start the issue again',
+        'its artifacts are retained; use a compatible binary or explicit migration without restarting the issue',
     );
   }
   const previous = runtimeOf(run);
@@ -830,6 +833,7 @@ export function split(dir, run, items, { parallel = false } = {}) {
       : branchFor(run.policy, run.issue.number, slugify(items[i - 1].slug ?? items[i - 1].title));
     return laneEntry(run.policy, issue, { slug, title: item.title, base }, run.runtime ?? 'claude', run.complexity);
   });
+  if(run.repositorySnapshot&&run.harness)for(const lane of run.lanes)if(lane.base===run.policy.base)run.harness.bases[lane.slug]=run.repositorySnapshot.sha;
   run.split = true;
   saveRun(dir, run);
   return run;
