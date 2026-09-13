@@ -125,10 +125,14 @@ node $SKILL_DIR/scripts/gmailtriage.js ingest \
   --out-threads threads.json --out-labels labels.json
 ```
 
-It dedupes across the fetches, unions label ids, derives `category` and the
-`hasUnsubscribe` proxy from the id-intersection (documented in
-`references/gmail.md`; do not present it as a fact), counts self-sent mail,
-and writes only the seven snapshot fields — **a snippet never reaches disk**.
+It dedupes across the fetches, unions label ids, and combines positive category
+search membership with existing category evidence. `hasUnsubscribe` remains a
+bulk proxy (documented in `references/gmail.md`; do not present it as a header
+fact). Missing evidence is unknown, never primary; conflicting or invalid
+evidence cannot satisfy category or proxy rules. Sender-only rules still work.
+Ingest reports unknown/conflict counts and conflicting ids on stderr. Ordinary
+snapshots keep seven fields; ambiguity adds only a bounded `categoryEvidence`
+marker with validated status/category tokens — **a snippet never reaches disk**.
 The label list is what makes a first run propose the user's *own* folders
 rather than inventing a parallel set beside them; that is why `--labels` is
 required.

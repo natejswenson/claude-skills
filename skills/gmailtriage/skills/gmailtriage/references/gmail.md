@@ -44,9 +44,9 @@ guessing at the mapping would cost a thread filed in the wrong place.
 ## Two fields that are not where you expect them
 
 `search_threads` with the minimal or metadata view returns `labelIds` **without
-the `CATEGORY_*` labels**. So `category` and any bulk-mail signal cannot be read
-from the main fetch. Both are derived by running the category queries separately
-and intersecting the ids:
+the `CATEGORY_*` labels** in the documented connector response. Ingest derives
+positive category evidence by running category queries separately and
+intersecting the ids:
 
 ```
 in:inbox                      → the sample
@@ -54,9 +54,24 @@ in:inbox category:promotions  → mark those ids promotions
 in:inbox category:updates     → mark those ids updates
 ```
 
-`hasUnsubscribe` is then an **approximation**: a thread in promotions or updates
-is treated as bulk. Gmail exposes no header operator, so this is the closest
-structural proxy available, and it is named as a proxy rather than a fact.
+A nonmember remains unknown: missing, partial, or limited searches cannot prove
+primary. Ingest also accepts existing explicit category fields and legacy
+`CATEGORY_*` labels; it does not synthesize those labels. All recognized sources
+must agree. Promotion/update overlap, or disagreement with existing evidence,
+produces `category: null` and a persisted conflict marker. Invalid evidence also
+produces null and an unknown marker. Re-ingesting these markers cannot erase the
+uncertainty. See `rules.md` for the vocabulary, aliases, and matching policy.
+
+`hasUnsubscribe` is an **approximation**: ingest sets it true only for one known
+promotions/updates category. Unknown, conflicting, and other categories set it
+false. Matching additionally requires a literal true boolean and that same known
+bulk evidence, so an old true boolean cannot override ambiguity. Gmail exposes
+no header operator; this remains a structural proxy, never a header fact.
+
+Ingest prints `category evidence: unknown=N conflict=N` to stderr, followed by
+conflicting thread ids and bounded category tokens. Existing stdout tables are
+unchanged. Ordinary snapshots retain seven fields; only ambiguity that null
+would lose adds `categoryEvidence`, whose schema contains no message content.
 
 This is worth knowing before adding a match field: if Gmail cannot express it as
 a query, the skill cannot match on it either.

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "primary",
+      "action": "label",
+      "label": "Filed",
+      "match": {
+        "category": "primary"
+      },
+      "note": "Observed category"
+    },
+    {
+      "id": "promotions",
+      "action": "label",
+      "label": "Filed",
+      "match": {
+        "category": "promotions"
+      },
+      "note": "Observed category"
+    },
+    {
+      "id": "updates",
+      "action": "label",
+      "label": "Filed",
+      "match": {
+        "category": "updates"
+      },
+      "note": "Observed category"
+    }
+  ]
+}

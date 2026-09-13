@@ -10,7 +10,7 @@
 import test from 'node:test';
 import { prepareInbox } from '../../evals/baseline/prepare-inbox.mjs';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -152,4 +152,76 @@ test('ingest --labels-only refreshes the label snapshot and nothing else', () =>
   assert.throws(
     () => sh(`node scripts/gmailtriage.js ingest --labels-only --inbox evals/baseline/raw-inbox.json --labels evals/baseline/raw-labels.json --out-labels ${out}/l2.json`),
   );
+});
+
+const CATEGORY_FIXTURES = join(HERE, 'fixtures', 'category-flow');
+const categoryCli = (args) => {
+  const result = spawnSync(process.execPath, ['scripts/gmailtriage.js', ...args], { cwd: SKILL, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  return result;
+};
+const readCategoryJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
+const ingestCategoryFixture = (fetches = ['promos', 'updates']) => {
+  const dir = mkdtempSync(join(tmpdir(), 'gt-category-'));
+  const threads = join(dir, 'threads.json');
+  const labels = join(dir, 'labels.json');
+  const result = categoryCli(['ingest', '--inbox', join(CATEGORY_FIXTURES, 'raw-inbox.json'),
+    '--labels', join(CATEGORY_FIXTURES, 'raw-labels.json'), '--out-threads', threads, '--out-labels', labels,
+    ...fetches.flatMap((name) => [`--${name}`, join(CATEGORY_FIXTURES, `raw-${name}.json`)])]);
+  return { dir, threads, labels, result };
+};
+const categoryPlan = ({ dir, threads, labels }, rules = join(CATEGORY_FIXTURES, 'rules.json')) => {
+  const out = join(dir, 'plan.json');
+  categoryCli(['plan', '--threads', threads, '--labels', labels, '--rules', rules, '--out', out]);
+  return readCategoryJson(out);
+};
+
+test('category flow: raw ingest to plan matches observed categories without category label ids', () => {
+  const files = ingestCategoryFixture();
+  const p = categoryPlan(files);
+  assert.deepEqual(p.taken.map((t) => [t.threadId, t.ruleId]), [['promo', 'promotions'], ['update', 'updates']],
+    'primary is first, so a false primary match cannot hide behind a correct category');
+  const snapshot = readCategoryJson(files.threads);
+  assert.equal(snapshot.length, 4);
+  assert.ok(snapshot.every((t) => !t.labelIds.some((l) => l.startsWith('CATEGORY_'))));
+  assert.deepEqual(snapshot.find((t) => t.id === 'overlap').categoryEvidence,
+    { status: 'conflict', categories: ['promotions', 'updates'] });
+  assert.equal(snapshot.find((t) => t.id === 'missing').category, null);
+  assert.match(files.result.stderr, /category evidence: unknown=1 conflict=1/);
+  assert.match(files.result.stderr, /overlap.*promotions.*updates/);
+  assert.ok(!files.result.stdout.includes('category evidence:'), 'diagnostics must not alter frozen stdout tables');
+  assert.match(readFileSync(join(CATEGORY_FIXTURES, 'raw-inbox.json'), 'utf8'), /category-secret-000000/);
+  assert.ok(!readFileSync(files.threads, 'utf8').includes('category-secret-000000'));
+  assert.ok(!readFileSync(files.threads, 'utf8').includes('snippet'));
+});
+
+test('category flow: absent or partial fetches do not make nonmembers primary', () => {
+  for (const [fetches, expected] of [[[], []], [['promos'], ['promo', 'overlap']], [['updates'], ['update', 'overlap']]]) {
+    const files = ingestCategoryFixture(fetches);
+    assert.deepEqual(categoryPlan(files).taken.map((t) => t.threadId), expected);
+    const snapshot = readCategoryJson(files.threads);
+    assert.equal(snapshot.filter((t) => t.category === null).length, 4 - expected.length);
+    assert.match(files.result.stderr, new RegExp(`category evidence: unknown=${4 - expected.length} conflict=0`));
+  }
+});
+
+test('category flow: proxy trash and label plans reject ambiguous legacy true booleans', () => {
+  const files = ingestCategoryFixture();
+  const snapshot = readCategoryJson(files.threads);
+  snapshot.push(
+    { ...snapshot[0], id: 'invalid', category: 'unknown' },
+    { ...snapshot[0], id: 'disagree', labelIds: ['INBOX', 'CATEGORY_UPDATES'] },
+  );
+  // Simulate legacy snapshots whose boolean predates conflict handling.
+  for (const t of snapshot) t.hasUnsubscribe = true;
+  writeFileSync(files.threads, JSON.stringify(snapshot));
+  for (const action of ['trash', 'label']) {
+    const rules = join(files.dir, 'proxy-rules.json');
+    writeFileSync(rules, JSON.stringify({ version: 1, rules: [{
+      id: 'bulk', action, ...(action === 'label' ? { label: 'Filed' } : {}),
+      match: { from: 'offers@shop.example', hasUnsubscribe: true }, note: 'Bulk proxy regression',
+    }] }));
+    assert.deepEqual(categoryPlan(files, rules).taken.map((t) => [t.threadId, t.action]),
+      [['promo', action], ['update', action]]);
+  }
 });

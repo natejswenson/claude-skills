@@ -8,14 +8,16 @@
  * was, so it lives here now: the agent writes each tool result to a file
  * VERBATIM, and this module does the rest.
  *
- * The structural guarantee this file carries: only SNAPSHOT_FIELDS ever reach
+ * The structural guarantee this file carries: only allowlisted snapshot fields ever reach
  * the output. A raw response carries `snippet` — which on a real mailbox has
  * held live verification codes — and nothing here copies it anywhere. The
  * output objects are built field by field precisely so a new field appearing
  * upstream cannot leak through.
  */
 
-/** The whole thread schema. Nothing else is ever written to disk. */
+import { resolveCategory, isBulkCategory } from './category.mjs';
+
+/** Ordinary snapshots; ambiguous evidence adds only a validated categoryEvidence marker. */
 export const SNAPSHOT_FIELDS = ['id', 'from', 'subject', 'date', 'labelIds', 'category', 'hasUnsubscribe'];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -90,15 +92,23 @@ export function applyCategories(threads, promoIds = [], updateIds = []) {
   const promos = new Set(promoIds);
   const updates = new Set(updateIds);
   return threads.map((t) => {
-    const category = promos.has(t.id) ? 'promotions' : updates.has(t.id) ? 'updates' : null;
+    const evidence = resolveCategory(t, [
+      ...(promos.has(t.id) ? ['promotions'] : []),
+      ...(updates.has(t.id) ? ['updates'] : []),
+    ]);
     return {
       id: t.id,
       from: t.from,
       subject: t.subject,
       date: t.date,
       labelIds: t.labelIds ?? [],
-      category,
-      hasUnsubscribe: category !== null,
+      category: evidence.category,
+      hasUnsubscribe: isBulkCategory(evidence),
+      // Null alone loses disagreement/invalid input. Retain only bounded tokens,
+      // so another ingest or a legacy true proxy cannot erase that uncertainty.
+      ...(evidence.status === 'conflict' || evidence.invalid ? {
+        categoryEvidence: { status: evidence.status, categories: evidence.categories },
+      } : {}),
     };
   });
 }
