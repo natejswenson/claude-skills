@@ -64,7 +64,7 @@ test('mailbox data is refused inside a git repository, and --allow-repo override
   sh(`node scripts/gmailtriage.js plan --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules.json --out ${plain}/plan.json`);
 });
 
-test('apply --update-threads makes a re-plan converge without re-fetching', () => {
+test('apply stays pending until confirmed outcomes make a re-plan converge', () => {
   const out = mkdtempSync(join(tmpdir(), 'gt-update-'));
   const threads = join(out, 'threads.json');
   writeFileSync(threads, JSON.stringify(prepareInbox(JSON.parse(readFileSync(join(BASELINE, 'threads.json'), 'utf8')))));
@@ -73,6 +73,15 @@ test('apply --update-threads makes a re-plan converge without re-fetching', () =
   // The receipt is untouched by the snapshot update — it is the undo.
   const receipt = JSON.parse(readFileSync(join(out, 'receipt.json'), 'utf8'));
   assert.ok(receipt.entries.length >= 10, 'the frozen corpus stopped producing a real apply');
+  assert.ok(receipt.operations.every((o) => o.status === 'pending'));
+  for (const action of ['trash', 'add', 'remove']) {
+    const ops = receipt.operations.filter((o) => o.action === action).map(({ id, threadId, action, label }) => ({ id, threadId, action, label }));
+    const outcomes = join(out, 'outcomes.json');
+    writeFileSync(outcomes, JSON.stringify({ runId: receipt.runId, outcomes: ops }));
+    sh(`node scripts/gmailtriage.js record --receipt ${out}/receipt.json --outcomes ${outcomes} --begin`);
+    writeFileSync(outcomes, JSON.stringify({ runId: receipt.runId, outcomes: ops.map((o) => ({ ...o, status: 'confirmed', evidence: 'success' })) }));
+    sh(`node scripts/gmailtriage.js record --receipt ${out}/receipt.json --outcomes ${outcomes}`);
+  }
   // A second plan over the updated snapshot must take zero threads: the
   // trashed are gone, the filed carry their labels, the archived left the inbox.
   const replan = sh(`node scripts/gmailtriage.js plan --threads ${threads} --labels evals/baseline/labels.json --rules evals/baseline/rules.json`);

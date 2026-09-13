@@ -96,6 +96,13 @@ test('CLI folder apply and updated snapshot converge while preserving parent and
   assert.match(applied.stdout, /additive.*INBOX/i);
   assert.doesNotMatch(applied.stdout, /TRASH exactly|REMOVE the INBOX|had already left the inbox/);
   assert.ok(f.read('receipt').entries.every((e) => e.action === 'label' && e.archived === false && !e.removed?.length));
+  const receipt = f.read('receipt');
+  assert.ok(receipt.operations.every((o) => o.status === 'pending'));
+  const outcomes = receipt.operations.map(({ id, threadId, action, label }) => ({ id, threadId, action, label }));
+  writeFileSync(f.path('outcomes'), JSON.stringify({ runId: receipt.runId, outcomes }));
+  assert.equal(f.run('record', '--receipt', f.path('receipt'), '--outcomes', f.path('outcomes'), '--begin').status, 0);
+  writeFileSync(f.path('outcomes'), JSON.stringify({ runId: receipt.runId, outcomes: outcomes.map((o) => ({ ...o, status: 'confirmed', evidence: 'success' })) }));
+  assert.equal(f.run('record', '--receipt', f.path('receipt'), '--outcomes', f.path('outcomes')).status, 0);
   const updated = f.read('threads');
   assert.ok(updated.find((t) => t.id === 'inbox-member').labelIds.includes('INBOX'));
   assert.ok(updated.filter((t) => ['member', 'inbox-member', 'mixed'].includes(t.id)).every((t) => t.labelIds.includes('Label_1')));

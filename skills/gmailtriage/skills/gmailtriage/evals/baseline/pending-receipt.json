@@ -1,0 +1,2153 @@
+{
+  "version": 2,
+  "runId": "00000000-0000-4000-8000-000000000000",
+  "revision": 0,
+  "at": "2026-08-05T12:00:00Z",
+  "count": 66,
+  "entries": [
+    {
+      "threadId": "thr-1a2e41a4",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 1"
+    },
+    {
+      "threadId": "thr-1a2e6093",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 2"
+    },
+    {
+      "threadId": "thr-1a2e7f82",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 3"
+    },
+    {
+      "threadId": "thr-1a2e9e71",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 4"
+    },
+    {
+      "threadId": "thr-1a2ebd60",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 5"
+    },
+    {
+      "threadId": "thr-1a2edc4f",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 6"
+    },
+    {
+      "threadId": "thr-1a2efb3e",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 7"
+    },
+    {
+      "threadId": "thr-1a2f1a2d",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 8"
+    },
+    {
+      "threadId": "thr-1a2f391c",
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "support@packages.example",
+      "subject": "Package published: build 9"
+    },
+    {
+      "threadId": "thr-1a2f580b",
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #1"
+    },
+    {
+      "threadId": "thr-1a2f76fa",
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #2"
+    },
+    {
+      "threadId": "thr-1a2f95e9",
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #3"
+    },
+    {
+      "threadId": "thr-1a2fb4d8",
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #4"
+    },
+    {
+      "threadId": "thr-1a2fd3c7",
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "deals@shopfront.example",
+      "subject": "20% off this week only"
+    },
+    {
+      "threadId": "thr-1a2ff2b6",
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "deals@shopfront.example",
+      "subject": "25% off this week only"
+    },
+    {
+      "threadId": "thr-1a3011a5",
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "deals@shopfront.example",
+      "subject": "30% off this week only"
+    },
+    {
+      "threadId": "thr-1a303094",
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 1"
+    },
+    {
+      "threadId": "thr-1a304f83",
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 2"
+    },
+    {
+      "threadId": "thr-1a306e72",
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "label": null,
+      "added": [],
+      "removed": [],
+      "archived": false,
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 3"
+    },
+    {
+      "threadId": "thr-1a2b5b3c",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter0@globex.example",
+      "subject": "Interview loop with Globex — stage 1"
+    },
+    {
+      "threadId": "thr-1a2b7a2b",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter1@globex.example",
+      "subject": "Interview loop with Globex — stage 2"
+    },
+    {
+      "threadId": "thr-1a2b991a",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter2@globex.example",
+      "subject": "Interview loop with Globex — stage 3"
+    },
+    {
+      "threadId": "thr-1a2bb809",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter3@globex.example",
+      "subject": "Interview loop with Globex — stage 4"
+    },
+    {
+      "threadId": "thr-1a2bd6f8",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter4@globex.example",
+      "subject": "Interview loop with Globex — stage 5"
+    },
+    {
+      "threadId": "thr-1a2bf5e7",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter5@globex.example",
+      "subject": "Interview loop with Globex — stage 6"
+    },
+    {
+      "threadId": "thr-1a2c14d6",
+      "ruleId": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "added": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "recruiter6@globex.example",
+      "subject": "Interview loop with Globex — stage 7"
+    },
+    {
+      "threadId": "thr-1a2c33c5",
+      "ruleId": "sort-initech",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "added": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2300"
+    },
+    {
+      "threadId": "thr-1a2c52b4",
+      "ruleId": "sort-initech",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "added": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2301"
+    },
+    {
+      "threadId": "thr-1a2c71a3",
+      "ruleId": "sort-initech",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "added": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2302"
+    },
+    {
+      "threadId": "thr-1a2c9092",
+      "ruleId": "sort-initech",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "added": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2303"
+    },
+    {
+      "threadId": "thr-1a2caf81",
+      "ruleId": "sort-umbrella",
+      "action": "label",
+      "label": "Recruiting/Umbrella",
+      "added": [
+        "Recruiting",
+        "Recruiting/Umbrella"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "no-reply@greenhouse.example",
+      "subject": "Thanks for applying to Umbrella Corp!"
+    },
+    {
+      "threadId": "thr-1a2cce70",
+      "ruleId": "sort-soylent",
+      "action": "label",
+      "label": "Recruiting/Soylent",
+      "added": [
+        "Recruiting",
+        "Recruiting/Soylent"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "noreply@candidates.workable.example",
+      "subject": "Thanks for applying to Soylent Industries"
+    },
+    {
+      "threadId": "thr-1a2ced5f",
+      "ruleId": "sort-statements",
+      "action": "label",
+      "label": "Statements",
+      "added": [
+        "Statements"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (1)"
+    },
+    {
+      "threadId": "thr-1a2d0c4e",
+      "ruleId": "sort-statements",
+      "action": "label",
+      "label": "Statements",
+      "added": [
+        "Statements"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (2)"
+    },
+    {
+      "threadId": "thr-1a2d2b3d",
+      "ruleId": "sort-statements",
+      "action": "label",
+      "label": "Statements",
+      "added": [
+        "Statements"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (3)"
+    },
+    {
+      "threadId": "thr-1a2d4a2c",
+      "ruleId": "sort-statements",
+      "action": "label",
+      "label": "Statements",
+      "added": [
+        "Statements"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (4)"
+    },
+    {
+      "threadId": "thr-1a2d691b",
+      "ruleId": "sort-medical",
+      "action": "label",
+      "label": "Medical",
+      "added": [
+        "Medical"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "mychart@valleyhealth.example",
+      "subject": "New message from your clinic"
+    },
+    {
+      "threadId": "thr-1a2d880a",
+      "ruleId": "sort-medical",
+      "action": "label",
+      "label": "Medical",
+      "added": [
+        "Medical"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "mychart@valleyhealth.example",
+      "subject": "You have a new statement"
+    },
+    {
+      "threadId": "thr-1a2da6f9",
+      "ruleId": "sort-banking",
+      "action": "label",
+      "label": "Banking",
+      "added": [
+        "Banking"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "alerts@notify.southbank.example",
+      "subject": "Insufficient funds notice"
+    },
+    {
+      "threadId": "thr-1a2dc5e8",
+      "ruleId": "sort-banking",
+      "action": "label",
+      "label": "Banking",
+      "added": [
+        "Banking"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "alerts@notify.southbank.example",
+      "subject": "Your balance is at or below zero"
+    },
+    {
+      "threadId": "thr-1a2de4d7",
+      "ruleId": "sort-school",
+      "action": "label",
+      "label": "School",
+      "added": [
+        "School"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "centralschools@parentvendor.example",
+      "subject": "Bus registration reminder 1"
+    },
+    {
+      "threadId": "thr-1a2e03c6",
+      "ruleId": "sort-school",
+      "action": "label",
+      "label": "School",
+      "added": [
+        "School"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "centralschools@parentvendor.example",
+      "subject": "Bus registration reminder 2"
+    },
+    {
+      "threadId": "thr-1a2e22b5",
+      "ruleId": "sort-gov",
+      "action": "label",
+      "label": "Paperwork",
+      "added": [
+        "Paperwork"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "records@statearchive.gov",
+      "subject": "Your records request"
+    },
+    {
+      "threadId": "thr-1a308d61",
+      "ruleId": "sort-security",
+      "action": "label",
+      "label": "Security",
+      "added": [
+        "Security"
+      ],
+      "removed": [],
+      "archived": false,
+      "from": "no-reply@accounts.mailprovider.example",
+      "subject": "Security alert: new sign-in"
+    },
+    {
+      "threadId": "thr-1a30ac50",
+      "ruleId": "sort-modelhub",
+      "action": "label",
+      "label": "Security",
+      "added": [
+        "Security"
+      ],
+      "removed": [],
+      "archived": false,
+      "from": "website@modelhub.example",
+      "subject": "Click this link to confirm your email address"
+    },
+    {
+      "threadId": "thr-1a30cb3f",
+      "ruleId": "sort-receipts-cloud",
+      "action": "label",
+      "label": "Receipts/Cloud Vendor",
+      "added": [
+        "Receipts",
+        "Receipts/Cloud Vendor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "billing@cloudvendor.example",
+      "subject": "Your receipt from Cloud Vendor #2563"
+    },
+    {
+      "threadId": "thr-1a30ea2e",
+      "ruleId": "sort-receipts-books",
+      "action": "label",
+      "label": "Receipts/Bookstore",
+      "added": [
+        "Receipts",
+        "Receipts/Bookstore"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "donotreply@bookstore.example",
+      "subject": "Thanks, your order is complete"
+    },
+    {
+      "threadId": "thr-1a31091d",
+      "ruleId": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "added": [
+        "Financial Advisor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "advisor0@wealthpartners.example",
+      "subject": "Re: your annual review (1)"
+    },
+    {
+      "threadId": "thr-1a31280c",
+      "ruleId": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "added": [
+        "Financial Advisor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "advisor1@wealthpartners.example",
+      "subject": "Re: your annual review (2)"
+    },
+    {
+      "threadId": "thr-1a3146fb",
+      "ruleId": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "added": [
+        "Financial Advisor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "advisor0@wealthpartners.example",
+      "subject": "Re: your annual review (3)"
+    },
+    {
+      "threadId": "thr-1a3165ea",
+      "ruleId": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "added": [
+        "Financial Advisor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "advisor1@wealthpartners.example",
+      "subject": "Re: your annual review (4)"
+    },
+    {
+      "threadId": "thr-1a3184d9",
+      "ruleId": "sort-advisor",
+      "action": "label",
+      "label": "Financial Advisor",
+      "added": [
+        "Financial Advisor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "advisor0@wealthpartners.example",
+      "subject": "Re: your annual review (5)"
+    },
+    {
+      "threadId": "thr-1a31a3c8",
+      "ruleId": "sort-realty",
+      "action": "label",
+      "label": "Realty",
+      "added": [
+        "Realty"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "agent@realty.example",
+      "subject": "Off boarding"
+    },
+    {
+      "threadId": "thr-1a31c2b7",
+      "ruleId": "sort-realty",
+      "action": "label",
+      "label": "Realty",
+      "added": [
+        "Realty"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "agent@realty.example",
+      "subject": "Re: paperwork"
+    },
+    {
+      "threadId": "thr-1a31e1a6",
+      "ruleId": "sort-briefings",
+      "action": "label",
+      "label": "Briefings",
+      "added": [
+        "Briefings"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "me@mailprovider.example",
+      "subject": "Morning brief — Wednesday"
+    },
+    {
+      "threadId": "thr-1a320095",
+      "ruleId": "sort-briefings",
+      "action": "label",
+      "label": "Briefings",
+      "added": [
+        "Briefings"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "me@mailprovider.example",
+      "subject": "Evening brief — Friday"
+    },
+    {
+      "threadId": "thr-1a321f84",
+      "ruleId": "sort-claim-work",
+      "action": "label",
+      "label": "Home Claim/Contractor",
+      "added": [
+        "Home Claim",
+        "Home Claim/Contractor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "invoices@billingplatform.example",
+      "subject": "Invoice 1250 from Roofing Co"
+    },
+    {
+      "threadId": "thr-1a323e73",
+      "ruleId": "sort-claim-work",
+      "action": "label",
+      "label": "Home Claim/Contractor",
+      "added": [
+        "Home Claim",
+        "Home Claim/Contractor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "invoices@billingplatform.example",
+      "subject": "Invoice 1251 from Roofing Co"
+    },
+    {
+      "threadId": "thr-1a325d62",
+      "ruleId": "sort-claim-work",
+      "action": "label",
+      "label": "Home Claim/Contractor",
+      "added": [
+        "Home Claim",
+        "Home Claim/Contractor"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "invoices@billingplatform.example",
+      "subject": "Invoice 1252 from Roofing Co"
+    },
+    {
+      "threadId": "thr-1a327c51",
+      "ruleId": "sort-claim-insurepay",
+      "action": "label",
+      "label": "Home Claim/Insurance",
+      "added": [
+        "Home Claim",
+        "Home Claim/Insurance"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "claims@insurepay.example",
+      "subject": "A digital payment was issued for your claim"
+    },
+    {
+      "threadId": "thr-1a329b40",
+      "ruleId": "sort-claim-insurepay",
+      "action": "label",
+      "label": "Home Claim/Insurance",
+      "added": [
+        "Home Claim",
+        "Home Claim/Insurance"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "claims@insurepay.example",
+      "subject": "Payment confirmation"
+    },
+    {
+      "threadId": "thr-1a32ba2f",
+      "ruleId": "sort-claim-insurer",
+      "action": "label",
+      "label": "Home Claim/Insurance",
+      "added": [
+        "Home Claim",
+        "Home Claim/Insurance"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "correspondence@insurer.example",
+      "subject": "Insurance claim 01006543"
+    },
+    {
+      "threadId": "thr-1a32d91e",
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "label": "Paperwork",
+      "added": [
+        "Paperwork"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 1"
+    },
+    {
+      "threadId": "thr-1a32f80d",
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "label": "Paperwork",
+      "added": [
+        "Paperwork"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 2"
+    },
+    {
+      "threadId": "thr-1a3316fc",
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "label": "Paperwork",
+      "added": [
+        "Paperwork"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 3"
+    },
+    {
+      "threadId": "thr-1a3335eb",
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "label": "Paperwork",
+      "added": [
+        "Paperwork"
+      ],
+      "removed": [],
+      "archived": true,
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 4"
+    }
+  ],
+  "operations": [
+    {
+      "id": "b49ae5526ac2e923d67d5fa9",
+      "threadId": "thr-1a2e41a4",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3d98c413962070dffe6c25c9",
+      "threadId": "thr-1a2e6093",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3e678d373f8499181de33f76",
+      "threadId": "thr-1a2e7f82",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "fece84cf4eb2dc1e0f27f141",
+      "threadId": "thr-1a2e9e71",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "ae97f90297b04ea59c32d892",
+      "threadId": "thr-1a2ebd60",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "21c5d045cd00f1309e1ac460",
+      "threadId": "thr-1a2edc4f",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "16fc19210a3a01521bd554ed",
+      "threadId": "thr-1a2efb3e",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "239f580cff97f26745308572",
+      "threadId": "thr-1a2f1a2d",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2ba197c0450d58b74b4b615f",
+      "threadId": "thr-1a2f391c",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "98b64230b676ac0aa9efd749",
+      "threadId": "thr-1a2f580b",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "71f1ee0d5d7bba5f6fe8caed",
+      "threadId": "thr-1a2f76fa",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "28ef0499f662749b0f8ecbe2",
+      "threadId": "thr-1a2f95e9",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "876644a8d85a161ff8af658b",
+      "threadId": "thr-1a2fb4d8",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "8ca87bc741d825ba9a6de2d1",
+      "threadId": "thr-1a2fd3c7",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "68e50dd10c6834aaaa242457",
+      "threadId": "thr-1a2ff2b6",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "9ec1cb3c1a44e40057a8f2dc",
+      "threadId": "thr-1a3011a5",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "0901264aa9dbda76c88b63af",
+      "threadId": "thr-1a303094",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "a891a72976077f7da517652c",
+      "threadId": "thr-1a304f83",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "40762b10c7c6946f70ea4c2d",
+      "threadId": "thr-1a306e72",
+      "action": "trash",
+      "label": null,
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "0a2c47d32700f95338241ae2",
+      "threadId": "thr-1a2b5b3c",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "966cf249e069ad0b8c3627af",
+      "threadId": "thr-1a2b5b3c",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "046c4b4dda4080e829b3d607",
+      "threadId": "thr-1a2b5b3c",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "0a2c47d32700f95338241ae2",
+        "966cf249e069ad0b8c3627af"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "6247bdc31fcb843512b94a5d",
+      "threadId": "thr-1a2b7a2b",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "71088172a0ea7e7d36e279b8",
+      "threadId": "thr-1a2b7a2b",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "01167b573b34ce7767f338af",
+      "threadId": "thr-1a2b7a2b",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "6247bdc31fcb843512b94a5d",
+        "71088172a0ea7e7d36e279b8"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "376877db64996146a381b0db",
+      "threadId": "thr-1a2b991a",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "a7dd9ac98a307327b6facf31",
+      "threadId": "thr-1a2b991a",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "6bcc37a124f1a21968ee8671",
+      "threadId": "thr-1a2b991a",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "376877db64996146a381b0db",
+        "a7dd9ac98a307327b6facf31"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "67b66371ecd24b6b381f3e6a",
+      "threadId": "thr-1a2bb809",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "fbff5bf20ce45ea998382c58",
+      "threadId": "thr-1a2bb809",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "c02817b4f0246ed4e0ddd6c2",
+      "threadId": "thr-1a2bb809",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "67b66371ecd24b6b381f3e6a",
+        "fbff5bf20ce45ea998382c58"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "473eb7479544f1776661a8c0",
+      "threadId": "thr-1a2bd6f8",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "9119ff5bc2d4621ac3cb839f",
+      "threadId": "thr-1a2bd6f8",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "7bfdea215ed4c80257d9d48f",
+      "threadId": "thr-1a2bd6f8",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "473eb7479544f1776661a8c0",
+        "9119ff5bc2d4621ac3cb839f"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "bc2461b0df558f94dcb1cda5",
+      "threadId": "thr-1a2bf5e7",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "4e8213e1227943c1f3736a1e",
+      "threadId": "thr-1a2bf5e7",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2f35e660226ae3d23482171b",
+      "threadId": "thr-1a2bf5e7",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "bc2461b0df558f94dcb1cda5",
+        "4e8213e1227943c1f3736a1e"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "aa64b08756c3852d220a574d",
+      "threadId": "thr-1a2c14d6",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "6b915f865b95ff3a64a1f789",
+      "threadId": "thr-1a2c14d6",
+      "action": "add",
+      "label": "Recruiting/Globex",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3df1ed70235a15770a973e0a",
+      "threadId": "thr-1a2c14d6",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "aa64b08756c3852d220a574d",
+        "6b915f865b95ff3a64a1f789"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2e038550000f2e53ae93ab69",
+      "threadId": "thr-1a2c33c5",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "07c4be871c3578f7284d961c",
+      "threadId": "thr-1a2c33c5",
+      "action": "add",
+      "label": "Recruiting/Initech",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2f3849f14d52545625df979b",
+      "threadId": "thr-1a2c33c5",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "2e038550000f2e53ae93ab69",
+        "07c4be871c3578f7284d961c"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2a23970c619a620f78ebf7a2",
+      "threadId": "thr-1a2c52b4",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3b3ba773a7fdbe08dfe4118a",
+      "threadId": "thr-1a2c52b4",
+      "action": "add",
+      "label": "Recruiting/Initech",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "80381e675eb5f582a1a27d0f",
+      "threadId": "thr-1a2c52b4",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "2a23970c619a620f78ebf7a2",
+        "3b3ba773a7fdbe08dfe4118a"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "39676226d55c88910937f5ea",
+      "threadId": "thr-1a2c71a3",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "aebc2339baaea9ee22bc7435",
+      "threadId": "thr-1a2c71a3",
+      "action": "add",
+      "label": "Recruiting/Initech",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "15fc69cfafac3c987ddab1ca",
+      "threadId": "thr-1a2c71a3",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "39676226d55c88910937f5ea",
+        "aebc2339baaea9ee22bc7435"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "4879bfd9401118731bc4e1f4",
+      "threadId": "thr-1a2c9092",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "521859ac80bf8f2c7067d453",
+      "threadId": "thr-1a2c9092",
+      "action": "add",
+      "label": "Recruiting/Initech",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "879f2c5b25011408243f9a4a",
+      "threadId": "thr-1a2c9092",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "4879bfd9401118731bc4e1f4",
+        "521859ac80bf8f2c7067d453"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "50b43c0b030c7347367ee75c",
+      "threadId": "thr-1a2caf81",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "ae7b86acf33ce395760cc8a9",
+      "threadId": "thr-1a2caf81",
+      "action": "add",
+      "label": "Recruiting/Umbrella",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "5eb403199b01aeaf1b969172",
+      "threadId": "thr-1a2caf81",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "50b43c0b030c7347367ee75c",
+        "ae7b86acf33ce395760cc8a9"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "0974226bb57e45bd33b6048e",
+      "threadId": "thr-1a2cce70",
+      "action": "add",
+      "label": "Recruiting",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "8d9e6d822c4a00cd5a6c5f5c",
+      "threadId": "thr-1a2cce70",
+      "action": "add",
+      "label": "Recruiting/Soylent",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "cbee020050b4a4f5a98e0a98",
+      "threadId": "thr-1a2cce70",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "0974226bb57e45bd33b6048e",
+        "8d9e6d822c4a00cd5a6c5f5c"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "5ec01facb54973a6efc3f477",
+      "threadId": "thr-1a2ced5f",
+      "action": "add",
+      "label": "Statements",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "043833a1a693dd8b2d9e73a8",
+      "threadId": "thr-1a2ced5f",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "5ec01facb54973a6efc3f477"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "fa6b761555035878a895a51f",
+      "threadId": "thr-1a2d0c4e",
+      "action": "add",
+      "label": "Statements",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "28bb6a09e76054544e82da84",
+      "threadId": "thr-1a2d0c4e",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "fa6b761555035878a895a51f"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "e87f782cb4f466857e0f565e",
+      "threadId": "thr-1a2d2b3d",
+      "action": "add",
+      "label": "Statements",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "c1bb3d56b43f150b2d51b1c3",
+      "threadId": "thr-1a2d2b3d",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "e87f782cb4f466857e0f565e"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "9a72ea2f4e7dad01cadb65ab",
+      "threadId": "thr-1a2d4a2c",
+      "action": "add",
+      "label": "Statements",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f7ba0eda10ba2a44435ebd4f",
+      "threadId": "thr-1a2d4a2c",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "9a72ea2f4e7dad01cadb65ab"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "38edcf48d577434604721f5e",
+      "threadId": "thr-1a2d691b",
+      "action": "add",
+      "label": "Medical",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "61c494b73e8a7f039cb22a72",
+      "threadId": "thr-1a2d691b",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "38edcf48d577434604721f5e"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "2b93e5b16bb1e91ef5b0cefc",
+      "threadId": "thr-1a2d880a",
+      "action": "add",
+      "label": "Medical",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "412b943643f9a794d1def2db",
+      "threadId": "thr-1a2d880a",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "2b93e5b16bb1e91ef5b0cefc"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "84ebbefeccb86ec9fce361c1",
+      "threadId": "thr-1a2da6f9",
+      "action": "add",
+      "label": "Banking",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "976113d79059513213565a12",
+      "threadId": "thr-1a2da6f9",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "84ebbefeccb86ec9fce361c1"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "7cf5b58aa429197a5fb4c80d",
+      "threadId": "thr-1a2dc5e8",
+      "action": "add",
+      "label": "Banking",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "576878ea06e5dd831c300e6a",
+      "threadId": "thr-1a2dc5e8",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "7cf5b58aa429197a5fb4c80d"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "06c6644c465b69d1e71863a2",
+      "threadId": "thr-1a2de4d7",
+      "action": "add",
+      "label": "School",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "5696cb3555dd24b309b6e51f",
+      "threadId": "thr-1a2de4d7",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "06c6644c465b69d1e71863a2"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "64934cd02e8a24934b5b8d5f",
+      "threadId": "thr-1a2e03c6",
+      "action": "add",
+      "label": "School",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "5ff3f840774c5ce1e6e7b63d",
+      "threadId": "thr-1a2e03c6",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "64934cd02e8a24934b5b8d5f"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "c38e0c0f3d8a3d51797d8c6f",
+      "threadId": "thr-1a2e22b5",
+      "action": "add",
+      "label": "Paperwork",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "543d455b8be74ecf7307222f",
+      "threadId": "thr-1a2e22b5",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "c38e0c0f3d8a3d51797d8c6f"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "a29c8252c56c21440c2fa31c",
+      "threadId": "thr-1a308d61",
+      "action": "add",
+      "label": "Security",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f4fdc0f3269f961942dc2ea0",
+      "threadId": "thr-1a30ac50",
+      "action": "add",
+      "label": "Security",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "eed8f7d7f424959b6744510c",
+      "threadId": "thr-1a30cb3f",
+      "action": "add",
+      "label": "Receipts",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "6789e6ebf9a0bb55fe409847",
+      "threadId": "thr-1a30cb3f",
+      "action": "add",
+      "label": "Receipts/Cloud Vendor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "82d0dacd992ee11ccf5a6b8a",
+      "threadId": "thr-1a30cb3f",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "eed8f7d7f424959b6744510c",
+        "6789e6ebf9a0bb55fe409847"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "949dd383574c4bcd4fad49cb",
+      "threadId": "thr-1a30ea2e",
+      "action": "add",
+      "label": "Receipts",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "68508d62202e30507c51ad3d",
+      "threadId": "thr-1a30ea2e",
+      "action": "add",
+      "label": "Receipts/Bookstore",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "597308f59c78e7cc0593f6b2",
+      "threadId": "thr-1a30ea2e",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "949dd383574c4bcd4fad49cb",
+        "68508d62202e30507c51ad3d"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "d70278b5dcbc222ac832a187",
+      "threadId": "thr-1a31091d",
+      "action": "add",
+      "label": "Financial Advisor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "23d4d1eb9281a9a22f2093dc",
+      "threadId": "thr-1a31091d",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "d70278b5dcbc222ac832a187"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "c477bcbe7b168345535e5879",
+      "threadId": "thr-1a31280c",
+      "action": "add",
+      "label": "Financial Advisor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "100e25a2214e1ba17dfc9268",
+      "threadId": "thr-1a31280c",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "c477bcbe7b168345535e5879"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "b058ab9ff8e09b01ea63c1c8",
+      "threadId": "thr-1a3146fb",
+      "action": "add",
+      "label": "Financial Advisor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3bfd87fae0406698ab9aed03",
+      "threadId": "thr-1a3146fb",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "b058ab9ff8e09b01ea63c1c8"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "45fce93b457d7ab418a0d62a",
+      "threadId": "thr-1a3165ea",
+      "action": "add",
+      "label": "Financial Advisor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "163c6bd652fc6adeeb5ce233",
+      "threadId": "thr-1a3165ea",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "45fce93b457d7ab418a0d62a"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "02d7856b500fbefb8337397d",
+      "threadId": "thr-1a3184d9",
+      "action": "add",
+      "label": "Financial Advisor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "cf62aab10aeda28d057e648a",
+      "threadId": "thr-1a3184d9",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "02d7856b500fbefb8337397d"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "ab7c5bff6febca6ef63b9b42",
+      "threadId": "thr-1a31a3c8",
+      "action": "add",
+      "label": "Realty",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "dd6a5cced351317853debf38",
+      "threadId": "thr-1a31a3c8",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "ab7c5bff6febca6ef63b9b42"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "d135de8b452fb26b347df7de",
+      "threadId": "thr-1a31c2b7",
+      "action": "add",
+      "label": "Realty",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "126e577221914affbbc33597",
+      "threadId": "thr-1a31c2b7",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "d135de8b452fb26b347df7de"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "9e0c2457921a975fb5cdea28",
+      "threadId": "thr-1a31e1a6",
+      "action": "add",
+      "label": "Briefings",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "36fe9cdaeb3640d660a216ac",
+      "threadId": "thr-1a31e1a6",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "9e0c2457921a975fb5cdea28"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "262afe16ea5100423d719e86",
+      "threadId": "thr-1a320095",
+      "action": "add",
+      "label": "Briefings",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "ceef65323b0b0873fbc02720",
+      "threadId": "thr-1a320095",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "262afe16ea5100423d719e86"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "387f5ae29c43989f22cfe844",
+      "threadId": "thr-1a321f84",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3339ace7bf0b68b749589634",
+      "threadId": "thr-1a321f84",
+      "action": "add",
+      "label": "Home Claim/Contractor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "082bbaee11813a017d7aedd5",
+      "threadId": "thr-1a321f84",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "387f5ae29c43989f22cfe844",
+        "3339ace7bf0b68b749589634"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f2315adcb89346a5214c9396",
+      "threadId": "thr-1a323e73",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "ceb1ed32abfc4ad06bf56cfa",
+      "threadId": "thr-1a323e73",
+      "action": "add",
+      "label": "Home Claim/Contractor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f84d35a5aedb9689513da049",
+      "threadId": "thr-1a323e73",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "f2315adcb89346a5214c9396",
+        "ceb1ed32abfc4ad06bf56cfa"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "054c94a22452df13f4507618",
+      "threadId": "thr-1a325d62",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "aece086f5d89a20c3dfab375",
+      "threadId": "thr-1a325d62",
+      "action": "add",
+      "label": "Home Claim/Contractor",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "3936eb08db04bb757b21f247",
+      "threadId": "thr-1a325d62",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "054c94a22452df13f4507618",
+        "aece086f5d89a20c3dfab375"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "c10c1cfae421c04b51876b1a",
+      "threadId": "thr-1a327c51",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "fe32142dbc7d144cc6d386a2",
+      "threadId": "thr-1a327c51",
+      "action": "add",
+      "label": "Home Claim/Insurance",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "68eb8411d018db8b3a43ff76",
+      "threadId": "thr-1a327c51",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "c10c1cfae421c04b51876b1a",
+        "fe32142dbc7d144cc6d386a2"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "bcac3591fadb84bba832203d",
+      "threadId": "thr-1a329b40",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "1715b924dadcd0a5c5040fc2",
+      "threadId": "thr-1a329b40",
+      "action": "add",
+      "label": "Home Claim/Insurance",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "e34fc7860890618a10e902e7",
+      "threadId": "thr-1a329b40",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "bcac3591fadb84bba832203d",
+        "1715b924dadcd0a5c5040fc2"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "21824b562e7aa0de55bfb2bb",
+      "threadId": "thr-1a32ba2f",
+      "action": "add",
+      "label": "Home Claim",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f8a854e63a812ba7f0c47ac0",
+      "threadId": "thr-1a32ba2f",
+      "action": "add",
+      "label": "Home Claim/Insurance",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "847be242b080e269078debce",
+      "threadId": "thr-1a32ba2f",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "21824b562e7aa0de55bfb2bb",
+        "f8a854e63a812ba7f0c47ac0"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "93a201b63846d879800d82c5",
+      "threadId": "thr-1a32d91e",
+      "action": "add",
+      "label": "Paperwork",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "74c233547e6a5a02987f3f06",
+      "threadId": "thr-1a32d91e",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "93a201b63846d879800d82c5"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "12c7a9587efd3d0abfa18a55",
+      "threadId": "thr-1a32f80d",
+      "action": "add",
+      "label": "Paperwork",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "f6e45b6731190c4bd12f105e",
+      "threadId": "thr-1a32f80d",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "12c7a9587efd3d0abfa18a55"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "a0f862cbdff7338549022b0c",
+      "threadId": "thr-1a3316fc",
+      "action": "add",
+      "label": "Paperwork",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "73b0006d5233ed2e11becbe4",
+      "threadId": "thr-1a3316fc",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "a0f862cbdff7338549022b0c"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "359ac292744ddf150403942f",
+      "threadId": "thr-1a3335eb",
+      "action": "add",
+      "label": "Paperwork",
+      "requires": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "8f95acbed117c8b2a895aaa7",
+      "threadId": "thr-1a3335eb",
+      "action": "remove",
+      "label": "INBOX",
+      "requires": [
+        "359ac292744ddf150403942f"
+      ],
+      "status": "pending",
+      "evidence": null
+    }
+  ],
+  "snapshot": null,
+  "labelIndex": {}
+}

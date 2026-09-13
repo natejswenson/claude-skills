@@ -540,6 +540,8 @@ test('a retroactive pass adds only what the thread does not already carry', () =
   assert.deepEqual(p.taken[1].adds, ['Recruiting', 'Recruiting/Globex']);
 
   const r = buildReceipt(p.taken, { at: 'now' });
+  assert.equal(undoPlan(r).total, 0);
+  for (const op of r.operations) { op.status = 'confirmed'; op.evidence = 'success'; }
   const u = undoPlan(r);
   // Undoing must never strip `Recruiting` from the thread that already had it.
   const rec = u.unlabel.find((g) => g.label === 'Recruiting');

@@ -34,32 +34,32 @@ set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-# The corpus first: everything below is derived from it.
-node evals/baseline/make-corpus.mjs
+# Generate into a temporary directory; validate all unrelated artifacts before copying.
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
-
-# `--at` is pinned: apply stamps the receipt with the current time otherwise,
-# and a golden that embeds "now" fails on every run but the one that wrote it.
-CMD='node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules-none.json --min-count 2 --show-withheld 20 --out $OUT/candidates.json > $OUT/propose.txt && node scripts/gmailtriage.js propose --threads evals/baseline/threads.json --labels evals/baseline/labels.json --rules evals/baseline/rules.json --min-count 2 --show-claimed 20 > $OUT/propose-covered.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules.json --labels evals/baseline/labels.json > $OUT/labels.txt && node evals/baseline/prepare-inbox.mjs evals/baseline/threads.json > $OUT/inbox-input.json && node scripts/gmailtriage.js plan --threads $OUT/inbox-input.json --rules evals/baseline/rules.json --preview 8 --out $OUT/plan.json > $OUT/plan.txt && rm $OUT/inbox-input.json && node scripts/gmailtriage.js apply --plan $OUT/plan.json --receipt $OUT/receipt.json --at 2026-08-05T12:00:00Z > $OUT/apply.txt && node scripts/gmailtriage.js subdivide --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --parent Recruiting --out $OUT/subdivide-candidates.json > $OUT/subdivide.txt && node scripts/gmailtriage.js labels --rules evals/baseline/rules-recruiting.json --labels evals/baseline/filed-labels.json > $OUT/retro-labels.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" --preview 13 --out $OUT/retro-plan.json > $OUT/retro-plan.txt && node scripts/gmailtriage.js apply --plan $OUT/retro-plan.json --receipt $OUT/retro-receipt.json --at 2026-08-07T12:00:00Z > $OUT/retro-apply.txt && node scripts/gmailtriage.js plan --threads evals/baseline/filed-after.json --labels evals/baseline/filed-labels.json --rules evals/baseline/rules-recruiting.json --scope "label:Recruiting" > $OUT/retro-converged.txt && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-before-labels.json --rules evals/baseline/mailbox-before-rules.json --threads evals/baseline/mailbox-before.json > $OUT/audit-before.txt || true && node scripts/gmailtriage.js audit --labels evals/baseline/mailbox-after-labels.json --rules evals/baseline/mailbox-after-rules.json --threads evals/baseline/mailbox-after.json > $OUT/audit-after.txt && node scripts/gmailtriage.js merge --from Reciepts --to Receipts --threads evals/baseline/mailbox-before.json --labels evals/baseline/mailbox-before-labels.json --receipt $OUT/merge-receipt.json --at 2026-08-07T12:00:00Z > $OUT/merge.txt && node scripts/gmailtriage.js ingest --inbox evals/baseline/raw-inbox.json --nolabel evals/baseline/raw-nolabel.json --promos evals/baseline/raw-promos.json --updates evals/baseline/raw-updates.json --labels evals/baseline/raw-labels.json --out-threads $OUT/ingested-threads.json --out-labels $OUT/ingested-labels.json > $OUT/ingest.txt'
-
-eval "${CMD//\$OUT/$OUT}"
-
-node - "$OUT" "$CMD" <<'NODE'
-const { readFileSync, writeFileSync, readdirSync, copyFileSync } = require('node:fs');
-const { createHash } = require('node:crypto');
-const { join } = require('node:path');
-const [, , out, command] = process.argv;
-const artifacts = readdirSync(out).sort().map((path) => {
-  const buf = readFileSync(join(out, path));
-  copyFileSync(join(out, path), join('evals', 'baseline', path));
-  return { path, bytes: buf.length, sha256: createHash('sha256').update(buf).digest('hex') };
+node --input-type=module - "$OUT" <<'NODE'
+import { readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+const out = process.argv[2], base = 'evals/baseline';
+const manifest = JSON.parse(readFileSync(join(base, 'MANIFEST.json'), 'utf8'));
+const changed = new Set(['pending-receipt.json', 'retro-pending-receipt.json', 'merge-pending-receipt.json', 'apply.txt', 'retro-apply.txt', 'merge.txt']);
+execFileSync('bash', ['-lc', manifest.command.replaceAll('$OUT', out)], { stdio: 'inherit' });
+const hash = (buf) => createHash('sha256').update(buf).digest('hex');
+for (const a of manifest.legacyReceipts) {
+  const buf = readFileSync(join(base, a.path));
+  if (buf.length !== a.bytes || hash(buf) !== a.sha256) throw new Error('legacy receipt drift: ' + a.path);
+}
+const artifacts = manifest.artifacts.map((a) => {
+  const buf = readFileSync(join(out, a.path));
+  if (!changed.has(a.path)) {
+    if (!buf.equals(readFileSync(join(base, a.path))) || buf.length !== a.bytes || hash(buf) !== a.sha256) throw new Error('unrelated golden drift: ' + a.path);
+    return a;
+  }
+  return { path: a.path, bytes: buf.length, sha256: hash(buf) };
 });
-writeFileSync('evals/baseline/MANIFEST.json', JSON.stringify({
-  $comment: 'Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.',
-  label: 'the-real-run',
-  command,
-  artifacts,
-}, null, 2) + '\n');
-console.log(`froze ${artifacts.length} artifacts`);
+for (const path of changed) copyFileSync(join(out, path), join(base, path));
+writeFileSync(join(base, 'MANIFEST.json'), JSON.stringify({ ...manifest, artifacts }, null, 2) + '\n');
+console.log('froze six lifecycle artifacts; unrelated artifacts and legacy receipts preserved');
 NODE

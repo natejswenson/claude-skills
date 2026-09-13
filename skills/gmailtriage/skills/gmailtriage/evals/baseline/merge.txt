@@ -1,13 +1,15 @@
 | Fold     | Into     | Threads carrying it | Need the target added | Already have it |
 |----------|----------|---------------------|-----------------------|-----------------|
 | Reciepts | Receipts | 2                   | 0                     | 2               |
+runId=00000000-0000-4000-8000-000000000000 confirmed=0 affectedThreads=0 pending=2 failed=0 unknown=0 incomplete=2
+Authorization alone is not completion. Before each call, record --begin; then record its outcome. Unknown/failed operations require fresh membership reconciliation.
 
 every thread already carries "Receipts", so nothing needs labelling first.
 
-THEN — not before — remove "Reciepts" from exactly these thread ids:
+AFTER confirmed target additions — remove "Reciepts" from exactly these thread ids:
 thr-1a30cb3f
 thr-1a30ea2e
 
-finally, delete the "Reciepts" label itself. It is empty by then, so nothing is lost with it.
+Separate folder deletion requires a fresh whole-mailbox empty check for "Reciepts".
 
 do these in that order. Removing the old label first leaves the mail in neither folder.
