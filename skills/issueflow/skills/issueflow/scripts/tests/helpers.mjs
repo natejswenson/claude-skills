@@ -14,6 +14,12 @@ import { accept, artifactPath, blockers, evidencePath, findStep, saveRun } from 
 import { ensureWorktree } from '../lib/worktree.mjs';
 import { nextRound, registerReview, reviewPath } from '../lib/reviews.mjs';
 
+/** CLI fixtures own a synthetic session; never borrow the invoking host's identity. */
+export function controllerTestEnv(sessionId) {
+  return { ...process.env, NODE_TEST_CONTEXT: undefined, ISSUEFLOW_SESSION_ID: sessionId,
+    CODEX_THREAD_ID: undefined, CLAUDE_SESSION_ID: undefined, ISSUEFLOW_CONTINUATION_FILE: undefined };
+}
+
 export const DOCS_CONTRACT = '\n```issueflow-contract\n' + JSON.stringify({ schema: 1, risk: 'docs', criteria: [{ id: 'D1', description: 'requested documentation edit' }], nonGoals: [], allowedPaths: ['README.md'], checks: [{ id: 'docs', type: 'command', argv: [process.execPath, '--version'], criteria: ['D1'] }] }) + '\n```\n';
 
 /** Write an artifact that satisfies the stage's required sections. */

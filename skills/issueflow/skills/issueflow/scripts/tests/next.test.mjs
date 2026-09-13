@@ -8,6 +8,7 @@
  * real binary offline and assert on the exit code, because the exit code is
  * the thing an orchestrator branches on without parsing English.
  */
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -35,7 +36,7 @@ const git = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8', st
 
 const cli = (args) => {
   try {
-    const out = execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, NODE_TEST_CONTEXT: undefined } });
+    const out = execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: controllerTestEnv('next-controller') });
     return { code: 0, out, err: '' };
   } catch (e) {
     return { code: e.status ?? 1, out: String(e.stdout ?? ''), err: String(e.stderr ?? '') };
@@ -379,7 +380,7 @@ for (const command of ['brief', 'review-brief', 'review-verify', 'review-fix-bri
     writeFileSync(clock, `const RealDate = Date; let reads = 0; globalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [${now} + (++reads >= 2 ? 20000000 : 0)])); } };\n`);
     const extra = command === 'brief' ? ['--stage', 'implement'] : [];
     const result = spawnSync(process.execPath, ['--import', clock, CLI, command, ...extra, '--lane', 'root', '--run-dir', dir, '--offline'], {
-      encoding: 'utf8', env: { ...process.env, NODE_TEST_CONTEXT: undefined },
+      encoding: 'utf8', env: controllerTestEnv('next-controller'),
     });
     assert.match(result.stdout, /next: stop — budget/);
     assert.equal(result.status, 4, result.stderr);

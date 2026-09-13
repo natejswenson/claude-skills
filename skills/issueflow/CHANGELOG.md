@@ -5,28 +5,25 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.0] - Unreleased
+## [0.17.0] - 2026-09-13
 
-- Carry the latest registered verifier quote and explanation into repeated-finding fixer briefs, keeping superseded reproductions explicitly historical; pin the real #366 handoff as a regression.
-- Limit stage guidance to root or known contract paths while requiring workers to load new applicable scopes; preserve nested directory guidance on both hosts.
-- Put completion intent, workflow eligibility and full input-path evidence checks into planning/review briefs; retain run lessons and evidence limitations inside the packaged skill.
-- Report actual rounds used separately from the base allowance and authorized extensions in review briefs, registration and exhaustion output.
-- Resume CI stops through `next`, preserving draft-only endpoint exclusions instead of suggesting `ready`.
-- Preserve legacy plan blockers during explicit migration; allow a recorded user choice of current repository base before implementation, retaining old policy, evidence and cumulative limits.
-- Rebuild migration scope from the frozen issue and current preflight when no contract was approved; retain the old allowlist restriction for actual amendments.
-- Send delivered plans that fail preflight back to their author within the existing repair cap, without consuming independent review rounds.
-- Refresh both PR refs before review and bind the diff/context to the observed target SHA, preventing stale cached bases from adding already-landed changes to the review.
-- Live Codex evaluation: supply an executable canonical-run preflight command to cold planners, explain context-packet hashing, respect completion exclusions in readiness handoffs, and start reopened workers' heartbeat clocks at their new dispatch.
-- Renew authorized autonomous windows when `next` reaches its budget decision, including prepared execution and post-amendment review; retain manual stops and the original cumulative cap.
-- Persist the observed reviewed-PR endpoint before returning its terminal handoff; keep draft-only guidance consistent after posting a review.
+### Added
 
-- Recover initialization under a durable controller identity and use one frozen base for planning, implementation and verification.
-- Preflight generated scope and package checks; add schema-2 cwd, isolated builds and verified output dependencies.
-- Normalize effective required CI, optional expected skips and retarget freshness across controller decisions.
-- Retain stable plan blockers and review published amendments without resetting PR identity, evidence history or cumulative limits.
-- Persist reviewed/merged/deployed endpoints, exclusions, scoped authority and provider receipts; reconcile uncertain writes before cleanup.
-- Add factual status/heartbeat output, correlated transcript evidence, interval metrics and a separate native-pilot importer.
-- Keep schema-3/4 continuation and installed Claude/Codex coverage. Native performance remains unverified; automatic GitHub merge stays pending when target-context preconditions are unsupported.
+- **Runs can track the intended completion endpoint and recover interrupted work.** Durable controller ownership, explicit recovery, scoped authority and provider receipts preserve the distinction between a reviewed PR, an observed merge and a verified deployment.
+- **Verification contracts can describe package checks and generated outputs.** Schema-2 contracts support working directories, isolated builds and verified output dependencies, with preflight checks before implementation.
+- **Status and evaluation retain stronger evidence.** Heartbeats, correlated execution records and interval measurements expose observed progress and missing coverage. Lessons from the actual issue #366 retry ship with the skill.
+
+### Fixed
+
+- **Reviewers and fixers receive current evidence.** Review refreshes both PR refs, binds the diff to the observed target, and carries the latest verifier reproduction into repeated-finding fixes. Nested repository guidance remains available on both hosts.
+- **Recoverable stops preserve the run's history.** Delivered plans that fail preflight return to their author within the repair allowance; migration and amendments retain blockers, PR identity, evidence and cumulative limits. Authorized autonomous windows renew when the controller reaches its budget decision.
+- **CI and completion handoffs respect the selected endpoint.** Effective required checks, expected optional skips and retarget freshness inform the decision; CI stops resume through `next`, and draft-only exclusions survive readiness handoffs. Uncertain remote writes are reconciled before cleanup.
+- **Offline tests and evals own their controller identity.** Fixtures no longer depend on an inherited Codex or Claude session, and an unrelated continuation credential cannot take over the offline evaluator.
+
+### Compatibility
+
+- Existing schema-3/4 runs retain their original continuation behavior and evidence strength; migration stays explicit. Claude configuration paths, slash invocations and the shared Codex package remain supported.
+- The issue #366 retry reached a user-authorized merge and verified cleanup. It does not establish unattended completion, a cross-host speedup or complete usage measurements. Automatic merge remains pending where atomic target-context preconditions are unsupported.
 
 ## [0.16.0] - 2026-09-12
 

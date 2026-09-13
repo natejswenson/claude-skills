@@ -1,3 +1,4 @@
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -31,7 +32,7 @@ function fixture(t, strict = false) {
 test('legacy migration is explicit, preserves history and caps, and never invents strict approval', (t) => {
   const f = fixture(t); const old = JSON.stringify(f.run); const bytes = readFileSync(artifactPath(f.dir, { run: f.run, stage: f.run.stages[0] }));
   const cli = fileURLToPath(new URL('../issueflow.js', import.meta.url));
-  const invoke = (...args) => spawnSync(process.execPath, [cli, 'migrate-run', '--run-dir', f.dir, ...args], { encoding: 'utf8' });
+  const invoke = (...args) => spawnSync(process.execPath, [cli, 'migrate-run', '--run-dir', f.dir, ...args], { encoding: 'utf8', env: controllerTestEnv('evolution-controller') });
   assert.equal(invoke('--reason', 'strict proof').status, 2);
   const r = invoke('--workers-released', '--reason', 'strict proof'); assert.equal(r.status, 0, r.stderr);
   const run = loadRun(f.dir); const record = run.harness.amendments[0];
@@ -42,7 +43,7 @@ test('legacy migration is explicit, preserves history and caps, and never invent
   assert.equal(run.stages[0].review.rounds.length, 1, 'review budget/history retained');
   assert.equal(latestRound({ stage: run.stages[0] }), null, 'old verdict is history, not approval');
   assert.equal(nextRound({ stage: run.stages[0] }), 2, 'migration does not replenish review rounds');
-  const next = spawnSync(process.execPath, [cli, 'next', '--run-dir', f.dir, '--workers-released'], { encoding: 'utf8' });
+  const next = spawnSync(process.execPath, [cli, 'next', '--run-dir', f.dir, '--workers-released'], { encoding: 'utf8', env: controllerTestEnv('evolution-controller') });
   assert.equal(next.status, 0, next.stderr);
   assert.match(next.stdout, /the plan has not been briefed/);
   assert.doesNotMatch(next.stdout, /approving the plan/);

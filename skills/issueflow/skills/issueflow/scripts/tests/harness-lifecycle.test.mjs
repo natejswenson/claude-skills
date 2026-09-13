@@ -4,6 +4,7 @@
  * Set ISSUEFLOW_HARNESS_KEEP=1 to retain command logs, receipts and repositories.
  * ISSUEFLOW_HARNESS_SOURCE optionally pins an independently frozen skill tree.
  */
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, copyFileSync, chmodSync, rmSync } from 'node:fs';
@@ -37,7 +38,7 @@ function fixture(t, { legacy = false, staleReviewBase = false } = {}) {
   const repo = join(root, 'repo'), dir = join(root, 'run'), bin = join(root, 'bin');
   mkdirSync(repo); mkdirSync(bin); mkdirSync(join(root, 'workspace')); mkdirSync(join(root, 'logs'));
   copyFileSync(fileURLToPath(new URL('./fixtures/harness-gh.cjs', import.meta.url)), join(bin, 'gh')); chmodSync(join(bin, 'gh'), 0o755);
-  const env = { ...process.env, PATH: bin + ':' + process.env.PATH, ISSUEFLOW_FAKE_GH_ROOT: root, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', GIT_ALLOW_PROTOCOL: 'file', TMPDIR: root };
+  const env = { ...controllerTestEnv('lifecycle-controller'), PATH: bin + ':' + process.env.PATH, ISSUEFLOW_FAKE_GH_ROOT: root, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', GIT_ALLOW_PROTOCOL: 'file', TMPDIR: root };
   // Nested node --test must not inherit the outer runner's IPC/reporting mode.
   delete env.NODE_TEST_CONTEXT;
   let sequence = 0;

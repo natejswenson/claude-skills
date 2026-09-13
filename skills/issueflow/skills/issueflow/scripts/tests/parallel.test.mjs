@@ -13,6 +13,7 @@
  * missing PATCH under `--issue-json` would pass byte-for-byte with the bug
  * fully present.
  */
+import { controllerTestEnv } from './helpers.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -41,7 +42,7 @@ const cli = (args, env = {}) => {
     const out = execFileSync(process.execPath, [CLI, ...args], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, NODE_TEST_CONTEXT: undefined, ...env },
+      env: { ...controllerTestEnv('parallel-controller'), ...env },
     });
     return { code: 0, out, err: '' };
   } catch (e) {

@@ -91,6 +91,22 @@ not establish that the earlier autonomous CI gate passed or that the built-in
 merge adapter gained atomic target-context support. Keep those distinctions in
 the evaluation instead of asking again for permission already given.
 
+## Release CI: isolate controller credentials
+
+PR #374's first GitHub run (34771030742) failed 13 of 557 tests after the same
+suite passed inside Codex. CLI fixtures borrowed the live host's session locally;
+CI had no session and correctly refused subsequent commands without the original
+continuation credential. A local green result did not establish CI portability.
+
+Give each multi-command fixture an explicit synthetic controller session and
+remove inherited `CODEX_THREAD_ID`, `CLAUDE_SESSION_ID` and
+`ISSUEFLOW_CONTINUATION_FILE`. Offline evals must own their synthetic identity too.
+Run the suite with all four controller credential variables removed, and keep
+hostile-credential coverage so an unrelated token file cannot take precedence.
+Retain separate no-session continuation and cross-controller refusal tests;
+never weaken runtime ownership to accommodate a fixture. Record both the failed
+remote run and the repaired local/remote results rather than replacing history.
+
 ## Evaluation and reporting limits
 
 - Controller checks and a fixer report establish only their observed results.

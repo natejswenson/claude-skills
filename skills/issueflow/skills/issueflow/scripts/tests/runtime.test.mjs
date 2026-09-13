@@ -1,3 +1,4 @@
+import { controllerTestEnv } from './helpers.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
@@ -466,14 +467,14 @@ test('start --runtime codex persists the host contract; an invalid host writes n
   writeFileSync(repoJson, `${JSON.stringify({ ...REPO, path: source })}\n`);
   writeFileSync(issueJson, `${JSON.stringify(ISSUE)}\n`);
 
-  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8' });
+  const output = execFileSync('node', [CLI, 'start', '--repo', source, '--issue', '42', '--runtime', 'codex', '--offline', '--repo-json', repoJson, '--issue-json', issueJson, '--run-dir', runDir], { encoding: 'utf8', env: controllerTestEnv('runtime-controller') });
   const persisted = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8'));
   assert.equal(persisted.runtime, 'codex');
   assert.equal(persisted.auto, true, 'autoflow starts autonomously by default');
   assert.match(output, /Auto run: the plan has independent red-team review; implementation has an evidence gate/);
   assert.doesNotMatch(output, /every stage is gated by a red-team review/);
   assert.match(output, /Codex run: dispatches include native model, reasoning effort and role fields/);
-  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8' });
+  const next = execFileSync('node', [CLI, 'next', '--run-dir', runDir, '--offline', '--workspace-root', workspaceRoot], { encoding: 'utf8', env: controllerTestEnv('runtime-controller') });
   assert.match(next, /model override omitted.*reasoning_effort `high`.*role `worker`.*fork_turns `none`/);
   assert.match(next, /next: dispatch \(brief\)/);
 

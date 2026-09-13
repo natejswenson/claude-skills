@@ -34,6 +34,31 @@ test('a different session cannot adopt an initialized run through start host sel
   assert.notEqual(other.status,0); assert.match(other.stderr,/owner|session/i);
   assert.equal(readFileSync(join(f.dir,'run.json'),'utf8'),before);
 });
+test('a CLI without a host session resumes only with its original continuation file', t => {
+  const f = fixture(t);
+  const env = { ISSUEFLOW_SESSION_ID: undefined, CODEX_THREAD_ID: undefined,
+    CLAUDE_SESSION_ID: undefined, ISSUEFLOW_CONTINUATION_FILE: undefined };
+  const started = f.start(f.workspace, env);
+  assert.equal(started.status, 0, started.stderr);
+  const match = started.stdout.match(/Controller continuation: pass --continuation-file (".*") on later commands\./);
+  assert.ok(match, 'startup must hand back a usable credential path');
+  const continuation = JSON.parse(match[1]);
+  t.after(() => rmSync(resolve(continuation, '..'), { recursive: true, force: true }));
+  const before = readFileSync(join(f.dir, 'run.json'), 'utf8');
+  const missing = f.invoke(['next'], env);
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /controller session is unavailable/);
+  assert.equal(readFileSync(join(f.dir, 'run.json'), 'utf8'), before);
+  const wrong = join(f.root, 'wrong-continuation'); writeFileSync(wrong, 'unrelated token');
+  const refused = f.invoke(['next', '--continuation-file', wrong], env);
+  assert.equal(refused.status, 2);
+  assert.match(refused.stderr, /another controller session owns/);
+  assert.equal(readFileSync(join(f.dir, 'run.json'), 'utf8'), before);
+  const resumed = f.invoke(['next', '--continuation-file', continuation], env);
+  assert.equal(resumed.status, 0, resumed.stderr);
+  assert.match(resumed.stdout, /Dispatch ONE subagent/);
+});
+
 test('worktree uses the frozen review base after the remote tracking branch advances',t=>{
   const f=fixture(t), base=git(f.repo,'rev-parse','HEAD');
   const run=createRun({strict:true,repo:{path:f.repo,owner:'fixture',name:'startup'},issue:{number:1,title:'docs'},policy:{base:'dev',featurePrefix:'feature/'},offline:true});
