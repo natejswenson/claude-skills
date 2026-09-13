@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { matches, validateRule, validateRuleSet, subsumes, lintRuleSet, toGmailQuery } from '../lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, plan } from '../lib/plan.mjs';
-import { normalizeSearchThreads, mergeThreadSources, applyCategories } from '../lib/ingest.mjs';
+import { normalizeSearchThreads, mergeThreadSources, applyCategories, validateIngest } from '../lib/ingest.mjs';
 
 const rule = (match, action = 'label', extra = {}) => ({
   id: 'sender-rule', action, ...(action === 'label' ? { label: 'Shopping' } : {}),
@@ -248,6 +248,52 @@ test('offline CLI ingest, propose, rules and plan keep exact selection through p
         '--out-threads', join(dir, 'threads.json'), '--out-labels', join(dir, 'labels.json'));
       run('plan', '--threads', join(dir, 'threads.json'), '--rules', rules, '--out', join(dir, 'plan.json'));
       assert.deepEqual(read('plan.json').taken.map((t) => t.threadId), ['t0']);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+
+test('category sender evidence cannot fill a missing selected sender', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sender-category-missing-'));
+  const cli = fileURLToPath(new URL('../gmailtriage.js', import.meta.url));
+  const write = (name, data) => { const p = join(dir, name); writeFileSync(p, JSON.stringify(data)); return p; };
+  const raw = (sender) => ({ threads: [{ id: 'thread-one', messages: [
+    { ...(sender === null ? {} : { sender }), subject: 'Summer offers', labelIds: ['INBOX'] },
+  ] }] });
+  try {
+    const inbox = write('inbox.json', raw(null));
+    const labels = write('labels.json', { labels: [] });
+    const out = join(dir, 'threads.json');
+    for (const category of ['promos', 'updates']) {
+      for (const senders of [['offers@shop.example'], ['offers@shop.example', 'attacker@evil.example']]) {
+        const evidence = write('category.json', { threads: senders.flatMap((s) => raw(s).threads) });
+        const args = ['ingest', '--inbox', inbox, '--' + category, evidence, '--labels', labels,
+          '--out-threads', out, '--out-labels', join(dir, 'labels-out.json')];
+        const refused = spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8', env: process.env });
+        assert.equal(refused.status, 1, 'category sender must not bypass missing-sender validation');
+        assert.match(refused.stdout, /no subject or sender/);
+        const forced = spawnSync(process.execPath, [cli, ...args, '--force'], { encoding: 'utf8', env: process.env });
+        assert.equal(forced.status, 0, forced.stderr + forced.stdout);
+        const snapshots = JSON.parse(readFileSync(out, 'utf8'));
+        assert.equal(snapshots[0].from, null, 'preserve the selected snapshot sender');
+        assert.equal(snapshots[0].senderAmbiguous, senders.length > 1 ? true : undefined);
+        assert.deepEqual(validateIngest(snapshots), [{ id: 'thread-one', missing: ['from'] }]);
+        for (const r of [exact, domain, rule({ from: '@shop.example' }, 'trash')]) {
+          assert.equal(matches(r, snapshots[0]), false);
+          assert.deepEqual(plan(snapshots, { rules: [r] }).taken, []);
+        }
+        assert.equal(propose(snapshots, { minCount: 1 }).candidates.length, 0);
+      }
+      // A no-label fetch remains an authorized source for the selected sender.
+      const nolabel = write('nolabel.json', raw('offers@shop.example'));
+      const evidence = write('category.json', raw('OFFERS@SHOP.EXAMPLE'));
+      const good = spawnSync(process.execPath, [cli, 'ingest', '--inbox', inbox, '--nolabel', nolabel,
+        '--' + category, evidence, '--labels', labels, '--out-threads', out,
+        '--out-labels', join(dir, 'labels-out.json')], { encoding: 'utf8', env: process.env });
+      assert.equal(good.status, 0, good.stderr + good.stdout);
+      const snapshots = JSON.parse(readFileSync(out, 'utf8'));
+      assert.equal(snapshots[0].from, 'offers@shop.example');
+      assert.equal(matches(exact, snapshots[0]), true);
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

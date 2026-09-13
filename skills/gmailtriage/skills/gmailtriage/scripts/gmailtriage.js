@@ -1059,13 +1059,17 @@ async function cmdIngest(args) {
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
   const merged = mergeThreadSources(inbox, nolabel);
-  const selectedIds = new Set(merged.map((t) => t.id));
+  const selectedSenders = new Map(merged.map((t) => [t.id, t.from]));
   // Category fetches establish membership without expanding scope, but any
   // sender evidence they supply must still constrain exact sender selection.
-  const categorySenders = [...promos, ...updates].filter((t) => selectedIds.has(t.id))
+  const categorySenders = [...promos, ...updates].filter((t) => selectedSenders.has(t.id))
     .map((t) => ({ id: t.id, from: t.from,
       ...(t.senderAmbiguous ? { senderAmbiguous: true } : {}) }));
-  const threads = applyCategories(mergeThreadSources(merged, categorySenders),
+  // Category evidence may withhold an exact match, but must not fill a missing
+  // selected sender and thereby change legacy matching or ingest validation.
+  const withSenderEvidence = mergeThreadSources(merged, categorySenders)
+    .map((t) => ({ ...t, from: selectedSenders.get(t.id) }));
+  const threads = applyCategories(withSenderEvidence,
     promos.map((t) => t.id), updates.map((t) => t.id));
 
   console.log(table(['Source', 'Threads', 'New'], [
