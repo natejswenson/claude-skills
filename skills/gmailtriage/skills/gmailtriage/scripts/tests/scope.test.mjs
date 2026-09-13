@@ -117,3 +117,29 @@ test('CLI refusals never write a plan', (t) => {
   assert.match(r.stderr, /thread.*(fetch|labels)/i);
   assert.equal(existsSync(f.path('plan')), false);
 });
+
+for (const [name, threads, labelMap, scope, taken] of [
+  ['mapped Label_ folder name', [row('member', ['Label_1'])],
+    [['Label_1', 'Label_Archive']], 'label:Label_Archive', ['member']],
+  ['resolved name colliding with an ID', [row('outsider', undefined, { labels: ['Label_1'] })],
+    [['Label_1', 'Shopping'], ['Label_2', 'Label_1']], 'label:Shopping', []],
+  ['resolved Label_ folder without a map', [row('member', undefined, { labels: ['Label_Archive'] })],
+    [], 'label:Label_Archive', ['member']],
+]) {
+  test('planner preserves ' + name, () => {
+    const p = plan(threads, { rules: [file] }, { scope, labelIndex: new Map(labelMap) });
+    assert.deepEqual(p.taken.map((t) => t.threadId), taken);
+    assert.equal(p.excluded.length, threads.length - taken.length);
+    assert.ok(p.taken.every((t) => t.action === 'label' && t.archive === false));
+  });
+  test('CLI preserves ' + name, (t) => {
+    const f = fixture(t, threads, [file]);
+    writeFileSync(f.path('labels'), JSON.stringify(labelMap.map(([id, name]) => ({ id, name }))));
+    const r = f.planning('--scope', scope);
+    assert.equal(r.status, 0, r.stderr);
+    const p = f.read('plan');
+    assert.deepEqual(p.taken.map((t) => t.threadId), taken);
+    assert.equal(p.excluded.length, threads.length - taken.length);
+    assert.ok(p.taken.every((t) => t.action === 'label' && t.archive === false));
+  });
+}

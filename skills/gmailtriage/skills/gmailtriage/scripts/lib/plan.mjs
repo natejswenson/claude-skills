@@ -797,13 +797,13 @@ const scopeThreads = (threads, boundary, labelIndex, rules) => {
     for (const key of supplied) {
       if (!Array.isArray(t[key]) || t[key].some((v) => typeof v !== 'string' || !v.trim())) refuse('malformed ' + key);
     }
-    const resolved = (t.labels ?? []).map((name) => labelIndex.get(name) ?? name);
+    // `labels` contains resolved names, even when a name resembles a Gmail ID.
+    const resolved = [...(t.labels ?? [])];
     for (const id of t.labelIds ?? []) {
       if (labelIndex.has(id)) resolved.push(labelIndex.get(id));
       else if (isSystem(id) || knownNames.has(normaliseLabel(id))) resolved.push(id);
       else if (boundary.folder) refuse('unresolved label id ' + id);
     }
-    if (boundary.folder && resolved.some((name) => /^Label_/i.test(name) && !labelIndex.has(name))) refuse('unresolved label names');
     const have = new Set(resolved.map(normaliseLabel));
     const reason = boundary.folder
       ? (have.has(boundary.folder) ? null : 'not-in-folder')
