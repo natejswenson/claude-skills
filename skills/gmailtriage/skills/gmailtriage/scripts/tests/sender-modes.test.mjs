@@ -181,6 +181,9 @@ test('lint explains all legacy substrings and exact or mixed trash/sort overlap'
     [{ fromDomain: 'shop.example' }, { fromAddress: 'offers@shop.example' }],
     [{ from: '@shop.example' }, { fromAddress: 'offers@shop.example' }],
     [{ fromAddress: 'offers@shop.example' }, { from: '@shop.example' }],
+    [{ from: 'offers@shop.example' }, { fromDomain: 'shop.example' }],
+    [{ fromDomain: 'shop.example' }, { from: 'offers@shop.example' }],
+    [{ from: ' Shop' }, { from: 'Shop ' }],
   ]) assert.equal(overlap(...pair).length, 1);
   assert.equal(overlap({ fromDomain: 'shop.example' }, { fromDomain: 'other.example' }).length, 0);
   assert.equal(overlap({ fromAddress: 'offers@shop.example' }, { fromAddress: 'other@shop.example' }).length, 0);
@@ -223,5 +226,28 @@ test('offline CLI ingest, propose, rules and plan keep exact selection through p
     run('rules', '--file', legacy);
     run('plan', '--threads', join(dir, 'threads.json'), '--rules', legacy, '--out', join(dir, 'legacy-plan.json'));
     assert.equal(read('legacy-plan.json').taken.length, 5, 'saved substring rules retain display-name and malformed matches');
+    // Rich category responses must preserve sender uncertainty for selected
+    // threads, while metadata-only responses and out-of-scope IDs stay harmless.
+    for (const category of ['promos', 'updates']) {
+      const evidence = write('category.json', { threads: [
+        { id: 't0', messages: [{ sender: 'attacker@evil.example' }] },
+        { id: 't1', messages: [{ sender: 'bad, offers@shop.example' }] },
+        { id: 't2', senderAmbiguous: true, messages: [] },
+        { id: 'outside', messages: [{ sender: 'offers@shop.example' }] },
+      ] });
+      run('ingest', '--inbox', raw, '--' + category, evidence, '--labels', labels,
+        '--out-threads', join(dir, 'threads.json'), '--out-labels', join(dir, 'labels.json'));
+      const snapshots = read('threads.json');
+      assert.equal(snapshots.length, 5, 'category fetch must not expand scope');
+      assert.ok(snapshots.slice(0, 3).every((t) => t.senderAmbiguous === true));
+      run('plan', '--threads', join(dir, 'threads.json'), '--rules', rules, '--out', join(dir, 'plan.json'));
+      assert.deepEqual(read('plan.json').taken, [], category + ' uncertainty must block exact trash');
+
+      const metadata = write('category.json', { threads: [{ id: 't0' }, { id: 'outside' }] });
+      run('ingest', '--inbox', raw, '--' + category, metadata, '--labels', labels,
+        '--out-threads', join(dir, 'threads.json'), '--out-labels', join(dir, 'labels.json'));
+      run('plan', '--threads', join(dir, 'threads.json'), '--rules', rules, '--out', join(dir, 'plan.json'));
+      assert.deepEqual(read('plan.json').taken.map((t) => t.threadId), ['t0']);
+    }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

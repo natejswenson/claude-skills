@@ -319,6 +319,14 @@ function senderSubsumes(a, b) {
 
 function senderOverlap(a, b) {
   if (!hasSender(a) || !hasSender(b)) return false;
+  // Legacy substrings may coexist in display-name text even when neither
+  // implies the other. Preserve the historical trimmed-needle warning.
+  if (a.from !== undefined && b.from !== undefined) {
+    return str(a.from).includes(str(b.from)) || str(b.from).includes(str(a.from));
+  }
+  // An arbitrary display name can satisfy the substring alongside any exact
+  // mailbox/domain; implication is intentionally stricter than possible overlap.
+  if (a.from !== undefined || b.from !== undefined) return true;
   return senderSubsumes(a, b) || senderSubsumes(b, a);
 }
 

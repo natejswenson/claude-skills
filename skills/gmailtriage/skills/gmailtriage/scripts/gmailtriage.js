@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
-import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
+import { normalizeSearchThreads, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { resolveCategory } from './lib/category.mjs';
 
@@ -1054,12 +1054,19 @@ async function cmdIngest(args) {
 
   const inbox = normalizeSearchThreads(readJson(args.inbox, 'ingest: --inbox'), '--inbox');
   const nolabel = args.nolabel ? normalizeSearchThreads(readJson(args.nolabel, 'ingest: --nolabel'), '--nolabel') : [];
-  const promoIds = args.promos ? threadIds(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
-  const updateIds = args.updates ? threadIds(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
+  const promos = args.promos ? normalizeSearchThreads(readJson(args.promos, 'ingest: --promos'), '--promos') : [];
+  const updates = args.updates ? normalizeSearchThreads(readJson(args.updates, 'ingest: --updates'), '--updates') : [];
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
   const merged = mergeThreadSources(inbox, nolabel);
-  const threads = applyCategories(merged, promoIds, updateIds);
+  const selectedIds = new Set(merged.map((t) => t.id));
+  // Category fetches establish membership without expanding scope, but any
+  // sender evidence they supply must still constrain exact sender selection.
+  const categorySenders = [...promos, ...updates].filter((t) => selectedIds.has(t.id))
+    .map((t) => ({ id: t.id, from: t.from,
+      ...(t.senderAmbiguous ? { senderAmbiguous: true } : {}) }));
+  const threads = applyCategories(mergeThreadSources(merged, categorySenders),
+    promos.map((t) => t.id), updates.map((t) => t.id));
 
   console.log(table(['Source', 'Threads', 'New'], [
     ['in:inbox', inbox.length, inbox.length],
