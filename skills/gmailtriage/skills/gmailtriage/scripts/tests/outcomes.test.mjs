@@ -1,5 +1,4 @@
 import test from 'node:test';
-import { pendingReceipt, replay } from '../lib/receipt.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, renameSync, mkdirSync, rmdirSync, statSync } from 'node:fs';
@@ -298,12 +297,18 @@ for (const kind of ['apply', 'merge']) {
 }
 for (const label of ['constructor', 'toString', '__proto__']) {
   test('confirmed removal recognizes literal label ' + label, () => {
-    const receipt = pendingReceipt([{ threadId: 't', action: 'unlabel', removed: [label], added: [] }],
-      { labelIndex: { Label_new: 'New' } });
-    receipt.operations[0].status = 'confirmed';
-    const snapshot = [{ id: 't', labelIds: [label, 'Label_new', 'New'] }];
-    const result = replay(receipt, snapshot);
+    const f = fixture();
+    write(f.path('literal'), [{ id: 't', labelIds: [label, 'Label_new', 'New'] }]);
+    write(f.path('literal-labels'), { labels: [{ id: 'Label_new', name: 'New' }] });
+    f.ok('merge', '--threads', f.path('literal'), '--labels', f.path('literal-labels'),
+      '--from', label, '--to', 'New', '--receipt', f.path('literal-receipt'), '--update-threads', f.path('literal'));
+    const receiptPath = f.path('literal-receipt'), operations = read(receiptPath).operations;
+    assert.deepEqual(operations.map(({ action, label }) => ({ action, label })), [{ action: 'remove', label }]);
+    recordReceipt(f, receiptPath, operations, '--begin'); recordReceipt(f, receiptPath, operations);
+    const result = read(f.path('literal'));
     assert.deepEqual(result[0].labelIds, ['Label_new', 'New']);
-    assert.deepEqual(replay(receipt, result), result);
+    recordReceipt(f, receiptPath, operations);
+    f.ok('record', '--receipt', receiptPath, '--recover');
+    assert.deepEqual(read(f.path('literal')), result);
   });
 }
