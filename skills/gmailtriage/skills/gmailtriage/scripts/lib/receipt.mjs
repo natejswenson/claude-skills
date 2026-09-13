@@ -46,9 +46,10 @@ export function transition(receipt, envelope, mode = 'outcome') {
   const next = structuredClone(receipt);
   const seen = new Map();
   for (const x of envelope.outcomes) {
-    if (!x || Object.keys(x).some((k) => !['id', 'threadId', 'action', 'label', 'status', 'evidence'].includes(k))) throw new Error('unsupported outcome fields');
+    if (!x || Object.keys(x).some((k) => !['id', 'threadId', 'action', 'label', 'status', 'evidence', 'attempt'].includes(k))) throw new Error('unsupported outcome fields');
     const o = receipt.operations.find((v) => v.id === x.id);
     if (!o || ['threadId', 'action', 'label'].some((k) => x[k] !== o[k])) throw new Error('unauthorized operation tuple');
+    if ((x.attempt ?? 0) !== (o.attempt ?? 0)) throw new Error('stale operation attempt; read the current receipt');
     const signature = JSON.stringify([x.status ?? null, x.evidence ?? null]);
     if (seen.has(x.id) && seen.get(x.id) !== signature) throw new Error('contradictory duplicate outcomes');
     seen.set(x.id, signature);
@@ -64,6 +65,7 @@ export function transition(receipt, envelope, mode = 'outcome') {
     } else if (mode === 'retry') {
       if (o.status !== 'failed' || o.evidence !== 'read-absent') throw new Error('retry requires fresh no-effect reconciliation');
       status = 'pending'; evidence = null;
+      o.attempt = (o.attempt ?? 0) + 1;
     } else {
       status = x.status; evidence = x.evidence;
       const permitted = mode === 'reconcile'
@@ -107,7 +109,7 @@ export function confirmedEntries(r) {
     const ops = r.operations.filter((o) => o.threadId === e.threadId && o.status === 'confirmed');
     if (!ops.length) return [];
     return [{ ...e, added: ops.filter((o) => o.action === 'add').map((o) => o.label),
-      removed: ops.filter((o) => o.action === 'remove' && o.label !== 'INBOX').map((o) => o.label),
+      removed: ops.filter((o) => o.action === 'remove' && (e.action === 'unlabel' || o.label !== 'INBOX')).map((o) => o.label),
       archived: ops.some((o) => o.action === 'remove' && o.label === 'INBOX') }];
   });
 }

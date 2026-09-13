@@ -23,7 +23,7 @@ function fixture(kind = 'apply') {
   }
   const receipt = () => read(path('receipt')), ops = () => receipt().operations;
   const record = (operations, mode, status = 'confirmed', evidence = 'success', overrides = {}) => {
-    write(path('outcomes'), { runId: receipt().runId, outcomes: operations.map(({ id, threadId, action, label }) => ({ id, threadId, action, label, ...(mode === '--begin' || mode === '--retry' ? {} : { status, evidence }) })), ...overrides });
+    write(path('outcomes'), { runId: receipt().runId, outcomes: operations.map(({ id, threadId, action, label, attempt }) => ({ id, threadId, action, label, ...(attempt === undefined ? {} : { attempt }), ...(mode === '--begin' || mode === '--retry' ? {} : { status, evidence }) })), ...overrides });
     return run('record', '--receipt', path('receipt'), '--outcomes', path('outcomes'), ...(mode ? [mode] : []));
   };
   const pass = (...args) => { const r = record(...args); assert.equal(r.status, 0, r.stderr); return r.stdout; };
@@ -81,7 +81,9 @@ for (const kind of ['apply', 'merge']) {
     assert.doesNotMatch(f.ok('record', '--receipt', f.path('receipt'), '--recover'), /Dispatchable|Begun operation/);
     assert.notEqual(f.record(add, '--retry').status, 0);
     f.pass(add, '--reconcile', 'failed', 'read-absent');
-    f.pass(add, '--retry'); f.pass(add, '--begin'); f.pass(add, '--reconcile', 'confirmed', 'read-present');
+    f.pass(add, '--retry');
+    const retried = f.ops().filter((o) => o.action === 'add');
+    f.pass(retried, '--begin'); f.pass(retried, '--reconcile', 'confirmed', 'read-present');
     assert.match(f.ok('record', '--receipt', f.path('receipt'), '--status'), /confirmed=1/);
   });
   test(kind + ': invalid batches and contradictory duplicates in both orders write nothing', () => {
@@ -188,3 +190,83 @@ test('opaque merge snapshots and mixed removal outcomes preserve exact membershi
   assert.match(undo, /ADD it back to exactly these thread ids:\none/);
   assert.doesNotMatch(undo, /\ntwo\n/);
 });
+
+function recordReceipt(f, receiptPath, operations, mode) {
+  write(f.path('second-outcomes'), { runId: read(receiptPath).runId,
+    outcomes: operations.map(({ id, threadId, action, label }) => ({ id, threadId, action, label,
+      ...(mode === '--begin' ? {} : { status: 'confirmed', evidence: 'success' }) })) });
+  return f.ok('record', '--receipt', receiptPath, '--outcomes', f.path('second-outcomes'), ...(mode ? [mode] : []));
+}
+function finishMerge(f, from, to) {
+  f.ok('merge', '--threads', f.path('threads'), '--labels', f.path('labels'), '--from', from, '--to', to,
+    '--receipt', f.path('second'), '--update-threads', f.path('threads'));
+  for (const action of ['add', 'remove']) {
+    const ops = read(f.path('second')).operations.filter((o) => o.action === action);
+    recordReceipt(f, f.path('second'), ops, '--begin'); recordReceipt(f, f.path('second'), ops);
+  }
+}
+test('older duplicate confirmation and recovery cannot replay over a later merge', () => {
+  const f = fixture(), add = f.ops().filter((o) => o.action === 'add');
+  f.pass(add, '--begin'); f.pass(add);
+  finishMerge(f, 'Filed/Child', 'New');
+  const snapshot = readFileSync(f.path('threads'), 'utf8');
+  assert.ok(!read(f.path('threads'))[0].labelIds.includes('Filed/Child'));
+  f.pass(add); f.ok('record', '--receipt', f.path('receipt'), '--recover');
+  assert.equal(readFileSync(f.path('threads'), 'utf8'), snapshot);
+});
+test('distinct receipts share a snapshot lock and recover both confirmed effects', () => {
+  const f = fixture(), add = f.ops().filter((o) => o.action === 'add');
+  f.pass(add, '--begin');
+  mkdirSync(f.path('threads') + '.lock');
+  try {
+    assert.match(f.record(add).stderr, /locked/);
+    f.ok('merge', '--threads', f.path('threads'), '--labels', f.path('labels'), '--from', 'Old', '--to', 'Filed',
+      '--receipt', f.path('second'), '--update-threads', f.path('threads'));
+    assert.throws(() => recordReceipt(f, f.path('second'), read(f.path('second')).operations, '--begin'), /locked/);
+    assert.throws(() => recordReceipt(f, f.path('second'), read(f.path('second')).operations), /locked/);
+    assert.equal(readFileSync(f.path('threads'), 'utf8'), f.original);
+    assert.equal(f.ops()[0].status, 'confirmed');
+    assert.equal(read(f.path('second')).operations[0].status, 'confirmed');
+  } finally { rmdirSync(f.path('threads') + '.lock'); }
+  f.ok('record', '--receipt', f.path('receipt'), '--recover');
+  f.ok('record', '--receipt', f.path('second'), '--recover');
+  const t = read(f.path('threads'))[0];
+  assert.ok(t.labelIds.includes('Filed/Child') && !t.labelIds.includes('Label_old'));
+});
+test('pending snapshot image recovers before another receipt replays', () => {
+  const f = fixture(), add = f.ops().filter((o) => o.action === 'add');
+  f.pass(add, '--begin'); f.pass(add);
+  const ledgerPath = f.path('threads') + '.receipt-state.json', ledger = read(ledgerPath);
+  ledger.pending = read(f.path('threads')); write(ledgerPath, ledger);
+  writeFileSync(f.path('threads'), f.original);
+  finishMerge(f, 'Old', 'Filed');
+  const t = read(f.path('threads'))[0];
+  assert.ok(t.labelIds.includes('Filed/Child') && !t.labelIds.includes('Label_old'));
+  assert.equal(read(ledgerPath).pending, undefined);
+});
+for (const firstOutcome of ['timeout', 'no-effect']) {
+  test('retry rejects stale ' + firstOutcome + ' and reconciliation envelopes', () => {
+    const f = fixture(), original = f.ops().filter((o) => o.action === 'add');
+    f.pass(original, '--begin');
+    f.pass(original, null, firstOutcome === 'timeout' ? 'unknown' : 'failed', firstOutcome);
+    f.pass(original, '--reconcile', 'failed', 'read-absent'); f.pass(original, '--retry');
+    const current = f.ops().filter((o) => o.action === 'add');
+    assert.equal(current[0].attempt, 1);
+    assert.notEqual(f.record(original, '--begin').status, 0);
+    f.pass(current, '--begin');
+    const before = readFileSync(f.path('receipt'), 'utf8');
+    assert.match(f.record(original, '--reconcile', 'failed', 'read-absent').stderr, /stale operation attempt/);
+    assert.match(f.record(original, null, firstOutcome === 'timeout' ? 'unknown' : 'failed', firstOutcome).stderr, /stale operation attempt/);
+    assert.equal(readFileSync(f.path('receipt'), 'utf8'), before);
+    f.pass(current); f.pass(current);
+    assert.equal(f.ops()[0].status, 'confirmed');
+  });
+}
+for (const target of ['Filed', 'New']) {
+  test('merge INBOX undo restores membership with target ' + target, () => {
+    const f = fixture(); finishMerge(f, 'INBOX', target);
+    const undo = f.ok('undo', '--receipt', f.path('second'));
+    assert.match(undo, /INBOX/); assert.match(undo, /ADD it back to exactly these thread ids:/);
+    assert.ok(!read(f.path('threads'))[0].labelIds.includes('INBOX'));
+  });
+}

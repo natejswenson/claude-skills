@@ -856,8 +856,27 @@ async function cmdRecord(args) {
     if (JSON.stringify(next) !== JSON.stringify(old)) writeJson(path, next, { ...args, atomic: true });
     if (next.snapshot) {
       try {
-        const snapshot = readJson(next.snapshot, 'bound snapshot'), updated = replay(next, snapshot);
-        if (JSON.stringify(snapshot) !== JSON.stringify(updated)) writeJson(next.snapshot, updated, { ...args, atomic: true });
+        withReceiptLock(next.snapshot, (snapshot) => {
+          // The snapshot and its application ledger share one writer lock across runs.
+          // A durable pending image closes the crash window between their two writes.
+          const ledgerPath = next.snapshot + '.receipt-state.json';
+          let ledger = existsSync(ledgerPath) ? readJson(ledgerPath, 'snapshot receipt state') : { applied: [] };
+          if (ledger.pending) {
+            writeJson(next.snapshot, ledger.pending, { ...args, atomic: true });
+            snapshot = ledger.pending;
+            delete ledger.pending;
+            writeJson(ledgerPath, ledger, { ...args, atomic: true });
+          }
+          const key = (o) => next.runId + ':' + o.id;
+          const operations = next.operations.filter((o) => o.status === 'confirmed' && !ledger.applied.includes(key(o)));
+          if (!operations.length) return;
+          const updated = replay({ ...next, operations }, snapshot);
+          ledger = { applied: [...ledger.applied, ...operations.map(key)], pending: updated };
+          writeJson(ledgerPath, ledger, { ...args, atomic: true });
+          writeJson(next.snapshot, updated, { ...args, atomic: true });
+          delete ledger.pending;
+          writeJson(ledgerPath, ledger, { ...args, atomic: true });
+        });
       }
       catch (e) { throw new Error(`receipt preserved; snapshot replay incomplete: ${e.message}; restore the bound path and record --recover`); }
     }
@@ -865,6 +884,7 @@ async function cmdRecord(args) {
   });
   printReceipt(r);
   if (mode === 'begin') console.log('Begun operation IDs: ' + readJson(args.outcomes, '--outcomes').outcomes.map((o) => o.id).join(', '));
+  if (r.operations.some((o) => o.attempt)) console.log('Retried operations require the current attempt field in every begin, outcome, reconciliation and retry tuple: ' + JSON.stringify(r.operations.filter((o) => o.attempt).map(({ id, attempt }) => ({ id, attempt }))));
   // Status/recovery never turn uncertainty into executable instructions.
   if (!['status', 'recover'].includes(mode)) console.log('Dispatchable pending IDs: ' + dispatchable(r).map((o) => o.id).join(', '));
 }
