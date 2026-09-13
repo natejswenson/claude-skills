@@ -113,13 +113,22 @@ from a working page, not from the repo. Without it a run can push but cannot con
 anything went live. Set with `set siteUrl 'https://example.com'`, clear with
 `set siteUrl ''`.
 
-For **add-project**: resolve the path first (the repo the user named, or the cwd), then
-detect what the CLI will use — key = directory basename, remote = `git -C '<path>' remote
-get-url origin`. In a monorepo, suggest a `--path-filter` (the project's subdir) and a
-`--tag-prefix` (e.g. `myproj-v`). Confirm the resolved values with the user in ONE
-`AskUserQuestion` (options: "looks right" / sensible alternatives), then run with `--yes`
-and show the resulting project list. For **remove-project**, confirm once before running;
-tell the user published entries are not deleted.
+For **add-project**: inspect validated config first with `config --json`, then
+resolve the user's absolute repository path and compare key, label, path, remote,
+pathFilter and tagPrefix. Preserve a matching existing row unchanged and skip the
+add. Run add-project only when the key is absent. Report a mismatch instead of
+removing/recreating the existing row automatically; duplicate-key rejection remains
+intentional. Detect the default key from the directory basename and remote with
+`git -C '<path>' remote get-url origin`. In a monorepo, use the project's subdirectory
+as `--path-filter` and its release namespace as `--tag-prefix`. Confirm unresolved
+values with the user before adding; values already supplied or authorized need no
+second confirmation. For **remove-project**, confirm once before running; tell the
+user published entries are not deleted.
+
+Complete the [producer and website onboarding guide](../../README.md#producer-and-website-onboarding)
+before declaring setup complete. It covers the exact Issue Flow monorepo fields,
+retained shared configuration, and the website registry-plus-manifest requirement.
+Registration does not publish an article; preserve any existing website content.
 
 **Private repos.** If the user says the repo is private (or a source repo happens to be
 private on GitHub even though it's configured normally), pass `--private`. A private
@@ -483,18 +492,20 @@ content on disk that the registry doesn't list is built right past, and the entr
 while every command in this skill reports success. Publishing a project's first entry is
 therefore a two-part job, and the CLI can only do the first part.
 
-When `firstEntryForProject` is true, **before the push**:
+Follow the [producer and website onboarding guide](../../README.md#producer-and-website-onboarding)
+even before the first article. When `firstEntryForProject` is true, **before the push**:
 
-1. Find the registry in the clone. It is a source file, not content — grep the site's
-   `src/` for the existing project keys (`grep -rn '<a-known-project-key>' <clone>/src`).
-   In an Astro/Next-style site it is typically a `PROJECTS` array the entry loader maps
-   over.
-2. Add the new project, matching the shape of the neighbouring rows exactly.
-3. **Build the site in the clone and confirm the route exists** (`npm ci && npx astro
-   build`, then check the output directory contains the new `<project>/<version>` path).
-   A registry edit that doesn't produce a route is not done.
-4. Run the site's own test suite if it has one, and commit the registry change together
-   with the content in the same push.
+1. Inspect the current website branch and find its registry in the clone. Search the
+   site's `src/` for existing project keys with `rg`. An Astro/Next-style site typically
+   maps a `PROJECTS` array. Preserve a matching registration instead of adding a duplicate.
+2. For a new project, add the registry row and valid manifest in the same change,
+   matching neighboring rows. Never replace a populated manifest with an empty example.
+3. Build the site and confirm the project/article routes exist in its output. Run the
+   site's tests and check navigation, tag search, metadata, cover, feed and sitemap
+   behavior as described in the paired guide.
+4. Follow the site's own PR flow for registry/source/config/docs changes and link any
+   companion PR. Content publication alone does not authorize bypassing that flow;
+   do not report the route complete until the required website checks are observed.
 
 If you cannot find a registry, say so plainly rather than assuming there isn't one; the
 verification in Step 6 is what actually settles it.
