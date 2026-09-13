@@ -22,4 +22,3 @@ The controller's automatic merge capability remains limited as documented.
 
 The [merge receipt](2026-09-13-issueflow-366-merge.json) records the head,
 landing commit, authorization source, completion state and stable checkpoint.
-

@@ -100,4 +100,3 @@ fresh verification and CI observations required by the applied contract. That
 permits reviewing a recovery; it does not approve exceptions or another fix loop.
 Stop if the amendment review blocks or the final review does not converge.
 Repository workflow changes need their own reviewed scope. The PR stays draft.
-
