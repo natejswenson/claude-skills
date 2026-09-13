@@ -17,7 +17,7 @@
     {
       "id": "reads-connections-not-payloads",
       "pattern": "reads connections, not packet payloads",
-      "rationale": "The safety boundary that makes this skill runnable without sudo and without capturing anyone's data. Lose the line and a future author reaches for tcpdump, and the skill starts capturing credentials off a shared network — the exact thing the connection-snapshot design exists to avoid."
+      "rationale": "Default collection remains metadata only; optional scoped packet capture requires the user's concrete approval and stays local."
     },
     {
       "id": "empty-capture-is-not-all-clear",
@@ -28,6 +28,11 @@
       "id": "zero-match-warning-is-not-a-success",
       "pattern": "A zero-match warning is never narrated into a success",
       "rationale": "`accept --snapshot` exits 0 on a new entry that matches nothing, by design — pre-seeding a range that is not live yet is legitimate. Exit 0 plus a warning is only as strong as the rule that stops the agent talking past it; without this line the warning is printed but never relayed, which is the same silent-dead-entry failure the check exists to catch, one layer up."
+    },
+    {
+      "id": "specific-user-actions",
+      "pattern": "Only the user chooses what to recognize, capture as packets, or terminate",
+      "rationale": "Unknown or unsigned is never automatic permission to trust, capture, or stop."
     }
   ],
   "split": {
@@ -47,6 +52,38 @@
       {
         "step": "fold chosen unrecognized flows into the baseline, reversibly, and report whether each new entry actually matches anything in the snapshot",
         "command": "node scripts/netwatch.js accept"
+      },
+      {
+        "step": "capture timestamped local sockets with per-tool diagnostics",
+        "command": "node scripts/netwatch.js capture"
+      },
+      {
+        "step": "inspect process identity, executable and sockets",
+        "command": "node scripts/netwatch.js inspect"
+      },
+      {
+        "step": "compare observed socket tuples",
+        "command": "node scripts/netwatch.js diff"
+      },
+      {
+        "step": "collect bounded samples and differences",
+        "command": "node scripts/netwatch.js watch"
+      },
+      {
+        "step": "drive a terminal session of explicit user choices",
+        "command": "node scripts/netwatch.js interactive"
+      },
+      {
+        "step": "preview and run a scoped bounded packet capture after exact confirmation",
+        "command": "node scripts/netwatch.js packets"
+      },
+      {
+        "step": "validate identity and confirmation, signal one process, and observe its outcome",
+        "command": "node scripts/netwatch.js terminate"
+      },
+      {
+        "step": "render an offline interactive HTML report",
+        "command": "node scripts/netwatch.js render"
       }
     ],
     "nondeterministic": [
@@ -90,9 +127,21 @@
       "id": "accept-zero-match-warning",
       "kind": "unit",
       "test": "scripts/tests/accept.test.mjs",
-      "fixtures": ["evals/baseline/capture.txt"],
+      "fixtures": [
+        "evals/baseline/capture.txt"
+      ],
       "update_command": "n/a — asserted directly against the frozen capture already pinned by real-snapshot-report; no separate artifact to refresh",
       "rationale": "a new baseline entry that matches nothing failing to warn, exactly the issue this test is named for — an IPv6 prefix, a mistyped octet, a wrong --process, all read as accepted with nothing pointing at the dead entry. Two-sided: a zero-match entry must warn and print 0, a matching entry must not, and the no-snapshot case must read 'not checked' rather than a fabricated number. Includes the issue's own end-to-end scenario against the real frozen capture."
+    },
+    {
+      "id": "runtime-safety",
+      "kind": "unit",
+      "test": "scripts/tests/runtime.test.mjs",
+      "fixtures": [
+        "evals/baseline/capture.txt"
+      ],
+      "update_command": "npm test — generated fixtures and disposable child processes, no golden update",
+      "rationale": "Two-sided checks for capture failure, exact-signal consent, stale/changed identities, protected processes, bounded packet scope, and live termination of a test-owned child only."
     }
   ]
 }

@@ -1,32 +1,83 @@
 | Flows | Known | Unrecognized | Destinations | Processes |
 |-------|-------|--------------|--------------|-----------|
-| 8     | 3     | 5            | 5            | 5         |
+| 29    | 4     | 25           | 5            | 17        |
 
 UNRECOGNIZED — not in your baseline (which is not the same as dangerous)
 
-| Process           | Destination                  | Network              | Port | Sockets |
-|-------------------|------------------------------|----------------------|------|---------|
-| claude            | 216.24.57.7                  | Render               | 443  | 2       |
-| claude            | 34.149.66.165                | unknown network      | 443  | 1       |
-| Code Helper       | 150.171.110.195              | unknown network      | 443  | 1       |
-| identityservicesd | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN) | 1024 | 1       |
-| identityservicesd | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN) | 1025 | 2       |
+| Process                                  | Destination                  | Network                 | Port | Sockets |
+|------------------------------------------|------------------------------|-------------------------|------|---------|
+| claude (5713)                            | 216.24.57.7                  | Render                  | 443  | 1       |
+| claude (49677)                           | 216.24.57.7                  | Render                  | 443  | 1       |
+| claude (49677)                           | 34.149.66.165                | unknown network         | 443  | 1       |
+| Code Helper (73682)                      | listener 127.0.0.1:53096     | Loopback (this machine) | —    | 1       |
+| Code Helper (73642)                      | 150.171.110.195              | unknown network         | 443  | 1       |
+| Code Helper (Plugin) (75773)             | listener 127.0.0.1:31141     | Loopback (this machine) | —    | 1       |
+| Code Helper (Plugin) (76065)             | listener 127.0.0.1:59957     | Loopback (this machine) | —    | 1       |
+| com.docker.backend (1966)                | listener *:8080              | unknown network         | —    | 1       |
+| com.docker.backend (1966)                | listener *:443               | unknown network         | —    | 1       |
+| com.docker.backend (1966)                | listener *:80                | unknown network         | —    | 1       |
+| ControlCenter (729)                      | listener *:7000              | unknown network         | —    | 1       |
+| ControlCenter (729)                      | listener *:7000              | unknown network         | —    | 1       |
+| ControlCenter (729)                      | listener *:5000              | unknown network         | —    | 1       |
+| ControlCenter (729)                      | listener *:5000              | unknown network         | —    | 1       |
+| GitHub Desktop Helper (Renderer) (89041) | listener 127.0.0.1:64367     | Loopback (this machine) | —    | 1       |
+| homed (690)                              | bound *:62694                | unknown network         | —    | 1       |
+| homed (690)                              | bound *:62275                | unknown network         | —    | 1       |
+| identityservicesd (691)                  | bound *:*                    | unknown network         | —    | 5       |
+| identityservicesd (691)                  | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN)    | 1024 | 1       |
+| identityservicesd (691)                  | fe80:13::aa35:70b7:7318:8427 | Link-local (the LAN)    | 1025 | 2       |
+| ollama (934)                             | listener 127.0.0.1:11434     | Loopback (this machine) | —    | 1       |
+| rapportd (682)                           | listener *:49362             | unknown network         | —    | 1       |
+| rapportd (682)                           | listener *:49362             | unknown network         | —    | 1       |
+| replicatord (18760)                      | bound *:50454                | unknown network         | —    | 1       |
+| sharingd (688)                           | bound *:53313                | unknown network         | —    | 1       |
 
 KNOWN — you have vouched for these
 
-| Process       | Destination   | Network   | Known as               |
-|---------------|---------------|-----------|------------------------|
-| claude        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
-| Claude        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
-| Claude Helper | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| Process               | Destination   | Network   | Known as               |
+|-----------------------|---------------|-----------|------------------------|
+| claude (49677)        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| claude (49677)        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| Claude (50150)        | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
+| Claude Helper (50159) | 160.79.104.10 | Anthropic | Anthropic API (Claude) |
 
-BY PROCESS — how much each moved
-| Process           | Flows | Destinations | Unrecognized | Bytes in | Bytes out |
-|-------------------|-------|--------------|--------------|----------|-----------|
-| claude            | 3     | 3            | 2            | 443.9 KB | 19.3 MB   |
-| identityservicesd | 2     | 1            | 2            | 8.3 KB   | 13.4 KB   |
-| Code Helper       | 1     | 1            | 1            | 10.5 KB  | 2.8 KB    |
-| Claude            | 1     | 1            | 0            | 3.7 KB   | 22.9 KB   |
-| Claude Helper     | 1     | 1            | 0            | 33.0 KB  | 27.0 KB   |
+BY PROCESS — observed counters, not an interval rate or destination totals
+| Process                                  | Flows | Destinations | Unrecognized | Bytes in | Bytes out |
+|------------------------------------------|-------|--------------|--------------|----------|-----------|
+| ControlCenter (729)                      | 4     | 0            | 4            | 0 B      | 0 B       |
+| com.docker.backend (1966)                | 3     | 0            | 3            | 0 B      | 0 B       |
+| identityservicesd (691)                  | 3     | 1            | 3            | 8.3 KB   | 13.4 KB   |
+| claude (49677)                           | 4     | 3            | 2            | 443.9 KB | 19.3 MB   |
+| homed (690)                              | 2     | 0            | 2            | 0 B      | 0 B       |
+| rapportd (682)                           | 2     | 0            | 2            | 0 B      | 0 B       |
+| claude (5713)                            | 1     | 1            | 1            | 3.7 KB   | 851 B     |
+| Code Helper (73642)                      | 1     | 1            | 1            | 10.5 KB  | 2.8 KB    |
+| Code Helper (73682)                      | 1     | 0            | 1            | 0 B      | 0 B       |
+| Code Helper (Plugin) (75773)             | 1     | 0            | 1            | 0 B      | 0 B       |
+| Code Helper (Plugin) (76065)             | 1     | 0            | 1            | 0 B      | 0 B       |
+| GitHub Desktop Helper (Renderer) (89041) | 1     | 0            | 1            | 0 B      | 0 B       |
+| ollama (934)                             | 1     | 0            | 1            | 0 B      | 0 B       |
+| replicatord (18760)                      | 1     | 0            | 1            | 0 B      | 0 B       |
+| sharingd (688)                           | 1     | 0            | 1            | 0 B      | 0 B       |
+| Claude (50150)                           | 1     | 1            | 0            | 3.7 KB   | 22.9 KB   |
+| Claude Helper (50159)                    | 1     | 1            | 0            | 33.0 KB  | 27.0 KB   |
 
-5 of 8 flow(s) are unrecognized — decide which are worth a look, then `accept` the ones that are fine. Run `render` for a shareable report.
+SECURITY OBSERVATIONS — evidence for investigation, not malware verdicts
+| PID   | Process            | Observation             | Limit                                                               |
+|-------|--------------------|-------------------------|---------------------------------------------------------------------|
+| 1966  | com.docker.backend | TCP listener on *:8080  | Bound beyond loopback; firewall and routing determine reachability. |
+| 1966  | com.docker.backend | TCP listener on *:443   | Bound beyond loopback; firewall and routing determine reachability. |
+| 1966  | com.docker.backend | TCP listener on *:80    | Bound beyond loopback; firewall and routing determine reachability. |
+| 729   | ControlCenter      | TCP listener on *:7000  | Bound beyond loopback; firewall and routing determine reachability. |
+| 729   | ControlCenter      | TCP listener on *:7000  | Bound beyond loopback; firewall and routing determine reachability. |
+| 729   | ControlCenter      | TCP listener on *:5000  | Bound beyond loopback; firewall and routing determine reachability. |
+| 729   | ControlCenter      | TCP listener on *:5000  | Bound beyond loopback; firewall and routing determine reachability. |
+| 690   | homed              | UDP bound on *:62694    | No peer observed; does not prove an inbound service or traffic.     |
+| 690   | homed              | UDP bound on *:62275    | No peer observed; does not prove an inbound service or traffic.     |
+| 691   | identityservicesd  | UDP bound on *:*        | No peer observed; does not prove an inbound service or traffic.     |
+| 682   | rapportd           | TCP listener on *:49362 | Bound beyond loopback; firewall and routing determine reachability. |
+| 682   | rapportd           | TCP listener on *:49362 | Bound beyond loopback; firewall and routing determine reachability. |
+| 18760 | replicatord        | UDP bound on *:50454    | No peer observed; does not prove an inbound service or traffic.     |
+| 688   | sharingd           | UDP bound on *:53313    | No peer observed; does not prove an inbound service or traffic.     |
+
+25 of 29 socket flow(s) are unrecognized. Visibility is limited to readable sockets; connection direction and payload encryption are unknown. Network labels are offline hints. Use inspect, diff, or interactive to investigate.

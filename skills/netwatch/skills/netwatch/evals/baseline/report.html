@@ -131,7 +131,7 @@ h2 {
   padding-bottom: 0.4rem;
   margin: 0 0 0.9rem;
 }
-h2 .no { color: var(--sig); margin-right: 0.5rem; }
+h2 .no { color: var(--dim); margin-right: 0.5rem; }
 .lede { margin: -0.3rem 0 1rem; font-size: 0.95rem; }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
@@ -159,14 +159,14 @@ td:last-child, th:last-child { padding-right: 0; }
   font-weight: 700;
   white-space: nowrap;
 }
-.tag.unrecognized { color: var(--sig); }
+.tag.unrecognized { color: var(--ink); }
 .tag.unrecognized::before { content: "●"; margin-right: 0.35rem; }
 .tag.known { color: var(--ink-faint); }
 .tag.known::before { content: "○"; margin-right: 0.35rem; }
 
 /* byte bars — dim, never the accent (accent is spent on the stamp + alerts) */
 .bar-wrap { display: flex; align-items: center; gap: 0.55rem; }
-.bar { height: 0.5rem; background: var(--ink-mid); border-radius: 1px; min-width: 1px; }
+.bar { height: 0.5rem; background: var(--ink-mid); min-width: 1px; }
 .bar-num { font-family: var(--mono); font-size: 0.76rem; color: var(--dim); white-space: nowrap; }
 
 .empty { color: var(--dim); font-style: italic; font-family: var(--serif); }
@@ -182,6 +182,17 @@ td:last-child, th:last-child { padding-right: 0; }
   line-height: 1.7;
 }
 .colophon strong { color: var(--ink); font-weight: 600; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 1rem; border-block: 1px solid var(--ink); padding: 1rem 0; margin-bottom: 2rem; }
+.controls label { display: flex; flex-direction: column; font-family: var(--mono); font-size: 0.8rem; }
+input, select, button { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--dim); padding: 0.4rem; border-radius: 0; }
+button, summary { cursor: pointer; }
+th button { border: 0; padding: 0; text-align: left; font: inherit; text-transform: inherit; }
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.controls output { flex-basis: 100%; font-family: var(--mono); font-size: 0.8rem; }
+details { min-width: 10rem; }
+details p, pre { font-weight: 400; font-size: 0.75rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+[hidden] { display: none !important; }
 
 @media (max-width: 40rem) {
   .signal { grid-template-columns: repeat(2, 1fr); }
@@ -200,52 +211,262 @@ td:last-child, th:last-child { padding-right: 0; }
     <div>
       <div class="eyebrow">netwatch — live network activity</div>
       <h1>What your machine is talking to</h1>
-      <p class="dek serif">Every connection open at one moment, grounded in what the capture held — connection metadata only, never packet contents.</p>
+      <p class="dek serif">Observed socket metadata. Open a process row for evidence, filter the view, or sort a column. This file is an offline snapshot.</p>
     </div>
-    <div class="meta mono">8 flows<br>5 unrecognized<br>2026-08-12</div>
+    <div class="meta mono">29 flows<br>25 unrecognized<br>2026-08-12</div>
   </header>
 
   <div class="signal">
-    <div class="stat"><span class="num">8</span><span class="lab">Flows</span></div>
-    <div class="stat"><span class="num">3</span><span class="lab">Known</span></div>
-    <div class="stat alert"><span class="num">5</span><span class="lab">Unrecognized</span></div>
+    <div class="stat"><span class="num">29</span><span class="lab">Flows</span></div>
+    <div class="stat"><span class="num">4</span><span class="lab">Known</span></div>
+    <div class="stat alert"><span class="num">25</span><span class="lab">Unrecognized</span></div>
     <div class="stat"><span class="num">5</span><span class="lab">Destinations</span></div>
   </div>
+
+  <nav class="controls" aria-label="Filter socket flows">
+    <label>Search <input id="search" type="search" placeholder="Process, PID, peer, port, evidence"></label>
+    <label>Status <select id="status"><option value="">All statuses</option><option value="unrecognized">Unrecognized</option><option value="known">Known</option></select></label>
+    <label>Kind <select id="kind"><option value="">All sockets</option><option value="connection">Connection</option><option value="listener">TCP listener</option><option value="bound">Bound socket</option></select></label>
+    <button id="reset" type="button">Reset filters</button>
+    <output id="visible" aria-live="polite"></output>
+  </nav>
+  <noscript>JavaScript is disabled: all captured rows and native expandable evidence remain available.</noscript>
+  <p class="lede serif">Legacy capture: per-tool diagnostics and capture timing are unavailable.</p>
 
   <section>
     <h2><span class="no">01</span> Unrecognized — worth your eye</h2>
     <p class="lede serif">Not in your baseline — which means you have not vouched for it, not that it is dangerous.</p>
     <table><thead><tr><th>Process</th><th>Destination · network</th><th>Port</th><th>Sockets</th></tr></thead>
     <tbody>
-      <tr>
-        <td class="proc">claude</td>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>claude <span class="mono">5713</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51462</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p5713 c2.1.227 TCP 192.168.1.43:51462-&gt;216.24.57.7:443</pre></details></td>
         <td class="host">216.24.57.7<span class="net"> · Render</span></td>
         <td class="mono">443</td>
-        <td class="mono">2</td>
+        <td class="mono">1</td>
       </tr>
-      <tr>
-        <td class="proc">claude</td>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>claude <span class="mono">49677</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51464</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p49677 c2.1.228 TCP 192.168.1.43:51464-&gt;216.24.57.7:443</pre></details></td>
+        <td class="host">216.24.57.7<span class="net"> · Render</span></td>
+        <td class="mono">443</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>claude <span class="mono">49677</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51472</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p49677 c2.1.228 TCP 192.168.1.43:51472-&gt;34.149.66.165:443</pre></details></td>
         <td class="host">34.149.66.165<span class="net"> · unknown network</span></td>
         <td class="mono">443</td>
         <td class="mono">1</td>
       </tr>
-      <tr>
-        <td class="proc">Code Helper</td>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>Code Helper <span class="mono">73682</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: 127.0.0.1:53096</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p73682 cCode Helper TCP 127.0.0.1:53096</pre></details></td>
+        <td class="host">127.0.0.1:53096 (listener)<span class="net"> · Loopback (this machine)</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>Code Helper <span class="mono">73642</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51470</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p73642 cCode Helper TCP 192.168.1.43:51470-&gt;150.171.110.195:443</pre></details></td>
         <td class="host">150.171.110.195<span class="net"> · unknown network</span></td>
         <td class="mono">443</td>
         <td class="mono">1</td>
       </tr>
-      <tr>
-        <td class="proc">identityservicesd</td>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>Code Helper (Plugin) <span class="mono">75773</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: 127.0.0.1:31141</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p75773 cCode Helper (Plugin) TCP 127.0.0.1:31141</pre></details></td>
+        <td class="host">127.0.0.1:31141 (listener)<span class="net"> · Loopback (this machine)</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>Code Helper (Plugin) <span class="mono">76065</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: 127.0.0.1:59957</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p76065 cCode Helper (Plugin) TCP 127.0.0.1:59957</pre></details></td>
+        <td class="host">127.0.0.1:59957 (listener)<span class="net"> · Loopback (this machine)</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>com.docker.backend <span class="mono">1966</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:8080</p>
+        <p>TCP listener on *:8080. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p1966 ccom.docker.backend TCP *:8080</pre></details></td>
+        <td class="host">*:8080 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>com.docker.backend <span class="mono">1966</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:443</p>
+        <p>TCP listener on *:443. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p1966 ccom.docker.backend TCP *:443</pre></details></td>
+        <td class="host">*:443 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>com.docker.backend <span class="mono">1966</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:80</p>
+        <p>TCP listener on *:80. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p1966 ccom.docker.backend TCP *:80</pre></details></td>
+        <td class="host">*:80 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>ControlCenter <span class="mono">729</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:7000</p>
+        <p>TCP listener on *:7000. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p729 cControlCenter TCP *:7000</pre></details></td>
+        <td class="host">*:7000 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>ControlCenter <span class="mono">729</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:7000</p>
+        <p>TCP listener on *:7000. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p729 cControlCenter TCP *:7000</pre></details></td>
+        <td class="host">*:7000 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>ControlCenter <span class="mono">729</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:5000</p>
+        <p>TCP listener on *:5000. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p729 cControlCenter TCP *:5000</pre></details></td>
+        <td class="host">*:5000 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>ControlCenter <span class="mono">729</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:5000</p>
+        <p>TCP listener on *:5000. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p729 cControlCenter TCP *:5000</pre></details></td>
+        <td class="host">*:5000 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>GitHub Desktop Helper (Renderer) <span class="mono">89041</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: 127.0.0.1:64367</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p89041 cGitHub Desktop Helper (Renderer TCP 127.0.0.1:64367</pre></details></td>
+        <td class="host">127.0.0.1:64367 (listener)<span class="net"> · Loopback (this machine)</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="bound">
+        <td class="proc"><details><summary>homed <span class="mono">690</span></summary>
+        <p class="mono">UDP · bound · state unavailable<br>Local: *:62694</p>
+        <p>UDP bound on *:62694. No peer observed; does not prove an inbound service or traffic.</p>
+        <pre>p690 chomed UDP *:62694</pre></details></td>
+        <td class="host">*:62694 (bound)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="bound">
+        <td class="proc"><details><summary>homed <span class="mono">690</span></summary>
+        <p class="mono">UDP · bound · state unavailable<br>Local: *:62275</p>
+        <p>UDP bound on *:62275. No peer observed; does not prove an inbound service or traffic.</p>
+        <pre>p690 chomed UDP *:62275</pre></details></td>
+        <td class="host">*:62275 (bound)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="bound">
+        <td class="proc"><details><summary>identityservicesd <span class="mono">691</span></summary>
+        <p class="mono">UDP · bound · state unavailable<br>Local: *:*</p>
+        <p>UDP bound on *:*. No peer observed; does not prove an inbound service or traffic.</p>
+        <pre>p691 cidentityservicesd UDP *:*
+p691 cidentityservicesd UDP *:*
+p691 cidentityservicesd UDP *:*
+p691 cidentityservicesd UDP *:*
+p691 cidentityservicesd UDP *:*</pre></details></td>
+        <td class="host">*:* (bound)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">5</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>identityservicesd <span class="mono">691</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: fe80:13::803c:7365:57f:ea7c:1024</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p691 cidentityservicesd TCP [fe80:13::803c:7365:57f:ea7c]:1024-&gt;[fe80:13::aa35:70b7:7318:8427]:1024</pre></details></td>
         <td class="host">fe80:13::aa35:70b7:7318:8427<span class="net"> · Link-local (the LAN)</span></td>
         <td class="mono">1024</td>
         <td class="mono">1</td>
       </tr>
-      <tr>
-        <td class="proc">identityservicesd</td>
+      <tr data-flow data-status="unrecognized" data-kind="connection">
+        <td class="proc"><details><summary>identityservicesd <span class="mono">691</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: fe80:13::803c:7365:57f:ea7c:1032</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p691 cidentityservicesd TCP [fe80:13::803c:7365:57f:ea7c]:1032-&gt;[fe80:13::aa35:70b7:7318:8427]:1025
+p691 cidentityservicesd TCP [fe80:13::803c:7365:57f:ea7c]:1032-&gt;[fe80:13::aa35:70b7:7318:8427]:1025</pre></details></td>
         <td class="host">fe80:13::aa35:70b7:7318:8427<span class="net"> · Link-local (the LAN)</span></td>
         <td class="mono">1025</td>
         <td class="mono">2</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>ollama <span class="mono">934</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: 127.0.0.1:11434</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p934 collama TCP 127.0.0.1:11434</pre></details></td>
+        <td class="host">127.0.0.1:11434 (listener)<span class="net"> · Loopback (this machine)</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>rapportd <span class="mono">682</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:49362</p>
+        <p>TCP listener on *:49362. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p682 crapportd TCP *:49362</pre></details></td>
+        <td class="host">*:49362 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="listener">
+        <td class="proc"><details><summary>rapportd <span class="mono">682</span></summary>
+        <p class="mono">TCP · listener · LISTEN<br>Local: *:49362</p>
+        <p>TCP listener on *:49362. Bound beyond loopback; firewall and routing determine reachability.</p>
+        <pre>p682 crapportd TCP *:49362</pre></details></td>
+        <td class="host">*:49362 (listener)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="bound">
+        <td class="proc"><details><summary>replicatord <span class="mono">18760</span></summary>
+        <p class="mono">UDP · bound · state unavailable<br>Local: *:50454</p>
+        <p>UDP bound on *:50454. No peer observed; does not prove an inbound service or traffic.</p>
+        <pre>p18760 creplicatord UDP *:50454</pre></details></td>
+        <td class="host">*:50454 (bound)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
+      </tr>
+      <tr data-flow data-status="unrecognized" data-kind="bound">
+        <td class="proc"><details><summary>sharingd <span class="mono">688</span></summary>
+        <p class="mono">UDP · bound · state unavailable<br>Local: *:53313</p>
+        <p>UDP bound on *:53313. No peer observed; does not prove an inbound service or traffic.</p>
+        <pre>p688 csharingd UDP *:53313</pre></details></td>
+        <td class="host">*:53313 (bound)<span class="net"> · unknown network</span></td>
+        <td class="mono">—</td>
+        <td class="mono">1</td>
       </tr>
     </tbody></table>
   </section>
@@ -254,20 +475,38 @@ td:last-child, th:last-child { padding-right: 0; }
     <h2><span class="no">02</span> Known — vouched for</h2>
     <table><thead><tr><th>Process</th><th>Destination · network</th><th>Port</th><th>Known as</th></tr></thead>
     <tbody>
-      <tr>
-        <td class="proc">claude</td>
+      <tr data-flow data-status="known" data-kind="connection">
+        <td class="proc"><details><summary>claude <span class="mono">49677</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51444</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p49677 c2.1.228 TCP 192.168.1.43:51444-&gt;160.79.104.10:443</pre></details></td>
         <td class="host">160.79.104.10<span class="net"> · Anthropic</span></td>
         <td class="mono">443</td>
         <td class="net">Anthropic API (Claude)</td>
       </tr>
-      <tr>
-        <td class="proc">Claude</td>
+      <tr data-flow data-status="known" data-kind="connection">
+        <td class="proc"><details><summary>claude <span class="mono">49677</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:50834</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p49677 c2.1.228 TCP 192.168.1.43:50834-&gt;160.79.104.10:443</pre></details></td>
         <td class="host">160.79.104.10<span class="net"> · Anthropic</span></td>
         <td class="mono">443</td>
         <td class="net">Anthropic API (Claude)</td>
       </tr>
-      <tr>
-        <td class="proc">Claude Helper</td>
+      <tr data-flow data-status="known" data-kind="connection">
+        <td class="proc"><details><summary>Claude <span class="mono">50150</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51471</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p50150 cClaude TCP 192.168.1.43:51471-&gt;160.79.104.10:443</pre></details></td>
+        <td class="host">160.79.104.10<span class="net"> · Anthropic</span></td>
+        <td class="mono">443</td>
+        <td class="net">Anthropic API (Claude)</td>
+      </tr>
+      <tr data-flow data-status="known" data-kind="connection">
+        <td class="proc"><details><summary>Claude Helper <span class="mono">50159</span></summary>
+        <p class="mono">TCP · connection · ESTABLISHED<br>Local: 192.168.1.43:51258</p>
+        <p>No configured security indicators observed; not proof of safety.</p>
+        <pre>p50159 cClaude Helper TCP 192.168.1.43:51258-&gt;160.79.104.10:443</pre></details></td>
         <td class="host">160.79.104.10<span class="net"> · Anthropic</span></td>
         <td class="mono">443</td>
         <td class="net">Anthropic API (Claude)</td>
@@ -276,39 +515,124 @@ td:last-child, th:last-child { padding-right: 0; }
   </section>
 
   <section>
-    <h2><span class="no">03</span> By process — how much moved</h2>
+    <h2><span class="no">03</span> By process — observed counters</h2>
+    <p class="lede serif">Totals for the full snapshot, unaffected by view filters. These are process counters, not traffic rates or destination byte totals.</p>
     <table><thead><tr><th>Process</th><th>Flows</th><th>Destinations</th><th>Unrecognized</th><th>Bytes out</th></tr></thead>
     <tbody>
       <tr>
-        <td class="proc">claude</td>
+        <td class="proc">ControlCenter (729)</td>
+        <td class="mono">4</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">4</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">com.docker.backend (1966)</td>
         <td class="mono">3</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">3</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">identityservicesd (691)</td>
+        <td class="mono">3</td>
+        <td class="mono">1</td>
+        <td class="tag unrecognized">3</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">13.4 KB</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">claude (49677)</td>
+        <td class="mono">4</td>
         <td class="mono">3</td>
         <td class="tag unrecognized">2</td>
         <td><span class="bar-wrap"><span class="bar" style="width:120px"></span><span class="bar-num">19.3 MB</span></span></td>
       </tr>
       <tr>
-        <td class="proc">identityservicesd</td>
+        <td class="proc">homed (690)</td>
         <td class="mono">2</td>
-        <td class="mono">1</td>
+        <td class="mono">0</td>
         <td class="tag unrecognized">2</td>
-        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">13.4 KB</span></span></td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
       </tr>
       <tr>
-        <td class="proc">Code Helper</td>
+        <td class="proc">rapportd (682)</td>
+        <td class="mono">2</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">2</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">claude (5713)</td>
+        <td class="mono">1</td>
+        <td class="mono">1</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">851 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">Code Helper (73642)</td>
         <td class="mono">1</td>
         <td class="mono">1</td>
         <td class="tag unrecognized">1</td>
         <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">2.8 KB</span></span></td>
       </tr>
       <tr>
-        <td class="proc">Claude</td>
+        <td class="proc">Code Helper (73682)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">Code Helper (Plugin) (75773)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">Code Helper (Plugin) (76065)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">GitHub Desktop Helper (Renderer) (89041)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">ollama (934)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">replicatord (18760)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">sharingd (688)</td>
+        <td class="mono">1</td>
+        <td class="mono">0</td>
+        <td class="tag unrecognized">1</td>
+        <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">0 B</span></span></td>
+      </tr>
+      <tr>
+        <td class="proc">Claude (50150)</td>
         <td class="mono">1</td>
         <td class="mono">1</td>
         <td class="tag known">0</td>
         <td><span class="bar-wrap"><span class="bar" style="width:1px"></span><span class="bar-num">22.9 KB</span></span></td>
       </tr>
       <tr>
-        <td class="proc">Claude Helper</td>
+        <td class="proc">Claude Helper (50159)</td>
         <td class="mono">1</td>
         <td class="mono">1</td>
         <td class="tag known">0</td>
@@ -319,9 +643,56 @@ td:last-child, th:last-child { padding-right: 0; }
 
   <footer class="colophon">
     <strong>The one rule:</strong> a flow is only ever <em>known</em> (you accepted it) or <em>unrecognized</em> — never dangerous on a hunch.
-    Networks are named by an offline allocation lookup (likely operator), not a claim about the traffic.
-    Nothing here was moved or changed; the capture read connection metadata only.
+    Networks are named by an offline allocation hint that may be stale, not verified ownership or a claim about safety.
+    Only readable sockets were observed; short-lived connections may be missed. Direction and payload encryption are unknown.
+    This report contains metadata that may be sensitive. It cannot capture packets or stop processes; use the netwatch conversation or terminal for live actions.
   </footer>
 </div>
+<script>
+/* Offline view controls. No fetches, command execution, or imported libraries. */
+(() => {
+  const rows = [...document.querySelectorAll('[data-flow]')];
+  const search = document.getElementById('search');
+  const status = document.getElementById('status');
+  const kind = document.getElementById('kind');
+  const visible = document.getElementById('visible');
+  const update = () => {
+    const query = search.value.toLowerCase().trim();
+    let count = 0;
+    for (const row of rows) {
+      row.hidden = Boolean((query && !row.textContent.toLowerCase().includes(query))
+        || (status.value && row.dataset.status !== status.value)
+        || (kind.value && row.dataset.kind !== kind.value));
+      if (!row.hidden) count++;
+    }
+    visible.textContent = `${count} of ${rows.length} socket flows shown${count ? '' : ' — no matching rows'}`;
+  };
+  search.addEventListener('input', update);
+  status.addEventListener('change', update);
+  kind.addEventListener('change', update);
+  document.getElementById('reset').addEventListener('click', () => {
+    search.value = ''; status.value = ''; kind.value = ''; update();
+  });
+  for (const table of document.querySelectorAll('table')) {
+    for (const [index, heading] of [...table.querySelectorAll('th')].entries()) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = heading.textContent;
+      button.setAttribute('aria-label', `Sort by ${heading.textContent}`);
+      heading.textContent = ''; heading.append(button);
+      let ascending = true;
+      button.addEventListener('click', () => {
+        const body = table.querySelector('tbody');
+        const text = (row) => row.children[index]?.querySelector('summary')?.textContent || row.children[index]?.textContent || '';
+        [...body.children].sort((a, b) => text(a).localeCompare(text(b), undefined, { numeric: true }) * (ascending ? 1 : -1)).forEach((r) => body.append(r));
+        for (const h of table.querySelectorAll('th')) h.removeAttribute('aria-sort');
+        heading.setAttribute('aria-sort', ascending ? 'ascending' : 'descending');
+        ascending = !ascending;
+      });
+    }
+  }
+  update();
+})();
+
+</script>
 </body>
 </html>

@@ -19,6 +19,7 @@ An array of entries (or `{ "entries": [...] }`). Each entry:
 | `host` | **required.** The destination to recognize. See matching, below. |
 | `process` | optional. Restrict the entry to one process (case-insensitive). Omit or `*` for any. |
 | `port` | optional. Restrict to one remote port. Omit or `*` for any. |
+| `proto` | optional. Restrict to `TCP` or `UDP`; omitted rules retain their legacy behavior. |
 | `note` | why this flow is fine — the sentence a reader six months from now needs. |
 
 ## How `host` matches
@@ -55,7 +56,13 @@ prefix. Matching is case-insensitive throughout. Six forms:
 - **`host` of `*`, `.`, `*.`, `**`, `:`, `::`** — the same failure written
   explicitly. `:` and `::` both desugar to a `/0` prefix, matching every IPv6
   address there is.
-- a `port` that is neither a number nor `*`.
+- a port outside 1–65535 or `*`, an invalid CIDR, or an unsupported protocol.
+
+Only connected sockets match a destination rule. Listeners and bound UDP
+sockets do not have an observed peer and cannot be accepted as destinations.
+Prefer a process, exact peer, port, and protocol over an entire provider range.
+Process names are not executable identity pins; another executable with that
+name can match the same rule. Recognition never proves safety.
 
 A one-sided baseline is the classic rot: the day someone lets a match-everything
 entry through, the report goes all-green over a mailbox nobody is actually

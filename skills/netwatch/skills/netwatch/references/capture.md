@@ -1,65 +1,34 @@
 # Capturing a snapshot
 
-netwatch analyzes a **capture file** the agent takes on the live machine. The
-script never runs the capture itself — the machine's connection state is
-agent-side, exactly as Gmail is agent-side for gmailtriage — so the capture is a
-step you run, and the script reads what it wrote.
+Run `node scripts/netwatch.js capture --out <new-file>` on the local Mac.
+The command collects numeric `lsof -nP -i -FpcfntPT`, optional
+`nettop -P -L 1 -x -J bytes_in,bytes_out`, and `ps -axo pid=,comm=`.
+It records timestamps, per-tool exit status and warnings in a metadata header.
+Existing capture files are never overwritten; new files use mode 0600.
 
-## The one command
+A legacy text capture remains supported: sections labelled `===== lsof =====`,
+`===== nettop =====`, and `===== ps =====`. Raw lsof field output also works.
+Only lsof is required. Processes retain their PID, local endpoint, protocol,
+state and source record. TCP listeners and unconnected bound UDP sockets appear
+alongside connected sockets; a bound UDP socket has no observed peer.
 
-```bash
-{ echo '===== lsof ====='; lsof -nP -i -FcnPptT;
-  echo '===== nettop ====='; nettop -P -L 1 -x -J bytes_in,bytes_out;
-  echo '===== ps ====='; ps -axo pid=,comm=; } > "$OUT/capture.txt"
-```
+The readings are not atomic. Permission limits hide some processes, connections
+can open and close between samples, and process names can change between ps and
+lsof. Missing optional tools are reported, not silently interpreted as zero.
+An empty or failed lsof capture is refused, never called an all-clear.
 
-Three labelled sections in one file. Only the `lsof` section is load-bearing;
-`nettop` and `ps` are both optional enrichments.
+Nettop values are observed process counters, not bytes for a destination, a
+capture interval, or a measured rate. Multiple instances of the same process
+stay separate by PID. Offline provider labels are partial, potentially stale
+hints, not live registration checks or evidence of safety.
 
-## Why these tools, and why no sudo
+Default capture reads connections, not packet payloads, and requires no sudo.
+Metadata can still expose private services, activity, and process paths.
+Keep captures out of source control and review before sharing.
+Optional packet capture has a separate authorization flow in
+[packets.md](packets.md); it is never triggered by this command.
 
-- **`lsof -nP -i`** lists every open network socket with the process behind it.
-  `-n` keeps addresses numeric (no DNS lookups — fast and deterministic), `-P`
-  keeps ports numeric, `-i` selects network files. `-FcnPptT` asks for
-  machine-readable *field* output (command, name, protocol, pid, type, TCP
-  state), which is the only lsof format that survives a command name containing
-  spaces (`Google Chrome H…`). None of this needs elevated privileges to see
-  *your own* processes' sockets.
-- **`nettop -P -L 1 -x`** takes one sample (`-L 1`) of per-process byte totals
-  (`-x` = raw bytes, `-J` selects the two columns) and exits. It is optional:
-  it only fills the **Bytes in / Bytes out** columns of the per-process rollup.
-  If it is missing, unreadable, or empty, the report shows `—` and loses nothing
-  else.
-- **`ps -axo pid=,comm=`** maps each pid to a clean process name. It is optional
-  too: `lsof`'s own command field is used when `ps` is absent, but that field can
-  be an odd internal string (it reported Claude as `2.1.228` once), so `ps` is
-  what makes the process column readable. The names are joined by pid, so a
-  process that exited between the two reads simply keeps its `lsof` name.
-
-The **network** each destination reaches — `Apple`, `Google`, `Render`,
-`Link-local (the LAN)` — is not captured; it is an **offline** lookup against a
-built-in table of well-known allocations (`scripts/lib/providers.mjs`), the same
-answer `whois` gives for a netblock's owner. It is a fact about the *address*,
-never a claim about the *traffic*, and it never changes a flow's known/unrecognized
-status. Everything the table does not know is honestly `unknown network`.
-
-## What it deliberately does not do
-
-netwatch **reads connections, not packet payloads.** It sees *that* your browser
-has a socket open to `142.250.72.14:443` and how many bytes the process moved —
-never *what* crossed that socket. That is the whole point of the design:
-
-- no `sudo`, ever;
-- nothing sensitive is captured, so the frozen eval corpus is safe to commit;
-- on a shared network it can only ever see *your* machine's own sockets, never a
-  housemate's traffic.
-
-The moment someone swaps in `tcpdump` or a `.pcap` to "get more detail", every
-one of those properties is gone. If packet-level analysis is genuinely needed,
-that is a different, heavier, privileged tool — not a quiet upgrade to this one.
-
-## The snapshot is a moment, not a monitor
-
-A capture is one instant. A connection that opens and closes between two captures
-is invisible to both — that is a property of snapshotting, not a bug, and the
-report never pretends otherwise. Take another capture to see another moment.
+For repeated observations, `watch --out <new-dir> --count 3 --interval 5`
+writes numbered captures and differences. Count is bounded to 2–120, interval
+to 1–60 seconds. Ctrl-C stops watching. Compare two existing captures with
+`diff --before <file> --snapshot <file>`.

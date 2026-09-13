@@ -124,7 +124,7 @@ h2 {
   padding-bottom: 0.4rem;
   margin: 0 0 0.9rem;
 }
-h2 .no { color: var(--sig); margin-right: 0.5rem; }
+h2 .no { color: var(--dim); margin-right: 0.5rem; }
 .lede { margin: -0.3rem 0 1rem; font-size: 0.95rem; }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
@@ -152,14 +152,14 @@ td:last-child, th:last-child { padding-right: 0; }
   font-weight: 700;
   white-space: nowrap;
 }
-.tag.unrecognized { color: var(--sig); }
+.tag.unrecognized { color: var(--ink); }
 .tag.unrecognized::before { content: "●"; margin-right: 0.35rem; }
 .tag.known { color: var(--ink-faint); }
 .tag.known::before { content: "○"; margin-right: 0.35rem; }
 
 /* byte bars — dim, never the accent (accent is spent on the stamp + alerts) */
 .bar-wrap { display: flex; align-items: center; gap: 0.55rem; }
-.bar { height: 0.5rem; background: var(--ink-mid); border-radius: 1px; min-width: 1px; }
+.bar { height: 0.5rem; background: var(--ink-mid); min-width: 1px; }
 .bar-num { font-family: var(--mono); font-size: 0.76rem; color: var(--dim); white-space: nowrap; }
 
 .empty { color: var(--dim); font-style: italic; font-family: var(--serif); }
@@ -175,6 +175,17 @@ td:last-child, th:last-child { padding-right: 0; }
   line-height: 1.7;
 }
 .colophon strong { color: var(--ink); font-weight: 600; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 1rem; border-block: 1px solid var(--ink); padding: 1rem 0; margin-bottom: 2rem; }
+.controls label { display: flex; flex-direction: column; font-family: var(--mono); font-size: 0.8rem; }
+input, select, button { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--dim); padding: 0.4rem; border-radius: 0; }
+button, summary { cursor: pointer; }
+th button { border: 0; padding: 0; text-align: left; font: inherit; text-transform: inherit; }
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.controls output { flex-basis: 100%; font-family: var(--mono); font-size: 0.8rem; }
+details { min-width: 10rem; }
+details p, pre { font-weight: 400; font-size: 0.75rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+[hidden] { display: none !important; }
 
 @media (max-width: 40rem) {
   .signal { grid-template-columns: repeat(2, 1fr); }

@@ -32,7 +32,7 @@ test('re-running the frozen command reproduces it byte for byte', () => {
   for (const a of manifest.artifacts) {
     const produced = readFileSync(join(out, a.path));
     const frozen = readFileSync(join(BASELINE, a.path));
-    assert.deepEqual(produced, frozen, `${a.path} drifted from the frozen run — inspect the diff before refreshing`);
+    assert.ok(produced.equals(frozen), `${a.path} drifted from the frozen run — inspect the diff, then refresh with node evals/baseline/update.mjs`);
   }
 });
 

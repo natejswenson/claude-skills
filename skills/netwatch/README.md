@@ -6,26 +6,32 @@
 ---
 <!-- <<< press:masthead -->
 
-*Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch.*
+*Investigate network activity interactively, inspect process evidence, capture scoped packets when needed, and stop a process you choose.*
 
-> **Every connection in the report is one the skill actually observed in the live snapshot, and no connection is called malicious or safe on the model's hunch — a flow is 'known' only when it matches a baseline the user built, and everything else is 'unrecognized', never 'dangerous'.**
+> **Every connection in the report is one the skill actually observed. Keep observations separate from security interpretation: a baseline match means known, not safe. Only the user chooses what to recognize, capture as packets, or terminate.**
 
 ## Why install this
 
-Shows you exactly what your computer is talking to on the network right now — every outbound connection, the process behind it, and how much it moved — and calls a flow known only if you have said so, never dangerous on a hunch. It ships the method as well as the commands: 4 steps the machine decides outright, and 4 the model has to judge, with the line between them written down in `skill-invariants.json` rather than left to taste.
+An unfamiliar network connection should lead to a useful investigation. Netwatch
+lets you select a process, inspect its executable and sockets, compare activity
+over time, and decide what to do next. Recognition rules and security observations
+stay separate, so a familiar destination does not hide an unexpected listener.
 
-Use it when the work needs a repeatable process and a result you can inspect.
+The chat flow works in Claude Code and Codex. A terminal session provides the
+same actions, and the HTML report supports search, filters, sorting, and expandable
+evidence.
 
 ## What you get
 
-| Path | What it provides |
+| Capability | Result |
 |---|---|
-| `skills/netwatch/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/netwatch/scripts/` | The deterministic half — `flows`, `report`, `baseline`, `accept`. |
-| `skills/netwatch/references/anatomy.md` | The fixed shape of a netwatch report — the flow table, the known/unrecognized split, and the per-process and per-destination rollups. |
-| `skills/netwatch/references/capture.md` | How a live snapshot is taken agent-side (nettop, lsof -i, netstat), why the skill reads connections and not packet payloads, and why no command here needs sudo. |
-| `skills/netwatch/references/baseline.md` | The baseline format — what a known-flow entry means, the checks it must survive, and why a flow is only ever 'unrecognized' and never 'dangerous'. |
-| `skills/netwatch/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
+| Capture and filter | Timestamped TCP/UDP connections, listeners, bound sockets, local endpoints, and collection diagnostics |
+| Inspect a process | PID/start identity, executable path, owner, file properties, SHA-256, macOS signature evidence, and current sockets |
+| Watch changes | Bounded repeated samples with added/closed socket tuples |
+| Security investigation | Source-backed observations about listening services, service ports, and executable properties, with their limitations |
+| Optional packet capture | Exact interface/peer preview, explicit approval, bounded time/count/snaplen, private pcap and header summary |
+| Stop a selected process | TERM or separately chosen KILL, fresh identity and ownership checks, observed result, and a private receipt |
+| Recognize and export | User-built baseline with receipts and a self-contained interactive HTML snapshot |
 
 ## Quick start
 
@@ -37,7 +43,7 @@ Claude Code — run in chat:
 /netwatch
 ```
 
-Codex — run in a terminal from the root of this repository checkout:
+Codex — run in a terminal from this repository checkout:
 
 ```bash
 codex plugin marketplace add "$PWD"
@@ -50,52 +56,91 @@ Start a new Codex session, then invoke in chat:
 $netwatch
 ```
 
+For a terminal session from the bundled skill directory:
+
 ```bash
-netwatch flows      # parse a captured snapshot (the raw nettop/lsof/netstat text the agent saved) into a normalized, deduplicated flow table — process, pid, protocol, remote host, remote port, bytes in/out — each flow carrying the source line it came from, and refuse an empty or malformed capture
-netwatch baseline   # read, validate and store the baseline of known flows — refusing an entry that matches everything or names no destination — and report how much of the current snapshot the baseline already covers
-netwatch report     # classify every flow in the snapshot as known or unrecognized strictly against the baseline, roll the flows up by process and by destination, and emit the report — with every reported flow traceable to a captured line and no flow ever labelled dangerous
-netwatch accept     # fold a chosen set of unrecognized flows into the baseline so a later run recognizes them, writing a receipt so the change can be reversed
+node scripts/netwatch.js interactive
 ```
+
+Commands include `inspect PID`, `focus PID`, `refresh`, `changes`, `watch`,
+`accept`, `export`, `packets`, `stop PID`, `force PID`, and `quit`.
+The agent uses individual commands and chat choices when no user-owned terminal
+is available. Run `node scripts/netwatch.js --help` for the command reference.
 
 ## Triggers
 
-- "netwatch"
-- "analyze my network traffic"
-- "what is my computer connecting to"
-- "who is my mac talking to"
-- "what's talking on my network"
-- "show me my network connections"
-- "is anything phoning home"
-- "what process is using the network"
-- "audit my outbound connections"
-- Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
+- “netwatch” or “analyze my network traffic”
+- “What is my Mac connecting to?”
+- “Investigate this network process”
+- “Show listening services” or “watch for new connections”
+- “Capture packets for this peer”
+- “Stop this process” during a network investigation
 
 ## Requirements
 
-- **Claude Code:** Run on the local Mac with shell access to `lsof`, `nettop`, `netstat` and `ps`.
-- **Codex:** Allow the same local shell commands; a remote Codex environment observes its own machine, not your Mac.
-- **Personal data:** Captures, baseline and reports go to the paths chosen for the run; no private `~/.claude/netwatch` store is required.
+- **Claude Code:** Run on the local Mac with shell access to the bundled commands.
+- **Codex:** Allow the same local commands; a remote environment observes itself.
+- **Personal data:** Keep the existing `~/.netwatch/baseline.json` or the user's
+  selected path; no private data is bundled in the plugin.
+- macOS and Node 18+ for live collection; `lsof` and `ps` ship with macOS.
+  `nettop` adds optional process counters.
+- Python 3.9+ for process inspection/termination (`/usr/bin/python3` on macOS).
+- Packet capture uses the system `tcpdump` and needs local BPF access. Optional
+  `--sudo` uses existing noninteractive sudo authorization only after the
+  user approves the specific capture.
+- Offline report/parse/diff commands also work on other hosts. A remote agent
+  observes its own machine. Linux process identity/signalling uses procfs/pidfd.
+- No npm dependencies. Existing `~/.netwatch/baseline.json` remains supported;
+  scripts resolve assets from their installed directory.
 
 See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
 
-- Node 18+ (the bundled scripts are ESM, no dependencies).
+## Limits and privacy
+
+Default collection reads socket metadata. Metadata can itself reveal private
+activity, and optional packet files may contain credentials or request contents.
+New captures, inspections, packet artifacts, and action receipts are private and
+stay local; none are uploaded automatically.
+
+Only readable sockets are visible; short-lived connections can escape samples.
+Process counters are not per-destination byte totals or measured interval rates.
+Ports do not prove encryption or protocol. Signatures, provider hints and known
+baseline matches do not establish safety.
+
+Termination refuses root/other-user processes, protected macOS system services,
+and the current agent/shell ancestry. Confirmations bind a fresh process identity
+and signal. macOS rechecks kernel identity immediately before signalling but
+retains a small check-to-signal race; Linux uses pidfd. No automatic force kill,
+firewall modification, persistence removal, or malware-clean verdict is offered.
+
+See [the skill entrypoint](skills/netwatch/SKILL.md) and its linked investigation,
+packet capture, and termination references for the complete flow.
 
 ## Development
 
 ```bash
 cd skills/netwatch/skills/netwatch
 npm test
+node evals/baseline/update.mjs
 ```
 
-Node skill. `ci / netwatch` runs the same tests plus the house lints on
-every pull request, and `skillfactory verify --skill netwatch` reports which rung
-of the ladder it has reached.
+Tests cover the frozen real metadata report, parsing and matching regressions,
+scope/confirmation guards, failure outcomes, and a disposable owned test
+process. They never signal an existing user process or capture live packets.
+The refresh command re-renders the existing frozen capture; review its diff.
+
+From the repository root:
+
+```bash
+python3 tools/sync_codex.py --check
+python3 tools/check_compatibility.py
+```
 
 ## Changelog
 
-See [`CHANGELOG.md`](CHANGELOG.md). Releases are cut by a version bump, tagged
-`netwatch-v<version>`.
+See [CHANGELOG.md](CHANGELOG.md). Feature PRs target `main` under GitHub Flow;
+releases are explicitly dispatched after the reviewed version/changelog PR lands.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT — see [LICENSE](LICENSE).

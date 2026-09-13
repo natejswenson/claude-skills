@@ -69,6 +69,10 @@ test("the issue's own scenario, end to end: fe80: now covers the reported flow a
   const reportOut = run(['report', '--snapshot', 'capture.txt', '--baseline', 'baseline.json'], dir);
   const unrecSection = reportOut.slice(reportOut.indexOf('UNRECOGNIZED'), reportOut.indexOf('KNOWN'));
   const knownSection = reportOut.slice(reportOut.indexOf('KNOWN'));
-  assert.doesNotMatch(unrecSection, /identityservicesd/, 'the accepted flows must leave UNRECOGNIZED — exactly the promise SKILL.md makes');
+  // Newly visible UDP binds have no peer and cannot match a destination rule.
+  const structured = JSON.parse(run(['report', '--snapshot', 'capture.txt', '--baseline', 'baseline.json', '--json'], dir));
+  const selected = structured.flows.filter((f) => f.process === 'identityservicesd');
+  assert.ok(selected.filter((f) => f.kind === 'connection').every((f) => f.match), 'every connected peer selected by the rule must be known');
+  assert.ok(selected.filter((f) => f.kind === 'bound').every((f) => !f.match), 'bound sockets must not inherit destination trust');
   assert.match(knownSection, /identityservicesd/, 'the accepted flows must now read KNOWN');
 });

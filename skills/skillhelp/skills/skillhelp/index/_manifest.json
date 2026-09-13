@@ -194,16 +194,16 @@
     },
     {
       "name": "netwatch",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "stack": "node",
-      "cardHash": "ebb3114aa639e419",
-      "facts": 54,
+      "cardHash": "3602a4fbbb1eb6a6",
+      "facts": 64,
       "sections": {
-        "setup": 6,
+        "setup": 10,
         "usage": 12,
-        "commands": 15,
-        "architecture": 8,
-        "troubleshooting": 13
+        "commands": 20,
+        "architecture": 16,
+        "troubleshooting": 6
       },
       "emptySections": [],
       "secretsRefused": 0

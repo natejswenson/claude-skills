@@ -5,6 +5,26 @@ All notable changes to the **netwatch** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-12
+
+### Added
+
+- Interactive investigation in Claude Code/Codex chat and a user-owned terminal: refresh, focus, inspect, compare, watch, recognize, export, and act.
+- PID-specific security inspection with kernel start identity, executable ownership/mode, on-disk SHA-256, macOS signature evidence, and live sockets.
+- Timestamped capture diagnostics, bounded repeated samples, socket differences, and evidence-based observations for listening services and selected service ports.
+- Optional packet capture with an exact interface/peer preview, explicit confirmation, bounded time/count/snaplen, private artifacts, and local header summaries.
+- Confirmed TERM and separately confirmed KILL for one inspected process, with expiry, identity/ownership/ancestor guards, outcome verification, and an audit receipt.
+- Search, status/kind filters, sortable columns, and expandable evidence in offline HTML reports; structured JSON for host integrations.
+
+### Fixed
+
+- Same-named processes no longer collapse across PIDs or receive another instance's byte counters; local endpoints and source records are retained.
+- TCP listeners and unconnected UDP sockets are no longer silently dropped. Recognition rules can constrain protocol.
+- IPv6 exact-address normalization, scoped CIDR matching, invalid CIDR/port validation, and malformed IPv4 handling.
+- First-run baseline creation makes its directory before writing receipts; invalid snapshots are checked before baseline mutation.
+- npm packages include the report assets. Added the missing frozen-artifact refresh command and runtime regression coverage.
+- Corrected claims that socket metadata is automatically safe to publish, provider labels prove current ownership, or process counters measure interval traffic.
+
 ## [0.2.0] - 2026-08-12
 
 ### Added
