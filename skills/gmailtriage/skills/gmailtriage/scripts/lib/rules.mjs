@@ -12,6 +12,8 @@
  * than discovered later.
  */
 
+import { resolveCategory, isBulkCategory } from './category.mjs';
+
 export const ACTIONS = ['trash', 'label', 'keep'];
 
 /**
@@ -545,16 +547,15 @@ export function matches(rule, thread, now = new Date(), { ignoreFiled = false } 
   const m = rule.match ?? {};
   const from = String(thread.from ?? '').toLowerCase();
   const subject = String(thread.subject ?? '').toLowerCase();
-  const labels = (thread.labelIds ?? []).map((l) => String(l).toUpperCase());
 
   if (m.from && !from.includes(String(m.from).toLowerCase())) return false;
   if (m.list && !String(thread.list ?? '').toLowerCase().includes(String(m.list).toLowerCase())) return false;
   if (m.subjectContains && !subject.includes(String(m.subjectContains).toLowerCase())) return false;
-  if (m.category) {
-    const want = `CATEGORY_${m.category.toUpperCase()}`;
-    if (m.category === 'primary' ? labels.some((l) => l.startsWith('CATEGORY_') && l !== want) : !labels.includes(want)) return false;
+  if (m.category || m.hasUnsubscribe) {
+    const evidence = resolveCategory(thread);
+    if (m.category && (evidence.status !== 'known' || evidence.category !== m.category)) return false;
+    if (m.hasUnsubscribe && (thread.hasUnsubscribe !== true || !isBulkCategory(evidence))) return false;
   }
-  if (m.hasUnsubscribe && !thread.hasUnsubscribe) return false;
   // Already filed there. `labelIds` carries Gmail's opaque ids, so this reads
   // `thread.labels` — the resolved names — and simply does not fire when the
   // fetch did not supply them. Re-labelling is idempotent in Gmail, so the cost

@@ -1084,3 +1084,133 @@ test('audit returns dangling destinations, and clean requires none', () => {
   assert.deepEqual(b.dangling, []);
   assert.equal(b.clean, true);
 });
+
+// Category evidence must survive ingest and constrain every dependent action.
+const categoryNames = ['promotions', 'updates', 'social', 'forums', 'primary'];
+const categoryThread = (over = {}) => thread({ category: null, labelIds: ['INBOX'], ...over });
+const ambiguousCategories = [
+  {}, { category: null }, { category: 'unknown' }, { category: 'PROMOTIONS' },
+  { category: '' }, { category: 42 },
+  { labelIds: ['INBOX', 'CATEGORY_UNKNOWN'] },
+  { category: 'promotions', labelIds: ['INBOX', 'CATEGORY_UPDATES'] },
+  { labelIds: ['INBOX', 'CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL'] },
+  { category: 'unknown', labelIds: ['INBOX', 'CATEGORY_PROMOTIONS'] },
+  { category: 'updates', labelIds: ['INBOX', 'CATEGORY_UNKNOWN'] },
+  { categoryEvidence: { status: 'conflict', categories: ['promotions', 'updates'] } },
+  { category: 'promotions', categoryEvidence: { status: 'unknown', categories: [] } },
+  ...[null, 'secret-marker', {}, { status: 'known', categories: ['promotions'] },
+    { status: 'conflict', categories: ['promotions'] },
+    { status: 'unknown', categories: ['secret-token'] },
+    { status: 'unknown', categories: [], snippet: 'secret-marker' },
+  ].map((categoryEvidence) => ({ category: 'promotions', categoryEvidence })),
+];
+
+test('category evidence: explicit fields and every legacy category agree without synthetic labels', () => {
+  for (const category of categoryNames) {
+    const aliases = category === 'primary' ? ['PERSONAL', 'PRIMARY'] : [category.toUpperCase()];
+    const sources = [{ category }, ...aliases.flatMap((alias) => [
+      { labelIds: ['INBOX', `category_${alias.toLowerCase()}`] },
+      { category, labelIds: ['INBOX', `CATEGORY_${alias}`, `CATEGORY_${alias}`] },
+    ])];
+    for (const source of sources) {
+      for (const want of categoryNames) {
+        assert.equal(matches(rule({ match: { category: want } }), categoryThread(source)),
+          want === category, JSON.stringify({ source, want }));
+      }
+    }
+  }
+  assert.equal(matches(rule({ match: { category: 'primary' } }), categoryThread({
+    labelIds: ['INBOX', 'CATEGORY_PERSONAL', 'CATEGORY_PRIMARY'],
+  })), true, 'primary aliases agree');
+});
+
+test('category evidence: unknown and conflicting sources cannot authorize category or proxy actions', () => {
+  for (const source of ambiguousCategories) {
+    const t = categoryThread({ ...source, hasUnsubscribe: true });
+    for (const category of categoryNames) {
+      assert.equal(matches(rule({ match: { category } }), t), false, JSON.stringify({ source, category }));
+    }
+    for (const action of ['trash', 'label']) {
+      const r = rule({ action, label: 'Filed', match: { from: 'noreply@shop.example', hasUnsubscribe: true } });
+      assert.equal(matches(r, t), false, JSON.stringify({ source, action }));
+      assert.deepEqual(plan([t], { rules: [r] }).taken, []);
+    }
+    assert.equal(matches(rule(), t), true, 'sender-only evidence remains independent');
+  }
+});
+
+test('category evidence: bulk proxy requires a true boolean and known bulk category', () => {
+  for (const category of categoryNames) {
+    for (const hasUnsubscribe of [true, false, undefined, 'true', 1]) {
+      const t = categoryThread({ category, hasUnsubscribe });
+      const expected = ['promotions', 'updates'].includes(category) && hasUnsubscribe === true;
+      for (const action of ['trash', 'label']) {
+        const r = rule({ action, label: 'Filed', match: { hasUnsubscribe: true } });
+        assert.equal(matches(r, t), expected);
+        assert.equal(plan([t], { rules: [r] }).taken.length, expected ? 1 : 0);
+      }
+    }
+  }
+});
+
+test('category evidence: ingest preserves ambiguity, strips raw evidence and never infers primary', async () => {
+  const { applyCategories } = await import('../lib/ingest.mjs');
+  const overlap = applyCategories([categoryThread()], ['t1'], ['t1'])[0];
+  assert.equal(overlap.category, null);
+  assert.equal(overlap.hasUnsubscribe, false);
+  assert.deepEqual(overlap.categoryEvidence, { status: 'conflict', categories: ['promotions', 'updates'] });
+  for (const source of ambiguousCategories) {
+    const [normalized] = applyCategories([categoryThread({ ...source, snippet: 'secret-marker' })]);
+    assert.equal(normalized.category, null, JSON.stringify(source));
+    assert.equal(normalized.hasUnsubscribe, false);
+    assert.ok(!JSON.stringify(normalized).includes('secret-marker'));
+    assert.ok(!JSON.stringify(normalized).includes('secret-token'));
+    const [again] = applyCategories(JSON.parse(JSON.stringify([normalized])));
+    assert.deepEqual(again, normalized, 'round-trip preserves non-authorizing evidence');
+    assert.equal(matches(rule({ match: { category: 'primary' } }), again), false);
+  }
+  for (const t of [overlap, categoryThread({ category: 'invalid-secret' })]) {
+    const [once] = applyCategories([t]);
+    const [again] = applyCategories([once], ['t1']);
+    assert.equal(again.category, null, 'new positive membership cannot erase persisted ambiguity');
+    assert.equal(again.hasUnsubscribe, false);
+    assert.ok(!JSON.stringify(again).includes('invalid-secret'));
+  }
+  for (const category of categoryNames) {
+    const [known] = applyCategories([categoryThread({ category })]);
+    assert.equal(known.category, category);
+    assert.equal(known.hasUnsubscribe, ['promotions', 'updates'].includes(category));
+    assert.equal(Object.keys(known).length, 7, 'ordinary snapshots keep their seven fields');
+  }
+  const [conflict] = applyCategories([categoryThread({ category: 'social' })], ['t1']);
+  assert.equal(conflict.category, null, 'positive search membership is combined with existing evidence');
+  const [agree] = applyCategories([categoryThread({ category: 'promotions' })], ['t1']);
+  assert.equal(agree.category, 'promotions');
+});
+
+test('category evidence: raw normalization preserves explicit and persisted evidence before search matching', async () => {
+  const { normalizeSearchThreads, applyCategories } = await import('../lib/ingest.mjs');
+  for (const [source, expected] of [
+    [{ category: 'promotions' }, 'promotions'],
+    [{ category: 'social' }, null],
+    [{ category: null, categoryEvidence: { status: 'conflict', categories: ['social', 'promotions'] } }, null],
+    [{ category: 'promotions', categoryEvidence: { status: 'unknown', categories: [] } }, null],
+    [{ category: 'secret-token' }, null],
+    [{ categoryEvidence: { status: 'known', categories: ['promotions'], snippet: 'secret-token' } }, null],
+  ]) {
+    const raw = { threads: [{ id: 't1', ...source, messages: [{
+      sender: 'offers@shop.example', subject: 'Offers', date: '2026-08-01',
+      labelIds: ['INBOX'], snippet: 'secret-token',
+    }] }] };
+    const normalized = normalizeSearchThreads(raw);
+    assert.ok(!JSON.stringify(normalized).includes('secret-token'));
+    const [snapshot] = applyCategories(normalized, ['t1']);
+    assert.equal(snapshot.category, expected, JSON.stringify(source));
+    assert.equal(snapshot.hasUnsubscribe, expected === 'promotions');
+    for (const action of ['trash', 'label']) {
+      const r = rule({ action, label: 'Filed', match: { from: 'offers@shop.example', hasUnsubscribe: true } });
+      assert.equal(matches(r, snapshot), expected === 'promotions');
+      assert.equal(plan([snapshot], { rules: [r] }).taken.length, expected === 'promotions' ? 1 : 0);
+    }
+  }
+});

@@ -8,14 +8,16 @@
  * was, so it lives here now: the agent writes each tool result to a file
  * VERBATIM, and this module does the rest.
  *
- * The structural guarantee this file carries: only SNAPSHOT_FIELDS ever reach
+ * The structural guarantee this file carries: only allowlisted snapshot fields ever reach
  * the output. A raw response carries `snippet` — which on a real mailbox has
  * held live verification codes — and nothing here copies it anywhere. The
  * output objects are built field by field precisely so a new field appearing
  * upstream cannot leak through.
  */
 
-/** The whole thread schema. Nothing else is ever written to disk. */
+import { resolveCategory, isBulkCategory } from './category.mjs';
+
+/** Ordinary snapshots; ambiguous evidence adds only a validated categoryEvidence marker. */
 export const SNAPSHOT_FIELDS = ['id', 'from', 'subject', 'date', 'labelIds', 'category', 'hasUnsubscribe'];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -40,11 +42,18 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
     if (!isObj(t) || !t.id) throw new Error(`${what}: a thread without an id — this is not a search_threads response`);
     const msgs = Array.isArray(t.messages) ? t.messages : [];
     const first = msgs[0] ?? {};
+    // Preserve existing evidence through the raw-response boundary, using only
+    // bounded resolver tokens so malformed fields cannot leak into snapshots.
+    const evidence = resolveCategory(t);
     out.push({
       id: t.id,
       from: first.sender ?? null,
       subject: first.subject ?? null,
       date: first.date ?? null,
+      ...(evidence.category ? { category: evidence.category } : {}),
+      ...(evidence.status === 'conflict' || evidence.invalid ? {
+        categoryEvidence: { status: evidence.status, categories: evidence.categories },
+      } : {}),
       labelIds: [...new Set(msgs.flatMap((m) => m?.labelIds ?? []))],
     });
   }
@@ -69,6 +78,17 @@ export function mergeThreadSources(...sources) {
     for (const t of list ?? []) {
       const prev = byId.get(t.id);
       if (!prev) { byId.set(t.id, { ...t }); continue; }
+      // A later duplicate contributes evidence, including uncertainty; neither
+      // source gets to overwrite or silently discard the other's category.
+      const categorySources = [resolveCategory(prev), resolveCategory(t)];
+      const evidence = resolveCategory(
+        categorySources.some((e) => e.invalid) ? { categoryEvidence: { status: 'unknown', categories: [] } } : {},
+        categorySources.flatMap((e) => e.categories),
+      );
+      prev.category = evidence.category;
+      if (evidence.status === 'conflict' || evidence.invalid) {
+        prev.categoryEvidence = { status: evidence.status, categories: evidence.categories };
+      } else delete prev.categoryEvidence;
       prev.labelIds = [...new Set([...(prev.labelIds ?? []), ...(t.labelIds ?? [])])];
       prev.from ??= t.from;
       prev.subject ??= t.subject;
@@ -90,15 +110,23 @@ export function applyCategories(threads, promoIds = [], updateIds = []) {
   const promos = new Set(promoIds);
   const updates = new Set(updateIds);
   return threads.map((t) => {
-    const category = promos.has(t.id) ? 'promotions' : updates.has(t.id) ? 'updates' : null;
+    const evidence = resolveCategory(t, [
+      ...(promos.has(t.id) ? ['promotions'] : []),
+      ...(updates.has(t.id) ? ['updates'] : []),
+    ]);
     return {
       id: t.id,
       from: t.from,
       subject: t.subject,
       date: t.date,
       labelIds: t.labelIds ?? [],
-      category,
-      hasUnsubscribe: category !== null,
+      category: evidence.category,
+      hasUnsubscribe: isBulkCategory(evidence),
+      // Null alone loses disagreement/invalid input. Retain only bounded tokens,
+      // so another ingest or a legacy true proxy cannot erase that uncertainty.
+      ...(evidence.status === 'conflict' || evidence.invalid ? {
+        categoryEvidence: { status: evidence.status, categories: evidence.categories },
+      } : {}),
     };
   });
 }

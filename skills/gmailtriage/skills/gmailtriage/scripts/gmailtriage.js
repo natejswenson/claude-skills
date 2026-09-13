@@ -16,6 +16,8 @@ import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYS
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
 import { normalizeSearchThreads, threadIds, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
+import { resolveCategory } from './lib/category.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
 
@@ -1086,6 +1088,10 @@ async function cmdIngest(args) {
   const outLabels = writeJson(args.outLabels ?? 'labels.json', labelsDoc, args);
   console.error(`wrote ${outThreads}`);
   console.error(`wrote ${outLabels}`);
+  const evidence = threads.map((t) => ({ id: t.id, ...resolveCategory(t) }));
+  const conflicts = evidence.filter((e) => e.status === 'conflict');
+  console.error(`category evidence: unknown=${evidence.filter((e) => e.status === 'unknown').length} conflict=${conflicts.length}`);
+  for (const e of conflicts) console.error(`category conflict ${JSON.stringify(e.id)}: ${e.categories.join(', ')}`);
 
   console.log('');
   console.log(table(['Threads', 'Promotions', 'Updates', 'Bulk', 'Sent-only', 'Missing subject/from', 'Your labels', 'System labels'], [[
@@ -1100,8 +1106,8 @@ async function cmdIngest(args) {
   ]]));
 
   if (!args.promos && !args.updates) {
-    console.log('\nno category fetches supplied — hasUnsubscribe is false everywhere, so every trash rule');
-    console.log('requiring a bulk marker will match nothing. Fetch category:promotions and category:updates');
+    console.log('\nno category fetches supplied — only existing category evidence can establish the bulk proxy.');
+    console.log('Missing evidence stays unknown. Fetch category:promotions and category:updates');
     console.log('(ids only) unless this run truly does not need them.');
   }
   console.log('\nsnippets are never written — the snapshot carries sender, subject, date and labels, nothing else.');

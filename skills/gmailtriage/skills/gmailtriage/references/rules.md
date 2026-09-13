@@ -94,6 +94,36 @@ not there, because a rule wrongly declared dead is a rule someone deletes.
 are unrelated as far as this check is concerned, and a `trash` rule for codes
 `olderThanDays: 7` does not shadow the `label` rule that keeps fresh ones.
 
+## Category evidence and the bulk proxy
+
+Category rules use one shared interpretation for normalized and legacy snapshots.
+Explicit `category` values are lowercase `promotions`, `updates`, `social`,
+`forums`, or `primary`. Legacy label ids are case-insensitive: the corresponding
+`CATEGORY_*` labels are supported, and both `CATEGORY_PERSONAL` and
+`CATEGORY_PRIMARY` mean primary. Multiple agreeing sources, including both
+primary aliases, remain known.
+
+Missing/null category fields and absent category labels contribute no evidence.
+They never mean primary. Distinct recognized categories conflict; no source takes
+precedence. Any non-null unsupported explicit value, unsupported `CATEGORY_*`
+label, or invalid persisted marker makes the result non-authorizing even beside
+a recognized source. Category rules match only one known matching category.
+
+Ingest writes null for uncertainty and preserves otherwise lost evidence as
+`categoryEvidence: {status: "conflict", categories: ["promotions", "updates"]}`
+or `{status: "unknown", categories: []}`. Tokens are unique, vocabulary-ordered,
+and bounded to the five categories; conflict requires at least two, unknown at
+most one. Extra fields, invalid tokens, or any other marker shape are invalid.
+A persisted marker can retain uncertainty but cannot assert a known category.
+Re-reading and re-ingesting it stays non-authorizing. Conflicting recognized
+categories are reported as conflict even if invalid evidence is also present.
+
+A truthy `match.hasUnsubscribe` requires `thread.hasUnsubscribe === true` and one
+known promotions/updates category. A false or missing proxy fails even for a
+known bulk category; an old true proxy fails for unknown/conflicting evidence.
+This applies to both trash and label actions, and remains a category proxy rather
+than proof of headers. Rules relying only on sender/subject data remain eligible.
+
 ## The compiled query
 
 Every rule prints the Gmail query it compiles to. That is the point: a user who
