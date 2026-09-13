@@ -88,13 +88,15 @@ export const fixBriefPath = (dir, lane, round) => activePath(dir, 'briefs', `${l
 
 export const currentRound = (lane) => lane.review?.rounds.at(-1) ?? null;
 export const nextReviewRound = (lane) => (lane.review?.rounds.length ?? 0) + 1;
+export const nextReviewAuthorized = (lane) => (lane.review?.overrides ?? []).some(o => o.round === nextReviewRound(lane) && typeof o.reason === 'string' && o.reason.trim());
+export const reviewCapacityAvailable = (lane) => (lane.review?.rounds.length ?? 0) < reviewCap(lane) || nextReviewAuthorized(lane);
 
 /** True when the cap is spent: MAX_REVIEW_ROUNDS registered and the last still has an open major. */
 export const reviewExhausted = (lane) => {
   const rounds = lane.review?.rounds ?? [];
   const last = rounds.at(-1);
   const cap = lane.review?.maxRounds ?? MAX_REVIEW_ROUNDS;
-  return rounds.length >= cap && (Boolean(last?.cancelled) || Boolean(last?.registered) && last.verdict !== 'converged');
+  return rounds.length >= cap && !nextReviewAuthorized(lane) && (Boolean(last?.cancelled) || Boolean(last?.supersededBy) || Boolean(last?.registered) && last.verdict !== 'converged');
 };
 
 /** The persisted lane cap, with the legacy four-round default for old runs. */
@@ -524,7 +526,7 @@ export function openRound(dir, run, lane, { head, remoteHead = null, prHead = nu
   if (!lane.pr) throw new RunError(`cannot review ${lane.slug}: no pull request — ship first`);
   const last = currentRound(lane);
   if (last && !last.registered && !last.cancelled) throw new RunError(`round ${last.round} of ${lane.slug} is open — register it, or use review-cancel after all workers are terminal`);
-  if (reviewExhausted(lane)) {
+  if (!reviewCapacityAvailable(lane)) {
     // The cap hands the open majors to a person. Two answers exist, and both
     // are typed by the person, never by `next`: rule on the majors
     // (`review-rule`), or direct one more round with a reason, recorded here.

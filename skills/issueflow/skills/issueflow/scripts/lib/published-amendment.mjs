@@ -6,32 +6,51 @@ import { RunError, artifactPath, findStep, laneTree, saveRun } from './run.mjs';
 import { activeRoot, approveArtifact, gitStore, prepareOutputs, readDelivery, recordDispatch } from './execution.mjs';
 import { contractFromPlan, gitText, hash, checkScope, contractForLane } from './contracts.mjs';
 import { assertPreflight } from './preflight.mjs';
-import { budgetStatus } from './budget.mjs';
+import { autoRenewBudget, budgetStatus } from './budget.mjs';
+import { nextReviewRound, reviewCap, reviewCapacityAvailable } from './prreview.mjs';
 import { MAX_ROUNDS, MAX_TOTAL_ROUNDS, parseFindings, deriveVerdict, resolveCitation } from './reviews.mjs';
 import { operation } from './operations.mjs';
 import { apiRead, apiWrite } from './gh.mjs';
 import { assertRepairComplete, reconcilePlanFindings } from './plan-repair.mjs';
 const fail=s=>{throw new RunError(`published amendment: ${s}`)};
-const proposalHash=e=>hash({planHash:e.planHash,contractHash:e.contractHash,previousContractHash:e.previousContractHash,lanes:e.lanes,reason:e.reason,authoritySource:e.authoritySource,rewriteAuthoritySource:e.rewriteAuthoritySource});
+const proposalHash=e=>hash({planHash:e.planHash,contractHash:e.contractHash,previousContractHash:e.previousContractHash,lanes:e.lanes,reason:e.reason,authoritySource:e.authoritySource,rewriteAuthoritySource:e.rewriteAuthoritySource,reviewRoundAuthorization:e.reviewRoundAuthorization});
 const remotePath=(run,lane)=>`repos/${run.repo.owner}/${run.repo.name}/pulls/${lane.pr.number}`;
 export function amendmentCapacity(run) {
   const budget=budgetStatus(run);
   if (budget?.expired) fail('time window expired; resume within the existing cumulative cap before proposing changes');
   const review=findStep(run,'investigate').stage.review;
   const count=review?.rounds.length??0;
-  if(run.lanes.some(l=>l.review?.rounds?.length >= (l.review.maxRounds??3)))fail('cumulative code-review capacity is exhausted; retain the proposed delta');
+  if(run.lanes.some(l=>!reviewCapacityAvailable(l)))fail('cumulative code-review capacity is exhausted; retain the proposed delta');
   if (count>=MAX_TOTAL_ROUNDS || count>=MAX_ROUNDS && !review?.overrides?.some(o=>o.round===count+1)) fail('cumulative plan-review capacity is exhausted; retain the delta without applying it');
 }
 function eligible(run,workersReleased) {
   if (run.schema<5 || !run.harness?.contract) fail('explicit schema-5 migration and an approved contract are required');
   if (run.finished||run.lanes.some(l=>l.landed)) fail('partially landed work needs a separate follow-up scope');
   if (!workersReleased||run.dispatch?.queue) fail('observe and drain every native writer first');
+  if (Object.values(run.harness.attempts??{}).some(a=>a.native?.status==='started')) fail('observe every native writer terminal before acknowledging release');
   if (Object.values(run.operations??{}).some(o=>o.state!=='confirmed')) fail('reconcile uncertain remote effects first');
 }
-export function proposePublishedAmendment(dir,run,{plan,reason,authoritySource,workersReleased,base=null,strategy='target-only',rewriteAuthoritySource=null}) {
-  eligible(run,workersReleased); amendmentCapacity(run);
+export function proposePublishedAmendment(dir,run,{plan,reason,authoritySource,workersReleased,base=null,strategy='target-only',rewriteAuthoritySource=null,anotherRound=null,lane=null}) {
+  eligible(run,workersReleased);
   if (!reason?.trim()||!authoritySource?.trim()) fail('reason and existing user authority source are required; a flag cannot create authority');
   if (run.harness.publishedAmendment && !['applied','blocked'].includes(run.harness.publishedAmendment.phase)) fail('finish or resolve the existing amendment first');
+  // Stage the extension and renewal together with the proposal; a failed
+  // preflight must not allocate a round or silently change the time ledger.
+  const capacity=structuredClone(run);
+  let reviewRoundAuthorization;
+  if(anotherRound!=null) {
+    if(typeof anotherRound!=='string'||!anotherRound.trim())fail('--another-round needs the existing user decision, never a bare flag');
+    const selected=lane?capacity.lanes.find(l=>l.slug===lane):capacity.lanes.length===1?capacity.lanes[0]:null;
+    if(!selected)fail('--lane must select one lane for the single directed future round');
+    if((selected.review?.rounds.length??0)<reviewCap(selected))fail('the selected lane still has its original review capacity');
+    if(selected.review.overrides?.some(o=>o.round===nextReviewRound(selected)||o.reason===anotherRound.trim()))fail('that future round or authorization is already recorded; retain it without adding another');
+    selected.review.overrides??=[];
+    const authorization={round:nextReviewRound(selected),reason:anotherRound.trim(),authoritySource,at:new Date().toISOString()};
+    selected.review.overrides.push(authorization);
+    reviewRoundAuthorization={lane:selected.slug,...authorization};
+  }
+  if(budgetStatus(capacity)?.expired)autoRenewBudget(capacity);
+  amendmentCapacity(capacity);
   const proposed=contractFromPlan(plan),id=randomUUID(),archive=join(dir,'evolution',id);
   const lanes=[];
   const pending=[...run.lanes];
@@ -69,18 +88,53 @@ export function proposePublishedAmendment(dir,run,{plan,reason,authoritySource,w
   mkdirSync(archive,{recursive:true});writeFileSync(join(archive,'run.json'),JSON.stringify(run,null,2),{flag:'wx'});
   writeFileSync(join(archive,'plan.md'),plan,{flag:'wx'});
   const entry={id,phase:'proposed',archive,planHash:hash(plan),contract:proposed,contractHash:hash(proposed),previousContract:run.harness.contract,previousContractHash:run.harness.contractHash,lanes,reason,authoritySource,rewriteAuthoritySource,createdAt:new Date().toISOString()};
+  if(reviewRoundAuthorization)entry.reviewRoundAuthorization=reviewRoundAuthorization;
   entry.proposalHash=proposalHash(entry);
+  for(const lane of run.lanes)lane.review.overrides=capacity.lanes.find(l=>l.slug===lane.slug).review.overrides;
+  if(capacity.budgetRenewals)run.budgetRenewals=capacity.budgetRenewals;
   run.harness.amendments.push(entry);run.harness.publishedAmendment=entry;saveRun(dir,run);return entry;
 }
-export function briefPublishedAmendment(dir,run) {
-  const entry=run.harness.publishedAmendment;if(entry?.phase!=='proposed')fail('no proposed amendment');amendmentCapacity(run);
-  const root=join(activeRoot(dir,run),'amendments',entry.id),brief=join(root,'review.md'),output=join(root,'review.json');
+export function briefPublishedAmendment(dir,run,{retry=false,workersReleased=false,reason=null}={}) {
+  const entry=run.harness.publishedAmendment;
+  if(retry) {
+    eligible(run,workersReleased);
+    if(typeof reason!=='string'||!reason.trim())fail('retry requires --reason after observing native worker release');
+    if(entry?.phase!=='reviewing'||!entry.review?.rejection)fail('only a rejected, unregistered amendment review can be retried');
+  } else if(entry?.phase!=='proposed')fail('no proposed amendment; rejected delivery needs an explicit --retry');
+  amendmentCapacity(run);
+  if(retry) {
+    const prior=entry.review,key=relative(activeRoot(dir,run),prior.output),attempt=run.harness.attempts?.[key];
+    const archive=join(entry.archive,'rejected-reviews',randomUUID());mkdirSync(archive,{recursive:true});
+    // Retain even incomplete delivery bytes. Completion manifests and prior
+    // worker outputs stay at their original immutable paths as well.
+    for(const [name,path] of Object.entries({brief:prior.brief,output:prior.output,request:attempt?.manifest,completion:attempt?.completion})) {
+      if(path&&existsSync(path))writeFileSync(join(archive,name),readFileSync(path),{flag:'wx'});
+    }
+    writeFileSync(join(archive,'review.json'),JSON.stringify({review:prior,attempt,reason:reason.trim()}),{flag:'wx'});
+    entry.reviewHistory??=[];entry.reviewHistory.push({...prior,archive,reason:reason.trim(),supersededAt:new Date().toISOString()});
+    if(attempt){run.harness.attemptHistory??=[];run.harness.attemptHistory.push({...attempt,state:'rejected',reason:reason.trim(),archive});delete run.harness.attempts[key];}
+  }
+  const root=join(activeRoot(dir,run),'amendments',entry.id,...(retry?[`retry-${randomUUID()}`]:[])),brief=join(root,'review.md'),output=join(root,'review.json');
   prepareOutputs(dir,run,[brief,output]);
-  writeFileSync(brief,`Independently review this proposed change before it is applied. Read ${join(entry.archive,'plan.md')} and ${join(entry.archive,'run.json')}. Inspect the current/candidate trees listed below. Validate every added path, check, Git transition, unresolved finding and authorization scope. Do not mutate repository/state.\n\n${JSON.stringify(entry.lanes,null,2)}\n\nPrior findings: ${JSON.stringify(run.harness.planFindings??{})}\nReturn findings, notExamined, verdict and resolutions in the normal plan-review JSON format, plus proposalHash ${entry.proposalHash}. Cite exact sources. Write only ${output}. Complete your attempt manifest when done.\n`);
+  writeFileSync(brief,`Independently review this proposed change before it is applied. Read ${join(entry.archive,'plan.md')} and ${join(entry.archive,'run.json')}. Inspect the current/candidate trees listed below. Validate every added path, check, Git transition, unresolved finding and authorization scope. Do not mutate repository/state.\n\n${JSON.stringify(entry.lanes,null,2)}\n\nDirected code-review extension: ${JSON.stringify(entry.reviewRoundAuthorization??null)}\nPrior findings: ${JSON.stringify(run.harness.planFindings??{})}\nReturn findings, notExamined, verdict and resolutions in the normal plan-review JSON format, plus proposalHash ${entry.proposalHash}. Cite exact sources. Write only ${output}. Complete your attempt manifest when done.\n`);
   recordDispatch(dir,run,brief,[output]);entry.review={brief,output};entry.phase='reviewing';saveRun(dir,run);return {brief,output};
 }
 export function registerPublishedAmendment(dir,run) {
   const entry=run.harness.publishedAmendment;if(entry?.phase!=='reviewing')fail('no amendment review in flight');
+  let result;
+  try { result=registerReview(dir,run,entry); }
+  catch(error) {
+    if(error instanceof RunError||error instanceof SyntaxError) {
+      entry.review.rejection??={at:new Date().toISOString(),reason:error.message};
+      saveRun(dir,run);
+    }
+    throw error;
+  }
+  // Storage failures belong to recovery of the existing gate transaction,
+  // never to the rejected-output retry path.
+  saveRun(dir,run);return result;
+}
+function registerReview(dir,run,entry) {
   const text=readDelivery(dir,entry.review.output,run),raw=JSON.parse(text),review=parseFindings(text);
   if(review.error||raw.proposalHash!==entry.proposalHash||proposalHash(entry)!==entry.proposalHash)fail(review.error??'review names another proposal');
   const plan=readFileSync(join(entry.archive,'plan.md'),'utf8');if(hash(plan)!==entry.planHash)fail('proposal changed after dispatch');
@@ -90,14 +144,16 @@ export function registerPublishedAmendment(dir,run) {
   const ledger=reconcilePlanFindings(run,review.findings,review.resolutions??[],{round,artifactSha:entry.planHash,responses:assertRepairComplete(run,plan)});
   const verdict=deriveVerdict(review.findings);if(verdict!==review.verdict)fail('review verdict disagrees with findings');
   step.stage.review.rounds.push({round,verdict,artifactSha:entry.planHash,items:review.findings,findings:Object.fromEntries(['critical','high','medium','low'].map(s=>[s,review.findings.filter(f=>f.severity===s).length])),dispositions:Object.fromEntries(['fixable','accepted-risk','out-of-scope'].map(d=>[d,review.findings.filter(f=>f.disposition===d).length])),notExamined:review.notExamined,amendment:entry.id,at:new Date().toISOString()});
-  run.harness.planFindings=ledger;entry.phase=verdict==='pass'?'reviewed':'blocked';entry.review.verdict=verdict;entry.review.hash=hash(text);saveRun(dir,run);return entry;
+  run.harness.planFindings=ledger;entry.phase=verdict==='pass'?'reviewed':'blocked';entry.review.verdict=verdict;entry.review.hash=hash(text);return entry;
 }
 export function applyPublishedAmendment(dir,run,{workersReleased}) {
   const entry=run.harness.publishedAmendment;
   if(!entry||!['reviewed','applying'].includes(entry.phase))fail('a passing independent review is required before application');
   if(!workersReleased||run.dispatch?.queue)fail('observe reviewer termination before applying');
-  if(budgetStatus(run)?.expired)fail('time window exhausted; delta retained without resetting the budget');
+  const capacity=structuredClone(run);
+  if(budgetStatus(capacity)?.expired&&!autoRenewBudget(capacity))fail('time window exhausted; delta retained without resetting the budget');
   if(proposalHash(entry)!==entry.proposalHash||hash(readFileSync(join(entry.archive,'plan.md'),'utf8'))!==entry.planHash || hash(readFileSync(entry.review.output))!==entry.review.hash)fail('review/proposal bytes changed');
+  if(capacity.budgetRenewals)run.budgetRenewals=capacity.budgetRenewals;
   entry.phase='applying';saveRun(dir,run);
   for(const change of entry.lanes) {
     const lane=run.lanes.find(l=>l.slug===change.slug),tree=laneTree(dir,run,lane);

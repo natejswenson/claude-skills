@@ -37,7 +37,7 @@ import {
 import { latestRound, nextRound, reviewBriefPath, reviewPath, roundsExhausted } from './reviews.mjs';
 import {
   MAX_REVIEW_ROUNDS, candidatesPath, currentRound, finderBriefPath, finderProfile, fixBriefPath, reviewCap,
-  ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
+  ciFailureFingerprint, fixReportPath, openMajors, repeatedReviewMajors, reviewCapacityAvailable, reviewExhausted, stackedOn, verdictsPath, verifierBriefPath,
   verifierProfile,
 } from './prreview.mjs';
 import { readTimings } from './timings.mjs';
@@ -409,7 +409,7 @@ function afterFixBrief(dir, run, lane, entry, head, ctx) {
       });
     }
   }
-  if (reviewExhausted(lane)) return exhaustedStop(lane);
+  if (!reviewCapacityAvailable(lane)) return exhaustedStop(lane);
   if (run.harness && !verificationCurrent(dir, run, lane)) return act('verify-run', { lane: lane.slug, phase: 'review' }, 'fixer changed HEAD — executing reviewed obligations before another review');
   return act('review-brief', { lane: lane.slug }, `${lane.slug}: fix pushed — opening round ${entry.round + 1}`);
 }

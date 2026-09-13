@@ -505,6 +505,14 @@
       "fixtures": [],
       "update_command": "node --test scripts/tests/guidance-scope.test.mjs",
       "rationale": "The #366 planning brief imported unrelated fixture and scratch rules. Both hosts must retain root and applicable nested guidance while excluding unrelated instructions; directory scopes must include their own descendants. Observed failing against the previous renderer/resolver."
+    },
+    {
+      "id": "published-amendment-recovery",
+      "kind": "trap",
+      "test": "scripts/tests/amendment-recovery.test.mjs",
+      "fixtures": [],
+      "update_command": "node --test scripts/tests/amendment-recovery.test.mjs",
+      "rationale": "The retained #367/#368 amendment failures are reproduced through the public CLI on both Claude and Codex: already resolved plan IDs stay resolved without new repair evidence, while open blockers cannot be cleared; rejected immutable output gets a fresh archived attempt only after explicit native release/reason; a single directed future code-review round survives amendment and is consumed once by next on an unchanged head; expired autonomous proposal/application windows renew only within their existing cumulative cap. Prior run and worker outputs are synthetic; Git, verification, attempts, and controller transitions are real local execution."
     }
   ]
 }
