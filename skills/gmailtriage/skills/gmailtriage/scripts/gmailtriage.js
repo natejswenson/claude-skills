@@ -294,7 +294,10 @@ async function cmdPropose(args) {
       withheld.slice(0, Number(args.showWithheld ?? 8)).map((w) => [w.from, w.count, w.why])));
     // State the real count. "most of these can still be sorted" is a claim,
     // and when it is 2 of 16 it is a wrong one.
-    console.log(`withheld from TRASHING, not from sorting — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
+    const withholding = withheld.some((w) => w.kind === 'uncertain-sender')
+      ? 'uncertain senders are withheld from both trashing and sorting'
+      : 'withheld from TRASHING, not from sorting';
+    console.log(`${withholding} — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
   }
 
   console.log('');

@@ -168,10 +168,19 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     c.ruleIds.add(rule.id);
   }
 
+  const withheld = [];
   const byAddr = new Map();
   for (const t of threads) {
     const addr = resolveSender(t).address;
-    if (!addr) continue;
+    if (!addr) {
+      // These threads cannot safely form sender clusters, but still belong in
+      // the reported sample. Keep each separate from any valid sender group.
+      withheld.push({ from: String(t.from ?? '(missing sender)'), count: 1,
+        bulkCount: t.hasUnsubscribe ? 1 : 0, sample: t.subject ?? '',
+        kind: 'uncertain-sender',
+        why: 'sender is missing, malformed or ambiguous — no trash or sort proposal; inspect the sender evidence' });
+      continue;
+    }
     // Excluded here rather than filtered out of `threads` up front, so
     // `sampled` still reports what was actually read.
     if (claimedBy.has(addr)) continue;
@@ -180,7 +189,6 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   }
 
   const candidates = [];
-  const withheld = [];
   const below = [];
   for (const [addr, group] of byAddr) {
     // the whole address, because the marker is often in the local part
@@ -220,7 +228,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     // withholds sorting: auto-archiving a human's mail out of the inbox is
     // the most damaging thing this skill could do, and a cluster with no bulk
     // marker is exactly the case where it cannot tell.
-    if (w.kind === 'no-bulk-marker') continue;
+    if (w.kind === 'no-bulk-marker' || w.kind === 'uncertain-sender') continue;
     // A protected SUBJECT proves the cluster matters; it does not prove the
     // sender is an institution rather than a person, so still require bulk.
     if (w.kind === 'protected-subject' && w.bulkCount === 0) continue;
@@ -262,8 +270,13 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     ? { kind: 'all-sent-only',
         text: `the sample held only mail you sent yourself — nothing here is triage material.` }
     : null;
+  const uncertainCount = withheld.filter((w) => w.kind === 'uncertain-sender').length;
+  const uncertainReason = uncertainCount > 0
+    ? { kind: 'uncertain-sender',
+        text: `${uncertainCount} thread(s) could not be grouped because their sender evidence is missing, malformed or ambiguous. Inspect the withheld rows before writing sender rules; other senders may already be covered or withheld by other guards.` }
+    : null;
   const reason = candidates.length > 0 ? null
-    : allSentOnly ?? (below.length > 0
+    : allSentOnly ?? uncertainReason ?? (below.length > 0
       ? { kind: 'below-threshold', best: below[0].count, minCount,
           text: `no sender reached the threshold of ${minCount}. The largest unguarded cluster has ${below[0].count} (${below[0].from}) — re-run with --min-count ${below[0].count} to see it.` }
       : withheld.length > 0
@@ -283,7 +296,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   // produced it — same contract as `reason`, for the same reason: a bare empty
   // table reads as a broken skill.
   const sortReason = sortable.length > 0 ? null
-    : allSentOnly ?? (withheld.some((w) => w.kind !== 'no-bulk-marker')
+    : allSentOnly ?? uncertainReason ?? (withheld.some((w) => w.kind !== 'no-bulk-marker')
       ? { kind: 'below-threshold',
           text: `nothing reached the threshold of ${minCount} to be worth its own folder. Re-run with a lower \`--min-count\` to see the near misses.` }
       : withheld.length > 0

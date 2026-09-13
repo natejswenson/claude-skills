@@ -72,7 +72,9 @@ test('malformed sender input cannot match or become a proposal', () => {
     assert.equal(matches(exact, t), false, JSON.stringify(from));
     assert.equal(matches(domain, t), false, JSON.stringify(from));
     const p = propose([t], { minCount: 1 });
-    assert.equal([...p.candidates, ...p.sortable, ...p.withheld, ...p.below].length, 0, JSON.stringify(from));
+    assert.equal([...p.candidates, ...p.sortable, ...p.below].length, 0, JSON.stringify(from));
+    assert.equal(p.withheld.length, 1, JSON.stringify(from));
+    assert.equal(p.withheld[0].kind, 'uncertain-sender', JSON.stringify(from));
     assert.equal(subdivide([t], { parent: 'Shopping' }).clusters.length, 0);
   }
 });
@@ -296,4 +298,37 @@ test('category sender evidence cannot fill a missing selected sender', () => {
       assert.equal(matches(exact, snapshots[0]), true);
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+
+test('proposals report uncertain senders without claiming a clean or covered sample', () => {
+  for (const uncertain of [
+    thread('offers@shop.example', { senderAmbiguous: true }),
+    thread('offers@shop.example, other@shop.example'),
+    thread(undefined),
+  ]) {
+    for (const known of [[], [thread('known@shop.example', { id: 'known' })]]) {
+      const result = propose([uncertain, ...known], {
+        minCount: 1, rules: [rule({ fromAddress: 'known@shop.example' })],
+      });
+      assert.equal(result.sampled, 1 + known.length);
+      assert.equal(result.withheld.length, 1);
+      assert.equal(result.withheld[0].kind, 'uncertain-sender');
+      assert.equal(result.withheld[0].count, 1);
+      assert.match(result.withheld[0].why, /sender.*missing, malformed or ambiguous/);
+      assert.equal(result.reason.kind, 'uncertain-sender');
+      assert.equal(result.sortReason.kind, 'uncertain-sender');
+      assert.match(result.reason.text, /1 thread/);
+      assert.equal(result.claimedThreads, known.length);
+      assert.equal(result.candidates.length, 0);
+      assert.equal(result.sortable.length, 0);
+    }
+  }
+  const mixed = propose([
+    thread('offers@shop.example', { senderAmbiguous: true }),
+    thread('offers@shop.example', { id: 'valid' }),
+  ], { minCount: 1 });
+  assert.equal(mixed.withheld.length, 1);
+  assert.equal(mixed.candidates.length, 1);
+  assert.equal(mixed.candidates[0].count, 1);
 });
