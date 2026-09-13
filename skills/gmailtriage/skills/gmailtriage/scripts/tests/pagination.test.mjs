@@ -57,6 +57,49 @@ test('multiple verbatim pages dedupe with union, later category membership and c
   assert.deepEqual(plan(), actions);
 });
 
+test('paginated sender conflicts stay withheld while confirmed outcomes update only the exact match', (t) => {
+  const f = fixture(t), path = name => join(f.dir, name + '.json');
+  const raw = (id, sender = 'sender@example.test') => ({ ...thread(id),
+    messages: [{ sender, subject: 'Invented offer', labelIds: ['INBOX'] }] });
+  ok(f.ingest({
+    inbox: f.source([
+      f.record('inbox-1.json', page([raw('good'), raw('page-conflict'), raw('category-conflict')], 'next')),
+      f.record('inbox-2.json', page([raw('page-conflict', 'other@example.test')]), 'next'),
+    ]),
+    promos: f.source([
+      f.record('promos-1.json', page([{ id: 'good' }], 'more')),
+      f.record('promos-2.json', page([raw('category-conflict', 'other@example.test'), { id: 'outside' }]), 'more'),
+    ], { query: 'category:promotions' }),
+  }));
+  const original = readFileSync(path('threads'), 'utf8');
+  assert.deepEqual(f.read('threads.json').filter(x => x.senderAmbiguous).map(x => x.id),
+    ['page-conflict', 'category-conflict']);
+  assert.equal(f.read('threads.json').length, 3, 'category-only IDs cannot expand the mutation scope');
+  assert.equal(f.read('coverage.json').sources.promos.state, 'complete');
+  f.put('rules.json', { version: 1, rules: [{ id: 'exact', action: 'label', label: 'Filed',
+    match: { fromAddress: 'sender@example.test' }, note: 'Invented approved exact sender rule' }] });
+  ok(cli('plan', '--threads', path('threads'), '--labels', path('labels'), '--rules', path('rules'), '--out', path('plan')));
+  assert.deepEqual(f.read('plan.json').taken.map(x => x.threadId), ['good']);
+  ok(cli('apply', '--plan', path('plan'), '--receipt', path('receipt'), '--update-threads', path('threads')));
+  assert.equal(readFileSync(path('threads'), 'utf8'), original, 'preparation must not claim observed effects');
+  for (const action of ['add', 'remove']) {
+    const receipt = f.read('receipt.json');
+    const tuples = receipt.operations.filter(o => o.action === action)
+      .map(({ id, threadId, action, label }) => ({ id, threadId, action, label }));
+    assert.ok(tuples.length > 0);
+    f.put('outcomes.json', { runId: receipt.runId, outcomes: tuples });
+    ok(cli('record', '--receipt', path('receipt'), '--outcomes', path('outcomes'), '--begin'));
+    f.put('outcomes.json', { runId: receipt.runId,
+      outcomes: tuples.map(o => ({ ...o, status: 'confirmed', evidence: 'success' })) });
+    ok(cli('record', '--receipt', path('receipt'), '--outcomes', path('outcomes')));
+  }
+  const after = f.read('threads.json');
+  assert.deepEqual(after.filter(x => x.id !== 'good'), JSON.parse(original).filter(x => x.id !== 'good'));
+  assert.ok(after.find(x => x.id === 'good').labelIds.includes('Filed'));
+  assert.ok(!after.find(x => x.id === 'good').labelIds.includes('INBOX'));
+  assert.ok(f.read('receipt.json').operations.every(o => o.threadId === 'good' && o.status === 'confirmed'));
+});
+
 test('coverage distinguishes exhaustion, caps and interruptions while retaining partial data', (t) => {
   const f = fixture(t);
   const first = f.record('first.json', page([thread('one')], 'a'));

@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import { undoPlan } from '../lib/plan.mjs';
+import { normalizeReceipts } from '../../evals/baseline/normalize-receipts.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -11,8 +14,7 @@ const SKILL = join(HERE, '..', '..');
 const BASELINE = join(SKILL, 'evals', 'baseline');
 const manifest = JSON.parse(readFileSync(join(BASELINE, 'MANIFEST.json'), 'utf8'));
 
-// Pinned against a real run of gmailtriage against a real Gmail mailbox —
-// its real inbox and its real label list, redacted by evals/baseline/redact.mjs.
+// Pinned against an invented corpus shaped after real runs; no private mailbox data.
 //
 //   REFRESH WITH:  bash evals/baseline/refresh.sh
 //
@@ -207,8 +209,9 @@ test('subdivide never names a cluster after the vendor that hosts it', () => {
   // tempting their domain looks.
   assert.ok(cands.sortCandidates.length >= 1, 'no cluster was housed at all — the child matcher has stopped matching');
   for (const r of cands.sortCandidates) {
-    assert.ok(!/greenhouse|workable|lever|ashby/.test(r.match.from),
-      `a vendor-hosted cluster reached the ready-to-add list: ${r.match.from}`);
+    assert.equal(typeof r.match.fromDomain, 'string', 'a ready domain cluster must name its exact domain');
+    assert.ok(!/greenhouse|workable|lever|ashby/.test(r.match.fromDomain),
+      `a vendor-hosted cluster reached the ready-to-add list: ${r.match.fromDomain}`);
   }
   assert.ok(cands.unhoused.length >= 2, 'the vendor-hosted clusters stopped being held back');
 });
@@ -280,15 +283,56 @@ test('a merge labels before it unlabels, and records a fold that moved nothing',
   const out = readB('merge.txt');
   const iLabel = out.indexOf('LABEL "');
   const iUnlabel = out.indexOf('remove "');
-  const iDelete = out.indexOf('delete the "');
-  assert.ok(iUnlabel > 0 && iDelete > iUnlabel, 'the delete must come after the unlabel');
+  assert.ok(iUnlabel > 0);
+  assert.doesNotMatch(out, /finally, delete/);
+  assert.match(out, /fresh whole-mailbox empty check/);
+  assert.match(out, /confirmed=0/);
   if (iLabel >= 0) assert.ok(iLabel < iUnlabel, 'the target label must go on before the source comes off');
   assert.match(out, /Removing the old label first leaves the mail in neither folder/);
 
   // The real case moved no mail — its one thread already carried the target —
   // and it must STILL be recorded, or the deleted folder cannot come back.
-  const receipt = JSON.parse(readFileSync(join(BASELINE, 'merge-receipt.json'), 'utf8'));
+  const receipt = JSON.parse(readFileSync(join(BASELINE, 'merge-pending-receipt.json'), 'utf8'));
   assert.ok(receipt.entries.length >= 1, 'a merge that moved no mail recorded nothing, so it cannot be undone');
   assert.equal(receipt.entries[0].action, 'unlabel');
   assert.ok(receipt.entries[0].removed.length >= 1);
+  assert.ok(receipt.operations.every((o) => o.status === 'pending'));
+});
+
+test('historical receipts retain exact bytes and legacy inverse semantics', () => {
+  assert.equal(manifest.legacyReceipts.length, 3);
+  for (const a of manifest.legacyReceipts) {
+    const bytes = readFileSync(join(BASELINE, a.path));
+    assert.equal(bytes.length, a.bytes);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), a.sha256);
+    const r = JSON.parse(bytes), u = undoPlan(r);
+    assert.equal(u.total, r.entries.length);
+    assert.equal(u.untrash.length, r.entries.filter((e) => (e.action ?? 'trash') === 'trash').length);
+    assert.deepEqual(u.reinbox.map((e) => e.threadId), r.entries.filter((e) => e.archived).map((e) => e.threadId));
+    assert.match(sh(`node scripts/gmailtriage.js undo --receipt evals/baseline/${a.path}`, SKILL), /legacy: execution evidence unavailable/);
+  }
+});
+test('normalization refuses malformed and inconsistent identities without hiding effects', () => {
+  const out = mkdtempSync(join(tmpdir(), 'gt-normalize-'));
+  const fixtures = () => {
+    for (const [i, prefix] of ['', 'retro-', 'merge-'].entries()) {
+      const r = JSON.parse(readFileSync(join(BASELINE, prefix + 'pending-receipt.json')));
+      r.runId = `10000000-0000-4000-8000-00000000000${i}`;
+      writeFileSync(join(out, prefix + 'pending-receipt.json'), JSON.stringify(r, null, 2) + '\n');
+      writeFileSync(join(out, prefix === 'merge-' ? 'merge.txt' : prefix + 'apply.txt'), 'runId=' + r.runId + '\n');
+    }
+  };
+  fixtures();
+  const file = join(out, 'pending-receipt.json'), r = JSON.parse(readFileSync(file));
+  r.operations[0].status = 'unknown'; r.operations[0].label = 'Changed'; r.count = 123;
+  writeFileSync(file, JSON.stringify(r, null, 2) + '\n');
+  normalizeReceipts(out);
+  const normalized = JSON.parse(readFileSync(file));
+  assert.equal(normalized.operations[0].status, 'unknown');
+  assert.equal(normalized.operations[0].label, 'Changed');
+  assert.equal(normalized.count, 123);
+  fixtures(); writeFileSync(join(out, 'apply.txt'), 'runId=wrong');
+  assert.throws(() => normalizeReceipts(out), /inconsistent/);
+  fixtures(); r.runId = 'bad'; writeFileSync(file, JSON.stringify(r));
+  assert.throws(() => normalizeReceipts(out), /UUID/);
 });

@@ -7,7 +7,7 @@
  * depend on a model behaving well lives here — which threads a rule takes,
  * whether a thread was authorised, and what was actually moved.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync, renameSync, openSync, closeSync, fsyncSync, unlinkSync, linkSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -16,6 +16,8 @@ import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYS
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
 import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
+import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
+import { randomUUID, createHash } from 'node:crypto';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,7 +74,7 @@ const repoRootOf = (start) => {
  * own state dir is exempt — it lives under $HOME on purpose, and a home
  * directory that happens to be a dotfiles repo must not brick the rule file.
  */
-const writeJson = (p, v, { allowRepo = false } = {}) => {
+const writeJson = (p, v, { allowRepo = false, atomic = false, exclusive = false } = {}) => {
   const f = resolve(p);
   if (!allowRepo && !(f + sep).startsWith(STATE_DIR + sep)) {
     const repo = repoRootOf(dirname(f));
@@ -81,7 +83,17 @@ const writeJson = (p, v, { allowRepo = false } = {}) => {
     }
   }
   mkdirSync(dirname(f), { recursive: true, mode: 0o700 });
-  writeFileSync(f, JSON.stringify(v, null, 2) + '\n', { mode: 0o600 });
+  const target = atomic ? f + '.' + randomUUID() + '.tmp' : f;
+  try {
+    writeFileSync(target, JSON.stringify(v, null, 2) + '\n', { mode: 0o600, flag: atomic || exclusive ? 'wx' : 'w' });
+    if (atomic) {
+      const fd = openSync(target, 'r');
+      try { fsyncSync(fd); } finally { closeSync(fd); }
+      if (exclusive) { linkSync(target, f); unlinkSync(target); } else renameSync(target, f);
+      const dir = openSync(dirname(f), 'r');
+      try { fsyncSync(dir); } finally { closeSync(dir); }
+    }
+  } finally { if (atomic && existsSync(target)) unlinkSync(target); }
   return f;
 };
 
@@ -294,7 +306,10 @@ async function cmdPropose(args) {
       withheld.slice(0, Number(args.showWithheld ?? 8)).map((w) => [w.from, w.count, w.why])));
     // State the real count. "most of these can still be sorted" is a claim,
     // and when it is 2 of 16 it is a wrong one.
-    console.log(`withheld from TRASHING, not from sorting — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
+    const withholding = withheld.some((w) => w.kind === 'uncertain-sender')
+      ? 'uncertain senders are withheld from both trashing and sorting'
+      : 'withheld from TRASHING, not from sorting';
+    console.log(`${withholding} — ${sortable.length} of these ${withheld.length} appear in the sort table above.`);
   }
 
   console.log('');
@@ -446,9 +461,10 @@ async function cmdMerge(args) {
     return;
   }
 
-  const receipt = { at: args.at ?? new Date().toISOString(), count: m.total, entries: mergeReceiptEntries(m) };
+  const receipt = pendingReceipt(mergeReceiptEntries(m), receiptOptions(args));
   const out = args.receipt ?? join(RECEIPTS_DIR, `merge-${receipt.at.replace(/[:.]/g, '-')}.json`);
-  console.error(`wrote ${writeJson(out, receipt, args)}`);
+  console.error(`wrote ${writeJson(out, receipt, { ...args, atomic: true, exclusive: true })}`);
+  printReceipt(receipt);
 
   if (m.label.length) {
     console.log(`\nfirst, LABEL "${m.to}" onto exactly these thread ids:`);
@@ -456,9 +472,9 @@ async function cmdMerge(args) {
   } else {
     console.log(`\nevery thread already carries "${m.to}", so nothing needs labelling first.`);
   }
-  console.log(`\nTHEN — not before — remove "${m.from}" from exactly these thread ids:`);
+  console.log(`\nAFTER confirmed target additions — remove "${m.from}" from exactly these thread ids:`);
   console.log(m.unlabel.map((e) => e.threadId).join('\n'));
-  console.log(`\nfinally, delete the "${m.from}" label itself. It is empty by then, so nothing is lost with it.`);
+  console.log(`\nSeparate folder deletion requires a fresh whole-mailbox empty check for "${m.from}".`);
   console.log('\ndo these in that order. Removing the old label first leaves the mail in neither folder.');
 }
 
@@ -820,6 +836,79 @@ async function cmdPlan(args) {
   if (args.out) console.error(`wrote ${writeJson(args.out, p, args)}`);
 }
 
+function receiptOptions(args) {
+  if (args.receipt && args.updateThreads && resolve(args.receipt) === resolve(args.updateThreads)) throw new Error('receipt and snapshot must be separate paths');
+  const snapshot = args.updateThreads ? resolve(args.updateThreads) : null;
+  if (snapshot) {
+    const current = readJson(snapshot, '--update-threads');
+    const ledgerPath = snapshot + '.receipt-state.json';
+    if (existsSync(ledgerPath)) {
+      const ledger = readJson(ledgerPath, 'snapshot receipt state');
+      const snapshotHash = createHash('sha256').update(JSON.stringify(current)).digest('hex');
+      if (ledger.pending) {
+        throw new Error('snapshot has an outstanding pending replay; no run prepared. Recover the existing receipt against its original snapshot before planning another run. For a fresh mailbox sample, ingest --out-threads <new-unused-path>, re-plan, and bind --update-threads to that new path.');
+      }
+      if (ledger.applied.length && ledger.snapshotHash !== snapshotHash) {
+        throw new Error('snapshot was refreshed outside its application ledger; no run prepared. For a fresh mailbox sample, ingest --out-threads <new-unused-path>, re-plan, and bind --update-threads to that new path. Keep the old snapshot and ledger for existing receipt recovery.');
+      }
+    }
+  }
+  return { at: args.at ?? new Date().toISOString(), snapshot,
+    labelIndex: args.labels ? Object.fromEntries(readLabelIndex(args.labels)) : {} };
+}
+function printReceipt(r) {
+  console.log(`runId=${r.runId} ${summary(r)}`);
+  console.log('Authorization alone is not completion. Before each call, record --begin; then record its outcome. Unknown/failed operations require fresh membership reconciliation.');
+}
+async function cmdRecord(args) {
+  const modes = ['begin', 'reconcile', 'retry', 'status', 'recover'].filter((k) => args[k]);
+  if (modes.length > 1) throw new Error('choose one record mode');
+  const path = resolve(args.receipt ?? '');
+  const mode = modes[0] ?? 'outcome';
+  const r = withReceiptLock(path, (old) => {
+    if (!checkReceipt(old)) throw new Error('legacy: execution evidence unavailable');
+    if (mode === 'status') return old;
+    const next = mode === 'recover' ? old : transition(old, readJson(args.outcomes ?? '', '--outcomes'), mode);
+    if (JSON.stringify(next) !== JSON.stringify(old)) writeJson(path, next, { ...args, atomic: true });
+    if (next.snapshot) {
+      try {
+        withReceiptLock(next.snapshot, (snapshot) => {
+          // The snapshot and its application ledger share one writer lock across runs.
+          // A durable pending image closes the crash window between their two writes.
+          const ledgerPath = next.snapshot + '.receipt-state.json';
+          let ledger = existsSync(ledgerPath) ? readJson(ledgerPath, 'snapshot receipt state') : { applied: [] };
+          if (ledger.pending) {
+            writeJson(next.snapshot, ledger.pending, { ...args, atomic: true });
+            snapshot = ledger.pending;
+            delete ledger.pending;
+            writeJson(ledgerPath, ledger, { ...args, atomic: true });
+          }
+          const hash = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+          if (ledger.applied.length && ledger.snapshotHash !== hash(snapshot)) {
+            throw new Error('snapshot does not match its application ledger; reconcile the snapshot and ledger before recovery');
+          }
+          const key = (o) => next.runId + ':' + o.id;
+          const operations = next.operations.filter((o) => o.status === 'confirmed' && !ledger.applied.includes(key(o)));
+          if (!operations.length) return;
+          const updated = replay({ ...next, operations }, snapshot);
+          ledger = { applied: [...ledger.applied, ...operations.map(key)], snapshotHash: hash(updated), pending: updated };
+          writeJson(ledgerPath, ledger, { ...args, atomic: true });
+          writeJson(next.snapshot, updated, { ...args, atomic: true });
+          delete ledger.pending;
+          writeJson(ledgerPath, ledger, { ...args, atomic: true });
+        });
+      }
+      catch (e) { throw new Error(`receipt preserved; snapshot replay incomplete: ${e.message}; restore the bound path and record --recover`); }
+    }
+    return next;
+  });
+  printReceipt(r);
+  if (mode === 'begin') console.log('Begun operation IDs: ' + readJson(args.outcomes, '--outcomes').outcomes.map((o) => o.id).join(', '));
+  if (r.operations.some((o) => o.attempt)) console.log('Retried operations require the current attempt field in every begin, outcome, reconciliation and retry tuple: ' + JSON.stringify(r.operations.filter((o) => o.attempt).map(({ id, attempt }) => ({ id, attempt }))));
+  // Status/recovery never turn uncertainty into executable instructions.
+  if (!['status', 'recover'].includes(mode)) console.log('Dispatchable pending IDs: ' + dispatchable(r).map((o) => o.id).join(', '));
+}
+
 // ── apply ───────────────────────────────────────────────────────────────────
 
 async function cmdApply(args) {
@@ -836,7 +925,7 @@ async function cmdApply(args) {
   const entries = [...trashed, ...filed];
   if (entries.length === 0) throw new Error('apply: this plan authorises nothing — there is nothing to do');
 
-  const receipt = buildReceipt(entries, { at: args.at ?? new Date().toISOString() });
+  const receipt = buildReceipt(entries, receiptOptions(args));
 
   // Keyed on the rule id alone: a rule has exactly one action and one
   // destination, so a composite key would buy nothing and would split wrongly
@@ -865,42 +954,8 @@ async function cmdApply(args) {
   // flow asks anyone to pass: every receipt that landed in a session scratchpad
   // died with the session, and three real runs are un-undoable because of it.
   const out = args.receipt ?? join(RECEIPTS_DIR, `${receipt.at.replace(/[:.]/g, '-')}.json`);
-  console.error(`wrote ${writeJson(out, receipt, args)}`);
-
-  // Replay the authorised moves onto the working snapshot, so a re-plan
-  // converges without re-fetching — and without the agent hand-editing JSON,
-  // which is how a mid-run rule addition used to cost three manual edits.
-  // The receipt above stays the source of truth; this mutates only the
-  // snapshot the next `plan` reads.
-  if (args.updateThreads) {
-    const snapPath = resolve(args.updateThreads);
-    const snapshot = readJson(snapPath, 'apply: --update-threads <threads.json>');
-    const byId = new Map(entries.map((e) => [e.threadId, e]));
-    const updated = snapshot
-      .filter((t) => byId.get(t.id)?.action !== 'trash')
-      .map((t) => {
-        const e = byId.get(t.id);
-        if (!e || e.action !== 'label') return t;
-        // The added LABEL NAMES go into labelIds, not into a `labels` array.
-        // `resolveThreadLabels` passes an entry it cannot resolve through
-        // verbatim, so a name mixed in among the opaque ids resolves to itself
-        // — while a pre-populated `labels` array would short-circuit the
-        // resolver entirely and every OTHER label id on the thread would stop
-        // resolving, which un-converges exactly the rules this exists to
-        // converge.
-        const adds = (e.adds ?? e.labels ?? [e.label]).filter(Boolean);
-        let labelIds = [...new Set([...(t.labelIds ?? []), ...adds])];
-        let labels = Array.isArray(t.labels) && t.labels.length ? [...new Set([...t.labels, ...adds])] : null;
-        if (e.archive) {
-          const notInbox = (l) => String(l).toUpperCase() !== 'INBOX';
-          labelIds = labelIds.filter(notInbox);
-          if (labels) labels = labels.filter(notInbox);
-        }
-        return labels ? { ...t, labelIds, labels } : { ...t, labelIds };
-      });
-    writeJson(snapPath, updated, args);
-    console.error(`updated ${snapPath} — a re-plan over it now converges without re-fetching`);
-  }
+  console.error(`wrote ${writeJson(out, receipt, { ...args, atomic: true, exclusive: true })}`);
+  printReceipt(receipt);
 
   // Three separate instruction blocks, because they are three different calls.
   // Merging them would hand the agent a list of ids and leave it to infer what
@@ -929,7 +984,7 @@ async function cmdApply(args) {
   }
   const toArchive = filed.filter((e) => e.archive);
   if (toArchive.length) {
-    console.log('\nthen REMOVE the INBOX label from exactly these thread ids — this is the "move":');
+    console.log('\nafter confirmed additions, REMOVE the INBOX label from exactly these thread ids — this is the "move":');
     console.log(toArchive.map((e) => e.threadId).join('\n'));
   }
   // Folder mode preserves membership regardless of where the thread started.
@@ -970,8 +1025,9 @@ async function cmdUndo(args) {
     console.log(`undoing the last recorded run — ${args.receipt.replace(homedir(), '~')} (${dated[0].at || 'no timestamp'})\n`);
   }
   const r = readJson(args.receipt ?? '', 'undo: --receipt <receipt.json>');
-  const entries = r.entries ?? [];
-  if (entries.length === 0) throw new Error('undo: that receipt records no threads');
+  const entries = confirmedEntries(r);
+  if (checkReceipt(r)) console.log(summary(r));
+  else console.log('legacy: execution evidence unavailable');
 
   // An entry with no `action` was written by 0.1.0, which could only trash.
   const u = undoPlan(r);
@@ -984,7 +1040,7 @@ async function cmdUndo(args) {
       // had filed by hand before the run.
       (e.action ?? 'trash') === 'trash'
         ? 'trashed'
-        : `filed → ${(Array.isArray(e.added) && e.added.length ? e.added : [e.label]).join(' + ')}${e.archived ? ' (left inbox)' : ''}`,
+        : `filed → ${(Array.isArray(e.added) ? e.added : [e.label]).join(' + ')}${e.archived ? ' (left inbox)' : ''}`,
       trim(e.from, 24), trim(e.subject, 34),
     ])));
   console.log('');
@@ -1002,10 +1058,8 @@ async function cmdUndo(args) {
     console.log(`\nremove the "${label}" label from exactly these thread ids:`);
     console.log(es.map((e) => e.threadId).join('\n'));
   }
-  // Reversing a merge means putting the folded-away folder back — and it was
-  // deleted at the end of that merge, so it has to be created again first.
-  // Emitting a bare `label_thread` here would fail against an id that no
-  // longer exists.
+  // Ensure a source label exists before restoring confirmed membership.
+  // Thread receipts do not establish whether a separate folder deletion occurred.
   for (const { label, entries: es } of u.relabel ?? []) {
     console.log(`\nre-create the "${label}" label if it is gone, then ADD it back to exactly these thread ids:`);
     console.log(es.map((e) => e.threadId).join('\n'));
@@ -1059,12 +1113,22 @@ async function cmdIngest(args) {
   if (!manifest) for (const name of SOURCE_NAMES) if (args[name]) legacy[name] = readJson(args[name], name);
   const { sources, coverage } = ingestSources(manifest,
     path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy);
-  const { inbox, nolabel } = sources;
-  const promoIds = sources.promos.map(t => t.id), updateIds = sources.updates.map(t => t.id);
+  const { inbox, nolabel, promos, updates } = sources;
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
   const merged = mergeThreadSources(inbox, nolabel);
-  const threads = applyCategories(merged, promoIds, updateIds);
+  const selectedSenders = new Map(merged.map((t) => [t.id, t.from]));
+  // Category fetches establish membership without expanding scope, but any
+  // sender evidence they supply must still constrain exact sender selection.
+  const categorySenders = [...promos, ...updates].filter((t) => selectedSenders.has(t.id))
+    .map((t) => ({ id: t.id, from: t.from,
+      ...(t.senderAmbiguous ? { senderAmbiguous: true } : {}) }));
+  // Category evidence may withhold an exact match, but must not fill a missing
+  // selected sender and thereby change legacy matching or ingest validation.
+  const withSenderEvidence = mergeThreadSources(merged, categorySenders)
+    .map((t) => ({ ...t, from: selectedSenders.get(t.id) }));
+  const threads = applyCategories(withSenderEvidence,
+    promos.map((t) => t.id), updates.map((t) => t.id));
 
   console.log(table(['Source', 'Threads', 'New'], [
     ['in:inbox', inbox.length, inbox.length],
@@ -1138,8 +1202,10 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
   gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope in:inbox|label:<Folder>] [--preview N] [--out <plan.json>]
-  gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>]
+  gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>] [--labels <labels.json>]
                         [--receipt <f.json>] [--at <iso>]
+  gmailtriage record    --receipt <receipt.json> --outcomes <json> [--begin|--reconcile|--retry]
+  gmailtriage record    --receipt <receipt.json> [--status|--recover]
   gmailtriage undo      --receipt <f.json> | --last
 
 \`ingest\` takes the RAW output of the Gmail search_threads / list_labels tools,
@@ -1179,6 +1245,7 @@ async function main() {
       case 'labels': return await cmdLabels(args);
       case 'plan': return await cmdPlan(args);
       case 'apply': return await cmdApply(args);
+      case 'record': return await cmdRecord(args);
       case 'undo': return await cmdUndo(args);
       default:
         console.log(USAGE);

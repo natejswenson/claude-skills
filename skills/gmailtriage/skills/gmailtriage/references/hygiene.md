@@ -92,24 +92,22 @@ solve.
 gmailtriage merge --from Reciepts --to Receipts --threads all.json
 ```
 
-Three operations, and **the order is the whole of it**:
+Merge uses the same pending receipt and `record` protocol as apply:
 
-1. apply `<to>` to every thread carrying `<from>` that lacks it;
-2. *then* remove `<from>` from all of them;
-3. *then* delete the `<from>` label, which is empty by now.
+1. Begin and execute target additions; record their individual outcomes.
+2. Only after a thread's target additions are confirmed, begin its source removal
+   and record the outcome. If the target was already present, only removal is pending.
+3. Report confirmed and incomplete operation counts. Folder deletion is separate:
+   require a fresh whole-mailbox empty check and the user's authorization.
 
-Reversed, every thread spends the gap between two API calls in neither folder —
-and a run that dies in that gap leaves it there permanently, with a receipt
-describing a mailbox that no longer exists.
+Pass `--labels labels.json --update-threads all.json` to bind an opaque working
+snapshot. Authorization leaves it unchanged; only confirmations replay. An
+interrupted or ambiguous attempt needs fresh host membership reconciliation,
+never a blind merge rerun.
 
-**A merge that moves no mail is still a merge.** The real `Reciepts` case was
-one thread that already carried `Receipts`, so the whole operation was "remove
-the label, delete the folder". Recording nothing would have made it
-unreversible — the folder is gone, and only the receipt knows it existed.
-
-`undo` reverses a merge by re-creating the folded folder and putting it back on
-exactly the threads that had it, and by removing the target label from only the
-threads the merge added it to — never from the ones that already had it.
+Undo restores only confirmed source removals and removes only confirmed target
+additions. It may ensure the source label exists before restoring membership;
+it does not claim the folder was deleted or restored without evidence.
 
 ## Coverage is the number to watch
 

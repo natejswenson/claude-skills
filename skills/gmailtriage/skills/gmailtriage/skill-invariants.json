@@ -90,7 +90,7 @@
         "command": "node scripts/gmailtriage.js audit"
       },
       {
-        "step": "fold one folder into another in the only safe order — apply the target label, then remove the source, then delete the source folder — and write a receipt even when no mail moved, so the deleted folder can be restored",
+        "step": "prepare pending merge operations; confirm target additions before source removal; separately verify emptiness before authorized folder deletion",
         "command": "node scripts/gmailtriage.js merge"
       },
       {
@@ -114,11 +114,11 @@
         "command": "node scripts/gmailtriage.js plan"
       },
       {
-        "step": "authorise exactly the threads the plan named, per action, refuse anything it did not, and write a receipt of every move",
+        "step": "authorise exactly the planned threads and prepare a durable pending receipt",
         "command": "node scripts/gmailtriage.js apply"
       },
       {
-        "step": "reverse every move listed in a previous run's receipt — untrash, unlabel, and put back in the inbox",
+        "step": "reverse only confirmed effects in a new receipt; mark legacy execution evidence unavailable",
         "command": "node scripts/gmailtriage.js undo"
       }
     ],
@@ -310,7 +310,7 @@
       "test": "scripts/tests/run-safety.test.mjs",
       "fixtures": [],
       "update_command": "bash evals/baseline/refresh.sh",
-      "rationale": "the mid-run hand-edits coming back. apply --update-threads replays the authorised moves onto the working snapshot; a re-plan over it must take zero threads, or every mid-run rule addition costs hand-edited JSON again — and a hand-edit that seeds resolved label names wrong is exactly how a run stops converging while every table still reads correctly."
+      "rationale": "the mid-run hand-edits coming back. apply --update-threads binds the snapshot unchanged; record replays only confirmed effects, and a re-plan after full confirmation must take zero threads, or every mid-run rule addition costs hand-edited JSON again — and a hand-edit that seeds resolved label names wrong is exactly how a run stops converging while every table still reads correctly."
     },
     {
       "id": "audit-catches-a-rule-filing-nowhere",

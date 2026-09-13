@@ -6,22 +6,16 @@
  * model behaving well: which threads a rule takes, whether a thread was
  * authorised, and what was actually moved.
  */
+import { pendingReceipt, confirmedEntries, checkReceipt } from './receipt.mjs';
 import {
   matches, toGmailQuery, normaliseLabel, archives, labelPath, DEFAULT_SCOPE,
   isNearDuplicateLabel, SYSTEM_LABELS, reconcileDestinations,
 } from './rules.mjs';
+import { parseSender, resolveSender } from './sender.mjs';
 
 // ── proposing ───────────────────────────────────────────────────────────────
 
-const domainOf = (from) => {
-  const m = /<?([^<>@\s]+)@([^<>\s]+)>?\s*$/.exec(String(from ?? '').trim());
-  return m ? m[2].toLowerCase() : null;
-};
-
-const addressOf = (from) => {
-  const m = /<?([^<>\s]+@[^<>\s]+)>?\s*$/.exec(String(from ?? '').trim());
-  return m ? m[1].toLowerCase() : null;
-};
+const domainOf = (from) => parseSender(from)?.domain ?? null;
 
 /**
  * Senders this skill never proposes a trash rule for, however bulky they look.
@@ -165,7 +159,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   // sitting in front of their sort rule.
   const claimedBy = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
+    const addr = resolveSender(t).address;
     if (!addr) continue;
     const rule = (rules ?? []).find((r) => matches(r, t, new Date(), { ignoreFiled: true }));
     if (!rule) continue;
@@ -175,10 +169,20 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     c.ruleIds.add(rule.id);
   }
 
+  const withheld = [];
   const byAddr = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
-    if (!addr) continue;
+    const addr = resolveSender(t).address;
+    if (!addr) {
+      // These threads cannot safely form sender clusters, but still belong in
+      // the reported sample. Keep each separate from any valid sender group.
+      withheld.push({ from: typeof t.from === 'string' ? t.from :
+        (t.from == null ? '(missing sender)' : '(malformed sender)'), count: 1,
+        bulkCount: t.hasUnsubscribe ? 1 : 0, sample: t.subject ?? '',
+        kind: 'uncertain-sender',
+        why: 'sender is missing, malformed or ambiguous — no trash or sort proposal; inspect the sender evidence' });
+      continue;
+    }
     // Excluded here rather than filtered out of `threads` up front, so
     // `sampled` still reports what was actually read.
     if (claimedBy.has(addr)) continue;
@@ -187,7 +191,6 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   }
 
   const candidates = [];
-  const withheld = [];
   const below = [];
   for (const [addr, group] of byAddr) {
     // the whole address, because the marker is often in the local part
@@ -227,7 +230,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     // withholds sorting: auto-archiving a human's mail out of the inbox is
     // the most damaging thing this skill could do, and a cluster with no bulk
     // marker is exactly the case where it cannot tell.
-    if (w.kind === 'no-bulk-marker') continue;
+    if (w.kind === 'no-bulk-marker' || w.kind === 'uncertain-sender') continue;
     // A protected SUBJECT proves the cluster matters; it does not prove the
     // sender is an institution rather than a person, so still require bulk.
     if (w.kind === 'protected-subject' && w.bulkCount === 0) continue;
@@ -269,8 +272,13 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
     ? { kind: 'all-sent-only',
         text: `the sample held only mail you sent yourself — nothing here is triage material.` }
     : null;
+  const uncertainCount = withheld.filter((w) => w.kind === 'uncertain-sender').length;
+  const uncertainReason = uncertainCount > 0
+    ? { kind: 'uncertain-sender',
+        text: `${uncertainCount} thread(s) could not be grouped because their sender evidence is missing, malformed or ambiguous. Inspect the withheld rows before writing sender rules; other senders may already be covered or withheld by other guards.` }
+    : null;
   const reason = candidates.length > 0 ? null
-    : allSentOnly ?? (below.length > 0
+    : allSentOnly ?? uncertainReason ?? (below.length > 0
       ? { kind: 'below-threshold', best: below[0].count, minCount,
           text: `no sender reached the threshold of ${minCount}. The largest unguarded cluster has ${below[0].count} (${below[0].from}) — re-run with --min-count ${below[0].count} to see it.` }
       : withheld.length > 0
@@ -290,7 +298,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
   // produced it — same contract as `reason`, for the same reason: a bare empty
   // table reads as a broken skill.
   const sortReason = sortable.length > 0 ? null
-    : allSentOnly ?? (withheld.some((w) => w.kind !== 'no-bulk-marker')
+    : allSentOnly ?? uncertainReason ?? (withheld.some((w) => w.kind !== 'no-bulk-marker')
       ? { kind: 'below-threshold',
           text: `nothing reached the threshold of ${minCount} to be worth its own folder. Re-run with a lower \`--min-count\` to see the near misses.` }
       : withheld.length > 0
@@ -320,7 +328,7 @@ export function propose(allThreads, { minCount = 3, labels = [], rules = [] } = 
 export const candidateToRule = (c) => ({
   id: c.id,
   action: 'trash',
-  match: { from: c.from, hasUnsubscribe: true },
+  match: { fromAddress: c.from, hasUnsubscribe: true },
   note: `bulk mail from ${c.from} — ${c.count} in the sample, e.g. "${String(c.sample).slice(0, 60)}"`,
 });
 
@@ -344,7 +352,7 @@ export const candidateToSortRule = (c, destination = c.destination) => {
     id: c.id,
     action: 'label',
     label: destination,
-    match: { from: c.from },
+    match: { fromAddress: c.from },
     note: `file mail from ${c.from} — ${c.count} in the sample, e.g. "${String(c.sample).slice(0, 60)}"`,
   };
   if (c.keepInInbox) {
@@ -453,8 +461,7 @@ export function subdivide(threads, { parent, labels = [], minCount = 1 } = {}) {
 
   const byDomain = new Map();
   for (const t of threads) {
-    const addr = addressOf(t.from);
-    const domain = domainOf(t.from);
+    const { address: addr, domain } = resolveSender(t);
     if (!addr || !domain) continue;
     if (!byDomain.has(domain)) byDomain.set(domain, []);
     byDomain.get(domain).push({ ...t, _addr: addr });
@@ -537,7 +544,7 @@ export const clusterToSubRule = (c, destination = c.destination, subjectContains
       'a sender-only rule would file all of them into one folder. Give it a subjectContains naming the organisation.',
     );
   }
-  const match = { from: c.from };
+  const match = { fromDomain: c.domain };
   if (subjectContains) match.subjectContains = subjectContains;
   return {
     id: c.id,
@@ -641,7 +648,7 @@ export function audit(labels = [], ruleDoc = { rules: [] }, threads = null) {
 
     const byAddr = new Map();
     for (const t of rest) {
-      const addr = addressOf(t.from);
+      const addr = resolveSender(t).address;
       if (!addr) continue;
       if (!byAddr.has(addr)) byAddr.set(addr, []);
       byAddr.get(addr).push(t);
@@ -939,28 +946,24 @@ export function authorise(planDoc, requested, action = 'trash') {
  * Entries written by 0.1.0 carry no `action`. They are read as trash, because
  * that is the only thing 0.1.0 could do — an old receipt must still undo.
  */
-export const buildReceipt = (entries, { at }) => ({
-  at,
-  count: entries.length,
-  entries: entries.map((e) => ({
+export const buildReceipt = (entries, options) => pendingReceipt(entries.map((e) => ({
     threadId: e.threadId,
     ruleId: e.ruleId,
     action: e.action ?? 'trash',
     label: e.label ?? null,
-    // Exactly the labels this run PUT on the thread, which is not the same as
+    // Authorized additions, pending until host outcomes confirm them; not
     // the labels the thread ends up with. Filing into `Recruiting/Globex`
     // mail that already sat in `Recruiting` adds one label, and an undo that
     // removed both would take away a label the user filed by hand.
     added: e.action === 'label' ? (e.adds ?? (e.label ? [e.label] : [])) : (e.added ?? []),
-    // Labels this run took OFF the thread, which only a merge does. Recorded
+    // Authorized removals, pending until host outcomes confirm them. Recorded
     // for the same reason `added` is: an undo has to know what to put back, and
     // "the rule's destination" does not answer that.
     removed: e.removed ?? [],
     archived: e.action === 'label' ? e.archive === true : false,
     from: e.from,
     subject: e.subject,
-  })),
-});
+  })), options);
 
 /**
  * What `undo` must actually reverse, grouped by the operation that reverses it.
@@ -971,7 +974,8 @@ export const buildReceipt = (entries, { at }) => ({
  * its single `label`, so an old receipt still undoes.
  */
 export function undoPlan(receipt) {
-  const entries = receipt.entries ?? [];
+  const modern = checkReceipt(receipt);
+  const entries = confirmedEntries(receipt);
   const untrash = entries.filter((e) => (e.action ?? 'trash') === 'trash');
   const labelled = entries.filter((e) => e.action === 'label');
   const merged = entries.filter((e) => e.action === 'unlabel');
@@ -982,7 +986,7 @@ export function undoPlan(receipt) {
   for (const e of [...labelled, ...merged]) {
     const added = Array.isArray(e.added) && e.added.length
       ? e.added
-      : (e.action === 'label' && e.label ? [e.label] : []);
+      : (!modern && e.action === 'label' && e.label ? [e.label] : []);
     // Innermost first: removing a parent while a child of it is still on the
     // thread leaves the thread filed under a folder Gmail will keep showing.
     for (const label of [...added].reverse()) {

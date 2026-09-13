@@ -16,8 +16,9 @@
  */
 
 import { resolveCategory, isBulkCategory } from './category.mjs';
+import { resolveSender } from './sender.mjs';
 
-/** Ordinary snapshots; ambiguous evidence adds only a validated categoryEvidence marker. */
+/** Ordinary snapshots; ambiguous evidence adds bounded categoryEvidence and/or senderAmbiguous markers. */
 export const SNAPSHOT_FIELDS = ['id', 'from', 'subject', 'date', 'labelIds', 'category', 'hasUnsubscribe'];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -48,6 +49,7 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
     out.push({
       id: t.id,
       from: first.sender ?? null,
+      ...(resolveSender({ ...t, from: first.sender }, first).ambiguous ? { senderAmbiguous: true } : {}),
       subject: first.subject ?? null,
       date: first.date ?? null,
       ...(evidence.category ? { category: evidence.category } : {}),
@@ -168,7 +170,11 @@ export function mergeThreadSources(...sources) {
   for (const list of sources) {
     for (const t of list ?? []) {
       const prev = byId.get(t.id);
-      if (!prev) { byId.set(t.id, { ...t }); continue; }
+      if (!prev) {
+        byId.set(t.id, { ...t, ...(resolveSender(t).ambiguous ? { senderAmbiguous: true } : {}) });
+        continue;
+      }
+      if (resolveSender(prev, t).ambiguous) prev.senderAmbiguous = true;
       // A later duplicate contributes evidence, including uncertainty; neither
       // source gets to overwrite or silently discard the other's category.
       const categorySources = [resolveCategory(prev), resolveCategory(t)];
@@ -208,6 +214,7 @@ export function applyCategories(threads, promoIds = [], updateIds = []) {
     return {
       id: t.id,
       from: t.from,
+      ...(resolveSender(t).ambiguous ? { senderAmbiguous: true } : {}),
       subject: t.subject,
       date: t.date,
       labelIds: t.labelIds ?? [],
