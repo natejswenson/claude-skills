@@ -216,6 +216,13 @@ Netlify or Cloudflare Pages, build with `vite build`, deploy `dist/`.
 **Other stacks (Next, Astro, plain HTML):** it is static JSON and Markdown on
 GitHub. Build whatever UI you want against the data contract below.
 
+## Producer and website onboarding
+
+Follow the [complete producer and website onboarding guide](https://github.com/natejswenson/claude-skills/blob/main/skills/devlog/skills/devlog/SKILL.md#producer-and-website-onboarding).
+The guide ships inside SKILL.md for plugin, standalone Claude and npm installations.
+It covers inspecting and preserving registration, privacy, monorepo release scoping,
+and the website registry, manifest and verification required before setup is complete.
+
 ## Data contract
 
 The dev-log repo has this layout, all served as raw files from
