@@ -5,6 +5,12 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-09-14
+
+### Fixed
+
+- **Codex Gmail searches now feed Gmailtriage's thread-based workflow without hand-built snapshots.** The skill recognizes Codex's message and label response envelopes, groups messages by thread, and preserves the existing snippet-free snapshot guarantee.
+
 ## [0.8.0] - 2026-09-14
 
 ### Added
