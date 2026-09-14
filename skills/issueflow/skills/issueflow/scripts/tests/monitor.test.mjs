@@ -95,6 +95,25 @@ test('public observer groups two hosts and deduplicates outputs while retaining 
   assert.equal(missingNative.agents.find((r) => r.attemptId === 'old').details[0].text, 'old immutable output');
 });
 
+test('a replacement cannot inherit canonical output left by its predecessor', (t) => {
+  const root = fixture(t), f = state(root), old = attempt(f, 'predecessor', 'failed');
+  const replacement = attempt(f, 'replacement');
+  replacement.native.startedAt = '2026-09-01T01:00:00.000Z';
+  f.run.harness.attemptHistory = [old];
+  f.run.harness.attempts['root/implement.md'] = replacement;
+  write(replacement.outputs[0], 'predecessor bytes');
+  utimesSync(replacement.outputs[0], 1, 1); f.save();
+  const before = tree(root), observed = snapshot(root).runs[0];
+  const worker = observed.agents.find((a) => a.attemptId === replacement.id);
+  assert.equal(worker.state, 'started');
+  assert.equal(worker.details[0].status, 'unavailable');
+  assert.equal(worker.details[0].text, null);
+  assert.ok(!JSON.stringify(observed.agents).includes('predecessor bytes'));
+  assert.deepEqual(tree(root), before);
+  write(replacement.outputs[0], 'replacement bytes');
+  assert.equal(snapshot(root).runs[0].agents.find((a) => a.attemptId === replacement.id).details[0].text, 'replacement bytes');
+});
+
 test('refresh exposes stages, terminal observations, stage activity and attention-required controller transitions', (t) => {
   const root = fixture(t), f = state(root), a = attempt(f, 'worker');
   f.run.harness.attempts['root/implement.md'] = a; f.save();
@@ -213,6 +232,13 @@ test('prepared artifacts require matching execution ownership and immutable arch
   const envelope = JSON.parse(readFileSync(a.completion));
   envelope.generation = 'wrong-generation'; write(a.completion, envelope);
   assert.equal(snapshot(root).runs.find((r) => r.issue === 1).agents[0].details[0].status, 'unavailable');
+  // Even touching the predecessor's bytes cannot turn an excluded delivery into
+  // replacement output; a changed delivery must still remain observable.
+  f.run.execution.dispatches = { 'root/implement.md': { at: 1, excluded: [hash('prior bytes')] } };
+  f.save(); write(a.outputs[0], 'prior bytes');
+  assert.equal(snapshot(root).runs.find((r) => r.issue === 1).agents[0].details[0].status, 'unavailable');
+  write(a.outputs[0], 'new bytes');
+  assert.equal(snapshot(root).runs.find((r) => r.issue === 1).agents[0].details[0].text, 'new bytes');
   f.run.execution.owner.issue = 999; f.save();
   assert.match(snapshot(root).runs[0].problems[0], /ownership/);
 });

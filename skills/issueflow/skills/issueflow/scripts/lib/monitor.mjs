@@ -62,10 +62,14 @@ function jsonOwned(root, path) {
   if (!file.bytes) throw new Error(file.reason);
   return JSON.parse(file.bytes.toString('utf8'));
 }
-function textOwned(root, path, now) {
-  const file = readOwned(root, path, TEXT_LIMIT, true);
+function textOwned(root, path, now, { notBefore, excluded = [] } = {}) {
+  const file = readOwned(root, path, excluded.length ? JSON_LIMIT : TEXT_LIMIT, !excluded.length);
+  if (file.bytes && (Date.parse(file.observedAt) <= notBefore || excluded.includes(hash(file.bytes)))) {
+    return unavailable('Output predates this attempt or matches an excluded prior delivery');
+  }
   const { bytes, ...metadata } = file;
-  return { ...metadata, path: cleanText(path), text: bytes ? cleanText(bytes.toString('utf8')) : null,
+  return { ...metadata, truncated: file.truncated || (bytes?.length ?? 0) > TEXT_LIMIT,
+    path: cleanText(path), text: bytes ? cleanText(bytes.toString('utf8')) : null,
     freshness: age(file.observedAt, now) };
 }
 const unavailable = (reason) => ({ status: 'unavailable', reason, text: null, freshness: 'unavailable' });
@@ -194,7 +198,11 @@ function agentsOf(run, runKey, root, stages, now) {
         } else agent.details.push(unavailable('Attempt archive unavailable or hash mismatch'));
       } else if (agent.current && current[relative(root, ownedPath(root, path))]?.id === a.id &&
                  current[relative(root, ownedPath(root, path))]?.generation === a.generation) {
-        agent.details.push({ ...textOwned(root, path, now), source: 'current attempt output' });
+        const dispatch = run.execution?.dispatches?.[relative(root, ownedPath(root, path))];
+        agent.details.push({ ...textOwned(root, path, now, {
+          notBefore: Math.max(Date.parse(a.native?.startedAt) || 0, Number(dispatch?.at) || 0),
+          excluded: Array.isArray(dispatch?.excluded) ? dispatch.excluded : [],
+        }), source: 'current attempt output' });
       } else agent.details.push(unavailable('Historical output unavailable; live path may belong to a replacement'));
     });
     if (outputs.length > 16) agent.details.push(unavailable('Additional outputs omitted: observation limit 16'));
