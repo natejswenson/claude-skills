@@ -68,16 +68,16 @@
    "rationale": "Rendering a visual before asking wasted a full card build in a real session (user wanted a carousel). One form question before any authoring is prose-only."
   },
   {
-   "id": "one-dialog-start",
+   "id": "lane-first-selection",
    "file": "SKILL.md",
-   "pattern": "check-in and the menu ride in the same single",
-   "rationale": "Session-start round trips are the UX tax paid every single run: the 0.14.0 pass merged the outcome check-in and the idea menu into ONE AskUserQuestion dialog. This rule is prose-only; deleting it regresses to two sequential question dialogs before any work starts."
+   "pattern": "first question[\\s\\S]{0,180}What type of post will you be[\\s\\S]{0,300}Project[\\s\\S]{0,180}Trends in Industry[\\s\\S]{0,180}Personal Fun",
+   "rationale": "The user chooses Project, Trends in Industry, or Personal Fun before any idea research is shown. This prevents a mixed, irrelevant idea menu and makes the first interaction predictable."
   },
   {
-   "id": "full-text-in-approval-dialog",
+   "id": "codex-complete-draft-visible",
    "file": "SKILL.md",
-   "pattern": "complete,?\\s*final\\s+(post\\s+)?text\\s+(goes|rides)\\s+in(side)?\\s+the\\s+approval\\s+dialog",
-   "rationale": "A real session (2026-08-11) asked for publish approval twice on a post the user had never seen in full: the dialog takes focus over chat scrollback, so text printed above it is not shown. Approval is only meaningful against the exact full text, and this rule lives only in prose; deleting it regresses to approving unseen posts."
+   "pattern": "Codex:[\\s\\S]{0,120}always display the complete post text[\\s\\S]{0,160}including every line after the fold",
+   "rationale": "Approval is meaningful only when the user can read every line of the exact draft. Codex must show the full post inline, not rely on a clipped preview or a file link."
   },
   {
    "id": "fold-marked-draft-show",
@@ -134,6 +134,12 @@
    "rationale": "The Codex run transcript is part of the product. Forwarding stdout, shell commands, file dumps or stack traces makes the interaction unreadable and exposes machinery the user cannot act on."
   },
   {
+   "id": "collapsed-execution-when-supported",
+   "file": "SKILL.md",
+   "pattern": "host offers a collapsed execution/tool group[\\s\\S]{0,260}every command\\s+and edit",
+   "rationale": "Commands and edits should stay out of the main transcript when the host supports collapsed execution groups, while acknowledging that the host controls the UI."
+  },
+  {
    "id": "stable-stage-navigation",
    "file": "SKILL.md",
    "pattern": "ghostwriter · ideas[\\s\\S]{0,160}ghostwriter · publish",
@@ -154,7 +160,7 @@
   {
    "id": "generated-card-separate-approval",
    "file": "references/codex-images.md",
-   "pattern": "show the actual image[\\s\\S]{0,160}approve card",
+   "pattern": "show the actual image[\\s\\S]{0,320}approve card",
    "rationale": "The LinkedIn payload must never gain an unseen generated card after the user approved only the text."
   },
   {
@@ -174,6 +180,12 @@
    "file": "references/codex-images.md",
    "pattern": "after every generated or edited candidate that passes all applicable checks, open the PNG",
    "rationale": "The user explicitly asked to see generated cards full-size; inline thumbnails alone are not an adequate approval view."
+  },
+  {
+   "id": "generated-card-viewer-fallback",
+   "file": "references/codex-images.md",
+   "pattern": "fall back to a browser[\\s\\S]{0,320}Opening is required\\s+before asking for approval",
+   "rationale": "A generated card must open for full-size review before approval; a missing default PNG handler cannot silently downgrade the review to a thumbnail."
   },
   {
    "id": "selectable-controls-first",

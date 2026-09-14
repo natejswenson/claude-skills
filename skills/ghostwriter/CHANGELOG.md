@@ -4,6 +4,19 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Open-ended drafting now begins with a Project, Trends in Industry, or Personal
+  Fun picker; Ghostwriter only researches and presents ideas after the user chooses
+  one category.
+- Codex now renders the entire draft inline for approval, opens the saved draft
+  when available, and requires generated-card review in an image viewer or browser
+  before asking for approval.
+- Keep execution details out of the main transcript and use collapsed execution
+  groups when the host provides them.
+
 ## [0.23.1] - 2026-09-14
 
 ### Fixed

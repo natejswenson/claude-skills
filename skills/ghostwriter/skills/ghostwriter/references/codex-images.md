@@ -154,9 +154,12 @@ Copy the selected built-in output from its reported Codex location to
 `images/<slug>-generated-vN.png`; never leave a publish-bound asset only under Codex's generated
 image directory and never overwrite an existing candidate.
 
-After every generated or edited candidate that passes all applicable checks, open the PNG in the
-user's image viewer so they can inspect it full-size. Also show the actual image in the
-conversation. Use selectable responses when available and ask one decision:
+After every generated or edited candidate that passes all applicable checks, open the PNG in a
+compatible image viewer (fall back to a browser if the default viewer has no PNG handler) so they
+can inspect it full-size. Also show the actual image in the conversation. Opening is required
+before asking for approval; if no compatible viewer can open it, state that plainly and provide
+the full-resolution artifact link rather than claiming it opened. Use selectable responses when
+available and ask one decision:
 **Approve card** / **Change card** / **Drop card**. A change is re-inspected, opened, and
 re-shown. Publishing still requires the approved post text and the final approved card.
 
