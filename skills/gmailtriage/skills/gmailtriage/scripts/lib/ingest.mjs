@@ -62,9 +62,54 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
   return out;
 }
 
+/** The structured content in Codex's raw Gmail tool-result envelope. */
+const codexContent = (raw) => isObj(raw?.structuredContent) ? raw.structuredContent : raw;
+
+/**
+ * Codex's Gmail plugin exposes `search_emails`, not `search_threads`. Group
+ * the verbatim response by thread here, rather than asking the agent to
+ * transcribe it. Snapshot construction remains allowlisted, so snippets and
+ * every other message-body field stay out of the session files.
+ */
+export function normalizeCodexSearchEmails(raw, what = 'Codex Gmail search_emails output') {
+  if (!isObj(raw)) throw new Error(`${what}: expected the raw Codex Gmail response object, written to the file verbatim`);
+  const result = codexContent(raw);
+  const emails = result.emails ?? [];
+  if (!Array.isArray(emails)) throw new Error(`${what}: "emails" is not an array — this is not a Codex Gmail search_emails response`);
+  const threads = new Map();
+  for (const email of emails) {
+    if (!isObj(email) || !email.thread_id) throw new Error(`${what}: an email without a thread_id — cannot safely build a thread snapshot`);
+    const message = {
+      // The Codex connector serializes `from` as `from_`.
+      from: email.from_ ?? email.from ?? null,
+      subject: email.subject ?? null,
+      date: email.email_ts ?? null,
+      labelIds: Array.isArray(email.labels) ? email.labels : [],
+    };
+    const current = threads.get(email.thread_id);
+    if (!current) { threads.set(email.thread_id, { id: email.thread_id, ...message }); continue; }
+    current.labelIds = [...new Set([...current.labelIds, ...message.labelIds])];
+    // Codex returns newest-first; match the existing first-message policy by
+    // retaining the oldest observable message in each thread.
+    if (message.date && (!current.date || message.date < current.date)) {
+      current.from = message.from;
+      current.subject = message.subject;
+      current.date = message.date;
+    }
+  }
+  return [...threads.values()];
+}
+
+/** Select an explicit host shape; never reinterpret an unrelated response. */
+export function normalizeGmailSearch(raw, what = 'Gmail search output') {
+  if (isObj(raw) && Array.isArray(raw.threads)) return normalizeSearchThreads(raw, what);
+  if (isObj(codexContent(raw)) && Array.isArray(codexContent(raw).emails)) return normalizeCodexSearchEmails(raw, what);
+  return normalizeSearchThreads(raw, what);
+}
+
 /** Just the thread ids — all a category fetch is for. */
 export const threadIds = (raw, what = 'category fetch') =>
-  normalizeSearchThreads(raw, what).map((t) => t.id);
+  normalizeGmailSearch(raw, what).map((t) => t.id);
 
 export const SOURCE_NAMES = ['inbox', 'nolabel', 'promos', 'updates'];
 const token = (v) => v === null || (typeof v === 'string' && v.length > 0);
@@ -105,7 +150,7 @@ export function ingestSources(manifest, readPage, legacy = {}) {
     sources[name] = [];
     if (!source) {
       if (Object.hasOwn(legacy, name)) {
-        sources[name] = mergeThreadSources(normalizeSearchThreads(legacy[name], name));
+        sources[name] = mergeThreadSources(normalizeGmailSearch(legacy[name], name));
         Object.assign(c, { pages: 1, uniqueThreads: sources[name].length, reason: 'legacy-chain-unavailable' });
       }
       continue;
@@ -121,26 +166,31 @@ export function ingestSources(manifest, readPage, legacy = {}) {
       if (requested.has(p.pageToken)) interrupt('repeated-request-token');
       requested.add(p.pageToken);
       if (p.failed) { interrupt('failed-page'); expected = undefined; continue; }
-      let raw, threads;
+      let raw, threads, codex, codexShape;
       try {
         raw = readPage(p.path);
         // {} is the connector's legitimate empty response. Error envelopes and
         // malformed thread/token fields must not masquerade as that response.
-        if (!isObj(raw) || ['error', 'errors', 'isError', 'status'].some(k => Object.hasOwn(raw, k))
-          || (Object.keys(raw).length && !['threads', 'nextPageToken', 'resultCountEstimate'].some(k => Object.hasOwn(raw, k)))
-          || (Object.hasOwn(raw, 'resultCountEstimate')
-            && !(Number.isSafeInteger(raw.resultCountEstimate) && raw.resultCountEstimate >= 0)
-            && !(typeof raw.resultCountEstimate === 'string' && /^[0-9]+$/.test(raw.resultCountEstimate)))
-          || (Object.hasOwn(raw, 'threads') && !Array.isArray(raw.threads))
-          || (Object.hasOwn(raw, 'nextPageToken') && !token(raw.nextPageToken))) throw new Error('invalid response');
-        threads = normalizeSearchThreads(raw, name);
+        codex = codexContent(raw);
+        codexShape = isObj(codex) && Array.isArray(codex.emails);
+        if (!isObj(raw) || raw.isError === true
+          || (codexShape
+            ? (Object.hasOwn(codex, 'next_page_token') && !token(codex.next_page_token))
+            : (['error', 'errors', 'isError', 'status'].some(k => Object.hasOwn(raw, k))
+              || (Object.keys(raw).length && !['threads', 'nextPageToken', 'resultCountEstimate'].some(k => Object.hasOwn(raw, k)))
+              || (Object.hasOwn(raw, 'resultCountEstimate')
+                && !(Number.isSafeInteger(raw.resultCountEstimate) && raw.resultCountEstimate >= 0)
+                && !(typeof raw.resultCountEstimate === 'string' && /^[0-9]+$/.test(raw.resultCountEstimate)))
+              || (Object.hasOwn(raw, 'threads') && !Array.isArray(raw.threads))
+              || (Object.hasOwn(raw, 'nextPageToken') && !token(raw.nextPageToken))))) throw new Error('invalid response');
+        threads = normalizeGmailSearch(raw, name);
         if (threads.some(t => typeof t.id !== 'string')) throw new Error('invalid thread id');
       } catch { interrupt('unreadable-or-invalid-page'); expected = undefined; continue; }
       sources[name] = mergeThreadSources(sources[name], threads);
       c.pages += 1;
       c.uniqueThreads = sources[name].length;
       if (c.uniqueThreads > source.maxThreads) throw new Error(`ingest: ${name} exceeds maxThreads`);
-      const next = raw.nextPageToken ?? null;
+      const next = codexShape ? codex.next_page_token ?? null : raw.nextPageToken ?? null;
       if (next !== null) {
         if (returned.has(next) || requested.has(next)) interrupt('repeated-continuation-token');
         returned.add(next);
@@ -251,5 +301,8 @@ export const validateIngest = (threads) =>
 export function normalizeLabels(raw, what = 'list_labels output') {
   if (Array.isArray(raw)) return { labels: raw };
   if (isObj(raw) && Array.isArray(raw.labels)) return { labels: raw.labels };
+  if (isObj(raw?.structuredContent) && Array.isArray(raw.structuredContent.labels)) {
+    return { labels: raw.structuredContent.labels };
+  }
   throw new Error(`${what}: expected the raw list_labels response object, written to the file verbatim`);
 }

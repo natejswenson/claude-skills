@@ -990,7 +990,7 @@ test('audit excludes self-sent mail from unclaimed, and only that', () => {
 });
 
 test('ingest: normalize, dedupe, category intersection, and the field allowlist', async () => {
-  const { normalizeSearchThreads, mergeThreadSources, applyCategories, threadIds, validateIngest, normalizeLabels } = await import('../lib/ingest.mjs');
+  const { normalizeSearchThreads, normalizeCodexSearchEmails, normalizeGmailSearch, mergeThreadSources, applyCategories, threadIds, validateIngest, normalizeLabels } = await import('../lib/ingest.mjs');
   const raw = {
     resultCountEstimate: '999',
     threads: [
@@ -1029,6 +1029,22 @@ test('ingest: normalize, dedupe, category intersection, and the field allowlist'
   assert.deepEqual(normalizeLabels({ labels: [{ name: 'A' }] }), { labels: [{ name: 'A' }] });
   assert.deepEqual(normalizeLabels([{ name: 'A' }]), { labels: [{ name: 'A' }] });
   assert.throws(() => normalizeLabels({ nope: true }), /verbatim/);
+
+  const codex = { structuredContent: { emails: [
+    { id: 'm2', thread_id: 'ct1', from_: 'new@x.example', subject: 're: one', email_ts: '2026-09-02', labels: ['INBOX', 'Label_9'], snippet: 'code 654321' },
+    { id: 'm1', thread_id: 'ct1', from_: 'old@x.example', subject: 'one', email_ts: '2026-09-01', labels: ['INBOX'], snippet: 'older code 123456' },
+    { id: 'm3', thread_id: 'ct2', from_: 'two@y.example', subject: 'two', email_ts: '2026-09-03', labels: [] },
+  ], next_page_token: null } };
+  const codexThreads = normalizeCodexSearchEmails(codex);
+  assert.deepEqual(codexThreads, [
+    { id: 'ct1', from: 'old@x.example', subject: 'one', date: '2026-09-01', labelIds: ['INBOX', 'Label_9'] },
+    { id: 'ct2', from: 'two@y.example', subject: 'two', date: '2026-09-03', labelIds: [] },
+  ]);
+  assert.deepEqual(normalizeGmailSearch(codex), codexThreads);
+  assert.deepEqual(threadIds(codex), ['ct1', 'ct2']);
+  assert.deepEqual(normalizeLabels({ structuredContent: { labels: [{ name: 'Codex label' }] } }), { labels: [{ name: 'Codex label' }] });
+  assert.ok(!JSON.stringify(applyCategories(codexThreads)).includes('654321'), 'Codex snippets never reach snapshots');
+  assert.throws(() => normalizeCodexSearchEmails({ emails: [{ id: 'm1' }] }), /thread_id/);
 });
 
 test('lintRuleSet warns on every legacy sender substring', async () => {

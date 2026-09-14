@@ -18,6 +18,15 @@ action. Use Codex's delegation tools for required subagents when available;
 otherwise disclose that independent execution is unavailable. Discover connected
 apps by capability rather than assuming Claude MCP tool names exist.
 
+When the connected Codex Gmail plugin exposes `search_emails` rather than
+`search_threads`, fetch the same four Gmail queries with `search_emails` and
+write each full tool result verbatim. `ingest` has an explicit Codex adapter:
+it groups `structuredContent.emails` by `thread_id`, unions their label IDs,
+and admits only sender, subject, date, and labels into the snapshot. It also
+accepts the plugin's `list_labels` envelope. Do not reshape either response in
+chat or by hand; do not claim metadata-only category fetching is available
+unless the connector actually exposes that view.
+
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
 
 You are running the **gmailtriage** skill.
