@@ -4,6 +4,14 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.1] - 2026-09-14
+
+### Fixed
+
+- Restored live trend research when a versioned plugin cache cannot store a
+  refresh receipt or direct feed access is unavailable. Codex now falls back to
+  one fresh browser search before it offers non-trending ideas.
+
 ## [0.23.0] - 2026-09-12
 
 ### Added
