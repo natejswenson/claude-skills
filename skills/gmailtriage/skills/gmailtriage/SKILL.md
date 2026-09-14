@@ -2,7 +2,7 @@
 name: gmailtriage
 description: Sort and clean a Gmail inbox under rules the user wrote — filing mail into their own labels and out of the inbox, and moving junk to the trash. On a first run it walks the user through building that rule set from their own senders and their own existing folders, instead of shipping generic defaults. Use when the user says "clean my inbox", "gmailtriage", "triage my email", "sort my gmail", "file my email into folders", "auto-label my mail", "set up my email rules", "delete my junk mail", "unsubscribe and clean up", "why is my inbox full", or wants mail automatically filed, labelled or cleared out of Gmail without doing it by hand.
 user_invocable: true
-version: 0.7.0
+version: 0.8.0
 ---
 
 ## Codex runtime

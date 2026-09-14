@@ -5,6 +5,21 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-14
+
+### Added
+
+- **Gmail Triage can ingest paginated mailbox samples and report whether retrieval was complete.**
+- **Rules can match exact sender addresses and domains.**
+- **Rules can use categories produced during ingestion.**
+- **Gmail operations are confirmed before receipts and snapshots record them.**
+- **Gmail Triage now works consistently in Claude Code and Codex.** Both hosts use the same plugin release and compatibility checks.
+- **Terminal output follows the shared presentation contract.** Interactive runs now use the repository's standard terminal styling.
+
+### Fixed
+
+- **Retroactive planning stays within the selected mailbox scope and only adds safe filing work.** Existing plans are preserved while newly discovered eligible threads can be incorporated.
+
 ## [0.7.0] - 2026-08-13
 
 Round two, from the first live run of 0.6.0 — which happened to collide with a
