@@ -308,6 +308,26 @@ def test_failed_refresh_replaces_previous_success(tmp_path, monkeypatch, capsys)
     assert len(list(research.glob(".trending-*.json"))) == 1
 
 
+def test_read_only_receipt_does_not_mask_a_failed_refresh(tmp_path, monkeypatch, capsys):
+    def dead(url):
+        raise OSError("offline")
+
+    argv, _ = _main_env(tmp_path, monkeypatch, dead)
+    monkeypatch.setattr(
+        Path, "write_text",
+        lambda self, *args, **kwargs: (_ for _ in ()).throw(PermissionError("read-only")),
+    )
+    assert trending.main(argv + ["--json"]) == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "failed"
+    assert result["sidecar"] is None
+    assert "read-only" in result["receipt_error"]
+
+
+def test_default_research_dir_is_user_owned():
+    assert trending.RESEARCH_DIR == Path.home() / ".claude" / "ghostwriter" / "research"
+
+
 def test_filtered_empty_is_success_not_stale_reuse(tmp_path, monkeypatch, capsys):
     argv, _ = _main_env(tmp_path, monkeypatch, frozen_fetch)
     cfg = json.loads(EXAMPLE_CONFIG.read_text())
