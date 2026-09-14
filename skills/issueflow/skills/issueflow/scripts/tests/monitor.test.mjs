@@ -214,3 +214,20 @@ test('missing prepared execution fails closed and custom directories and flag er
   const terminal = invoke([]);
   assert.notEqual(terminal.status, 0); assert.match(terminal.stderr, /monitor --json/);
 });
+
+test('ancestor aliases preserve current output and historical archives without following artifact symlinks', (t) => {
+  const root = realpathSync(fixture(t)), alias = join(root, 'alias'), actual = join(root, 'actual');
+  mkdirSync(actual); symlinkSync(actual, alias);
+  const f = state(alias), current = attempt(f, 'current'), old = attempt(f, 'old', 'completed');
+  f.run.harness.attempts['root/implement.md'] = current; f.run.harness.attemptHistory = [old];
+  write(current.outputs[0], 'current aliased output'); archive(f, old, ['historical aliased output']); f.save();
+  for (const discovery of [alias, actual]) {
+    const run = snapshot(discovery).runs[0];
+    assert.equal(run.agents.find((a) => a.attemptId === 'current').state, 'started');
+    assert.equal(run.agents.find((a) => a.attemptId === 'current').details[0].text, 'current aliased output');
+    assert.equal(run.agents.find((a) => a.attemptId === 'old').details[0].text, 'historical aliased output');
+  }
+  const secret = join(root, 'secret'); write(secret, 'outside secret');
+  rmSync(current.outputs[0]); symlinkSync(secret, current.outputs[0]);
+  assert.equal(snapshot(alias).runs[0].agents.find((a) => a.attemptId === 'current').details[0].status, 'unavailable');
+});

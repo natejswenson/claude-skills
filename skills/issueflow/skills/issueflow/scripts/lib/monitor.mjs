@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
 import { activeRoot } from './execution.mjs';
 
@@ -18,12 +18,27 @@ const latest = (values) => values.map(stamp).filter(Boolean).sort().at(-1) ?? nu
 const age = (at, now) => !at || Date.parse(at) > now ? 'unavailable' : now - Date.parse(at) > FRESHNESS_MS ? 'stale' : 'fresh';
 const inside = (root, path) => path === root || path.startsWith(root + sep);
 
+// Only canonicalize aliases above the owned root (e.g. macOS /var → /private/var).
+// Keep every component below that root lexical so readOwned still rejects symlinks.
+function ownedPath(root, name) {
+  const path = resolve(root, name);
+  if (inside(root, path)) return path;
+  for (let ancestor = dirname(path); ancestor !== dirname(ancestor); ancestor = dirname(ancestor)) {
+    try {
+      if (!lstatSync(ancestor).isSymbolicLink() && realpathSync(ancestor) === root) {
+        return resolve(root, relative(ancestor, path));
+      }
+    } catch { /* Missing output ancestors do not establish ownership. */ }
+  }
+  return path;
+}
+
 /** Reject every symlink component and check identity again after a bounded read. */
 function readOwned(root, name, limit = TEXT_LIMIT, tail = false) {
   let fd;
   try {
     if (typeof name !== 'string' || name.split(/[\\/]/).includes('..')) throw new Error('unsafe path');
-    const path = isAbsolute(name) ? name : resolve(root, name);
+    const path = ownedPath(root, name);
     if (!inside(root, path)) throw new Error('path outside owned artifacts');
     for (let part = path; inside(root, part); part = dirname(part)) {
       if (lstatSync(part).isSymbolicLink() || realpathSync(part) !== part) throw new Error('symlink path');
@@ -96,12 +111,12 @@ function agentsOf(run, runKey, root, stages, now) {
       distinct((r) => JSON.stringify(r.outputs)).length > 1 ||
       ['brief', 'briefHash', 'manifest', 'manifestHash', 'completion'].some((field) => distinct((r) => r[field]).length > 1) ||
       !outputs.length || outputs.some((p) => typeof p !== 'string') ||
-      (root && bindings.some((b) => !outputs.some((p) => resolve(root, p) === resolve(root, b))));
+      (root && bindings.some((b) => !outputs.some((p) => ownedPath(root, p) === ownedPath(root, b))));
     const generation = generations.length === 1 ? cleanText(generations[0]) : null;
     const key = hash(JSON.stringify([runKey, generations.slice().sort(), identity]));
     const at = latest(records.flatMap((r) => [r.native?.startedAt, r.native?.terminalAt]));
     const matching = root ? stages.filter((s) => s.artifact && outputs.some((p) =>
-      typeof p === 'string' && resolve(root, p) === resolve(root, s.artifact))) : [];
+      typeof p === 'string' && ownedPath(root, p) === ownedPath(root, s.artifact))) : [];
     const agent = { key, attemptId: cleanText(a.id), generation, current: bindings.length > 0,
       membership: bindings.length ? 'current' : 'historical', role: conflict ? 'unavailable' : matching.map((s) => s.key).join(', ') || cleanText(a.brief) || 'unknown',
       workerId: conflict ? null : cleanText(ids[0]), state: conflict ? 'conflict' : terminals[0] ?? states[0] ?? 'unknown',
@@ -115,7 +130,7 @@ function agentsOf(run, runKey, root, stages, now) {
     let envelope;
     try {
       const expected = join(root, 'attempts', a.id, 'completed.json');
-      if (a.completion !== expected) throw new Error('completion path mismatch');
+      if (typeof a.completion !== 'string' || ownedPath(root, a.completion) !== expected) throw new Error('completion path mismatch');
       envelope = jsonOwned(root, expected);
       if (envelope.id !== a.id || envelope.generation !== a.generation || envelope.manifestHash !== a.manifestHash ||
           envelope.status !== 'completed' || !Array.isArray(envelope.outputs) || envelope.outputs.length !== outputs.length ||
@@ -130,8 +145,8 @@ function agentsOf(run, runKey, root, stages, now) {
             text: cleanText(file.bytes.toString('utf8')), observedAt: file.observedAt,
             freshness: age(file.observedAt, now), truncated: file.bytes.length > TEXT_LIMIT });
         } else agent.details.push(unavailable('Attempt archive unavailable or hash mismatch'));
-      } else if (agent.current && current[relative(root, resolve(root, path))]?.id === a.id &&
-                 current[relative(root, resolve(root, path))]?.generation === a.generation) {
+      } else if (agent.current && current[relative(root, ownedPath(root, path))]?.id === a.id &&
+                 current[relative(root, ownedPath(root, path))]?.generation === a.generation) {
         agent.details.push({ ...textOwned(root, path, now), source: 'current attempt output' });
       } else agent.details.push(unavailable('Historical output unavailable; live path may belong to a replacement'));
     });
