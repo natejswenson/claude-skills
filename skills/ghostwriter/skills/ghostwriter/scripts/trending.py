@@ -36,6 +36,7 @@ from pathlib import Path
 CONFIG_PATH = Path.home() / ".claude" / "ghostwriter" / "voice" / "trending-queries.json"
 EXAMPLE_CONFIG = Path(__file__).resolve().parent.parent / "voice" / "trending-queries.example.json"
 PUBLISHED_LOG = Path.home() / ".claude" / "ghostwriter" / "published.jsonl"
+RESEARCH_DIR = Path.home() / ".claude" / "ghostwriter" / "research"
 USER_AGENT = "ghostwriter-trending/0.19 (research; github.com/natejswenson/claude-skills)"
 
 
@@ -267,10 +268,21 @@ def build_candidates(cfg: dict, get, haystack: str, limit: int, include_all: boo
     return unique[:limit], surface_counts, failures
 
 
+def write_receipt(research_dir: Path, receipt: dict) -> tuple[Path | None, str | None]:
+    """Persist a refresh receipt without hiding the sweep result if storage is unavailable."""
+    sidecar = research_dir / f".trending-{time.strftime('%Y-%m-%d')}.json"
+    try:
+        sidecar.parent.mkdir(parents=True, exist_ok=True)
+        sidecar.write_text(json.dumps(receipt, indent=1), encoding="utf-8")
+    except OSError as exc:
+        return None, str(exc)
+    return sidecar, None
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default=str(CONFIG_PATH), help=argparse.SUPPRESS)
-    ap.add_argument("--research-dir", default=str(Path(__file__).resolve().parent.parent / "research"), help=argparse.SUPPRESS)
+    ap.add_argument("--research-dir", default=str(RESEARCH_DIR), help=argparse.SUPPRESS)
     ap.add_argument("--published-log", default=str(PUBLISHED_LOG), help=argparse.SUPPRESS)
     ap.add_argument("--limit", type=int, default=12, help="Max candidates in the table.")
     ap.add_argument("--all", action="store_true", help="Include candidates matching no interest.")
@@ -297,11 +309,11 @@ def main(argv: list[str] | None = None) -> int:
     }
     # Replace today's receipt even when the refresh fails. A previous successful
     # same-day sweep must never masquerade as the result of this attempt.
-    sidecar = Path(args.research_dir) / f".trending-{time.strftime('%Y-%m-%d')}.json"
-    sidecar.parent.mkdir(parents=True, exist_ok=True)
-    sidecar.write_text(json.dumps(receipt, indent=1), encoding="utf-8")
+    sidecar, receipt_error = write_receipt(Path(args.research_dir), receipt)
+    if receipt_error:
+        receipt["receipt_error"] = receipt_error
     if args.json:
-        print(json.dumps({**receipt, "sidecar": str(sidecar)}))
+        print(json.dumps({**receipt, "sidecar": str(sidecar) if sidecar else None}))
     if broken:
         print(f"ERROR: every surface returned nothing ({counts}) — the sweep is broken, not quiet.", file=sys.stderr)
         return 2
@@ -312,7 +324,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"trending sweep {time.strftime('%Y-%m-%d')} · raw {counts} · {len(fresh)} fresh candidates\n")
     print(render(fresh))
 
-    print(f"\nsidecar: {sidecar}")
+    if sidecar:
+        print(f"\nsidecar: {sidecar}")
+    else:
+        print("\nWARN: refresh receipt could not be saved", file=sys.stderr)
     return 0
 
 
