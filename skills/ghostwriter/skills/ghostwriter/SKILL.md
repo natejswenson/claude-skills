@@ -164,13 +164,18 @@ that advances the run and the one decision currently needed.
   Quiet bookkeeping stays quiet.
 
 **Research tools.** The trend collector calls public endpoints directly with the
-Python standard library; it does not use Firecrawl. Interactive source checks use
-the host's available browser tools first. Firecrawl is optional: use it only when
-the user requests it or it is already configured and a specific page needs it.
-Do not check for, install, authenticate, or load an optional scraper merely to
-start an ideas run. The scheduled Claude radar uses its own WebSearch/WebFetch;
-the Codex radar uses its bundled retrieval path. Name the tools actually used if
-the user asks, not every tool mentioned in the skill catalog.
+Python standard library and stores its personal receipts under
+`~/.claude/ghostwriter/research/`, never in a versioned plugin install. If that
+collector fails from a host-network restriction, Codex must make one fresh pass
+with its available browser search before declaring trends unavailable; it must
+still use dated signals and never substitute an old board for live research.
+Interactive source checks also use the host's available browser tools first.
+Firecrawl is optional: use it only when the user requests it or it is already
+configured and a specific page needs it. Do not check for, install, authenticate,
+or load an optional scraper merely to start an ideas run. The scheduled Claude
+radar uses its own WebSearch/WebFetch; the Codex radar uses its bundled retrieval
+path. Name the tools actually used if the user asks, not every tool mentioned in
+the skill catalog.
 
 ---
 
@@ -320,8 +325,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      when a recent board exists. Check `generated_at` and `status` in this run's
      receipt; never serve an old sidecar as a successful refresh. `partial` means
      use the surviving sources and name the unavailable ones. `failed` or exit 2
-     means refresh unavailable: continue with grounded projects/interests and
-     report that limitation once. Do not re-label old ideas as “trending now.”
+     means first make the one Codex browser-search fallback described above. Only
+     if that also fails is refresh unavailable: continue with grounded
+     projects/interests and report that limitation once. Do not re-label old ideas
+     as “trending now.”
      Zero candidates after filtering means no new matches, not permission to
      recycle old news. **The angle gate (below) applies hardest here: every scored post ever
      sourced from this lane flopped when it shipped as reaction-to-news.**
@@ -372,7 +379,7 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
 
    **Persist the full list — research the user paid for doesn't evaporate.** Follow
    Run presentation's in-place expansion requirement as well. Whether or not it
-   was shown, write `research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
+   was shown, write `~/.claude/ghostwriter/research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
    surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
    open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
    into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
