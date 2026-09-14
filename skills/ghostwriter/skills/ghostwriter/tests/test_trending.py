@@ -324,6 +324,16 @@ def test_read_only_receipt_does_not_mask_a_failed_refresh(tmp_path, monkeypatch,
     assert "read-only" in result["receipt_error"]
 
 
+def test_read_only_receipt_warns_in_human_output(tmp_path, monkeypatch, capsys):
+    argv, _ = _main_env(tmp_path, monkeypatch, frozen_fetch)
+    monkeypatch.setattr(
+        Path, "write_text",
+        lambda self, *args, **kwargs: (_ for _ in ()).throw(PermissionError("read-only")),
+    )
+    assert trending.main(argv) == 0
+    assert "refresh receipt could not be saved" in capsys.readouterr().err
+
+
 def test_default_research_dir_is_user_owned():
     assert trending.RESEARCH_DIR == Path.home() / ".claude" / "ghostwriter" / "research"
 
