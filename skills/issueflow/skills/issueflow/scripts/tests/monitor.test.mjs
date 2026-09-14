@@ -276,7 +276,7 @@ test('current stages exclude future work and expose plan and code review activit
 });
 
 test('a replacement during a detail read cannot publish new bytes under the old attempt', (t) => {
-  const root = fixture(t), f = state(root), a = attempt(f, 'old');
+  const root = realpathSync(fixture(t)), f = state(root), a = attempt(f, 'old');
   f.run.harness.attempts['root/implement.md'] = a; write(a.outputs[0], 'old output'); f.save();
   const replacement = structuredClone(f.run);
   replacement.harness.attempts['root/implement.md'] = attempt(f, 'replacement');
@@ -299,6 +299,8 @@ test('a replacement during a detail read cannot publish new bytes under the old 
   const result = spawnSync(process.execPath, ['--import', preload, cli, 'monitor', '--json', '--run-dir', f.dir],
     { encoding: 'utf8', timeout: 10000 });
   assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(readFileSync(join(f.dir, 'run.json'))).harness.attempts['root/implement.md'].id,
+    'replacement', 'the canonical artifact read must trigger the replacement');
   const run = JSON.parse(result.stdout).runs[0];
   assert.equal(run.status, 'unavailable'); assert.match(run.problems[0], /changed during observation/);
   assert.ok(!result.stdout.includes('replacement output'));
