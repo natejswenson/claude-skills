@@ -249,13 +249,14 @@ function observeRun(dir, now) {
         addReview(`${lane.slug}-review-r${r.round}-verifier-${n}`, !r.registered && !r.cancelled);
       if (r.fix?.briefed) addReview(`${lane.slug}-fix-r${r.round}`, !r.fix.reported && !r.cancelled);
     }
+    const controllerReviews = new Set(reviewLogs);
     for (const agent of agents) {
       if (!root || agent.state === 'conflict') continue;
       const brief = agent.role && ownedPath(root, agent.role);
       if (!brief || dirname(brief) !== join(root, 'briefs')) continue;
       const stem = relative(join(root, 'briefs'), brief).replace(/\.md$/, '');
       if (!/^(review-.+-r\d+|.+-review-r\d+-(finder|verifier)-\d+|.+-fix-r\d+)$/.test(stem)) continue;
-      if (!reviewLogs.has(stem)) addReview(stem, agent.current && agent.state === 'started');
+      if (!controllerReviews.has(stem)) addReview(stem, agent.current && agent.state === 'started');
     }
     for (const stem of reviewLogs) {
       if (!stageActivity.some((s) => s.stage === stem)) stageActivity.push({
