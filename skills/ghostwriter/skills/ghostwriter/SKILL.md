@@ -74,15 +74,16 @@ Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/v
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
 If not, switch to Setup.
 
-**Never narrate or paste execution commands.** Assistant messages contain no Python
+**Keep execution machinery collapsed.** Assistant messages contain no Python
 invocations, shell commands, heredocs, tool payloads, or raw file dumps during a
-normal run. The user sees one status line per slow step, then the result. Native
-tool cards are rendered by the host, not controlled by this skill: do not claim
-they are hidden or invent a setting to hide them. Reduce visible machinery by
-calling existing bundled scripts directly, requesting only needed output, and
-batching independent work; never replace a small operation with an inline Python
-program or dump whole skills/configs to orient yourself. Do not inspect credentials
-in ideas-only mode. Command examples below are execution instructions, not chat copy.
+normal run. When the host offers a collapsed execution/tool group, put every command
+and edit in that group; only the status line and the user-facing result belong in the
+main transcript. The host owns whether native tool cards can collapse, so do not claim
+to control a UI capability that is unavailable. Reduce visible machinery by calling
+existing bundled scripts directly, requesting only needed output, and batching
+independent work; never replace a small operation with an inline Python program or
+dump whole skills/configs to orient yourself. Do not inspect credentials in ideas-only
+mode. Command examples below are execution instructions, not chat copy.
 Nate,
 2026-08-28: "no need for the skill to print and show all the bash commands, it makes it very
 messy." Do the setup check (and any other bookkeeping — idea-board/radar
@@ -112,7 +113,15 @@ label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
 `ghostwriter · visual`, or `ghostwriter · publish`. Under it, show only the result
 that advances the run and the one decision currently needed.
 
-- **Consistent idea table.** Every inline idea menu uses exactly these columns,
+- **Lane-first picker for open-ended posts.** The first question for an open-ended
+  “create a LinkedIn post” request is exactly **“What type of post will you be
+  writing today?”** Offer exactly these choices: **Project** (from recent Claude
+  sessions), **Trends in Industry** (from Hacker News, Claude, OpenAI, and similar
+  current sources), and **Personal Fun**. Do not run or show idea items before this
+  choice. After the user selects a lane, research that lane and populate its items;
+  never flatten unrelated lanes into the first menu. A user who already supplied a
+  concrete topic still bypasses the picker.
+- **Consistent idea table.** Every populated inline idea menu uses exactly these columns,
   in this order: `#`, `Idea`, `Angle / signal`, `Status`. This applies on the first
   display, after “more,” and after “fewer”; never switch to `Choice` / `What you get`.
   Initially show three recommendations. “More” shows the full saved board and
@@ -123,8 +132,8 @@ that advances the run and the one decision currently needed.
   “own topic” and I’ll ask what you want to write about.** This is a separate
   action, not a research row, and is always available, including an empty board.
   If they provide the topic, go directly to grounding and drafting; if they only
-  choose “own topic,” ask one concise topic question and wait. Do not ask them to
-  choose a research lane or re-confirm a topic already supplied.
+  choose “own topic,” ask one concise topic question and wait. Do not re-confirm a
+  topic already supplied.
   End with the available actions: idea number, own topic, more/fewer, or exit.
   Claude's supported selector remains available, with the custom-topic action
   explicitly described beside it; never rely on an unexplained automatic Other.
@@ -236,7 +245,7 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
 
-**Outcome check-in (max one dialog, fast — the feedback loop).** Before anything else, run
+**Outcome check-in (max one dialog, fast — the feedback loop).** Before researching, run
 `python3 scripts/post_outcome.py --stats` and `--list-unscored` (reads `~/.claude/ghostwriter/published.jsonl`,
 written automatically on every publish). If any post **≥2 days old has no `outcome`**, ask ONE
 check-in covering the **most recent unscored post** (up to 3 if several are recent) — *"How did
@@ -249,12 +258,10 @@ number — but record the decline: add `--impressions-declined` so the log disti
 `--stats` prints when 3+ scored posts in a row have no number; when it does, say once that
 the recovery protocol can't be evaluated without impressions, then move on.
 If there's a **backlog** of older unscored posts, offer once to skip it (`--outcome skipped` is
-not a thing — just leave them; don't re-ask every session). **One dialog to
-start: if the idea menu (step 2) is also due, the check-in and the menu ride in the SAME single
-`AskUserQuestion` call** — the check-in takes the first question slot and the flat idea question
-(step 2) takes the second — still one dialog, one round trip, never two sequential question
-dialogs to get a session moving. Only when no menu is due (the topic came in concrete)
-may the check-in be its own question. Never ask more
+not a thing — just leave them; don't re-ask every session). **The lane-first picker always comes
+first for an open-ended request.** If a check-in is due, ask it only after the user selects the
+lane, alongside that lane's populated ideas when the host supports two questions; otherwise
+record it after the idea selection. Never ask more
 than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
 outcomes everywhere you choose — from the `--stats` rollup, never re-derived by eye:** lean
 the idea menu toward lanes that scored `great` and away from repeated `flopped` (cite the
@@ -267,15 +274,12 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    you at a source, or said "draft a post from item N in the radar," skip the menu and go straight
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
-2. **No topic given → ONE flat idea question, pick and go.** Apply the host mapping
-   in Run presentation: Codex Default presents the actual menu inline in the final
-   response; Claude uses its supported selector. Gather concrete, ready-to-write
-   ideas from the four lanes below *yourself*, then **flatten them into a single ranked list**
-   (lane priority order below, bent by outcome history) and present the **top 3** as **ONE
-   single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
-   ideas."** Never go back to asking one question per lane: that forced paging past unrelated
-   cards even after the user had already picked, which is exactly backwards. Rules of the
-   question:
+2. **No topic given → pick a lane, then pick an idea.** Apply the host mapping in Run
+   presentation: Codex Default presents the lane picker inline; Claude uses its supported
+   selector. Ask **“What type of post will you be writing today?”** with exactly **Project**,
+   **Trends in Industry**, and **Personal Fun**. After the user picks, gather concrete,
+   ready-to-write ideas only from that lane and present its top three plus **“Show more ideas.”**
+   Rules of the populated idea question:
    - **Every idea option carries a compact `preview`** (target 3 lines, hard cap ~5 so the pane
      never clips): the working hook, the suggested angle, and one source-freshness line prefixed
      with its lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`,
@@ -292,11 +296,13 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    - **One provenance line total in chat**, not per lane (radar date + job health, live-search
      date, repo names) — don't dump a duplicate board into chat; the question options carry the
      ideas (the inline table carries them in Codex Default).
-   - **When the outcome check-in is due** it rides as the first question in the SAME call (see
-     above); the flat idea question is the second. Still one dialog, one round trip.
+   - **When the outcome check-in is due**, it follows the lane picker and can share the populated
+     idea view when the host supports it. It never displaces the lane picker as the first question.
 
-   The four lanes, in priority order (used to rank the flattened list, not to structure separate
-   questions). **This order is outcome-driven, not editorial:** first-person build stories are
+   The source lanes below map to the three user-facing choices: **Project** uses recent Claude
+   projects; **Trends in Industry** combines live trends and release radar; **Personal Fun** uses
+   interests, personal stories, and hot takes. **This order is outcome-driven, not editorial:**
+   first-person build stories are
    the only lane that has ever rated `great`, and both `flopped` posts were news-shaped
    (release/opinion takes on someone else's announcement). News still surfaces — but only when
    the signal is strong AND the user has a real angle, and it ranks below lived work:
@@ -362,9 +368,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      assets from the loaded plugin. First-time Codex setup uses
      `bash scripts/install_radar.sh --backend codex` and requires Codex authentication
      plus `~/.claude/ghostwriter/voice/interests.md` (or explicit `--interests <path>`).
-   **Build the list fast and honestly.** Gather all four lanes in parallel (the
-   `trending.py` sweep, the radar read + top-up, interests, `recent_projects.py`) so the
-   question is the first thing the user waits on. **The angle gate:** an idea enters the menu
+   **Build the selected list fast and honestly.** After the lane selection, gather only the
+   selected lane's sources: `recent_projects.py` for Project, interests/story-bank material for
+   Personal Fun, or `trending.py` plus radar/top-up for Trends in Industry. **The angle gate:** an idea enters the menu
    only when paired with a named angle the user actually owns — a recent project, a story-bank
    item from `interests.md`, or a listed defended opinion. A high-signal item with no such
    pairing goes on the board's **Watchlist** section (visible, never a menu option); it
@@ -373,21 +379,20 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    the user actually ran stays in the projects lane (lived beats trending); a release surging on
    HN that the user hasn't touched is Trending, not Radar. Filter every candidate against
    `published.jsonl`
-   and recent `drafts/` so nothing already covered resurfaces. Rank the flattened list by lane
-   priority and the outcome history, and say so in the provenance line when it bends the order
-   ("build stories lead; your last news post flopped").
+   and recent `drafts/` so nothing already covered resurfaces. Rank the selected lane's list by
+   relevance and outcome history, and say so in the provenance line when it changes the order.
 
    **Persist the full list — research the user paid for doesn't evaporate.** Follow
    Run presentation's in-place expansion requirement as well. Whether or not it
    was shown, write `~/.claude/ghostwriter/research/idea-board-YYYY-MM-DD.md`: every idea gathered (not just the 3
-   surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next
-   open-ended run, read the newest board (≤7 days old) and fold still-good unpicked ideas back
-   into the flattened ranking labeled `on deck · <date>` — re-verify a trending idea's signal
+   surfaced) with its lane, signal, angle, and status (`picked` / `on deck`). On the next run
+   for the same lane, read the newest board (≤7 days old) and fold still-good unpicked ideas back
+   into that lane's ranking labeled `on deck · <date>` — re-verify a trending idea's signal
    before reusing it, and drop anything that went stale. **On-deck TTL:** an idea unpicked
    after 3 consecutive boards is dropped or demoted to the Watchlist unless its signal is
    re-verified fresh that day — the boards are a menu, not a museum.
 
-   **After the pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
+   **After the idea pick: lock it in, zero extra dialogs.** Echo a compact brief and go —
    `Locked in: <idea> · <lane>`, with at most one sentence naming the real anchor
    if it was not already in the option. Keep the angle, save, and source plan in the
    saved board rather than repeating the selected preview. Then straight to
@@ -507,10 +512,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      the approval dialog as the Publish option's `preview`, without fold markers
      or metadata. Longer posts use the opened file; name the line count and final
      line in the question rather than pasting a second, clipped copy.
-   - **Codex:** show the complete draft once, with its actionable file link. If the
-     client collapses that text or lacks an unclipped preview, open the saved file
-     and check the opener result as above. Do not assume Claude's `preview` field
-     exists, or force an editor launch when the full draft is already readable.
+   - **Codex:** always display the complete post text directly in the terminal/chat response,
+     including every line after the fold; a file link is supplemental, never the only view.
+     Also open the saved draft when the host supports it, so the user can review it outside a
+     collapsed transcript. If opening fails, retain the full inline text and provide the link.
    Ask once about that exact draft: **Publish** / **Edit** / **Scrap**. Typed edit
    instructions go straight to the edit; no extra confirmation. If the host has no
    eligible question tool, ask one concise chat question and wait. An unanswered
