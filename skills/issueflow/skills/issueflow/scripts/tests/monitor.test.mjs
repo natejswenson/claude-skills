@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -83,6 +83,16 @@ test('public observer groups two hosts and deduplicates outputs while retaining 
   assert.equal(claude.agents[0].state, 'failed'); assert.equal(claude.agents[0].details[0].text, 'claude current only');
   assert.ok(!JSON.stringify(out).includes('MUST-NOT-LEAK'));
   assert.deepEqual(tree(root), before, 'observing must leave all run and ownership bytes unchanged');
+  delete current.native; delete old.native;
+  a.run.harness.attempts['root/test-output.txt'] = structuredClone(current);
+  a.run.harness.attemptHistory = [old, structuredClone(old)]; a.save();
+  const missingNative = snapshot(root).runs.find((r) => r.host === 'codex');
+  for (const agent of missingNative.agents) {
+    assert.equal(agent.state, 'unknown'); assert.equal(agent.workerId, null);
+    assert.equal(agent.role, 'root/implement'); assert.ok(agent.outputs.length);
+    assert.equal(agent.details[0].status, 'available');
+  }
+  assert.equal(missingNative.agents.find((r) => r.attemptId === 'old').details[0].text, 'old immutable output');
 });
 
 test('refresh exposes stages, terminal observations, stage activity and attention-required controller transitions', (t) => {
@@ -114,6 +124,7 @@ test('conflicting duplicates fail closed independent of source order', (t) => {
   for (const change of [
     (b) => { b.native.workerId = 'other-worker'; },
     (b) => { b.native.status = 'failed'; },
+    (b) => { delete b.native; },
     (b) => { b.generation = 'different-generation'; },
     (b) => { b.outputs = [join(f.dir, 'other.md')]; },
     ...['outputs', 'generation', 'completion', 'brief', 'manifestHash'].map((field) => (b) => { delete b[field]; }),
@@ -174,6 +185,25 @@ test('prepared artifacts require matching execution ownership and immutable arch
   const before = tree(root), observed = snapshot(root).runs.find((r) => r.issue === 1);
   assert.equal(observed.agents[0].details[0].text, 'owned prepared result');
   assert.deepEqual(observed.problems, []); assert.deepEqual(tree(root), before);
+  const dotGit = join(source, '.git'), heldGit = join(root, 'held-git');
+  renameSync(dotGit, heldGit);
+  assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
+  const other = join(root, 'other-repository');
+  mkdirSync(other); execFileSync('git', ['init', '-q', other]);
+  write(dotGit, 'gitdir: ' + join(other, '.git') + '\n');
+  assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
+  rmSync(dotGit); renameSync(heldGit, dotGit);
+  execFileSync('git', ['-C', source, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+    'commit', '--allow-empty', '-qm', 'fixture']);
+  const linked = join(root, 'linked');
+  execFileSync('git', ['-C', source, 'worktree', 'add', '-qb', 'linked', linked]);
+  f.run.repo.path = linked; f.run.execution.source = linked;
+  write(join(path, 'owner.json'), { ...owner, generation, source: linked, common: dotGit }); f.save();
+  assert.deepEqual(snapshot(root).runs.find((r) => r.issue === 1).problems, []);
+  const pointer = readFileSync(join(linked, '.git'));
+  write(join(linked, '.git'), 'gitdir: ' + join(other, '.git') + '\n');
+  assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
+  writeFileSync(join(linked, '.git'), pointer);
   const marker = join(path, 'owner.json'), markerBytes = readFileSync(marker);
   rmSync(marker); execFileSync('mkfifo', [marker]);
   assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
@@ -273,6 +303,25 @@ test('current stages exclude future work and expose plan and code review activit
   const code = snapshot(root).runs[0];
   assert.equal(code.currentStage, 'root-review-r1-finder-1');
   assert.equal(code.stageActivity.find((s) => s.stage === code.currentStage).text, 'code review underway');
+  f.run.lanes[0].review.rounds[0].cancelled = 'cancelled';
+  f.run.lanes[0].review.rounds[0].verifiers = 1;
+  f.run.lanes[0].review.rounds.push({ round: 2, angles: ['correctness'], registered: null }); f.save();
+  const next = snapshot(root).runs[0];
+  assert.equal(next.currentStage, 'root-review-r2-finder-1');
+  assert.equal(next.stageActivity.find((s) => s.stage === 'root-review-r1-finder-1').text, 'code review underway');
+  f.run.lanes[0].review.rounds[1].registered = 'registered'; f.save();
+  assert.equal(snapshot(root).runs[0].currentStage, 'unavailable');
+  for (const name of ['bad\x1b[2J\u202ename', 'x'.repeat(20000)]) {
+    f.run.stages[0].id = name; f.run.stages[0].state = 'submitted';
+    f.run.stages[0].review = { briefed: { round: 1 }, rounds: [] };
+    f.run.lanes[0].slug = name;
+    f.run.lanes[0].review.rounds[1].registered = null; f.save();
+    const sanitized = snapshot(root).runs[0];
+    for (const label of [sanitized.currentStage, ...sanitized.stageActivity.map((s) => s.stage)]) {
+      assert.doesNotMatch(label, /[\x1b\u202e]/);
+      assert.ok(label.length <= 16384);
+    }
+  }
 });
 
 test('a replacement during a detail read cannot publish new bytes under the old attempt', (t) => {

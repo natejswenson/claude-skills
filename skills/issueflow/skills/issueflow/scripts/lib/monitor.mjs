@@ -70,6 +70,29 @@ function textOwned(root, path, now) {
 }
 const unavailable = (reason) => ({ status: 'unavailable', reason, text: null, freshness: 'unavailable' });
 
+// Read Git's on-disk directory links without spawning Git or following special files.
+function sourceCommon(source) {
+  const dotGit = join(source, '.git'), metadata = lstatSync(dotGit);
+  let gitDir = dotGit;
+  if (!metadata.isDirectory()) {
+    const file = readOwned(source, '.git');
+    const match = file.bytes?.toString('utf8').match(/^gitdir: ([^\r\n]+)\s*$/);
+    if (!match) throw new Error('invalid source Git directory');
+    gitDir = realpathSync(resolve(source, match[1].trim()));
+  }
+  const commonFile = readOwned(gitDir, 'commondir');
+  if (!commonFile.bytes && commonFile.reason !== 'ENOENT') throw new Error('unavailable Git common directory');
+  if (commonFile.bytes && !commonFile.bytes.toString('utf8').trim()) throw new Error('empty Git common directory');
+  const common = commonFile.bytes
+    ? realpathSync(resolve(gitDir, commonFile.bytes.toString('utf8').trim())) : realpathSync(gitDir);
+  const head = readOwned(gitDir, 'HEAD');
+  if (!head.bytes || !/^(ref: refs\/[^\s]+|[a-f0-9]{40}|[a-f0-9]{64})\s*$/.test(head.bytes.toString('utf8')) ||
+      !['objects', 'refs'].every((name) => lstatSync(join(common, name)).isDirectory())) {
+    throw new Error('invalid source repository');
+  }
+  return common;
+}
+
 // Observation must not enter execution's unbounded owner-file or Git readers.
 function observationRoot(canonical, run) {
   const e = run.execution;
@@ -79,7 +102,7 @@ function observationRoot(canonical, run) {
       !isAbsolute(e.root ?? '') || realpathSync(e.root) !== e.root ||
       !/^[a-f0-9-]{36}$/.test(e.generation ?? '') || e.key !== hash(JSON.stringify(owner)) ||
       e.path !== join(e.root, 'issueflow', e.key, e.generation) ||
-      e.source !== realpathSync(run.repo.path) || !isAbsolute(e.common ?? '') ||
+      e.source !== realpathSync(run.repo.path) || e.common !== sourceCommon(e.source) ||
       inside(canonical, e.root) || inside(join(homedir(), '.claude'), e.root) ||
       inside(e.common, e.root) || inside(e.root, e.source) || inside(e.source, e.root)) {
     throw new Error('invalid execution ownership');
@@ -124,13 +147,14 @@ function agentsOf(run, runKey, root, stages, now) {
     const distinct = (fn) => [...new Set(records.map(fn))];
     const generations = distinct((a) => a.generation), ids = distinct((a) => a.native?.workerId);
     const states = distinct((a) => a.native?.status);
-    const terminals = states.filter((s) => s !== 'started');
+    const terminals = states.filter((s) => s !== undefined && s !== 'started');
     const bindings = entries.filter((e) => e.binding !== null).map((e) => e.binding).sort();
     const a = records[0] ?? {};
     const outputs = Array.isArray(a.outputs) ? a.outputs : [];
     const conflict = records.length !== entries.length || typeof a.id !== 'string' ||
       generations.length !== 1 || typeof generations[0] !== 'string' || ids.length > 1 || terminals.length > 1 ||
-      states.some((s) => !['started', 'completed', 'failed', 'cancelled'].includes(s)) ||
+      states.some((s) => s !== undefined && !['started', 'completed', 'failed', 'cancelled'].includes(s)) ||
+      (states.includes(undefined) && states.length > 1) ||
       distinct((r) => JSON.stringify(r.outputs)).length > 1 ||
       ['brief', 'briefHash', 'manifest', 'manifestHash', 'completion'].some((field) => distinct((r) => r[field]).length > 1) ||
       !outputs.length || outputs.some((p) => typeof p !== 'string') ||
@@ -208,7 +232,7 @@ function observeRun(dir, now) {
     // reuse these logs, so their bytes must never be attributed to a native worker.
     const activeReviews = [];
     const reviewLogs = new Set();
-    const addReview = (stem, active) => { reviewLogs.add(stem); if (active) activeReviews.push(stem); };
+    const addReview = (stem, active) => { reviewLogs.add(stem); if (active) activeReviews.push(cleanText(stem)); };
     for (const [lane, entries] of [[null, run.stages], ...run.lanes.map((l) => [l.slug, l.stages])]) {
       for (const s of entries ?? []) {
         const round = s.review?.briefed?.round;
@@ -220,10 +244,10 @@ function observeRun(dir, now) {
     for (const lane of run.lanes) for (const r of lane.review?.rounds ?? []) {
       if (!Number.isSafeInteger(r.round) || r.round < 1) continue;
       for (let n = 1; n <= Math.min(r.angles?.length ?? 0, 100); n++)
-        addReview(`${lane.slug}-review-r${r.round}-finder-${n}`, !r.registered);
+        addReview(`${lane.slug}-review-r${r.round}-finder-${n}`, !r.registered && !r.cancelled);
       for (let n = 1; n <= Math.min(r.verifiers ?? 0, 100); n++)
-        addReview(`${lane.slug}-review-r${r.round}-verifier-${n}`, !r.registered);
-      if (r.fix?.briefed) addReview(`${lane.slug}-fix-r${r.round}`, !r.fix.reported);
+        addReview(`${lane.slug}-review-r${r.round}-verifier-${n}`, !r.registered && !r.cancelled);
+      if (r.fix?.briefed) addReview(`${lane.slug}-fix-r${r.round}`, !r.fix.reported && !r.cancelled);
     }
     for (const agent of agents) {
       if (!root || agent.state === 'conflict') continue;
@@ -231,11 +255,11 @@ function observeRun(dir, now) {
       if (!brief || dirname(brief) !== join(root, 'briefs')) continue;
       const stem = relative(join(root, 'briefs'), brief).replace(/\.md$/, '');
       if (!/^(review-.+-r\d+|.+-review-r\d+-(finder|verifier)-\d+|.+-fix-r\d+)$/.test(stem)) continue;
-      addReview(stem, agent.current && agent.state === 'started');
+      if (!reviewLogs.has(stem)) addReview(stem, agent.current && agent.state === 'started');
     }
     for (const stem of reviewLogs) {
       if (!stageActivity.some((s) => s.stage === stem)) stageActivity.push({
-        stage: stem, source: 'review activity (not worker-specific)',
+        stage: cleanText(stem), source: 'review activity (not worker-specific)',
         ...(root ? textOwned(root, join('progress', `${stem}.log`), now) : unavailable('Review activity unavailable')),
       });
     }
@@ -251,7 +275,7 @@ function observeRun(dir, now) {
       issue: Number.isSafeInteger(run.issue.number) ? run.issue.number : null, title: cleanText(run.issue.title),
       createdAt: stamp(run.createdAt), host: ['claude', 'codex'].includes(run.runtime) ? run.runtime : 'unknown',
       ownerFingerprint: /^[a-f0-9]{64}$/.test(run.initialization?.owner?.digest ?? '') ? run.initialization.owner.digest : null,
-      state, currentStage: [...currentStages.map((s) => s.key), ...new Set(activeReviews)].join(', ') || 'unavailable',
+      state, currentStage: cleanText([...currentStages.map((s) => s.key), ...new Set(activeReviews)].join(', ')) || 'unavailable',
       nextAction: cleanText(presentation?.nextAction ?? run.presentation?.lastProgress),
       lastObservedAt, freshness: age(lastObservedAt, now), stages, stageActivity, agents, problems,
       agentsNote: agents.length ? null : 'Native agent observations unavailable; no recorded attempts' };
