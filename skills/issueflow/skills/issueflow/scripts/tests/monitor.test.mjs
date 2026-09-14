@@ -76,7 +76,7 @@ test('public observer groups two hosts and deduplicates outputs while retaining 
   assert.equal(codex.agents.length, 2); assert.equal(claude.agents.length, 1);
   const worker = codex.agents.find((r) => r.attemptId === 'new'), historical = codex.agents.find((r) => r.attemptId === 'old');
   assert.notEqual(worker.key, claude.agents[0].key);
-  assert.equal(worker.state, 'started'); assert.equal(worker.freshness, 'stale');
+  assert.equal(worker.state, 'started'); assert.equal(worker.freshness, 'fresh');
   assert.equal(worker.details[0].text, 'codex current only'); assert.equal(worker.details[1].text, 'test details');
   assert.equal(historical.membership, 'historical'); assert.equal(historical.state, 'completed');
   assert.equal(historical.details[0].text, 'old immutable output');
@@ -116,6 +116,7 @@ test('conflicting duplicates fail closed independent of source order', (t) => {
     (b) => { b.native.status = 'failed'; },
     (b) => { b.generation = 'different-generation'; },
     (b) => { b.outputs = [join(f.dir, 'other.md')]; },
+    ...['outputs', 'generation', 'completion', 'brief', 'manifestHash'].map((field) => (b) => { delete b[field]; }),
   ]) {
     const b = structuredClone(a); change(b);
     f.run.harness.attemptHistory = [a, b]; f.save();
@@ -173,6 +174,12 @@ test('prepared artifacts require matching execution ownership and immutable arch
   const before = tree(root), observed = snapshot(root).runs.find((r) => r.issue === 1);
   assert.equal(observed.agents[0].details[0].text, 'owned prepared result');
   assert.deepEqual(observed.problems, []); assert.deepEqual(tree(root), before);
+  const marker = join(path, 'owner.json'), markerBytes = readFileSync(marker);
+  rmSync(marker); execFileSync('mkfifo', [marker]);
+  assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
+  rmSync(marker); write(marker, 'x'.repeat(1024 * 1024 + 1));
+  assert.match(snapshot(root).runs.find((r) => r.issue === 1).problems[0], /ownership/);
+  writeFileSync(marker, markerBytes);
   const envelope = JSON.parse(readFileSync(a.completion));
   envelope.generation = 'wrong-generation'; write(a.completion, envelope);
   assert.equal(snapshot(root).runs.find((r) => r.issue === 1).agents[0].details[0].status, 'unavailable');
@@ -230,4 +237,69 @@ test('ancestor aliases preserve current output and historical archives without f
   const secret = join(root, 'secret'); write(secret, 'outside secret');
   rmSync(current.outputs[0]); symlinkSync(secret, current.outputs[0]);
   assert.equal(snapshot(alias).runs[0].agents.find((a) => a.attemptId === 'current').details[0].status, 'unavailable');
+});
+
+test('output timestamps refresh workers and runs, and finished state overrides presentation', (t) => {
+  const root = fixture(t), f = state(root), a = attempt(f, 'fresh-output');
+  delete f.run.presentation;
+  f.run.harness.attempts['root/implement.md'] = a; f.save();
+  utimesSync(join(f.dir, 'run.json'), 1, 1);
+  const before = snapshot(root).runs[0];
+  assert.equal(before.freshness, 'stale'); assert.equal(before.agents[0].freshness, 'stale');
+  write(a.outputs[0], 'new activity');
+  const after = snapshot(root).runs[0];
+  assert.equal(after.freshness, 'fresh'); assert.equal(after.agents[0].freshness, 'fresh');
+  assert.equal(after.lastObservedAt, after.agents[0].details[0].observedAt);
+  f.run.finished = { at: new Date().toISOString() };
+  f.run.presentation = { snapshot: { state: 'waiting for worker' } }; f.save();
+  assert.equal(snapshot(root).runs[0].state, 'finished');
+});
+
+test('current stages exclude future work and expose plan and code review activity without attempts', (t) => {
+  const root = fixture(t), f = state(root);
+  f.run.stages[0].state = 'briefed';
+  f.run.stages.push({ id: 'future', state: 'pending' });
+  f.run.lanes[0].stages[0].state = 'pending'; f.save();
+  assert.equal(snapshot(root).runs[0].currentStage, 'investigate');
+  f.run.stages[0].state = 'submitted';
+  f.run.stages[0].review = { briefed: { round: 1 }, rounds: [] };
+  write(join(f.dir, 'progress/review-investigate-r1.log'), 'plan review underway'); f.save();
+  const plan = snapshot(root).runs[0];
+  assert.match(plan.currentStage, /review-investigate-r1/);
+  assert.equal(plan.stageActivity.find((s) => s.stage === 'review-investigate-r1').text, 'plan review underway');
+  f.run.stages[0].state = 'approved'; f.run.lanes[0].stages[0].state = 'approved';
+  f.run.lanes[0].review = { rounds: [{ round: 1, angles: ['correctness'], registered: null }] };
+  write(join(f.dir, 'progress/root-review-r1-finder-1.log'), 'code review underway'); f.save();
+  const code = snapshot(root).runs[0];
+  assert.equal(code.currentStage, 'root-review-r1-finder-1');
+  assert.equal(code.stageActivity.find((s) => s.stage === code.currentStage).text, 'code review underway');
+});
+
+test('a replacement during a detail read cannot publish new bytes under the old attempt', (t) => {
+  const root = fixture(t), f = state(root), a = attempt(f, 'old');
+  f.run.harness.attempts['root/implement.md'] = a; write(a.outputs[0], 'old output'); f.save();
+  const replacement = structuredClone(f.run);
+  replacement.harness.attempts['root/implement.md'] = attempt(f, 'replacement');
+  const preload = join(root, 'replace-on-read.mjs');
+  write(preload, `
+    import fs from 'node:fs';
+    import { syncBuiltinESMExports } from 'node:module';
+    const original = fs.openSync;
+    let replaced = false;
+    fs.openSync = function(path, ...args) {
+      if (!replaced && path === ${JSON.stringify(a.outputs[0])}) {
+        replaced = true;
+        fs.writeFileSync(${JSON.stringify(join(f.dir, 'run.json'))}, ${JSON.stringify(JSON.stringify(replacement))});
+        fs.writeFileSync(path, 'replacement output');
+      }
+      return original.call(this, path, ...args);
+    };
+    syncBuiltinESMExports();
+  `);
+  const result = spawnSync(process.execPath, ['--import', preload, cli, 'monitor', '--json', '--run-dir', f.dir],
+    { encoding: 'utf8', timeout: 10000 });
+  assert.equal(result.status, 0, result.stderr);
+  const run = JSON.parse(result.stdout).runs[0];
+  assert.equal(run.status, 'unavailable'); assert.match(run.problems[0], /changed during observation/);
+  assert.ok(!result.stdout.includes('replacement output'));
 });

@@ -2,9 +2,8 @@
 import { createHash } from 'node:crypto';
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
-import { activeRoot } from './execution.mjs';
 
 const JSON_LIMIT = 1024 * 1024;
 const TEXT_LIMIT = 16384;
@@ -71,6 +70,30 @@ function textOwned(root, path, now) {
 }
 const unavailable = (reason) => ({ status: 'unavailable', reason, text: null, freshness: 'unavailable' });
 
+// Observation must not enter execution's unbounded owner-file or Git readers.
+function observationRoot(canonical, run) {
+  const e = run.execution;
+  if (!e) return canonical;
+  const owner = { dir: canonical, createdAt: run.createdAt, issue: run.issue.number };
+  if (e.version !== 1 || ['dir', 'createdAt', 'issue'].some((field) => e.owner?.[field] !== owner[field]) ||
+      !isAbsolute(e.root ?? '') || realpathSync(e.root) !== e.root ||
+      !/^[a-f0-9-]{36}$/.test(e.generation ?? '') || e.key !== hash(JSON.stringify(owner)) ||
+      e.path !== join(e.root, 'issueflow', e.key, e.generation) ||
+      e.source !== realpathSync(run.repo.path) || !isAbsolute(e.common ?? '') ||
+      inside(canonical, e.root) || inside(join(homedir(), '.claude'), e.root) ||
+      inside(e.common, e.root) || inside(e.root, e.source) || inside(e.source, e.root)) {
+    throw new Error('invalid execution ownership');
+  }
+  const marker = readOwned(e.root, join(e.path, 'owner.json'), JSON_LIMIT);
+  if (!marker.bytes || marker.bytes.toString('utf8') !==
+      JSON.stringify({ ...e.owner, generation: e.generation, source: e.source, common: e.common })) {
+    throw new Error('invalid execution owner marker');
+  }
+  const root = join(e.path, 'artifacts');
+  if (realpathSync(root) !== root) throw new Error('unsafe artifacts root');
+  return root;
+}
+
 function stagesOf(run) {
   const stages = [];
   const add = (entries, lane) => {
@@ -98,7 +121,7 @@ function agentsOf(run, runKey, root, stages, now) {
   }
   return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([identity, entries]) => {
     const records = entries.map((e) => e.attempt).filter(object);
-    const distinct = (fn) => [...new Set(records.map(fn).filter((v) => v !== null && v !== undefined))];
+    const distinct = (fn) => [...new Set(records.map(fn))];
     const generations = distinct((a) => a.generation), ids = distinct((a) => a.native?.workerId);
     const states = distinct((a) => a.native?.status);
     const terminals = states.filter((s) => s !== 'started');
@@ -113,7 +136,7 @@ function agentsOf(run, runKey, root, stages, now) {
       !outputs.length || outputs.some((p) => typeof p !== 'string') ||
       (root && bindings.some((b) => !outputs.some((p) => ownedPath(root, p) === ownedPath(root, b))));
     const generation = generations.length === 1 ? cleanText(generations[0]) : null;
-    const key = hash(JSON.stringify([runKey, generations.slice().sort(), identity]));
+    const key = hash(JSON.stringify([runKey, generations.map((g) => g ?? null).sort(), identity]));
     const at = latest(records.flatMap((r) => [r.native?.startedAt, r.native?.terminalAt]));
     const matching = root ? stages.filter((s) => s.artifact && outputs.some((p) =>
       typeof p === 'string' && ownedPath(root, p) === ownedPath(root, s.artifact))) : [];
@@ -151,6 +174,8 @@ function agentsOf(run, runKey, root, stages, now) {
       } else agent.details.push(unavailable('Historical output unavailable; live path may belong to a replacement'));
     });
     if (outputs.length > 16) agent.details.push(unavailable('Additional outputs omitted: observation limit 16'));
+    agent.lastObservedAt = latest([at, ...agent.details.map((d) => d.observedAt)]);
+    agent.freshness = age(agent.lastObservedAt, now);
     return agent;
   });
 }
@@ -171,14 +196,53 @@ function observeRun(dir, now) {
     const key = hash(JSON.stringify([canonical, run.createdAt ?? null]));
     const stages = stagesOf(run), problems = [];
     let root;
-    try { root = realpathSync(activeRoot(canonical, run)); }
+    try { root = observationRoot(canonical, run); }
     catch { problems.push('Execution artifacts unavailable: missing storage or invalid execution ownership'); }
     const agents = agentsOf(run, key, root, stages, now);
-    const currentStages = stages.filter((s) => !['approved', 'skipped'].includes(s.state));
+    const currentStages = stages.filter((s) => !['pending', 'approved', 'skipped'].includes(s.state));
     const presentation = run.presentation?.snapshot ?? run.presentation;
-    const state = cleanText(presentation?.state) ?? (run.finished ? 'finished' : currentStages[0]?.state ?? 'unknown');
+    const state = run.finished ? 'finished' : cleanText(presentation?.state) ?? currentStages[0]?.state ?? 'unknown';
     const stageActivity = currentStages.map((s) => ({ stage: s.key, source: 'stage activity (not worker-specific)',
       ...(root && s.key ? textOwned(root, join('progress', `${s.key.replace('/', '-')}.log`), now) : unavailable('Stage activity unavailable')) }));
+    // Review progress shares a brief's stem but is stage activity: replacements may
+    // reuse these logs, so their bytes must never be attributed to a native worker.
+    const activeReviews = [];
+    const reviewLogs = new Set();
+    const addReview = (stem, active) => { reviewLogs.add(stem); if (active) activeReviews.push(stem); };
+    for (const [lane, entries] of [[null, run.stages], ...run.lanes.map((l) => [l.slug, l.stages])]) {
+      for (const s of entries ?? []) {
+        const round = s.review?.briefed?.round;
+        if (Number.isSafeInteger(round) && round > 0) addReview(
+          `review-${lane ? lane + '-' : ''}${s.id}-r${round}`,
+          !s.review.rounds?.some((r) => r.round === round) && !['approved', 'skipped'].includes(s.state));
+      }
+    }
+    for (const lane of run.lanes) for (const r of lane.review?.rounds ?? []) {
+      if (!Number.isSafeInteger(r.round) || r.round < 1) continue;
+      for (let n = 1; n <= Math.min(r.angles?.length ?? 0, 100); n++)
+        addReview(`${lane.slug}-review-r${r.round}-finder-${n}`, !r.registered);
+      for (let n = 1; n <= Math.min(r.verifiers ?? 0, 100); n++)
+        addReview(`${lane.slug}-review-r${r.round}-verifier-${n}`, !r.registered);
+      if (r.fix?.briefed) addReview(`${lane.slug}-fix-r${r.round}`, !r.fix.reported);
+    }
+    for (const agent of agents) {
+      if (!root || agent.state === 'conflict') continue;
+      const brief = agent.role && ownedPath(root, agent.role);
+      if (!brief || dirname(brief) !== join(root, 'briefs')) continue;
+      const stem = relative(join(root, 'briefs'), brief).replace(/\.md$/, '');
+      if (!/^(review-.+-r\d+|.+-review-r\d+-(finder|verifier)-\d+|.+-fix-r\d+)$/.test(stem)) continue;
+      addReview(stem, agent.current && agent.state === 'started');
+    }
+    for (const stem of reviewLogs) {
+      if (!stageActivity.some((s) => s.stage === stem)) stageActivity.push({
+        stage: stem, source: 'review activity (not worker-specific)',
+        ...(root ? textOwned(root, join('progress', `${stem}.log`), now) : unavailable('Review activity unavailable')),
+      });
+    }
+    const confirmed = readOwned(canonical, 'run.json', JSON_LIMIT);
+    if (!confirmed.bytes || !confirmed.bytes.equals(file.bytes) || confirmed.observedAt !== file.observedAt) {
+      throw new Error('Run changed during observation; refresh to read current attempt bindings');
+    }
     const lastObservedAt = latest([file.observedAt, run.presentation?.emittedAt,
       ...stages.map((s) => s.lastObservedAt), ...agents.map((a) => a.lastObservedAt),
       ...stageActivity.map((s) => s.observedAt)]);
@@ -187,7 +251,7 @@ function observeRun(dir, now) {
       issue: Number.isSafeInteger(run.issue.number) ? run.issue.number : null, title: cleanText(run.issue.title),
       createdAt: stamp(run.createdAt), host: ['claude', 'codex'].includes(run.runtime) ? run.runtime : 'unknown',
       ownerFingerprint: /^[a-f0-9]{64}$/.test(run.initialization?.owner?.digest ?? '') ? run.initialization.owner.digest : null,
-      state, currentStage: currentStages.map((s) => s.key).join(', ') || 'unavailable',
+      state, currentStage: [...currentStages.map((s) => s.key), ...new Set(activeReviews)].join(', ') || 'unavailable',
       nextAction: cleanText(presentation?.nextAction ?? run.presentation?.lastProgress),
       lastObservedAt, freshness: age(lastObservedAt, now), stages, stageActivity, agents, problems,
       agentsNote: agents.length ? null : 'Native agent observations unavailable; no recorded attempts' };
