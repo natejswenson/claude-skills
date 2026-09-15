@@ -10,6 +10,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - Design documents no longer require runtime regression tests because their filenames contain persistence or authentication terms. Preflight and committed-scope verification recognize normative design prose and JSON examples while retaining stronger checks for executable content, agent instructions, and protected directories.
+- Python unittest summaries now supply real test counts to verification. Empty or entirely skipped suites, import errors, failures, and nonzero process exits retain their blocking behavior.
 
 ## [0.17.0] - 2026-09-13
 
