@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { recoverOwner, assertControllerOwner, initializeRecord, resumeInitialization, initializationProblems } from './lib/initialization.mjs';
 import { freezeRepository } from './lib/repository.mjs';
 import { statusSnapshot, progressEvent } from './lib/status.mjs';
+import { monitorSnapshot } from './lib/monitor.mjs';
 import { assertReadyAuthority, completeRun, completionIntent, recordAuthorization } from './lib/completion.mjs';
 import { proposePublishedAmendment, briefPublishedAmendment, registerPublishedAmendment, applyPublishedAmendment } from './lib/published-amendment.mjs';
 import { dispatchProfile } from './lib/runtime.mjs';
@@ -1960,6 +1961,7 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
                                                 retain abandoned review evidence; does not renew round/time caps
                                                 abandon a wave ONLY after every affected native worker is terminal
   issueflow runs
+  issueflow monitor --json [--run-root <path> | --run-dir <path>]
   issueflow ship   [--issue <n>] [--dry-run] [--no-draft] [--force]
   issueflow review-brief      --lane <slug>     open a review round: the diff, the finder briefs
   issueflow review-verify     --lane <slug>     pool the candidates, brief the verifiers
@@ -2102,6 +2104,11 @@ async function main() {
       case 'split': return await cmdSplit(args);
       case 'status': return await cmdStatus(args);
       case 'runs': return await cmdRuns(args);
+      case 'monitor': {
+        if (!args.json) throw new RunError('Terminal monitor is not available in this layer. Use issueflow monitor --json [--run-root <path> | --run-dir <path>].');
+        console.log(JSON.stringify(monitorSnapshot(args), null, 2));
+        return;
+      }
       case 'ship': return await cmdShip(args);
       case 'review-brief': return await cmdReviewBrief(args);
       case 'review-verify': return await cmdReviewVerify(args);
