@@ -86,7 +86,7 @@ function detailLines(view, run, agent) {
   } else {
     for (const stage of run.stages ?? []) lines.push(`Stage ${stage.key}: ${stage.state}`);
     for (const activity of run.stageActivity ?? []) lines.push(`${activity.source}: ${activity.stage}`,
-      `Observed: ${activity.observedAt ?? 'unavailable'} (${activity.freshness})`, activity.text ?? activity.reason ?? 'Activity unavailable');
+      `Observed: ${activity.observedAt ?? 'unavailable'} (${activity.freshness})${activity.truncated ? ' [bounded excerpt]' : ''}`, activity.text ?? activity.reason ?? 'Activity unavailable');
   }
   return lines;
 }
