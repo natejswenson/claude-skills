@@ -5,6 +5,12 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Design documents no longer require runtime regression tests because their filenames contain persistence or authentication terms. Preflight and committed-scope verification recognize normative design prose and JSON examples while retaining stronger checks for executable content, agent instructions, and protected directories.
+
 ## [0.17.0] - 2026-09-13
 
 ### Added
