@@ -71,6 +71,21 @@ test('receipt hash, log hash, untracked inputs, and superseded attempts cannot a
   f.step.stage.at.briefed = new Date(Date.now() + 1000).toISOString(); assert.throws(() => assertVerified(f.dir, f.run, f.lane), /stale/);
 });
 
+test('strict verification accepts real unittest counts and rejects skipped or failing suites', (t) => {
+  for (const outcome of ['pass', 'skip', 'fail']) {
+    const body = outcome === 'skip' ? "self.skipTest('fixture skip')" : `self.assertEqual(1, ${outcome === 'pass' ? 1 : 2})`;
+    const code = `import unittest\nclass Case(unittest.TestCase):\n    def test_value(self):\n        ${body}\nunittest.main(verbosity=2)\n`;
+    const f = fixture(t, (c) => ({ ...c, checks: [...c.checks, { id: 'python', type: 'test', argv: ['python3', '-B', '-c', code], criteria: ['C1'] }] }));
+    if (outcome === 'pass') verifyLane(f.dir, f.run, f.lane);
+    else assert.throws(() => verifyLane(f.dir, f.run, f.lane), /failed or stale obligation python/);
+    const receipt = JSON.parse(readFileSync(f.lane.verification.receipts.at(-1).path, 'utf8'));
+    assert.equal(receipt.green.exitCode, outcome === 'fail' ? 1 : 0);
+    assert.equal(receipt.green.summaries.at(-1).runner, 'python unittest');
+    assert.equal(receipt.green.summaries.at(-1).passed, outcome === 'pass' ? 1 : 0);
+    assert.equal(receipt.passed, outcome === 'pass');
+  }
+});
+
 test('post-fix HEAD is automatically verified before another review and before ready', (t) => {
   const f = fixture(t); verifyLane(f.dir, f.run, f.lane); accept(f.dir, f.run, f.step);
   f.lane.pr = { number: 1, url: 'https://example.invalid/1' };

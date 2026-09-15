@@ -51,6 +51,27 @@ const RUNNERS = [
     }),
   },
   {
+    id: 'python unittest',
+    // TextTestRunner writes a count followed by a terminal OK/FAILED line.
+    // Skips and expected failures are not positive passing-test evidence.
+    all: (text) => [...text.matchAll(/^Ran (\d+) tests? in \d+(?:\.\d+)?s\r?\n[ \t]*\r?\n(OK|FAILED)(?: \(([^\r\n]*)\))?[ \t]*\r?$/gm)].map((line) => {
+      const total = Number(line[1]);
+      const counts = new Map();
+      let valid = Number.isSafeInteger(total);
+      for (const part of line[3] === undefined ? [] : line[3].split(', ')) {
+        const counter = /^(failures|errors|skipped|expected failures|unexpected successes)=(\d+)$/.exec(part);
+        if (!counter || counts.has(counter[1]) || !Number.isSafeInteger(Number(counter[2]))) { valid = false; continue; }
+        counts.set(counter[1], Number(counter[2]));
+      }
+      const failed = (counts.get('failures') ?? 0) + (counts.get('errors') ?? 0) + (counts.get('unexpected successes') ?? 0);
+      const skipped = (counts.get('skipped') ?? 0) + (counts.get('expected failures') ?? 0);
+      if (!valid || skipped > total || !Number.isSafeInteger(failed + skipped) || line[2] === 'FAILED' && failed === 0) {
+        return { index: line.index, passed: null, failed: null };
+      }
+      return { index: line.index, passed: Math.max(0, total - failed - skipped), failed };
+    }),
+  },
+  {
     id: 'pytest',
     // `=== 3 failed, 118 passed in 1.20s ===`, and the no-pass variant.
     all: (text) => [...text.matchAll(/^.*?\b(\d+)\s+(passed|failed)\b.*$/gm)].map((line) => {
