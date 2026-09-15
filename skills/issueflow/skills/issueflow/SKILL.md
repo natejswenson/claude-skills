@@ -137,13 +137,14 @@ Every file remains in the brief. Candidates determine verifiers.
 
 ## Safety invariants
 
-Read-only coordination: `node "$SKILL_DIR/scripts/issueflow.js" monitor --json`
-lists locally discoverable runs and their current/historical agent observations.
-Use `--run-root <path>` or `--run-dir <path>` for other locations. It does not
-dispatch or resume work. Fresh observations (60 seconds) do not prove liveness;
-missing data stays unknown. Both hosts expose recorded details; external native
+Read-only coordination: run `node "$SKILL_DIR/scripts/issueflow.js" monitor`
+in a separate ANSI terminal. Tab changes panels; arrows select; Enter details;
+PgUp/PgDn scroll; o navigation; Esc overview; r refresh; q/Ctrl-C exit.
+Use `--json` without a TTY, `--run-root <path>` or `--run-dir <path>` for other
+locations. Observes runs and current/historical agents without dispatch/resume.
+Fresh (60 seconds) does not prove liveness; missing data stays unknown. External
 attachment is unavailable. In the owning session use Claude `/tasks` then Enter,
-or Codex `/agent` / its supported agent panel.
+or Codex `/agent` / its supported agent panel. See README for terminal requirements.
 
 - Every state change is checkpointed. If a checkpoint fails, say the run is
   only local and stop.
