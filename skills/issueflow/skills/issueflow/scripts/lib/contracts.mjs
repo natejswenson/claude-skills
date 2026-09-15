@@ -81,9 +81,25 @@ export function contractFromPlan(text) {
 
 /** Extensions are not sufficient: skill instructions and executable config are code. */
 export function observedRisk(files, contents = () => '') {
-  const sensitive = files.filter((f) => /(?:^|\/)(?:\.github|migrations?|auth|security)(?:\/|\.)|(?:auth|persist|concurren|credential|workflow|deploy|lock)/i.test(f));
+  const docs = new Set(files.filter((file) => {
+    if (!/(?:^|\/)(?:readme|changelog|license)(?:\.(?:md|txt|rst))?$|^docs\/.*\.(?:md|txt|rst)$/i.test(file)) return false;
+    if (/(?:^|\/)(?:skill|agents(?:\.override)?|claude|review)\.md$/i.test(file)) return false;
+    const text = contents(file);
+    // Match the complete fence language: `json` is data, not a `js` fence.
+    if (/^[ \t]{0,3}(?:`{3,}|~{3,})[ \t]*(?:sh|bash|shell|zsh|fish|powershell|js|javascript|ts|typescript|python|sql|yaml|yml)(?:[ \t{]|$)/im.test(text)) return false;
+    // Specifications use normative prose to describe future behavior. Retain
+    // conservative checks for runbooks and direct agent/operator instructions.
+    if (/^docs\/(?:design|plans)\/.+\.(?:md|txt|rst)$/i.test(file)) {
+      return !/^[ \t]*(?:(?:[-*]|\d+\.)[ \t]+)?(?:you[ \t]+(?:must|should)\b|(?:execute|dispatch)\b|(?:must|never)[ \t]+(?:run|execute|dispatch|deploy)\b)/im.test(text);
+    }
+    return !/\b(?:must|never|execute|dispatch)\b/i.test(text);
+  }));
+  // Topic words in a static design filename do not make it executable. Actual
+  // protected directories retain their stronger review even for prose files.
+  const sensitive = files.filter((f) => /(?:^|\/)(?:\.github|migrations?|auth|security)(?:\/|$)/i.test(f)
+    || !docs.has(f) && /(?:^|\/)(?:\.github|migrations?|auth|security)(?:\/|\.)|(?:auth|persist|concurren|credential|workflow|deploy|lock)/i.test(f));
   if (sensitive.length) return { kind: 'deep', reason: `sensitive paths: ${sensitive.join(', ')}` };
-  const nonDocs = files.filter((f) => !(/(?:^|\/)(?:readme|changelog|license)(?:\.[^/]*)?$|^docs\/.*\.(?:md|txt|rst)$/i.test(f)) || /(?:^|\n)(?:```(?:sh|bash|js|javascript|python|yaml)|.*\b(?:must|never|execute|dispatch)\b)/i.test(contents(f)));
+  const nonDocs = files.filter((f) => !docs.has(f));
   return nonDocs.length ? { kind: 'standard', reason: `behavioral or unknown scope: ${nonDocs.join(', ')}` } : { kind: 'fast-docs', reason: 'observed prose-only documentation scope' };
 }
 
