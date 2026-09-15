@@ -200,7 +200,7 @@ function agentsOf(run, runKey, root, stages, now) {
                  current[relative(root, ownedPath(root, path))]?.generation === a.generation) {
         const dispatch = run.execution?.dispatches?.[relative(root, ownedPath(root, path))];
         agent.details.push({ ...textOwned(root, path, now, {
-          notBefore: Math.max(Date.parse(a.native?.startedAt) || 0, Number(dispatch?.at) || 0),
+          notBefore: Math.max(...records.map((r) => Date.parse(r.native?.startedAt) || 0), Number(dispatch?.at) || 0),
           excluded: Array.isArray(dispatch?.excluded) ? dispatch.excluded : [],
         }), source: 'current attempt output' });
       } else agent.details.push(unavailable('Historical output unavailable; live path may belong to a replacement'));
