@@ -83,7 +83,7 @@
   },
   "enforceAdmins": false,
   "renderedTemplateHashes": {
-    ".github/workflows/main-automerge.yml": "c3d9150170792d69390ad4816e83b1a4e7340da55369816b3fa77c6ebc287174"
+    ".github/workflows/main-automerge.yml": "cc58b0e7af07393e718f3a476fad6a52abb55ebd0ade6770088426aba821ff90"
   },
   "workflowPattern": "github-flow"
 }

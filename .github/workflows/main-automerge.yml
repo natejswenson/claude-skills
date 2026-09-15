@@ -6,9 +6,13 @@ name: auto-merge to main
 # (handEditDetected) until an explicit --force is passed. Commit both files
 # together in the same commit.
 #
-# GitHub Flow has no separate "promotion" branch — every PR into main
-# is eligible for auto-merge and every merge is release-worthy, so unlike
-# dev-main-promotion's template, neither job here restricts on head.ref.
+# GitHub Flow has no separate promotion branch. Only ready PRs from this
+# repository are eligible for auto-merge; repository write access is the trust
+# boundary. Forks (and missing head repositories) skip both jobs because ordinary
+# pull_request events cannot supply repository secrets to forks. Maintainers
+# review fork PRs and enable auto-merge or merge with their own credentials after
+# required checks, and may add release-pending manually. No PR code is executed.
+# Same-repository merged PRs receive an optional reminder, never a tag or release.
 #
 # GH_TOKEN uses config.release.releaseCredential, NOT a hardcoded
 # secrets.GITHUB_TOKEN, because of GitHub's loop-prevention rule: a PR
@@ -25,7 +29,7 @@ name: auto-merge to main
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, closed]
+    types: [opened, reopened, synchronize, ready_for_review, closed]
     branches: [main]
 
 # Deny by default at the workflow level, grant per job. A workflow-level grant
@@ -39,20 +43,30 @@ on:
 permissions: {}
 
 jobs:
-  # Enables native GitHub auto-merge on open/reopen/synchronize — this job
+  # Enables native GitHub auto-merge on open/reopen/synchronize/ready — this job
   # does NOT wait for checks itself; it turns on auto-merge and exits. The
   # actual merge happens asynchronously, later, whenever GitHub's own
   # required-checks gate is satisfied (see the design's discussion of why a
   # bespoke polling/blocking job was rejected).
   auto-merge:
-    if: github.event.action != 'closed'
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - name: Enable auto-merge
-        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Skipping auto-merge: GH_TOKEN is unavailable or not configured."
+            exit 0
+          fi
+          gh pr merge --auto --squash "$PR_NUMBER" --repo "$PR_REPO"
         env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.SHIPFLOW_AUTOMERGE_PAT }}
 
   # Fires once, when a PR actually merges (a separate event from the job
@@ -63,12 +77,20 @@ jobs:
   label-release-pending:
     if: >-
       github.event.action == 'closed' &&
-      github.event.pull_request.merged == true
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - name: Apply release-pending label
-        run: gh pr edit "${{ github.event.pull_request.number }}" --add-label release-pending --repo "${{ github.repository }}"
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Skipping release reminder: GH_TOKEN is unavailable or not configured."
+            exit 0
+          fi
+          gh pr edit "$PR_NUMBER" --add-label release-pending --repo "$PR_REPO"
         env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.SHIPFLOW_AUTOMERGE_PAT }}
