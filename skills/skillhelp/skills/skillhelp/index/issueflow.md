@@ -44,9 +44,9 @@
 - node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:56`
 - node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:57`
 - node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800 `skills/issueflow/skills/issueflow/SKILL.md:63`
-- node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:318`
-- node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:319`
-- node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:320`
+- node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:347`
+- node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:348`
+- node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:349`
 - npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:43`
 - npm run eval:harness — node evals/harness.mjs run --mode offline `skills/issueflow/skills/issueflow/package.json:40`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:45`

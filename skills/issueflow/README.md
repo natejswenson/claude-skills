@@ -250,17 +250,45 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
 Observe concurrent local runs from a separate terminal with:
 
 ```bash
+issueflow monitor
+issueflow monitor --run-root /path/to/run-root
+issueflow monitor --run-dir /path/to/one/run
 issueflow monitor --json
-issueflow monitor --json --run-root /path/to/run-root
-issueflow monitor --json --run-dir /path/to/one/run
 ```
 
 With the bundled plugin, use `node "$SKILL_DIR/scripts/issueflow.js"` in place
 of `issueflow`, where `SKILL_DIR` is the directory containing the loaded SKILL.md.
 Discovery reads immediate repository/issue directories under
 `~/.claude/issueflow` by default. Choose either root or explicit run directory.
-JSON works without a TTY; interactive invocation currently points to this fallback.
-Each invocation is a fresh snapshot and exits; runs continue independently.
+The live terminal view refreshes once per second. It requires input and output
+TTYs with an ANSI-capable `TERM` (not `dumb` or `unknown`), and Node.js; no terminal
+multiplexer or additional runtime dependency is required. JSON works without a
+TTY and prints one fresh snapshot before exiting. Add `--json` to either location
+form above for scripting or a noninteractive fallback.
+
+The view shows runs, the selected run's agents, and recorded details. `>` marks
+the selected row and `*` marks the focused panel. Wide terminals show three
+panels; narrower terminals show the focused panel with identity breadcrumbs.
+Resize preserves selection. Unicode text is escaped as `\u{...}` to keep terminal
+cell widths predictable. Output is bounded; `[bounded excerpt]` marks truncation.
+
+| Control | Action |
+|---|---|
+| Tab / Shift-Tab or Left / Right | Move panel focus |
+| Up / Down or j / k | Select a run or agent; scroll in details |
+| Enter | Inspect the selected run or agent's details |
+| Page Up / Page Down | Scroll details by a page |
+| o | Open recorded details and host navigation instructions |
+| Esc | Return to the run overview |
+| r | Refresh immediately |
+| q / Ctrl-C / Ctrl-D | Exit and restore the terminal; runs continue |
+
+Selection stays with the recorded run/attempt across refresh. A removed selection
+remains explicitly unavailable until you choose another row. No-agents-yet,
+unreadable runs, conflicts and missing output have explicit states. To inspect
+stage activity, press Esc then Enter; to inspect worker output, select it in the
+agents panel then press Enter. The viewer also restores terminal state on EOF
+or a handled stream/read error. Closing it never cancels the observed workers.
 
 Snapshots expose recorded repository, issue, host and controller fingerprint,
 stages, current and historical attempts, and bounded available output. Duplicate
@@ -274,7 +302,8 @@ artifact directory. Reading does not acquire ownership, dispatch, resume, cancel
 or alter gates.
 
 Both Claude Code and Codex use this snapshot format, verified with controlled
-host-record fixtures. External native attachment is unavailable: use `/tasks`
+host-record fixtures and public CLI pseudoterminal tests. The `o` action shows
+“External attachment unavailable” and local details: use `/tasks`
 then Enter in the owning Claude Code session (completed entries may expire), or
 `/agent` in the owning Codex CLI / its supported background-agent panel. These
 are client-local actions, not shell commands. A live native focus campaign has
