@@ -34,7 +34,7 @@ three against the repo's real shape — it never silently picks one.
 |---|---|
 | `skills/shipflow/SKILL.md` | The interactive setup interview, and where it must stop and ask. |
 | `skills/shipflow/bin/` | The CLI: `detect`, `plan`, `apply`, `releases`, `release-dispatch`. |
-| `skills/shipflow/templates/` | The workflow files each pattern renders. |
+| `skills/shipflow/templates/` | GitHub Flow auto-merge for ready same-repository PRs, including `ready_for_review`; drafts and forks skip. |
 | `skills/shipflow/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
 
 ## Quick start
@@ -83,6 +83,7 @@ npx -y @natjswenson/shipflow@latest detect --repo . --main main --dev dev
 
 - **Claude Code:** Expose the authenticated `gh` CLI to shell tools.
 - **Codex:** Use the same `gh` authentication and repository permissions; Claude app connections are not imported.
+- **GitHub Flow credentials:** A configured PAT/App repository secret is required; an unavailable token skips cleanly. Maintainers handle fork merges and optional reminders with their own credentials.
 - **Personal data:** Configuration stays in `.github/shipflow.json` in the target repository; no private `~/.claude/shipflow` store is required.
 
 See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
@@ -99,7 +100,7 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
 | Pattern | Shape |
 |---|---|
 | `dev-main-promotion` | Long-lived `dev` + `main`; a promotion PR auto-merges `dev` into `main` |
-| `github-flow` | Single long-lived `main`; every PR merges (and auto-merges) directly to it |
+| `github-flow` | Single long-lived `main`; ready same-repository PRs can auto-merge directly to it |
 | `gitflow` | `develop` + `main` + transient `release/*`/`hotfix/*`, for software maintaining multiple released versions concurrently |
 
 `detect` scores all three against the repo's branches, tags and workflow files,
@@ -120,6 +121,38 @@ detection is ambiguous or the repo is greenfield.
 4. Ongoing: eligible PRs auto-merge once required checks pass; a durable
    `release-pending` label survives the async gap until a later
    `shipflow releases` check asks whether to cut a release.
+
+## GitHub Flow contributions
+
+Draft PRs skip merge automation. Ready PRs from the same repository can enable
+native auto-merge on `opened`, `reopened`, `synchronize` or `ready_for_review`;
+GitHub's required checks gate the merge. Keep implementation PRs draft until review
+and the authorized merge decision are complete.
+
+Repository write access is the trust boundary. Forks and missing head repositories
+skip both jobs. Maintainers review fork PRs and explicitly enable auto-merge or
+merge with their own authorized credentials after required checks. The workflow
+uses `pull_request` and executes no PR code.
+
+Configure `release.releaseCredential` as the name of a PAT/App repository secret
+with `contents: write` and `pull-requests: write`. Both commands skip cleanly if that
+named secret is unavailable, without falling back to `GITHUB_TOKEN`; setup must
+still provision it. Omitting the credential name instead retains the renderer’s
+legacy `GITHUB_TOKEN` default, which does not guarantee a skip or the merged-PR
+reminder. Always configure and provision the named PAT/App secret for this flow.
+A merged same-repository PR receives an optional `release-pending` label;
+unmerged closes and fork merges skip it. Maintainers may label fork merges manually,
+and component `release-status` discovers untagged work without labels. No PR event
+creates a tag or release.
+
+To migrate an existing generated workflow, run plan/apply with the corrected engine.
+During unreleased development, invoke `node <skill-directory>/bin/shipflow.js` from
+the corrected checkout; after release use `npx -y @natjswenson/shipflow@latest`.
+Review the plan, including any live settings changes, and apply with its state hash.
+An existing workflow matching its old `renderedTemplateHashes` receipt is recognized
+as a generator update. Commit the generated YAML and returned receipt together,
+then replan to confirm no template drift. Genuine hand edits still block apply;
+never edit the hash to hide them.
 
 ## Commands
 
