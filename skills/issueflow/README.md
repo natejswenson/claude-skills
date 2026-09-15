@@ -247,6 +247,39 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
 
 ## Completion and recovery
 
+Observe concurrent local runs from a separate terminal with:
+
+```bash
+issueflow monitor --json
+issueflow monitor --json --run-root /path/to/run-root
+issueflow monitor --json --run-dir /path/to/one/run
+```
+
+With the bundled plugin, use `node "$SKILL_DIR/scripts/issueflow.js"` in place
+of `issueflow`, where `SKILL_DIR` is the directory containing the loaded SKILL.md.
+Discovery reads immediate repository/issue directories under
+`~/.claude/issueflow` by default. Choose either root or explicit run directory.
+JSON works without a TTY; interactive invocation currently points to this fallback.
+Each invocation is a fresh snapshot and exits; runs continue independently.
+
+Snapshots expose recorded repository, issue, host and controller fingerprint,
+stages, current and historical attempts, and bounded available output. Duplicate
+output bindings become one attempt; contradictory observations appear as conflicts.
+An owner fingerprint is not a native session ID. “Fresh” means observed within
+60 seconds, not proof that a worker is alive. Unknown and unavailable observations
+stay explicit. Stage progress is labeled separately from worker output; historical
+output requires an attempt-correlated archive. Prepared execution storage must
+pass its existing ownership checks; missing storage never falls back to another
+artifact directory. Reading does not acquire ownership, dispatch, resume, cancel,
+or alter gates.
+
+Both Claude Code and Codex use this snapshot format, verified with controlled
+host-record fixtures. External native attachment is unavailable: use `/tasks`
+then Enter in the owning Claude Code session (completed entries may expire), or
+`/agent` in the owning Codex CLI / its supported background-agent panel. These
+are client-local actions, not shell commands. A live native focus campaign has
+not been verified; the observer never reports attachment success.
+
 New runs freeze one base and issue input, validate plan scope and check cwd before
 review, and retain interrupted startup for the same controller. Published plan
 amendments preserve the PR while requiring new verification and review. Expected
