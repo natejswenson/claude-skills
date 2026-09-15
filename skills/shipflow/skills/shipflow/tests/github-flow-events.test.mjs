@@ -135,6 +135,27 @@ for (const event of [{ action: 'opened' }, { action: 'closed', merged: true }]) 
   }
 }
 
+for (const release of [undefined, {}]) {
+  test('omitted credential configuration retains legacy GITHUB_TOKEN default: ' + JSON.stringify(release), () => {
+    const [unconfigured] = templates({ ...config, release });
+    const generated = parse(renderTemplate(source, unconfigured.params));
+    for (const job of Object.values(generated.jobs)) {
+      assert.equal(job.steps[0].env.GH_TOKEN, '${{ secrets.GITHUB_TOKEN }}');
+    }
+  });
+}
+
+test('an unavailable explicitly named credential does not fall back to an available GITHUB_TOKEN', () => {
+  for (const event of [{ action: 'opened' }, { action: 'closed', merged: true }]) {
+    const context = contextFor(event);
+    delete context.secrets.SHIPFLOW_AUTOMERGE_PAT;
+    context.secrets.GITHUB_TOKEN = token;
+    const { calls, output } = runGenerated(context);
+    assert.deepEqual(calls, []);
+    assert.match(output, /skip.*GH_TOKEN.*(unavailable|not configured)/i);
+  }
+});
+
 test('only declared PR events and main base are admitted', () => {
   assert.deepEqual(Object.keys(workflow.on), ['pull_request']);
   assert.deepEqual(workflow.on.pull_request.types, ['opened', 'reopened', 'synchronize', 'ready_for_review', 'closed']);

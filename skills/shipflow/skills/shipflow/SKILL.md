@@ -155,9 +155,12 @@ authorized credentials after required checks. Do not switch to
 make credentials available.
 
 Both commands use the configured `release.releaseCredential` PAT/App secret from
-setup step 6. If it is unavailable or unset, the step reports a clean skip and
-invokes no `gh` command. This does not provision or validate the credential; configure
-it separately. There is no fallback to `GITHUB_TOKEN`.
+setup step 6. If that named secret is unavailable or unset, the step reports a clean
+skip and invokes no `gh` command; it does not fall back to `GITHUB_TOKEN`. This does
+not provision or validate the credential. Omitting `release.releaseCredential`
+from configuration instead retains the renderer’s legacy `GITHUB_TOKEN` default,
+which does not guarantee a skip or the merged-PR reminder. Always configure and
+provision the named PAT/App secret for this flow.
 
 Only a merged same-repository PR receives the optional `release-pending` reminder.
 Unmerged closes and fork merges skip it; a maintainer may label a fork merge

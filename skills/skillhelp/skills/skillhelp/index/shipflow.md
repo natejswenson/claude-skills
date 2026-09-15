@@ -38,24 +38,24 @@
 
 ## Commands
 
-- Command — What it does `skills/shipflow/README.md:156`
-- detect --repo <path> [--main <name>] [--dev <name>] — Inspect live repo state: branch protection, CI checks, release conventions `skills/shipflow/README.md:158`
-- plan --repo <path> — Diff .github/shipflow.json against live state; prints what would change plus a state hash `skills/shipflow/README.md:159`
-- apply --repo <path> --expect-state-hash <hash> [--dry-run] [--force <id> --force-reason <text>] — Apply a confirmed plan `skills/shipflow/README.md:160`
-- releases --repo <path> — List merged main PR reminders (mergedPrs for GitHub flow, promotions for legacy consumers) `skills/shipflow/README.md:161`
-- release-dispatch --repo <path> --pr <n> --workflow-file <f>... --ref <ref> — Dispatch each changed skill's release workflow; clear the label on success `skills/shipflow/README.md:162`
-- rename-default-branch --repo <path> --branch <old> --to <new> — One-time bootstrap: rename a repo's default branch `skills/shipflow/README.md:163`
-- Every command prints JSON to stdout. `skills/shipflow/README.md:165`
+- Command — What it does `skills/shipflow/README.md:159`
+- detect --repo <path> [--main <name>] [--dev <name>] — Inspect live repo state: branch protection, CI checks, release conventions `skills/shipflow/README.md:161`
+- plan --repo <path> — Diff .github/shipflow.json against live state; prints what would change plus a state hash `skills/shipflow/README.md:162`
+- apply --repo <path> --expect-state-hash <hash> [--dry-run] [--force <id> --force-reason <text>] — Apply a confirmed plan `skills/shipflow/README.md:163`
+- releases --repo <path> — List merged main PR reminders (mergedPrs for GitHub flow, promotions for legacy consumers) `skills/shipflow/README.md:164`
+- release-dispatch --repo <path> --pr <n> --workflow-file <f>... --ref <ref> — Dispatch each changed skill's release workflow; clear the label on success `skills/shipflow/README.md:165`
+- rename-default-branch --repo <path> --branch <old> --to <new> — One-time bootstrap: rename a repo's default branch `skills/shipflow/README.md:166`
+- Every command prints JSON to stdout. `skills/shipflow/README.md:168`
 - npx -y @natjswenson/shipflow@latest detect --repo <path> --main main --dev dev `skills/shipflow/skills/shipflow/SKILL.md:60`
 - npx -y @natjswenson/shipflow@latest rename-default-branch --repo <path> --branch <old-default> --to main `skills/shipflow/skills/shipflow/SKILL.md:77`
 - npx -y @natjswenson/shipflow@latest plan --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:120`
 - npx -y @natjswenson/shipflow@latest apply --repo <path> --dry-run `skills/shipflow/skills/shipflow/SKILL.md:126`
 - npx -y @natjswenson/shipflow@latest apply --repo <path> --expect-state-hash <hash-from-step-8> `skills/shipflow/skills/shipflow/SKILL.md:131`
-- npx -y @natjswenson/shipflow@latest releases --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:183`
-- npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main `skills/shipflow/skills/shipflow/SKILL.md:191`
-- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:230`
-- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:260`
-- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:271`
+- npx -y @natjswenson/shipflow@latest releases --repo <path> `skills/shipflow/skills/shipflow/SKILL.md:186`
+- npx -y @natjswenson/shipflow@latest release-dispatch --repo <path> --pr <number> --workflow-file <skill1>.yml --workflow-file <skill2>.yml --ref main `skills/shipflow/skills/shipflow/SKILL.md:194`
+- npx -y @natjswenson/shipflow@latest release-status --repo <path> --component <name> `skills/shipflow/skills/shipflow/SKILL.md:233`
+- npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:263`
+- npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:274`
 - npx -y @natjswenson/shipflow@latest detect --repo . --main main --dev dev `skills/shipflow/README.md:64`
 - npm run audit — npm audit --audit-level=moderate `skills/shipflow/skills/shipflow/package.json:44`
 

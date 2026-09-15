@@ -135,9 +135,12 @@ merge with their own authorized credentials after required checks. The workflow
 uses `pull_request` and executes no PR code.
 
 Configure `release.releaseCredential` as the name of a PAT/App repository secret
-with `contents: write` and `pull-requests: write`. Both commands skip cleanly if the
-token is unavailable; setup must still provision it. There is no `GITHUB_TOKEN`
-fallback. A merged same-repository PR receives an optional `release-pending` label;
+with `contents: write` and `pull-requests: write`. Both commands skip cleanly if that
+named secret is unavailable, without falling back to `GITHUB_TOKEN`; setup must
+still provision it. Omitting the credential name instead retains the renderer’s
+legacy `GITHUB_TOKEN` default, which does not guarantee a skip or the merged-PR
+reminder. Always configure and provision the named PAT/App secret for this flow.
+A merged same-repository PR receives an optional `release-pending` label;
 unmerged closes and fork merges skip it. Maintainers may label fork merges manually,
 and component `release-status` discovers untagged work without labels. No PR event
 creates a tag or release.
