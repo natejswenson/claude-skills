@@ -65,7 +65,7 @@ user; the CLI is the only thing that *does*.
    - **Confident:** state what was detected and why (the top entry's `evidence` array) — *"I detected this repo is using **`<pattern-id>`** because: `<evidence bullets>`. I'll set `workflowPattern` to this — confirm before I proceed, or tell me if you'd rather pick a different pattern."* This is still a confirm-before-write checkpoint per this section's mandatory-interview rule — a confident autodetect is not a substitute for the user's explicit confirmation.
    - **Ambiguous or greenfield:** present all 3 patterns and ask the user to choose. Do not silently pick one:
      - `dev-main-promotion` — long-lived `dev` + `main`; a promotion PR auto-merges `dev` into `main`.
-     - `github-flow` — single long-lived `main`; every PR merges (and auto-merges) directly to `main`. Suggest this as the lightweight default for a **greenfield** repo specifically, without auto-picking it.
+     - `github-flow` — single long-lived `main`; ready same-repository PRs can auto-merge directly to `main`; forks require maintainer action. Suggest this as the lightweight default for a **greenfield** repo specifically, without auto-picking it.
      - `gitflow` — `develop` + `main` + transient `release/*`/`hotfix/*` branches, for software that maintains multiple released versions concurrently.
    - Once resolved, proceed with only the interview fields that pattern's config actually uses — skip asking about a `dev` branch name under `github-flow`, for instance.
    - If `workflowPattern` is `gitflow`, additionally ask for `releaseBranchPrefix`/`hotfixBranchPrefix` (defaulting to `release/`/`hotfix/` if the user has no preference) — recorded under `patternConfig.gitflow` in the config.
@@ -137,6 +137,42 @@ user; the CLI is the only thing that *does*.
 ## Re-run / audit
 
 Same as steps 1, 8, 9, 10, 11 above, skipping the interview (`workflowPattern`/branch names/checks/protectionOwner/releaseCredential are already recorded in `.github/shipflow.json` — read it, don't re-ask, unless the user explicitly says they want to reconfigure). Step 2's pattern resolution never runs on a re-run — `workflowPattern`'s absence from a config genuinely means "not yet resolved," and its presence means "already resolved," so there's nothing to detect again. If `plan.creates`/`plan.updates` is non-empty, that's drift since the last apply — show it and confirm before applying, exactly as in first-run setup.
+
+## GitHub Flow readiness, forks and migration
+
+For `workflowPattern: "github-flow"`, the generated `pull_request` workflow handles
+`opened`, `reopened`, `synchronize`, `ready_for_review` and `closed` on configured
+main. Only a non-draft PR whose head repository matches the target repository can
+enable native auto-merge. Drafts skip cleanly; making a reviewed draft ready has
+its own trigger. Native GitHub required checks still gate the merge. Keep an
+implementation PR draft until review and the authorized merge decision are complete.
+
+Repository write access is the trust boundary. Forks and missing head repositories
+skip both jobs, regardless of contributor association or labels. Maintainers must
+review fork PRs and explicitly enable native auto-merge or merge with their own
+authorized credentials after required checks. Do not switch to
+`pull_request_target`, check out PR code, or run contributor-controlled scripts to
+make credentials available.
+
+Both commands use the configured `release.releaseCredential` PAT/App secret from
+setup step 6. If it is unavailable or unset, the step reports a clean skip and
+invokes no `gh` command. This does not provision or validate the credential; configure
+it separately. There is no fallback to `GITHUB_TOKEN`.
+
+Only a merged same-repository PR receives the optional `release-pending` reminder.
+Unmerged closes and fork merges skip it; a maintainer may label a fork merge
+manually. Component `release-status` discovers untagged work without labels. No
+PR event cuts a tag or release.
+
+When upgrading this template, use the corrected checkout's
+`node <skill-directory>/bin/shipflow.js plan --repo <target>` and matching `apply`
+during unreleased development; use the explicit `@latest` invocation after release.
+Follow the reviewed plan and state-hash apply process above, including any live
+settings changes it proposes. If the existing workflow matches its recorded old
+`renderedTemplateHashes` receipt, plan recognizes a template update. Apply generates
+new bytes and returns the new receipt; commit both together and replan to verify
+no template drift. A genuine hand edit still requires the explicit scoped override;
+never manufacture a matching receipt by hand to bypass that refusal.
 
 ## Check pending releases (`manual-gate` ask-flow)
 
