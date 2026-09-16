@@ -1,3 +1,4 @@
+import { specEntryActive, specIntent } from './approved-spec.mjs';
 import { activePath, approvedArtifactPath, executionInstructions, prepareOutputs, recordDispatch } from './execution.mjs';
 /**
  * The review loop's briefs — finder, verifier, fixer — rendered from
@@ -91,6 +92,7 @@ function changeBlock(dir, run, lane, entry, tree) {
 }
 
 function intentBlock(dir, run) {
+  if (specEntryActive(run)) return specIntent(dir, run);
   const plan = findStep(run, PLAN_STAGE);
   return [
     '## What the change is for',

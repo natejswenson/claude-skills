@@ -10,6 +10,7 @@
  * The run lives outside the target repo (`~/.claude/issueflow/…`) so a run
  * survives branch switches and never appears in the user's `git status`.
  */
+import { assertSpecInput, specEntryActive } from './approved-spec.mjs';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { closeSync, fsyncSync, linkSync, openSync, unlinkSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
@@ -220,6 +221,7 @@ export function loadRun(dir, { host, childSlots } = {}) {
         'its artifacts are retained; use a compatible binary or explicit migration without restarting the issue',
     );
   }
+  assertSpecInput(dir, run);
   const previous = runtimeOf(run);
   const selected = assertRuntime(host ?? previous);
   const changing = selected !== previous || (childSlots != null && Number(childSlots) !== (run.dispatch?.childSlots ?? 1));
@@ -350,7 +352,8 @@ export function dependencies(run, step) {
  *
  * `skipped` is deliberately NOT approval. A skipped stage stays a hole the whole
  * way to `ship`, which is what stops a run reporting a stage it never did as
- * done.
+ * done. An explicit approved-spec entry separately supplies the implementation
+ * contract while truthfully leaving planning skipped.
  */
 export function blockers(run, step) {
   const seen = new Set([step.key]);
@@ -359,7 +362,7 @@ export function blockers(run, step) {
     for (const dep of dependencies(run, from)) {
       if (seen.has(dep.key)) continue;
       seen.add(dep.key);
-      if (dep.stage.state === 'approved') continue;
+      if (dep.stage.state === 'approved' || dep.stage.id === PLAN_STAGE && specEntryActive(run)) continue;
       found.push(dep);
       walk(dep);
     }
