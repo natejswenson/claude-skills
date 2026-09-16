@@ -16,7 +16,9 @@ REFERENCE = (ROOT / "references" / "codex-images.md").read_text(encoding="utf-8"
 
 
 def _section() -> str:
-    start = REFERENCE.index("## Save, open, approve")
+    heading = "## Save, open, approve"
+    assert heading in REFERENCE, "generated-card save/open/approval section is missing"
+    start = REFERENCE.index(heading)
     end = REFERENCE.find("\n## ", start + 1)
     return REFERENCE[start:] if end == -1 else REFERENCE[start:end]
 
@@ -25,12 +27,17 @@ def _normalized_section() -> str:
     return " ".join(_section().split())
 
 
+def _index(section: str, needle: str) -> int:
+    assert needle in section, f"required generated-card contract text is missing: {needle}"
+    return section.index(needle)
+
+
 def test_candidate_copy_uses_exact_host_viewer_path_before_approval():
     section = _normalized_section()
-    copy = section.index("Copy the selected built-in output")
-    open_attempt = section.index("After the copy succeeds")
-    wait = section.index("wait for the open attempt to finish before asking for approval")
-    approval = section.index("**Approve card** / **Change card** / **Drop card**")
+    copy = _index(section, "Copy the selected built-in output")
+    open_attempt = _index(section, "After the copy succeeds")
+    wait = _index(section, "wait for the open attempt to finish before asking for approval")
+    approval = _index(section, "**Approve card** / **Change card** / **Drop card**")
 
     assert copy < open_attempt < wait < approval
     assert "exact candidate path" in section
@@ -50,7 +57,7 @@ def test_native_open_success_and_failure_keep_inline_recovery_truthful():
         r"On failure or unavailability, say that the native\s+viewer\s+could not open it",
         section,
     )
-    approval = section.index("**Approve card** / **Change card** / **Drop card**")
+    approval = _index(section, "**Approve card** / **Change card** / **Drop card**")
 
     assert success_match and failure_match
     assert "Treat a zero exit status as a successful native-open attempt" in section
