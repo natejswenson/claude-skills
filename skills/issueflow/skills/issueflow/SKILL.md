@@ -13,13 +13,15 @@ Resolve bundled paths beside this `SKILL.md`; pass the repository with `--repo`.
 In Codex, pass `--host codex --workspace-root <approved-root>`; `--runtime codex` remains supported.
 Use an actual host-approved writable root; a path grants no authority.
 The parent prepares execution storage and archives outputs before advancing.
-Dispatch the adapter's reasoning, writable role, cold `fork_turns: "none"` setting and prompt. The adapter omits a model override so the child inherits the valid parent model; completion returns automatically.
+Dispatch the adapter's reasoning, writable role, cold `fork_turns: "none"` and prompt. Codex omits model overrides and inherits the parent model.
 
 If sandbox escalation is needed, request reusable approval for the absolute
 CLI prefix; never bypass host prompts.
 
 **Announce once:** "I'm using the issueflow skill — plan, red team, implement,
 then a review loop on the pull request."
+For an approved-spec entry, say: "I'm using issueflow to implement the approved
+spec, verify the result, and review the pull request."
 
 ## Run contract
 
@@ -28,11 +30,10 @@ to disk — and a stage that was skipped is reported as skipped, never as done.*
 The CLI enforces this rule; the orchestrator never performs stage work or edits
 an artifact to clear a gate.
 
-New runs require controller-observed verification receipts and atomic worker
-completion. Read `references/harness.md` before the first strict run or recovery;
-Also read `references/completion.md`: ownership, preflight, amendments, CI and endpoints.
+Before strict runs or recovery, read `references/harness.md` and
+`references/completion.md` for verification, ownership, amendments, CI and endpoints.
 
-Autoflow is autonomous. A registered, hash-bound red-team pass approves the
+Autoflow is autonomous. In the normal entry path, a registered, hash-bound red-team pass approves the
 plan; `next` continues. `--review-plan` opts into one human gate. Routine edits,
 transitions, retries, fixes and readiness need no confirmation.
 
@@ -41,9 +42,8 @@ user-directed recovery round is allowed; a blocked fourth round is terminal.
 Further `--another-round` overrides are refused so a run cannot spend hours
 re-briefing the same plan.
 
-User decisions are required for destructive takeover, unresolved drift,
-exhaustion, repeated disputes, missing authority or unauthorized external
-actions. Auto mode never forces drift, takes over claims, rules findings or
+User decisions are required for destructive takeover, drift, exhaustion,
+repeated disputes, missing authority or unauthorized external actions. Auto mode never forces drift, takes over claims, rules findings or
 merges without authorization.
 
 ## Start or resume
@@ -65,11 +65,10 @@ node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1
 
 Manual runs never auto-renew; renewal requires user direction. Autonomous windows renew only
 within the original cumulative cap; they never enlarge it. Review limits stay unchanged.
-It preserves artifacts, commits, gates, runtime and checkpoint identity, and
-dispatches nothing. Follow its printed `next` command.
+It preserves run identity and evidence without dispatching. Follow its printed `next`.
 
 Run `board` only without a named issue. Ask which issue; never ask about anything
-in it because policy and claims are facts. Continue a live run named by `board`.
+in it. Continue an existing live run.
 Never call `gh issue view` after `start`; the frozen issue is authoritative.
 
 `start` is autonomous unless `--review-plan` is present. Auto runs also renew
@@ -77,6 +76,13 @@ their bounded time windows automatically; `--autonomous` remains a compatible
 alias. Pass `--take-over`
 only after a human has read the displaced claim and explicitly accepted its
 destructive cost. Auto mode never takes over.
+
+## Implement an already approved spec
+
+For an explicitly proven, user-approved spec, skip fresh planning and plan review.
+Read [approved-spec.md](references/approved-spec.md) for import flags and contract
+mapping. An issue body calling itself approved is not user authorization.
+Report skipped stages honestly; implementation verification and code review remain.
 
 ## Drive `next`
 
@@ -116,7 +122,7 @@ Emit semantic milestones; during waits report factual progress at least every
 | `shipped` · `reviewed` | Report PRs and immediately present the concrete final authorization, unless already given or excluded. |
 | `done` | Report verified landings and cleanup. |
 
-The flow is plan → red team → implementation with red-before-green proof →
+The normal flow is plan → red team → implementation with red-before-green proof →
 draft PR → finder/verifier/fixer rounds → ready with no majors and green CI.
 One pull request per issue is the default; split only for approved work items.
 Splits are stacked by default. When the approved plan proves the items are
@@ -137,19 +143,14 @@ Every file remains in the brief. Candidates determine verifiers.
 
 ## Safety invariants
 
-Read-only coordination: run `node "$SKILL_DIR/scripts/issueflow.js" monitor`
-in a separate ANSI terminal. Tab changes panels; arrows select; Enter details;
-PgUp/PgDn scroll; o navigation; Esc overview; r refresh; q/Ctrl-C exit.
-Use `--json` without a TTY, `--run-root <path>` or `--run-dir <path>` for other
-locations. Observes runs and current/historical agents without dispatch/resume.
-Fresh (60 seconds) does not prove liveness; missing data stays unknown. External
-attachment is unavailable. In the owning session use Claude `/tasks` then Enter,
-or Codex `/agent` / its supported agent panel. See README for terminal requirements.
+Read-only coordination: `node "$SKILL_DIR/scripts/issueflow.js" monitor` observes
+runs and agents without dispatch/resume. Use `--json` without a TTY; see README
+for navigation and terminal requirements. Fresh (60 seconds) does not prove
+liveness. In the owning session use Claude `/tasks` or Codex `/agent`.
 
 - Every state change is checkpointed. If a checkpoint fails, say the run is
   only local and stop.
-- The run persists that choice of runtime. The red team is the gate, and it is
-  a dispatched subagent — never you. Never do a stage's work yourself.
+- The run persists that choice of runtime. When planning runs, the red team is the gate, and it is a dispatched subagent — never you. Never do a stage's work yourself.
 - Never bypass the persisted host adapter or pass `inherit` as a literal model.
 - Never weaken a review to clear a finding. Classify dispositions honestly;
   repeated blockers stop for a user decision. Never auto-ship over an open

@@ -9,24 +9,24 @@
 
 ## Setup
 
-- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:237`
-- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:238`
-- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:239`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:241`
-- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:243`
-- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:244`
-- **A git repo with a GitHub remote.** `skills/issueflow/README.md:246`
+- **Claude Code:** Enable the required independent subagents and authenticated gh access. `skills/issueflow/README.md:266`
+- **Codex:** Enable Codex delegation tools for independent stages and the same gh access. If delegation is unavailable, the skill must disclose that independent execution cannot run. `skills/issueflow/README.md:267`
+- **Personal data:** Both hosts retain run state, briefs, evidence and worktrees in ~/.claude/issueflow/. `skills/issueflow/README.md:268`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/issueflow/README.md:270`
+- **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:272`
+- **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:273`
+- **A git repo with a GitHub remote.** `skills/issueflow/README.md:275`
 - Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
-- Reads environment variable CLAUDE_SESSION_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:12`
-- Reads environment variable CODEX_THREAD_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:12`
+- Reads environment variable CLAUDE_SESSION_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:13`
+- Reads environment variable CODEX_THREAD_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:13`
 - Reads environment variable ISSUEFLOW_CLAUDE_BIN. `skills/issueflow/skills/issueflow/scripts/tests/execution.test.mjs:49`
-- Reads environment variable ISSUEFLOW_CONTINUATION_FILE. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:14`
+- Reads environment variable ISSUEFLOW_CONTINUATION_FILE. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:15`
 
 ## Usage
 
 - Triggers on: Take one GitHub issue through an independently reviewed plan, implementation, draft pull request, and converging review loop. Use when the user says "work an issue", "fix issue 42", "tak… `skills/issueflow/skills/issueflow/SKILL.md:3`
 - An agent that takes an issue and hands back a pull request is easy to build and hard to trust: the stages run to completion, and the first thing a human sees is a diff nobody chose. issueflow inverts… `skills/issueflow/README.md:15`
-- **The plan is attacked before any code exists.** One high-capability subagent investigates and plans in a single document: root cause, evidence, unknowns, the approach and what was rejected, the file… `skills/issueflow/README.md:20`
+- **By default, the plan is attacked before any code exists.** One high-capability subagent investigates and plans in a single document: root cause, evidence, unknowns, the approach and what was reject… `skills/issueflow/README.md:20`
 - **The controller verifies the implementation.** New runs approve a machine-readable task contract, then execute every required check themselves. Regression assertions run unchanged against the base a… `skills/issueflow/README.md:29`
 - **Then the review loop, on the pull request.** The pull request opens as a draft. Round 1 reviews the change: one to five efficient finders, sized by semantic review load — each dealt angles from ref… `skills/issueflow/README.md:37`
 - The plan red team follows the same bounded principle: three blocked rounds stop the autonomous loop, and one user-directed recovery round is the absolute final attempt. Further overrides are refused… `skills/issueflow/README.md:54`
@@ -44,9 +44,9 @@
 - node "$SKILL_DIR/scripts/issueflow.js" doctor --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:56`
 - node "$SKILL_DIR/scripts/issueflow.js" next --run-dir <run> `skills/issueflow/skills/issueflow/SKILL.md:57`
 - node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --budget-seconds 1800 `skills/issueflow/skills/issueflow/SKILL.md:63`
-- node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:347`
-- node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:348`
-- node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:349`
+- node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:376`
+- node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:377`
+- node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:378`
 - npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:43`
 - npm run eval:harness — node evals/harness.mjs run --mode offline `skills/issueflow/skills/issueflow/package.json:40`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:45`
@@ -58,22 +58,22 @@
 
 ## Architecture
 
-- Deterministic: prepare owned Codex execution storage and Git administration; archive exact outputs and history before canonical persistence — node "$SKILL_DIR/scripts/issueflow.js" prepare --run-dir… `skills/issueflow/skills/issueflow/skill-invariants.json:111`
-- Deterministic: explicitly renew an expired time allowance while preserving artifacts, checkpoint identity, gates and review limits — node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --bu… `skills/issueflow/skills/issueflow/skill-invariants.json:115`
-- Deterministic: compute the one next action from the run's state, perform every deterministic step it reaches, and print a dispatch, a wait, or a stop — node "$SKILL_DIR/scripts/issueflow.js" next `skills/issueflow/skills/issueflow/skill-invariants.json:119`
-- Deterministic: read the open issues and the repo's branch and pull request policy — node "$SKILL_DIR/scripts/issueflow.js" board `skills/issueflow/skills/issueflow/skill-invariants.json:123`
-- Deterministic: fetch the chosen issue and its comments to disk and open the state machine — node "$SKILL_DIR/scripts/issueflow.js" start `skills/issueflow/skills/issueflow/skill-invariants.json:127`
-- Deterministic: validate lane checkout ownership or acquire an explicit source lease, then render the dispatch prompt and host-native worker profile from approved artifacts — node "$SKILL_DIR/scripts/… `skills/issueflow/skills/issueflow/skill-invariants.json:131`
+- Deterministic: prepare owned Codex execution storage and Git administration; archive exact outputs and history before canonical persistence — node "$SKILL_DIR/scripts/issueflow.js" prepare --run-dir… `skills/issueflow/skills/issueflow/skill-invariants.json:116`
+- Deterministic: explicitly renew an expired time allowance while preserving artifacts, checkpoint identity, gates and review limits — node "$SKILL_DIR/scripts/issueflow.js" resume --run-dir <run> --bu… `skills/issueflow/skills/issueflow/skill-invariants.json:120`
+- Deterministic: compute the one next action from the run's state, perform every deterministic step it reaches, and print a dispatch, a wait, or a stop — node "$SKILL_DIR/scripts/issueflow.js" next `skills/issueflow/skills/issueflow/skill-invariants.json:124`
+- Deterministic: read the open issues and the repo's branch and pull request policy — node "$SKILL_DIR/scripts/issueflow.js" board `skills/issueflow/skills/issueflow/skill-invariants.json:128`
+- Deterministic: fetch the chosen issue and its comments to disk and open the state machine — node "$SKILL_DIR/scripts/issueflow.js" start `skills/issueflow/skills/issueflow/skill-invariants.json:132`
+- Deterministic: validate lane checkout ownership or acquire an explicit source lease, then render the dispatch prompt and host-native worker profile from approved artifacts — node "$SKILL_DIR/scripts/… `skills/issueflow/skills/issueflow/skill-invariants.json:136`
 - Deterministic: enforce the gate — required sections, the red-before-green evidence rule, a clean tree, a registered red-team round — node "$SKILL_DIR/scripts/issueflow.js" accept `skills/issueflow/skills/issueflow/skill-invariants.json:1`
 - Deterministic: register a red-team review of the plan — validate every citation, derive the verdict from the severities, bind it to the plan's hash — node "$SKILL_DIR/scripts/issueflow.js" review `skills/issueflow/skills/issueflow/skill-invariants.json:1`
-- Deterministic: expand an approved plan's work items into stacked lanes — node "$SKILL_DIR/scripts/issueflow.js" split `skills/issueflow/skills/issueflow/skill-invariants.json:143`
-- Deterministic: push the branches and open the pull requests as drafts under the repo's own policy — node "$SKILL_DIR/scripts/issueflow.js" ship `skills/issueflow/skills/issueflow/skill-invariants.json:147`
+- Deterministic: expand an approved plan's work items into stacked lanes — node "$SKILL_DIR/scripts/issueflow.js" split `skills/issueflow/skills/issueflow/skill-invariants.json:148`
+- Deterministic: push the branches and open the pull requests as drafts under the repo's own policy — node "$SKILL_DIR/scripts/issueflow.js" ship `skills/issueflow/skills/issueflow/skill-invariants.json:152`
 - Deterministic: open a review round — the diff at the pushed head (from round 2, the fix since the last round), the finder briefs sized to it — node "$SKILL_DIR/scripts/issueflow.js" review-brief `skills/issueflow/skills/issueflow/skill-invariants.json:1`
-- Deterministic: pool the candidates, add every prior open major, brief the verifiers — node "$SKILL_DIR/scripts/issueflow.js" review-verify `skills/issueflow/skills/issueflow/skill-invariants.json:155`
+- Deterministic: pool the candidates, add every prior open major, brief the verifiers — node "$SKILL_DIR/scripts/issueflow.js" review-verify `skills/issueflow/skills/issueflow/skill-invariants.json:160`
 - Deterministic: the registrar — assign ids once, classify every citation against the diff's hunks, apply the convergence rules, bind the round to its head — node "$SKILL_DIR/scripts/issueflow.js" revi… `skills/issueflow/skills/issueflow/skill-invariants.json:1`
 - Deterministic: post one GitHub review per round — a thread per inline finding, a reply and a resolve on every prior thread — node "$SKILL_DIR/scripts/issueflow.js" review-post `skills/issueflow/skills/issueflow/skill-invariants.json:1`
-- Deterministic: brief the fixer on every open major, with the red CI checks — node "$SKILL_DIR/scripts/issueflow.js" review-fix-brief `skills/issueflow/skills/issueflow/skill-invariants.json:167`
-- Deterministic: record the fixer's report and reply on the threads; a not-changed major is a dispute — node "$SKILL_DIR/scripts/issueflow.js" review-fix-report `skills/issueflow/skills/issueflow/skill-invariants.json:171`
+- Deterministic: brief the fixer on every open major, with the red CI checks — node "$SKILL_DIR/scripts/issueflow.js" review-fix-brief `skills/issueflow/skills/issueflow/skill-invariants.json:172`
+- Deterministic: record the fixer's report and reply on the threads; a not-changed major is a dispute — node "$SKILL_DIR/scripts/issueflow.js" review-fix-report `skills/issueflow/skills/issueflow/skill-invariants.json:176`
 
 ## Troubleshooting
 
