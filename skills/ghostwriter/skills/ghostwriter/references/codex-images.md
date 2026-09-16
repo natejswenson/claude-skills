@@ -154,9 +154,23 @@ Copy the selected built-in output from its reported Codex location to
 `images/<slug>-generated-vN.png`; never leave a publish-bound asset only under Codex's generated
 image directory and never overwrite an existing candidate.
 
+After the copy succeeds, invoke a compatible native image viewer with that exact candidate path and
+wait for the open attempt to finish before asking for approval. Use the host command that applies:
+
+- macOS: `open "images/<slug>-generated-vN.png"`
+- Linux: `xdg-open "images/<slug>-generated-vN.png"`
+- Windows: `start "" "images/<slug>-generated-vN.png"`
+
+Resolve the candidate path once and pass that same path as the command's target; do not open the
+generated-image directory or a different copy. Treat a zero exit status as a successful native-open
+attempt. A missing opener, exception, or nonzero exit status is a failed or unavailable native open.
+The inline image attachment is separate evidence and never counts as a native viewer opening.
+
 After every generated or edited candidate that passes all applicable checks, open the PNG in the
-user's image viewer so they can inspect it full-size. Also show the actual image in the
-conversation. Use selectable responses when available and ask one decision:
+user's image viewer using the attempt above. On success, report that the native viewer opened the
+exact candidate path. On failure or unavailability, say that the native viewer
+could not open it, retain the full inline image, and give that exact candidate path for manual
+opening; do not claim it opened. Only after the open attempt and truthful status report, also show the actual image at full size in the conversation. Use selectable responses when available and ask one decision:
 **Approve card** / **Change card** / **Drop card**. A change is re-inspected, opened, and
 re-shown. Publishing still requires the approved post text and the final approved card.
 

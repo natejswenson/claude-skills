@@ -176,6 +176,18 @@
    "rationale": "The user explicitly asked to see generated cards full-size; inline thumbnails alone are not an adequate approval view."
   },
   {
+   "id": "generated-card-native-open-before-approval",
+   "file": "references/codex-images.md",
+   "pattern": "after the copy succeeds[\\s\\S]{0,700}wait for the open attempt to finish before asking for approval[\\s\\S]{0,700}macOS: `open[^\\n]+`[\\s\\S]{0,700}Linux: `xdg-open[^\\n]+`[\\s\\S]{0,700}Windows: `start",
+   "rationale": "The candidate must be copied first and the exact copied path must be handed to a compatible host viewer before the approval gate; an inline attachment alone cannot establish that full-size review was possible."
+  },
+  {
+   "id": "generated-card-native-open-status-branches",
+   "file": "references/codex-images.md",
+   "pattern": "zero\\s+exit status as a successful native-open\\s+attempt[\\s\\S]{0,500}inline image attachment is separate evidence[\\s\\S]{0,500}On success, report that the native[\\s\\S]{0,300}On failure or unavailability, say that the native[\\s\\S]{0,300}exact candidate path for manual",
+   "rationale": "Viewer success must come from the opener result, while failure must preserve the full inline image and provide a recoverable path without claiming that the viewer opened."
+  },
+  {
    "id": "selectable-controls-first",
    "file": "SKILL.md",
    "pattern": "selectable controls first[\\s\\S]{0,500}one compact Markdown table",
