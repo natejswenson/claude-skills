@@ -29,6 +29,7 @@ import { addIssueComment, commentIdFromUrl, issueComments, issueCommentsAll, upd
 import { artifactPath, board, gateSteps, saveRun } from './run.mjs';
 import { operation } from './operations.mjs';
 import { hash } from './contracts.mjs';
+import { specEntryActive } from './approved-spec.mjs';
 
 /** How much artifact prose the sticky comment may carry, in characters. */
 const ARTIFACT_BUDGET = 20000;
@@ -190,7 +191,10 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
   // stage, on an auto run the red team did, and saying the wrong one would be
   // a claim about an approval that never happened. Gated strictly on
   // `run.auto` so the frozen (gated) golden stays byte-identical.
-  const approvedBy = run.auto
+  const approvedBy = run.approvedSpec
+    ? ['Initial planning and plan review were skipped for a user-approved specification; subsequent amendments retain their review gates.',
+       'Implementation evidence and independent pull-request code review remain required.']
+    : run.auto
     ? [
         'The plan requires an independent red-team review. Implementation has an',
         'evidence gate; code review happens on the pull request. The board below',
@@ -267,7 +271,9 @@ export function renderComment(dir, run, { budget = ARTIFACT_BUDGET } = {}) {
     );
   }
 
-  const skipped = steps.filter((s) => s.stage.state === 'skipped');
+  const skipped = steps.filter((s) => s.stage.state === 'skipped' && !(s.stage.id === 'investigate' && specEntryActive(run)));
+  if (specEntryActive(run)) lines.push('', '**Planning skipped — using the approved specification:**', '',
+    `- Spec SHA-256: \`${run.approvedSpec.sha256}\`; implementation and code-review gates remain required.`);
   if (skipped.length > 0) {
     lines.push(
       '',

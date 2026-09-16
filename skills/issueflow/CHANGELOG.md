@@ -5,6 +5,12 @@ All notable changes to the **issueflow** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Start directly at implementation with an explicitly approved spec and its execution contract. Freeze the supplied bytes, retain approval provenance across retries, and report planning and plan review as skipped. Implementation evidence, independent code review, CI and completion permissions remain required on both hosts.
+
 ## [0.17.0] - 2026-09-13
 
 ### Added

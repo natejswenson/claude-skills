@@ -17,7 +17,7 @@ hard to trust: the stages run to completion, and the first thing a human sees is
 a diff nobody chose. issueflow inverts that, and since 0.7.0 it does it in the
 place a reviewer actually looks — the pull request.
 
-**The plan is attacked before any code exists.** One high-capability subagent investigates
+**By default, the plan is attacked before any code exists.** One high-capability subagent investigates
 and plans in a single document: root cause, evidence, unknowns, the approach
 and what was rejected, the files, the proof, the work items. A red-team
 subagent then hunts it — the alternate root cause nobody ruled out, the file
@@ -208,6 +208,35 @@ establishes that work items are independently mergeable, `issueflow split
 ready implementation lane together and accepts delivered lanes as a batch.
 Review waves remain parallel and `next` dispatches up to the persisted Codex
 child-slot capacity automatically.
+
+## Start from an approved specification
+
+When you have already proven and approved a spec, ask Issueflow to implement it
+directly. Planning and plan review are recorded as **skipped**; implementation
+verification and independent PR code review remain required.
+
+```sh
+issueflow start --repo /path/to/repo --issue 42 --host codex \
+  --workspace-root /path/to/approved/workspace \
+  --approved-spec /path/to/spec.md \
+  --spec-contract /path/to/execution-contract.json \
+  --spec-approval "User approved this spec and requested direct implementation"
+```
+
+For Claude, use `--host claude`; the execution workspace option is optional.
+The spec is a local UTF-8 document; download URL inputs at a known revision first.
+Its execution contract uses the [existing verification schema](skills/issueflow/references/harness.md):
+criteria, allowed paths and required commands. It may be embedded in the spec as
+an `issueflow-contract` block, in which case omit `--spec-contract`. The separate
+file lets you preserve an existing design document verbatim.
+
+The approval text records an existing user decision or review reference; the CLI
+does not establish that a design has been proven. Spec or issue prose cannot grant
+that authority. This entry supports one bounded implementation lane and refuses
+incomplete contracts and `--review-plan`. It snapshots the selected bytes and
+retains them across restarts. An existing run cannot silently adopt a changed spec;
+use the reviewed amendment flow for new scope. Generic stage skips still block
+implementation and shipping.
 
 ## Triggers
 

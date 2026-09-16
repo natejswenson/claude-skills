@@ -1,3 +1,4 @@
+import { specEntryActive } from './approved-spec.mjs';
 /**
  * The last gate, and the only step that writes to GitHub.
  *
@@ -31,7 +32,7 @@ const git = (args, cwd) => {
 /** Every reason this run may not ship. All of them, never just the first. */
 export function shipBlockers(run) {
   return gateSteps(run)
-    .filter((s) => s.stage.state !== 'approved')
+    .filter((s) => s.stage.state !== 'approved' && !(s.stage.id === 'investigate' && specEntryActive(run)))
     .map((s) => ({ step: s.key, state: s.stage.state, reason: s.stage.skipReason ?? null }));
 }
 
@@ -84,7 +85,9 @@ export function prBody(dir, run, lane) {
           (s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} | ${s.stage.review?.rounds.length ?? 0} |`,
         ),
         '',
-        'The plan passed independent red-team review before implementation.',
+        run.approvedSpec
+          ? 'Initial planning and plan review were skipped for a user-approved specification. Later amendments follow their recorded review gates.'
+          : 'The plan passed independent red-team review before implementation.',
         'Implementation acceptance checks its required evidence; independent code',
         'review follows on this pull request.',
       ]
@@ -93,7 +96,9 @@ export function prBody(dir, run, lane) {
         '|---|---|---|',
         ...[...shared, ...own].map((s) => `| ${s.stage.id} | ${modelLabel(dispatchProfile(run, s.stage.id))} | ${s.stage.state} |`),
         '',
-        'The independently reviewed plan was approved by a human before implementation.',
+        run.approvedSpec
+          ? 'Initial planning and plan review were skipped for a user-approved specification. Later amendments follow their recorded review gates.'
+          : 'The independently reviewed plan was approved by a human before implementation.',
         'Implementation acceptance checks its required evidence.',
       ];
   const lines = [
@@ -104,6 +109,7 @@ export function prBody(dir, run, lane) {
     '## How this was produced',
     '',
     ...produced,
+    ...(run.approvedSpec ? ['', `Initial approved specification SHA-256: \`${run.approvedSpec.sha256}\`.`] : []),
     '',
     '## Test evidence',
     '',

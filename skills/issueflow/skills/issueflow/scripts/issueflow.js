@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync,
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { recoverOwner, assertControllerOwner, initializeRecord, resumeInitialization, initializationProblems } from './lib/initialization.mjs';
+import { readSpecSelection, assertSameSpecSelection, selectApprovedSpec, specEntryActive, specPath } from './lib/approved-spec.mjs';
 import { freezeRepository } from './lib/repository.mjs';
 import { statusSnapshot, progressEvent } from './lib/status.mjs';
 import { monitorSnapshot } from './lib/monitor.mjs';
@@ -664,11 +665,13 @@ function resetRunDir(dir, repoPath, { force = false } = {}) {
 }
 
 async function cmdStart(args) {
+  const selectedSpec = readSpecSelection(args);
   if (args.auto && args.reviewPlan) throw new Error('choose either autonomous mode or --review-plan, not both');
   if(args.runDir&&!args.takeOver&&existsSync(join(resolve(args.runDir),'run.json'))) {
     const dir=resolve(args.runDir);let old;try{old=loadRun(dir)}catch{}
     if(old?.initialization&&!old.finished) {
       assertControllerOwner(old,args);
+      assertSameSpecSelection(old, selectedSpec);
       if(args.issue!=null&&Number(args.issue)!==old.issue.number||args.repo&&resolve(args.repo)!==old.repo.path)throw new RunError('startup retry identifies another issue or repository');
       validateWorkspaceRoot(old.repo.path,dir,args.workspaceRoot,old.runtime);
       const release=claimController(dir,'start');try{resumeInitialization(dir,old,args);confirmInitialization(dir,old)}finally{release()}
@@ -694,6 +697,7 @@ async function cmdStart(args) {
     if (existing && !existing.finished && (existing.initialization || requestedHost)) {
       if (existing.repo.owner !== info.owner || existing.repo.name !== info.name || existing.issue.number !== issue.number) throw new RunError('run/issue identity differs from the existing claim');
       assertControllerOwner(existing, args);
+      assertSameSpecSelection(existing, selectedSpec);
       if (existing.initialization) {
         const release = claimController(dir, 'start');
         try { resumeInitialization(dir, existing, args); confirmInitialization(dir, existing); }
@@ -733,6 +737,7 @@ async function cmdStart(args) {
   // `claimRunDir`, not `saveRun`: this is the FIRST write, and it is the one
   // that must lose to a run already there rather than overwrite it.
   freezeRepository(run);
+  selectApprovedSpec(run, selectedSpec);
   initializeRecord(run, issue, args);
   claimRunDir(dir, run, { takeOver });
   const release = claimController(dir, 'start');
@@ -768,7 +773,9 @@ async function cmdStart(args) {
   runBoard(run);
   // Conditional so a gated run's `start` output stays byte-identical to the
   // frozen golden — the same rule every review-aware rendering follows.
-  if (run.auto) {
+  if (run.approvedSpec) {
+    console.log('\nApproved-spec entry: planning and plan review skipped; implementation evidence and pull-request code review remain required.');
+  } else if (run.auto) {
     console.log(
       '\nAuto run: the plan has independent red-team review; implementation has an evidence gate, followed by pull-request code review.\n' +
         `A stage advances only on a registered pass; ${MAX_ROUNDS} blocked rounds plus one recovery round are the absolute plan-review cap.`,
@@ -1353,7 +1360,7 @@ async function cmdReviewBrief(args) {
   if(baseHead)entry.baseHead=baseHead;
   let contextSection = '';
   if (runtimeOf(run) === 'codex' || run.harness) {
-    const contextInput = { issue: loadIssue(dir), base: baseHead ?? lane.base, head, files, plan: artifactPath(dir, findStep(run, PLAN_STAGE)), contract: run.harness?.contract, evidence: lane.verification ?? null, priorFindings: openFindings(lane) };
+    const contextInput = { issue: loadIssue(dir), base: baseHead ?? lane.base, head, files, plan: specEntryActive(run) ? specPath(dir) : artifactPath(dir, findStep(run, PLAN_STAGE)), contract: run.harness?.contract, evidence: lane.verification ?? null, priorFindings: openFindings(lane) };
     const prepared = run.harness ? prepareReviewContext(join(dir, 'context-cache'), tree, contextInput) : { packet: buildContextPacket(contextInput) };
     const packet = prepared.packet;
     const packetPath = contextPath(dir, lane, round);
@@ -1979,6 +1986,9 @@ const USAGE = `issueflow v${VERSION} — one open GitHub issue to a pull request
 Exit codes: 0 ok · 2 a gate refused (send the work back) · 3 infrastructure (gh/git — retry) ·
 4 hand back to the user (a cap, drift, a dispute, the human stop).
 
+  --approved-spec <file>  implement an explicitly approved, proven spec without planning/review
+  --spec-approval <text> existing user direction or review reference authorizing spec reuse
+  --spec-contract <file> execution-contract JSON when the spec has no issueflow-contract block
   --review-plan        opt in to one human stop after the red-teamed plan
   --auto               backward-compatible alias for the autonomous default;
                        on accept: approve on a registered, hash-bound passing review

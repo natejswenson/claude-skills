@@ -24,6 +24,20 @@ historical/simple checks; execution-mode fields require schema 2.
 
 ## Reviewed obligations
 
+An explicitly user-approved, proven specification can enter through
+`start --approved-spec <file> --spec-approval "<existing direction/reference>"`.
+Its contract may be a single embedded `issueflow-contract` block or a separate
+`--spec-contract <json>` file. The controller validates the contract and repository
+preflight, freezes both inputs, and marks planning and plan review skipped. It
+does not produce a red-team verdict. The selected approval covers using these
+requirements for implementation; it grants no new command permissions, release
+or merge authority. The orchestrator maps the existing spec to required checks
+without redesigning it. Syntactic validation does not establish design quality.
+This entry supports one lane. Missing prerequisites remain unresolved work;
+scope changes require the ordinary reviewed amendment flow. Restarting keeps
+the frozen snapshot even if its original file changes or disappears.
+
+For the ordinary planning entry:
 The investigator includes exactly one `issueflow-contract` JSON fence in its
 plan. The independent plan reviewer must check relevance, sufficient full-suite
 coverage, non-goals, allowed paths, and command permissions. A command that prints

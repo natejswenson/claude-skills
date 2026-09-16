@@ -1,4 +1,5 @@
 /** Durable initialization identity is distinct from a short command lease. */
+import { initializeApprovedSpec } from './approved-spec.mjs';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -61,6 +62,8 @@ function resumeSteps(dir, run, args = {}) {
   if (workspaceRoot) prepareExecution(dir, run, { workspaceRoot });
   if (init.noWorktree) prepareCheckout(dir, run, run.lanes[0], { ...args, reserve: true });
   completed(dir, run, 'execution');
+  initializeApprovedSpec(dir, run);
+  if (run.approvedSpec) completed(dir, run, 'approved-spec');
   run.initialization.phase = 'active'; delete run.initialization.lastError;
   completed(dir, run, 'active');
   return run;
