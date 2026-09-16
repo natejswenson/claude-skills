@@ -71,5 +71,14 @@ def test_native_open_success_and_failure_keep_inline_recovery_truthful():
 if __name__ == "__main__":
     # T1 runs this file directly, without pytest. Keep that reviewed check
     # meaningful while retaining normal pytest discovery for the skill suite.
-    test_candidate_copy_uses_exact_host_viewer_path_before_approval()
-    test_native_open_success_and_failure_keep_inline_recovery_truthful()
+    try:
+        test_candidate_copy_uses_exact_host_viewer_path_before_approval()
+        test_native_open_success_and_failure_keep_inline_recovery_truthful()
+    except AssertionError:
+        # issueflow's direct regression runner consumes TAP-style evidence.
+        print("# pass 0")
+        print("# fail 1")
+        raise
+    else:
+        print("# pass 2")
+        print("# fail 0")
