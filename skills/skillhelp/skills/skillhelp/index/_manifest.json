@@ -130,9 +130,9 @@
     },
     {
       "name": "github-stats",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "stack": "python",
-      "cardHash": "87d5598571df3dc4",
+      "cardHash": "93f4a006cfd60acd",
       "facts": 30,
       "sections": {
         "setup": 9,
