@@ -276,7 +276,7 @@
       "name": "shipflow",
       "version": "0.6.0",
       "stack": "node",
-      "cardHash": "d0db4c0e42c8abc2",
+      "cardHash": "7cf0e4f3693b5022",
       "facts": 71,
       "sections": {
         "setup": 12,
