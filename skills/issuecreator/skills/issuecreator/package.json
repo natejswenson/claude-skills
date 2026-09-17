@@ -1,6 +1,6 @@
 {
   "name": "@natjswenson/issuecreator",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Create actionable GitHub issues that issueflow can take through planning and implementation.",
   "license": "MIT",
   "author": "Nate Swenson",

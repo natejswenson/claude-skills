@@ -162,9 +162,9 @@
     },
     {
       "name": "issuecreator",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "stack": "node",
-      "cardHash": "ad821743b5d7f036",
+      "cardHash": "cb8bd079a7cf2342",
       "facts": 49,
       "sections": {
         "setup": 9,
