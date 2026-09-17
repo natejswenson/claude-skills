@@ -48,11 +48,11 @@
 - devlog lint-post <file> — Deterministic post-contract check `skills/devlog/README.md:139`
 - devlog lint-guide <file> [--voice] — Post checks plus a unique top-of-post implementation handoff `skills/devlog/README.md:140`
 - devlog prepare-guide --article <md> --brand <json> --out <new-dir> [--cover <png>] — Standalone local preview and complete copyable prompt/reference `skills/devlog/README.md:141`
-- npx -y @natjswenson/devlog@0.14.1 config --json `skills/devlog/skills/devlog/SKILL.md:162`
-- npx -y @natjswenson/devlog@0.14.1 add-project --yes \ `skills/devlog/skills/devlog/SKILL.md:188`
-- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:263`
-- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:264`
-- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:565`
+- npx -y @natjswenson/devlog@0.14.1 config --json `skills/devlog/skills/devlog/SKILL.md:163`
+- npx -y @natjswenson/devlog@0.14.1 add-project --yes \ `skills/devlog/skills/devlog/SKILL.md:189`
+- npx -y @natjswenson/devlog@latest scan --json --summary # the plan table `skills/devlog/skills/devlog/SKILL.md:264`
+- npx -y @natjswenson/devlog@latest scan --json --project '<key>' # full detail, one project `skills/devlog/skills/devlog/SKILL.md:265`
+- npx -y @natjswenson/devlog@latest publish-entry \ `skills/devlog/skills/devlog/SKILL.md:566`
 - npx @natjswenson/devlog init # create the repo, install the Claude skill, write config `skills/devlog/README.md:68`
 - npx @natjswenson/devlog preview # see it rendered at http://localhost:5173 `skills/devlog/README.md:69`
 - npm test # deterministic core; scan tests use real throwaway git repos `skills/devlog/README.md:373`
