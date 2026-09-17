@@ -2,6 +2,12 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
+## [0.14.2] - 2026-09-17
+
+### Added
+
+- Completed issueflow integration and made initialization host-aware.
+
 ## Unreleased
 
 - Make init host-aware: Claude retains standalone skill installation while
