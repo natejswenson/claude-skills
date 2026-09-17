@@ -18,9 +18,9 @@
     },
     {
       "name": "brandreport",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "stack": "node",
-      "cardHash": "a4172c40a9dd9475",
+      "cardHash": "293dfad26b7b7112",
       "facts": 45,
       "sections": {
         "setup": 6,
