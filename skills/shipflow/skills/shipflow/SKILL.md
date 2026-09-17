@@ -2,7 +2,7 @@
 name: shipflow
 description: Scaffold a configurable dev/main branching, auto-merge, branch-cleanup, and release-tagging workflow into any repo. Detects existing branch protection, CI checks, and release conventions; always shows a plan and waits for confirmation before mutating anything. Use when the user asks to set up branch protection standards, apply deployment/release standards to a repo, or wants long-lived dev/main branches with auto-merge and branch cleanup.
 user_invocable: true
-version: 0.6.0
+version: 0.7.0
 ---
 
 ## Codex runtime
