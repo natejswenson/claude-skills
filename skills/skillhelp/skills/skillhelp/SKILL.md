@@ -2,7 +2,7 @@
 name: skillhelp
 description: Answer help questions about the skills in this repo. Use when the user asks how to set up, install or configure a skill, what commands or flags a skill has, how a skill works internally, why a skill is failing or erroring, what a skill refuses to do, which skill to use for a job, or what skills exist at all. Triggers on "/skillhelp", "how do I use <skill>", "how do I set up <skill>", "what commands does <skill> have", "what does <skill> do", "how does <skill> work", "why is <skill> failing", "what skills do I have", "which skill should I use for", "explain <skill> to me", "document my skills", and "rebuild the skill index".
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 ## Codex runtime

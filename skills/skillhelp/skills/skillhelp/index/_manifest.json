@@ -322,9 +322,9 @@
     },
     {
       "name": "skillhelp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "stack": "node",
-      "cardHash": "3747f3ccb6c6a2ed",
+      "cardHash": "d4352dce55a1fd3b",
       "facts": 50,
       "sections": {
         "setup": 7,
