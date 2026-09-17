@@ -2,7 +2,7 @@
 name: brandreport
 description: Analyze a person's personal online brand from nothing but their name and generate a report on it. Use when the user says "brand report", "brandreport", "analyze my online brand", "what does the internet say about me", "search my name and tell me what you find", "audit my online presence", "what does my personal brand look like", "how do I come across online", or gives a name and asks what's out there about that person. The skill discovers sources itself — profiles, sites, posts, mentions — the user never supplies a list.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 ## Codex runtime
