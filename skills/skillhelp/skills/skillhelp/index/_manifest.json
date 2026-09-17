@@ -290,9 +290,9 @@
     },
     {
       "name": "shipreport",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "stack": "node",
-      "cardHash": "1e108ec9a491c3d1",
+      "cardHash": "a36f28a5e19809cc",
       "facts": 60,
       "sections": {
         "setup": 6,

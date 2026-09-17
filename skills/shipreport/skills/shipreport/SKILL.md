@@ -2,7 +2,7 @@
 name: shipreport
 description: Write an executive summary of the work actually shipped over a chosen time frame, built from real GitHub contributions and real Claude Code session transcripts, ranked so only what mattered appears, and rendered as a press-styled HTML report. Use when the user says "what did I ship this week", "shipreport", "write my weekly summary", "executive summary of my work", "status report for my manager", "what did I get done last month", "summarize what I shipped in July", or wants their commits, merged PRs, cut releases and coding sessions turned into a report someone who wasn't there can read.
 user_invocable: true
-version: 0.2.0
+version: 0.3.0
 ---
 
 ## Codex runtime
