@@ -1,6 +1,6 @@
 {
   "name": "resume",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Tailor a stored résumé to a job description and render it as a themed PDF. The résumé is supplied once and reused, so later runs need only a job URL — paste a posting link and get a tailored, uniquely-named PDF back. Triggers on \"/resume\", \"tailor my resume\", \"optimize my resume for this job\", a bare job posting URL, or any request to adapt a résumé to a specific posting.",
   "author": {
     "name": "Nate Swenson"

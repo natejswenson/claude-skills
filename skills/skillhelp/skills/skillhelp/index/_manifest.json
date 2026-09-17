@@ -258,9 +258,9 @@
     },
     {
       "name": "resume",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "stack": "node",
-      "cardHash": "9aae7d540373bfa2",
+      "cardHash": "8d1428bd84f6f76d",
       "facts": 50,
       "sections": {
         "setup": 12,
