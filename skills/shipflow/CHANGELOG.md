@@ -2,6 +2,16 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## 0.7.0 (2026-09-17)
+
+### Added
+
+- Added guarded main-only policy and GitHub Flow support.
+
+### Fixed
+
+- Hardened draft/fork pull request handling and legacy release recovery.
+
 ## 0.6.0 (2026-08-03) — the ambiguous fast path is refused, not guessed
 
 ### Fixed
