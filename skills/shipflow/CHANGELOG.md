@@ -2,7 +2,7 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
-## [0.7.0] - 2026-09-17
+## 0.7.0 (2026-09-17)
 
 ### Added
 
