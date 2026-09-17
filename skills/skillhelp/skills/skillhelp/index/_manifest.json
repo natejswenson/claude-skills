@@ -210,9 +210,9 @@
     },
     {
       "name": "pluginsync",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "stack": "node",
-      "cardHash": "773f4fa7f3d18137",
+      "cardHash": "b126f6c11e5b0e81",
       "facts": 46,
       "sections": {
         "setup": 6,
