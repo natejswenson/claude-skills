@@ -2,9 +2,9 @@
   "skills": [
     {
       "name": "appletv",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "stack": "node",
-      "cardHash": "52c5be1a3d4931ca",
+      "cardHash": "e1735f2eb305f8f1",
       "facts": 76,
       "sections": {
         "setup": 12,
