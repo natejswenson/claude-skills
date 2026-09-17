@@ -209,4 +209,20 @@ test('stable selections survive reorder; lifecycle removes listeners and restore
     assert.equal(output.listenerCount('resize'), 0); assert.equal(signals.listenerCount('SIGINT'), 0);
     assert.match(Buffer.concat(chunks).toString(), /\x1b\[\?25h\x1b\[\?1049l/);
   }
+
+  // readline installs a cached decoder on the input stream. Cleanup must
+  // remove it so an embedding client can start the monitor again on the same
+  // stream and still receive keyboard input.
+  {
+    const input = new PassThrough(), output = new PassThrough(), signals = new EventEmitter();
+    Object.assign(input, { isTTY: true, isRaw: false, setRawMode(value) { this.isRaw = value; } });
+    Object.assign(output, { isTTY: true, columns: 140, rows: 24 });
+    const options = { input, output, signals, env: { TERM: 'xterm' }, intervalMs: 1000 };
+    const first = runMonitor({}, options);
+    input.write('q');
+    await first;
+    const second = runMonitor({}, options);
+    input.write('q');
+    await second;
+  }
 });

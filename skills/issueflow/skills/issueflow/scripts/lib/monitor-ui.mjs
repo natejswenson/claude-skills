@@ -150,15 +150,22 @@ export async function runMonitor(options, { input = process.stdin, output = proc
   const view = createView(snapshot(options));
   const wasRaw = Boolean(input.isRaw), wasFlowing = input.readableFlowing === true;
   const before = new Map(['data', 'newListener'].map((event) => [event, input.rawListeners(event)]));
+  const beforeSymbols = new Set(Object.getOwnPropertySymbols(input));
   return new Promise((resolve, reject) => {
     let timer, closed = false;
     const finish = (error) => {
       if (closed) return;
       closed = true; clearInterval(timer);
       input.removeListener('keypress', keypress); input.removeListener('end', end); input.removeListener('close', end);
-      input.removeListener('error', fail); output.removeListener('error', fail); output.removeListener('resize', refresh);
+      input.removeListener('error', fail); output.removeListener('error', fail); output.removeListener('resize', redraw);
       for (const [event, listeners] of before) for (const listener of input.rawListeners(event)) {
         if (!listeners.includes(listener)) input.removeListener(event, listener);
+      }
+      // readline caches its keypress decoder on the stream. Remove only the
+      // symbols installed by this invocation so a reused stream can be wired
+      // up again by emitKeypressEvents on the next invocation.
+      for (const symbol of Object.getOwnPropertySymbols(input)) {
+        if (!beforeSymbols.has(symbol) && ['keypress-decoder', 'escape-decoder'].includes(symbol.description)) delete input[symbol];
       }
       signals.removeListener('SIGINT', end); signals.removeListener('SIGTERM', end);
       let failure = error;
@@ -169,6 +176,7 @@ export async function runMonitor(options, { input = process.stdin, output = proc
     const fail = (error) => finish(error), end = () => finish();
     const draw = () => output.write('\x1b[H\x1b[2J' + renderView(view, output.columns, output.rows));
     const refresh = () => { try { refreshView(view, snapshot(options)); draw(); } catch (e) { finish(e); } };
+    const redraw = () => { try { draw(); } catch (e) { finish(e); } };
     const keypress = (_s, key = {}) => {
       try {
         const action = handleKey(view, key, Math.max(1, (output.rows ?? 24) - 8));
@@ -178,7 +186,7 @@ export async function runMonitor(options, { input = process.stdin, output = proc
     try {
       emitKeypressEvents(input);
       input.on('keypress', keypress).on('end', end).on('close', end).on('error', fail);
-      output.on('resize', refresh).on('error', fail);
+      output.on('resize', redraw).on('error', fail);
       signals.on('SIGINT', end).on('SIGTERM', end);
       input.setRawMode(true); input.resume(); output.write('\x1b[?1049h\x1b[?25l'); draw();
       timer = setInterval(refresh, intervalMs);
