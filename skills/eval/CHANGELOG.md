@@ -5,6 +5,16 @@ All notable changes to the **eval** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-17
+
+### Added
+
+- Added completion recovery and actionable issue preparation for issueflow.
+
+### Fixed
+
+- Improved cross-host tool-fact normalization and contract evaluation.
+
 ## [Unreleased]
 
 - Recognize an explicitly named skill in a combined skill announcement; unrelated mentions and repeated announcements still fail the probe.

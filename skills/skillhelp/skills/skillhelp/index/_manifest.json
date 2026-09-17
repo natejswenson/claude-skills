@@ -66,9 +66,9 @@
     },
     {
       "name": "eval",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "stack": "node",
-      "cardHash": "067579906b019280",
+      "cardHash": "8003577259a12cc9",
       "facts": 61,
       "sections": {
         "setup": 8,
