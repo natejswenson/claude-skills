@@ -2,7 +2,7 @@
 
 All notable changes to `@natjswenson/devlog` are documented here.
 
-## [0.14.2] - 2026-09-17
+## 0.14.2 (2026-09-17)
 
 ### Added
 
