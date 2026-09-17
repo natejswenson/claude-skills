@@ -2,7 +2,7 @@
 name: issuecreator
 description: Create GitHub issues grounded in repository evidence and formatted for issueflow. Use when the user says "create an issue", "turn this into a GitHub issue", "write an issue for issueflow", or "break this work into issues". Supports local drafts and authorized publishing; implementing existing issues belongs to issueflow.
 user_invocable: true
-version: 0.1.0
+version: 0.1.1
 ---
 
 # /issuecreator — actionable issues for issueflow
