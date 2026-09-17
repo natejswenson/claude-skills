@@ -34,9 +34,9 @@
     },
     {
       "name": "city-report",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "stack": "python",
-      "cardHash": "9d1d330359c403a7",
+      "cardHash": "3bc9d3df678375f2",
       "facts": 59,
       "sections": {
         "setup": 5,
