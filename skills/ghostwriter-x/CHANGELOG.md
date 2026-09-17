@@ -5,6 +5,16 @@ All notable changes to the ghostwriter-x skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-17
+
+### Added
+
+- Added generated PRESS branding, CI verification, and shared dual-host support.
+
+### Fixed
+
+- Corrected generated-region and version handling.
+
 ## [0.2.1] - 2026-07-28
 
 ### Changed
