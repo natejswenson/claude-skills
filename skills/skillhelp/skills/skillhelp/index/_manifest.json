@@ -226,9 +226,9 @@
     },
     {
       "name": "press",
-      "version": "0.10.0",
+      "version": "0.11.0",
       "stack": "node",
-      "cardHash": "dcd744b1a04d5ea3",
+      "cardHash": "1036c275cd58e996",
       "facts": 58,
       "sections": {
         "setup": 7,
