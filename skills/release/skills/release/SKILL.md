@@ -2,7 +2,7 @@
 name: release
 description: Cut a release for one named skill, package or service and prove the tag exists. Use when the user says "release devlog", "release ghostwriter", "cut a release for press", "ship a new version of X", "what is unreleased", "tag the current main", or asks whether something has a release pending. Reads the commits on main since the last tag, proposes a semver bump and a CHANGELOG entry, waits for approval, then lands the bump and reports the tag URL — never claiming a release happened until the tag is read back from the remote.
 user_invocable: true
-version: 0.2.0
+version: 0.3.0
 ---
 
 ## Codex runtime

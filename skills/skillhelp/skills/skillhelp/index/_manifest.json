@@ -242,9 +242,9 @@
     },
     {
       "name": "release",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "stack": "node",
-      "cardHash": "701e945062f7a0c7",
+      "cardHash": "604a83a93fb8bd02",
       "facts": 60,
       "sections": {
         "setup": 12,
