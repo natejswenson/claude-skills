@@ -4,6 +4,16 @@ All notable changes to the resume skill are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/), and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] - 2026-09-17
+
+### Added
+
+- Added shared dual-host terminal presentation, generated branding, and CI verification.
+
+### Fixed
+
+- Aligned runtime architecture and lockfile version handling.
+
 ## [2.0.0] — 2026-07-29
 
 **Breaking.** Seven react-pdf templates are replaced by one semantic HTML
