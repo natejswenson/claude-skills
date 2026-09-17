@@ -2,7 +2,7 @@
 name: pluginsync
 description: Refresh the locally-installed Claude Code plugin marketplaces so newly released skill versions are actually on disk. Use when the user says "update my marketplace", "refresh my skills", "update the claude-skills plugins", "am I on the latest skills", "install the new skill", or "why is /skillfactory still the old version". Reports installed vs available version per plugin, installs what is missing, updates what drifted, flags plugins shadowed by a stale personal copy in ~/.claude/skills, and always says whether a restart is still needed.
 user_invocable: true
-version: 0.1.0
+version: 0.2.0
 ---
 
 ## Codex runtime
