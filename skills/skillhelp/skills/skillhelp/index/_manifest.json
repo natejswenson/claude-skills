@@ -306,9 +306,9 @@
     },
     {
       "name": "skillfactory",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "stack": "node",
-      "cardHash": "7d5da3cf2cb94af3",
+      "cardHash": "cb34f610c9ffb195",
       "facts": 58,
       "sections": {
         "setup": 8,

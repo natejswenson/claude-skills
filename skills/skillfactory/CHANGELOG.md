@@ -5,6 +5,16 @@ All notable changes to the **skillfactory** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-17
+
+### Added
+
+- Added GitHub Flow support and host-aware strongest-model gating.
+
+### Internal
+
+- Documented pattern-aware explicit component releases.
+
 ## [0.4.0] - 2026-08-02
 
 ### Fixed
