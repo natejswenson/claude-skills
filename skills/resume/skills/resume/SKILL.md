@@ -2,7 +2,7 @@
 name: resume
 description: Tailor a stored résumé to a job description and render it as a themed PDF. The résumé is supplied once and reused, so later runs need only a job URL. Triggers on "/resume", "tailor my resume", "optimize my resume for this job", a bare job posting URL, or any request to adapt a résumé to a specific posting and produce a PDF. Also handles "update my stored resume", "show my stored resume", and "forget my resume".
 user_invocable: true
-version: 2.0.0
+version: 2.1.0
 ---
 
 ## Codex runtime
