@@ -2,6 +2,7 @@
 name: devlog
 description: Turn releases into researched how-to posts, or explicitly draft one complete concept guide readers can implement with their own coding agent. Supports Codex AI cover drafts and conversational devlog configuration.
 user_invocable: true
+version: 0.14.1
 ---
 
 ## Codex runtime
