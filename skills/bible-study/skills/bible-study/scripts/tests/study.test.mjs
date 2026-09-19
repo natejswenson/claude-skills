@@ -11,6 +11,9 @@ test('reviewed John 3 study retains all required coverage and source links',()=>
  assert.ok(html.includes('3:22-36'));assert.ok(html.includes('John 3:30'));
 });
 for(const [name,change] of [
+ ['missing comparison exercise',d=>{delete d.related[1].prompt;}],
+ ['missing discussion question',d=>{d.questions.pop();}],
+ ['missing opening instructions',d=>{delete d.opening;}],
  ['non-Christian source',d=>{d.sources[1].kind='secular';}],
  ['unread source',d=>{d.sources[1].read=false;}],
  ['unresolved citation',d=>{d.meaning[0].sources=['S999'];}],
@@ -28,3 +31,19 @@ test('source text is escaped rather than executed',()=>{
  const h=render(d);assert.ok(h.includes('&lt;script&gt;'));assert.ok(!h.includes('<script>'));assert.ok(!h.includes('<img src=x'));
 });
 test('invalid root is rejected',()=>{for(const d of [null,[],false])assert.ok(validate(d).length);});
+
+test('participant guide keeps questions, comparison prompts and writing space in reading order',()=>{
+ const h=render(good);
+ const escaped=s=>s.replaceAll('&','&amp;').replaceAll("'",'&#39;');
+ let end=0;
+ for(let i=0;i<3;i++){
+   const start=h.indexOf('class="study-step"',end);
+   end=h.indexOf('</section>',start);
+   const step=h.slice(start,end);
+   assert.ok(step.includes(good.flow[i].reference));
+   for(const q of good.questions.slice(i*2,i*2+2))assert.ok(step.includes(escaped(q)));
+   assert.ok(step.includes(escaped(good.related[i].prompt)));
+   assert.ok(step.includes('class="write-lines"'));
+ }
+ assert.ok(h.includes('class="commitment"'));
+});

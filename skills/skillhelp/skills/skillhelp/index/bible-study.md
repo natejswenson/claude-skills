@@ -9,12 +9,12 @@
 
 ## Setup
 
-- **Claude Code:** Use the host's web, file, and shell tools; no Claude CLI subprocess is needed. `skills/bible-study/README.md:72`
-- **Codex:** Use Codex's web, file, and shell tools with the same bundled renderer. `skills/bible-study/README.md:73`
-- **Personal data:** No credentials or private configuration store. Outputs go to your chosen folder. `skills/bible-study/README.md:74`
-- See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for shared-host conventions. `skills/bible-study/README.md:76`
-- Node 18+ for offline validation and HTML. Python 3 with Playwright and Chromium for PDF/PNG: `skills/bible-study/README.md:78`
-- Use .venv/bin/python for export when using that environment. Poppler (pdfinfo, pdftoppm) verifies page count and renders the PDF for inspection. No API credentials or Claude CLI required. Both hosts… `skills/bible-study/README.md:86`
+- **Claude Code:** Use the host's web, file, and shell tools; no Claude CLI subprocess is needed. `skills/bible-study/README.md:73`
+- **Codex:** Use Codex's web, file, and shell tools with the same bundled renderer. `skills/bible-study/README.md:74`
+- **Personal data:** No credentials or private configuration store. Outputs go to your chosen folder. `skills/bible-study/README.md:75`
+- See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for shared-host conventions. `skills/bible-study/README.md:77`
+- Node 18+ for offline validation and HTML. Python 3 with Playwright and Chromium for PDF/PNG: `skills/bible-study/README.md:79`
+- Use .venv/bin/python for export when using that environment. Poppler (pdfinfo, pdftoppm) verifies page count and renders the PDF for inspection. No API credentials or Claude CLI required. Both hosts… `skills/bible-study/README.md:87`
 - Requires Node >=18 (package.json engines). `skills/bible-study/skills/bible-study/package.json:35`
 
 ## Usage
@@ -27,21 +27,21 @@
 - Research JSON — Claim citations and source review notes `skills/bible-study/README.md:25`
 - Writing date and authorship, separated from the time of the narrated events. `skills/bible-study/README.md:27`
 - Historical and literary context, meaning, and three related passages. `skills/bible-study/README.md:28`
-- A 45-minute group plan with questions, application and prayer. `skills/bible-study/README.md:29`
-- One-page PDF, high-resolution PNG, responsive HTML, and a research JSON record. `skills/bible-study/README.md:30`
-- From this repository checkout, install the local plugin in Codex: `skills/bible-study/README.md:35`
-- Start a new session and invoke $bible-study John 3. In Claude Code, after this version is available from the marketplace: `skills/bible-study/README.md:42`
+- A 45-minute participant guide: six observation/interpretation questions, three cross-reference exercises, writing space, a weekly commitment, and prayer. `skills/bible-study/README.md:29`
+- One-page PDF, high-resolution PNG, responsive HTML, and a research JSON record. `skills/bible-study/README.md:31`
+- From this repository checkout, install the local plugin in Codex: `skills/bible-study/README.md:36`
+- Start a new session and invoke $bible-study John 3. In Claude Code, after this version is available from the marketplace: `skills/bible-study/README.md:43`
 
 ## Commands
 
-- node scripts/bible-study.js validate --file /absolute/path/study.json `skills/bible-study/skills/bible-study/SKILL.md:93`
-- node scripts/bible-study.js render --file /absolute/path/study.json --out /absolute/path/output `skills/bible-study/skills/bible-study/SKILL.md:94`
-- python3 scripts/export.py --file /absolute/path/output/study.html --out /absolute/path/output `skills/bible-study/skills/bible-study/SKILL.md:95`
-- node scripts/bible-study.js validate --file evals/input/john-3.json `skills/bible-study/README.md:59`
-- node scripts/bible-study.js render --file evals/input/john-3.json --out /tmp/john-3 `skills/bible-study/README.md:60`
-- python3 scripts/export.py --file /tmp/john-3/study.html --out /tmp/john-3 `skills/bible-study/README.md:61`
-- python3 -m venv .venv `skills/bible-study/README.md:81`
-- node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run `skills/bible-study/README.md:111`
+- node scripts/bible-study.js validate --file /absolute/path/study.json `skills/bible-study/skills/bible-study/SKILL.md:99`
+- node scripts/bible-study.js render --file /absolute/path/study.json --out /absolute/path/output `skills/bible-study/skills/bible-study/SKILL.md:100`
+- python3 scripts/export.py --file /absolute/path/output/study.html --out /absolute/path/output `skills/bible-study/skills/bible-study/SKILL.md:101`
+- node scripts/bible-study.js validate --file evals/input/john-3.json `skills/bible-study/README.md:60`
+- node scripts/bible-study.js render --file evals/input/john-3.json --out /tmp/john-3 `skills/bible-study/README.md:61`
+- python3 scripts/export.py --file /tmp/john-3/study.html --out /tmp/john-3 `skills/bible-study/README.md:62`
+- python3 -m venv .venv `skills/bible-study/README.md:82`
+- node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run `skills/bible-study/README.md:112`
 - npm run audit — npm audit --audit-level=moderate `skills/bible-study/skills/bible-study/package.json:40`
 - npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/bible-study/skills/bible-study/package.json:42`
 - npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/bible-study/skills/bible-study/package.json:41`

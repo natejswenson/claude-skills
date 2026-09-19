@@ -26,7 +26,8 @@ related verses come with explanations, and every research section links to its e
 
 - Writing date and authorship, separated from the time of the narrated events.
 - Historical and literary context, meaning, and three related passages.
-- A 45-minute group plan with questions, application and prayer.
+- A 45-minute participant guide: six observation/interpretation questions, three
+  cross-reference exercises, writing space, a weekly commitment, and prayer.
 - One-page PDF, high-resolution PNG, responsive HTML, and a research JSON record.
 - A Christian-only research policy, with explicit acknowledgment of interpretive differences.
 

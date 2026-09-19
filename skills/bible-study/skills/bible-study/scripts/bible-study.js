@@ -9,7 +9,7 @@ const webURL = s => { try { const u=new URL(s); return u.protocol === 'https:' &
 export function validate(d) {
   const errors=[]; const need=(ok,msg)=>{if(!ok)errors.push(msg);};
   if(!d || typeof d !== 'object' || Array.isArray(d))return ['Study must be an object'];
-  for(const k of ['passage','title','subtitle','translation','translationNotice','audience','reviewedOn'])need(nonempty(d[k]),`Missing ${k}`);
+  for(const k of ['passage','title','subtitle','translation','translationNotice','audience','reviewedOn','opening'])need(nonempty(d[k]),`Missing ${k}`);
   need(/^\d{4}-\d{2}-\d{2}$/.test(d.reviewedOn??''),'reviewedOn must be YYYY-MM-DD');
   need(d.review?.christianSourcesOnly === true,'Christian-only source review required');
   need(d.review?.claimsChecked === true,'Claim support review required');
@@ -45,12 +45,13 @@ export function validate(d) {
     rows.forEach((c,i)=>{claim(c,`${key} ${i+1}`);need(nonempty(c.reference),`${key}: verse reference required`);need(nonempty(c.title),`${key}: title required`);});
   }
   const questions=Array.isArray(d.questions)?d.questions:[];
-  need(questions.length===3 && questions.every(nonempty),'Exactly 3 discussion questions required');
+  need(questions.length===6 && questions.every(nonempty),'Exactly 6 discussion questions required: observation and interpretation for each passage section');
+  for(const c of d.related??[])need(nonempty(c?.prompt),'Each related passage needs a comparison prompt');
   need(nonempty(d.application) && nonempty(d.prayer),'Application and prayer required');
   const flow=Array.isArray(d.flow)?d.flow:[];need(flow.length===3 && flow.every(x=>nonempty(x.title)&&nonempty(x.reference)),'Three-part passage map required');
   sources.forEach(s=>need(cited.has(s.id),`Unused source ${s.id}`));
-  const content=[d.title,d.subtitle,d.quote?.text,d.bigIdea?.text,d.composition?.text,d.composition?.author,d.composition?.uncertainty,d.events?.text,d.historicalContext?.text,d.literaryContext?.text,d.interpretiveNote?.text,...(d.meaning??[]).map(x=>x.text),...(d.related??[]).map(x=>x.text),...questions,d.application,d.prayer].join(' ');
-  need(words(content)<=620,'Handout exceeds 620-word content budget; condense before export');
+  const content=[d.title,d.subtitle,d.opening,...(d.related??[]).map(x=>x.prompt),d.quote?.text,d.bigIdea?.text,d.composition?.text,d.composition?.author,d.composition?.uncertainty,d.events?.text,d.historicalContext?.text,d.literaryContext?.text,d.interpretiveNote?.text,...(d.meaning??[]).map(x=>x.text),...(d.related??[]).map(x=>x.text),...questions,d.application,d.prayer].join(' ');
+  need(words(content)<=520,'Handout exceeds 520-word content budget; condense before export');
   need(words(d.title)<=9,'Title exceeds 9 words');
   return errors;
 }
@@ -64,19 +65,19 @@ export function render(d){
   const css=fs.readFileSync(path.join(ROOT,'assets/study.css'),'utf8');
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(d.passage)} | Bible study</title><style>${css}</style></head><body><main class="sheet">
-<header class="mast"><span class="eyebrow">Bible study / ${e(d.passage)}</span><span class="byline">${e(d.audience)} · 45 minutes</span></header>
+<header class="mast"><span class="eyebrow">Bible study guide / ${e(d.passage)}</span><span class="byline">${e(d.audience)} · 45 minutes</span></header>
 <h1>${e(d.title)} <span class="sig">${e(d.passage)}</span></h1><p class="stand">${e(d.subtitle)}</p>
+<p class="opening"><strong>Begin · 3 min</strong> ${e(d.opening)}</p>
+<div class="columns"><div class="workbook">
+${d.flow.map((f,i)=>`<section class="study-step"><h2>0${i+1} / ${e(f.title)}</h2><p class="label">Read ${e(f.reference)} aloud · 11 min</p><ol start="${i*2+1}">${d.questions.slice(i*2,i*2+2).map(q=>`<li>${e(q)}</li>`).join('')}</ol><p class="connection"><strong>Compare ${e(d.related[i].reference)}.</strong> ${e(d.related[i].prompt)}</p><div class="write-lines" aria-label="Space for observations and verse references"><span>Notes / verse</span><div></div></div></section>`).join('')}
+<section class="response"><h2>04 / Respond & pray · 9 min</h2><p>${e(d.application)}</p><div class="commitment"><span>This week I will</span><div></div><span>When / follow-up</span><div></div></div><p><strong>Pray together.</strong> ${e(d.prayer)}</p></section>
+</div><aside>
+<section><h2>Context to keep nearby</h2><h3>Writing &amp; authorship</h3>${p(d.composition)}<p>${e(d.composition.author)} ${e(d.composition.uncertainty)}${refs(d.composition)}</p><h3>Setting of the events</h3>${p(d.events)}${p(d.historicalContext)}${p(d.literaryContext)}</section>
+<section><h2>Meaning to reflect on</h2>${p(d.bigIdea)}${d.meaning.map(c=>`<p><strong>${e(c.reference)}</strong> ${e(c.text)}${refs(c)}</p>`).join('')}<p class="interpretive">${e(d.interpretiveNote.text)}${refs(d.interpretiveNote)}</p></section>
+<section><h2>Connections</h2>${d.related.map(c=>`<p><strong>${e(c.reference)}</strong> ${e(c.text)}${refs(c)}</p>`).join('')}</section>
 <div class="quote">“${e(d.quote.text)}”<span class="label">${e(d.quote.reference)} · ${e(d.translation)}${refs(d.quote)}</span></div>
-<div class="flow">${d.flow.map(f=>`<div><strong>${e(f.title)}</strong><span>${e(f.reference)}</span></div>`).join('')}</div>
-<div class="columns"><div>
-<section><h2>01 / When & where</h2><h3>When the book was written</h3>${p(d.composition)}<p>${e(d.composition.author)} ${e(d.composition.uncertainty)}${refs(d.composition)}</p><h3>When the events happened</h3>${p(d.events)}<h3>What was happening around it</h3>${p(d.historicalContext)}${p(d.literaryContext)}</section>
-<section><h2>02 / What it means</h2>${p(d.bigIdea)}${d.meaning.map(c=>`<h3>${e(c.reference)} · ${e(c.title)}</h3>${p(c)}`).join('')}<p><strong>Interpretive note.</strong> ${e(d.interpretiveNote.text)}${refs(d.interpretiveNote)}</p></section>
-</div><div>
-<section><h2>03 / Read alongside</h2>${d.related.map(c=>`<h3>${e(c.reference)} · ${e(c.title)}</h3>${p(c)}`).join('')}</section>
-<section><h2>04 / Study together</h2><p class="label">Read 8 min / explore 12 / discuss 20 / pray 5</p><ol>${d.questions.map(q=>`<li>${e(q)}</li>`).join('')}</ol></section>
-<section><h2>05 / Put it into practice</h2><p>${e(d.application)}</p><h3>Pray</h3><p>${e(d.prayer)}</p></section>
-</div></div>
-<footer class="sources">READ & VERIFY · ${sourceLinks}</footer><div class="colophon">${e(d.translationNotice)} · Research checked ${e(d.reviewedOn)}<br>Read the full passage in your Bible. Questions and prayer are study prompts.</div>
+</aside></div>
+<footer class="sources">SOURCES · ${sourceLinks}</footer><div class="colophon">${e(d.translationNotice)} · Research checked ${e(d.reviewedOn)}</div>
 </main></body></html>\n`;
 }
 function main(args){

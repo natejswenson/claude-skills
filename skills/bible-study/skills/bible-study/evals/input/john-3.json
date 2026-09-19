@@ -1,7 +1,7 @@
 {
   "passage": "John 3",
   "title": "Life from above.",
-  "subtitle": "New birth, faith in the Son, and the joy of pointing others to Jesus.",
+  "subtitle": "What does it mean to receive new life and put Jesus first?",
   "translation": "World English Bible",
   "translationNotice": "Scripture: World English Bible (public domain).",
   "audience": "Small-group study",
@@ -19,23 +19,23 @@
     ]
   },
   "composition": {
-    "text": "Often dated AD 85-95 and associated with Ephesus; this dates the Gospel, not the events.",
-    "author": "Traditionally John the apostle; the author is unnamed.",
-    "uncertainty": "Dating is uncertain; some Christian scholars argue for before AD 70.",
+    "text": "Often dated AD 85–95, associated with Ephesus.",
+    "author": "Traditionally John the apostle; the Gospel is unsigned.",
+    "uncertainty": "Uncertain: some Christian scholars argue for a date before AD 70.",
     "sources": [
       "S2",
       "S9"
     ]
   },
   "events": {
-    "text": "During Jesus' ministry, after the John 2 Passover scene and before the Baptist's imprisonment (3:24). No exact year is given.",
+    "text": "Jesus’ ministry: after John 2’s Passover, before John’s imprisonment (3:24). Exact year unstated.",
     "sources": [
       "S1",
       "S8"
     ]
   },
   "historicalContext": {
-    "text": "Nicodemus is a Pharisee and Jewish leader; purification and baptism matter here. On the later dating, readers lived after Jerusalem's destruction in AD 70.",
+    "text": "Nicodemus: Pharisee and Jewish leader. Purification and baptism feature here. Late dating places readers after Jerusalem’s destruction (AD 70).",
     "sources": [
       "S1",
       "S8",
@@ -43,7 +43,7 @@
     ]
   },
   "literaryContext": {
-    "text": "John 2 closes with responses to signs. Nicodemus starts there; Jesus leads him toward new life.",
+    "text": "John 2’s signs and belief lead into Nicodemus’s visit (3:2).",
     "sources": [
       "S1",
       "S8",
@@ -61,7 +61,7 @@
     {
       "title": "Receive new birth",
       "reference": "3:1-13",
-      "text": "Knowledge cannot produce new birth. The Spirit gives it; anew can also mean again or from above.",
+      "text": "New birth comes through the Spirit.",
       "sources": [
         "S1",
         "S4"
@@ -70,7 +70,7 @@
     {
       "title": "Believe in the Son",
       "reference": "3:14-21",
-      "text": "The lifted serpent points to the Son. God gives life to believers; light exposes evil and rejection.",
+      "text": "God gives his Son for life; rejecting him brings judgment.",
       "sources": [
         "S1",
         "S4"
@@ -79,14 +79,14 @@
     {
       "title": "Make room for Jesus",
       "reference": "3:22-36",
-      "text": "John rejoices as people turn to Jesus. The Son speaks God's words; belief brings life, rejection leaves judgment.",
+      "text": "John rejoices in Jesus’ prominence; the Son speaks God’s words.",
       "sources": [
         "S1"
       ]
     }
   ],
   "interpretiveNote": {
-    "text": "Water and Spirit (3:5): Christians differ between readings including baptism and Ezekiel's promised cleansing.",
+    "text": "Christians differ on “water and Spirit” (3:5), including baptism and promised cleansing.",
     "sources": [
       "S4",
       "S5"
@@ -96,28 +96,31 @@
     {
       "title": "Cleansing & a new heart",
       "reference": "Ezekiel 36:25-27",
-      "text": "God promises cleansing, a new heart, and his Spirit: an Old Testament background for John 3:5-10.",
+      "text": "God promises cleansing, a new heart, and his Spirit.",
       "sources": [
         "S5",
         "S4"
-      ]
+      ],
+      "prompt": "What echoes do you hear in John 3:5–10?"
     },
     {
       "title": "Look & live",
       "reference": "Numbers 21:4-9",
-      "text": "Those bitten look at the bronze serpent and live. Jesus explicitly draws this connection in John 3:14-15.",
+      "text": "The bitten Israelites look at the bronze serpent and live.",
       "sources": [
         "S6",
         "S1"
-      ]
+      ],
+      "prompt": "What does this help explain in John 3:14–15?"
     },
     {
       "title": "Why John wrote",
       "reference": "John 20:30-31",
-      "text": "John writes to nurture belief in Jesus as Messiah and Son, and life in his name.",
+      "text": "John writes so readers may believe and have life in Jesus.",
       "sources": [
         "S7"
-      ]
+      ],
+      "prompt": "How does John 3:31–36 serve this purpose?"
     }
   ],
   "flow": [
@@ -135,12 +138,15 @@
     }
   ],
   "questions": [
-    "Read John 3 aloud. What surprises Nicodemus? What does Jesus say the Spirit does (3:1-13)?",
-    "Read Numbers 21:4-9. How does it illuminate John 3:14-18? How do love and judgment fit together?",
-    "Compare hiding from light (3:19-21) with John's joy (3:29-30). Where could you practice honesty or humility this week?"
+    "Observe · What confuses Nicodemus? What does the Spirit do (vv. 3–8)?",
+    "Interpret · Why does Nicodemus need new birth despite his knowledge?",
+    "Observe · What does God give? Why do people avoid the light (vv. 16–21)?",
+    "Interpret · How do God’s love and judgment fit together here?",
+    "Observe · Contrast the disciples’ concern (v. 26) with John’s joy (vv. 27–30).",
+    "Interpret · What does the bridegroom picture reveal about John’s role?"
   ],
-  "application": "Choose one response: pray about a hidden struggle, seek a trusted Christian's help, or serve without seeking credit. Revisit it next meeting.",
-  "prayer": "Father, thank you for your Son. Renew us by your Spirit, help us come into the light, and teach us to rejoice when Jesus is honored. Amen.",
+  "application": "Where do you need honesty or humility? Choose one response to this passage for the week. Sharing is optional.",
+  "prayer": "Thank God for his Son. Ask for new life, honesty, and joy in honoring Jesus.",
   "sources": [
     {
       "id": "S1",
@@ -250,5 +256,6 @@
       "accessed": "2026-09-19",
       "supportNotes": "Date section contrasts 90s and pre-70 dating, mentions Jerusalem's destruction in AD 70, and argues for the earlier view. Late-date context on the handout is explicitly conditional."
     }
-  ]
+  ],
+  "opening": "Pray for understanding. Read each section aloud. Support your answers with a verse."
 }

@@ -78,9 +78,15 @@ Include source identity evidence, dates accessed, and paraphrased support notes.
 Mark reviews true only after doing them. These attestations are human/model judgments,
 not facts established by the validator.
 
-Design a self-contained one-page study: title, short attributed Scripture excerpt,
-passage map, the four research areas, three observation/interpretation/application
-questions, one practical response and a prayer prompt. Cover the entire requested
+Design a participant study guide, with most of the page devoted to working through
+Scripture. Use three reading sections covering the passage, each with an observation
+question, an interpretation question, a related-passage comparison exercise, and space
+to write a note or verse. Begin with prayer and reading instructions; end with personal
+application, a written weekly commitment and follow-up, and prayer. Use the 45-minute
+sequence: begin 3, three reading/discussion sections of 11, respond/pray 9. Keep the
+four research areas and a short attributed Scripture excerpt in a supporting sidebar.
+Questions should send readers back to the text, welcome discovery, and avoid giving
+the answer away. Keep interpretation summaries available for reflection after discussion. Cover the entire requested
 passage. Keep a longer research record in the bundle; condense the page, not the research.
 Quote sparingly, label the translation, follow its permissions, and never label a paraphrase
 as a quotation. The selected translation must be identified even for paraphrase-only studies.
@@ -102,7 +108,8 @@ No network is used by either command; export blocks remote resources as well.
 
 Read the resulting PNG, render the PDF using `pdftoppm`, and inspect the PDF page image.
 Use `pdfinfo` to prove exactly one page. Check clipping, readable text, citation labels,
-all section coverage, and source hyperlinks. Fix overflow by editing content or layout;
+all section coverage, source hyperlinks, and usable writing space. Ensure the guide
+can be followed by participants without a separate leader script. Fix overflow by editing content or layout;
 never crop missing content or shrink it to unreadable type. Export has a mechanical
 overflow guard but visual judgment remains necessary. Inspect at phone and print scale.
 
