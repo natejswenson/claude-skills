@@ -37,6 +37,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`netwatch`](skills/netwatch) | ![netwatch](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=netwatch-v*&label=&sort=semver&color=blue) | `/netwatch` | Node | Interactive network security investigation: inspect processes, compare connections, capture scoped packets, and stop user-selected processes with confirmation. |
 | [`appletv`](skills/appletv) | ![appletv](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=appletv-v*&label=&sort=semver&color=blue) | `/appletv` | Node | Find the Apple TVs on your network, pair with one, and control it from chat — and never say a command landed until the TV's own state says so. |
 | [`issuecreator`](skills/issuecreator) | ![issuecreator](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issuecreator-v*&label=&sort=semver&color=blue) | `/issuecreator` | Node | Create actionable GitHub issues that issueflow can take through planning and implementation. |
+| [`bible-study`](skills/bible-study) | ![bible-study](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=bible-study-v*&label=&sort=semver&color=blue) | `/bible-study` | Node | Turn a Bible verse or chapter into a researched, one-page Bible study for a group. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -91,6 +92,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install netwatch@claude-skills
 /plugin install appletv@claude-skills
 /plugin install issuecreator@claude-skills
+/plugin install bible-study@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -131,6 +133,7 @@ ln -sfn "$PWD/skills/brandreport/skills/brandreport" ~/.claude/skills/brandrepor
 ln -sfn "$PWD/skills/netwatch/skills/netwatch" ~/.claude/skills/netwatch
 ln -sfn "$PWD/skills/appletv/skills/appletv" ~/.claude/skills/appletv
 ln -sfn "$PWD/skills/issuecreator/skills/issuecreator" ~/.claude/skills/issuecreator
+ln -sfn "$PWD/skills/bible-study/skills/bible-study" ~/.claude/skills/bible-study
 ```
 </details>
 

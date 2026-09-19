@@ -1,0 +1,2031 @@
+{
+  "passage": "John 3",
+  "title": "Life from above.",
+  "subtitle": "What does it mean to receive new life and put Jesus first?",
+  "translation": "World English Bible",
+  "translationNotice": "Scripture: World English Bible (public domain), via Bible-API.com.",
+  "audience": "Small-group study",
+  "reviewedOn": "2026-09-19",
+  "review": {
+    "christianSourcesOnly": true,
+    "claimsChecked": true,
+    "passageReadInContext": true
+  },
+  "quote": {
+    "text": "He must increase, but I must decrease.",
+    "reference": "John 3:30",
+    "sources": [
+      "S1"
+    ]
+  },
+  "composition": {
+    "text": "Often dated AD 85–95, associated with Ephesus.",
+    "author": "Traditionally John the apostle; the Gospel is unsigned.",
+    "uncertainty": "Uncertain: some Christian scholars argue for a date before AD 70.",
+    "sources": [
+      "S2",
+      "S9"
+    ]
+  },
+  "events": {
+    "text": "Jesus’ ministry: after John 2’s Passover, before John’s imprisonment (3:24). Exact year unstated.",
+    "sources": [
+      "S1",
+      "S8"
+    ]
+  },
+  "historicalContext": {
+    "text": "Nicodemus: Pharisee and Jewish leader. Purification and baptism feature here. Late dating places readers after Jerusalem’s destruction (AD 70).",
+    "sources": [
+      "S1",
+      "S8",
+      "S9"
+    ]
+  },
+  "literaryContext": {
+    "text": "John 2’s signs and belief lead into Nicodemus’s visit (3:2).",
+    "sources": [
+      "S1",
+      "S8",
+      "S3"
+    ]
+  },
+  "bigIdea": {
+    "text": "God gives new life through the Spirit and eternal life through faith in his Son.",
+    "sources": [
+      "S1",
+      "S3"
+    ]
+  },
+  "meaning": [
+    {
+      "title": "Receive new birth",
+      "reference": "3:1-13",
+      "text": "New birth comes through the Spirit.",
+      "sources": [
+        "S1",
+        "S4"
+      ]
+    },
+    {
+      "title": "Believe in the Son",
+      "reference": "3:14-21",
+      "text": "God gives his Son for life; rejecting him brings judgment.",
+      "sources": [
+        "S1",
+        "S4"
+      ]
+    },
+    {
+      "title": "Make room for Jesus",
+      "reference": "3:22-36",
+      "text": "John rejoices in Jesus’ prominence; the Son speaks God’s words.",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "interpretiveNote": {
+    "text": "Christians differ on “water and Spirit” (3:5), including baptism and promised cleansing.",
+    "sources": [
+      "S4",
+      "S5"
+    ]
+  },
+  "related": [
+    {
+      "title": "Cleansing & a new heart",
+      "reference": "Ezekiel 36:25-27",
+      "text": "God promises cleansing, a new heart, and his Spirit.",
+      "sources": [
+        "S5",
+        "S4"
+      ],
+      "prompt": "What echoes do you hear in John 3:5–10?"
+    },
+    {
+      "title": "Look & live",
+      "reference": "Numbers 21:4-9",
+      "text": "The bitten Israelites look at the bronze serpent and live.",
+      "sources": [
+        "S6",
+        "S1"
+      ],
+      "prompt": "What does this help explain in John 3:14–15?"
+    },
+    {
+      "title": "Why John wrote",
+      "reference": "John 20:30-31",
+      "text": "John writes so readers may believe and have life in Jesus.",
+      "sources": [
+        "S7"
+      ],
+      "prompt": "How does John 3:31–36 serve this purpose?"
+    }
+  ],
+  "flow": [
+    {
+      "title": "New birth",
+      "reference": "3:1-13"
+    },
+    {
+      "title": "Love & light",
+      "reference": "3:14-21"
+    },
+    {
+      "title": "Humble witness",
+      "reference": "3:22-36"
+    }
+  ],
+  "questions": [
+    "Observe · What confuses Nicodemus? What does the Spirit do (vv. 3–8)?",
+    "Interpret · Why does Nicodemus need new birth despite his knowledge?",
+    "Observe · What does God give? Why do people avoid the light (vv. 16–21)?",
+    "Interpret · How do God’s love and judgment fit together here?",
+    "Observe · Contrast the disciples’ concern (v. 26) with John’s joy (vv. 27–30).",
+    "Interpret · What does the bridegroom picture reveal about John’s role?"
+  ],
+  "application": "Where do you need honesty or humility? Choose one response to this passage for the week. Sharing is optional.",
+  "prayer": "Thank God for his Son. Ask for new life, honesty, and joy in honoring Jesus.",
+  "sources": [
+    {
+      "id": "S1",
+      "kind": "bible",
+      "title": "John 3",
+      "publisher": "WEB John 3",
+      "url": "https://bible-api.com/data/web/JHN/3",
+      "identityURL": "https://bible-api.com/",
+      "identityEvidence": "Bible-API.com serves identified World English Bible Scripture; the API response labels this translation Public Domain.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Read all 36 verses and notes. Nicodemus visits at night; water/Spirit and anew/from above; lifted serpent; love/light; baptism; Baptist's joy and Son's authority. Does not give an exact event year or say why Nicodemus chose night. Scripture retrieved through the common Bible API, with complete chapter context retained; selected verses were read against the prior research.",
+      "providerId": "bible-api",
+      "scriptureReference": "John 3"
+    },
+    {
+      "id": "S2",
+      "kind": "christian",
+      "title": "John overview",
+      "publisher": "Insight for Living",
+      "url": "https://insight.org/resources/bible/the-gospels/john",
+      "identityURL": "https://insight.org/about",
+      "identityEvidence": "Page identifies the Bible-teaching ministry of Pastor Chuck Swindoll and his pastoral/seminary role.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Who wrote the book and Where are we sections: Gospel unnamed internally, traditional apostolic authorship, Ephesus and AD 85-95. These are attributed historical judgments, not certain dates stated in John.",
+      "providerId": "insight"
+    },
+    {
+      "id": "S3",
+      "kind": "christian",
+      "title": "Guide to John",
+      "publisher": "BibleProject",
+      "url": "https://bibleproject.com/guides/book-of-john/",
+      "identityURL": "https://bibleproject.com/about/",
+      "identityEvidence": "Christian Bible education ministry; guide presents Jesus as Messiah and Son of God and reads the Bible as a unified story leading to Jesus.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Overview and John 2-12 section place Nicodemus among signs and encounters; new heart/life, and author's purpose of faith and life. Do not repeat the unsupported all-night embellishment as a textual observation.",
+      "providerId": "bibleproject"
+    },
+    {
+      "id": "S4",
+      "kind": "christian",
+      "title": "John 3 commentary",
+      "publisher": "Enduring Word",
+      "url": "https://enduringword.com/bible-commentary/john-3/",
+      "identityURL": "https://enduringword.com/about/statement-of-faith/",
+      "identityEvidence": "Pastor David Guzik's Christian commentary; statement of faith affirms Scripture, Jesus Christ and Christian ministry.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Sections A.2-5 and B cover new birth and Nicodemus, competing water readings including baptism and Ezekiel cleansing, serpent analogy, and Baptist witness. Commentary interpretations are kept distinct from Scripture; avoid generalizing its claims about all Jewish expectations.",
+      "providerId": "enduring-word"
+    },
+    {
+      "id": "S5",
+      "kind": "bible",
+      "title": "Ezekiel 36:25-27 in context",
+      "publisher": "WEB Ezekiel 36",
+      "url": "https://bible-api.com/data/web/EZK/36",
+      "identityURL": "https://bible-api.com/",
+      "identityEvidence": "Bible-API.com serves identified World English Bible Scripture; the API response labels this translation Public Domain.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Verses 22-28: restoration of Israel, cleansing, new heart and Spirit; connection to John 3 is interpretive and supported by S4. Scripture retrieved through the common Bible API, with complete chapter context retained; selected verses were read against the prior research.",
+      "providerId": "bible-api",
+      "scriptureReference": "Ezekiel 36:25-27"
+    },
+    {
+      "id": "S6",
+      "kind": "bible",
+      "title": "Numbers 21:4-9 in context",
+      "publisher": "WEB Numbers 21",
+      "url": "https://bible-api.com/data/web/NUM/21",
+      "identityURL": "https://bible-api.com/",
+      "identityEvidence": "Bible-API.com serves identified World English Bible Scripture; the API response labels this translation Public Domain.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Israel complains, serpents bite, people confess, Moses intercedes and makes the bronze serpent; bitten people looking live. John 3 makes the explicit comparison. Scripture retrieved through the common Bible API, with complete chapter context retained; selected verses were read against the prior research.",
+      "providerId": "bible-api",
+      "scriptureReference": "Numbers 21:4-9"
+    },
+    {
+      "id": "S7",
+      "kind": "bible",
+      "title": "John 20:30-31 in context",
+      "publisher": "WEB John 20",
+      "url": "https://bible-api.com/data/web/JHN/20",
+      "identityURL": "https://bible-api.com/",
+      "identityEvidence": "Bible-API.com serves identified World English Bible Scripture; the API response labels this translation Public Domain.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Purpose statement follows Thomas and resurrection appearances: selected signs, belief in Messiah/Son and life in his name. Scripture retrieved through the common Bible API, with complete chapter context retained; selected verses were read against the prior research.",
+      "providerId": "bible-api",
+      "scriptureReference": "John 20:30-31"
+    },
+    {
+      "id": "S8",
+      "kind": "bible",
+      "title": "John 2",
+      "publisher": "WEB John 2",
+      "url": "https://bible-api.com/data/web/JHN/2",
+      "identityURL": "https://bible-api.com/",
+      "identityEvidence": "Bible-API.com serves identified World English Bible Scripture; the API response labels this translation Public Domain.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Cana purification jars; Jerusalem Passover and temple scene; 2:23-25 connects signs and belief to Nicodemus's opening in 3:2. Scripture retrieved through the common Bible API, with complete chapter context retained; selected verses were read against the prior research.",
+      "providerId": "bible-api",
+      "scriptureReference": "John 2"
+    },
+    {
+      "id": "S9",
+      "kind": "christian",
+      "title": "The Gospel of John: Introduction, Argument, Outline",
+      "publisher": "Bible.org / Wallace",
+      "url": "https://bible.org/seriespage/gospel-john-introduction-argument-outline",
+      "identityURL": "https://bible.org/article/doctrinal-statement",
+      "identityEvidence": "Christian Bible study ministry publishing Daniel B. Wallace's New Testament teaching.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Date section contrasts 90s and pre-70 dating, mentions Jerusalem's destruction in AD 70, and argues for the earlier view. Late-date context on the handout is explicitly conditional.",
+      "providerId": "bible-org"
+    }
+  ],
+  "opening": "Pray for understanding. Read each section aloud. Support your answers with a verse.",
+  "scripture": [
+    {
+      "provider": "bible-api",
+      "requestedReference": "John 3",
+      "reference": "John 3",
+      "bookId": "JHN",
+      "url": "https://bible-api.com/data/web/JHN/3",
+      "retrievedAt": "2026-09-19T14:42:33.266Z",
+      "translation": {
+        "identifier": "web",
+        "name": "World English Bible",
+        "language": "English",
+        "language_code": "eng",
+        "license": "Public Domain"
+      },
+      "verses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 1,
+          "text": "Now there was a man of the Pharisees named Nicodemus, a ruler of the Jews.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 2,
+          "text": "The same came to him by night, and said to him, “Rabbi, we know that you are a teacher come from God, for no one can do these signs that you do, unless God is with him.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 3,
+          "text": "Jesus answered him,\n“Most certainly, I tell you, unless one is born anew,\n\nhe can’t see God’s Kingdom.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 4,
+          "text": "Nicodemus said to him, “How can a man be born when he is old? Can he enter a second time into his mother’s womb, and be born?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 5,
+          "text": "Jesus answered,\n“Most certainly I tell you, unless one is born of water and spirit, he can’t enter into God’s Kingdom.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 6,
+          "text": "\nThat which is born of the flesh is flesh. That which is born of the Spirit is spirit.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 7,
+          "text": "\nDon’t marvel that I said to you, ‘You must be born anew.’\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 8,
+          "text": "\nThe wind\nblows where it wants to, and you hear its sound, but don’t know where it comes from and where it is going. So is everyone who is born of the Spirit.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 9,
+          "text": "Nicodemus answered him, “How can these things be?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 10,
+          "text": "Jesus answered him,\n“Are you the teacher of Israel, and don’t understand these things?\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 11,
+          "text": "\nMost certainly I tell you, we speak that which we know, and testify of that which we have seen, and you don’t receive our witness.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 12,
+          "text": "\nIf I told you earthly things and you don’t believe, how will you believe if I tell you heavenly things?\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 13,
+          "text": "\nNo one has ascended into heaven, but he who descended out of heaven, the Son of Man, who is in heaven.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 14,
+          "text": "\nAs Moses lifted up the serpent in the wilderness, even so must the Son of Man be lifted up,\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 15,
+          "text": "\nthat whoever believes in him should not perish, but have eternal life.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 16,
+          "text": "\nFor God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 17,
+          "text": "\nFor God didn’t send his Son into the world to judge the world, but that the world should be saved through him.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 18,
+          "text": "\nHe who believes in him is not judged. He who doesn’t believe has been judged already, because he has not believed in the name of the one and only Son of God.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 19,
+          "text": "\nThis is the judgment, that the light has come into the world, and men loved the darkness rather than the light; for their works were evil.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 20,
+          "text": "\nFor everyone who does evil hates the light, and doesn’t come to the light, lest his works would be exposed.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 21,
+          "text": "\nBut he who does the truth comes to the light, that his works may be revealed, that they have been done in God.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 22,
+          "text": "After these things, Jesus came with his disciples into the land of Judea. He stayed there with them, and baptized.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 23,
+          "text": "John also was baptizing in Enon near Salim, because there was much water there. They came, and were baptized.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 24,
+          "text": "For John was not yet thrown into prison.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 25,
+          "text": "There arose therefore a questioning on the part of John’s disciples with some Jews about purification.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 26,
+          "text": "They came to John, and said to him, “Rabbi, he who was with you beyond the Jordan, to whom you have testified, behold, the same baptizes, and everyone is coming to him.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 27,
+          "text": "John answered, “A man can receive nothing, unless it has been given him from heaven.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 28,
+          "text": "You yourselves testify that I said, ‘I am not the Christ,’ but, ‘I have been sent before him.’\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 29,
+          "text": "He who has the bride is the bridegroom; but the friend of the bridegroom, who stands and hears him, rejoices greatly because of the bridegroom’s voice. This, my joy, therefore is made full.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 30,
+          "text": "He must increase, but I must decrease.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 31,
+          "text": "He who comes from above is above all. He who is from the earth belongs to the earth, and speaks of the earth. He who comes from heaven is above all.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 32,
+          "text": "What he has seen and heard, of that he testifies; and no one receives his witness.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 33,
+          "text": "He who has received his witness has set his seal to this, that God is true.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 34,
+          "text": "For he whom God has sent speaks the words of God; for God gives the Spirit without measure.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 35,
+          "text": "The Father loves the Son, and has given all things into his hand.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 36,
+          "text": "One who believes in the Son has eternal life, but one who disobeys\n the Son won’t see life, but the wrath of God remains on him.”\n"
+        }
+      ],
+      "contextVerses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 1,
+          "text": "Now there was a man of the Pharisees named Nicodemus, a ruler of the Jews.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 2,
+          "text": "The same came to him by night, and said to him, “Rabbi, we know that you are a teacher come from God, for no one can do these signs that you do, unless God is with him.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 3,
+          "text": "Jesus answered him,\n“Most certainly, I tell you, unless one is born anew,\n\nhe can’t see God’s Kingdom.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 4,
+          "text": "Nicodemus said to him, “How can a man be born when he is old? Can he enter a second time into his mother’s womb, and be born?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 5,
+          "text": "Jesus answered,\n“Most certainly I tell you, unless one is born of water and spirit, he can’t enter into God’s Kingdom.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 6,
+          "text": "\nThat which is born of the flesh is flesh. That which is born of the Spirit is spirit.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 7,
+          "text": "\nDon’t marvel that I said to you, ‘You must be born anew.’\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 8,
+          "text": "\nThe wind\nblows where it wants to, and you hear its sound, but don’t know where it comes from and where it is going. So is everyone who is born of the Spirit.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 9,
+          "text": "Nicodemus answered him, “How can these things be?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 10,
+          "text": "Jesus answered him,\n“Are you the teacher of Israel, and don’t understand these things?\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 11,
+          "text": "\nMost certainly I tell you, we speak that which we know, and testify of that which we have seen, and you don’t receive our witness.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 12,
+          "text": "\nIf I told you earthly things and you don’t believe, how will you believe if I tell you heavenly things?\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 13,
+          "text": "\nNo one has ascended into heaven, but he who descended out of heaven, the Son of Man, who is in heaven.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 14,
+          "text": "\nAs Moses lifted up the serpent in the wilderness, even so must the Son of Man be lifted up,\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 15,
+          "text": "\nthat whoever believes in him should not perish, but have eternal life.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 16,
+          "text": "\nFor God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 17,
+          "text": "\nFor God didn’t send his Son into the world to judge the world, but that the world should be saved through him.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 18,
+          "text": "\nHe who believes in him is not judged. He who doesn’t believe has been judged already, because he has not believed in the name of the one and only Son of God.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 19,
+          "text": "\nThis is the judgment, that the light has come into the world, and men loved the darkness rather than the light; for their works were evil.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 20,
+          "text": "\nFor everyone who does evil hates the light, and doesn’t come to the light, lest his works would be exposed.\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 21,
+          "text": "\nBut he who does the truth comes to the light, that his works may be revealed, that they have been done in God.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 22,
+          "text": "After these things, Jesus came with his disciples into the land of Judea. He stayed there with them, and baptized.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 23,
+          "text": "John also was baptizing in Enon near Salim, because there was much water there. They came, and were baptized.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 24,
+          "text": "For John was not yet thrown into prison.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 25,
+          "text": "There arose therefore a questioning on the part of John’s disciples with some Jews about purification.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 26,
+          "text": "They came to John, and said to him, “Rabbi, he who was with you beyond the Jordan, to whom you have testified, behold, the same baptizes, and everyone is coming to him.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 27,
+          "text": "John answered, “A man can receive nothing, unless it has been given him from heaven.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 28,
+          "text": "You yourselves testify that I said, ‘I am not the Christ,’ but, ‘I have been sent before him.’\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 29,
+          "text": "He who has the bride is the bridegroom; but the friend of the bridegroom, who stands and hears him, rejoices greatly because of the bridegroom’s voice. This, my joy, therefore is made full.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 30,
+          "text": "He must increase, but I must decrease.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 31,
+          "text": "He who comes from above is above all. He who is from the earth belongs to the earth, and speaks of the earth. He who comes from heaven is above all.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 32,
+          "text": "What he has seen and heard, of that he testifies; and no one receives his witness.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 33,
+          "text": "He who has received his witness has set his seal to this, that God is true.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 34,
+          "text": "For he whom God has sent speaks the words of God; for God gives the Spirit without measure.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 35,
+          "text": "The Father loves the Son, and has given all things into his hand.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 3,
+          "verse": 36,
+          "text": "One who believes in the Son has eternal life, but one who disobeys\n the Son won’t see life, but the wrath of God remains on him.”\n"
+        }
+      ]
+    },
+    {
+      "provider": "bible-api",
+      "requestedReference": "Ezekiel 36:25-27",
+      "reference": "Ezekiel 36:25-27",
+      "bookId": "EZK",
+      "url": "https://bible-api.com/data/web/EZK/36",
+      "retrievedAt": "2026-09-19T14:43:22.982Z",
+      "translation": {
+        "identifier": "web",
+        "name": "World English Bible",
+        "language": "English",
+        "language_code": "eng",
+        "license": "Public Domain"
+      },
+      "verses": [
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 25,
+          "text": "I will sprinkle clean water on you, and you will be clean. I will cleanse you from all your filthiness, and from all your idols.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 26,
+          "text": "I will also give you a new heart, and I will put a new spirit within you. I will take away the stony heart out of your flesh, and I will give you a heart of flesh.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 27,
+          "text": "I will put my Spirit within you, and cause you to walk in my statutes. You will keep my ordinances and do them.\n"
+        }
+      ],
+      "contextVerses": [
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 1,
+          "text": "You, son of man, prophesy to the mountains of Israel, and say, “You mountains of Israel, hear Yahweh’s word.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 2,
+          "text": "Thus says the Lord Yahweh: ‘Because the enemy has said against you, “Aha!” and, “The ancient high places are ours in possession!”’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 3,
+          "text": "therefore prophesy, and say, ‘Thus says the Lord Yahweh: “Because, even because they have made you desolate, and swallowed you up on every side, that you might be a possession to the residue of the nations, and you are taken up in the lips of talkers, and the evil report of the people;”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 4,
+          "text": "therefore, you mountains of Israel, hear the word of the Lord Yahweh: Thus says the Lord Yahweh to the mountains and to the hills, to the watercourses and to the valleys, to the desolate wastes and to the cities that are forsaken, which have become a prey and derision to the residue of the nations that are all around;\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 5,
+          "text": "therefore thus says the Lord Yahweh: “Surely in the fire of my jealousy I have spoken against the residue of the nations, and against all Edom, that have appointed my land to themselves for a possession with the joy of all their heart, with despite of soul, to cast it out for a prey.”’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 6,
+          "text": "Therefore prophesy concerning the land of Israel, and tell the mountains, the hills, the watercourses and the valleys, ‘Thus says the Lord Yahweh: “Behold, I have spoken in my jealousy and in my wrath, because you have borne the shame of the nations.”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 7,
+          "text": "Therefore thus says the Lord Yahweh: “I have sworn, ‘Surely the nations that are around you will bear their shame.’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 8,
+          "text": "“‘“But you, mountains of Israel, you shall shoot out your branches, and yield your fruit to my people Israel; for they are at hand to come.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 9,
+          "text": "For, behold, I am for you, and I will come to you, and you will be tilled and sown.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 10,
+          "text": "I will multiply men on you, all the house of Israel, even all of it. The cities will be inhabited, and the waste places will be built.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 11,
+          "text": "I will multiply man and animal on you. They will increase and be fruitful. I will cause you to be inhabited as you were before, and you will do better than at your beginnings. Then you will know that I am Yahweh.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 12,
+          "text": "Yes, I will cause men to walk on you, even my people Israel. They will possess you, and you will be their inheritance, and you will never again bereave them of their children.”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 13,
+          "text": "“‘Thus says the Lord Yahweh: “Because they say to you, ‘You are a devourer of men, and have been a bereaver of your nation;’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 14,
+          "text": "therefore you shall devour men no more, and not bereave your nation any more,” says the Lord Yahweh.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 15,
+          "text": "“I won’t let you hear the shame of the nations any more. You won’t bear the reproach of the peoples any more, and you won’t cause your nation to stumble any more,” says the Lord Yahweh.’”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 16,
+          "text": "Moreover Yahweh’s word came to me, saying,\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 17,
+          "text": "“Son of man, when the house of Israel lived in their own land, they defiled it by their ways and by their deeds. Their way before me was as the uncleanness of a woman in her impurity.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 18,
+          "text": "Therefore I poured out my wrath on them for the blood which they had poured out on the land, and because they had defiled it with their idols.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 19,
+          "text": "I scattered them among the nations, and they were dispersed through the countries. I judged them according to their way and according to their deeds.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 20,
+          "text": "When they came to the nations where they went, they profaned my holy name; in that men said of them, ‘These are Yahweh’s people, and have left his land.’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 21,
+          "text": "But I had respect for my holy name, which the house of Israel had profaned among the nations where they went.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 22,
+          "text": "“Therefore tell the house of Israel, ‘Thus says the Lord Yahweh: “I don’t do this for your sake, house of Israel, but for my holy name, which you have profaned among the nations where you went.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 23,
+          "text": "I will sanctify my great name, which has been profaned among the nations, which you have profaned among them. Then the nations will know that I am Yahweh,” says the Lord Yahweh, “when I am proven holy in you before their eyes.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 24,
+          "text": "“‘“For I will take you from among the nations and gather you out of all the countries, and will bring you into your own land.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 25,
+          "text": "I will sprinkle clean water on you, and you will be clean. I will cleanse you from all your filthiness, and from all your idols.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 26,
+          "text": "I will also give you a new heart, and I will put a new spirit within you. I will take away the stony heart out of your flesh, and I will give you a heart of flesh.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 27,
+          "text": "I will put my Spirit within you, and cause you to walk in my statutes. You will keep my ordinances and do them.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 28,
+          "text": "You will dwell in the land that I gave to your fathers. You will be my people, and I will be your God.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 29,
+          "text": "I will save you from all your uncleanness. I will call for the grain, and will multiply it, and lay no famine on you.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 30,
+          "text": "I will multiply the fruit of the tree and the increase of the field, that you may receive no more the reproach of famine among the nations.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 31,
+          "text": "“‘“Then you will remember your evil ways, and your deeds that were not good; and you will loathe yourselves in your own sight for your iniquities and for your abominations.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 32,
+          "text": "I don’t do this for your sake,” says the Lord Yahweh. “Let it be known to you: be ashamed and confounded for your ways, house of Israel.”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 33,
+          "text": "“‘Thus says the Lord Yahweh: “In the day that I cleanse you from all your iniquities, I will cause the cities to be inhabited and the waste places will be built.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 34,
+          "text": "The land that was desolate will be tilled instead of being a desolation in the sight of all who passed by.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 35,
+          "text": "They will say, ‘This land that was desolate has become like the garden of Eden. The waste, desolate, and ruined cities are fortified and inhabited.’\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 36,
+          "text": "Then the nations that are left around you will know that I, Yahweh, have built the ruined places, and planted that which was desolate. I, Yahweh, have spoken it, and I will do it.”\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 37,
+          "text": "“‘Thus says the Lord Yahweh: “For this, moreover, will I be inquired of by the house of Israel, to do it for them: I will increase them with men like a flock.\n"
+        },
+        {
+          "book_id": "EZK",
+          "book": "Ezekiel",
+          "chapter": 36,
+          "verse": 38,
+          "text": "As the flock for sacrifice, as the flock of Jerusalem in her appointed feasts, so the waste cities will be filled with flocks of men. Then they will know that I am Yahweh.’”\n"
+        }
+      ]
+    },
+    {
+      "provider": "bible-api",
+      "requestedReference": "Numbers 21:4-9",
+      "reference": "Numbers 21:4-9",
+      "bookId": "NUM",
+      "url": "https://bible-api.com/data/web/NUM/21",
+      "retrievedAt": "2026-09-19T14:43:25.189Z",
+      "translation": {
+        "identifier": "web",
+        "name": "World English Bible",
+        "language": "English",
+        "language_code": "eng",
+        "license": "Public Domain"
+      },
+      "verses": [
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 4,
+          "text": "They traveled from Mount Hor by the way to the Red Sea, to go around the land of Edom The soul of the people was very discouraged because of the journey.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 5,
+          "text": "The people spoke against God, and against Moses, “Why have you brought us up out of Egypt to die in the wilderness? For there is no bread, and there is no water; and our soul loathes this disgusting bread.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 6,
+          "text": "Yahweh sent venomous snakes among the people, and they bit the people. Many people of Israel died.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 7,
+          "text": "The people came to Moses, and said, “We have sinned, because we have spoken against Yahweh, and against you. Pray to Yahweh, that he take away the serpents from us.” Moses prayed for the people.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 8,
+          "text": "Yahweh said to Moses, “Make a venomous snake, and set it on a pole. It shall happen, that everyone who is bitten, when he sees it, shall live.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 9,
+          "text": "Moses made a serpent of brass, and set it on the pole. If a serpent had bitten any man, when he looked at the serpent of brass, he lived.\n"
+        }
+      ],
+      "contextVerses": [
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 1,
+          "text": "The Canaanite, the king of Arad, who lived in the South, heard that Israel came by the way of Atharim. He fought against Israel, and took some of them captive.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 2,
+          "text": "Israel vowed a vow to Yahweh, and said, “If you will indeed deliver this people into my hand, then I will utterly destroy their cities.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 3,
+          "text": "Yahweh listened to the voice of Israel, and delivered up the Canaanites; and they utterly destroyed them and their cities. The name of the place was called Hormah.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 4,
+          "text": "They traveled from Mount Hor by the way to the Red Sea, to go around the land of Edom The soul of the people was very discouraged because of the journey.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 5,
+          "text": "The people spoke against God, and against Moses, “Why have you brought us up out of Egypt to die in the wilderness? For there is no bread, and there is no water; and our soul loathes this disgusting bread.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 6,
+          "text": "Yahweh sent venomous snakes among the people, and they bit the people. Many people of Israel died.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 7,
+          "text": "The people came to Moses, and said, “We have sinned, because we have spoken against Yahweh, and against you. Pray to Yahweh, that he take away the serpents from us.” Moses prayed for the people.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 8,
+          "text": "Yahweh said to Moses, “Make a venomous snake, and set it on a pole. It shall happen, that everyone who is bitten, when he sees it, shall live.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 9,
+          "text": "Moses made a serpent of brass, and set it on the pole. If a serpent had bitten any man, when he looked at the serpent of brass, he lived.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 10,
+          "text": "The children of Israel traveled, and encamped in Oboth.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 11,
+          "text": "They traveled from Oboth, and encamped at Iyeabarim, in the wilderness which is before Moab, toward the sunrise.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 12,
+          "text": "From there they traveled, and encamped in the valley of Zered.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 13,
+          "text": "From there they traveled, and encamped on the other side of the Arnon, which is in the wilderness, that comes out of the border of the Amorites: for the Arnon is the border of Moab, between Moab and the Amorites.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 14,
+          "text": "Therefore it is said in the book of the Wars of Yahweh, “Vaheb in Suphah, the valleys of the Arnon,\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 15,
+          "text": "the slope of the valleys that incline toward the dwelling of Ar, leans on the border of Moab.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 16,
+          "text": "From there they traveled to Beer; that is the well of which Yahweh said to Moses, “Gather the people together, and I will give them water.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 17,
+          "text": "Then Israel sang this song:\n“Spring up, well! Sing to it,\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 18,
+          "text": "the well, which the princes dug,\nwhich the nobles of the people dug,\nwith the scepter, and with their poles.”\nFrom the wilderness they traveled to Mattanah;\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 19,
+          "text": "and from Mattanah to Nahaliel; and from Nahaliel to Bamoth;\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 20,
+          "text": "and from Bamoth to the valley that is in the field of Moab, to the top of Pisgah, which looks down on the desert.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 21,
+          "text": "Israel sent messengers to Sihon king of the Amorites, saying,\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 22,
+          "text": "“Let me pass through your land. We will not turn away into field or vineyard. We will not drink of the water of the wells. We will go by the king’s highway, until we have passed your border.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 23,
+          "text": "Sihon would not allow Israel to pass through his border, but Sihon gathered all his people together, and went out against Israel into the wilderness, and came to Jahaz. He fought against Israel.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 24,
+          "text": "Israel struck him with the edge of the sword, and possessed his land from the Arnon to the Jabbok, even to the children of Ammon; for the border of the children of Ammon was strong.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 25,
+          "text": "Israel took all these cities. Israel lived in all the cities of the Amorites, in Heshbon, and in all its villages.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 26,
+          "text": "For Heshbon was the city of Sihon the king of the Amorites, who had fought against the former king of Moab, and taken all his land out of his hand, even to the Arnon.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 27,
+          "text": "Therefore those who speak in proverbs say,\n“Come to Heshbon.\nLet the city of Sihon be built and established;\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 28,
+          "text": "for a fire has gone out of Heshbon,\na flame from the city of Sihon.\nIt has devoured Ar of Moab,\nThe lords of the high places of the Arnon.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 29,
+          "text": "Woe to you, Moab!\nYou are undone, people of Chemosh!\nHe has given his sons as fugitives,\nand his daughters into captivity,\nto Sihon king of the Amorites.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 30,
+          "text": "We have shot at them.\nHeshbon has perished even to Dibon.\nWe have laid waste even to Nophah,\nWhich reaches to Medeba.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 31,
+          "text": "Thus Israel lived in the land of the Amorites.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 32,
+          "text": "Moses sent to spy out Jazer. They took its villages, and drove out the Amorites who were there.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 33,
+          "text": "They turned and went up by the way of Bashan. Og the king of Bashan went out against them, he and all his people, to battle at Edrei.\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 34,
+          "text": "Yahweh said to Moses, “Don’t fear him, for I have delivered him into your hand, with all his people, and his land. You shall do to him as you did to Sihon king of the Amorites, who lived at Heshbon.”\n"
+        },
+        {
+          "book_id": "NUM",
+          "book": "Numbers",
+          "chapter": 21,
+          "verse": 35,
+          "text": "So they struck him, with his sons and all his people, until there were no survivors; and they possessed his land.\n"
+        }
+      ]
+    },
+    {
+      "provider": "bible-api",
+      "requestedReference": "John 20:30-31",
+      "reference": "John 20:30-31",
+      "bookId": "JHN",
+      "url": "https://bible-api.com/data/web/JHN/20",
+      "retrievedAt": "2026-09-19T14:43:27.381Z",
+      "translation": {
+        "identifier": "web",
+        "name": "World English Bible",
+        "language": "English",
+        "language_code": "eng",
+        "license": "Public Domain"
+      },
+      "verses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 30,
+          "text": "Therefore Jesus did many other signs in the presence of his disciples, which are not written in this book;\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 31,
+          "text": "but these are written, that you may believe that Jesus is the Christ, the Son of God, and that believing you may have life in his name.\n"
+        }
+      ],
+      "contextVerses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 1,
+          "text": "Now on the first day of the week, Mary Magdalene went early, while it was still dark, to the tomb, and saw the stone taken away from the tomb.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 2,
+          "text": "Therefore she ran and came to Simon Peter, and to the other disciple whom Jesus loved, and said to them, “They have taken away the Lord out of the tomb, and we don’t know where they have laid him!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 3,
+          "text": "Therefore Peter and the other disciple went out, and they went toward the tomb.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 4,
+          "text": "They both ran together. The other disciple outran Peter, and came to the tomb first.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 5,
+          "text": "Stooping and looking in, he saw the linen cloths lying, yet he didn’t enter in.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 6,
+          "text": "Then Simon Peter came, following him, and entered into the tomb. He saw the linen cloths lying,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 7,
+          "text": "and the cloth that had been on his head, not lying with the linen cloths, but rolled up in a place by itself.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 8,
+          "text": "So then the other disciple who came first to the tomb also entered in, and he saw and believed.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 9,
+          "text": "For as yet they didn’t know the Scripture, that he must rise from the dead.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 10,
+          "text": "So the disciples went away again to their own homes.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 11,
+          "text": "But Mary was standing outside at the tomb weeping. So, as she wept, she stooped and looked into the tomb,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 12,
+          "text": "and she saw two angels in white sitting, one at the head, and one at the feet, where the body of Jesus had lain.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 13,
+          "text": "They told her, “Woman, why are you weeping?”\nShe said to them, “Because they have taken away my Lord, and I don’t know where they have laid him.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 14,
+          "text": "When she had said this, she turned around and saw Jesus standing, and didn’t know that it was Jesus.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 15,
+          "text": "Jesus said to her,\n“Woman, why are you weeping? Who are you looking for?”\nShe, supposing him to be the gardener, said to him, “Sir, if you have carried him away, tell me where you have laid him, and I will take him away.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 16,
+          "text": "Jesus said to her,\n“Mary.”\nShe turned and said to him, “Rabboni!” which is to say, “Teacher!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 17,
+          "text": "Jesus said to her,\n“Don’t hold me, for I haven’t yet ascended to my Father; but go to my brothers, and tell them, ‘I am ascending to my Father and your Father, to my God and your God.’”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 18,
+          "text": "Mary Magdalene came and told the disciples that she had seen the Lord, and that he had said these things to her.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 19,
+          "text": "When therefore it was evening, on that day, the first day of the week, and when the doors were locked where the disciples were assembled, for fear of the Jews, Jesus came and stood in the middle, and said to them,\n“Peace be to you.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 20,
+          "text": "When he had said this, he showed them his hands and his side. The disciples therefore were glad when they saw the Lord.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 21,
+          "text": "Jesus therefore said to them again,\n“Peace be to you. As the Father has sent me, even so I send you.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 22,
+          "text": "When he had said this, he breathed on them, and said to them,\n“Receive the Holy Spirit!\n\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 23,
+          "text": "\nIf you forgive anyone’s sins, they have been forgiven them. If you retain anyone’s sins, they have been retained.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 24,
+          "text": "But Thomas, one of the twelve, called Didymus, wasn’t with them when Jesus came.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 25,
+          "text": "The other disciples therefore said to him, “We have seen the Lord!”\nBut he said to them, “Unless I see in his hands the print of the nails, put my finger into the print of the nails, and put my hand into his side, I will not believe.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 26,
+          "text": "After eight days again his disciples were inside, and Thomas was with them. Jesus came, the doors being locked, and stood in the middle, and said,\n“Peace be to you.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 27,
+          "text": "Then he said to Thomas,\n“Reach here your finger, and see my hands. Reach here your hand, and put it into my side. Don’t be unbelieving, but believing.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 28,
+          "text": "Thomas answered him, “My Lord and my God!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 29,
+          "text": "Jesus said to him,\n“Because you have seen me,\nyou have believed. Blessed are those who have not seen, and have believed.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 30,
+          "text": "Therefore Jesus did many other signs in the presence of his disciples, which are not written in this book;\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 20,
+          "verse": 31,
+          "text": "but these are written, that you may believe that Jesus is the Christ, the Son of God, and that believing you may have life in his name.\n"
+        }
+      ]
+    },
+    {
+      "provider": "bible-api",
+      "requestedReference": "John 2",
+      "reference": "John 2",
+      "bookId": "JHN",
+      "url": "https://bible-api.com/data/web/JHN/2",
+      "retrievedAt": "2026-09-19T14:43:20.941Z",
+      "translation": {
+        "identifier": "web",
+        "name": "World English Bible",
+        "language": "English",
+        "language_code": "eng",
+        "license": "Public Domain"
+      },
+      "verses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 1,
+          "text": "The third day, there was a marriage in Cana of Galilee. Jesus’ mother was there.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 2,
+          "text": "Jesus also was invited, with his disciples, to the marriage.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 3,
+          "text": "When the wine ran out, Jesus’ mother said to him, “They have no wine.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 4,
+          "text": "Jesus said to her,\n“Woman, what does that have to do with you and me? My hour has not yet come.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 5,
+          "text": "His mother said to the servants, “Whatever he says to you, do it.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 6,
+          "text": "Now there were six water pots of stone set there after the Jews’ way of purifying, containing two or three metretes apiece.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 7,
+          "text": "Jesus said to them,\n“Fill the water pots with water.” They filled them up to the brim.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 8,
+          "text": "He said to them,\n“Now draw some out, and take it to the ruler of the feast.” So they took it.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 9,
+          "text": "When the ruler of the feast tasted the water now become wine, and didn’t know where it came from (but the servants who had drawn the water knew), the ruler of the feast called the bridegroom,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 10,
+          "text": "and said to him, “Everyone serves the good wine first, and when the guests have drunk freely, then that which is worse. You have kept the good wine until now!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 11,
+          "text": "This beginning of his signs Jesus did in Cana of Galilee, and revealed his glory; and his disciples believed in him.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 12,
+          "text": "After this, he went down to Capernaum, he, and his mother, his brothers, and his disciples; and they stayed there a few days.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 13,
+          "text": "The Passover of the Jews was at hand, and Jesus went up to Jerusalem.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 14,
+          "text": "He found in the temple those who sold oxen, sheep, and doves, and the changers of money sitting.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 15,
+          "text": "He made a whip of cords, and threw all out of the temple, both the sheep and the oxen; and he poured out the changers’ money, and overthrew their tables.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 16,
+          "text": "To those who sold the doves, he said,\n“Take these things out of here! Don’t make my Father’s house a marketplace!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 17,
+          "text": "His disciples remembered that it was written, “Zeal for your house will eat me up.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 18,
+          "text": "The Jews therefore answered him, “What sign do you show us, seeing that you do these things?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 19,
+          "text": "Jesus answered them,\n“Destroy this temple, and in three days I will raise it up.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 20,
+          "text": "The Jews therefore said, “It took forty-six years to build this temple! Will you raise it up in three days?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 21,
+          "text": "But he spoke of the temple of his body.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 22,
+          "text": "When therefore he was raised from the dead, his disciples remembered that he said this, and they believed the Scripture, and the word which Jesus had said.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 23,
+          "text": "Now when he was in Jerusalem at the Passover, during the feast, many believed in his name, observing his signs which he did.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 24,
+          "text": "But Jesus didn’t entrust himself to them, because he knew everyone,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 25,
+          "text": "and because he didn’t need for anyone to testify concerning man; for he himself knew what was in man.\n"
+        }
+      ],
+      "contextVerses": [
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 1,
+          "text": "The third day, there was a marriage in Cana of Galilee. Jesus’ mother was there.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 2,
+          "text": "Jesus also was invited, with his disciples, to the marriage.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 3,
+          "text": "When the wine ran out, Jesus’ mother said to him, “They have no wine.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 4,
+          "text": "Jesus said to her,\n“Woman, what does that have to do with you and me? My hour has not yet come.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 5,
+          "text": "His mother said to the servants, “Whatever he says to you, do it.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 6,
+          "text": "Now there were six water pots of stone set there after the Jews’ way of purifying, containing two or three metretes apiece.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 7,
+          "text": "Jesus said to them,\n“Fill the water pots with water.” They filled them up to the brim.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 8,
+          "text": "He said to them,\n“Now draw some out, and take it to the ruler of the feast.” So they took it.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 9,
+          "text": "When the ruler of the feast tasted the water now become wine, and didn’t know where it came from (but the servants who had drawn the water knew), the ruler of the feast called the bridegroom,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 10,
+          "text": "and said to him, “Everyone serves the good wine first, and when the guests have drunk freely, then that which is worse. You have kept the good wine until now!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 11,
+          "text": "This beginning of his signs Jesus did in Cana of Galilee, and revealed his glory; and his disciples believed in him.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 12,
+          "text": "After this, he went down to Capernaum, he, and his mother, his brothers, and his disciples; and they stayed there a few days.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 13,
+          "text": "The Passover of the Jews was at hand, and Jesus went up to Jerusalem.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 14,
+          "text": "He found in the temple those who sold oxen, sheep, and doves, and the changers of money sitting.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 15,
+          "text": "He made a whip of cords, and threw all out of the temple, both the sheep and the oxen; and he poured out the changers’ money, and overthrew their tables.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 16,
+          "text": "To those who sold the doves, he said,\n“Take these things out of here! Don’t make my Father’s house a marketplace!”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 17,
+          "text": "His disciples remembered that it was written, “Zeal for your house will eat me up.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 18,
+          "text": "The Jews therefore answered him, “What sign do you show us, seeing that you do these things?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 19,
+          "text": "Jesus answered them,\n“Destroy this temple, and in three days I will raise it up.”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 20,
+          "text": "The Jews therefore said, “It took forty-six years to build this temple! Will you raise it up in three days?”\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 21,
+          "text": "But he spoke of the temple of his body.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 22,
+          "text": "When therefore he was raised from the dead, his disciples remembered that he said this, and they believed the Scripture, and the word which Jesus had said.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 23,
+          "text": "Now when he was in Jerusalem at the Passover, during the feast, many believed in his name, observing his signs which he did.\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 24,
+          "text": "But Jesus didn’t entrust himself to them, because he knew everyone,\n"
+        },
+        {
+          "book_id": "JHN",
+          "book": "John",
+          "chapter": 2,
+          "verse": 25,
+          "text": "and because he didn’t need for anyone to testify concerning man; for he himself knew what was in man.\n"
+        }
+      ]
+    }
+  ]
+}

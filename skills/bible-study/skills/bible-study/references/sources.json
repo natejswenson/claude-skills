@@ -1,0 +1,15 @@
+{
+  "bible": {
+    "id": "bible-api",
+    "name": "Bible-API.com",
+    "baseURL": "https://bible-api.com",
+    "documentationURL": "https://bible-api.com/",
+    "defaultTranslation": "web"
+  },
+  "research": [
+    {"id":"bibleproject","name":"BibleProject","host":"bibleproject.com","identityURL":"https://bibleproject.com/about/","role":"Book structure, literary context, and themes","perspective":"Christian Bible education"},
+    {"id":"enduring-word","name":"Enduring Word","host":"enduringword.com","identityURL":"https://enduringword.com/about/statement-of-faith/","role":"Passage-by-passage commentary","perspective":"Evangelical Protestant"},
+    {"id":"insight","name":"Insight for Living","host":"insight.org","identityURL":"https://insight.org/about","role":"Book introductions, authorship, dates, historical setting","perspective":"Evangelical Protestant"},
+    {"id":"bible-org","name":"Bible.org","host":"bible.org","identityURL":"https://bible.org/article/doctrinal-statement","role":"Detailed exegesis and alternative dating arguments","perspective":"Evangelical Protestant; attribute the individual author"}
+  ]
+}

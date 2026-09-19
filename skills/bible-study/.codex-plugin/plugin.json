@@ -1,0 +1,22 @@
+{
+  "name": "bible-study",
+  "version": "0.1.0",
+  "description": "Turn a Bible verse or chapter into a researched, one-page Bible study for a group.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/bible-study",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "bible-study",
+    "shortDescription": "Turn a Bible verse or chapter into a researched, one-page Bible study for a group.",
+    "longDescription": "Turn a Bible verse or chapter into a researched, one-page Bible study for a group.",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $bible-study to help me."
+    ]
+  }
+}

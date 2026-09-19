@@ -5,6 +5,7 @@
   "featureBranchPrefix": "feature/",
   "requiredChecks": [
     "ci / appletv",
+    "ci / bible-study",
     "ci / brandreport",
     "ci / city-report",
     "ci / devlog",
@@ -53,6 +54,7 @@
     },
     "components": [
       "appletv",
+      "bible-study",
       "brandreport",
       "city-report",
       "devlog",
