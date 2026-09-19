@@ -7,13 +7,30 @@ Record the identity URL and what it establishes. Christian sources may disagree;
 perspective, not an invented consensus. Do not use secular authorities indirectly through
 a Christian page when the claim depends on an unread or ineligible underlying work.
 
-Useful starting points (not an automatic allowlist): BibleProject for literary structure;
-Insight for Living and Bible.org for introductions; Enduring Word for evangelical commentary;
-USCCB and Catholic publishers for Catholic interpretation; established Orthodox churches or
-seminaries for Orthodox interpretation. Check the actual author, page, and relevance each run.
-Bible text may be hosted by eBible.org or a recognized Bible publisher. Prefer public-domain
-WEB for unrestricted group sharing. A source quoting Scripture is not a substitute for reading
-the passage itself. Never rely on an AI-generated summary atop a commentary page.
+## Common sources for every study
+
+[The shared registry](sources.json) is the source of provider IDs and research domains:
+
+| Provider | Primary role |
+|---|---|
+| Bible-API.com | All Bible text, chapter context, cross-references and quotations |
+| BibleProject | Literary structure and themes |
+| Insight for Living | Book introductions, authorship and dates |
+| Enduring Word | Passage commentary |
+| Bible.org | Detailed exegesis and alternative historical arguments |
+
+Search within these research domains first. Read relevant pages from at least three
+Christian publishers, with two detailed interpretive treatments where available. The
+registry establishes consistent starting points, not automatic agreement with every page.
+Verify author and support each run. A requested Christian tradition or a gap in these
+sources can justify a supplemental source; record `providerId: supplemental` and
+`supplementReason`, identity evidence and perspective. The Christian-only rule still applies.
+
+Use [the shared Scripture client](bible-api.md), not independently chosen Bible sites.
+Prefer public-domain WEB. Retrieve and read all passages in one translation, retaining
+its license and exact API provenance. A commentary quoting Scripture is not a substitute
+for retrieving the passage. No provider failover or translation substitution is automatic.
+Never rely on an AI-generated summary atop a commentary page.
 
 ## Research coverage
 

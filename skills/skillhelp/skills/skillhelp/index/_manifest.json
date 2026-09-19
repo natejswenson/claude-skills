@@ -20,13 +20,13 @@
       "name": "bible-study",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "ddbe5c5676b07912",
-      "facts": 41,
+      "cardHash": "6e9f3d019f3e5b89",
+      "facts": 42,
       "sections": {
         "setup": 7,
         "usage": 12,
         "commands": 13,
-        "architecture": 6,
+        "architecture": 7,
         "troubleshooting": 3
       },
       "emptySections": [],

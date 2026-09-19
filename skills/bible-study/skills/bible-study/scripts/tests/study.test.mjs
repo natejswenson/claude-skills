@@ -11,6 +11,13 @@ test('reviewed John 3 study retains all required coverage and source links',()=>
  assert.ok(html.includes('3:22-36'));assert.ok(html.includes('John 3:30'));
 });
 for(const [name,change] of [
+ ['missing Scripture record',d=>{delete d.scripture;}],
+ ['wrong Scripture translation label',d=>{d.translation='King James Version';}],
+ ['invented Scripture quotation',d=>{d.quote.text='God helps those who help themselves.';}],
+ ['quotation assigned to wrong verse',d=>{d.quote.reference='John 3:16';}],
+ ['unregistered publisher',d=>{d.sources[1].providerId='random-site';}],
+ ['publisher domain mismatch',d=>{d.sources[1].url='https://example.com/article';}],
+ ['uncached Bible source',d=>{d.sources[0].url='https://bible-api.com/data/web/JHN/4';}],
  ['missing comparison exercise',d=>{delete d.related[1].prompt;}],
  ['missing discussion question',d=>{d.questions.pop();}],
  ['missing opening instructions',d=>{delete d.opening;}],

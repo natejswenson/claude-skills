@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import {registry,checkRecord,parseReference,normalizeText} from './bible-data.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -14,6 +15,13 @@ export function validate(d) {
   need(d.review?.christianSourcesOnly === true,'Christian-only source review required');
   need(d.review?.claimsChecked === true,'Claim support review required');
   need(d.review?.passageReadInContext === true,'Passage context review required');
+  const scripture=Array.isArray(d.scripture)?d.scripture:[];
+  need(scripture.length>0,'Fetched Scripture records are required');
+  for(const record of scripture){try{checkRecord(record);}catch(error){errors.push(error.message);}}
+  const translationIds=new Set(scripture.map(r=>r?.translation?.identifier));
+  need(translationIds.size===1,'Use one consistent Scripture translation per study');
+  need(scripture.every(r=>r?.translation?.name===d.translation),'Study translation label must match fetched Scripture');
+  need(scripture.some(r=>r?.reference===d.passage || r?.requestedReference===d.passage),'Requested study passage is missing from fetched Scripture');
   const sources=Array.isArray(d.sources)?d.sources:[];
   need(sources.length>=4 && sources.length<=10,'Use 4-10 sources, including Scripture and at least 3 Christian research sources');
   const ids=new Set();let bible=0, christian=0;const hosts=new Set();
@@ -25,8 +33,17 @@ export function validate(d) {
     need(webURL(s.identityURL),`Source ${s.id}: identity evidence URL required`);
     need(s.read === true,`Source ${s.id}: must be read, not just discovered`);
     need(['bible','christian'].includes(s.kind),`Source ${s.id}: only Bible or Christian sources allowed`);
-    if(s.kind==='bible')bible++;
-    if(s.kind==='christian'){christian++; if(webURL(s.url))hosts.add(new URL(s.url).hostname);}
+    if(s.kind==='bible'){
+      bible++;
+      need(s.providerId===registry.bible.id,'Bible sources must use the shared Bible API provider');
+      need(scripture.some(r=>r?.url===s.url && r?.reference===s.scriptureReference),`Source ${s.id}: fetched Scripture provenance is missing`);
+    }
+    if(s.kind==='christian'){
+      const publisher=registry.research.find(p=>p.id===s.providerId);
+      if(publisher)need(webURL(s.url)&&new URL(s.url).hostname.replace(/^www\./,'')===publisher.host,`Source ${s.id}: URL does not match registered publisher`);
+      else need(s.providerId==='supplemental' && nonempty(s.supplementReason),`Source ${s.id}: use a registered Christian publisher or explain a supplemental source`);
+    }
+    if(s.kind==='christian'){christian++; if(webURL(s.url))hosts.add(new URL(s.url).hostname.replace(/^www\./,''));}
   }
   need(bible>=1 && christian>=3 && hosts.size>=3,'Need Scripture and 3 Christian publishers, not mirrors of one source');
   const cited=new Set();
@@ -40,6 +57,15 @@ export function validate(d) {
   need(nonempty(d.composition?.uncertainty),'Composition date must state uncertainty');
   need(nonempty(d.composition?.author),'Composition must distinguish authorship/tradition');
   claim(d.quote,'quote');need(nonempty(d.quote?.reference),'Quote reference required');
+  try{
+    const q=parseReference(d.quote?.reference);
+    const matching=scripture.filter(r=>r?.contextVerses?.[0]?.book===q.book && r.contextVerses[0].chapter===q.chapter);
+    const supported=matching.some(r=>{
+      const verses=r.contextVerses.filter(v=>q.first===null || v.verse>=q.first&&v.verse<=q.last);
+      return verses.length>0 && normalizeText(verses.map(v=>v.text).join(' ')).includes(normalizeText(d.quote.text)) && sources.some(s=>d.quote.sources.includes(s.id)&&s.kind==='bible'&&s.url===r.url);
+    });
+    need(supported,'Scripture quote must match the cited API text and verse reference');
+  }catch{errors.push('Scripture quote requires a valid reference and fetched text');}
   for(const [key,min,max] of [['meaning',3,4],['related',3,4]]){
     const rows=Array.isArray(d[key])?d[key]:[];need(rows.length>=min && rows.length<=max,`${key}: ${min}-${max} entries required`);
     rows.forEach((c,i)=>{claim(c,`${key} ${i+1}`);need(nonempty(c.reference),`${key}: verse reference required`);need(nonempty(c.title),`${key}: title required`);});

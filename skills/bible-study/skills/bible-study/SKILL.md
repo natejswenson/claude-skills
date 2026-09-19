@@ -18,7 +18,7 @@ Announce: “I'm using the bible-study skill to research the passage and design 
 
 Support both Claude Code (`/bible-study John 3`) and Codex (`$bible-study John 3`).
 Resolve bundled files relative to this SKILL.md, never the user's current directory.
-Use the host's web search and page-reading tools; map Read/Write/Bash to local tools.
+Use `scripts/bible-data.mjs` for all Scripture retrieval and the host’s web tools for commentary; map Read/Write/Bash to local tools.
 No Claude CLI, account credentials, paid model, or external app is required.
 
 Node 18+ handles validation and HTML rendering without dependencies. PDF/PNG export uses
@@ -48,7 +48,23 @@ attribute disputed interpretations, and do not portray one denomination as all C
 
 ### 2. Research before designing
 
-Read [references/research.md](references/research.md). Read the full passage and its
+Read [references/research.md](references/research.md) and the common publisher registry at
+[references/sources.json](references/sources.json). Retrieve Scripture with the shared API
+client before research; see [references/bible-api.md](references/bible-api.md). Use it for
+the main passage, surrounding text, every cross-reference, and direct quotations. Do not
+mix ad hoc Bible websites or translations into the same study. Retain the returned JSON
+records, including full chapter context, translation/license and provenance. Read the text;
+a successful fetch does not mark a source reviewed.
+
+Start with BibleProject, Enduring Word, Insight for Living, and Bible.org for every study.
+Use at least three relevant publishers from this set, with two detailed interpretive
+sources where available. A supplemental Christian source needs identity verification and
+an explicit reason such as a requested tradition, missing coverage, or an interpretive
+alternative. Record it as `providerId: supplemental` with `supplementReason`; never silently
+replace the common source set with random search results. This default set leans Protestant;
+it is not a claim to represent all Christian traditions.
+
+Read the full passage and its
 surroundings, a book introduction, and at least three substantive Christian sources
 from distinct publishers. Search within identified Christian sources; exclude secular
 encyclopedias, anonymous forums, search snippets, and AI summaries as evidence.
@@ -74,7 +90,10 @@ all Jews. A verse is not permission to pressure group members into disclosing pr
 Use [references/study-schema.md](references/study-schema.md) and the worked John 3 bundle
 at `evals/input/john-3.json` as a shape example, not as content for a different passage.
 Save to a user-selected directory or `reports/bible-study/<passage-slug>/study.json`.
-Include source identity evidence, dates accessed, and paraphrased support notes.
+Include source identity evidence, dates accessed, paraphrased support notes, registry
+`providerId` values, and the fetched records in `scripture`. Each Bible source links its
+API URL and canonical `scriptureReference`. Use returned translation metadata and verify
+that quoted words occur in the cited verses.
 Mark reviews true only after doing them. These attestations are human/model judgments,
 not facts established by the validator.
 
@@ -122,6 +141,10 @@ explicit request. Creating a shareable file does not authorize distribution.
 
 ## Failures and recovery
 
+- Bible API unavailable: use the recorded cache with `--offline`, or report the gap. Never
+  silently switch providers, translations, or fabricate missing verses. Unsupported requested
+  translations require an explicitly chosen supported translation or a separately implemented
+  licensed provider; this version implements only Bible-API.com.
 - Source unavailable: find another eligible Christian source; retain the failed-source
   note in research, not as a cited source you pretend to have read.
 - Invalid or missing evidence: fix the research bundle; no bypass flag exists.

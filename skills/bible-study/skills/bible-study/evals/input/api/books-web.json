@@ -1,0 +1,341 @@
+{
+  "translation": {
+    "identifier": "web",
+    "name": "World English Bible",
+    "language": "English",
+    "language_code": "eng",
+    "license": "Public Domain"
+  },
+  "books": [
+    {
+      "id": "GEN",
+      "name": "Genesis",
+      "url": "https://bible-api.com/data/web/GEN"
+    },
+    {
+      "id": "EXO",
+      "name": "Exodus",
+      "url": "https://bible-api.com/data/web/EXO"
+    },
+    {
+      "id": "LEV",
+      "name": "Leviticus",
+      "url": "https://bible-api.com/data/web/LEV"
+    },
+    {
+      "id": "NUM",
+      "name": "Numbers",
+      "url": "https://bible-api.com/data/web/NUM"
+    },
+    {
+      "id": "DEU",
+      "name": "Deuteronomy",
+      "url": "https://bible-api.com/data/web/DEU"
+    },
+    {
+      "id": "JOS",
+      "name": "Joshua",
+      "url": "https://bible-api.com/data/web/JOS"
+    },
+    {
+      "id": "JDG",
+      "name": "Judges",
+      "url": "https://bible-api.com/data/web/JDG"
+    },
+    {
+      "id": "RUT",
+      "name": "Ruth",
+      "url": "https://bible-api.com/data/web/RUT"
+    },
+    {
+      "id": "1SA",
+      "name": "1 Samuel",
+      "url": "https://bible-api.com/data/web/1SA"
+    },
+    {
+      "id": "2SA",
+      "name": "2 Samuel",
+      "url": "https://bible-api.com/data/web/2SA"
+    },
+    {
+      "id": "1KI",
+      "name": "1 Kings",
+      "url": "https://bible-api.com/data/web/1KI"
+    },
+    {
+      "id": "2KI",
+      "name": "2 Kings",
+      "url": "https://bible-api.com/data/web/2KI"
+    },
+    {
+      "id": "1CH",
+      "name": "1 Chronicles",
+      "url": "https://bible-api.com/data/web/1CH"
+    },
+    {
+      "id": "2CH",
+      "name": "2 Chronicles",
+      "url": "https://bible-api.com/data/web/2CH"
+    },
+    {
+      "id": "EZR",
+      "name": "Ezra",
+      "url": "https://bible-api.com/data/web/EZR"
+    },
+    {
+      "id": "NEH",
+      "name": "Nehemiah",
+      "url": "https://bible-api.com/data/web/NEH"
+    },
+    {
+      "id": "EST",
+      "name": "Esther",
+      "url": "https://bible-api.com/data/web/EST"
+    },
+    {
+      "id": "JOB",
+      "name": "Job",
+      "url": "https://bible-api.com/data/web/JOB"
+    },
+    {
+      "id": "PSA",
+      "name": "Psalms",
+      "url": "https://bible-api.com/data/web/PSA"
+    },
+    {
+      "id": "PRO",
+      "name": "Proverbs",
+      "url": "https://bible-api.com/data/web/PRO"
+    },
+    {
+      "id": "ECC",
+      "name": "Ecclesiastes",
+      "url": "https://bible-api.com/data/web/ECC"
+    },
+    {
+      "id": "SNG",
+      "name": "Song of Solomon",
+      "url": "https://bible-api.com/data/web/SNG"
+    },
+    {
+      "id": "ISA",
+      "name": "Isaiah",
+      "url": "https://bible-api.com/data/web/ISA"
+    },
+    {
+      "id": "JER",
+      "name": "Jeremiah",
+      "url": "https://bible-api.com/data/web/JER"
+    },
+    {
+      "id": "LAM",
+      "name": "Lamentations",
+      "url": "https://bible-api.com/data/web/LAM"
+    },
+    {
+      "id": "EZK",
+      "name": "Ezekiel",
+      "url": "https://bible-api.com/data/web/EZK"
+    },
+    {
+      "id": "DAN",
+      "name": "Daniel",
+      "url": "https://bible-api.com/data/web/DAN"
+    },
+    {
+      "id": "HOS",
+      "name": "Hosea",
+      "url": "https://bible-api.com/data/web/HOS"
+    },
+    {
+      "id": "JOL",
+      "name": "Joel",
+      "url": "https://bible-api.com/data/web/JOL"
+    },
+    {
+      "id": "AMO",
+      "name": "Amos",
+      "url": "https://bible-api.com/data/web/AMO"
+    },
+    {
+      "id": "OBA",
+      "name": "Obadiah",
+      "url": "https://bible-api.com/data/web/OBA"
+    },
+    {
+      "id": "JON",
+      "name": "Jonah",
+      "url": "https://bible-api.com/data/web/JON"
+    },
+    {
+      "id": "MIC",
+      "name": "Micah",
+      "url": "https://bible-api.com/data/web/MIC"
+    },
+    {
+      "id": "NAM",
+      "name": "Nahum",
+      "url": "https://bible-api.com/data/web/NAM"
+    },
+    {
+      "id": "HAB",
+      "name": "Habakkuk",
+      "url": "https://bible-api.com/data/web/HAB"
+    },
+    {
+      "id": "ZEP",
+      "name": "Zephaniah",
+      "url": "https://bible-api.com/data/web/ZEP"
+    },
+    {
+      "id": "HAG",
+      "name": "Haggai",
+      "url": "https://bible-api.com/data/web/HAG"
+    },
+    {
+      "id": "ZEC",
+      "name": "Zechariah",
+      "url": "https://bible-api.com/data/web/ZEC"
+    },
+    {
+      "id": "MAL",
+      "name": "Malachi",
+      "url": "https://bible-api.com/data/web/MAL"
+    },
+    {
+      "id": "MAT",
+      "name": "Matthew",
+      "url": "https://bible-api.com/data/web/MAT"
+    },
+    {
+      "id": "MRK",
+      "name": "Mark",
+      "url": "https://bible-api.com/data/web/MRK"
+    },
+    {
+      "id": "LUK",
+      "name": "Luke",
+      "url": "https://bible-api.com/data/web/LUK"
+    },
+    {
+      "id": "JHN",
+      "name": "John",
+      "url": "https://bible-api.com/data/web/JHN"
+    },
+    {
+      "id": "ACT",
+      "name": "Acts",
+      "url": "https://bible-api.com/data/web/ACT"
+    },
+    {
+      "id": "ROM",
+      "name": "Romans",
+      "url": "https://bible-api.com/data/web/ROM"
+    },
+    {
+      "id": "1CO",
+      "name": "1 Corinthians",
+      "url": "https://bible-api.com/data/web/1CO"
+    },
+    {
+      "id": "2CO",
+      "name": "2 Corinthians",
+      "url": "https://bible-api.com/data/web/2CO"
+    },
+    {
+      "id": "GAL",
+      "name": "Galatians",
+      "url": "https://bible-api.com/data/web/GAL"
+    },
+    {
+      "id": "EPH",
+      "name": "Ephesians",
+      "url": "https://bible-api.com/data/web/EPH"
+    },
+    {
+      "id": "PHP",
+      "name": "Philippians",
+      "url": "https://bible-api.com/data/web/PHP"
+    },
+    {
+      "id": "COL",
+      "name": "Colossians",
+      "url": "https://bible-api.com/data/web/COL"
+    },
+    {
+      "id": "1TH",
+      "name": "1 Thessalonians",
+      "url": "https://bible-api.com/data/web/1TH"
+    },
+    {
+      "id": "2TH",
+      "name": "2 Thessalonians",
+      "url": "https://bible-api.com/data/web/2TH"
+    },
+    {
+      "id": "1TI",
+      "name": "1 Timothy",
+      "url": "https://bible-api.com/data/web/1TI"
+    },
+    {
+      "id": "2TI",
+      "name": "2 Timothy",
+      "url": "https://bible-api.com/data/web/2TI"
+    },
+    {
+      "id": "TIT",
+      "name": "Titus",
+      "url": "https://bible-api.com/data/web/TIT"
+    },
+    {
+      "id": "PHM",
+      "name": "Philemon",
+      "url": "https://bible-api.com/data/web/PHM"
+    },
+    {
+      "id": "HEB",
+      "name": "Hebrews",
+      "url": "https://bible-api.com/data/web/HEB"
+    },
+    {
+      "id": "JAS",
+      "name": "James",
+      "url": "https://bible-api.com/data/web/JAS"
+    },
+    {
+      "id": "1PE",
+      "name": "1 Peter",
+      "url": "https://bible-api.com/data/web/1PE"
+    },
+    {
+      "id": "2PE",
+      "name": "2 Peter",
+      "url": "https://bible-api.com/data/web/2PE"
+    },
+    {
+      "id": "1JN",
+      "name": "1 John",
+      "url": "https://bible-api.com/data/web/1JN"
+    },
+    {
+      "id": "2JN",
+      "name": "2 John",
+      "url": "https://bible-api.com/data/web/2JN"
+    },
+    {
+      "id": "3JN",
+      "name": "3 John",
+      "url": "https://bible-api.com/data/web/3JN"
+    },
+    {
+      "id": "JUD",
+      "name": "Jude",
+      "url": "https://bible-api.com/data/web/JUD"
+    },
+    {
+      "id": "REV",
+      "name": "Revelation",
+      "url": "https://bible-api.com/data/web/REV"
+    }
+  ]
+}

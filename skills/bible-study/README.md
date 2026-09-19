@@ -24,6 +24,8 @@ related verses come with explanations, and every research section links to its e
 | HTML | Responsive study with linked sources |
 | Research JSON | Claim citations and source review notes |
 
+- One shared Scripture API with cached chapter context, translation metadata, and quote checks.
+- A common Christian research library: BibleProject, Enduring Word, Insight for Living, Bible.org.
 - Writing date and authorship, separated from the time of the narrated events.
 - Historical and literary context, meaning, and three related passages.
 - A 45-minute participant guide: six observation/interpretation questions, three
@@ -53,7 +55,7 @@ $bible-study
 /bible-study John 3
 ```
 
-The skill researches the passage using your host's web tools. To reproduce the reviewed
+The skill retrieves Scripture through Bible-API.com and researches commentary using your host's web tools. To reproduce the reviewed
 John 3 handout offline, run from `skills/bible-study/skills/bible-study`:
 
 ```bash
@@ -86,7 +88,9 @@ python3 -m venv .venv
 
 Use `.venv/bin/python` for export when using that environment. Poppler (`pdfinfo`,
 `pdftoppm`) verifies page count and renders the PDF for inspection. No API credentials
-or Claude CLI required. Both hosts use the same implementation and their own web tools.
+or Claude CLI required. The shared Scripture client uses Bible-API.com with WEB by default;
+unsupported translations are reported, never silently replaced. See the
+[provider and cache guide](skills/bible-study/references/bible-api.md). Both hosts use the same implementation and their own web tools.
 
 ## Evidence and limits
 

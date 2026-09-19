@@ -23,6 +23,10 @@
   "split": {
     "deterministic": [
       {
+        "step": "Retrieve and cache Scripture through the common API; validate translation and verse coverage",
+        "command": "node scripts/bible-data.mjs fetch"
+      },
+      {
         "step": "Validate citation references, source attestations, required fields, and content budgets",
         "command": "node scripts/bible-study.js validate"
       },
@@ -62,7 +66,7 @@
         "evals/baseline/MANIFEST.json"
       ],
       "update_command": "node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run",
-      "rationale": "Missing historical context, dropped related-verse explanations, citation drift, or changed rendering. — pinned against The requested John 3 chapter study researched live and rendered during the first run; its final bundle frozen for offline replay..",
+      "rationale": "Missing historical context, dropped related-verse explanations, citation drift, or changed rendering. \u2014 pinned against The requested John 3 chapter study researched live and rendered during the first run; its final bundle frozen for offline replay..",
       "min_corpus": 1
     },
     {
@@ -75,8 +79,21 @@
         "evals/baseline/MANIFEST.json"
       ],
       "update_command": "node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run",
-      "rationale": "Accepting an unsupported claim or source outside the Christian-only policy. — pinned against The real John 3 bundle with a non-Christian source or unresolved citation introduced..",
+      "rationale": "Accepting an unsupported claim or source outside the Christian-only policy. \u2014 pinned against The real John 3 bundle with a non-Christian source or unresolved citation introduced..",
       "min_corpus": 1
+    },
+    {
+      "id": "bible-api-real-responses",
+      "kind": "corpus",
+      "test": "scripts/tests/bible-data.test.mjs",
+      "fixtures": [
+        "evals/input/api/books-web.json",
+        "evals/input/api/john-3.json"
+      ],
+      "min_corpus": 2,
+      "update_command": "node scripts/refresh-api-fixtures.mjs --from /absolute/path/to/reviewed-api-cache",
+      "rationale": "Real book catalog and 36-verse John 3 chapter replayed without network; rejects wrong identity, verse gaps, and invalid selections.",
+      "corpus_glob": "evals/input/api/*.json"
     }
   ]
 }

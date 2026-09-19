@@ -9,6 +9,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Common Bible API client with cached chapter context, explicit translation metadata, and quotation/provenance checks.
+- Shared registry of Christian research publishers, with documented supplemental-source reasons.
 - Bible-only and Christian-source research workflow for verses, passages, and chapters.
 - Writing date, historical setting, meaning, related passages, discussion, application, and prayer.
 - Shared Claude Code/Codex plugin with citation validation and PRESS HTML, PDF, and PNG output.
