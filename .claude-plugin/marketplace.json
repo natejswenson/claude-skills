@@ -88,6 +88,10 @@
     {
       "name": "issuecreator",
       "source": "./skills/issuecreator"
+    },
+    {
+      "name": "bible-study",
+      "source": "./skills/bible-study"
     }
   ]
 }
