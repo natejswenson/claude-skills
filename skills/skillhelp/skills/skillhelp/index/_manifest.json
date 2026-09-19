@@ -17,6 +17,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "bible-study",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "7779504e6e7993f2",
+      "facts": 41,
+      "sections": {
+        "setup": 7,
+        "usage": 12,
+        "commands": 13,
+        "architecture": 6,
+        "troubleshooting": 3
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "brandreport",
       "version": "0.2.0",
       "stack": "node",
