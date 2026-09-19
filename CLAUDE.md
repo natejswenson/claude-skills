@@ -224,6 +224,7 @@ below its own floor.
 
 | Skill | Baseline pinned against | Catches |
 |---|---|---|
+| bible-study | a real John 3 study researched from Scripture and four Christian publishers, with reviewed HTML re-rendered offline | missing sections or citations, absent dating uncertainty, non-Christian source labels, unsafe URLs, and renderer drift; PDF export separately checked for one-page geometry and readability |
 | ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
 | shipflow | this repo's own `shipflow.json` → rendered workflow (+ its `renderedTemplateHashes` receipt) | any renderer/config-mapping drift; found a real bug on first run (see below) |
 | shipflow (component releases) | covered by `release`'s baseline, which pins **shipflow's own `release-status` output**, plus 23 unit tests that drive a real git repo rather than a mock | a component resolving to the wrong files; `prepare` sweeping unrelated dirty work into a release commit; the `{name}` validator admitting a traversal. Deliberately **not** a second frozen corpus in `ci / shipflow` — it would pin the same artifact twice |
@@ -324,6 +325,12 @@ Three things that bite:
   and the foot.
 
 ## Repo settings (as code)
+
+Declared required contexts: `ci / devlog`, `ci / resume`, `ci / ghostwriter`,
+`ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`, `ci / city-report`,
+`ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
+`ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`,
+`ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`, `ci / bible-study`.
 
 `.github/repo-settings.sh` applies repository settings and main protection, then verifies
 the response against its declared policy. Run it only as part of an authorized settings

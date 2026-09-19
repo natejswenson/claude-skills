@@ -1,0 +1,82 @@
+{
+  "comment": "What must not silently disappear from bible-study. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Every historical or interpretive claim must be grounded in t",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "whole-passage",
+      "pattern": "John 3.*means the entire chapter",
+      "rationale": "A chapter request must not silently narrow to a famous verse."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Validate citation references, source attestations, required fields, and content budgets",
+        "command": "node scripts/bible-study.js validate"
+      },
+      {
+        "step": "Escape and render validated content into a portable one-page visual",
+        "command": "node scripts/bible-study.js render"
+      },
+      {
+        "step": "Export with overflow detection; block remote resources",
+        "command": "python3 scripts/export.py"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Research Scripture and identified Christian publishers, churches, ministries, and scholars",
+        "why": "Source identity, theological perspective, and evidential support require reading and judgment."
+      },
+      {
+        "step": "Distinguish composition date from narrated events, explain meaning and interpretive differences, and choose related verses",
+        "why": "Historical uncertainty and theological connections require contextual interpretation."
+      },
+      {
+        "step": "Design and visually inspect a readable study with discussion questions and application",
+        "why": "Visual hierarchy and useful group discussion require editorial judgment."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "john-3-real-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/input/john-3.json",
+        "evals/baseline/study.html",
+        "evals/baseline/MANIFEST.json"
+      ],
+      "update_command": "node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run",
+      "rationale": "Missing historical context, dropped related-verse explanations, citation drift, or changed rendering. — pinned against The requested John 3 chapter study researched live and rendered during the first run; its final bundle frozen for offline replay..",
+      "min_corpus": 1
+    },
+    {
+      "id": "unsupported-source-trap",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/input/john-3.json",
+        "evals/baseline/study.html",
+        "evals/baseline/MANIFEST.json"
+      ],
+      "update_command": "node scripts/refresh-baseline.mjs --from /absolute/path/to/reviewed-run",
+      "rationale": "Accepting an unsupported claim or source outside the Christian-only policy. — pinned against The real John 3 bundle with a non-Christian source or unresolved citation introduced..",
+      "min_corpus": 1
+    }
+  ]
+}

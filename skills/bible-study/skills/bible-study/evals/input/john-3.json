@@ -1,0 +1,254 @@
+{
+  "passage": "John 3",
+  "title": "Life from above.",
+  "subtitle": "New birth, faith in the Son, and the joy of pointing others to Jesus.",
+  "translation": "World English Bible",
+  "translationNotice": "Scripture: World English Bible (public domain).",
+  "audience": "Small-group study",
+  "reviewedOn": "2026-09-19",
+  "review": {
+    "christianSourcesOnly": true,
+    "claimsChecked": true,
+    "passageReadInContext": true
+  },
+  "quote": {
+    "text": "He must increase, but I must decrease.",
+    "reference": "John 3:30",
+    "sources": [
+      "S1"
+    ]
+  },
+  "composition": {
+    "text": "Often dated AD 85-95 and associated with Ephesus; this dates the Gospel, not the events.",
+    "author": "Traditionally John the apostle; the author is unnamed.",
+    "uncertainty": "Dating is uncertain; some Christian scholars argue for before AD 70.",
+    "sources": [
+      "S2",
+      "S9"
+    ]
+  },
+  "events": {
+    "text": "During Jesus' ministry, after the John 2 Passover scene and before the Baptist's imprisonment (3:24). No exact year is given.",
+    "sources": [
+      "S1",
+      "S8"
+    ]
+  },
+  "historicalContext": {
+    "text": "Nicodemus is a Pharisee and Jewish leader; purification and baptism matter here. On the later dating, readers lived after Jerusalem's destruction in AD 70.",
+    "sources": [
+      "S1",
+      "S8",
+      "S9"
+    ]
+  },
+  "literaryContext": {
+    "text": "John 2 closes with responses to signs. Nicodemus starts there; Jesus leads him toward new life.",
+    "sources": [
+      "S1",
+      "S8",
+      "S3"
+    ]
+  },
+  "bigIdea": {
+    "text": "God gives new life through the Spirit and eternal life through faith in his Son.",
+    "sources": [
+      "S1",
+      "S3"
+    ]
+  },
+  "meaning": [
+    {
+      "title": "Receive new birth",
+      "reference": "3:1-13",
+      "text": "Knowledge cannot produce new birth. The Spirit gives it; anew can also mean again or from above.",
+      "sources": [
+        "S1",
+        "S4"
+      ]
+    },
+    {
+      "title": "Believe in the Son",
+      "reference": "3:14-21",
+      "text": "The lifted serpent points to the Son. God gives life to believers; light exposes evil and rejection.",
+      "sources": [
+        "S1",
+        "S4"
+      ]
+    },
+    {
+      "title": "Make room for Jesus",
+      "reference": "3:22-36",
+      "text": "John rejoices as people turn to Jesus. The Son speaks God's words; belief brings life, rejection leaves judgment.",
+      "sources": [
+        "S1"
+      ]
+    }
+  ],
+  "interpretiveNote": {
+    "text": "Water and Spirit (3:5): Christians differ between readings including baptism and Ezekiel's promised cleansing.",
+    "sources": [
+      "S4",
+      "S5"
+    ]
+  },
+  "related": [
+    {
+      "title": "Cleansing & a new heart",
+      "reference": "Ezekiel 36:25-27",
+      "text": "God promises cleansing, a new heart, and his Spirit: an Old Testament background for John 3:5-10.",
+      "sources": [
+        "S5",
+        "S4"
+      ]
+    },
+    {
+      "title": "Look & live",
+      "reference": "Numbers 21:4-9",
+      "text": "Those bitten look at the bronze serpent and live. Jesus explicitly draws this connection in John 3:14-15.",
+      "sources": [
+        "S6",
+        "S1"
+      ]
+    },
+    {
+      "title": "Why John wrote",
+      "reference": "John 20:30-31",
+      "text": "John writes to nurture belief in Jesus as Messiah and Son, and life in his name.",
+      "sources": [
+        "S7"
+      ]
+    }
+  ],
+  "flow": [
+    {
+      "title": "New birth",
+      "reference": "3:1-13"
+    },
+    {
+      "title": "Love & light",
+      "reference": "3:14-21"
+    },
+    {
+      "title": "Humble witness",
+      "reference": "3:22-36"
+    }
+  ],
+  "questions": [
+    "Read John 3 aloud. What surprises Nicodemus? What does Jesus say the Spirit does (3:1-13)?",
+    "Read Numbers 21:4-9. How does it illuminate John 3:14-18? How do love and judgment fit together?",
+    "Compare hiding from light (3:19-21) with John's joy (3:29-30). Where could you practice honesty or humility this week?"
+  ],
+  "application": "Choose one response: pray about a hidden struggle, seek a trusted Christian's help, or serve without seeking credit. Revisit it next meeting.",
+  "prayer": "Father, thank you for your Son. Renew us by your Spirit, help us come into the light, and teach us to rejoice when Jesus is honored. Amen.",
+  "sources": [
+    {
+      "id": "S1",
+      "kind": "bible",
+      "title": "John 3",
+      "publisher": "WEB John 3",
+      "url": "https://ebible.org/engwebp/JHN03.htm",
+      "identityURL": "https://ebible.org/engwebp/JHN03.htm",
+      "identityEvidence": "World English Bible chapter text, identified as public-domain Scripture on the page.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Read all 36 verses and notes. Nicodemus visits at night; water/Spirit and anew/from above; lifted serpent; love/light; baptism; Baptist's joy and Son's authority. Does not give an exact event year or say why Nicodemus chose night."
+    },
+    {
+      "id": "S2",
+      "kind": "christian",
+      "title": "John overview",
+      "publisher": "Insight for Living",
+      "url": "https://insight.org/resources/bible/the-gospels/john",
+      "identityURL": "https://insight.org/resources/bible/the-gospels/john",
+      "identityEvidence": "Page identifies the Bible-teaching ministry of Pastor Chuck Swindoll and his pastoral/seminary role.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Who wrote the book and Where are we sections: Gospel unnamed internally, traditional apostolic authorship, Ephesus and AD 85-95. These are attributed historical judgments, not certain dates stated in John."
+    },
+    {
+      "id": "S3",
+      "kind": "christian",
+      "title": "Guide to John",
+      "publisher": "BibleProject",
+      "url": "https://bibleproject.com/guides/book-of-john/",
+      "identityURL": "https://bibleproject.com/about/",
+      "identityEvidence": "Christian Bible education ministry; guide presents Jesus as Messiah and Son of God and reads the Bible as a unified story leading to Jesus.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Overview and John 2-12 section place Nicodemus among signs and encounters; new heart/life, and author's purpose of faith and life. Do not repeat the unsupported all-night embellishment as a textual observation."
+    },
+    {
+      "id": "S4",
+      "kind": "christian",
+      "title": "John 3 commentary",
+      "publisher": "Enduring Word",
+      "url": "https://enduringword.com/bible-commentary/john-3/",
+      "identityURL": "https://enduringword.com/about/statement-of-faith/",
+      "identityEvidence": "Pastor David Guzik's Christian commentary; statement of faith affirms Scripture, Jesus Christ and Christian ministry.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Sections A.2-5 and B cover new birth and Nicodemus, competing water readings including baptism and Ezekiel cleansing, serpent analogy, and Baptist witness. Commentary interpretations are kept distinct from Scripture; avoid generalizing its claims about all Jewish expectations."
+    },
+    {
+      "id": "S5",
+      "kind": "bible",
+      "title": "Ezekiel 36:25-27 in context",
+      "publisher": "WEB Ezekiel 36",
+      "url": "https://ebible.org/engwebp/EZK36.htm",
+      "identityURL": "https://ebible.org/engwebp/EZK36.htm",
+      "identityEvidence": "World English Bible text and public-domain notice.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Verses 22-28: restoration of Israel, cleansing, new heart and Spirit; connection to John 3 is interpretive and supported by S4."
+    },
+    {
+      "id": "S6",
+      "kind": "bible",
+      "title": "Numbers 21:4-9 in context",
+      "publisher": "WEB Numbers 21",
+      "url": "https://ebible.org/eng-web/NUM21.htm",
+      "identityURL": "https://ebible.org/eng-web/NUM21.htm",
+      "identityEvidence": "World English Bible Classic Scripture text.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Israel complains, serpents bite, people confess, Moses intercedes and makes the bronze serpent; bitten people looking live. John 3 makes the explicit comparison."
+    },
+    {
+      "id": "S7",
+      "kind": "bible",
+      "title": "John 20:30-31 in context",
+      "publisher": "WEB John 20",
+      "url": "https://ebible.org/eng-web/JHN20.htm",
+      "identityURL": "https://ebible.org/eng-web/JHN20.htm",
+      "identityEvidence": "World English Bible Classic Scripture text.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Purpose statement follows Thomas and resurrection appearances: selected signs, belief in Messiah/Son and life in his name."
+    },
+    {
+      "id": "S8",
+      "kind": "bible",
+      "title": "John 2",
+      "publisher": "WEB John 2",
+      "url": "https://ebible.org/eng-web/JHN02.htm",
+      "identityURL": "https://ebible.org/eng-web/JHN02.htm",
+      "identityEvidence": "World English Bible Classic Scripture text.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Cana purification jars; Jerusalem Passover and temple scene; 2:23-25 connects signs and belief to Nicodemus's opening in 3:2."
+    },
+    {
+      "id": "S9",
+      "kind": "christian",
+      "title": "The Gospel of John: Introduction, Argument, Outline",
+      "publisher": "Bible.org / Wallace",
+      "url": "https://bible.org/seriespage/gospel-john-introduction-argument-outline",
+      "identityURL": "https://bible.org/article/doctrinal-statement",
+      "identityEvidence": "Christian Bible study ministry publishing Daniel B. Wallace's New Testament teaching.",
+      "read": true,
+      "accessed": "2026-09-19",
+      "supportNotes": "Date section contrasts 90s and pre-70 dating, mentions Jerusalem's destruction in AD 70, and argues for the earlier view. Late-date context on the handout is explicitly conditional."
+    }
+  ]
+}

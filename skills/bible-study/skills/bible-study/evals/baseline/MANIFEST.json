@@ -1,0 +1,12 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/bible-study.js render --file evals/input/john-3.json --out \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "study.html",
+      "bytes": 10365,
+      "sha256": "24b1906dee64d10c19a5c7a7ce153fefd5e3b4917a9fcf0b50d94852ee3a1801"
+    }
+  ]
+}
