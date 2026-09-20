@@ -465,6 +465,8 @@ def test_gate_branches(monkeypatch, capsys):
 
 # -------------------------------------------------------------------------- main
 def run_main(monkeypatch, argv, env=None):
+    # Full review + publish integration has real records in test_post_review.py.
+    monkeypatch.setattr(tp.post_review, "enforce", lambda *a: None)
     monkeypatch.setattr(tp.sys, "argv", ["typefully_post.py", *argv])
     monkeypatch.setattr(tp, "load_env", lambda path: dict(env or ENV))
     tp.main()

@@ -22,10 +22,11 @@ official API. No copy-paste, and no unattended posting.
 
 Every external claim is verified against three or more live sources before you
 see the draft, and the gate narrates as it works rather than going silent.
-Every draft also runs through an AI-fingerprint gate (`scripts/ai_tells.py`)
-before you see it: eleven deterministic tells from your own voice notes plus a
-cost-capped LLM judge, and the publish command refuses a post that still trips
-one.
+Every draft must pass the [editorial review](skills/ghostwriter/references/post-review.md)
+before you see it: voice, naturalness, substance, clarity, hook, ending,
+credibility, restraint, originality and platform fit. Mechanical checks catch
+known tells; the editor must resolve every warning against your real samples.
+Edits invalidate the review, and the publisher refuses an unreviewed draft.
 
 ## What you get
 
