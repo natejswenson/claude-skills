@@ -12,11 +12,16 @@ Create one original portrait 4:5 card that **supplements** the post. It must add
 explanation the body does not already provide: a system map, comparison, sequence, method,
 decision, or key number. A decorated restatement of the opening line fails.
 
+Read [visual-composition.md](visual-composition.md) before choosing the hero.
+Default to a picture that explains the idea, with supporting type; a large
+headline plus a text ledger is not the default generated-card composition.
+
 The finished result is still a card, with PRESS anatomy:
 
 - masthead and square monogram stamp;
-- one dominant headline;
-- one proof-bearing hero, such as a diagram, ledger, duel, or big figure;
+- one concise headline at supporting scale;
+- one dominant visual hero, such as an editorial illustration, spatial comparison,
+  or evidence-backed diagram;
 - a small standfirst or marginal note only when it adds meaning;
 - ruled colophon.
 
@@ -83,6 +88,11 @@ Before calling the image tool, register the versioned candidate using
   "generator": "codex-imagegen",
   "post_anchor": "<exact excerpt from the approved post>",
   "visual_claim": "<what the hero explains about that point>",
+  "visual_encoding": {
+    "marks": "<which pictorial marks carry meaning>",
+    "mapping": "<how those marks map to the evidence>",
+    "picture_text_balance": "<picture area and supporting labels>"
+  },
   "alt_text": "<exact description to publish>",
   "seed": "assets/image-seeds/<file>.png",
   "information_shape": "system-map",
@@ -110,10 +120,12 @@ Never rely on the conversation transcript as the only copy of the prompt.
    the one visual relationship the card should prove. For architecture/flow, build and verify the
    evidence model above first. Do not add a fact, person, setting, or outcome the draft and its
    evidence did not establish.
-2. Write the card's exact copy. Keep it compact: one masthead, one headline of at most two
+2. Compose the visual encoding first, following `visual-composition.md`, then write
+   the card's exact copy. Keep it compact: one masthead, one headline of at most two
    short lines, at most five hero labels, and one optional standfirst or colophon. The hero
-   must do more than repeat the headline.
-3. Build a production prompt for a `productivity-visual` or `ads-marketing` LinkedIn editorial
+   must do more than repeat the headline. Describe the encoding in the receipt;
+   keep type subordinate to the picture without hiding necessary qualifications.
+3. Build a production prompt for an `infographic-diagram`, `productivity-visual` or `ads-marketing` LinkedIn editorial
    card, portrait 4:5. Include the PRESS values read from the brand source, the seed's role,
    the requested composition, every string under `Text (verbatim)`, and explicit avoid rules.
 4. Save the prompt receipt, then use Codex's built-in image-generation tool with the selected

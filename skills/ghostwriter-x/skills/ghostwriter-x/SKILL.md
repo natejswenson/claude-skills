@@ -494,6 +494,7 @@ write a genuine how-to — not a news recap.
 ### Visuals (optional — diagrams & cards)
 
 If the user chooses a graphic generated or edited with Codex imagegen, read
+`references/visual-composition.md` to plan a picture-led explanation, then
 `references/visual-review.md` and pass all 12 checks before presentation. Register
 its origin, inspect the actual pixels, and run `visual_review.py check` before
 showing it. The publisher enforces that review, including dry-run and draft-only
