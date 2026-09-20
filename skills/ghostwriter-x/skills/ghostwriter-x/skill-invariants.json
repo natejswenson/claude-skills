@@ -138,6 +138,30 @@
       "file": "references/visual-review.md",
       "pattern": "cannot withhold those[\\s\\S]{0,140}stop this workflow",
       "rationale": "A host that automatically displays unreviewed images cannot truthfully promise private review."
+    },
+    {
+      "id": "review-comparison-quality",
+      "file": "references/post-review.md",
+      "pattern": "Do not use a deliberately\\s+bad alternative",
+      "rationale": "Comparison records must challenge the draft with plausible alternatives; schema validation alone cannot judge that."
+    },
+    {
+      "id": "review-positive-voice",
+      "file": "references/post-review.md",
+      "pattern": "first-person pronouns and short paragraphs alone do not establish warmth",
+      "rationale": "A previous passing draft was a neutral feature explanation despite first person and short paragraphs; the editor must compare positive voice evidence."
+    },
+    {
+      "id": "review-question-context",
+      "file": "references/post-review.md",
+      "pattern": "warning does not ban questions",
+      "rationale": "Question findings require contextual judgment, preserving useful and genuine questions rather than flattening the author voice."
+    },
+    {
+      "id": "review-preserve-conditions",
+      "file": "references/post-review.md",
+      "pattern": "Check conditions, thresholds and fallback/error behavior",
+      "rationale": "The real forward test exposed a missing minimum-history condition in an otherwise source-backed first-person capability claim."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter-x` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
