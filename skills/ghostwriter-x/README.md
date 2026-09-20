@@ -23,6 +23,10 @@ through Typefully to your connected X account.
 
 Every tweet is validated against X's real weighted 280-character rules *before
 you see it*, so a draft that looks fine and would be rejected never reaches you.
+It also must pass the [editorial review](skills/ghostwriter-x/references/post-review.md)
+for voice, naturalness, substance, clarity, hook, ending, credibility, restraint,
+originality and platform fit. Unresolved warnings and missing or stale reviews
+block display and publishing, including external Typefully draft creation.
 
 ## What you get
 

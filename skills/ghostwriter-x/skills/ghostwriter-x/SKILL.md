@@ -11,8 +11,9 @@ The bundled recent-project collector reads Claude history. In Codex, use the
 current repository's git history and projects named by the user when it finds
 nothing; do not interpret absent Claude history as no recent work. Optional
 `claude -p`/Anthropic judge scripts still require their own CLI or API credentials.
-When unavailable, run deterministic checks and review the rubric in this session,
-and report that the external judge was not run. Never claim an external score.
+External judges are optional diagnostics. The mandatory review in
+`references/post-review.md` runs in this session on either host; unavailable or
+mock judges never count as a passing review. Never claim an external score.
 
 When running in Codex, invoke this skill as `$ghostwriter-x`. Resolve scripts, assets,
 and references from the directory containing this SKILL.md, regardless of the
@@ -139,6 +140,10 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 
 ## Mode: Generate
 
+**Draft display is gated.** Before exposing post copy anywhere, complete
+[the mandatory post review](references/post-review.md). Topic menus may describe
+angles and evidence, but cannot preview an unreviewed hook or post excerpt.
+
 **Posture: propose, don't interrogate.** The default is *you* surface concrete, already-real
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
@@ -207,8 +212,8 @@ scraping. Revisit the whole loop if the account upgrades.
    (lane priority order below, bent by outcome history) and present the **top 3** as **ONE
    single-select `AskUserQuestion`** — options are the 3 ideas plus a 4th, **"Show more
    ideas."** Never ask one question per lane. Rules of the question:
-   - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): the working
-     tweet as it would actually read, the suggested angle in one sentence (assume a single
+   - **Every idea option carries a `preview`** (≤ ~9 lines so the pane never clips): a topic
+     summary rather than draft copy, the suggested angle in one sentence (assume a single
      unless the user asked for a thread), and a source-freshness line prefixed with its
      lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`, `Radar · Jul 17 ·
      anthropic.com`). A user should be able to pick on the preview alone.
@@ -376,10 +381,9 @@ scraping. Revisit the whole loop if the account upgrades.
      `{"external_claims": false, "claims": []}`; the gate passes trivially. Be honest: if the
      post mixes a real external claim into a personal story, it is *not*
      `external_claims:false`.
-   - **Narrate the gate — it's the slow step; never go silent through it.** Emit one short status
-     line per claim as it resolves — `checking: "Sonnet 5 ships computer-use GA" → vendor
-     announcement + docs ✓` — and one close line when the gate passes: `3 claims · 5 distinct
-     hosts · gate passed`.
+   - **Narrate the gate — it's the slow step; never go silent through it.** Emit one short
+     status line as claims resolve, without quoting unreviewed draft text. Close
+     with the result, for example `3 claims · 5 distinct hosts · gate passed`.
    - **The narration floor applies to every slow stretch, not just this one.** From the live run
      (3a) through the source gate, the render cycles, and publishing, **never go more than ~2 tool
      calls without a user-facing line.** Say what you're doing and what came back: `ran ruff
@@ -389,29 +393,29 @@ scraping. Revisit the whole loop if the account upgrades.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
      sidecar before publishing.
-7. **Pre-show self-check, then show the draft.** Before the user sees it, verify against
-   `~/.claude/ghostwriter-x/voice/voice-notes.md`, hardest first:
-   - **The ending** — the #1 AI tell. The post (or thread) stops on the last real point. No
-     inverted-parallel closer, no clever-symmetry aphorism, no reflexive "what do you think?"
-     CTA, no recap tweet that just restates the thread.
-   - **Nothing fabricated** — no invented details, motivations, or timeline drama the user
-     didn't actually live.
-   - **Tweet 1 is the hook** — X has no fold: the first tweet must stand alone, carry the
-     post's sharpest number or tension in its first line, and earn the tap into the rest. If
-     the best number sits in tweet 3, move it up.
-   - **Every tweet fits** — run `python3 scripts/x_len.py --file drafts/<slug>.md --thread` and
-     fix any overflow now, not at publish.
-   - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words,
-     "🧵👇", engagement bait.
-   - **The save** — name (to yourself) the thing a reader keeps: a command, a checklist, a
-     reusable model. A thread with nothing to keep is a lower-reach personal post on purpose —
-     fine, but don't pad it with fake utility.
+7. **Complete the mandatory post review before showing any draft.** Read
+   [references/post-review.md](references/post-review.md) and follow its full
+   rubric and private revision loop, using one fresh editor subagent when the host
+   supports delegation (otherwise label the in-session review honestly). Prepare `drafts/<slug>.review.json` with
+   `scripts/post_review.py prepare`, then complete every editorial check against
+   the user's current voice files, 2–3 real samples, and source evidence.
+   The ending stops on the last real point; voice, naturalness, substance,
+   clarity, hook, credibility, restraint, originality and platform fit must also
+   pass. Resolve every warning with a specific contextual reason or rewrite it.
+   **Re-run the gate after every edit**; missing, stale, skipped, or mock reviews
+   block display. After at most three private revision rounds, report the blocker
+   without showing failed copy. Never open a failed draft or quote it in status
+   updates, idea previews, approval choices, or a final response.
+   Run `python3 scripts/post_review.py check --file drafts/<slug>.md --show`.
+   **Only exit 0 permits display.** No averaged score can overrule a failed check.
+   The first tweet must stand alone as the hook; every reply earns its place.
    Fix what fails, then **show the full draft in the X-true format** — numbered tweets, each in
    its own fenced block, each headed by its live weighted count in the form `[n/N · used/280]`
    (from `x_len.py`, not estimated):
    - A single post is `[1/1 · 243/280]` + the tweet.
    - One metadata line under the last block: `single|thread of N · save: <the thing a reader
      keeps> · lane: <lane>` (+ `link rides in final reply: <url>` when applicable).
+   - Review line: `Review passed · voice, substance, clarity, credibility and platform checks`.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole thread hunting for the edit.
@@ -673,6 +677,11 @@ Only after the user explicitly approves a specific draft.
    — pass the post's content lane (`release-howto` / `personal-project` / `opinion` / `career` /
    `personal`) so the publish log (`~/.claude/ghostwriter-x/published.jsonl`, written
    automatically on success) can feed the outcome loop. Omitting `--lane` still publishes.
+   - **Post review runs automatically before external writes.** The exact draft must
+     have a current passing `.review.json`; source/AI override flags do not bypass
+     this check. Missing or stale review → repeat Generate step 7, then re-show and
+     obtain approval for any changed text. Dry-run payload previews also require
+     the current passing review; they cannot expose an unchecked draft.
    - **Source gate runs automatically.** A real (non-dry-run) `--file` publish is refused unless the
      draft's `*.sources.json` sidecar passes `verify_sources.py` (≥3 distinct live hosts, every claim
      sourced, or `external_claims:false`). If it fails, **fix the sidecar / redo the research step,
