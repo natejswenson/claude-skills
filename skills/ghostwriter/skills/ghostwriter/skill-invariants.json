@@ -11,13 +11,13 @@
    "id": "source-gate-step",
    "file": "SKILL.md",
    "pattern": "verify_sources\\.py",
-   "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). This is a soft check that the gate isn't unreferenced; the HARD enforcement that publishing runs the gate is code-tested in tests/test_linkedin_post.py (enforce_source_gate) — not this regex."
+   "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). This is a soft check that the gate isn't unreferenced; the HARD enforcement that publishing runs the gate is code-tested in tests/test_linkedin_post.py (enforce_source_gate) \u2014 not this regex."
   },
   {
    "id": "tos-no-automation",
    "file": "SKILL.md",
-   "pattern": "(never automate posting|ToS\\s*§?\\s*3\\.1|decline and explain)",
-   "rationale": "LinkedIn ToS §3.1 exposure: this is the only instruction telling the agent to decline scheduled/looped/unattended posting."
+   "pattern": "(never automate posting|ToS\\s*\u00a7?\\s*3\\.1|decline and explain)",
+   "rationale": "LinkedIn ToS \u00a73.1 exposure: this is the only instruction telling the agent to decline scheduled/looped/unattended posting."
   },
   {
    "id": "sources-not-in-body",
@@ -83,13 +83,13 @@
    "id": "fold-marked-draft-show",
    "file": "SKILL.md",
    "pattern": "fold ~210 chars",
-   "rationale": "The ~210-char '…see more' fold decides LinkedIn reach, and the fold-marked draft presentation is the only place the user actually SEES where their post cuts off before approving it. Prose-only; deleting it regresses to showing drafts with no fold visibility."
+   "rationale": "The ~210-char '\u2026see more' fold decides LinkedIn reach, and the fold-marked draft presentation is the only place the user actually SEES where their post cuts off before approving it. Prose-only; deleting it regresses to showing drafts with no fold visibility."
   },
   {
    "id": "ai-tells-gate-step",
    "file": "SKILL.md",
-   "pattern": "ai_tells\\.py[^\\n]{0,80}--judge",
-   "rationale": "The user's standing ask (2026-08-24): 'ensure we run the posts through a filter that ensures there is no AI fingerprint on them.' The pre-show gate invocation lives only in this prose; the HARD enforcement at publish is code-tested in tests/test_linkedin_post.py (enforce_ai_tells_gate), but the pre-show run is what catches a tell while there is still a draft to rewrite."
+   "pattern": "post_review\\.py check[^\\n]*--show",
+   "rationale": "Only a current passing full editorial review permits displaying draft copy; mechanical lint alone cannot approve it."
   },
   {
    "id": "ai-tells-rerun-on-edit",
@@ -142,7 +142,7 @@
   {
    "id": "stable-stage-navigation",
    "file": "SKILL.md",
-   "pattern": "ghostwriter · ideas[\\s\\S]{0,160}ghostwriter · publish",
+   "pattern": "ghostwriter \u00b7 ideas[\\s\\S]{0,160}ghostwriter \u00b7 publish",
    "rationale": "Four stable stage labels give the user a reliable sense of place while the skill moves through a long multi-gate workflow."
   },
   {
@@ -204,6 +204,24 @@
    "file": "references/codex-images.md",
    "pattern": "rendered-graph reconciliation[\\s\\S]{0,900}missing, reversed, extra, ambiguous, or unsupported relationship",
    "rationale": "A correct prompt does not prove the raster output is correct. The rendered arrows and containment must be transcribed from the image and compared with the evidence model before the card is shown."
+  },
+  {
+   "id": "complete-review-before-display",
+   "file": "SKILL.md",
+   "pattern": "Only exit 0 permits display",
+   "rationale": "No failed or incomplete review can reach the user as draft copy."
+  },
+  {
+   "id": "review-bound-and-repeated",
+   "file": "references/post-review.md",
+   "pattern": "re-run the gate after every edit",
+   "rationale": "Every revision must pass the full editorial rubric again."
+  },
+  {
+   "id": "review-failure-withholds-text",
+   "file": "references/post-review.md",
+   "pattern": "report the missing[\\s\\S]{0,150}without exposing the failed text",
+   "rationale": "Exhausted revisions report a blocker, not the rejected draft."
   }
  ],
  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
@@ -236,7 +254,7 @@
     "evals/baseline/trending/github.json",
     "evals/baseline/trending/expected-table.md"
    ],
-   "rationale": "Real payloads captured live from all four surfaces on 2026-09-01, replayed through the same build_candidates() path main() uses and byte-compared against the frozen table. Catches a parser dropping a surface or field while the table still looks complete. Two-sided: test_baseline_all_surfaces_dead_is_an_error pins the opposite face — a sweep finding nothing anywhere must exit 2, never render an empty table as a quiet day.",
+   "rationale": "Real payloads captured live from all four surfaces on 2026-09-01, replayed through the same build_candidates() path main() uses and byte-compared against the frozen table. Catches a parser dropping a surface or field while the table still looks complete. Two-sided: test_baseline_all_surfaces_dead_is_an_error pins the opposite face \u2014 a sweep finding nothing anywhere must exit 2, never render an empty table as a quiet day.",
    "update_command": "Re-capture: cd evals/baseline/trending && bash refresh.sh, then run pytest tests/test_trending.py -k baseline to re-render, inspect the diff, and commit fixtures + expected-table.md together."
   },
   {
@@ -247,8 +265,17 @@
     "evals/baseline/outcomes/published-frozen.jsonl",
     "evals/baseline/outcomes/expected-stats.md"
    ],
-   "rationale": "A field-projected freeze of the real 24-post publish log (date/slug/lane/format/outcome/impressions only — no urns, urls or post text), with --stats re-run and byte-compared. Pins the finding that drove the 0.19 revamp — trending/radar-sourced posts flopped 6 of 6 — so the rollup cannot silently drop a lane or miscount while still printing a complete-looking table.",
+   "rationale": "A field-projected freeze of the real 24-post publish log (date/slug/lane/format/outcome/impressions only \u2014 no urns, urls or post text), with --stats re-run and byte-compared. Pins the finding that drove the 0.19 revamp \u2014 trending/radar-sourced posts flopped 6 of 6 \u2014 so the rollup cannot silently drop a lane or miscount while still printing a complete-looking table.",
    "update_command": "python3 tests/refresh_outcomes_baseline.py (re-projects the live log and re-renders expected-stats.md; inspect the diff before committing)."
+  },
+  {
+   "id": "post-review-published-corpus",
+   "kind": "corpus",
+   "test": "tests/test_post_review.py",
+   "corpus_glob": "evals/baseline/drafts/*.md",
+   "min_corpus": 8,
+   "rationale": "Previously published real drafts retain zero hard failures; mutation tests reject edited text, missing editorial evidence, unresolved warnings and stale context before display or writes.",
+   "update_command": "Add a newly published, user-approved draft to evals/baseline/drafts/ and run pytest tests/test_post_review.py. Never edit an approved artifact merely to appease a rule."
   }
  ]
 }

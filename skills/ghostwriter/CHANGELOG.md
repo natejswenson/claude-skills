@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Require a complete editorial review before displaying any draft: voice, naturalness,
+  substance, clarity, hook, ending, credibility, restraint, originality and platform fit.
+- Bind reviews to the exact draft, sources and voice evidence; unresolved warnings,
+  missing reviews and edits block display and publication, including X draft-only writes.
+
 - Open-ended drafting now begins with a Project, Trends in Industry, or Personal
   Fun picker; Ghostwriter only researches and presents ideas after the user chooses
   one category.

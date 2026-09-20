@@ -37,6 +37,7 @@ import urllib.request
 from pathlib import Path
 
 import verify_sources
+import post_review
 import x_len
 
 REPO = Path(__file__).resolve().parent.parent
@@ -572,6 +573,8 @@ def main() -> None:
     tweets = x_len.split_thread(text)
     counts = validate_tweets(tweets)
     media_map = parse_media_args(args.image, args.alt, len(tweets))
+
+    post_review.enforce(args.file, text)
 
     if args.dry_run:
         placeholder = {

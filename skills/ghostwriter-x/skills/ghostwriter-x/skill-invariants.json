@@ -11,7 +11,7 @@
       "id": "source-gate-step",
       "file": "SKILL.md",
       "pattern": "verify_sources\\.py",
-      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). The HARD enforcement that publishing runs the gate is code-tested in tests/test_typefully_post.py (enforce_source_gate) — not this regex."
+      "rationale": "SKILL.md must reference the source gate at all (the literal appears in the Generate research step, the Publish gate note, and Guardrails). The HARD enforcement that publishing runs the gate is code-tested in tests/test_typefully_post.py (enforce_source_gate) \u2014 not this regex."
     },
     {
       "id": "no-unattended-posting",
@@ -76,7 +76,7 @@
     {
       "id": "hook-tweet-preview",
       "file": "SKILL.md",
-      "pattern": "first tweet[^.\\n]*(stand alone|hook)[\\s\\S]{0,2500}?\\[\\s*n\\s*/\\s*N\\s*·",
+      "pattern": "first tweet[^.\\n]*(stand alone|hook)[\\s\\S]{0,2500}?\\[\\s*n\\s*/\\s*N\\s*\u00b7",
       "rationale": "X has no fold: tweet 1 IS the hook, and the numbered per-tweet preview with live weighted counts is the only place the user SEES each tweet's length and the hook standing alone before approving. Prose-only; deleting it regresses to showing drafts as one blob."
     },
     {
@@ -90,6 +90,24 @@
       "file": "SKILL.md",
       "pattern": "transcription of a real session,\\s*not an\\s*invention",
       "rationale": "A real ghostwriter session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's actual output. Capture-before-author lives only in this prose; the term-misaligned lint checks alignment, not provenance."
+    },
+    {
+      "id": "complete-review-before-display",
+      "file": "SKILL.md",
+      "pattern": "Only exit 0 permits display",
+      "rationale": "No failed or incomplete review can reach the user as draft copy."
+    },
+    {
+      "id": "review-bound-and-repeated",
+      "file": "references/post-review.md",
+      "pattern": "re-run the gate after every edit",
+      "rationale": "Every revision must pass the full editorial rubric again."
+    },
+    {
+      "id": "review-failure-withholds-text",
+      "file": "references/post-review.md",
+      "pattern": "report the missing[\\s\\S]{0,150}without exposing the failed text",
+      "rationale": "Exhausted revisions report a blocker, not the rejected draft."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter-x` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
@@ -103,7 +121,7 @@
         ".STAGED.md"
       ],
       "min_corpus": 5,
-      "rationale": "The drafts the user approved and published are the only ground truth for 'this is my voice'. Six are frozen into evals/baseline/drafts/ as a committed corpus: drafts/ itself is gitignored as a working directory, so globbing it would find zero files in CI and red-line every PR. Pinning the corpus clean catches a voice-lint rule that grows too broad and blocks real work; pinning bad-draft.md's exact flag set catches a rule that gets weakened and stops catching real AI tells. The min_corpus floor stops the glob silently matching nothing and passing vacuously. `.STAGED.md` stays excluded because its human-written 'not published' banner contains an editorial em-dash that is not tweet body — verified that the staged file's published counterpart is clean, so the exclusion hides no real violation.",
+      "rationale": "The drafts the user approved and published are the only ground truth for 'this is my voice'. Six are frozen into evals/baseline/drafts/ as a committed corpus: drafts/ itself is gitignored as a working directory, so globbing it would find zero files in CI and red-line every PR. Pinning the corpus clean catches a voice-lint rule that grows too broad and blocks real work; pinning bad-draft.md's exact flag set catches a rule that gets weakened and stops catching real AI tells. The min_corpus floor stops the glob silently matching nothing and passing vacuously. `.STAGED.md` stays excluded because its human-written 'not published' banner contains an editorial em-dash that is not tweet body \u2014 verified that the staged file's published counterpart is clean, so the exclusion hides no real violation.",
       "fixtures": []
     },
     {
@@ -115,8 +133,17 @@
         ".STAGED.md"
       ],
       "min_corpus": 5,
-      "rationale": "X's 280 limit is weighted, not len(): URLs are charged a flat weight and CJK/emoji are charged 2. Threads that published successfully are known-good input, so if scripts/x_len.py ever measures them as over-limit the weighting regressed and would start rejecting valid posts. The paired over-limit and URL-weighting assertions cover the other direction — a weighting that under-charges would let a too-long tweet reach X, where it is truncated or rejected.",
+      "rationale": "X's 280 limit is weighted, not len(): URLs are charged a flat weight and CJK/emoji are charged 2. Threads that published successfully are known-good input, so if scripts/x_len.py ever measures them as over-limit the weighting regressed and would start rejecting valid posts. The paired over-limit and URL-weighting assertions cover the other direction \u2014 a weighting that under-charges would let a too-long tweet reach X, where it is truncated or rejected.",
       "fixtures": []
+    },
+    {
+      "id": "post-review-published-corpus",
+      "kind": "corpus",
+      "test": "tests/test_post_review.py",
+      "corpus_glob": "evals/baseline/drafts/*.md",
+      "min_corpus": 6,
+      "rationale": "Previously published real drafts retain zero hard failures; mutation tests reject edited text, missing editorial evidence, unresolved warnings and stale context before display or writes.",
+      "update_command": "Add a newly published, user-approved draft to evals/baseline/drafts/ and run pytest tests/test_post_review.py. Never edit an approved artifact merely to appease a rule."
     }
   ]
 }

@@ -9,35 +9,35 @@
 
 ## Setup
 
-- **Claude Code:** Run typefully_post.py --connect with the Typefully API key. `skills/ghostwriter-x/README.md:93`
-- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthr… `skills/ghostwriter-x/README.md:94`
-- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter-x/. `skills/ghostwriter-x/README.md:95`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter-x/README.md:97`
-- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:99`
-- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:101`
-- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:103`
+- **Claude Code:** Run typefully_post.py --connect with the Typefully API key. `skills/ghostwriter-x/README.md:97`
+- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthr… `skills/ghostwriter-x/README.md:98`
+- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter-x/. `skills/ghostwriter-x/README.md:99`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter-x/README.md:101`
+- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:103`
+- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:105`
+- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:107`
 
 ## Usage
 
 - Triggers on: Write sharp X (Twitter) posts and threads in the user's own voice and publish them through the free Typefully API after they approve. Use when the user wants to draft, write, or post som… `skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md:5`
 - X removed its API free tier in February 2026 — new developer accounts pay per post. Typefully's free plan covers one connected X account and about 15 posts a month behind a clean public API, which is… `skills/ghostwriter-x/README.md:15`
 - ghostwriter-x works in three moves: **learn your voice** from your own tweet archive, **draft** a post or thread, **you approve**, then it **publishes** through Typefully to your connected X account. `skills/ghostwriter-x/README.md:20`
-- Every tweet is validated against X's real weighted 280-character rules *before you see it*, so a draft that looks fine and would be rejected never reaches you. `skills/ghostwriter-x/README.md:24`
-- Path — What it provides `skills/ghostwriter-x/README.md:29`
-- skills/ghostwriter-x/SKILL.md — The flow Claude follows, and where it must stop and ask. `skills/ghostwriter-x/README.md:31`
-- skills/ghostwriter-x/scripts/typefully_post.py — Publishes a post or thread (--dry-run previews, --connect sets up). `skills/ghostwriter-x/README.md:32`
-- skills/ghostwriter-x/scripts/x_len.py — Weighted 280-character validation, twitter-text rules. `skills/ghostwriter-x/README.md:33`
-- skills/ghostwriter-x/scripts/extract_tweets.py — Turns your archive's tweets.js into voice-analysis input. `skills/ghostwriter-x/README.md:34`
-- skills/ghostwriter-x/scripts/verify_sources.py — The source gate: every external claim needs 3+ live distinct hosts. `skills/ghostwriter-x/README.md:35`
-- skills/ghostwriter-x/scripts/render_image.py, render_carousel.py, card_lint.py — 16:9 card rendering and lint. `skills/ghostwriter-x/README.md:36`
-- skills/ghostwriter-x/assets/ — Landscape card templates, the card language, vendored mermaid.min.js. `skills/ghostwriter-x/README.md:37`
+- Every tweet is validated against X's real weighted 280-character rules *before you see it*, so a draft that looks fine and would be rejected never reaches you. It also must pass the [editorial review… `skills/ghostwriter-x/README.md:24`
+- Path — What it provides `skills/ghostwriter-x/README.md:33`
+- skills/ghostwriter-x/SKILL.md — The flow Claude follows, and where it must stop and ask. `skills/ghostwriter-x/README.md:35`
+- skills/ghostwriter-x/scripts/typefully_post.py — Publishes a post or thread (--dry-run previews, --connect sets up). `skills/ghostwriter-x/README.md:36`
+- skills/ghostwriter-x/scripts/x_len.py — Weighted 280-character validation, twitter-text rules. `skills/ghostwriter-x/README.md:37`
+- skills/ghostwriter-x/scripts/extract_tweets.py — Turns your archive's tweets.js into voice-analysis input. `skills/ghostwriter-x/README.md:38`
+- skills/ghostwriter-x/scripts/verify_sources.py — The source gate: every external claim needs 3+ live distinct hosts. `skills/ghostwriter-x/README.md:39`
+- skills/ghostwriter-x/scripts/render_image.py, render_carousel.py, card_lint.py — 16:9 card rendering and lint. `skills/ghostwriter-x/README.md:40`
+- skills/ghostwriter-x/assets/ — Landscape card templates, the card language, vendored mermaid.min.js. `skills/ghostwriter-x/README.md:41`
 
 ## Commands
 
-- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:67`
-- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:68`
-- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:69`
-- python3 -m venv .venv `skills/ghostwriter-x/README.md:172`
+- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:71`
+- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:72`
+- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:73`
+- python3 -m venv .venv `skills/ghostwriter-x/README.md:176`
 
 ## Architecture
 
@@ -47,6 +47,7 @@
 - Ships module scripts/install_radar.sh. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/install_radar.sh:1`
 - Ships module scripts/local_memory.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/local_memory.py:1`
 - Ships module scripts/post_outcome.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/post_outcome.py:1`
+- Ships module scripts/post_review.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/post_review.py:1`
 - Ships module scripts/recent_projects.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/recent_projects.py:1`
 - Ships module scripts/release_radar.sh. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/release_radar.sh:1`
 - Ships module scripts/render_carousel.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/render_carousel.py:1`
@@ -72,4 +73,4 @@
 - first tweet[.n]*(stand alone — hook)[sS]{0,2500}?[s*ns*/s*Ns*· — X has no fold: tweet 1 IS the hook, and the numbered per-tweet preview with live weighted counts is the only place the user SEES each… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
 - 280s+weighted — weighted[.n]{0,40}280 — The weighted 280/tweet limit is enforced by x_len.py at publish, but drafting to fit (URLs=23, emoji/CJK=2) lives in prose; deleting it regresses to trimming a… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
 - transcription of a real session,s*not ans*invention — A real ghostwriter session (2026-07-18) burned ~9 review rounds because the terminal card was invented instead of transcribed from the agent's ac… `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:1`
-- **Never do** — anti-patterns to avoid (engagement bait, "🧵👇", corporate buzzwords, `skills/ghostwriter-x/skills/ghostwriter-x/SKILL.md:133`
+- Only exit 0 permits display — No failed or incomplete review can reach the user as draft copy. `skills/ghostwriter-x/skills/ghostwriter-x/skill-invariants.json:97`

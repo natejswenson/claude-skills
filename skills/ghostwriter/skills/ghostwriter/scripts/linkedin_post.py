@@ -24,6 +24,7 @@ import urllib.request
 from pathlib import Path
 
 import ai_tells
+import post_review
 import verify_sources
 
 REPO = Path(__file__).resolve().parent.parent
@@ -470,6 +471,8 @@ def main() -> None:
             sys.exit(f"ERROR: document not found: {document_path}")
         if document_path.suffix.lower() != ".pdf":
             sys.exit("ERROR: --document must be a .pdf (LinkedIn carousels are PDFs).")
+
+    post_review.enforce(args.file, text)
 
     if args.dry_run:
         # Use placeholders so dry-run works pre-setup and without uploading.

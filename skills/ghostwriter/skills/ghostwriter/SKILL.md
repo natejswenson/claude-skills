@@ -11,8 +11,9 @@ The bundled recent-project collector reads Claude history. In Codex, use the
 current repository's git history and projects named by the user when it finds
 nothing; do not interpret absent Claude history as no recent work. Optional
 `claude -p`/Anthropic judge scripts still require their own CLI or API credentials.
-When unavailable, run deterministic checks and review the rubric in this session,
-and report that the external judge was not run. Never claim an external score.
+External judges are optional diagnostics. The mandatory review in
+`references/post-review.md` runs in this session on either host; unavailable or
+mock judges never count as a passing review. Never claim an external score.
 
 When running in Codex, invoke this skill as `$ghostwriter`. Resolve scripts, assets,
 and references from the directory containing this SKILL.md, regardless of the
@@ -181,7 +182,7 @@ that advances the run and the one decision currently needed.
   native selector remains available for ordinary choices.
 - **Tables for comparison, prose for conclusions.** When the user must compare three or
   more ideas, formats, outcomes, or candidates, use a compact table or the selection
-  tool's option previews. Keep each preview to the hook/result, the angle, and the signal;
+  tool's option previews. Keep each preview to the topic/result, the angle, and the signal;
   do not turn choices into mini-essays. Status updates remain one sentence.
 - **Never forward raw command output, file contents, stack traces, or shell commands.**
   Parse tool results privately and translate them into one short status line or a
@@ -265,6 +266,10 @@ Keep it concrete and example-driven — it's a generation guide, not an essay.
 
 ## Mode: Generate
 
+**Draft display is gated.** Before exposing post copy anywhere, complete
+[the mandatory post review](references/post-review.md). Topic menus may describe
+angles and evidence, but cannot preview an unreviewed hook or post excerpt.
+
 **Posture: propose, don't interrogate.** The default is *you* surface concrete, already-real
 ideas and the user taps one — not a blank "what do you want to post about?" The picked idea is the
 post's real anchor, so there's no generic interview.
@@ -305,7 +310,7 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    ready-to-write ideas only from that lane and present its top three plus **“Show more ideas.”**
    Rules of the populated idea question:
    - **Every idea option carries a compact `preview`** (target 3 lines, hard cap ~5 so the pane
-     never clips): the working hook, the suggested angle, and one source-freshness line prefixed
+     never clips): the topic summary, the suggested angle, and one source-freshness line prefixed
      with its lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`,
      `Radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview alone.
    - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
@@ -471,58 +476,29 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      result below the draft; keep per-claim diagnostics in the sidecar.
    - **Re-verify on edit.** The show→edit→re-show loop below can add a claim after the sidecar was
      written. **Whenever an edit adds or changes an external claim, re-run this step** and update the
-     sidecar before publishing. (The AI-fingerprint gate in step 7 re-runs on every edit too.)
-7. **The AI-fingerprint gate, then the pre-show self-check, then show the draft.**
-   - **Run the gate first, every time, before the user sees a word:**
-     `python3 scripts/ai_tells.py --file drafts/YYYY-MM-DD-slug.md --judge`. It is the deterministic
-     encoding of the bans in `~/.claude/ghostwriter/voice/voice-notes.md` (em dashes, the "No X. No
-     Y. No Z." list, the reflexive closing question, an antithesis closer, the strawman opener,
-     "here's the thing", slop words, credential flexing, emoji bullets, hashtag piles, 60-word
-     paragraphs) plus a cost-capped LLM judge (`claude -p`, Haiku, ≤$0.10 a call) that scores
-     AI-likeness 0–10 against the real voice files and quotes the phrases it read as AI. **Any
-     `FAIL`, or a judge score under 7, means rewrite and re-run** until the close line reads
-     `ai-tells: clean · judge N/10`; a `WARN` is a smell to weigh, not a block.
-     Keep routine rewrites quiet; report a blocker if it needs user input.
-     Put the final gate result under the draft's metadata line when you show it.
-     **Re-run the gate after every edit** in the
-     show→edit→re-show loop; an edit is how a tell gets back in. Passing the gate is the floor:
-     the checks below are the judgment layer on top of it, not a substitute for it.
-   Then verify against `~/.claude/ghostwriter/voice/voice-notes.md`, hardest first:
-   - **The ending** — the #1 AI tell, flagged more than anything else. The post stops on the
-     last real point, or on a genuine question the user actually wants answered. No
-     inverted-parallel closer, no clever-symmetry aphorism, no reflexive
-     "what's your…?" CTA.
-   - **The register — warm, personable, human (voice-notes → Register).** This is a positive
-     check, not a ban: the post opens on the situation or the human reason (not a statistic),
-     names the real thing in plain words instead of a category, narrates first-person as
-     something that happened to the user, and reads like them talking to a peer. A draft that
-     merely avoids every banned tic but sounds like an incident report FAILS this check —
-     rewrite the clinical sentences in the words the user would say out loud.
-   - **The feed-native check — would this sit naturally in the user's own feed?** Read 2–3 of
-     their real posts from `data/my_posts.md` next to the draft. Their real register is the
-     bar: one idea per line or a 1–2 sentence paragraph, blank line between, **no paragraph
-     over ~40 words**, questions and casual energy where they'd really use them. A draft that
-     reads like a polished essay next to their real posts FAILS this check even if it breaks
-     no ban — the essay register is itself the AI tell (voice-notes → Recalibration
-     2026-08-19). Reformat and rewrite until it belongs in that feed.
-   - **Nothing fabricated** — no invented details, motivations, or timeline drama the user
-     didn't actually live.
-   - **Length and shape** — default 50–120 words (see Engagement craft), and **varied against
-     the last few posts**: if the recent posts all ran the same length and arc, this one
-     shouldn't (uniformity across a feed reads as automation).
-   - **No banned tics** — em dashes, rule-of-three fragments, credential flexing, hedge words.
-   - **The hook** — the post's single most specific number or sharpest tension appears in the
-     first ~210 chars (before "…see more"). If the best number sits below the fold, move it up.
-   - **The save** — name (to yourself) the thing a reader keeps: a command, a checklist, a
-     reusable model. If there's nothing to keep, either rework toward reference-worthy or
-     accept it's a lower-reach personal post on purpose — don't pad it with fake utility.
+     sidecar before publishing. (The full post review in step 7 re-runs on every edit too.)
+7. **Complete the mandatory post review before showing any draft.** Read
+   [references/post-review.md](references/post-review.md) and follow its full
+   rubric and private revision loop, using one fresh editor subagent when the host
+   supports delegation (otherwise label the in-session review honestly). Prepare `drafts/<slug>.review.json` with
+   `scripts/post_review.py prepare`, then complete every editorial check against
+   the user's current voice files, 2–3 real samples, and source evidence.
+   The ending stops on the last real point; voice, naturalness, substance,
+   clarity, hook, credibility, restraint, originality and platform fit must also
+   pass. Resolve every warning with a specific contextual reason or rewrite it.
+   **Re-run the gate after every edit**; missing, stale, skipped, or mock reviews
+   block display. After at most three private revision rounds, report the blocker
+   without showing failed copy. Never open a failed draft or quote it in status
+   updates, idea previews, approval choices, or a final response.
+   Run `python3 scripts/post_review.py check --file drafts/<slug>.md --show`.
+   **Only exit 0 permits display.** No averaged score can overrule a failed check.
    Fix what fails, then **show the full draft in the LinkedIn-true format**:
    - The draft text in a fenced block, with a visible fold line —
      `┄┄┄ …see more (fold ~210 chars) ┄┄┄` — inserted at the line break nearest char 210, so the
      user sees exactly what shows above the fold. (A draft that ends before the fold needs no
      marker.)
    - One metadata line under the block: `N words · save: <the thing a reader keeps> · lane: <lane>`,
-     and the gate's close line under that: `ai-tells: clean · judge 8.4/10`.
+     and `Review passed · voice, substance, clarity, credibility and platform checks`.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
@@ -900,6 +876,11 @@ Only after the user explicitly approves a specific draft.
    — pass the post's content lane (`release-howto` / `personal-project` / `opinion` / `career` /
    `personal`) so the publish log (`~/.claude/ghostwriter/published.jsonl`, written automatically
    on success) can feed the outcome loop. Omitting `--lane` still publishes.
+   - **Post review runs automatically before external writes.** The exact draft must
+     have a current passing `.review.json`; source/AI override flags do not bypass
+     this check. Missing or stale review → repeat Generate step 7, then re-show and
+     obtain approval for any changed text. Dry-run payload previews also require
+     the current passing review; they cannot expose an unchecked draft.
    - **Source gate runs automatically.** A real (non-dry-run) `--file` publish is refused unless the
      draft's `*.sources.json` sidecar passes `verify_sources.py` (≥3 distinct live hosts, every claim
      sourced, or `external_claims:false`). If it fails, **fix the sidecar / redo the research step,
@@ -956,10 +937,11 @@ for that exact draft.
   human to override a genuine edge case (e.g. a real source transiently down). **The agent must
   never set it to get past a failed gate** — fix the sidecar / redo the research instead (same
   spirit as "never publish without explicit approval").
-- **Every post runs through the AI-fingerprint gate before it is shown and before it publishes**
-  (`scripts/ai_tells.py`, Generate step 7). **`--allow-ai-tells` is human-only** — the single bypass
-  of that gate at publish, for a human who has read the finding and wants the line anyway. **The
-  agent must never set it** — rewrite the draft, re-run the gate, re-show.
+- **Every post runs through the full review before it is shown and before it publishes**
+  (`scripts/post_review.py`, Generate step 7, including the `scripts/ai_tells.py` rules).
+  **`--allow-ai-tells` is human-only** and retained for the legacy lint check;
+  it does not bypass the mandatory full review. The agent must never set it to
+  clear a finding. Rewrite the draft, re-run the gate, and re-show.
 - **One post per request** unless the user asks for several.
 - **Compliance (LinkedIn API ToS §3.1) — never automate posting.** Every post must be
   member-initiated and explicitly approved by the user, one at a time. Do NOT set up scheduled,

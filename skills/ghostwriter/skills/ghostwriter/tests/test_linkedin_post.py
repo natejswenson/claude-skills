@@ -229,6 +229,9 @@ def test_publish_url_error(monkeypatch):
 
 # ---------------------------------------------------------------------- main
 def _env(monkeypatch, env):
+    # Isolate existing source/transport tests; the full review chain is exercised
+    # with real records in test_post_review.py.
+    monkeypatch.setattr(lp.post_review, "enforce", lambda *a: None)
     monkeypatch.setattr(lp, "load_env", lambda: env)
 
 
@@ -505,7 +508,7 @@ def test_main_ai_gate_fail_blocks_before_upload(monkeypatch, tmp_path):
     assert "AI-fingerprint gate failed" in str(e.value)
 
 
-def test_main_ai_gate_human_bypass_publishes(monkeypatch, capsys, tmp_path):
+def test_main_ai_gate_human_bypass_after_separate_review(monkeypatch, capsys, tmp_path):
     draft = tmp_path / "p.md"
     draft.write_text(BAD_TEXT, encoding="utf-8")
     _env(monkeypatch, {"LINKEDIN_PERSON_URN": "urn:li:person:1", "LINKEDIN_ACCESS_TOKEN": "t"})
