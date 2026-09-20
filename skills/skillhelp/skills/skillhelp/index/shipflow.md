@@ -57,7 +57,7 @@
 - npx -y @natjswenson/shipflow@latest release-prepare --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:264`
 - npx -y @natjswenson/shipflow@latest release-cut --repo <path> --component <name> \ `skills/shipflow/skills/shipflow/SKILL.md:275`
 - npx -y @natjswenson/shipflow@latest detect --repo . --main main --dev dev `skills/shipflow/README.md:64`
-- npm run audit — npm audit --audit-level=moderate `skills/shipflow/skills/shipflow/package.json:44`
+- npm run audit — npm audit --audit-level=moderate `skills/shipflow/skills/shipflow/package.json:45`
 
 ## Architecture
 

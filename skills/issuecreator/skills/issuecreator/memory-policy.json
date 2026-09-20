@@ -1,0 +1,11 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "issuecreator",
+  "mode": "advisory",
+  "keys": [
+    "issue.acceptance-style",
+    "project.design-rationale"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}

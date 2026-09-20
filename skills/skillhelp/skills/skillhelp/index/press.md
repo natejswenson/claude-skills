@@ -15,7 +15,7 @@
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/press/README.md:104`
 - Node 18+, no dependencies. `skills/press/README.md:106`
 - Nothing else. Every command is offline; propagate is the only one that talks to a network, and only when pointed at another checkout. `skills/press/README.md:107`
-- Requires Node >=18 (package.json engines). `skills/press/skills/press/package.json:38`
+- Requires Node >=18 (package.json engines). `skills/press/skills/press/package.json:40`
 
 ## Usage
 
@@ -50,10 +50,10 @@
 - npx -y @natjswenson/press@latest doctor # the whole registry `skills/press/README.md:80`
 - npx -y @natjswenson/press@latest tokens --format css `skills/press/README.md:81`
 - npx -y @natjswenson/press@latest emit --target <id> --init `skills/press/README.md:151`
-- npm run audit — npm audit --audit-level=moderate `skills/press/skills/press/package.json:43`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/press/skills/press/package.json:45`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/press/skills/press/package.json:44`
-- npm run test — node --test "tests/**/*.test.mjs" `skills/press/skills/press/package.json:42`
+- npm run audit — npm audit --audit-level=moderate `skills/press/skills/press/package.json:45`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/press/skills/press/package.json:47`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/press/skills/press/package.json:46`
+- npm run test — node --test "tests/**/*.test.mjs" `skills/press/skills/press/package.json:44`
 
 ## Architecture
 

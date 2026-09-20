@@ -1,0 +1,10 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "ghfactory",
+  "mode": "advisory",
+  "keys": [
+    "workflow.design-rationale"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}

@@ -45,6 +45,7 @@
 - Ships module scripts/extract_tweets.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/extract_tweets.py:1`
 - Ships module scripts/hn_trending.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/hn_trending.py:1`
 - Ships module scripts/install_radar.sh. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/install_radar.sh:1`
+- Ships module scripts/local_memory.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/local_memory.py:1`
 - Ships module scripts/post_outcome.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/post_outcome.py:1`
 - Ships module scripts/recent_projects.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/recent_projects.py:1`
 - Ships module scripts/release_radar.sh. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/release_radar.sh:1`

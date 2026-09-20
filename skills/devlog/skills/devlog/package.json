@@ -30,6 +30,7 @@
     "lib/",
     "evals/",
     "skill-invariants.json",
+    "memory-policy.json",
     "preview/",
     "examples/",
     "voice/",

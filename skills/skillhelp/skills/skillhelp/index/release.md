@@ -20,7 +20,7 @@
 - **shipflow ≥ 0.6.0.** Every mutating step is one of its release-* commands, which did not exist before then. release.js checks this at startup and stops with a plain message rather than failing obscu… `skills/release/skills/release/SKILL.md:195`
 - **gh, authenticated** with repo write access. Every check is a gh API call. `skills/release/skills/release/SKILL.md:198`
 - **A repo with .github/shipflow.json.** A repo with no release.components block gets one component inferred from its root, so a single-project repo needs no extra config. `skills/release/skills/release/SKILL.md:199`
-- Requires Node >=18 (package.json engines). `skills/release/skills/release/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/release/skills/release/package.json:34`
 
 ## Usage
 
@@ -43,10 +43,10 @@
 - node scripts/release.js changelog-draft --repo <path> --component <name> --version <x.y.z> `skills/release/skills/release/SKILL.md:114`
 - node scripts/release.js prepare --repo <path> --component <name> \ `skills/release/skills/release/SKILL.md:123`
 - node scripts/release.js cut --repo <path> --component <name> \ `skills/release/skills/release/SKILL.md:159`
-- npm run audit — npm audit --audit-level=moderate `skills/release/skills/release/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/release/skills/release/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/release/skills/release/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/release/skills/release/package.json:37`
+- npm run audit — npm audit --audit-level=moderate `skills/release/skills/release/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/release/skills/release/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/release/skills/release/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/release/skills/release/package.json:38`
 - Binary "release" → scripts/release.js `skills/release/skills/release/package.json:22`
 
 ## Architecture

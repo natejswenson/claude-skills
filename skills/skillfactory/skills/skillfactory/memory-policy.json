@@ -1,0 +1,11 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "skillfactory",
+  "mode": "advisory",
+  "keys": [
+    "skill-design.interaction-style",
+    "skill-design.output-format"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}

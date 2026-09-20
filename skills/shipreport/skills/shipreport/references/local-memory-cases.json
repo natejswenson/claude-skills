@@ -1,0 +1,37 @@
+{
+  "skill": "shipreport",
+  "allowed": [
+    {
+      "key": "shipreport.audience",
+      "value": "Project stakeholders unfamiliar with implementation details"
+    },
+    {
+      "key": "shipreport.emphasis",
+      "value": "Explain user-visible improvements supported by receipts"
+    }
+  ],
+  "rejected": [
+    {
+      "key": "shipreport.raw_sessions",
+      "value": "Invented transcript"
+    },
+    {
+      "key": "shipreport.audience",
+      "value": [
+        "Managers"
+      ]
+    },
+    {
+      "key": "shipreport.emphasis",
+      "value": false
+    },
+    {
+      "key": "shipreport.audience",
+      "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "key": "shipreport.emphasis",
+      "value": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+    }
+  ]
+}

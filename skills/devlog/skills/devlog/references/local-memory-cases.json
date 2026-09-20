@@ -1,0 +1,49 @@
+{
+  "skill": "devlog",
+  "allowed": [
+    {
+      "key": "devlog.audience",
+      "value": "Developers learning command-line tools"
+    },
+    {
+      "key": "devlog.explanation-depth",
+      "value": "brief"
+    },
+    {
+      "key": "devlog.explanation-depth",
+      "value": "standard"
+    },
+    {
+      "key": "devlog.explanation-depth",
+      "value": "detailed"
+    }
+  ],
+  "rejected": [
+    {
+      "key": "writing.hashtags",
+      "value": "none"
+    },
+    {
+      "key": "devlog.destination",
+      "value": "synthetic-site"
+    },
+    {
+      "key": "devlog.audience",
+      "value": [
+        "developers"
+      ]
+    },
+    {
+      "key": "devlog.audience",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "devlog.explanation-depth",
+      "value": "unlimited"
+    },
+    {
+      "key": "devlog.explanation-depth",
+      "value": true
+    }
+  ]
+}

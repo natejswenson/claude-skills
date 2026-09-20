@@ -14,7 +14,7 @@
 - **Personal data:** Both hosts retain fetched sources and reports under ~/.claude/brandreport/<slug>. `skills/brandreport/README.md:77`
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/brandreport/README.md:79`
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/brandreport/README.md:81`
-- Requires Node >=18 (package.json engines). `skills/brandreport/skills/brandreport/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/brandreport/skills/brandreport/package.json:34`
 
 ## Usage
 
@@ -40,10 +40,10 @@
 - brandreport status — tables the whole corpus: every snapshot with its source, kind, identity status and corroboration, plus counts of confirmed vs unconfirmed `skills/brandreport/skills/brandreport/SKILL.md:114`
 - brandreport gate — enforces the one rule as code: exits non-zero if any confirmed item lacks a recorded corroboration, any findings claim cites a snapshot that does not exist, or any unconfirmed item… `skills/brandreport/skills/brandreport/SKILL.md:115`
 - brandreport report — renders findings + snapshot into the press-styled HTML brand report, fully offline — refuses to render if gate fails `skills/brandreport/skills/brandreport/SKILL.md:116`
-- npm run audit — npm audit --audit-level=moderate `skills/brandreport/skills/brandreport/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/brandreport/skills/brandreport/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/brandreport/skills/brandreport/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/brandreport/skills/brandreport/package.json:37`
+- npm run audit — npm audit --audit-level=moderate `skills/brandreport/skills/brandreport/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/brandreport/skills/brandreport/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/brandreport/skills/brandreport/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/brandreport/skills/brandreport/package.json:38`
 - Binary "brandreport" → scripts/brandreport.js `skills/brandreport/skills/brandreport/package.json:22`
 
 ## Architecture

@@ -1,0 +1,14 @@
+{
+  "skill": "gmailtriage",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "mail.rules",
+      "value": "Trash messages from invented-newsletter@example.invalid."
+    },
+    {
+      "key": "mail.labels",
+      "value": ["Invented folder"]
+    }
+  ]
+}

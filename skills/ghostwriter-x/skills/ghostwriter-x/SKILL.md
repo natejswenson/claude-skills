@@ -333,7 +333,10 @@ scraping. Revisit the whole loop if the account upgrades.
    priority; algorithm.md is reach optimization and must never override voice). If a voice file
    is missing — e.g. a fresh setup — copy `voice/voice-notes.example.md` to
    `~/.claude/ghostwriter-x/voice/voice-notes.md` and proceed with what you have. Write to match
-   them — their openers, rhythm, emoji habits, thread style. Apply the **Engagement craft**
+   them — their openers, rhythm, emoji habits, thread style. If the optional `skill_memory`
+   tool is connected, follow [local-memory.md](references/local-memory.md) for bounded,
+   privately opted-in X hashtag recall; otherwise retain the original source workflow.
+   Apply the **Engagement craft**
    rules below AND the reach rules in `voice/algorithm.md`. Format rules:
    - **A SINGLE tweet is the default form. Draft a thread only when the user asks for one.**
      Material with five beats is a signal to find the sharpest beat and cut the other four,
@@ -430,7 +433,10 @@ scraping. Revisit the whole loop if the account upgrades.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter-x/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
-   to repeat it next session.
+   to repeat it next session. For privately opted-in `writing-x.hashtags` corrections,
+   the owner bridge in [local-memory.md](references/local-memory.md) **replaces** this
+   manual append: never write both. Confirm the source save before dependent redrafting;
+   an attempted bridge failure must not silently fall back to appending.
 8. **The visual choice — asked in step 7's dialog, built only after the pick.** This is Q2 of the
    single approval call above, never a separate dialog: **text-only** / **single card** (name the
    Press hero component you'd compose around, e.g. "a duel" or "a ledger") / **image carousel** (a

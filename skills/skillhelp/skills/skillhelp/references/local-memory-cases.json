@@ -1,0 +1,17 @@
+{
+  "skill": "skillhelp",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "skillhelp.remembered_command",
+      "value": "demo-tool configure --sample"
+    },
+    {
+      "key": "skillhelp.troubleshooting_history",
+      "value": {
+        "symptom": "Invented demo command unavailable",
+        "resolution": "Use the current source documentation"
+      }
+    }
+  ]
+}
