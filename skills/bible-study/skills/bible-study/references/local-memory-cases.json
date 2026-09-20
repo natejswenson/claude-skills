@@ -1,0 +1,69 @@
+{
+  "skill": "bible-study",
+  "allowed": [
+    {
+      "key": "study.handout-format",
+      "value": "one-page participant worksheet"
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 45
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 5
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 240
+    }
+  ],
+  "rejected": [
+    {
+      "key": "study.translation",
+      "value": "invented translation"
+    },
+    {
+      "key": "study.religious-beliefs",
+      "value": "invented belief"
+    },
+    {
+      "key": "study.history",
+      "value": [
+        "invented passage"
+      ]
+    },
+    {
+      "key": "writing.hashtags",
+      "value": true
+    },
+    {
+      "key": "study.handout-format",
+      "value": 42
+    },
+    {
+      "key": "study.handout-format",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": true
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": "45"
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 5.5
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 4
+    },
+    {
+      "key": "study.duration-minutes",
+      "value": 241
+    }
+  ]
+}
