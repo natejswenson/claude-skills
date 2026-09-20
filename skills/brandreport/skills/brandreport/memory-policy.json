@@ -1,0 +1,8 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "brandreport",
+  "mode": "deferred",
+  "keys": [],
+  "read_keys": [],
+  "default_enabled": false
+}
