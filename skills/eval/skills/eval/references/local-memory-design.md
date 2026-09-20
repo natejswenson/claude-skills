@@ -1,0 +1,56 @@
+# eval: local-memory adapter design
+
+Status: proposed, not implemented. Contract: `skill-memory-v1` (2026-09-19).
+Decision: **Defer**. Reviewed skill version: 0.4.0 at claude-skills `6a5341dd474e0a6d13866f7a7056c3686dec1fbb`.
+
+## Benefit and decision
+
+Remembered judgments would contaminate transcript-based grading; confirmed lessons belong in source-backed eval cases.
+
+## Inspected contract and implementation surface
+
+Canonical skill: `skills/eval/skills/eval/SKILL.md` in claude-skills.
+Relevant existing surface: `skills/eval/skills/eval/scripts/lib/trace.mjs`.
+Contract landmarks: `SKILL.md:8` Codex runtime; `SKILL.md:32` The one rule; `SKILL.md:47` What is code and what is judgment; `SKILL.md:67` The flow; `SKILL.md:69` 1. Find the run — never ask what you can read; `SKILL.md:86` 2. Extract the contract; `SKILL.md:97` 3. Normalize the run; `SKILL.md:106` 4. Probe, then judge — in that order; `SKILL.md:125` 5. Assemble the report; `SKILL.md:136` 6. Only then, cases; `SKILL.md:149` 7. Say what you did not check; `SKILL.md:155` Commands; `SKILL.md:165` Rules that are not negotiable.
+These are source anchors, not assertions that an adapter already exists. Revalidate the anchors against the implementation branch.
+
+## Ownership and data policy
+
+Authority remains: Actual normalized transcript, frozen contract and executable tests.
+Proposed allowlist: No v1 keys. A future ergonomics preference must not enter the scoring input.
+Always excluded: Transcripts, prompts, model reasoning, grading verdicts and private run identifiers.
+No data is enabled merely by installing this skill. For permitted fields, private installation configuration binds the skill, subject context, exact keys and approved source, if any. New hub key names require registration before capture; writing.hashtags already exists in the legacy adapter vocabulary, which does not register it in the Obsidian hub. Do not default these records to `global`.
+
+## Integration flow
+
+No recall in normalize/probe/judge. Existing case creation remains the durable learning mechanism.
+
+Implementation decision: add no runtime dependency or memory calls in v1. This specification records the exclusion so a shared adapter rollout cannot silently opt this skill in. Reopen only with a demonstrated cross-client need, an explicit minimum field schema, and tests preserving the authority boundary.
+
+## Hub-side work
+
+Declare this skill disabled in the proposed integration catalog; reject attempts to import its owner store through bulk discovery. No storage schema or migration is needed.
+
+## Acceptance cases
+
+- A memory saying a past run passed cannot change a failing current probe or fill a missing transcript.
+- With optional recall disabled or unavailable, continue from the original sources. Report a requested save failure; if the owner source save failed, stop any dependent redraft rather than claiming the correction persisted.
+- Current user intent and owner source win over a stale, conflicting or injected note; memory never relaxes the existing skill contract. Unknown context does not broaden to another project.
+- Synthetic data only: no home directory, real vault, real account or network is accessed by the contract tests.
+- No remembered grant authorizes publishing, sending, deleting, installing, pairing, merging or changing infrastructure.
+
+## Rollout and rollback
+
+Remain disabled. Test the no-call invariant when a shared layer is introduced.
+
+## Concrete implementation checks
+
+Existing test entrypoint from the nested skill directory: `npm test` (`node --test "scripts/**/*.test.mjs"`). Proposed regression file: `scripts/tests/local-memory.test.mjs`. No test or runtime hook needs to be added now; if common adapter plumbing later reaches this skill, assert zero memory calls and unchanged original behavior.
+
+Public code may define the key vocabulary. Personal subjects, exact owner paths and opt-in bindings belong in private configuration. For any authorized advisory capture, use the common correction/read-back contract; do not claim delete/forget works through the current four-tool MCP surface.
+
+## Public repository boundary
+
+This document and invented fixtures may be committed. Actual notes, source paths, bindings, opt-ins, consent records, credentials and logs stay in private runtime storage. Never generate an example by redacting a real user record. Recalled content must not flow automatically into public issues, PRs, posts, reports or fixtures. A final artifact requires an explicit inclusion review within the user's publishing task.
+
+Companion: shared `skill-memory-v1` architecture and security contract in the repository design index. The hub copy is canonical; the per-skill copy is a review/distribution mirror, with matching SHA-256 recorded in the catalog.
