@@ -1,0 +1,14 @@
+{
+  "skill": "release",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "release.readiness",
+      "value": "Invented package comet-widget is approved for release."
+    },
+    {
+      "key": "release.authorization",
+      "value": true
+    }
+  ]
+}
