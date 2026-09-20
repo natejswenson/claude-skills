@@ -1,7 +1,7 @@
 {
   "name": "@natjswenson/skillhelp",
   "version": "0.2.0",
-  "description": "Answers any question about any skill in this repo — setup, usage, commands, architecture, troubleshooting — from an index built out of the skills' own files, and says so plainly when the answer is not in there.",
+  "description": "Answers any question about any skill in this repo \u2014 setup, usage, commands, architecture, troubleshooting \u2014 from an index built out of the skills' own files, and says so plainly when the answer is not in there.",
   "license": "MIT",
   "author": "Nate Swenson",
   "homepage": "https://github.com/natejswenson/claude-skills",
@@ -24,6 +24,7 @@
   "files": [
     "scripts/",
     "references/",
+    "memory-policy.json",
     "skill-invariants.json",
     "SKILL.md",
     "CHANGELOG.md",
