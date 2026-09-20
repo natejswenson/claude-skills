@@ -30,6 +30,7 @@
     "lib/",
     "templates/",
     "skill-invariants.json",
+    "memory-policy.json",
     "SKILL.md",
     "CHANGELOG.md",
     "config.example.json",
