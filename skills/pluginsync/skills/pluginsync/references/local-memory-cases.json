@@ -1,0 +1,16 @@
+{
+  "skill": "pluginsync",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "pluginsync.installed_versions",
+      "value": {
+        "example-plugin": "1.2.3"
+      }
+    },
+    {
+      "key": "pluginsync.restart_complete",
+      "value": true
+    }
+  ]
+}
