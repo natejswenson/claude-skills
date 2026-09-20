@@ -15,7 +15,7 @@
 - **Personal data:** Both hosts retain rules, backups and receipts in ~/.gmailtriage/; mailbox snapshots stay in the run scratchpad. `skills/gmailtriage/README.md:117`
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/gmailtriage/README.md:119`
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/gmailtriage/README.md:121`
-- Requires Node >=18 (package.json engines). `skills/gmailtriage/skills/gmailtriage/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/gmailtriage/skills/gmailtriage/package.json:34`
 
 ## Usage
 

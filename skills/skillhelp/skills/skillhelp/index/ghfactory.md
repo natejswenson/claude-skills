@@ -15,7 +15,7 @@
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghfactory/README.md:89`
 - [gh](https://cli.github.com/), authenticated. Rung 0 resolves refs through the GitHub API, and an unauthenticated run is rate-limited into uselessness. `skills/ghfactory/README.md:92`
 - [actionlint](https://github.com/rhysd/actionlint) and [zizmor](https://github.com/woodruffw/zizmor) for rungs 1 and 2. A missing tool is reported as a rung not reached, never as a rung that passed. `skills/ghfactory/README.md:94`
-- Requires Node >=18 (package.json engines). `skills/ghfactory/skills/ghfactory/package.json:39`
+- Requires Node >=18 (package.json engines). `skills/ghfactory/skills/ghfactory/package.json:41`
 
 ## Usage
 
@@ -36,25 +36,25 @@
 
 - node bin/ghfactory.js verify <file…> `skills/ghfactory/skills/ghfactory/SKILL.md:49`
 - node bin/ghfactory.js detect --repo <path> `skills/ghfactory/skills/ghfactory/SKILL.md:89`
-- node bin/ghfactory.js resolve actions/checkout actions/setup-node `skills/ghfactory/skills/ghfactory/SKILL.md:126`
-- node bin/ghfactory.js header <file> --purpose "<one line: what this workflow is for>" `skills/ghfactory/skills/ghfactory/SKILL.md:141`
-- npm run audit — npm audit --audit-level=moderate `skills/ghfactory/skills/ghfactory/package.json:44`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/ghfactory/skills/ghfactory/package.json:46`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/ghfactory/skills/ghfactory/package.json:45`
-- npm run test — node --test "tests/**/*.test.mjs" `skills/ghfactory/skills/ghfactory/package.json:43`
+- node bin/ghfactory.js resolve actions/checkout actions/setup-node `skills/ghfactory/skills/ghfactory/SKILL.md:130`
+- node bin/ghfactory.js header <file> --purpose "<one line: what this workflow is for>" `skills/ghfactory/skills/ghfactory/SKILL.md:149`
+- npm run audit — npm audit --audit-level=moderate `skills/ghfactory/skills/ghfactory/package.json:46`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/ghfactory/skills/ghfactory/package.json:48`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/ghfactory/skills/ghfactory/package.json:47`
+- npm run test — node --test "tests/**/*.test.mjs" `skills/ghfactory/skills/ghfactory/package.json:45`
 - Binary "ghfactory" → bin/ghfactory.js `skills/ghfactory/skills/ghfactory/package.json:27`
 
 ## Architecture
 
-- bin/ghfactory.js — the CLI: detect, resolve, verify, header, check `skills/ghfactory/skills/ghfactory/SKILL.md:187`
-- lib/resolve.mjs — ref → SHA, action.yml inputs, staleness — rung 0 `skills/ghfactory/skills/ghfactory/SKILL.md:188`
-- lib/verify.mjs — the ladder, with graceful degradation `skills/ghfactory/skills/ghfactory/SKILL.md:189`
-- lib/detect.mjs — the question budget `skills/ghfactory/skills/ghfactory/SKILL.md:190`
-- lib/header.mjs — the press masthead, via press's own emitter `skills/ghfactory/skills/ghfactory/SKILL.md:191`
-- references/anatomy.md — the fixed shape of a generated workflow `skills/ghfactory/skills/ghfactory/SKILL.md:192`
-- references/recipes.md — per-ecosystem recipes, versions resolved live `skills/ghfactory/skills/ghfactory/SKILL.md:193`
-- references/security.md — the rules linters do not catch `skills/ghfactory/skills/ghfactory/SKILL.md:194`
-- The baseline eval (tests/baseline.test.mjs) pins the emitted masthead byte-exactly and asserts the ladder is two-sided: a known-good workflow passes and a known-bad one fails on each rung it should.… `skills/ghfactory/skills/ghfactory/SKILL.md:198`
+- bin/ghfactory.js — the CLI: detect, resolve, verify, header, check `skills/ghfactory/skills/ghfactory/SKILL.md:195`
+- lib/resolve.mjs — ref → SHA, action.yml inputs, staleness — rung 0 `skills/ghfactory/skills/ghfactory/SKILL.md:196`
+- lib/verify.mjs — the ladder, with graceful degradation `skills/ghfactory/skills/ghfactory/SKILL.md:197`
+- lib/detect.mjs — the question budget `skills/ghfactory/skills/ghfactory/SKILL.md:198`
+- lib/header.mjs — the press masthead, via press's own emitter `skills/ghfactory/skills/ghfactory/SKILL.md:199`
+- references/anatomy.md — the fixed shape of a generated workflow `skills/ghfactory/skills/ghfactory/SKILL.md:200`
+- references/recipes.md — per-ecosystem recipes, versions resolved live `skills/ghfactory/skills/ghfactory/SKILL.md:201`
+- references/security.md — the rules linters do not catch `skills/ghfactory/skills/ghfactory/SKILL.md:202`
+- The baseline eval (tests/baseline.test.mjs) pins the emitted masthead byte-exactly and asserts the ladder is two-sided: a known-good workflow passes and a known-bad one fails on each rung it should.… `skills/ghfactory/skills/ghfactory/SKILL.md:206`
 
 ## Troubleshooting
 
@@ -68,9 +68,9 @@
 - nevers+hand-write it — The brand lives in press/brand/tokens.json and nowhere else. Hand-writing a masthead recreates precisely the drift press exists to end — this brand was previously eight hand-po… `skills/ghfactory/skills/ghfactory/skill-invariants.json:1`
 - secrets+*names* only — Detection reads gh secret list to know what exists. A secret VALUE entering the process or the transcript would turn a convenience feature into a credential leak. `skills/ghfactory/skills/ghfactory/skill-invariants.json:1`
 - never ask about anything in that table — Two questions maximum is achievable only because detection already answered the rest. Asking about a detectable signal is the UX failure that makes every othe… `skills/ghfactory/skills/ghfactory/skill-invariants.json:51`
-- **Never silently overwrite an existing workflow.** Show the diff, wait for an explicit yes. A workflow file is often load-bearing for merges. `skills/ghfactory/skills/ghfactory/SKILL.md:164`
-- **Never add a required status check without asking, and recommend against it until the check has gone green once.** A required check that never passes blocks every future merge — a repo-wide outage c… `skills/ghfactory/skills/ghfactory/SKILL.md:166`
-- **Never emit an action ref you have not resolved.** Not one. This is the rule the whole skill exists to enforce. `skills/ghfactory/skills/ghfactory/SKILL.md:169`
-- **Never interpolate ${{ github.event.* }} into a run: block.** Go through env:. It is remote code execution, and it is the most common real vulnerability in real workflows. `skills/ghfactory/skills/ghfactory/SKILL.md:171`
-- **Never write secrets, tokens, or a .env into a workflow.** Read secret *names* only; a value must never enter the transcript. `skills/ghfactory/skills/ghfactory/SKILL.md:174`
-- **pull_request_target needs an explicit conversation**, never a default. See references/security.md. `skills/ghfactory/skills/ghfactory/SKILL.md:176`
+- **Never silently overwrite an existing workflow.** Show the diff, wait for an explicit yes. A workflow file is often load-bearing for merges. `skills/ghfactory/skills/ghfactory/SKILL.md:172`
+- **Never add a required status check without asking, and recommend against it until the check has gone green once.** A required check that never passes blocks every future merge — a repo-wide outage c… `skills/ghfactory/skills/ghfactory/SKILL.md:174`
+- **Never emit an action ref you have not resolved.** Not one. This is the rule the whole skill exists to enforce. `skills/ghfactory/skills/ghfactory/SKILL.md:177`
+- **Never interpolate ${{ github.event.* }} into a run: block.** Go through env:. It is remote code execution, and it is the most common real vulnerability in real workflows. `skills/ghfactory/skills/ghfactory/SKILL.md:179`
+- **Never write secrets, tokens, or a .env into a workflow.** Read secret *names* only; a value must never enter the transcript. `skills/ghfactory/skills/ghfactory/SKILL.md:182`
+- **pull_request_target needs an explicit conversation**, never a default. See references/security.md. `skills/ghfactory/skills/ghfactory/SKILL.md:184`

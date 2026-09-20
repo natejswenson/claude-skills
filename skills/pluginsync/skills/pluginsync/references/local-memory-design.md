@@ -1,6 +1,6 @@
 # pluginsync: local-memory adapter design
 
-Status: proposed, not implemented. Contract: `skill-memory-v1` (2026-09-19).
+Status: implemented as an optional adapter or enforced deferral; this is the design baseline. Contract: `skill-memory-v1` (2026-09-19).
 Decision: **Defer**. Reviewed skill version: 0.2.0 at claude-skills `6a5341dd474e0a6d13866f7a7056c3686dec1fbb`.
 
 ## Benefit and decision
@@ -54,3 +54,7 @@ Public code may define the key vocabulary. Personal subjects, exact owner paths 
 This document and invented fixtures may be committed. Actual notes, source paths, bindings, opt-ins, consent records, credentials and logs stay in private runtime storage. Never generate an example by redacting a real user record. Recalled content must not flow automatically into public issues, PRs, posts, reports or fixtures. A final artifact requires an explicit inclusion review within the user's publishing task.
 
 Companion: shared `skill-memory-v1` architecture and security contract in the repository design index. The hub copy is canonical; the per-skill copy is a review/distribution mirror, with matching SHA-256 recorded in the catalog.
+
+Current protocol and storage details are in local-memory `docs/skill-memory-operations.md`;
+implementation uses a direct-read managed namespace and includes bounded inspect for stale
+maintenance handles. The original source hashes below remain historical review provenance.

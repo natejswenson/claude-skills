@@ -76,3 +76,17 @@ The root integration suite must validate the fixtures plus opt-in, unavailable,
 subject isolation, conflict and readback paths before private enablement. These
 fixtures do not prove a live Claude/Codex desktop round-trip. Disable the optional
 binding to roll back; retain user data unless deletion is separately requested.
+
+## Stale handles and maintenance
+
+If recall withholds an owned key as stale or conflicting, use the bounded
+`skill_memory` inspect operation with the same contract, skill, registered subject
+and `keys`. It returns status=inspection and records with id, key, revision, source
+and state=current, with evidence_state=valid|stale reported separately. Only unambiguous
+current handles are returned; conflict_keys need explicit owner repair. These handles
+are not advice or proof the old value is true. Request fewer keys if the response is too large.
+Use the selected current handle for supersedes or id/expected_revision when correcting
+or forgetting. Get a fresh source revision separately for an owner correction.
+Consumer bindings cannot inspect, correct or forget foreign keys; route those to the
+owning skill. A malformed note or unresolved multi-root conflict may still require
+explicit owner repair; do not invent a handle or bypass the guarded tools.

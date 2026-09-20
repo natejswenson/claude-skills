@@ -5,12 +5,13 @@ from local_memory import save_correction
 
 
 def invoke(backend="hub", key="writing.hashtags", status="saved", **overrides):
-    hub = Mock(return_value={"status": status})
+    hub = Mock(return_value={"status": status, "verified": True, "record": {}})
     legacy = Mock(return_value={"source_saved": True, "memory": "pending"})
     owner = Mock(return_value={"source_saved": True})
     args = dict(backend=backend, key=key, value="Use no hashtags.",
                 subject="synthetic-writer", source_revision="synthetic-revision",
-                hub_request=hub, legacy_capture=legacy, owner_save=owner)
+                hub_request=hub, legacy_capture=legacy, owner_save=owner,
+                capture_id="28d72d4b-179f-40c0-90fa-a4f64f4a0da1")
     args.update(overrides)
     result = save_correction(**args)
     return result, hub, legacy, owner
@@ -78,3 +79,18 @@ def test_selected_correction_keeps_record_identity():
     (_, redraft), hub, _, _ = invoke(supersedes="synthetic-record")
     assert redraft
     assert hub.call_args.args[0]["supersedes"] == "synthetic-record"
+
+
+def test_ambiguous_response_retains_exact_request_and_never_falls_back():
+    (_, redraft), hub, legacy, owner = invoke(hub_request=Mock(side_effect=OSError("timeout")))
+    assert not redraft
+    assert not legacy.called and not owner.called
+
+
+def test_missing_operation_id_and_unverified_response_stop():
+    (result, redraft), _, _, _ = invoke(capture_id=None)
+    assert not redraft and result["status"] == "rejected"
+    (result, redraft), _, _, _ = invoke(hub_request=Mock(return_value=None))
+    assert not redraft
+    (_, redraft), _, _, _ = invoke(hub_request=Mock(return_value={"status": "saved"}))
+    assert not redraft

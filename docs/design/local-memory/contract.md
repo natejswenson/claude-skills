@@ -1,6 +1,6 @@
 # Skill memory integration contract v1
 
-Status: design only, 2026-09-19. No adapter installation, migration, tool registration,
+Status: design baseline, 2026-09-19; see current operations for implemented details. No adapter installation, migration, tool registration,
 network exposure or publication is authorized by this document. This plan covers all
 22 top-level plugins in the inspected claude-skills checkout, not vendored packages,
 eval snapshots, generated help cards or installed plugin caches.
@@ -284,3 +284,15 @@ alone require no version bump, release dispatch, host installation or public pub
 
 The [field policy](field-policy.md) defines the complete proposed allowlist, value bounds
 and owner/consumer distinctions. These are implementation requirements, not current behavior.
+
+## Implementation resolution
+
+The implementation serves managed preferences directly from scoped Markdown through
+`skill_memory`, avoiding index completeness dependencies and unbounded native note reads.
+`SkillMemory` is excluded from Basic Memory indexing; its generic read/write paths are
+blocked (including native argument aliases). Existing ordinary hub notes are unchanged.
+The source-first outbox, atomic lineage suppression, bounded maintenance `inspect`, source
+and mirror validation, and shared-profile-only opt-in are implemented in the existing
+local MCP service. Native-tool mappings above describe the earlier design option, not
+how these managed records are persisted. Current interface: `docs/skill-memory-operations.md`
+in local-memory. No restricted-sharing backend or legacy migration was introduced.

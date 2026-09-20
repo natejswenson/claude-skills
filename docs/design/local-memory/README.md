@@ -1,10 +1,10 @@
 # Skill adapter design index
 
-Status: proposed, design only; accuracy revision 2. Inventory: all 22 top-level plugins in claude-skills.
+Status: implemented in source; integration revision 3. Per-skill bindings default disabled. Inventory: all 22 top-level plugins in claude-skills.
 
-Four priority candidates, seven optional advisory integrations, and eleven deferred skills. No adapters or personal-data migrations were activated.
+Four priority candidates, seven optional advisory integrations, and eleven deferred skills. Optional adapters and enforced deferrals are implemented. No personal-data migration or automatic opt-in occurs.
 
-Use the [shared contract](contract.md), [security review](security-review.md), [field policy](field-policy.md), [accuracy review](accuracy-review.md), and [machine-readable catalog](catalog.json) before any per-skill implementation. The local-memory repository at `docs/design/skill-adapters` owns the canonical designs; identical per-skill review copies live under each plugin’s `references/local-memory-design.md`. The catalog pins their SHA-256 digests and inspected skill source hashes.
+Use the [shared contract](contract.md), [security review](security-review.md), [field policy](field-policy.md), [accuracy review](accuracy-review.md), and [machine-readable catalog](catalog.json) before any per-skill implementation. The hub owns the canonical designs; identical per-skill review copies live under each plugin’s `references/local-memory-design.md`. The catalog pins their SHA-256 digests and inspected skill source hashes.
 
 ## Assessment
 
@@ -47,4 +47,4 @@ Each implementation change must preserve its existing baseline, add positive and
 
 Contract identifier: `skill-memory-v1`. local-memory is canonical. For a design change, update the hub files and catalog digests, then update the matching claude-skills copies in the same review batch. Cross-repository PRs should name both source commits and the contract ID; pin the implemented protocol version rather than depending on matching branch names. Per-skill specs are not executable configuration.
 
-This task creates local design files only. Publication, skill runtime changes, new bindings and migration are subsequent work.
+See [current operations](operations.md) for the implemented protocol, setup and recovery. The original inspected source hashes are historical design provenance; they are not expected to match changed entrypoints after implementation.

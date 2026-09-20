@@ -40,7 +40,8 @@ def test_ready_without_trusted_source_revision_stops(revision):
 
 
 @pytest.mark.parametrize("response,action", [
-    ({"status": "saved", "records": []}, "saved"),
+    ({"status": "saved", "verified": True, "record": {}}, "saved"),
+    ({"status":"saved"}, "stop"),
     ({"status": "source_saved_memory_pending"}, "pending"),
     ({"status": "rejected"}, "stop"),
     ({"status": "conflict"}, "stop"),
@@ -60,14 +61,22 @@ def test_single_owner_capture_with_no_manual_fallback(response, action):
                        "source": "Explicit X hashtag correction in current conversation"}
 
 
-def test_retry_preserves_capture_identity_and_refreshes_revision():
+def test_retry_preserves_entire_request_without_refreshing_revision():
     bridge = Bridge({"status": "ready", "source_revision": "before"}, OSError("timeout"),
-                    {"status": "ready", "source_revision": "after"}, {"status": "saved"})
-    assert save_hashtags(bridge, **ARGS)["action"] == "stop"
-    assert save_hashtags(bridge, **ARGS)["action"] == "saved"
-    first, retry = bridge.requests[1], bridge.requests[3]
-    assert first["capture_id"] == retry["capture_id"]
-    assert retry["expected_source_revision"] == "after"
+                    {"status": "saved", "verified": True, "record": {}})
+    first = save_hashtags(bridge, **ARGS)
+    assert first["action"] == "stop"
+    retry = save_hashtags(bridge, **ARGS, pending_request=first["request"])
+    assert retry["action"] == "saved"
+    assert bridge.requests[1] == bridge.requests[2]
+    assert len(bridge.requests) == 3
+
+
+def test_correction_keeps_selected_supersedes_and_rejects_mismatched_retry():
+    bridge = Bridge({"status": "ready", "source_revision": "before"}, {"status":"conflict"})
+    result = save_hashtags(bridge, **ARGS, supersedes="selected-record")
+    assert result["request"]["supersedes"] == "selected-record"
+    assert save_hashtags(bridge, **ARGS, pending_request={})["reason"] == "retry_mismatch"
 
 
 @pytest.mark.parametrize("state", [None, {}, {"status": "rejected"}, {"status": "conflict"}])
