@@ -1,0 +1,11 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "shipreport",
+  "mode": "advisory",
+  "keys": [
+    "shipreport.audience",
+    "shipreport.emphasis"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}
