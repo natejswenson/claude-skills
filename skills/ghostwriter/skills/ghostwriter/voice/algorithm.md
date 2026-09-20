@@ -7,6 +7,13 @@ posts); **[folklore]** = widely repeated, never demonstrated — listed only to 
 decisions. **These rules must never override `voice-notes.md`** — where they conflict,
 voice-notes wins.
 
+**Draft quality comes before reach tactics.** Use the composition and comparison
+tests in `references/post-review.md` before applying any tactic below. A post
+does not owe a question, a lesson, a numerical hook, or a framework to the feed.
+Preserve the author's voice, the actual point, and necessary qualifications.
+Reader value must survive when no one replies or saves the post; generic reach
+claims are not reasons to keep weaker wording.
+
 ## The AI-slop suppression is real — and the pattern is the tell
 
 - **[official] Since May 2026 LinkedIn explicitly suppresses "AI slop."** Flagged posts are
@@ -73,14 +80,16 @@ Run this for ~3 weeks, then judge by the numbers:
 - **Dwell time is treated as a primary quality signal** [measured-secondary]; ~30+ seconds
   is the meaningful threshold cited. Give the reader something to actually read or study —
   this is why decorative images do nothing and information-dense ones work.
-- **For Nate: earn comments with genuine questions and saves with reference-worthy meat,
-  never with CTA bait.** A real question you want answered is now a first-class ending
-  (voice-notes → Recalibration); the reflexive forms stay banned.
+- **For Nate: a genuine question remains a valid choice, not a requirement.** Keep
+  one when the author wants specific input or it helps the reader understand the
+  point better than a statement. A category-level engagement score does not make
+  every question bait, and a desire for comments does not make a question genuine.
 
 ## Bake into every draft
 
-- **Hook in the first ~210 characters** — all that shows before "…see more". The most
-  specific number or sharpest tension goes first. No throat-clearing.
+- **Make the first ~210 characters understandable on their own.** Lead with the real
+  situation or point in the author's voice. Compare a question or tension-led
+  opening with a direct statement; never withhold the answer just to earn a click.
 - **Feed-native formatting**: one idea per line or a 1–2 sentence paragraph, blank line
   between, max paragraph ~40 words. Knowledge/advice content gets ~3–5× reach [measured];
   ~8th-grade reading level (denser than 10th grade ≈ 35% less reach).

@@ -36,6 +36,10 @@ def reviewed(tmp_path, text=CLEAN, platform=None):
     for key in review.RUBRIC:
         record["checks"][key] = dict(status="pass", quote=text.splitlines()[0],
                                      reason=f"Synthetic attestation for {key}; tests protocol only.")
+    for key in review.COMPARISONS:
+        record["comparisons"][key] = dict(status="pass", quote=text.splitlines()[0],
+                                          alternative="A different synthetic opening." if key == "opening" else "[delete]",
+                                          reason=f"Synthetic {key} comparison; tests protocol only.")
     save(path, record)
     return path, record, voice, samples
 
@@ -114,6 +118,68 @@ def test_prepare_resets_an_old_pass(tmp_path):
     assert not review.validate(path)["ok"]
 
 
+@pytest.mark.parametrize("key", review.COMPARISONS)
+@pytest.mark.parametrize("change", ["missing", "pending", "fail", "no_quote", "wrong_quote",
+                                   "no_alternative", "same_alternative", "whitespace_alternative", "no_reason"])
+def test_comparisons_are_required_even_when_all_rubric_rows_pass(tmp_path, key, change):
+    path, record, _, _ = reviewed(tmp_path)
+    comparison = record["comparisons"][key]
+    if change == "missing":
+        del record["comparisons"][key]
+    elif change in {"pending", "fail"}:
+        comparison["status"] = change
+    elif change == "no_quote":
+        comparison["quote"] = ""
+    elif change == "wrong_quote":
+        comparison["quote"] = "This passage is absent."
+    elif change == "no_alternative":
+        comparison["alternative"] = " "
+    elif change == "same_alternative":
+        comparison["alternative"] = comparison["quote"]
+    elif change == "whitespace_alternative":
+        comparison["alternative"] = "  ".join(comparison["quote"].split())
+    else:
+        comparison["reason"] = ""
+    save(path, record)
+    assert not review.validate(path)["ok"]
+
+
+def test_opening_comparison_uses_opening_and_cannot_only_delete_it(tmp_path):
+    path, record, _, _ = reviewed(tmp_path)
+    record["comparisons"]["opening"]["quote"] = CLEAN.splitlines()[-1]
+    save(path, record)
+    assert not review.validate(path)["ok"]
+    record["comparisons"]["opening"]["quote"] = CLEAN.splitlines()[0]
+    record["comparisons"]["opening"]["alternative"] = "[delete]"
+    save(path, record)
+    assert not review.validate(path)["ok"]
+
+
+def test_legacy_pass_cannot_be_shown_without_new_editorial_work(tmp_path, capsys):
+    path, record, _, _ = reviewed(tmp_path)
+    record["version"] = 1
+    del record["comparisons"]
+    save(path, record)
+    assert review.main(["check", "--file", str(path), "--show"]) == 2
+    assert CLEAN not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("platform", ["linkedin", "x"])
+def test_questions_require_specific_decisions_but_are_not_banned(tmp_path, platform):
+    text = 'Which run should be the comparison?\n\nThe report asks "Was a workout planned?"'
+    path, record, _, _ = reviewed(tmp_path, text, platform)
+    questions = [f for f in record["findings"] if f["rule"] == "question_purpose"]
+    assert len(questions) == 2
+    assert all(f["severity"] == "WARN" for f in questions)
+    assert not review.validate(path, platform)["ok"]
+    record["warnings"][questions[0]["id"]] = dict(decision="keep", reason="Synthetic genuine request for a comparison choice.")
+    save(path, record)
+    assert not review.validate(path, platform)["ok"]  # Every question needs its own decision.
+    record["warnings"][questions[1]["id"]] = dict(decision="keep", reason="Synthetic quotation describes the supplied report, not a reader CTA.")
+    save(path, record)
+    assert review.validate(path, platform)["ok"]
+
+
 def test_warnings_need_individual_contextual_resolution(tmp_path):
     path, record, _, _ = reviewed(tmp_path, "I was afraid to share the broken demo.")
     assert not review.validate(path)["ok"]
@@ -140,6 +206,7 @@ def test_hard_findings_cannot_be_overruled_by_pass_record(tmp_path, platform):
     ("credential_flex", "After 16 years of experience.", "The file is 16 years old."),
     ("repetition", "I moved the check into the write path. I moved the check into the write path.", CLEAN),
     ("long_sentence", " ".join(["word"] * 36), "I tried again."),
+    ("question_purpose", "What should a top rating mean?", "The top rating means the plan was followed."),
 ])
 def test_smells_two_sided(rule, bad, good):
     assert rule in {f["rule"] for f in review.scan(bad, "x")}

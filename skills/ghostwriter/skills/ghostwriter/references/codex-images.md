@@ -2,7 +2,9 @@
 
 Read this reference only after the user approves the post text and chooses a generated
 PRESS card. This is the Codex replacement for filling an HTML card template. It does not
-change Claude Code's local renderer or the carousel workflow.
+change Claude Code's local renderer or the carousel workflow. Read
+`references/visual-review.md` before generating: its recorded review is mandatory
+before any candidate is shown or offered for approval.
 
 ## The job
 
@@ -10,11 +12,16 @@ Create one original portrait 4:5 card that **supplements** the post. It must add
 explanation the body does not already provide: a system map, comparison, sequence, method,
 decision, or key number. A decorated restatement of the opening line fails.
 
+Read [visual-composition.md](visual-composition.md) before choosing the hero.
+Default to a picture that explains the idea, with supporting type; a large
+headline plus a text ledger is not the default generated-card composition.
+
 The finished result is still a card, with PRESS anatomy:
 
 - masthead and square monogram stamp;
-- one dominant headline;
-- one proof-bearing hero, such as a diagram, ledger, duel, or big figure;
+- one concise headline at supporting scale;
+- one dominant visual hero, such as an editorial illustration, spatial comparison,
+  or evidence-backed diagram;
 - a small standfirst or marginal note only when it adds meaning;
 - ruled colophon.
 
@@ -40,7 +47,9 @@ Translate the source into these laws:
 Read `assets/image-seeds/manifest.json` and choose the seed whose **information shape** best
 matches the post. Pass that PNG to the built-in image tool as a style reference. State that
 the seed controls palette, print texture, typography, and PRESS anatomy only; it must not copy
-the seed's subject, wording, diagram, or layout.
+the seed's subject, wording, diagram, or layout. Current brand laws override the seed:
+inspect it for outdated treatments and explicitly exclude them from the prompt. A seed is
+not a pre-approved example and cannot waive a visual-review failure.
 
 The seed library is a repeatability tool, not a template gallery. Before generating, read the
 last two lines of `images/generated-card-history.jsonl` when it exists. Change at least two of:
@@ -71,10 +80,20 @@ comparison, sequence, and causal relationship must trace to the approved draft o
 
 ## Prompt receipt
 
-Before calling the image tool, save `images/<slug>.image.json` with:
+Before calling the image tool, register the versioned candidate using
+`visual_review.py register` and save `images/<slug>-generated-vN.image.json` with:
 
 ```json
 {
+  "generator": "codex-imagegen",
+  "post_anchor": "<exact excerpt from the approved post>",
+  "visual_claim": "<what the hero explains about that point>",
+  "visual_encoding": {
+    "marks": "<which pictorial marks carry meaning>",
+    "mapping": "<how those marks map to the evidence>",
+    "picture_text_balance": "<picture area and supporting labels>"
+  },
+  "alt_text": "<exact description to publish>",
   "seed": "assets/image-seeds/<file>.png",
   "information_shape": "system-map",
   "brand_source": "~/.claude/ghostwriter/assets/diagram.css",
@@ -91,8 +110,9 @@ Before calling the image tool, save `images/<slug>.image.json` with:
 }
 ```
 
-This receipt is the reproducible source for edits. Update it whenever the prompt or selected
-output changes. Never rely on the conversation transcript as the only copy of the prompt.
+This receipt is the reproducible source for edits. Write a new version whenever the prompt or
+selected output changes; after preparing review, changing the receipt invalidates that review.
+Never rely on the conversation transcript as the only copy of the prompt.
 
 ## Generate
 
@@ -100,53 +120,30 @@ output changes. Never rely on the conversation transcript as the only copy of th
    the one visual relationship the card should prove. For architecture/flow, build and verify the
    evidence model above first. Do not add a fact, person, setting, or outcome the draft and its
    evidence did not establish.
-2. Write the card's exact copy. Keep it compact: one masthead, one headline of at most two
+2. Compose the visual encoding first, following `visual-composition.md`, then write
+   the card's exact copy. Keep it compact: one masthead, one headline of at most two
    short lines, at most five hero labels, and one optional standfirst or colophon. The hero
-   must do more than repeat the headline.
-3. Build a production prompt for a `productivity-visual` or `ads-marketing` LinkedIn editorial
+   must do more than repeat the headline. Describe the encoding in the receipt;
+   keep type subordinate to the picture without hiding necessary qualifications.
+3. Build a production prompt for an `infographic-diagram`, `productivity-visual` or `ads-marketing` LinkedIn editorial
    card, portrait 4:5. Include the PRESS values read from the brand source, the seed's role,
    the requested composition, every string under `Text (verbatim)`, and explicit avoid rules.
 4. Save the prompt receipt, then use Codex's built-in image-generation tool with the selected
    seed as `referenced_image_paths`. Do not use an API-key CLI or silently switch models.
 5. Show one lowercase progress line while it runs: `generating the press card…`.
 
-## Text fidelity and art direction
+## Mandatory visual review
 
-Read every rendered word at full resolution. A card fails for any misspelling, substitution,
-duplicate, omitted string, invented microcopy, or clipped text. Fix only that defect with a
-targeted image edit when the composition is otherwise sound. Never approve "close enough"
-typography on a professional post.
+Follow `references/visual-review.md` for the private independent editor pass and
+all 12 checks. Inspect the actual pixels at full resolution and at 360px feed width;
+a prompt, matching palette, or source-only check cannot pass a generated image.
+That reference preserves the full rendered-graph reconciliation for architecture
+and flows and the two-failed-candidate limit. Reconcile every node, arrow,
+containment and exception after every edit, even a targeted text correction.
 
-Then check the card like an art director:
-
-- the hero visibly explains the post's anchor;
-- the card is portrait 4:5 and remains readable at feed size;
-- paper, ink, and one accent dominate;
-- the headline has one clear reading order and no widow word;
-- the seed's layout was not copied;
-- no fake code, terminal, UI, logo, watermark, or unsupported relationship slipped in;
-- it looks like a complete LinkedIn information card, not a standalone abstract illustration.
-
-For every architecture or flow candidate, perform a separate **rendered-graph reconciliation**
-after the art-direction check:
-
-1. At full resolution, transcribe every rendered node, arrow, direction, containment boundary,
-   and exception branch without relying on the prompt.
-2. Compare that transcription against `evidence_model.nodes`, `edges`, and `exceptions`.
-3. Record the comparison in the receipt's `checks`, naming every verified relationship. Any
-   missing, reversed, extra, ambiguous, or unsupported relationship is a failure. Reject the
-   image before the user sees it and regenerate or edit it.
-4. Reconcile the **entire** graph after every edit. A targeted edit can move or reconnect
-   unrelated arrows, so checking only the requested change is not enough.
-
-Do not say an architecture image "matches the repository" unless this reconciliation passed
-against sources read in the current run.
-
-Fix one defect at a time, re-open, and inspect again. After two failed internal attempts, stop
-and offer the deterministic renderer or text-only rather than making the user watch an
-open-ended generation loop. If the user explicitly asks for another image-generation attempt,
-that authorizes one additional candidate; rebuild it from the evidence model rather than editing
-the rejected composition again.
+Run `visual_review.py check` on the exact candidate and approved post. Only exit 0
+permits the save/open/approve presentation below. If the host cannot keep automatic
+image previews private, follow the explicit limitation path before generating.
 
 ## Save, open, approve
 
@@ -163,10 +160,11 @@ available and ask one decision:
 **Approve card** / **Change card** / **Drop card**. A change is re-inspected, opened, and
 re-shown. Publishing still requires the approved post text and the final approved card.
 
-On approval, copy the selected file to `images/<slug>.png`, add the prompt receipt's completed
-checks and selected path, and append one line to `images/generated-card-history.jsonl` with the
-seed and variation axes. Write alt text that describes the hierarchy and diagram without
-repeating every word on the card.
+On approval, retain the reviewed versioned path for publication; do not copy or rename it.
+Append one line to `images/generated-card-history.jsonl` with the selected path, seed and
+variation axes. Keep the bound prompt receipt unchanged. Use its reviewed alt text verbatim;
+changing the description requires another review. Use the pre-generation history snapshot
+for review evidence so this append does not change a bound input.
 
 If the built-in image tool is unavailable, say so once and offer the deterministic renderer or
 text-only. The legacy renderer is never an automatic fallback.

@@ -20,7 +20,8 @@ RUBRIC = (
     "voice", "naturalness", "substance", "clarity", "hook", "ending",
     "credibility", "restraint", "originality", "platform_fit",
 )
-VERSION = 1
+VERSION = 2
+COMPARISONS = ("opening", "compression")
 # Smells need contextual editorial decisions, not automatic claims of AI origin.
 SMELLS = {
     "engagement_bait": r"\b(?:comment\s+[\"'\w]+\s+(?:below|and|to)|(?:follow|repost|share)\s+(?:me|this|for)|agree\?|thoughts\?)",
@@ -74,6 +75,10 @@ def scan(text, platform):
     for rule, pattern in SMELLS.items():
         for m in re.finditer(pattern, text, re.I):
             add(rule, "WARN", m.group())
+    # Questions can be useful, quoted, or merely a device for soliciting replies.
+    # Require a contextual decision even when no stock CTA pattern matches.
+    for m in re.finditer(r"[^.!?\n]*\?", text):
+        add("question_purpose", "WARN", m.group().strip())
     sentences = re.split(r"(?<=[.!?])\s+|\n\s*\n", text)
     seen = set()
     for sentence in sentences:
@@ -103,6 +108,8 @@ def prepare(path, voice, samples, platform=PLATFORM):
                     "samples": [snapshot(s) for s in samples]},
         "reviewer": "pending",
         "checks": {key: {"status": "pending", "quote": "", "reason": ""} for key in RUBRIC},
+        "comparisons": {key: {"status": "pending", "quote": "", "alternative": "", "reason": ""}
+                        for key in COMPARISONS},
         "warnings": {f["id"]: {"decision": "pending", "reason": ""}
                      for f in findings if f["severity"] == "WARN"},
         "findings": findings,
@@ -145,6 +152,15 @@ def validate(path, platform=PLATFORM, text=None):
             if (check["status"] != "pass" or not nonempty(check["reason"])
                     or not nonempty(check["quote"]) or check["quote"] not in draft):
                 errors.append(f"Editorial check unresolved: {key}")
+        for key in COMPARISONS:
+            comparison = report["comparisons"][key]
+            quote, alternative = comparison["quote"], comparison["alternative"]
+            if (comparison["status"] != "pass" or not nonempty(comparison["reason"])
+                    or not nonempty(quote) or quote not in draft
+                    or not nonempty(alternative) or " ".join(alternative.split()) == " ".join(quote.split())
+                    or (key == "opening" and (not draft.lstrip().startswith(quote)
+                                               or alternative.strip() == "[delete]"))):
+                errors.append(f"Editorial comparison unresolved: {key}")
         for finding in scan(draft, platform):
             if finding["severity"] == "FAIL":
                 errors.append(f"Hard check failed: {finding['rule']}")

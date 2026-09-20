@@ -38,6 +38,7 @@ from pathlib import Path
 
 import verify_sources
 import post_review
+import visual_review
 import x_len
 
 REPO = Path(__file__).resolve().parent.parent
@@ -575,6 +576,7 @@ def main() -> None:
     media_map = parse_media_args(args.image, args.alt, len(tweets))
 
     post_review.enforce(args.file, text)
+    visual_review.enforce(args.file, [(p, alt, i) for i, pairs in media_map.items() for p, alt in pairs])
 
     if args.dry_run:
         placeholder = {
@@ -596,6 +598,7 @@ def main() -> None:
     # Source gate: before any media upload so a failed gate never orphans an
     # uploaded asset on Typefully's side.
     enforce_source_gate(args)
+    visual_review.enforce(args.file, [(p, alt, i) for i, pairs in media_map.items() for p, alt in pairs])
 
     media_ids = {
         i: [upload_media(env, social_set, p) for p, _alt in pairs]
