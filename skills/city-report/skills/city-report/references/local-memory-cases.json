@@ -1,0 +1,122 @@
+{
+  "skill": "city-report",
+  "allowed": [
+    {
+      "key": "city-report.layout",
+      "value": "Use a table for written city comparisons."
+    },
+    {
+      "key": "city-report.layout",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        "median_household_income",
+        "poverty_rate"
+      ]
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        "population",
+        "race",
+        "median_age",
+        "citizenship",
+        "foreign_born",
+        "veterans",
+        "median_household_income",
+        "income_by_race",
+        "income_distribution",
+        "gini",
+        "poverty_rate",
+        "earnings_by_industry",
+        "workforce_by_industry",
+        "homeownership_rate",
+        "tenure",
+        "median_home_value",
+        "home_value_distribution",
+        "commute_time",
+        "commute_means",
+        "no_internet",
+        "uninsured_rate",
+        "coverage_types"
+      ]
+    }
+  ],
+  "rejected": [
+    {
+      "key": "city-report.population",
+      "value": 1000
+    },
+    {
+      "key": "writing.hashtags",
+      "value": [
+        "#example"
+      ]
+    },
+    {
+      "key": "city-report.layout",
+      "value": {}
+    },
+    {
+      "key": "city-report.layout",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": "population"
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": []
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        "population",
+        "population"
+      ]
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        "invented_metric"
+      ]
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        1
+      ]
+    },
+    {
+      "key": "city-report.metric-order",
+      "value": [
+        "population",
+        "race",
+        "median_age",
+        "citizenship",
+        "foreign_born",
+        "veterans",
+        "median_household_income",
+        "income_by_race",
+        "income_distribution",
+        "gini",
+        "poverty_rate",
+        "earnings_by_industry",
+        "workforce_by_industry",
+        "homeownership_rate",
+        "tenure",
+        "median_home_value",
+        "home_value_distribution",
+        "commute_time",
+        "commute_means",
+        "no_internet",
+        "uninsured_rate",
+        "coverage_types",
+        "population"
+      ]
+    }
+  ]
+}
