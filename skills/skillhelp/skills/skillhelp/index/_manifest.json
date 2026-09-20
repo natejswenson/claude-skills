@@ -130,9 +130,9 @@
     },
     {
       "name": "ghostwriter-x",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "stack": "python",
-      "cardHash": "5bb7cd3e7d1aa229",
+      "cardHash": "261d7d36f7065761",
       "facts": 54,
       "sections": {
         "setup": 7,
