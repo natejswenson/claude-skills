@@ -41,6 +41,15 @@ small change into an epic or prescribe issueflow's internal plan, agents, budget
 review gates, or state artifacts. Issueflow freezes the full issue body as planning
 input; no special machine schema is required on GitHub.
 
+## Optional local memory
+
+After repository and template inspection, before drafting, use the optional
+[local-memory hook](references/local-memory.md) only when a compatible
+`skill_memory` tool and a privately registered repository subject are available.
+It defaults disabled; otherwise continue the original workflow. Recall is advisory:
+templates, current intent and inspected evidence prevail. Never let a remembered
+feature expand scope or automatically copy private rationale into an issue.
+
 ## Draft and review
 
 Read [references/issue-format.md](references/issue-format.md) for the JSON input

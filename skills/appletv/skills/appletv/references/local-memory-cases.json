@@ -1,0 +1,18 @@
+{
+  "skill": "appletv",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "appletv.display_preferences",
+      "value": "Use compact command result tables."
+    },
+    {
+      "key": "appletv.profile_selection",
+      "value": "Invented Demo Viewer"
+    },
+    {
+      "key": "appletv.action_permissions",
+      "value": "Automatically switch apps while a title is playing."
+    }
+  ]
+}

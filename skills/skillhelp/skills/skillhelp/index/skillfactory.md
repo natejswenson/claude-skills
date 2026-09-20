@@ -16,7 +16,7 @@
 - Node 18+ for the CLI itself. `skills/skillfactory/README.md:91`
 - Python 3.12 to run the house lints at rung 1 (score_skill.py, lint_plugin.py, lint_baseline.py). `skills/skillfactory/README.md:92`
 - press and ghfactory for the brand and workflow steps. Both ship in this repo. `skills/skillfactory/README.md:94`
-- Requires Node >=18 (package.json engines). `skills/skillfactory/skills/skillfactory/package.json:36`
+- Requires Node >=18 (package.json engines). `skills/skillfactory/skills/skillfactory/package.json:37`
 
 ## Usage
 
@@ -37,15 +37,15 @@
 
 - node scripts/skillfactory.js verify --skill <name> `skills/skillfactory/skills/skillfactory/SKILL.md:70`
 - node scripts/skillfactory.js detect --repo <path> `skills/skillfactory/skills/skillfactory/SKILL.md:116`
-- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:140`
-- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:141`
-- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:166`
-- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:180`
-- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:215`
-- npm run audit — npm audit --audit-level=moderate `skills/skillfactory/skills/skillfactory/package.json:41`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillfactory/skills/skillfactory/package.json:43`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillfactory/skills/skillfactory/package.json:42`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/skillfactory/skills/skillfactory/package.json:40`
+- node scripts/skillfactory.js spec <name> --out <file> # a template to fill in `skills/skillfactory/skills/skillfactory/SKILL.md:148`
+- node scripts/skillfactory.js check-spec --spec <file> # grade it `skills/skillfactory/skills/skillfactory/SKILL.md:149`
+- node scripts/skillfactory.js scaffold --spec <file> [--dry-run] `skills/skillfactory/skills/skillfactory/SKILL.md:174`
+- node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs `skills/skillfactory/skills/skillfactory/SKILL.md:188`
+- node scripts/skillfactory.js freeze --skill <name> --from <run output dir> \ `skills/skillfactory/skills/skillfactory/SKILL.md:223`
+- npm run audit — npm audit --audit-level=moderate `skills/skillfactory/skills/skillfactory/package.json:42`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillfactory/skills/skillfactory/package.json:44`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillfactory/skills/skillfactory/package.json:43`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/skillfactory/skills/skillfactory/package.json:41`
 - Binary "skillfactory" → scripts/skillfactory.js `skills/skillfactory/skills/skillfactory/package.json:25`
 
 ## Architecture
@@ -78,4 +78,4 @@
 - an unresolvable anchor aborts before the first byte is written — A half-applied wiring is worse than none, because the half that landed makes the rest look done. ci / shipflow sat un-required from th… `skills/skillfactory/skills/skillfactory/skill-invariants.json:69`
 - only takes effect when an admin runs it — Editing the contexts array in repo-settings.sh changes a file, not GitHub. A skill whose check is written down but never applied goes green on every PR and g… `skills/skillfactory/skills/skillfactory/skill-invariants.json:74`
 - Name the skill after the job, never a metaphor — A name is the only thing a user sees before deciding whether the skill is for them, and a metaphor tells them nothing. This repo shipped three of them… `skills/skillfactory/skills/skillfactory/skill-invariants.json:79`
-- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:259`
+- **Never call a skill done below rung 3.** Say which rung you reached. `skills/skillfactory/skills/skillfactory/SKILL.md:267`

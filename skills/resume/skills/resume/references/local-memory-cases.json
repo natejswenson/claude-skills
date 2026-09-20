@@ -1,0 +1,47 @@
+{
+  "skill": "resume",
+  "allowed": [
+    {
+      "key": "resume.presentation-format",
+      "value": "Prefer a compact handoff with both PDF links."
+    },
+    {
+      "key": "resume.explanation-depth",
+      "value": "brief"
+    },
+    {
+      "key": "resume.explanation-depth",
+      "value": "standard"
+    },
+    {
+      "key": "resume.explanation-depth",
+      "value": "detailed"
+    }
+  ],
+  "rejected": [
+    {
+      "key": "resume.employment-history",
+      "value": "Invented Employer"
+    },
+    {
+      "key": "writing.hashtags",
+      "value": "none"
+    },
+    {
+      "key": "resume.presentation-format",
+      "value": false
+    },
+    {
+      "key": "resume.presentation-format",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "resume.explanation-depth",
+      "value": "unlimited"
+    },
+    {
+      "key": "resume.explanation-depth",
+      "value": 2
+    }
+  ]
+}

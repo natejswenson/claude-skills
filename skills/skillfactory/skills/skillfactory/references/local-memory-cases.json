@@ -1,0 +1,37 @@
+{
+  "skill": "skillfactory",
+  "allowed": [
+    {
+      "key": "skill-design.interaction-style",
+      "value": "Ask one concise question at a time."
+    },
+    {
+      "key": "skill-design.output-format",
+      "value": "A short Markdown summary with a comparison table."
+    }
+  ],
+  "rejected": [
+    {
+      "key": "writing.hashtags",
+      "value": "Never use hashtags."
+    },
+    {
+      "key": "skill-design.interaction-style",
+      "value": [
+        "Ask one question."
+      ]
+    },
+    {
+      "key": "skill-design.output-format",
+      "value": false
+    },
+    {
+      "key": "skill-design.interaction-style",
+      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "key": "skill-design.output-format",
+      "value": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+    }
+  ]
+}

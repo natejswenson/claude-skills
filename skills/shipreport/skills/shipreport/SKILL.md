@@ -73,6 +73,16 @@ anything in it**. A confirmation is not a question.
 
 Ask at most one question, and only when the window is genuinely ambiguous.
 
+### Optional audience preferences
+
+Before ranking or composing, use the optional `skill_memory` hook only when a
+compatible connected tool and a privately registered subject are available. Read
+[the local-memory protocol](references/local-memory.md) first. It defaults off;
+missing, disabled or unavailable memory leaves the normal flow unchanged. Recalled
+audience/emphasis are presentation guidance only: current instructions, cached
+artifacts opened with `show`, deterministic counts and `receipts` remain authoritative.
+After delivery, save only an explicitly requested durable preference correction.
+
 ### 2. Index
 
 ```bash

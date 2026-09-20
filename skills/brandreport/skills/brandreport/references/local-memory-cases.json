@@ -1,0 +1,18 @@
+{
+  "skill": "brandreport",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "brandreport.identity",
+      "value": {
+        "name": "Mira Example",
+        "handle": "mira-example",
+        "confirmed": true
+      }
+    },
+    {
+      "key": "brandreport.reporting_format",
+      "value": "compact"
+    }
+  ]
+}

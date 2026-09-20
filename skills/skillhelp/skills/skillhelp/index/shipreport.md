@@ -14,7 +14,7 @@
 - **Personal data:** Both hosts retain the contribution corpus and watermark under ~/.shipreport/; transcripts stay in their original host directories. `skills/shipreport/README.md:76`
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/shipreport/README.md:78`
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/shipreport/README.md:80`
-- Requires Node >=18 (package.json engines). `skills/shipreport/skills/shipreport/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/shipreport/skills/shipreport/package.json:34`
 
 ## Usage
 
@@ -33,23 +33,23 @@
 
 ## Commands
 
-- Command — Returns `skills/shipreport/skills/shipreport/SKILL.md:212`
-- shipreport index — source, since, seen, new, cached — plus redaction counts and the new watermark `skills/shipreport/skills/shipreport/SKILL.md:214`
-- shipreport rank — rank, kind, item, score, signals, receipt — then the figures the sheet will print, the window/candidates/folds table, and a tie warning when the line is arbitrary `skills/shipreport/skills/shipreport/SKILL.md:215`
-- shipreport show — receipt, kind, when, title — then each artifact's body from the corpus, sharing one total character budget `skills/shipreport/skills/shipreport/SKILL.md:216`
-- shipreport receipts — claim, receipt, resolved — then a verdict with unresolved and prose counts, and any citation never opened with show; **exits non-zero on any failure** `skills/shipreport/skills/shipreport/SKILL.md:217`
-- shipreport render — section, items, receipts — then cards, size and window, and the output path `skills/shipreport/skills/shipreport/SKILL.md:218`
-- Useful flags: --days N / --since --until, --top, --floor, --kind release — pr — commit — session, --limit N, --near N, --all (print every candidate), --chars N (show's **total** budget, split across… `skills/shipreport/skills/shipreport/SKILL.md:220`
-- **Run every one of these bare.** The output is bounded — rank by --limit, show by a total character budget that shrinks as you ask for more artifacts. Piping through tail or head silently eats the he… `skills/shipreport/skills/shipreport/SKILL.md:225`
-- node scripts/shipreport.js index `skills/shipreport/skills/shipreport/SKILL.md:79`
-- node scripts/shipreport.js rank --days 7 `skills/shipreport/skills/shipreport/SKILL.md:92`
-- node scripts/shipreport.js show <receipt> <receipt> … `skills/shipreport/skills/shipreport/SKILL.md:119`
-- node scripts/shipreport.js receipts --draft <file> `skills/shipreport/skills/shipreport/SKILL.md:190`
-- node scripts/shipreport.js render --draft <file> --out <file.html> `skills/shipreport/skills/shipreport/SKILL.md:200`
-- npm run audit — npm audit --audit-level=moderate `skills/shipreport/skills/shipreport/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/shipreport/skills/shipreport/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/shipreport/skills/shipreport/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/shipreport/skills/shipreport/package.json:37`
+- Command — Returns `skills/shipreport/skills/shipreport/SKILL.md:222`
+- shipreport index — source, since, seen, new, cached — plus redaction counts and the new watermark `skills/shipreport/skills/shipreport/SKILL.md:224`
+- shipreport rank — rank, kind, item, score, signals, receipt — then the figures the sheet will print, the window/candidates/folds table, and a tie warning when the line is arbitrary `skills/shipreport/skills/shipreport/SKILL.md:225`
+- shipreport show — receipt, kind, when, title — then each artifact's body from the corpus, sharing one total character budget `skills/shipreport/skills/shipreport/SKILL.md:226`
+- shipreport receipts — claim, receipt, resolved — then a verdict with unresolved and prose counts, and any citation never opened with show; **exits non-zero on any failure** `skills/shipreport/skills/shipreport/SKILL.md:227`
+- shipreport render — section, items, receipts — then cards, size and window, and the output path `skills/shipreport/skills/shipreport/SKILL.md:228`
+- Useful flags: --days N / --since --until, --top, --floor, --kind release — pr — commit — session, --limit N, --near N, --all (print every candidate), --chars N (show's **total** budget, split across… `skills/shipreport/skills/shipreport/SKILL.md:230`
+- **Run every one of these bare.** The output is bounded — rank by --limit, show by a total character budget that shrinks as you ask for more artifacts. Piping through tail or head silently eats the he… `skills/shipreport/skills/shipreport/SKILL.md:235`
+- node scripts/shipreport.js index `skills/shipreport/skills/shipreport/SKILL.md:89`
+- node scripts/shipreport.js rank --days 7 `skills/shipreport/skills/shipreport/SKILL.md:102`
+- node scripts/shipreport.js show <receipt> <receipt> … `skills/shipreport/skills/shipreport/SKILL.md:129`
+- node scripts/shipreport.js receipts --draft <file> `skills/shipreport/skills/shipreport/SKILL.md:200`
+- node scripts/shipreport.js render --draft <file> --out <file.html> `skills/shipreport/skills/shipreport/SKILL.md:210`
+- npm run audit — npm audit --audit-level=moderate `skills/shipreport/skills/shipreport/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/shipreport/skills/shipreport/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/shipreport/skills/shipreport/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/shipreport/skills/shipreport/package.json:38`
 - Binary "shipreport" → scripts/shipreport.js `skills/shipreport/skills/shipreport/package.json:22`
 
 ## Architecture
@@ -71,13 +71,13 @@
 - A generic icon is a failure — The card scenes are the reason the sheet is worth looking at. The moment a run reaches for a stock glyph the report becomes a list with decoration, and nothing in code c… `skills/shipreport/skills/shipreport/skill-invariants.json:24`
 - Never shell out for something the corpus holds — The first real run read its releases with three networked gh loops and printed sixteen kilobytes of changelog into the conversation, in a skill whose… `skills/shipreport/skills/shipreport/skill-invariants.json:29`
 - the fix for that is a fix to the checker with a test on both sides — The gate once called the phrase "plus/minus" a repository name and the run reworded a true sentence to satisfy it. "Never weaken t… `skills/shipreport/skills/shipreport/skill-invariants.json:34`
-- **Every claim in the report carries a receipt — a commit SHA, pull request number, release tag or session event id that resolves against the local corpus — and a ranked item whose receipt does not re… `skills/shipreport/skills/shipreport/SKILL.md:234`
-- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/shipreport/skills/shipreport/SKILL.md:235`
-- **Never count activity as achievement.** Forty sessions and no releases is a report that says exactly that. A thin week produces a short report, and a short honest report is the correct output. `skills/shipreport/skills/shipreport/SKILL.md:237`
-- **Never fix a refusal by weakening the gate.** receipts is argued with by changing the draft. The one exception is a refusal that is simply *wrong* — the gate once called the phrase "plus/minus" a re… `skills/shipreport/skills/shipreport/SKILL.md:240`
-- **Never shell out for something the corpus holds.** show reads bodies that index already fetched and redacted. A gh call in the middle of a run is a round trip, a wall of text, and a second unredacte… `skills/shipreport/skills/shipreport/SKILL.md:245`
-- **Never hand-write a brand value.** assets/report.css's :root block is a press-generated region; change tokens.json and re-run press emit. Card art may paint only currentColor or none — a hex in a dr… `skills/shipreport/skills/shipreport/SKILL.md:248`
-- **Never let a card wear a generic icon.** A scene that would look right on any other card has not found the mechanism yet. `skills/shipreport/skills/shipreport/SKILL.md:252`
-- **Never write the sentence first and then hunt for a receipt to attach.** No gate `skills/shipreport/skills/shipreport/SKILL.md:138`
-- **Never claim a result you did not observe.** Say what you verified and what `skills/shipreport/skills/shipreport/SKILL.md:235`
-- **Never count activity as achievement.** Forty sessions and no releases is a `skills/shipreport/skills/shipreport/SKILL.md:237`
+- **Every claim in the report carries a receipt — a commit SHA, pull request number, release tag or session event id that resolves against the local corpus — and a ranked item whose receipt does not re… `skills/shipreport/skills/shipreport/SKILL.md:244`
+- **Never claim a result you did not observe.** Say what you verified and what you did not. `skills/shipreport/skills/shipreport/SKILL.md:245`
+- **Never count activity as achievement.** Forty sessions and no releases is a report that says exactly that. A thin week produces a short report, and a short honest report is the correct output. `skills/shipreport/skills/shipreport/SKILL.md:247`
+- **Never fix a refusal by weakening the gate.** receipts is argued with by changing the draft. The one exception is a refusal that is simply *wrong* — the gate once called the phrase "plus/minus" a re… `skills/shipreport/skills/shipreport/SKILL.md:250`
+- **Never shell out for something the corpus holds.** show reads bodies that index already fetched and redacted. A gh call in the middle of a run is a round trip, a wall of text, and a second unredacte… `skills/shipreport/skills/shipreport/SKILL.md:255`
+- **Never hand-write a brand value.** assets/report.css's :root block is a press-generated region; change tokens.json and re-run press emit. Card art may paint only currentColor or none — a hex in a dr… `skills/shipreport/skills/shipreport/SKILL.md:258`
+- **Never let a card wear a generic icon.** A scene that would look right on any other card has not found the mechanism yet. `skills/shipreport/skills/shipreport/SKILL.md:262`
+- **Never write the sentence first and then hunt for a receipt to attach.** No gate `skills/shipreport/skills/shipreport/SKILL.md:148`
+- **Never claim a result you did not observe.** Say what you verified and what `skills/shipreport/skills/shipreport/SKILL.md:245`
+- **Never count activity as achievement.** Forty sessions and no releases is a `skills/shipreport/skills/shipreport/SKILL.md:247`

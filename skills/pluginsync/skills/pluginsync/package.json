@@ -24,6 +24,7 @@
   "files": [
     "scripts/",
     "references/",
+    "memory-policy.json",
     "skill-invariants.json",
     "SKILL.md",
     "CHANGELOG.md",

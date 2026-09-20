@@ -52,10 +52,10 @@
 
 ## Architecture
 
-- npm test — offline unit suite (no network, no LLM calls): schema/content validation, the HTML generator's structural contract, theme resolution, PDF rendering in both shipped themes, the text-extract… `skills/resume/skills/resume/SKILL.md:256`
-- node scripts/evals/run.mjs — the tailoring-quality evaluation harness. See docs/plans/2026-07-08-resume-eval-harness-design.md for the full design (a single PASS/FAIL verdict, a real dollar cost cap,… `skills/resume/skills/resume/SKILL.md:261`
-- docs/security/prompt-injection-fixtures/ is a manual verification checklist for periodic spot-checks, backed by an automated scanning-oracle unit test (scripts/prompt-injection.test.mjs) and the eval… `skills/resume/skills/resume/SKILL.md:265`
-- Versioning (semver): in the dev → main PR, bump version here **and** in package.json (the release tag is driven by package.json), and add a matching ## [N.M.P] section to CHANGELOG.md. On a dispatche… `skills/resume/skills/resume/SKILL.md:269`
+- npm test — offline unit suite (no network, no LLM calls): schema/content validation, the HTML generator's structural contract, theme resolution, PDF rendering in both shipped themes, the text-extract… `skills/resume/skills/resume/SKILL.md:265`
+- node scripts/evals/run.mjs — the tailoring-quality evaluation harness. See docs/plans/2026-07-08-resume-eval-harness-design.md for the full design (a single PASS/FAIL verdict, a real dollar cost cap,… `skills/resume/skills/resume/SKILL.md:270`
+- docs/security/prompt-injection-fixtures/ is a manual verification checklist for periodic spot-checks, backed by an automated scanning-oracle unit test (scripts/prompt-injection.test.mjs) and the eval… `skills/resume/skills/resume/SKILL.md:274`
+- Versioning (semver): in the dev → main PR, bump version here **and** in package.json (the release tag is driven by package.json), and add a matching ## [N.M.P] section to CHANGELOG.md. On a dispatche… `skills/resume/skills/resume/SKILL.md:278`
 
 ## Troubleshooting
 

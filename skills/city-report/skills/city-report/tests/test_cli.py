@@ -684,7 +684,9 @@ def test_report_cli_vs_with_sections_names_them_in_the_filename(two_cities, tmp_
     assert "vs-otherville-ks-housing" in list(tmp_path.glob("*.html"))[0].name
 
 
-def test_report_cli_vs_unknown_city(two_cities, tmp_path, capsys):
+def test_report_cli_vs_unknown_city(two_cities, tmp_path, capsys, monkeypatch):
+    # Unknown-city autoload must stay synthetic in the offline suite.
+    monkeypatch.setattr(datausa, "resolve_place", lambda city: ([], None))
     assert report_mod.main(["Testville, MN", "--vs", "Nowhere, ZZ",
                             "--out", str(tmp_path)]) == 1
     assert "is not loaded" in capsys.readouterr().err

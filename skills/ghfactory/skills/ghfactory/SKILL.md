@@ -101,6 +101,10 @@ a question.
 **Always ask** about intent, which no file records: deploy targets and
 environments, which secrets a release needs, whether the workflow may write.
 
+After detection, optionally recall repository rationale through the disabled-by-default
+[local-memory hook](references/local-memory.md). Use it only in an explicitly
+registered repository context; continue normally when absent or unavailable.
+
 ### 2. Ask at most two questions, one at a time
 
 Opinionated, with a one-line reason. Zero questions is correct when the request
@@ -134,6 +138,10 @@ red preview. Then present:
 - a **Plan** table — File · Action · Triggers · Jobs · Runtime · Permissions · Pinned
 - the **ladder** table from `verify`
 - the YAML *only if asked*; on an update show the diff hunk, never the whole file
+
+After verification, an explicit request to remember a reusable design decision may
+use the same optional hook. Capture only rationale with current dependency hashes
+and a review date within 30 days. Memory never proves any verification rung.
 
 ### 5. Stamp the masthead and write
 

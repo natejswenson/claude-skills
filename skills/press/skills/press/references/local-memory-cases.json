@@ -1,0 +1,9 @@
+{
+  "skill": "press",
+  "allowed": [],
+  "rejected": [
+    {"key": "press.accent_color", "value": "#6A42B8"},
+    {"key": "press.voice_rules", "value": ["Prefer playful headlines."]},
+    {"key": "press.generated_region_permission", "value": true}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "skill": "shipflow",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "shipflow.workflow_pattern",
+      "value": "invented-example-workflow"
+    },
+    {
+      "key": "shipflow.apply_approved",
+      "value": true
+    }
+  ]
+}

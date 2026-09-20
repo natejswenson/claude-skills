@@ -80,6 +80,15 @@ Optional, only if the user expresses a preference:
 
 Do not ask the user to pre-edit or "clean up" their résumé — you do that work.
 
+### Optional presentation memory
+
+Only when this skill has an explicit private opt-in and a compatible connected
+`skill_memory` tool, follow [local-memory.md](references/local-memory.md) before
+choosing presentation or handoff detail. Otherwise continue normally. Recall only
+`resume.presentation-format` and `resume.explanation-depth`; current user choices
+win. These preferences never provide résumé facts, change source validation, or
+remove either required PDF. Capture only an explicit non-sensitive preference.
+
 ## Step 3 — Fetch, tailor, validate, render
 
 No subprocess, no LLM call besides your own reasoning.

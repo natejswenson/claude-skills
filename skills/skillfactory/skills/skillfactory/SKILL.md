@@ -121,6 +121,14 @@ version. **Never ask about anything in them.** A name collision, the required
 check set, the pinned action SHAs and whether press is available are all facts.
 A confirmation is not a question.
 
+Optional local memory: after detection and before drafting the spec, consult
+[references/local-memory.md](references/local-memory.md) only if the connected
+`skill_memory` tool and an explicit private skillfactory binding are available.
+Recall design preferences as optional suggestions; otherwise continue normally.
+Current intent, repository facts, the host model gate, spec approval, conformance
+and genuine baseline evidence remain authoritative. After spec review, capture
+only an explicit reusable preference the user asked to remember, using that guide.
+
 ### 2. Ask at most three questions, one at a time
 
 Opinionated, each with a one-line reason. Wait for the answer before asking the

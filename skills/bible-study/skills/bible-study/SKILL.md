@@ -46,6 +46,11 @@ English Bible for brief quotations. State those defaults once. Honor a requested
 translation, audience, or Christian tradition. Otherwise use broadly Christian language,
 attribute disputed interpretations, and do not portray one denomination as all Christians.
 
+If this installation explicitly enables optional local memory, follow
+[references/local-memory.md](references/local-memory.md) after resolving the passage,
+before research. It supplies only format and duration preferences; missing or disabled
+memory leaves the workflow unchanged. Never retain religious beliefs or study history.
+
 ### 2. Research before designing
 
 Read [references/research.md](references/research.md) and the common publisher registry at
@@ -138,6 +143,8 @@ Show the visual and provide actionable PDF, PNG and HTML links. Briefly name the
 translation and any material unresolved uncertainty. Offer revision for the group's
 translation/tradition if useful. Do not email, post, or message the group without an
 explicit request. Creating a shareable file does not authorize distribution.
+After delivery, an explicit request to remember a format or duration correction may
+use the optional memory reference; never capture from the study bundle automatically.
 
 ## Failures and recovery
 

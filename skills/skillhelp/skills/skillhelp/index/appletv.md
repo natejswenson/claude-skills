@@ -17,7 +17,7 @@
 - Python 3.9+ on the Mac; appletv doctor creates a private venv under the skill and installs [pyatv](https://pyatv.dev) into it — nothing global. `skills/appletv/README.md:91`
 - The Mac on the same network as the Apple TV (Bonjour), and someone in the room to read two PINs off the screen the first time. `skills/appletv/README.md:92`
 - Optional, for in-app navigation (Netflix has no deep links since Sept 2025): appletv screen takes real screenshots over Apple's developer tunnel — one-time screen --pair with the TV on *Remote App an… `skills/appletv/README.md:93`
-- Requires Node >=18 (package.json engines). `skills/appletv/skills/appletv/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/appletv/skills/appletv/package.json:34`
 - Reads environment variable APPLETV_CONFIG. `skills/appletv/skills/appletv/scripts/lib/config.mjs:13`
 - Reads environment variable APPLETV_OUT. `skills/appletv/skills/appletv/scripts/appletv.js:64`
 - Reads environment variable APPLETV_PIN_FILE. `skills/appletv/skills/appletv/scripts/appletv.js:31`

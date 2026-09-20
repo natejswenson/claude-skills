@@ -30,7 +30,8 @@
     "README.md",
     "LICENSE",
     "assets/",
-    "evals/input/"
+    "evals/input/",
+    "memory-policy.json"
   ],
   "engines": {
     "node": ">=18"

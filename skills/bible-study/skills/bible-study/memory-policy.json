@@ -1,0 +1,11 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "bible-study",
+  "mode": "advisory",
+  "keys": [
+    "study.handout-format",
+    "study.duration-minutes"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}

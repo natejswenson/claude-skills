@@ -56,6 +56,11 @@ place.
 
 ### Optional persistent memory companion
 
+Select at most one backend from trusted private installation configuration. For an explicitly
+selected hub backend, follow [the optional owner bridge](references/local-memory.md) instead
+of the legacy commands below. Never activate, migrate, backfill, or dual-write during invocation.
+Missing/disabled optional recall retains the existing voice-file workflow on both hosts.
+
 When `local-memory-adapter` is installed and Ghostwriter has been explicitly opted in, use the
 companion to carry durable writing preferences across sessions. It supplements the voice files;
 it never replaces them, reads credentials, publishes, or overrides current user instructions.
@@ -543,8 +548,11 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    chosen visual still needs its own preview and approval before publishing.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
-   you did ("added to voice notes"). Fixing only the draft loses the correction and the user has
-   to repeat it next session.
+   you did ("added to voice notes"). For a registered key with an opted-in companion,
+   use that selected adapter as the **single source writer** instead of manually appending;
+   follow its source-save result before redrafting. Never fall back to another writer after
+   an attempted adapter save. Unregistered keys retain the ordinary voice-note workflow.
+   Fixing only the draft loses the correction and the user has to repeat it next session.
 8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
    ask a single `AskUserQuestion`. The options depend on the host:
    - **Codex:** **generated PRESS card** / **native screenshot** / **text-only** /

@@ -17,7 +17,7 @@
 - See [Codex migration notes](https://github.com/natejswenson/claude-skills/blob/main/docs/codex-migration.md) for host setup. `skills/issuecreator/README.md:79`
 - After a verified create-only request, issuecreator shows the issue URL, a short summary, and any limitations, then ends with: “Would you like to pick up this issue with issueflow?” Accepting starts /… `skills/issuecreator/README.md:81`
 - Local drafting needs neither authentication nor issueflow installed. Unpublished drafts and failed or unverified publications do not offer or start issueflow; in a partial batch, only individually ve… `skills/issuecreator/README.md:83`
-- Requires Node >=18 (package.json engines). `skills/issuecreator/skills/issuecreator/package.json:36`
+- Requires Node >=18 (package.json engines). `skills/issuecreator/skills/issuecreator/package.json:37`
 
 ## Usage
 
@@ -36,20 +36,20 @@
 
 ## Commands
 
-- node "$SKILL_DIR/scripts/issuecreator.js" validate --input <draft.json> `skills/issuecreator/skills/issuecreator/SKILL.md:60`
-- node "$SKILL_DIR/scripts/issuecreator.js" render --input <draft.json> --out <draft-directory> `skills/issuecreator/skills/issuecreator/SKILL.md:61`
-- node "$SKILL_DIR/scripts/issuecreator.js" create --input <draft.json> --repo <OWNER/REPO> --out <unique-publication-directory> `skills/issuecreator/skills/issuecreator/SKILL.md:80`
+- node "$SKILL_DIR/scripts/issuecreator.js" validate --input <draft.json> `skills/issuecreator/skills/issuecreator/SKILL.md:69`
+- node "$SKILL_DIR/scripts/issuecreator.js" render --input <draft.json> --out <draft-directory> `skills/issuecreator/skills/issuecreator/SKILL.md:70`
+- node "$SKILL_DIR/scripts/issuecreator.js" create --input <draft.json> --repo <OWNER/REPO> --out <unique-publication-directory> `skills/issuecreator/skills/issuecreator/SKILL.md:89`
 - node skills/issuecreator/scripts/issuecreator.js validate --input draft.json `skills/issuecreator/README.md:56`
 - node skills/issuecreator/scripts/issuecreator.js render --input draft.json --out ./draft-output `skills/issuecreator/README.md:57`
 - node skills/issuecreator/scripts/issuecreator.js create --input draft.json --repo OWNER/REPO --out ./publication-output `skills/issuecreator/README.md:58`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issuecreator/skills/issuecreator/package.json:42`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issuecreator/skills/issuecreator/package.json:41`
-- npm run test — node --test scripts/tests/*.test.mjs `skills/issuecreator/skills/issuecreator/package.json:40`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issuecreator/skills/issuecreator/package.json:43`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issuecreator/skills/issuecreator/package.json:42`
+- npm run test — node --test scripts/tests/*.test.mjs `skills/issuecreator/skills/issuecreator/package.json:41`
 - Binary "issuecreator" → scripts/issuecreator.js `skills/issuecreator/skills/issuecreator/package.json:24`
 
 ## Architecture
 
-- scripts/issuecreator.js owns validation, rendering and verified publication. skill-invariants.json declares the code/judgment split and offline baseline. See [references/baseline.md](references/basel… `skills/issuecreator/skills/issuecreator/SKILL.md:129`
+- scripts/issuecreator.js owns validation, rendering and verified publication. skill-invariants.json declares the code/judgment split and offline baseline. See [references/baseline.md](references/basel… `skills/issuecreator/skills/issuecreator/SKILL.md:138`
 - Deterministic: Check structural readiness without claiming semantic correctness — node scripts/issuecreator.js validate `skills/issuecreator/skills/issuecreator/skill-invariants.json:61`
 - Deterministic: Render a consistent issue body — node scripts/issuecreator.js render `skills/issuecreator/skills/issuecreator/skill-invariants.json:65`
 - Deterministic: Create and read back the GitHub issue — node scripts/issuecreator.js create `skills/issuecreator/skills/issuecreator/skill-invariants.json:69`

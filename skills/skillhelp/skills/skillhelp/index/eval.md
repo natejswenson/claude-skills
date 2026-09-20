@@ -16,7 +16,7 @@
 - Node 18+, no dependencies. `skills/eval/README.md:95`
 - A skill with a committed SKILL.md — the contract is read from the skill's own file, never supplied separately, so there is nothing to keep in sync. `skills/eval/README.md:96`
 - A session transcript to grade. Everything is offline: eval never calls a model and cannot spend. `skills/eval/README.md:98`
-- Requires Node >=18 (package.json engines). `skills/eval/skills/eval/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/eval/skills/eval/package.json:34`
 
 ## Usage
 
@@ -46,10 +46,10 @@
 - node scripts/eval.js probe --contract <file> --trace <file> --out <file> `skills/eval/skills/eval/SKILL.md:109`
 - node scripts/eval.js report --contract <file> --trace <file> \ `skills/eval/skills/eval/SKILL.md:128`
 - node scripts/eval.js case --skill <name> --in <file> --prove \ `skills/eval/skills/eval/SKILL.md:142`
-- npm run audit — npm audit --audit-level=moderate `skills/eval/skills/eval/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/eval/skills/eval/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/eval/skills/eval/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/eval/skills/eval/package.json:37`
+- npm run audit — npm audit --audit-level=moderate `skills/eval/skills/eval/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/eval/skills/eval/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/eval/skills/eval/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/eval/skills/eval/package.json:38`
 - Binary "eval" → scripts/eval.js `skills/eval/skills/eval/package.json:22`
 
 ## Architecture

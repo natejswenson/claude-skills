@@ -34,7 +34,9 @@
     "SKILL.md",
     "CHANGELOG.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "memory-policy.json",
+    "references/"
   ],
   "engines": {
     "node": ">=18"

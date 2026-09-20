@@ -14,7 +14,7 @@
 - **Personal data:** The generated index stays in the skill repository; no private ~/.claude/skillhelp store is required. `skills/skillhelp/README.md:100`
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/skillhelp/README.md:102`
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/skillhelp/README.md:104`
-- Requires Node >=18 (package.json engines). `skills/skillhelp/skills/skillhelp/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/skillhelp/skills/skillhelp/package.json:34`
 - Reads environment variable DEMO_TOKEN. `skills/skillhelp/skills/skillhelp/scripts/tests/guards.test.mjs:116`
 
 ## Usage
@@ -42,10 +42,10 @@
 - node scripts/skillhelp.js ask "how do I set up ghostwriter" `skills/skillhelp/skills/skillhelp/SKILL.md:68`
 - node scripts/skillhelp.js check # what drifted, and why `skills/skillhelp/skills/skillhelp/SKILL.md:90`
 - node scripts/skillhelp.js build # rewrite the cards `skills/skillhelp/skills/skillhelp/SKILL.md:91`
-- npm run audit — npm audit --audit-level=moderate `skills/skillhelp/skills/skillhelp/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillhelp/skills/skillhelp/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillhelp/skills/skillhelp/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/skillhelp/skills/skillhelp/package.json:37`
+- npm run audit — npm audit --audit-level=moderate `skills/skillhelp/skills/skillhelp/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/skillhelp/skills/skillhelp/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/skillhelp/skills/skillhelp/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/skillhelp/skills/skillhelp/package.json:38`
 - Binary "skillhelp" → scripts/skillhelp.js `skills/skillhelp/skills/skillhelp/package.json:22`
 
 ## Architecture

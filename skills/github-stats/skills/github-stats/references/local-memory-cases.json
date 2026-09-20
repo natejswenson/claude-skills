@@ -1,0 +1,14 @@
+{
+  "skill": "github-stats",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "github-stats.default_username",
+      "value": "invented-orbit-gardener"
+    },
+    {
+      "key": "github-stats.cached_stars",
+      "value": 42
+    }
+  ]
+}

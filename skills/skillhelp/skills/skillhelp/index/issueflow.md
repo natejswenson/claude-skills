@@ -16,7 +16,7 @@
 - **Node 18+** (the bundled scripts are ESM, no dependencies). `skills/issueflow/README.md:272`
 - **gh, authenticated**, with read access to issues and write access to open a pull request. `skills/issueflow/README.md:273`
 - **A git repo with a GitHub remote.** `skills/issueflow/README.md:275`
-- Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:35`
+- Requires Node >=18 (package.json engines). `skills/issueflow/skills/issueflow/package.json:36`
 - Reads environment variable CLAUDE_SESSION_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:13`
 - Reads environment variable CODEX_THREAD_ID. `skills/issueflow/skills/issueflow/scripts/lib/initialization.mjs:13`
 - Reads environment variable ISSUEFLOW_CLAUDE_BIN. `skills/issueflow/skills/issueflow/scripts/tests/execution.test.mjs:49`
@@ -47,13 +47,13 @@
 - node evals/harness.mjs baseline --ref <commit> --out <new-output-directory> `skills/issueflow/README.md:376`
 - node evals/harness.mjs run --mode offline --out <different-new-output-directory> `skills/issueflow/README.md:377`
 - node evals/harness.mjs compare --baseline <baseline-directory>/report.json --candidate <candidate-directory>/report.json `skills/issueflow/README.md:378`
-- npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:43`
-- npm run eval:harness — node evals/harness.mjs run --mode offline `skills/issueflow/skills/issueflow/package.json:40`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:45`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issueflow/skills/issueflow/package.json:44`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/issueflow/skills/issueflow/package.json:39`
-- npm run test:native:claude — ISSUEFLOW_NATIVE_HOST=claude node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:42`
-- npm run test:native:codex — ISSUEFLOW_NATIVE_HOST=codex node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:41`
+- npm run audit — npm audit --audit-level=moderate `skills/issueflow/skills/issueflow/package.json:44`
+- npm run eval:harness — node evals/harness.mjs run --mode offline `skills/issueflow/skills/issueflow/package.json:41`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/issueflow/skills/issueflow/package.json:46`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/issueflow/skills/issueflow/package.json:45`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/issueflow/skills/issueflow/package.json:40`
+- npm run test:native:claude — ISSUEFLOW_NATIVE_HOST=claude node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:43`
+- npm run test:native:codex — ISSUEFLOW_NATIVE_HOST=codex node --test scripts/tests/execution.test.mjs `skills/issueflow/skills/issueflow/package.json:42`
 - Binary "issueflow" → scripts/issueflow.js `skills/issueflow/skills/issueflow/package.json:24`
 
 ## Architecture

@@ -51,6 +51,7 @@
 - Ships module scripts/install_radar.sh. `skills/ghostwriter/skills/ghostwriter/scripts/install_radar.sh:1`
 - Ships module scripts/linkedin_auth.py. `skills/ghostwriter/skills/ghostwriter/scripts/linkedin_auth.py:1`
 - Ships module scripts/linkedin_post.py. `skills/ghostwriter/skills/ghostwriter/scripts/linkedin_post.py:1`
+- Ships module scripts/local_memory.py. `skills/ghostwriter/skills/ghostwriter/scripts/local_memory.py:1`
 - Ships module scripts/post_outcome.py. `skills/ghostwriter/skills/ghostwriter/scripts/post_outcome.py:1`
 - Ships module scripts/radar_terminal.py. `skills/ghostwriter/skills/ghostwriter/scripts/radar_terminal.py:1`
 - Ships module scripts/recent_projects.py. `skills/ghostwriter/skills/ghostwriter/scripts/recent_projects.py:1`
@@ -60,7 +61,6 @@
 - Ships module scripts/release_radar_lock.py. `skills/ghostwriter/skills/ghostwriter/scripts/release_radar_lock.py:1`
 - Ships module scripts/release_radar_runtime.py. `skills/ghostwriter/skills/ghostwriter/scripts/release_radar_runtime.py:1`
 - Ships module scripts/render_carousel.py. `skills/ghostwriter/skills/ghostwriter/scripts/render_carousel.py:1`
-- Ships module scripts/render_image.py. `skills/ghostwriter/skills/ghostwriter/scripts/render_image.py:1`
 
 ## Troubleshooting
 

@@ -14,7 +14,7 @@
 - **Personal data:** Claude state remains under ~/.claude/plugins/ and personal skills under ~/.claude/skills/; Codex manages its own plugin state. Neither route migrates personal data. `skills/pluginsync/README.md:86`
 - See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/pluginsync/README.md:88`
 - Node 18+ (the bundled scripts are ESM, no dependencies). `skills/pluginsync/README.md:90`
-- Requires Node >=18 (package.json engines). `skills/pluginsync/skills/pluginsync/package.json:33`
+- Requires Node >=18 (package.json engines). `skills/pluginsync/skills/pluginsync/package.json:34`
 
 ## Usage
 
@@ -39,10 +39,10 @@
 - Both take --json for the structured payload, and --home / --installed-json so the evals can run offline. `skills/pluginsync/skills/pluginsync/SKILL.md:146`
 - node scripts/pluginsync.js check `skills/pluginsync/skills/pluginsync/SKILL.md:98`
 - node scripts/pluginsync.js apply `skills/pluginsync/skills/pluginsync/SKILL.md:127`
-- npm run audit — npm audit --audit-level=moderate `skills/pluginsync/skills/pluginsync/package.json:38`
-- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/pluginsync/skills/pluginsync/package.json:40`
-- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/pluginsync/skills/pluginsync/package.json:39`
-- npm run test — node --test "scripts/**/*.test.mjs" `skills/pluginsync/skills/pluginsync/package.json:37`
+- npm run audit — npm audit --audit-level=moderate `skills/pluginsync/skills/pluginsync/package.json:39`
+- npm run postpack — rm -f README.md LICENSE CHANGELOG.md `skills/pluginsync/skills/pluginsync/package.json:41`
+- npm run prepack — cp ../../README.md ../../LICENSE ../../CHANGELOG.md . `skills/pluginsync/skills/pluginsync/package.json:40`
+- npm run test — node --test "scripts/**/*.test.mjs" `skills/pluginsync/skills/pluginsync/package.json:38`
 - Binary "pluginsync" → scripts/pluginsync.js `skills/pluginsync/skills/pluginsync/package.json:22`
 
 ## Architecture

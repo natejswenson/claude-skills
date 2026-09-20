@@ -17,7 +17,7 @@
 - Packet capture uses the system tcpdump and needs local BPF access. Optional --sudo uses existing noninteractive sudo authorization only after the user approves the specific capture. `skills/netwatch/README.md:88`
 - Offline report/parse/diff commands also work on other hosts. A remote agent observes its own machine. Linux process identity/signalling uses procfs/pidfd. `skills/netwatch/README.md:91`
 - No npm dependencies. Existing ~/.netwatch/baseline.json remains supported; scripts resolve assets from their installed directory. `skills/netwatch/README.md:93`
-- Requires Node >=18 (package.json engines). `skills/netwatch/skills/netwatch/package.json:34`
+- Requires Node >=18 (package.json engines). `skills/netwatch/skills/netwatch/package.json:35`
 - Reads environment variable NETWATCH_UI_BROWSER. `skills/netwatch/skills/netwatch/scripts/tests/report-ui.test.mjs:11`
 
 ## Usage

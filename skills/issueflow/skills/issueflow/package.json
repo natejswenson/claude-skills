@@ -27,6 +27,7 @@
     "scripts/",
     "references/",
     "skill-invariants.json",
+    "memory-policy.json",
     "SKILL.md",
     "CHANGELOG.md",
     "README.md",

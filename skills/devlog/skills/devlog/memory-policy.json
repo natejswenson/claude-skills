@@ -1,0 +1,8 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "devlog",
+  "mode": "reader",
+  "keys": ["devlog.audience", "devlog.explanation-depth"],
+  "read_keys": ["writing.hashtags"],
+  "default_enabled": false
+}

@@ -30,6 +30,8 @@
     "brand/",
     "targets.json",
     "skill-invariants.json",
+    "memory-policy.json",
+    "references/",
     "SKILL.md",
     "CHANGELOG.md",
     "README.md",

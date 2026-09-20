@@ -77,6 +77,9 @@ alias. Pass `--take-over`
 only after a human has read the displaced claim and explicitly accepted its
 destructive cost. Auto mode never takes over.
 
+Optional opted-in investigation memory: dispatched planners follow
+[local-memory.md](references/local-memory.md). Unavailable memory preserves ordinary investigation.
+
 ## Implement an already approved spec
 
 For an explicitly proven, user-approved spec, skip fresh planning and plan review.

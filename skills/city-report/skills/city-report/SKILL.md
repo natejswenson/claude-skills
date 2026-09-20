@@ -83,6 +83,15 @@ The city argument is optional when one city is loaded. With several loaded,
 name one — a slug (`duluth-mn`) or a place name (`"Duluth, MN"`) both work.
 `query.py` never touches the network.
 
+**Optional presentation memory (Claude Code and Codex).** Before choosing a
+written comparison layout or report presentation, follow
+`references/local-memory.md` only if the compatible `skill_memory` tool and an
+explicit private opt-in for this skill and subject are available. Otherwise
+continue the normal flow. Recall is advisory; the digest, reference years and
+24-hour cache remain authoritative. Apply only supported presentation choices;
+this does not add renderer layout or metric-order controls. Capture only an
+explicit request to remember an allowed presentation preference.
+
 **4. Generate the report when asked.**
 
 ```bash

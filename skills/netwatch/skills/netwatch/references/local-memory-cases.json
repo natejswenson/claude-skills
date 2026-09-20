@@ -1,0 +1,23 @@
+{
+  "skill": "netwatch",
+  "allowed": [],
+  "rejected": [
+    {
+      "key": "netwatch.safe_processes",
+      "value": [
+        "invented-demo-worker"
+      ]
+    },
+    {
+      "key": "netwatch.baseline",
+      "value": {
+        "hostname": "invented.example.invalid",
+        "safe": true
+      }
+    },
+    {
+      "key": "netwatch.termination_grant",
+      "value": "invented-permanent-approval"
+    }
+  ]
+}

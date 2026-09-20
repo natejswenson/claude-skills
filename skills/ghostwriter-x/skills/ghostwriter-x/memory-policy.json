@@ -1,0 +1,10 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "ghostwriter-x",
+  "mode": "owner",
+  "keys": [
+    "writing-x.hashtags"
+  ],
+  "read_keys": [],
+  "default_enabled": false
+}
