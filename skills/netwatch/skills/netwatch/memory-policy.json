@@ -1,0 +1,8 @@
+{
+  "contract": "skill-memory-v1",
+  "skill": "netwatch",
+  "mode": "deferred",
+  "keys": [],
+  "read_keys": [],
+  "default_enabled": false
+}
