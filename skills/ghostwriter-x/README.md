@@ -28,6 +28,13 @@ for voice, naturalness, substance, clarity, hook, ending, credibility, restraint
 originality and platform fit. Unresolved warnings and missing or stale reviews
 block display and publishing, including external Typefully draft creation.
 
+Codex imagegen graphics also require an independent visual review of post alignment,
+visual impact, brand, typography, factual relationships, artifacts and feed-size
+readability. All 12 checks must pass before presentation; changed images or evidence
+invalidate the record. The publisher enforces it before uploads and preview payloads.
+Native screenshots and Claude/legacy renders retain their existing workflow. See
+[visual review](skills/ghostwriter-x/references/visual-review.md).
+
 ## What you get
 
 | Path | What it provides |

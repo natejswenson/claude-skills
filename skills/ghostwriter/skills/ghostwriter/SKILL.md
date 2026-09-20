@@ -32,6 +32,10 @@ for an original PRESS card that supplements the post. Do not author an HTML card
 card template in Codex unless the user explicitly asks for the legacy deterministic
 renderer. If native image generation is unavailable, offer the user a text-only,
 native-screenshot, or explicit legacy-renderer choice; never switch silently.
+Only Codex imagegen graphics must also pass `references/visual-review.md` before
+presentation: all 12 visual checks, actual pixel inspection and an unchanged
+`visual_review.py check` record. Publishers enforce this gate for generated assets;
+native screenshots and Claude/legacy renders keep their existing review path.
 
 # LinkedIn Ghostwriter
 

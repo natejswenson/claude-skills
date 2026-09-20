@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Require a recorded 12-dimension visual review for Codex imagegen graphics before
+  presentation or attachment, bound to the image, post, brand, sources and alt text.
+  Native screenshots and Claude/legacy render workflows remain unchanged.
+
 ### Changed
 
 - Require a complete editorial review before displaying any draft: voice, naturalness,

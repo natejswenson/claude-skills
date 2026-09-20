@@ -25,6 +25,7 @@ from pathlib import Path
 
 import ai_tells
 import post_review
+import visual_review
 import verify_sources
 
 REPO = Path(__file__).resolve().parent.parent
@@ -473,6 +474,7 @@ def main() -> None:
             sys.exit("ERROR: --document must be a .pdf (LinkedIn carousels are PDFs).")
 
     post_review.enforce(args.file, text)
+    visual_review.enforce(args.file, [(p, args.alt) for p in (image_path, document_path) if p])
 
     if args.dry_run:
         # Use placeholders so dry-run works pre-setup and without uploading.
@@ -500,6 +502,7 @@ def main() -> None:
     # uploaded asset on LinkedIn's side.
     enforce_source_gate(args)
     enforce_ai_tells_gate(args, text)
+    visual_review.enforce(args.file, [(p, args.alt) for p in (image_path, document_path) if p])
 
     warn_if_token_expiring(env)
     warn_publish_conditions()

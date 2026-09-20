@@ -487,6 +487,13 @@ write a genuine how-to — not a news recap.
 
 ### Visuals (optional — diagrams & cards)
 
+If the user chooses a graphic generated or edited with Codex imagegen, read
+`references/visual-review.md` and pass all 12 checks before presentation. Register
+its origin, inspect the actual pixels, and run `visual_review.py check` before
+showing it. The publisher enforces that review, including dry-run and draft-only
+creation. This gate applies only to Codex imagegen assets; the native screenshot
+and Claude/legacy render workflow below stays unchanged.
+
 Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
 reports Playwright/Chromium is missing, point them at the install step and stop).
 
