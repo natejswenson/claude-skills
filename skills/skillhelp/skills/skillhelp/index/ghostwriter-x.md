@@ -9,13 +9,13 @@
 
 ## Setup
 
-- **Claude Code:** Run typefully_post.py --connect with the Typefully API key. `skills/ghostwriter-x/README.md:97`
-- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthr… `skills/ghostwriter-x/README.md:98`
-- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter-x/. `skills/ghostwriter-x/README.md:99`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter-x/README.md:101`
-- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:103`
-- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:105`
-- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:107`
+- **Claude Code:** Run typefully_post.py --connect with the Typefully API key. `skills/ghostwriter-x/README.md:104`
+- **Codex:** Use the same Typefully scripts and API key; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Optional Claude/Anthr… `skills/ghostwriter-x/README.md:105`
+- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter-x/. `skills/ghostwriter-x/README.md:106`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter-x/README.md:108`
+- Python 3 standard library only for the core — publishing and validation need no third-party packages. `skills/ghostwriter-x/README.md:110`
+- A [Typefully](https://typefully.com) account with your X account connected, and an API key from Settings → API. No OAuth dance, no token expiry. `skills/ghostwriter-x/README.md:112`
+- Optional, for cards: Playwright + Chromium in a local .venv. `skills/ghostwriter-x/README.md:114`
 
 ## Usage
 
@@ -23,21 +23,21 @@
 - X removed its API free tier in February 2026 — new developer accounts pay per post. Typefully's free plan covers one connected X account and about 15 posts a month behind a clean public API, which is… `skills/ghostwriter-x/README.md:15`
 - ghostwriter-x works in three moves: **learn your voice** from your own tweet archive, **draft** a post or thread, **you approve**, then it **publishes** through Typefully to your connected X account. `skills/ghostwriter-x/README.md:20`
 - Every tweet is validated against X's real weighted 280-character rules *before you see it*, so a draft that looks fine and would be rejected never reaches you. It also must pass the [editorial review… `skills/ghostwriter-x/README.md:24`
-- Path — What it provides `skills/ghostwriter-x/README.md:33`
-- skills/ghostwriter-x/SKILL.md — The flow Claude follows, and where it must stop and ask. `skills/ghostwriter-x/README.md:35`
-- skills/ghostwriter-x/scripts/typefully_post.py — Publishes a post or thread (--dry-run previews, --connect sets up). `skills/ghostwriter-x/README.md:36`
-- skills/ghostwriter-x/scripts/x_len.py — Weighted 280-character validation, twitter-text rules. `skills/ghostwriter-x/README.md:37`
-- skills/ghostwriter-x/scripts/extract_tweets.py — Turns your archive's tweets.js into voice-analysis input. `skills/ghostwriter-x/README.md:38`
-- skills/ghostwriter-x/scripts/verify_sources.py — The source gate: every external claim needs 3+ live distinct hosts. `skills/ghostwriter-x/README.md:39`
-- skills/ghostwriter-x/scripts/render_image.py, render_carousel.py, card_lint.py — 16:9 card rendering and lint. `skills/ghostwriter-x/README.md:40`
-- skills/ghostwriter-x/assets/ — Landscape card templates, the card language, vendored mermaid.min.js. `skills/ghostwriter-x/README.md:41`
+- Codex imagegen graphics also require an independent visual review of post alignment, visual impact, brand, typography, factual relationships, artifacts and feed-size readability. All 12 checks must p… `skills/ghostwriter-x/README.md:31`
+- Path — What it provides `skills/ghostwriter-x/README.md:40`
+- skills/ghostwriter-x/SKILL.md — The flow Claude follows, and where it must stop and ask. `skills/ghostwriter-x/README.md:42`
+- skills/ghostwriter-x/scripts/typefully_post.py — Publishes a post or thread (--dry-run previews, --connect sets up). `skills/ghostwriter-x/README.md:43`
+- skills/ghostwriter-x/scripts/x_len.py — Weighted 280-character validation, twitter-text rules. `skills/ghostwriter-x/README.md:44`
+- skills/ghostwriter-x/scripts/extract_tweets.py — Turns your archive's tweets.js into voice-analysis input. `skills/ghostwriter-x/README.md:45`
+- skills/ghostwriter-x/scripts/verify_sources.py — The source gate: every external claim needs 3+ live distinct hosts. `skills/ghostwriter-x/README.md:46`
+- skills/ghostwriter-x/scripts/render_image.py, render_carousel.py, card_lint.py — 16:9 card rendering and lint. `skills/ghostwriter-x/README.md:47`
 
 ## Commands
 
-- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:71`
-- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:72`
-- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:73`
-- python3 -m venv .venv `skills/ghostwriter-x/README.md:176`
+- python3 scripts/typefully_post.py --connect # one-time, stores your social set id `skills/ghostwriter-x/README.md:78`
+- python3 scripts/extract_tweets.py # turn your archive into voice input `skills/ghostwriter-x/README.md:79`
+- python3 scripts/typefully_post.py --dry-run # see the payload without posting `skills/ghostwriter-x/README.md:80`
+- python3 -m venv .venv `skills/ghostwriter-x/README.md:183`
 
 ## Architecture
 
@@ -54,6 +54,7 @@
 - Ships module scripts/render_image.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/render_image.py:1`
 - Ships module scripts/typefully_post.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/typefully_post.py:1`
 - Ships module scripts/verify_sources.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/verify_sources.py:1`
+- Ships module scripts/visual_review.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/visual_review.py:1`
 - Ships module scripts/x_len.py. `skills/ghostwriter-x/skills/ghostwriter-x/scripts/x_len.py:1`
 
 ## Troubleshooting

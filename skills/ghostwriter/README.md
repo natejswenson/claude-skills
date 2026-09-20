@@ -28,6 +28,13 @@ credibility, restraint, originality and platform fit. Mechanical checks catch
 known tells; the editor must resolve every warning against your real samples.
 Edits invalidate the review, and the publisher refuses an unreviewed draft.
 
+Codex imagegen graphics also require an independent visual review of post alignment,
+visual impact, brand, typography, factual relationships, artifacts and feed-size
+readability. All 12 checks must pass before presentation; changed images or evidence
+invalidate the record. The publisher enforces it before uploads and preview payloads.
+Native screenshots and Claude/legacy renders retain their existing workflow. See
+[visual review](skills/ghostwriter/references/visual-review.md).
+
 ## What you get
 
 | Path | What it provides |

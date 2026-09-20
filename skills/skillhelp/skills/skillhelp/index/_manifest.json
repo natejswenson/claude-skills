@@ -116,7 +116,7 @@
       "name": "ghostwriter",
       "version": "0.24.0",
       "stack": "python",
-      "cardHash": "1565c8bcf6db9484",
+      "cardHash": "d4e2543bf9d493f9",
       "facts": 59,
       "sections": {
         "setup": 8,
@@ -132,13 +132,13 @@
       "name": "ghostwriter-x",
       "version": "0.3.0",
       "stack": "python",
-      "cardHash": "c42ebbc638ff5190",
-      "facts": 53,
+      "cardHash": "5bb7cd3e7d1aa229",
+      "facts": 54,
       "sections": {
         "setup": 7,
         "usage": 12,
         "commands": 4,
-        "architecture": 14,
+        "architecture": 15,
         "troubleshooting": 16
       },
       "emptySections": [],

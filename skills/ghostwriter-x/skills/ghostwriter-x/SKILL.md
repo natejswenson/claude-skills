@@ -341,6 +341,10 @@ scraping. Revisit the whole loop if the account upgrades.
    them — their openers, rhythm, emoji habits, thread style. If the optional `skill_memory`
    tool is connected, follow [local-memory.md](references/local-memory.md) for bounded,
    privately opted-in X hashtag recall; otherwise retain the original source workflow.
+   Read **Compose before polishing** in [references/post-review.md](references/post-review.md):
+   start from one supported observation and its value to the reader, then compare
+   a direct opening and a focused edit. Do not add a question, lesson, or framework
+   just to pursue engagement. Preserve warmth and material qualifications.
    Apply the **Engagement craft**
    rules below AND the reach rules in `voice/algorithm.md`. Format rules:
    - **A SINGLE tweet is the default form. Draft a thread only when the user asks for one.**
@@ -398,7 +402,9 @@ scraping. Revisit the whole loop if the account upgrades.
    rubric and private revision loop, using one fresh editor subagent when the host
    supports delegation (otherwise label the in-session review honestly). Prepare `drafts/<slug>.review.json` with
    `scripts/post_review.py prepare`, then complete every editorial check against
-   the user's current voice files, 2–3 real samples, and source evidence.
+   the user's current voice files, 2–3 real samples, and source evidence. Complete
+   both private comparisons (opening and compression), and justify every question's
+   purpose. A blanket pass or an overall score cannot replace these decisions.
    The ending stops on the last real point; voice, naturalness, substance,
    clarity, hook, credibility, restraint, originality and platform fit must also
    pass. Resolve every warning with a specific contextual reason or rewrite it.
@@ -486,6 +492,14 @@ write a genuine how-to — not a news recap.
   `assets/card-language.md` and vary against `images/card-history.jsonl`.
 
 ### Visuals (optional — diagrams & cards)
+
+If the user chooses a graphic generated or edited with Codex imagegen, read
+`references/visual-composition.md` to plan a picture-led explanation, then
+`references/visual-review.md` and pass all 12 checks before presentation. Register
+its origin, inspect the actual pixels, and run `visual_review.py check` before
+showing it. The publisher enforces that review, including dry-run and draft-only
+creation. This gate applies only to Codex imagegen assets; the native screenshot
+and Claude/legacy render workflow below stays unchanged.
 
 Only when the user opts in. Requires the diagram dependency (see README; if `render_image.py`
 reports Playwright/Chromium is missing, point them at the install step and stop).
@@ -641,14 +655,15 @@ illustrates that tweet's beat; better for 5+ beats). Slides are 16:9 (1200×675)
 
 The full rationale is in `voice/algorithm.md` — read it. The essentials:
 
-- **Tweet 1 is the whole ballgame.** No fold, no "…see more": the first line stops the scroll
-  or nothing else matters. Sharpest number, claim, or tension first. No throat-clearing, no
-  "a thread on…" preamble.
+- **Tweet 1 stands on its own.** Lead with the real situation or point in the
+  author's register. A number, tension, or question is useful only when it
+  serves that point. No throat-clearing or "a thread on…" preamble.
 - **One idea per post.** Cut anything that isn't serving the single point.
-- **Optimize for replies and bookmarks, not applause.** Real conversation and reference-worthy
-  content drive distribution. Never engagement-bait.
-- **Teach something.** A command, a config, a mental model — the thing a reader keeps is what
-  gets bookmarked and quoted.
+- **Give the reader something specific.** A useful observation, example, explanation,
+  or honest personal moment can earn the post. A quiet update need not become a lesson.
+- **Choose questions for their purpose.** Keep a genuine request for input or an
+  explanatory question when it helps more than stating the point. Never add one
+  just to solicit replies.
 - **Specifics over abstractions.** Real numbers, real moments, real names of things.
 - **One tweet is the default.** Cut to the sharpest beat and let the card carry the rest;
   only thread when the user asks. In a requested thread, each tweet is a complete thought

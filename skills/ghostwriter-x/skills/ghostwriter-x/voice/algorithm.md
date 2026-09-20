@@ -7,6 +7,13 @@ follower count — or die unseen — based on its first minutes of engagement si
 **These rules must never override `voice-notes.md`** — where they conflict, voice-notes
 wins.
 
+**Draft quality comes before reach tactics.** Use the composition and comparison
+tests in `references/post-review.md` before applying any tactic below. A post
+does not owe a question, a lesson, a numerical hook, or a framework to the feed.
+Preserve the author's voice, the actual point, and necessary qualifications.
+Reader value must survive when no one replies or bookmarks the post; generic
+reach claims are not reasons to keep weaker wording.
+
 ## How distribution works (why tweet 1 decides everything)
 1. Your post is scored for predicted engagement and shown to a slice of followers
    and interest-matched non-followers.
@@ -27,9 +34,10 @@ wins.
   and voice-notes forbids it anyway.
 
 ## Bake into every draft
-- **Tweet 1 must stand alone AND earn the tap.** The sharpest number, tension, or
-  claim goes in the first line. If tweet 1 reads like a preamble, cut it and start
-  at tweet 2.
+- **Tweet 1 must stand alone.** Lead with the real situation or point in the
+  author's register. Compare a question or tension-led opening with a direct
+  statement; never withhold the answer just to earn a tap. If tweet 1 reads like
+  a preamble, cut it and start at tweet 2.
 - **No external links in the main post.** Links in tweet 1 measurably suppress
   reach (X deprioritizes off-platform exits). Put the link in the **last reply** of
   the thread ("link below" if you must reference it).

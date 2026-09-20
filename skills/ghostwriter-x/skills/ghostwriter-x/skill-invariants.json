@@ -108,6 +108,60 @@
       "file": "references/post-review.md",
       "pattern": "report the missing[\\s\\S]{0,150}without exposing the failed text",
       "rationale": "Exhausted revisions report a blocker, not the rejected draft."
+    },
+    {
+      "id": "codex-visual-gate-routing",
+      "file": "SKILL.md",
+      "pattern": "references/visual-review\\.md",
+      "rationale": "Codex imagegen visuals require pixel review before presentation; native and legacy paths stay separate."
+    },
+    {
+      "id": "codex-visual-actual-inspection",
+      "file": "references/visual-review.md",
+      "pattern": "actual pixels at full resolution[\\s\\S]{0,80}360 CSS pixels",
+      "rationale": "Prompt inspection cannot establish the correctness, craft or mobile readability of a generated raster."
+    },
+    {
+      "id": "codex-visual-before-show",
+      "file": "references/visual-review.md",
+      "pattern": "Only exit 0 permits showing/opening that exact image",
+      "rationale": "A passing current review must precede any approval preview, not merely the final upload."
+    },
+    {
+      "id": "codex-visual-stop-condition",
+      "file": "references/visual-review.md",
+      "pattern": "two failed internal candidates[\\s\\S]{0,140}without showing failed art",
+      "rationale": "Repeated failures must not lower the quality threshold or expose rejected candidates."
+    },
+    {
+      "id": "codex-visual-private-host-capability",
+      "file": "references/visual-review.md",
+      "pattern": "cannot withhold those[\\s\\S]{0,140}stop this workflow",
+      "rationale": "A host that automatically displays unreviewed images cannot truthfully promise private review."
+    },
+    {
+      "id": "review-comparison-quality",
+      "file": "references/post-review.md",
+      "pattern": "Do not use a deliberately\\s+bad alternative",
+      "rationale": "Comparison records must challenge the draft with plausible alternatives; schema validation alone cannot judge that."
+    },
+    {
+      "id": "review-positive-voice",
+      "file": "references/post-review.md",
+      "pattern": "first-person pronouns and short paragraphs alone do not establish warmth",
+      "rationale": "A previous passing draft was a neutral feature explanation despite first person and short paragraphs; the editor must compare positive voice evidence."
+    },
+    {
+      "id": "review-question-context",
+      "file": "references/post-review.md",
+      "pattern": "warning does not ban questions",
+      "rationale": "Question findings require contextual judgment, preserving useful and genuine questions rather than flattening the author voice."
+    },
+    {
+      "id": "review-preserve-conditions",
+      "file": "references/post-review.md",
+      "pattern": "Check conditions, thresholds and fallback/error behavior",
+      "rationale": "The real forward test exposed a missing minimum-history condition in an otherwise source-backed first-person capability claim."
     }
   ],
   "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter-x` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",

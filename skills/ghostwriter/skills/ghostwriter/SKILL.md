@@ -32,6 +32,10 @@ for an original PRESS card that supplements the post. Do not author an HTML card
 card template in Codex unless the user explicitly asks for the legacy deterministic
 renderer. If native image generation is unavailable, offer the user a text-only,
 native-screenshot, or explicit legacy-renderer choice; never switch silently.
+Only Codex imagegen graphics must also pass `references/visual-review.md` before
+presentation: all 12 visual checks, actual pixel inspection and an unchanged
+`visual_review.py check` record. Publishers enforce this gate for generated assets;
+native screenshots and Claude/legacy renders keep their existing review path.
 
 # LinkedIn Ghostwriter
 
@@ -440,9 +444,13 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    reach optimization and must never override voice). If a voice file is missing — e.g. a fresh
    setup — copy `voice/voice-notes.example.md` to `~/.claude/ghostwriter/voice/voice-notes.md` and
    proceed with what you have (`~/.claude/ghostwriter/voice/interests.md` plus the defaults). Write the
-   post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Apply the
+   post to match them — their openers, rhythm, formatting, emoji/hashtag habits. Read
+   **Compose before polishing** in [references/post-review.md](references/post-review.md):
+   start from one supported observation and its value to the reader, then compare
+   a direct opening and a focused edit. Do not add a question, lesson, or framework
+   just to pursue engagement. Preserve warmth and material qualifications. Apply the
    **Engagement craft** rules below AND the reach rules in `voice/algorithm.md` (hook in the
-   first ~210 chars, default 50–120 words, optimize for *saves*, no links in the body). Aim for one
+   first ~210 chars, default 50–120 words, useful specifics, no links in the body). Aim for one
    strong post, not three mediocre options.
    **Never fabricate or exaggerate** details that aren't true to the user's real experience —
    authenticity over drama (see voice-notes.md).
@@ -482,7 +490,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    rubric and private revision loop, using one fresh editor subagent when the host
    supports delegation (otherwise label the in-session review honestly). Prepare `drafts/<slug>.review.json` with
    `scripts/post_review.py prepare`, then complete every editorial check against
-   the user's current voice files, 2–3 real samples, and source evidence.
+   the user's current voice files, 2–3 real samples, and source evidence. Complete
+   both private comparisons (opening and compression), and justify every question's
+   purpose. A blanket pass or an overall score cannot replace these decisions.
    The ending stops on the last real point; voice, naturalness, substance,
    clarity, hook, credibility, restraint, originality and platform fit must also
    pass. Resolve every warning with a specific contextual reason or rewrite it.
@@ -815,15 +825,16 @@ the best visual for educational / how-to / step-by-step posts. The template is *
 
 The full, sourced rationale is in `voice/algorithm.md` — read it. The essentials:
 
-- **Hook in the first ~210 characters (2–3 short lines).** That is all that shows before
-  "…see more", and it decides reach. A sharp claim, a specific number, a tension, or a story
-  cold-open. No throat-clearing ("I've been thinking lately...").
+- **Make the first ~210 characters (2–3 short lines) clear on their own.** Lead with
+  the real situation or point in the author's register. A number, tension, or
+  question is useful only when it serves that point. No throat-clearing.
 - **One idea per post.** Cut anything that isn't serving the single point.
-- **Optimize for SAVES, not applause.** Saves are worth ~5× a like and drive the most reach.
-  Make the post reference-worthy: a framework, a "how to", a reusable mental model the reader
-  wants to keep. This is how we chase the algorithm without resorting to engagement bait.
-- **Teach something.** Knowledge/advice content gets ~3–5× the reach. Prescriptive, for the
-  reader (see voice-notes), not autobiographical.
+- **Give the reader something specific.** A useful observation, example, explanation,
+  or honest personal moment can earn the post. Use a framework or how-to when the
+  material and request call for one. A quiet update need not become a lesson.
+- **Choose questions for their purpose.** A genuine request for input or a useful
+  explanatory question can fit the voice. Compare it with stating the point directly;
+  no question is owed to the algorithm, including in the opening.
 - **Specifics over abstractions.** Real numbers, real moments, real names of things.
 - **Feed-native formatting.** LinkedIn is read on phones: one idea per line or a 1–2 sentence
   paragraph, blank line between, no paragraph over ~40 words, ~8th-grade reading level (denser
@@ -832,8 +843,8 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
   link-in-first-comment workaround is reportedly detected as of early 2026 — it still beats an
   in-body link, but first ask whether the post needs the link at all.
 - **Earn the ending on substance.** The last real point, a line worth keeping, or a **genuine
-  question the user actually wants answered** — a real question is a first-class ending and the
-  main compliant way a post earns comments (voice-notes → Recalibration 2026-08-19). What stays
+  question the user actually wants answered** — keep a real question when it is the strongest
+  ending (voice-notes → Recalibration 2026-08-19). What stays
   banned is the reflexive shape: "Thoughts? 👇", "what's your…?", "how do you…?" as a tacked-on
   closer.
 - **Sound human — warmth is a positive property, not the absence of tells.** No "In today's
