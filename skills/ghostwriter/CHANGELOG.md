@@ -4,24 +4,24 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-09-20
+
+### Added
+
+- **Every Codex-generated card receives a recorded visual review before presentation or publication.** All 12 dimensions must pass after full-resolution and feed-size inspection, including post alignment, visual appeal, PRESS brand, factual relationships, exact copy, readability and accessibility. Reviews bind the exact image, post, prompt, brand and evidence; changed or stale inputs require another review. Native screenshots and Claude/legacy renders retain their existing workflow.
+- **Optional shared hashtag memory preserves one authoritative voice source.** An explicitly configured owner bridge can recall and save hashtag preferences with verified writes, scoped access and retry handling. Installation does not enable memory or migrate existing preferences.
+
+### Changed
+
+- **Existing drafts need a current editorial review before display or publication.** Ten checks cover voice, naturalness, substance, clarity, opening, ending, credibility, restraint, originality and platform fit. The editor compares a direct opening alternative and tests cutting or tightening the weakest passage; unresolved warnings, stale evidence and older review records block delivery until reviewed again.
+- **Drafts start from a supported observation and its value to the reader.** Questions, numerical hooks and lessons are choices rather than required formulas. Review preserves material conditions and checks positive voice evidence as well as accumulated attention devices and AI tells.
+- **Codex cards favor a meaningful picture with supporting text.** Illustrations, spatial comparisons and diagrams carry the explanation; captions preserve necessary conditions. The prompt records how the marks map to evidence, and revisions are compared with the actual previous image. The 12-check rubric and PRESS brand laws stay unchanged.
+
 ## [0.24.0] - 2026-09-16
 
 ### Changed
 
 - **Drafting sessions now handle idea selection and radar updates more reliably.** The refreshed flow keeps lane choices, idea status, and navigation consistent while improving radar reliability.
-
-## [Unreleased]
-
-- Require a recorded 12-dimension visual review for Codex imagegen graphics before
-  presentation or attachment, bound to the image, post, brand, sources and alt text.
-  Native screenshots and Claude/legacy render workflows remain unchanged.
-
-### Changed
-
-- Require a complete editorial review before displaying any draft: voice, naturalness,
-  substance, clarity, hook, ending, credibility, restraint, originality and platform fit.
-- Bind reviews to the exact draft, sources and voice evidence; unresolved warnings,
-  missing reviews and edits block display and publication, including X draft-only writes.
 
 - Open-ended drafting now begins with a Project, Trends in Industry, or Personal
   Fun picker; Ghostwriter only researches and presents ideas after the user chooses
