@@ -25,7 +25,8 @@
     "ci / shipflow",
     "ci / shipreport",
     "ci / skillfactory",
-    "ci / skillhelp"
+    "ci / skillhelp",
+    "ci / traefik"
   ],
   "mergeMethod": {
     "devToMainMethod": "squash"
