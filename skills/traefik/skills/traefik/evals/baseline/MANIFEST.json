@@ -1,0 +1,12 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/traefik.js check --input evals/capabilities.json --out \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "compatibility.json",
+      "bytes": 357,
+      "sha256": "6c86b8f6680dd12dc926c70a28b0c535e60fbe0b3c837673e80dc9ffe13bac1c"
+    }
+  ]
+}
