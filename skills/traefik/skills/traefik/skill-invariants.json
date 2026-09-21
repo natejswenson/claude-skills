@@ -1,0 +1,78 @@
+{
+  "comment": "What must not silently disappear from traefik. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Never operate a stack inferred from the plugin cache; resolv",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Detection establishes the selected checkout and compatibility; asking for the same information adds avoidable setup work."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Resolve and check the selected stack",
+        "command": "node scripts/traefik.js detect"
+      },
+      {
+        "step": "Bind a verified local default",
+        "command": "node scripts/traefik.js bind"
+      },
+      {
+        "step": "Validate the CLI contract offline",
+        "command": "node scripts/traefik.js check"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Choose the smallest service operation matching the user request",
+        "why": "User intent and application evidence determine the target and whether a mutation is authorized."
+      },
+      {
+        "step": "Diagnose endpoint failures and verify useful recovery",
+        "why": "Container readiness alone cannot establish DNS, TLS, authorization or application correctness."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-cli-contract",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/capabilities.json",
+        "evals/incompatible.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/compatibility.json"
+      ],
+      "update_command": "node ../../../skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill traefik --from /tmp/traefik-baseline-review --command 'node scripts/traefik.js check --input evals/capabilities.json --out \"$OUT\"' --trap-command 'node scripts/traefik.js check --input evals/incompatible.json'",
+      "rationale": "A newer skill must reject missing operational capabilities; the golden pins the path-free projection of a real external CLI contract."
+    },
+    {
+      "id": "missing-removal-contract",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/capabilities.json",
+        "evals/incompatible.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/compatibility.json"
+      ],
+      "update_command": "node ../../../skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill traefik --from /tmp/traefik-baseline-review --command 'node scripts/traefik.js check --input evals/capabilities.json --out \"$OUT\"' --trap-command 'node scripts/traefik.js check --input evals/incompatible.json'",
+      "rationale": "The real contract with removal-preview-v1 removed must fail specifically as cli_incompatible."
+    }
+  ]
+}

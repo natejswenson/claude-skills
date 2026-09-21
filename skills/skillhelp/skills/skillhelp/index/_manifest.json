@@ -351,6 +351,22 @@
       },
       "emptySections": [],
       "secretsRefused": 0
+    },
+    {
+      "name": "traefik",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "0de50fef00c0fcb6",
+      "facts": 40,
+      "sections": {
+        "setup": 10,
+        "usage": 12,
+        "commands": 7,
+        "architecture": 6,
+        "troubleshooting": 5
+      },
+      "emptySections": [],
+      "secretsRefused": 0
     }
   ]
 }

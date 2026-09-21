@@ -1,0 +1,22 @@
+{
+  "name": "traefik",
+  "version": "0.1.0",
+  "description": "Operate a local Traefik stack from either Codex or Claude through its external tk CLI.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/traefik",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "traefik",
+    "shortDescription": "Operate a local Traefik stack from either Codex or Claude through its external tk CLI.",
+    "longDescription": "Operate a local Traefik stack from either Codex or Claude through its external tk CLI.",
+    "developerName": "Nate Swenson",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Use $traefik to help me."
+    ]
+  }
+}

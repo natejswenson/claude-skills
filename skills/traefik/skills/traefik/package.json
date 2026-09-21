@@ -1,0 +1,42 @@
+{
+  "name": "@natjswenson/traefik",
+  "version": "0.1.0",
+  "description": "Operate a local Traefik stack from either Codex or Claude through its external tk CLI.",
+  "license": "MIT",
+  "author": "Nate Swenson",
+  "homepage": "https://github.com/natejswenson/claude-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/natejswenson/claude-skills.git"
+  },
+  "bugs": {
+    "url": "https://github.com/natejswenson/claude-skills/issues"
+  },
+  "keywords": [
+    "traefik",
+    "claude-code",
+    "claude-skill"
+  ],
+  "type": "module",
+  "bin": {
+    "traefik-skill": "scripts/traefik.js"
+  },
+  "files": [
+    "scripts/",
+    "references/",
+    "skill-invariants.json",
+    "SKILL.md",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test \"scripts/**/*.test.mjs\"",
+    "audit": "npm audit --audit-level=moderate",
+    "prepack": "cp ../../README.md ../../LICENSE ../../CHANGELOG.md .",
+    "postpack": "rm -f README.md LICENSE CHANGELOG.md"
+  }
+}

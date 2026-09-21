@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "command": "capabilities",
+  "ok": true,
+  "protocol_version": 1,
+  "commands": [
+    "list",
+    "status",
+    "doctor",
+    "inspect",
+    "logs",
+    "start",
+    "stop",
+    "restart",
+    "rebuild",
+    "wait",
+    "remove"
+  ],
+  "features": [
+    "inspection-json-v1",
+    "lifecycle-json-v1",
+    "lifecycle-explicit-targets",
+    "lifecycle-dry-run",
+    "bounded-readiness",
+    "removal-preview-v1",
+    "checkout-mutation-lock",
+    "tls-probes",
+    "local-memory-readiness"
+  ]
+}

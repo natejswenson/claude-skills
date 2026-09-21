@@ -1,0 +1,91 @@
+{
+  "name": "traefik",
+  "sources": [
+    "skills/traefik/skills/traefik/SKILL.md",
+    "skills/traefik/skills/traefik/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 21
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 14
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 11
+      }
+    },
+    {
+      "id": "house-cf7d2098",
+      "tag": "house",
+      "text": "Branch from `main` and open a PR into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 9
+      }
+    },
+    {
+      "id": "house-ecd88e99",
+      "tag": "house",
+      "text": "Delete merged feature branches locally and remotely.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-8a9e39e7",
+      "tag": "inv",
+      "text": "never ask about anything in it",
+      "severity": "high",
+      "rationale": "Detection establishes the selected checkout and compatibility; asking for the same information adds avoidable setup work.",
+      "source": {
+        "file": "skills/traefik/skills/traefik/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/traefik/skills/traefik/SKILL.md",
+        "line": 85
+      }
+    },
+    {
+      "id": "skill-ba61f473",
+      "tag": "skill",
+      "text": "Never operate a stack inferred from the plugin cache; resolve an explicit or verified stack and use its external tk CLI.",
+      "severity": "high",
+      "source": {
+        "file": "skills/traefik/skills/traefik/SKILL.md",
+        "line": 15
+      }
+    }
+  ]
+}

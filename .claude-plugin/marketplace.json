@@ -92,6 +92,10 @@
     {
       "name": "bible-study",
       "source": "./skills/bible-study"
+    },
+    {
+      "name": "traefik",
+      "source": "./skills/traefik"
     }
   ]
 }

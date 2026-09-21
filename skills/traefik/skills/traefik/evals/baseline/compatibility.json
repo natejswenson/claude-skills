@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "compatible": true,
+  "protocol_version": 1,
+  "required_capabilities": [
+    "inspection-json-v1",
+    "lifecycle-json-v1",
+    "lifecycle-explicit-targets",
+    "lifecycle-dry-run",
+    "bounded-readiness",
+    "removal-preview-v1",
+    "checkout-mutation-lock",
+    "tls-probes",
+    "local-memory-readiness"
+  ],
+  "mode": "offline"
+}
