@@ -32,6 +32,11 @@ Codex imagegen graphics also require an independent visual review of post alignm
 visual impact, brand, typography, factual relationships, artifacts and feed-size
 readability. All 12 checks must pass before presentation; changed images or evidence
 invalidate the record. The publisher enforces it before uploads and preview payloads.
+The original native PNG must meet a declared minimum of at least 1200×1500;
+2400×3000 is preferred when supported. A separate craft inspection compares the
+composition, sharpness and typography with the user's quality brief and brand.
+References are optional when none fits; correct labels or brand colors alone do not
+make a polished graphic. Automated checks enforce the record, not aesthetic taste.
 Native screenshots and Claude/legacy renders retain their existing workflow. See
 [visual review](skills/ghostwriter/references/visual-review.md).
 
@@ -45,7 +50,7 @@ Native screenshots and Claude/legacy renders retain their existing workflow. See
 | `skills/ghostwriter/scripts/linkedin_post.py` | Publishes a post (`--dry-run` previews the API payload). |
 | `skills/ghostwriter/scripts/release_radar.sh` | Optional research run that builds a digest of recent developments. |
 | `skills/ghostwriter/references/codex-images.md` | Codex-native generated-card, seed, and approval contract. |
-| `skills/ghostwriter/assets/image-seeds/` | Forward-tested PRESS cards used as style references, with prompt receipts. |
+| `skills/ghostwriter/assets/image-seeds/` | Optional PRESS style references with prompt receipts; inspect for fit and current brand compliance. |
 | `skills/ghostwriter/scripts/render_image.py` | Optional legacy path: locally renders a Mermaid diagram or PRESS card. |
 | `skills/ghostwriter/assets/` | Legacy card/diagram assets plus the shared brand-guide example. |
 | `skills/ghostwriter/voice/*.example.md` | Templates to copy into your own (gitignored) voice files. |

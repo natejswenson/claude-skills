@@ -63,22 +63,31 @@ def register(path, image, origin=GENERATOR):
     write_json(p, record)
 
 
-def png_size(image):
+def png_size(image, export=None):
     """Check PNG header and intended export size; actual decoding is the visual review."""
     header = Path(image).read_bytes()[:24]
     if Path(image).suffix.lower() != ".png" or header[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR":
         raise ValueError("Generated card must be a PNG")
     width, height = struct.unpack(">II", header[16:24])
-    if width < 1024 or height < 1280 or abs(width / height - 0.8) > 0.008:
-        raise ValueError("Generated card must be portrait 4:5 (1% tolerance), at least 1024 by 1280")
+    minimum = [1200, 1500]
+    if export is not None:
+        minimum = [export["min_width"], export["min_height"]]
+        if any(type(value) is not int or value < floor for value, floor in zip(minimum, (1200, 1500))):
+            raise ValueError("Export minimum cannot be lower than 1200 by 1500")
+    if width < minimum[0] or height < minimum[1] or abs(width / height - 0.8) > 0.008:
+        raise ValueError(f"Generated card is {width} by {height}; requires portrait 4:5 (1% aspect tolerance), "
+                         f"at least {minimum[0]} by {minimum[1]}. Regenerate; do not upscale.")
     return [width, height]
 
 
 def prepare(path, image, receipt, brand, evidence):
     p = Path(path).resolve()
+    export = read_json(receipt)["export"]
+    if not isinstance(export, dict):
+        raise ValueError("Prompt receipt needs an export minimum")
     record = {
         "version": 1, "generator": GENERATOR, "platform": post_review.PLATFORM,
-        "image": post_review.snapshot(image), "dimensions": png_size(image),
+        "image": post_review.snapshot(image), "dimensions": png_size(image, export),
         "context": {
             "draft": [post_review.snapshot(p)],
             "text_review": [post_review.snapshot(post_review.sidecar(p))],
@@ -88,7 +97,8 @@ def prepare(path, image, receipt, brand, evidence):
             "evidence": [post_review.snapshot(e) for e in evidence],
         },
         "reviewer": "pending",
-        "inspection": {"full_resolution": "", "feed_360px": ""},
+        "revision_required": None,
+        "inspection": {"full_resolution": "", "feed_360px": "", "craft": ""},
         "observed_text": [],
         "checks": {key: {"status": "pending", "region": "", "reason": ""} for key in RUBRIC},
     }
@@ -122,6 +132,12 @@ def validate(path, image, alt=None, tweet_index=None):
                         or not Path(entry["path"]).read_bytes().strip()):
                     errors.append(f"Changed or empty visual {role} evidence")
         receipt = read_json(context["receipt"][0]["path"])
+        if not isinstance(receipt["export"], dict):
+            raise ValueError("Prompt receipt needs an export minimum")
+        png_size(img, receipt["export"])
+        for field in ("finish", "focal_idea", "reference_basis"):
+            if not post_review.nonempty(receipt["quality_brief"][field]):
+                errors.append(f"Missing visual quality brief: {field}")
         if (receipt["generator"] != GENERATOR or not post_review.nonempty(receipt["post_anchor"])
                 or receipt["post_anchor"] not in p.read_text(encoding="utf-8")
                 or not post_review.nonempty(receipt["visual_claim"])
@@ -148,7 +164,9 @@ def validate(path, image, alt=None, tweet_index=None):
             errors.append("Rendered text differs from exact copy (including duplicates or omissions)")
         if record["reviewer"] not in ("independent-visual-editor", "session-visual-editor"):
             errors.append("Visual inspection missing; skipped and mock reviews cannot pass")
-        for view in ("full_resolution", "feed_360px"):
+        if record["revision_required"] is not False:
+            errors.append("Visual craft revision is required or undecided")
+        for view in ("full_resolution", "feed_360px", "craft"):
             if not post_review.nonempty(record["inspection"][view]):
                 errors.append(f"Missing actual visual inspection: {view}")
         for key in RUBRIC:

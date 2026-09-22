@@ -276,6 +276,24 @@
    "file": "references/post-review.md",
    "pattern": "Check conditions, thresholds and fallback/error behavior",
    "rationale": "The real forward test exposed a missing minimum-history condition in an otherwise source-backed first-person capability claim."
+  },
+  {
+   "id": "visual-craft-before-correctness",
+   "file": "references/visual-review.md",
+   "pattern": "Make the craft judgment first[\\s\\S]{0,450}weakest visible element",
+   "rationale": "An actual reviewed card had correct labels and counts but the user rejected its visual quality; craft needs a distinct comparison with the current quality brief."
+  },
+  {
+   "id": "visual-native-export-minimum",
+   "file": "references/visual-review.md",
+   "pattern": "1122\u00d71402 image fails[\\s\\S]{0,100}aspect tolerance cannot waive dimensions",
+   "rationale": "A 1122\u00d71402 native image slipped through a 1024\u00d71280 floor despite the requested 1200\u00d71500 export."
+  },
+  {
+   "id": "visual-reference-is-optional",
+   "file": "references/codex-images.md",
+   "pattern": "Passing a seed is optional[\\s\\S]{0,160}without an image reference",
+   "rationale": "Forcing a mismatched low-resolution reference inherits an unsuitable layout and finish; use brand sources when no seed fits."
   }
  ],
  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",
@@ -330,6 +348,16 @@
    "min_corpus": 8,
    "rationale": "Previously published real drafts retain zero hard failures; mutation tests reject edited text, missing editorial evidence, unresolved warnings and stale context before display or writes.",
    "update_command": "Add a newly published, user-approved draft to evals/baseline/drafts/ and run pytest tests/test_post_review.py. Never edit an approved artifact merely to appease a rule."
+  },
+  {
+   "id": "rejected-native-export",
+   "kind": "fixture",
+   "test": "tests/test_visual_review.py",
+   "fixtures": [
+    "evals/baseline/visual-quality/export-observation.json"
+   ],
+   "rationale": "Frozen PNG header from the rejected September 22 card must fail the declared minimum. The same test verifies a synthetic export meeting the minimum passes; neither result asserts aesthetic quality.",
+   "update_command": "For a new real export regression, project only its first 24 PNG bytes and required dimensions into this fixture, inspect the diff, and run pytest tests/test_visual_review.py -k frozen_rejected_export. Never use a checker pass as user approval."
   }
  ]
 }
