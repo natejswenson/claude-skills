@@ -44,16 +44,46 @@ Translate the source into these laws:
 
 ## Seed library
 
-Read `assets/image-seeds/manifest.json` and choose the seed whose **information shape** best
-matches the post. Pass that PNG to the built-in image tool as a style reference. State that
-the seed controls palette, print texture, typography, and PRESS anatomy only; it must not copy
-the seed's subject, wording, diagram, or layout. Current brand laws override the seed:
-inspect it for outdated treatments and explicitly exclude them from the prompt. A seed is
-not a pre-approved example and cannot waive a visual-review failure.
+Read `assets/image-seeds/manifest.json` and inspect a seed only when its **information shape**
+fits the post and its craft supports the current quality brief. Passing a seed is optional:
+if none fits, generate from the current brand laws without an image reference. Do not force a
+source-flow seed onto a price comparison. When a suitable user-approved reference exists,
+prefer it as the craft benchmark; record its provenance. A previous checker pass is not user
+approval, and user-rejected work is negative evidence, never a positive style reference.
+
+An image reference supplies palette, type roles and PRESS anatomy, never its subject, wording,
+diagram, layout or output dimensions. Inspect it for outdated treatments and explicitly exclude
+them from the prompt. Warm paper does not require visible grain, distress, faded ink or blurry
+edges; default to a clean, restrained paper surface. Current personal brand laws override seeds.
+A seed is not a pre-approved example and cannot waive a visual-review failure.
 
 The seed library is a repeatability tool, not a template gallery. Before generating, read the
 last two lines of `images/generated-card-history.jsonl` when it exists. Change at least two of:
 headline treatment, hero type, flow direction, density, numeral role, or support texture.
+
+## Quality brief and export
+
+High quality means three separate things: sharp output, visually appealing art direction,
+and fidelity to the user's current brand. More pixels alone cannot repair a generic diagram.
+Before generation, translate current user feedback into a short `quality_brief`: the intended
+finish, the focal idea and how its composition earns attention, and the reference basis for
+judging craft. If no user-approved reference exists, say so in the receipt and use the current
+brand sources plus the user's quality brief; never invent approval or ask for a reference just
+to start. Do not turn these production details into another user questionnaire.
+
+The final native PNG must be portrait 4:5 and **at least 1200×1500**. Prefer a **2400×3000**
+native master when the tool supports it, especially for detailed illustrations and diagrams;
+this is a preferred target, not a claim about the tool's capabilities. Record the actual
+required floor in `export.min_width` and `export.min_height` before generation; a larger size
+explicitly requested by the user becomes that floor. A size in a prompt is only a request.
+Measure the returned file after every generation or edit: 1122×1402 and 1024×1280 fail the
+minimum, even if the aspect ratio is close. Aspect-ratio tolerance never reduces the floor.
+
+Use the original tool output, not a screenshot, chat thumbnail, or compressed preview.
+Never resize, upscale, sharpen or add texture merely to pass the dimensions check. Inspect
+text edges, curves, linework and surface detail at 100% as well as the feed view. If the tool
+cannot supply the required native size or clean finish, report that specific limitation and
+offer the existing explicit renderer/text-only choices. Do not lower the requirement silently.
 
 ## Reality gate for architecture and flows
 
@@ -88,13 +118,19 @@ Before calling the image tool, register the versioned candidate using
   "generator": "codex-imagegen",
   "post_anchor": "<exact excerpt from the approved post>",
   "visual_claim": "<what the hero explains about that point>",
+  "export": {"min_width": 1200, "min_height": 1500},
+  "quality_brief": {
+    "finish": "<sharpness, surface restraint and current user quality preference>",
+    "focal_idea": "<specific composition and what makes it visually compelling>",
+    "reference_basis": "<approved reference path and provenance, or brand sources when none exists>"
+  },
   "visual_encoding": {
     "marks": "<which pictorial marks carry meaning>",
     "mapping": "<how those marks map to the evidence>",
     "picture_text_balance": "<picture area and supporting labels>"
   },
   "alt_text": "<exact description to publish>",
-  "seed": "assets/image-seeds/<file>.png",
+  "seed": null,
   "information_shape": "system-map",
   "brand_source": "~/.claude/ghostwriter/assets/diagram.css",
   "palette": {"paper": "...", "ink": "...", "dim": "...", "accent": "..."},
@@ -113,6 +149,7 @@ Before calling the image tool, register the versioned candidate using
 This receipt is the reproducible source for edits. Write a new version whenever the prompt or
 selected output changes; after preparing review, changing the receipt invalidates that review.
 Never rely on the conversation transcript as the only copy of the prompt.
+Set `seed` to the actual reference path only when one was selected; otherwise keep it `null`.
 
 ## Generate
 
@@ -126,10 +163,13 @@ Never rely on the conversation transcript as the only copy of the prompt.
    must do more than repeat the headline. Describe the encoding in the receipt;
    keep type subordinate to the picture without hiding necessary qualifications.
 3. Build a production prompt for an `infographic-diagram`, `productivity-visual` or `ads-marketing` LinkedIn editorial
-   card, portrait 4:5. Include the PRESS values read from the brand source, the seed's role,
+   card, portrait 4:5. Include the quality brief and required native size, the PRESS values
+   read from the brand source, the selected reference's role when applicable,
    the requested composition, every string under `Text (verbatim)`, and explicit avoid rules.
-4. Save the prompt receipt, then use Codex's built-in image-generation tool with the selected
-   seed as `referenced_image_paths`. Do not use an API-key CLI or silently switch models.
+4. Save the prompt receipt, then use Codex's built-in image-generation tool. Include
+   `referenced_image_paths` only when a suitable reference was selected. For a new card
+   without one, omit both image-reference arguments. Do not use an API-key CLI or silently
+   switch models. An edit may preserve its input's dimensions; verify its actual output too.
 5. Show one lowercase progress line while it runs: `generating the press card…`.
 
 ## Mandatory visual review
