@@ -15,7 +15,7 @@ import post_review
 from test_post_review import reviewed, ROOT, OTHER_ROOT
 
 
-def png(path, width=1024, height=1280):
+def png(path, width=1200, height=1500):
     def chunk(kind, data):
         return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
     path.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 0, 0, 0, 0))
@@ -29,13 +29,19 @@ def candidate(tmp_path):
     receipt = tmp_path / 'card.image.json'
     review.write_json(receipt, dict(generator=review.GENERATOR, post_anchor=path.read_text().splitlines()[0],
                                    visual_claim='The write check precedes saving.', prompt='Synthetic protocol fixture.',
-                                   exact_text=['Write check', 'Stop before saving'], alt_text='A check before a write.', tweet_index=1))
+                                   exact_text=['Write check', 'Stop before saving'], alt_text='A check before a write.', tweet_index=1,
+                                   export={'min_width': 1200, 'min_height': 1500},
+                                   quality_brief={'finish': 'Synthetic crisp output requirement.',
+                                                  'focal_idea': 'Synthetic purposeful spatial comparison.',
+                                                  'reference_basis': 'Synthetic brand; no approved reference.'}))
     brand = tmp_path / 'brand.css'
     brand.write_text('Synthetic brand evidence, not a rendered brand assertion.')
     record = review.prepare(path, image, receipt, [brand], [samples])
     record['reviewer'] = 'session-visual-editor'
+    record['revision_required'] = False
     record['inspection'] = {'full_resolution': 'Synthetic full view attestation.',
-                            'feed_360px': 'Synthetic feed view attestation.'}
+                            'feed_360px': 'Synthetic feed view attestation.',
+                            'craft': 'Synthetic reference comparison and strengths/weaknesses, not aesthetic evidence.'}
     record['observed_text'] = ['Write check', 'Stop before saving']
     for key in review.RUBRIC:
         record['checks'][key] = dict(status='pass', region='Synthetic hero region', reason=f'Synthetic {key} protocol attestation.')
@@ -66,7 +72,7 @@ def test_each_visual_dimension_is_required(tmp_path, key):
     assert not result['ok'] and any(key in error for error in result['errors'])
 
 
-@pytest.mark.parametrize('change', ['version', 'platform', 'origin', 'image', 'dimensions', 'reviewer', 'full_resolution', 'feed_360px', 'region', 'reason', 'quote_only'])
+@pytest.mark.parametrize('change', ['version', 'platform', 'origin', 'image', 'dimensions', 'reviewer', 'full_resolution', 'feed_360px', 'craft', 'region', 'reason', 'quote_only'])
 def test_incomplete_or_mismatched_review_blocks(tmp_path, change):
     path, image, _, _, record = candidate(tmp_path)
     if change in ('version', 'platform'):
@@ -291,10 +297,82 @@ def test_publisher_blocks_before_disclosure_or_upload(tmp_path, monkeypatch, cap
         assert 'DRY RUN' not in capsys.readouterr().out
 
 
-@pytest.mark.parametrize('size', [(1122, 1402), (1024, 1280), (1200, 1500)])
-def test_native_output_rounding_is_not_a_quality_failure(tmp_path, size):
+@pytest.mark.parametrize('size', [(1200, 1500), (1201, 1500), (2400, 3000)])
+def test_aspect_rounding_is_allowed_only_above_export_minimum(tmp_path, size):
     image = png(tmp_path / 'rounding.png', *size)
     assert review.png_size(image) == list(size)
+
+
+@pytest.mark.parametrize('size', [(1122, 1402), (1024, 1280), (1199, 1500), (1200, 1499)])
+def test_undersized_native_exports_cannot_use_aspect_tolerance(tmp_path, size):
+    # 1122x1402 was accepted in a real run despite the intended 1200x1500 export.
+    image = png(tmp_path / 'undersized.png', *size)
+    with pytest.raises(ValueError, match='at least 1200 by 1500'):
+        review.png_size(image)
+
+
+def test_frozen_rejected_export(tmp_path):
+    observation = review.read_json(ROOT / 'evals/baseline/visual-quality/export-observation.json')
+    image = tmp_path / 'observed.png'
+    image.write_bytes(bytes.fromhex(observation['native_header_hex']))
+    assert struct.unpack('>II', image.read_bytes()[16:24]) == (1122, 1402)
+    with pytest.raises(ValueError, match='at least 1200 by 1500'):
+        review.png_size(image)
+    # Synthetic positive boundary checks the export contract, not this artwork's craft.
+    png(image, *observation['requested_minimum'])
+    assert review.png_size(image) == [1200, 1500]
+
+
+@pytest.mark.parametrize('export', [None, {}, [], {'min_width': True, 'min_height': 1500},
+                                   {'min_width': 1122, 'min_height': 1402},
+                                   {'min_width': 1200, 'min_height': '1500'}])
+def test_missing_or_lowered_export_contract_blocks(tmp_path, export):
+    path, image, receipt, brand, record = candidate(tmp_path)
+    data = review.read_json(receipt)
+    data['export'] = export
+    review.write_json(receipt, data)
+    record['context']['receipt'] = [post_review.snapshot(receipt)]
+    review.write_json(review.sidecar(image), record)
+    assert not review.validate(path, image)['ok']
+    with pytest.raises((ValueError, KeyError, TypeError)):
+        review.prepare(path, image, receipt, [brand], [brand])
+
+
+def test_larger_declared_export_minimum_is_enforced(tmp_path):
+    path, image, receipt, brand, record = candidate(tmp_path)
+    data = review.read_json(receipt)
+    data['export'] = {'min_width': 2400, 'min_height': 3000}
+    review.write_json(receipt, data)
+    record['context']['receipt'] = [post_review.snapshot(receipt)]
+    review.write_json(review.sidecar(image), record)
+    assert not review.validate(path, image)['ok']
+    with pytest.raises(ValueError, match='at least 2400 by 3000'):
+        review.prepare(path, image, receipt, [brand], [brand])
+    png(image, 2400, 3000)
+    record['image'] = post_review.snapshot(image)
+    record['dimensions'] = [2400, 3000]
+    review.write_json(review.sidecar(image), record)
+    assert review.validate(path, image)['ok']
+
+
+@pytest.mark.parametrize('field', ['finish', 'focal_idea', 'reference_basis'])
+def test_quality_brief_cannot_be_empty(tmp_path, field):
+    path, image, receipt, _, record = candidate(tmp_path)
+    data = review.read_json(receipt)
+    data['quality_brief'][field] = ''
+    review.write_json(receipt, data)
+    record['context']['receipt'] = [post_review.snapshot(receipt)]
+    review.write_json(review.sidecar(image), record)
+    assert f'Missing visual quality brief: {field}' in review.validate(path, image)['errors']
+
+
+@pytest.mark.parametrize('decision', [True, None, 'false', 0])
+def test_craft_revision_blocks_even_with_twelve_passing_rows(tmp_path, decision):
+    path, image, _, _, record = candidate(tmp_path)
+    record['revision_required'] = decision
+    review.write_json(review.sidecar(image), record)
+    with pytest.raises(SystemExit, match='craft revision is required or undecided'):
+        review.enforce(path, [(image, 'A check before a write.')])
 
 
 @pytest.mark.parametrize('kind', ['header', 'dimensions', 'extension', 'truncated'])

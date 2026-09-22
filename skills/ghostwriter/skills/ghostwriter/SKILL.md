@@ -36,6 +36,10 @@ Only Codex imagegen graphics must also pass `references/visual-review.md` before
 presentation: all 12 visual checks, actual pixel inspection and an unchanged
 `visual_review.py check` record. Publishers enforce this gate for generated assets;
 native screenshots and Claude/legacy renders keep their existing review path.
+Generated cards require both a sharp native export of at least 1200×1500 and
+visually appealing art direction under the user's current brand. Follow the
+quality brief and reference-selection rules in `references/codex-images.md`;
+correct labels, a matching palette and a checker pass alone do not establish polish.
 
 # LinkedIn Ghostwriter
 
