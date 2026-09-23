@@ -96,6 +96,10 @@
     {
       "name": "traefik",
       "source": "./skills/traefik"
+    },
+    {
+      "name": "local-dev",
+      "source": "./skills/local-dev"
     }
   ]
 }

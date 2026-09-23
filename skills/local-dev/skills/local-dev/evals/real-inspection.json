@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "root": "claude-skills (local-dev development worktree)",
+  "branch": "feature/local-dev",
+  "head": "17de0ee57ee1f87121b69f82092308fe4f267bab",
+  "baseHint": "origin/main",
+  "baseFreshness": "local refs only; remote not checked",
+  "dirty": true,
+  "files": [
+    {
+      "status": " M",
+      "path": ".claude-plugin/marketplace.json"
+    },
+    {
+      "status": " M",
+      "path": ".github/repo-settings.sh"
+    },
+    {
+      "status": " M",
+      "path": ".github/shipflow.json"
+    },
+    {
+      "status": " M",
+      "path": "CLAUDE.md"
+    },
+    {
+      "status": " M",
+      "path": "README.md"
+    },
+    {
+      "status": " M",
+      "path": "skills/press/skills/press/targets.json"
+    },
+    {
+      "status": "??",
+      "path": ".github/workflows/local-dev.yml"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/.claude-plugin/plugin.json"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/CHANGELOG.md"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/LICENSE"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/README.md"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/SKILL.md"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/package.json"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/references/delivery.md"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/references/plan-template.md"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/scripts/local-dev.js"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/scripts/tests/baseline.test.mjs"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/scripts/tests/local-dev.test.mjs"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/scripts/tests/skill-contract.test.mjs"
+    },
+    {
+      "status": "??",
+      "path": "skills/local-dev/skills/local-dev/skill-invariants.json"
+    }
+  ],
+  "remotes": [
+    "origin"
+  ],
+  "instructionFiles": [
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "planFiles": [
+    "docs/plans/2026-06-19-repo-cicd-reusable-workflows-design.md",
+    "docs/plans/2026-06-20-resume-benchmark-design.md",
+    "docs/plans/2026-06-25-dev-to-main-auto-merge.md",
+    "docs/plans/2026-06-28-ghostwriter-evals-design.md",
+    "docs/plans/2026-07-10-marketplace-plugin-topology-design.md",
+    "docs/plans/2026-07-14-shipflow-skill-design.md",
+    "docs/plans/2026-07-16-shipflow-multi-pattern-design.md",
+    "docs/plans/2026-07-17-devlog-cover-quality-design.md",
+    "docs/plans/2026-07-17-shipflow-multi-pattern-implementation.md",
+    "docs/plans/2026-09-11-issueflow-harness-evaluation.md",
+    "docs/plans/2026-09-11-issueflow-harness-implementation.md",
+    "docs/plans/2026-09-12-issueflow-alert-adjudication.md",
+    "docs/plans/2026-09-12-issueflow-completion-fixes-implementation.md",
+    "docs/plans/2026-09-12-issueflow-completion-implementation-results.md",
+    "docs/plans/2026-09-12-issueflow-completion-live-evaluation.md",
+    "docs/plans/2026-09-12-issueflow-completion-plan-redteam.md",
+    "docs/plans/2026-09-12-issueflow-release-gates.md",
+    "docs/plans/2026-09-12-issueflow-run-review.md",
+    "docs/plans/2026-09-13-issueflow-366-continuation.md",
+    "docs/plans/2026-09-13-issueflow-366-live-evaluation.md",
+    "docs/plans/2026-09-13-issueflow-366-merge.md",
+    "docs/plans/2026-09-13-issueflow-366-round4.md",
+    "docs/plans/2026-09-13-issueflow-release-ci-repair.md",
+    "docs/plans/2026-09-23-local-dev.md"
+  ]
+}

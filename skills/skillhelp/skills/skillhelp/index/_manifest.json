@@ -209,6 +209,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "local-dev",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "f587865bf3755b99",
+      "facts": 44,
+      "sections": {
+        "setup": 11,
+        "usage": 12,
+        "commands": 11,
+        "architecture": 5,
+        "troubleshooting": 5
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "netwatch",
       "version": "0.3.0",
       "stack": "node",
