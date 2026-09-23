@@ -156,9 +156,15 @@ compatible image viewer (fall back to a browser if the default viewer has no PNG
 can inspect it full-size. Also show the actual image in the conversation. Opening is required
 before asking for approval; if no compatible viewer can open it, state that plainly and provide
 the full-resolution artifact link rather than claiming it opened. Use selectable responses when
-available and ask one decision:
+available only when their purpose permits approval and the complete image stays
+visible; otherwise keep the image, alt text and decision in the final message
+and wait for a normal reply, as `codex-session-ui.md` describes. Ask one decision:
 **Approve card** / **Change card** / **Drop card**. A change is re-inspected, opened, and
-re-shown. Publishing still requires the approved post text and the final approved card.
+re-shown. Approve card selects the media; it does not authorize publication.
+Then use `codex-session-ui.md` to show the full final post, image and reviewed alt
+text together for the final publication decision. A draft-only request stops at
+the approved artifacts. Publishing still requires the approved post text and
+the final approved card.
 
 On approval, retain the reviewed versioned path for publication; do not copy or rename it.
 Append one line to `images/generated-card-history.jsonl` with the selected path, seed and

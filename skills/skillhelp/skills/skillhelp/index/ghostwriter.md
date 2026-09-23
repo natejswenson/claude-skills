@@ -9,14 +9,14 @@
 
 ## Setup
 
-- **Claude Code:** Run linkedin_auth.py once with the developer app credentials. `skills/ghostwriter/README.md:140`
-- **Codex:** Use the same LinkedIn OAuth scripts and credentials; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Native image… `skills/ghostwriter/README.md:141`
-- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter/. `skills/ghostwriter/README.md:142`
-- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter/README.md:144`
-- Python 3 standard library only for the core — drafting and publishing need no third-party packages. `skills/ghostwriter/README.md:146`
-- A LinkedIn developer app with the **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** products, and redirect URL http://localhost:8765/callback. `skills/ghostwriter/README.md:148`
-- Optional, for visuals: Playwright + Chromium in a local .venv. `skills/ghostwriter/README.md:151`
-- Optional, for the radar: an authenticated Codex CLI for --backend codex, or the [claude CLI](https://docs.claude.com) for the legacy default. Codex radar needs no Claude CLI, Claude authentication, o… `skills/ghostwriter/README.md:152`
+- **Claude Code:** Run linkedin_auth.py once with the developer app credentials. `skills/ghostwriter/README.md:150`
+- **Codex:** Use the same LinkedIn OAuth scripts and credentials; Claude app connections are not imported. Recent-project discovery falls back to git history when Claude history is absent. Native image… `skills/ghostwriter/README.md:151`
+- **Personal data:** Both hosts retain the voice profile, brand overrides and .env credentials in ~/.claude/ghostwriter/. `skills/ghostwriter/README.md:152`
+- See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths. `skills/ghostwriter/README.md:154`
+- Python 3 standard library only for the core — drafting and publishing need no third-party packages. `skills/ghostwriter/README.md:156`
+- A LinkedIn developer app with the **Share on LinkedIn** and **Sign In with LinkedIn using OpenID Connect** products, and redirect URL http://localhost:8765/callback. `skills/ghostwriter/README.md:158`
+- Optional, for visuals: Playwright + Chromium in a local .venv. `skills/ghostwriter/README.md:161`
+- Optional, for the radar: an authenticated Codex CLI for --backend codex, or the [claude CLI](https://docs.claude.com) for the legacy default. Codex radar needs no Claude CLI, Claude authentication, o… `skills/ghostwriter/README.md:162`
 
 ## Usage
 
@@ -31,17 +31,17 @@
 - skills/ghostwriter/scripts/linkedin_auth.py — One-time OAuth; writes the token and person URN to .env. `skills/ghostwriter/README.md:44`
 - skills/ghostwriter/scripts/linkedin_post.py — Publishes a post (--dry-run previews the API payload). `skills/ghostwriter/README.md:45`
 - skills/ghostwriter/scripts/release_radar.sh — Optional research run that builds a digest of recent developments. `skills/ghostwriter/README.md:46`
-- skills/ghostwriter/references/codex-images.md — Codex-native generated-card, seed, and approval contract. `skills/ghostwriter/README.md:47`
+- skills/ghostwriter/references/codex-session-ui.md — Codex choices, progress, full previews and final publication decision. `skills/ghostwriter/README.md:47`
 
 ## Commands
 
-- python3 scripts/linkedin_auth.py # one-time OAuth, ~30 seconds `skills/ghostwriter/README.md:81`
-- python3 scripts/extract_posts.py # turn your export into voice input `skills/ghostwriter/README.md:82`
-- python3 scripts/linkedin_post.py --dry-run # see the payload without posting `skills/ghostwriter/README.md:83`
-- bash scripts/install_radar.sh --backend codex `skills/ghostwriter/README.md:238`
-- bash scripts/release_radar.sh --backend codex `skills/ghostwriter/README.md:239`
-- python3 scripts/release_radar_runtime.py discover `skills/ghostwriter/README.md:240`
-- python3 -m venv .venv `skills/ghostwriter/README.md:314`
+- python3 scripts/linkedin_auth.py # one-time OAuth, ~30 seconds `skills/ghostwriter/README.md:82`
+- python3 scripts/extract_posts.py # turn your export into voice input `skills/ghostwriter/README.md:83`
+- python3 scripts/linkedin_post.py --dry-run # see the payload without posting `skills/ghostwriter/README.md:84`
+- bash scripts/install_radar.sh --backend codex `skills/ghostwriter/README.md:248`
+- bash scripts/release_radar.sh --backend codex `skills/ghostwriter/README.md:249`
+- python3 scripts/release_radar_runtime.py discover `skills/ghostwriter/README.md:250`
+- python3 -m venv .venv `skills/ghostwriter/README.md:324`
 
 ## Architecture
 

@@ -44,6 +44,7 @@ Native screenshots and Claude/legacy renders retain their existing workflow. See
 | `skills/ghostwriter/scripts/linkedin_auth.py` | One-time OAuth; writes the token and person URN to `.env`. |
 | `skills/ghostwriter/scripts/linkedin_post.py` | Publishes a post (`--dry-run` previews the API payload). |
 | `skills/ghostwriter/scripts/release_radar.sh` | Optional research run that builds a digest of recent developments. |
+| `skills/ghostwriter/references/codex-session-ui.md` | Codex choices, progress, full previews and final publication decision. |
 | `skills/ghostwriter/references/codex-images.md` | Codex-native generated-card, seed, and approval contract. |
 | `skills/ghostwriter/assets/image-seeds/` | Forward-tested PRESS cards used as style references, with prompt receipts. |
 | `skills/ghostwriter/scripts/render_image.py` | Optional legacy path: locally renders a Mermaid diagram or PRESS card. |
@@ -96,20 +97,29 @@ Idea requests fetch current signals each time. If a source fails, the remaining
 sources still contribute and the result names the gap. Saved boards are useful
 history; their old signals are not presented as a new refresh. The terminal flow
 shows compact choices, one readable draft, and the decision needed next.
-Codex Default always shows the same inline columns: **# · Idea · Angle / signal ·
-Status**, initially three ideas. “More” shows all rows; “fewer” restores three.
-Every menu includes **Choose your own topic**: type the topic directly, or reply
-“own topic” to be asked what you want to write about. Claude keeps its supported native selector. Assistant messages omit
-execution commands; visibility of native tool cards remains controlled by the host.
-The radar stays entirely in the terminal. In a directly interactive terminal,
-**Ctrl+T** or **t** expands the same table from three rows to the full board;
-press again to collapse. Use arrows or j/k to navigate, Enter to select, and q to
-exit. Long boards scroll, and selection survives collapse. Watchlist/stale ideas
-cannot be selected. Nothing in the radar publishes.
-The bundled `scripts/radar_terminal.py --file <board.json>` reads a dated board
-with an `ideas` array (`id`, `title`, `angle`, `lane`, `signal`, `status`).
-When the host cannot attach user keyboard input, choices stay in terminal chat:
-reply “more” or “fewer.” Chat tables are static; no browser is opened.
+Codex uses native choices for lanes, ideas and formats when the current host
+supports them. Each choice includes the context needed to decide. A supplied
+topic or format skips its question. If the selector is unavailable or invisible,
+the session uses inline choices instead. Every idea view explicitly offers
+**Choose your own topic**; type it directly or reply “own topic.”
+
+One stage label and concise progress keep the session oriented. The complete
+reviewed draft stays visible while you decide; edits lead with what changed and
+show the entire revision. **Approve text** settles the wording for media work.
+The visual view shows the actual reviewed image with alt text, or every carousel
+slide with its title and full PDF. **Publish now** appears with the complete
+final payload. Text-only posts skip duplicate approval; draft-only requests end
+with saved drafts. A stale response, default selection or silence never publishes.
+
+The expanded idea board uses **# · Idea · Angle / signal · Status**. “More” shows
+all saved rows; “fewer” restores the compact view without repeating research or
+changing IDs. Only Ready ideas advance. The radar stays inside the session;
+no browser dashboard is opened. A directly user-attached terminal can still run
+`scripts/radar_terminal.py --file <board.json>`: Ctrl+T/t expands, arrows/j/k move,
+Enter selects and q exits. An agent-owned PTY alone is not interactive for the user.
+Claude retains its supported native controls and readable approval path.
+Assistant messages omit execution commands; native tool-card visibility is
+controlled by the host. See the [Codex session UI guide](skills/ghostwriter/references/codex-session-ui.md).
 
 Firecrawl is optional and is not used by the trend collector. Interactive research
 uses the host's browser tools. The default digest schedule is Monday and Thursday
