@@ -20,9 +20,10 @@ and references from the directory containing this SKILL.md, regardless of the
 current working directory. Existing `~/.claude/` personal-data paths remain valid
 and are still used by the bundled scripts; they do not require Claude to run.
 Map `Read`/`Write`/`Edit`/`Bash` to the available file and shell tools, and
-`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use an
-available question tool or a concise chat question; wait for answers that gate
-action. Use Codex's delegation tools for required subagents when available;
+`WebSearch`/`WebFetch` to available web tools. For `AskUserQuestion`, use a
+mode- and purpose-eligible control from `references/codex-session-ui.md`;
+wait for answers that gate action. Use Codex's delegation tools for required
+subagents when available;
 otherwise disclose that independent execution is unavailable. Discover connected
 apps by capability rather than assuming Claude MCP tool names exist.
 
@@ -97,7 +98,10 @@ absent, disabled, or unavailable, continue using the existing voice files unchan
   `~/.claude/ghostwriter/voice/voice-profile.md` is missing, or the user says "set up",
   "configure", "connect my LinkedIn". → Run **Setup**.
 - **Generate** — the user wants a post (the common case). → Run **Generate**.
-- **Publish** — the user approves a draft you already showed. → Run **Publish**.
+- **Publish** — the user explicitly authorizes publishing the exact shown payload.
+  In Codex, **Approve text** and **Approve card** settle components; follow
+  `references/codex-session-ui.md` for the final publication decision. Claude
+  retains its existing draft-and-visual approval flow. → Run **Publish**.
 
 Before generating, quietly confirm setup is done: `~/.claude/ghostwriter/voice/voice-profile.md`
 exists and `~/.claude/ghostwriter/.env` contains `LINKEDIN_ACCESS_TOKEN` + `LINKEDIN_PERSON_URN`.
@@ -125,17 +129,16 @@ results appear as the idea menu and one provenance line, never as raw collector 
 
 ## Run presentation
 
-Use the available host controls, not a simulated terminal application. In Claude Code,
-use `AskUserQuestion` previews when supported. **Codex Default mode uses inline
-choices:** the live September 11 test showed that an accepted asynchronous question
-did not produce a usable idea selector. Do not use that asynchronous selector again
-for this flow, and never call a Plan-only tool in Default mode. Show the options in
-the assistant's final message and wait for a normal reply. All references below to
-`AskUserQuestion` inherit this host mapping, including outcomes and visual choices.
-A preselected option or elapsed time is not consent.
-Honor a topic, format, or action already specified by the user instead of asking again.
-If the user says exit, stop, or asks to edit the skill, discard the pending selection
-and return to that request. A late selector response must not resume an exited run.
+Use the available host controls, not a simulated terminal application. **In
+Codex, read [codex-session-ui.md](references/codex-session-ui.md) now** for native
+preferences, readable previews and the final publication decision. It is the
+single Codex interaction route for every `AskUserQuestion` below. Select controls
+by their current mode, purpose and schema; an old failed selector test does not
+ban a working native control. In Claude Code, keep `AskUserQuestion` previews
+when supported and the existing readable draft/visual approval views.
+A preselected option or elapsed time is not consent. Honor a topic, format or
+action already supplied. Stop/exit or a request to edit the skill invalidates
+pending choices; a late selector response must not resume an exited run.
 
 The transcript is part of the product. Keep the user oriented with one stable stage
 label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
@@ -143,22 +146,28 @@ label at each transition: `ghostwriter · ideas`, `ghostwriter · draft`,
 that advances the run and the one decision currently needed.
 
 - **Lane-first picker for open-ended posts.** The first question for an open-ended
-  “create a LinkedIn post” request is exactly **“What type of post will you be
-  writing today?”** Offer exactly these choices: **Project** (from recent Claude
-  sessions), **Trends in Industry** (from Hacker News, Claude, OpenAI, and similar
+  “create a LinkedIn post” request starts with **“What type of post will you be
+  writing today?”** Keep that interrogative verbatim; a native question title may
+  follow it with brief explanations and custom-topic guidance. Offer exactly
+  these choices: **Project** (from recent project
+  work), **Trends in Industry** (from Hacker News, Claude, OpenAI, and similar
   current sources), and **Personal Fun**. Do not run or show idea items before this
   choice. After the user selects a lane, research that lane and populate its items;
   never flatten unrelated lanes into the first menu. A user who already supplied a
   concrete topic still bypasses the picker.
-- **Consistent idea table.** Every populated inline idea menu uses exactly these columns,
+- **Consistent idea table.** Use native choices for ordinary Codex preferences
+  when eligible; do not duplicate them in chat. Every populated inline idea menu
+  uses exactly these columns,
   in this order: `#`, `Idea`, `Angle / signal`, `Status`. This applies on the first
   display, after “more,” and after “fewer”; never switch to `Choice` / `What you get`.
-  Initially show three recommendations. “More” shows the full saved board and
-  “fewer” returns to three, preserving IDs, columns, dated signals, and statuses.
+  Initially show three recommendations. Native option limits can reduce that
+  count as the Codex reference describes. “More” shows the full saved board and
+  “fewer” restores the compact view, preserving IDs, columns, dated signals and statuses.
   Label Ready, Watchlist, and Stale explicitly; only Ready ideas proceed to drafting.
   Keep URLs in saved research or short source links, not long option labels.
-  Beneath every menu, show **Choose your own topic — type your topic, or reply
-  “own topic” and I’ll ask what you want to write about.** This is a separate
+  In every idea view, show **Choose your own topic — type your topic, or reply
+  “own topic” and I’ll ask what you want to write about.** Put it inside the
+  native Codex question, or beneath an inline table. This is a separate
   action, not a research row, and is always available, including an empty board.
   If they provide the topic, go directly to grounding and drafting; if they only
   choose “own topic,” ask one concise topic question and wait. Do not re-confirm a
@@ -180,8 +189,9 @@ that advances the run and the one decision currently needed.
   ID is returned as text on exit and never authorizes publishing.
   Only launch when the host provides direct user keyboard input to the process:
   an agent-owned PTY alone does not mean the user can interact with it. Otherwise
-  show the compact table in terminal chat and accept “more” / “fewer” to display
-  all rows / three rows. Do not claim chat messages can expand in place or bind
+  use the Codex reference for native choices and expanded inline tables, or the
+  compact inline fallback with “more” / “fewer” for all rows / three rows. Do not
+  claim chat messages can expand in place or bind
   the host's Ctrl+T. Never switch to a browser as a fallback. Claude's supported
   native selector remains available for ordinary choices.
 - **Tables for comparison, prose for conclusions.** When the user must compare three or
@@ -193,7 +203,8 @@ that advances the run and the one decision currently needed.
   compact table with named columns. A failure is one plain-language line with its
   recovery action, not the underlying stderr dump.
 - **One screen, one decision.** Keep choices numbered and stable. Once the user picks,
-  remove the menu from the active flow, echo `Locked in: ...`, and advance. Never make
+  retire the pending choice, acknowledge it briefly, and advance. This changes
+  the active flow; it does not claim to delete old chat messages. Never make
   them navigate back through lanes or dismiss already-rejected choices.
 - **Paths are actions, not decoration.** Show a path only when the user can open, edit,
   or publish that artifact. Do not repeat setup state or provenance in later stages.
@@ -293,9 +304,9 @@ the recovery protocol can't be evaluated without impressions, then move on.
 If there's a **backlog** of older unscored posts, offer once to skip it (`--outcome skipped` is
 not a thing — just leave them; don't re-ask every session). **The lane-first picker always comes
 first for an open-ended request.** If a check-in is due, ask it only after the user selects the
-lane, alongside that lane's populated ideas when the host supports two questions; otherwise
-record it after the idea selection. Never ask more
-than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
+lane. Claude may group it with the populated ideas when its host supports two
+questions; Codex records it after idea selection to keep one active decision.
+Never ask more than once per session; nothing to score → skip silently, don't mention it. **Use the accumulated
 outcomes everywhere you choose — from the `--stats` rollup, never re-derived by eye:** lean
 the idea menu toward lanes that scored `great` and away from repeated `flopped` (cite the
 rollup's numbers in the board's provenance line), let format outcomes steer the visual-form recommendation (step 8), and
@@ -308,13 +319,15 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    to grounding + drafting (step 3). The menu below is the default only for an open-ended "write me
    a post."
 2. **No topic given → pick a lane, then pick an idea.** Apply the host mapping in Run
-   presentation: Codex Default presents the lane picker inline; Claude uses its supported
+   presentation: Codex uses `references/codex-session-ui.md`; Claude uses its supported
    selector. Ask **“What type of post will you be writing today?”** with exactly **Project**,
    **Trends in Industry**, and **Personal Fun**. After the user picks, gather concrete,
-   ready-to-write ideas only from that lane and present its top three plus **“Show more ideas.”**
+   ready-to-write ideas only from that lane and present its top three plus **“Show more ideas”**
+   when there are more, respecting the Codex reference's actual option limits.
    Rules of the populated idea question:
-   - **Every idea option carries a compact `preview`** (target 3 lines, hard cap ~5 so the pane
-     never clips): the topic summary, the suggested angle, and one source-freshness line prefixed
+   - **Every idea option carries a compact description** (use `preview` only when supported;
+     otherwise put the summary and signal in the option text). Target 3 lines, hard cap ~5 so the pane
+     never clips: the topic summary, the suggested angle, and one source-freshness line prefixed
      with its lane (e.g. `Trending · HN 612 pts / 340 comments · Jul 18`,
      `Radar · Jul 17 · anthropic.com`). A user should be able to pick on the preview alone.
    - **Picking a real idea goes straight to grounding + draft (step 3) — nothing else to answer
@@ -328,9 +341,10 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      the only path that costs a second round trip, and only because the user explicitly asked.
    - **One provenance line total in chat**, not per lane (radar date + job health, live-search
      date, repo names) — don't dump a duplicate board into chat; the question options carry the
-     ideas (the inline table carries them in Codex Default).
-   - **When the outcome check-in is due**, it follows the lane picker and can share the populated
-     idea view when the host supports it. It never displaces the lane picker as the first question.
+     ideas (the inline table carries them when the native control is unavailable).
+   - **When the outcome check-in is due**, it follows the lane picker. Claude can share the
+     populated idea view when supported; Codex places it after idea selection. It never
+     displaces the lane picker as the first question.
 
    The source lanes below map to the three user-facing choices: **Project** uses recent Claude
    projects; **Trends in Industry** combines live trends and release radar; **Personal Fun** uses
@@ -507,8 +521,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      `┄┄┄ …see more (fold ~210 chars) ┄┄┄` — inserted at the line break nearest char 210, so the
      user sees exactly what shows above the fold. (A draft that ends before the fold needs no
      marker.)
-   - One metadata line under the block: `N words · save: <the thing a reader keeps> · lane: <lane>`,
-     and `Review passed · voice, substance, clarity, credibility and platform checks`.
+   - One metadata line under the block. Codex uses `N words · lane: <lane> · Review passed`;
+     Claude retains `N words · save: <the thing a reader keeps> · lane: <lane>` and
+     `Review passed · voice, substance, clarity, credibility and platform checks`.
    - **Re-shows lead with the delta:** after any edit, the first line is
      `Changed: <one-line summary>`, then the full draft in the same format — the user should never
      re-read the whole post hunting for the edit.
@@ -526,12 +541,16 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
      including every line after the fold; a file link is supplemental, never the only view.
      Also open the saved draft when the host supports it, so the user can review it outside a
      collapsed transcript. If opening fails, retain the full inline text and provide the link.
-   Ask once about that exact draft: **Publish** / **Edit** / **Scrap**. Typed edit
-   instructions go straight to the edit; no extra confirmation. If the host has no
-   eligible question tool, ask one concise chat question and wait. An unanswered
-   or preselected Publish option is not approval. An edited draft is re-shown and
-   re-approved; never publish unprompted. This approves the text; a subsequently
-   chosen visual still needs its own preview and approval before publishing.
+   **Codex:** keep the full preview and action in the final message and follow
+   `references/codex-session-ui.md`: **Approve text** / **Edit** / **Save draft**
+   when media work remains, or one final **Publish now** decision for an already
+   complete payload. An explicit draft-only request gets no publish action.
+   **Claude Code:** ask once about that exact draft: **Publish** / **Edit** / **Scrap**.
+   Typed edit instructions go straight to the edit on both hosts; no extra
+   confirmation. If no eligible control keeps the preview readable, ask in chat
+   and wait. An unanswered or preselected option is not approval. An edited draft
+   is re-shown and re-approved. Any chosen visual needs its own preview/review;
+   Codex then uses the complete final payload decision before external writes.
    **Any voice/style feedback the user gives — append it to
    `~/.claude/ghostwriter/voice/voice-notes.md` in the same turn, BEFORE redrafting,** and say
    you did ("added to voice notes"). For a registered key with an opted-in companion,
@@ -540,7 +559,9 @@ performance signal we have (no scraping — COMPLIANCE.md), so actually use it.
    an attempted adapter save. Unregistered keys retain the ordinary voice-note workflow.
    Fixing only the draft loses the correction and the user has to repeat it next session.
 8. **Settle the visual with ONE question — build nothing first.** After the text is approved,
-   ask a single `AskUserQuestion`. The options depend on the host:
+   ask a single host-eligible question. Honor an already chosen format; explicit
+   draft-only scope does not acquire a visual/publish flow unless requested.
+   The options depend on the host:
    - **Codex:** **generated PRESS card** / **native screenshot** / **text-only** /
      **carousel** when the post genuinely needs multiple slides. A generated card replaces the
      old template-filling path; name the card's headline and proof-bearing hero in its preview,
@@ -863,7 +884,12 @@ The full, sourced rationale is in `voice/algorithm.md` — read it. The essentia
 
 ## Mode: Publish
 
-Only after the user explicitly approves a specific draft.
+Run the external publishing steps only after the user explicitly approves
+publication of the specific payload. Step 0 is preparation, not an external write.
+In Codex, follow `references/codex-session-ui.md`: finish the advice in step 0
+before showing the final complete preview and Publish now decision. A prior
+Approve text or Approve card response alone does not authorize publication.
+Claude keeps its existing approval path.
 
 0. **Timing, cadence, and engagement-window gates (recommend, never block).** Before running
    the publish command, check the clock and `published.jsonl` (the script prints the same
@@ -879,6 +905,8 @@ Only after the user explicitly approves a specific draft.
      reply to comments and leave 5+ substantive comments on posts their audience reads. If
      not, recommend publishing when they do: early engagement decides distribution, and a
      printed reminder demonstrably didn't change behavior across the first 20 posts.
+     In Codex, collect genuinely missing engagement information before the final
+     publication decision; never add another questionnaire after Publish now.
    The user can override any of these with a word — they are recommendations, and the
    compliance rule stands: the post publishes only when the user says so, never on a schedule.
 1. **Preview the payload** (optional sanity check):
@@ -932,9 +960,10 @@ for that exact draft.
 - **Never publish without explicit approval** of the specific text. Editing the draft → re-show
   → re-confirm.
 - **The user must be able to read the ENTIRE post at the moment of approval** — first show and
-  every re-show. Follow Generate step 7's host-specific readable view. In Codex
-  Default, show the complete draft and the approval question in the final message;
-  do not place approval behind the failed asynchronous selector. Claude retains
+  every re-show. Follow Generate step 7's host-specific readable view. In Codex,
+  show the complete current payload and its approval action together in the final
+  message; do not hide it behind a selector that collapses the preview. Use
+  `references/codex-session-ui.md` for eligible controls and stale-response handling. Claude retains
   its unclipped short preview or opened full draft. Clipped panes and distant
   scrollback do not count as a readable approval view.
 - **Never print or commit secrets.** `.env`, `data/`, and `drafts/` are gitignored; keep it that

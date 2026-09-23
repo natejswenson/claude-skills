@@ -149,8 +149,8 @@ must identify its role and value here; the warning does not ban questions.
 
 ## Showing, editing and publishing
 
-After a pass, use the skill's complete draft display and approval flow. Add only
-`Review passed · voice, substance, clarity, credibility and platform checks`.
+After a pass, use the skill's host-specific complete draft display and approval
+flow, including its concise review-status line.
 Keep raw reports and rejected versions local. Passing review is not permission
 to publish. A changed word, claim, thread order, or final reply requires a fresh
 review and approval. When a visual changes the body, run the entire loop again;
