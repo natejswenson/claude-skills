@@ -1,0 +1,114 @@
+{
+  "name": "local-dev",
+  "sources": [
+    "skills/local-dev/skills/local-dev/SKILL.md",
+    "skills/local-dev/skills/local-dev/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 21
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 14
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 11
+      }
+    },
+    {
+      "id": "house-cf7d2098",
+      "tag": "house",
+      "text": "Branch from `main` and open a PR into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 9
+      }
+    },
+    {
+      "id": "house-ecd88e99",
+      "tag": "house",
+      "text": "Delete merged feature branches locally and remotely.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-594a0c05",
+      "tag": "inv",
+      "text": "Never claim a result you did not observe",
+      "severity": "high",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing.",
+      "source": {
+        "file": "skills/local-dev/skills/local-dev/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8a9e39e7",
+      "tag": "inv",
+      "text": "never ask about anything in the inspection that already answers the question",
+      "severity": "high",
+      "rationale": "Use local evidence before asking the user for information the checkout already supplies.",
+      "source": {
+        "file": "skills/local-dev/skills/local-dev/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8f9ba63e",
+      "tag": "inv",
+      "text": "one independent read-only subagent",
+      "severity": "high",
+      "rationale": "One independent local plan red team replaces remote stage review loops.",
+      "source": {
+        "file": "skills/local-dev/skills/local-dev/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-9cf89161",
+      "tag": "inv",
+      "text": "commit the reviewed plan before implementation",
+      "severity": "high",
+      "rationale": "Keep the reviewed implementation intent in a separate predecessor commit.",
+      "source": {
+        "file": "skills/local-dev/skills/local-dev/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "skill-a5a6b625",
+      "tag": "skill",
+      "text": "Keep planning, review, implementation and testing local until the final push and draft pull request.",
+      "severity": "high",
+      "source": {
+        "file": "skills/local-dev/skills/local-dev/SKILL.md",
+        "line": 12
+      }
+    }
+  ]
+}

@@ -59,3 +59,18 @@ The implementation PR stays draft. No merge, release or live repository settings
 change is part of this task. The new required-check declaration applies only when
 an authorized admin runs the settings script after review. CI is not polled or
 claimed passed. The original checkout's unrelated branch/work remains intact.
+# Merge verification follow-up
+
+After the user authorized merging PRs #424 and #425, #425 merged first. Its
+changes were integrated from `origin/main` without conflicts. PR #424's eval
+check failed because the frozen contract inventory covered 23 of 24 skills and
+omitted local-dev. This was reproduced locally: 87 tests passed and the inventory
+test failed. The existing extractor generated only the missing local-dev contract
+from its committed skill and invariants; other frozen inputs were preserved.
+
+- `node scripts/eval.js contract --skill local-dev --repo <repo> --out evals/fixtures/contracts/local-dev.json`: 10 source-backed clauses.
+- Eval `npm test`: 88 passed after the fix.
+- Local-dev `npm test`: 19 passed after integrating current main.
+- `python3 tools/check_compatibility.py`: both hosts passed.
+- Skillhelp `check --repo .`: all 24 cards current.
+- `git diff --check`: passed.
