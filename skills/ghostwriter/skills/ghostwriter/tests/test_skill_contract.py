@@ -60,10 +60,11 @@ def test_referenced_card_templates_exist():
     assert not missing, f"SKILL.md references missing card templates: {missing}"
 
 
-def test_codex_image_reference_exists():
-    """The host route must not point installed Codex sessions at a missing guide."""
-    assert "references/codex-images.md" in SKILL_MD
-    assert (ROOT / "references/codex-images.md").is_file()
+@pytest.mark.parametrize("reference", ["codex-images.md", "codex-session-ui.md"])
+def test_codex_reference_exists(reference):
+    """Every Codex host route must resolve in the installed skill bundle."""
+    assert f"references/{reference}" in SKILL_MD
+    assert (ROOT / "references" / reference).is_file()
 
 
 def test_codex_image_seed_manifest_resolves():
