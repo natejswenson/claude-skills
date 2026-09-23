@@ -1,0 +1,88 @@
+{
+  "comment": "What must not silently disappear from local-dev. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Keep planning, review, implementation and testing local unti",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in the inspection that already answers the question",
+      "rationale": "Use local evidence before asking the user for information the checkout already supplies."
+    },
+    {
+      "id": "plan-before-code",
+      "pattern": "commit the reviewed plan before implementation",
+      "rationale": "Keep the reviewed implementation intent in a separate predecessor commit."
+    },
+    {
+      "id": "independent-local-review",
+      "pattern": "one independent read-only subagent",
+      "rationale": "One independent local plan red team replaces remote stage review loops."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Inspect local repository state",
+        "command": "node scripts/local-dev.js inspect"
+      },
+      {
+        "step": "Read explicitly selected issues",
+        "command": "node scripts/local-dev.js issues"
+      },
+      {
+        "step": "Freeze a selected issue snapshot",
+        "command": "node scripts/local-dev.js issue"
+      },
+      {
+        "step": "Render an offline inspection report",
+        "command": "node scripts/local-dev.js report"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Clarify intent, design and red-team the plan, implement and evaluate behavior",
+        "why": "Acceptance criteria, design tradeoffs and correctness need repository evidence and user intent."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-local-inspection",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/real-inspection.json",
+        "evals/invalid-inspection.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/inspection.md"
+      ],
+      "update_command": "node ../../../skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill local-dev --from /tmp/local-dev-reviewed-run --label local-dev-inspection --command 'node scripts/local-dev.js report --input evals/real-inspection.json --out \"$OUT\"' --trap-command 'node scripts/local-dev.js report --input evals/invalid-inspection.json'",
+      "rationale": "Local checkout evidence omitted or misreported \u2014 pinned against The real local-dev development checkout inspection, with its local path replaced by a portable label."
+    },
+    {
+      "id": "invalid-inspection",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/real-inspection.json",
+        "evals/invalid-inspection.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/inspection.md"
+      ],
+      "update_command": "node ../../../skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill local-dev --from /tmp/local-dev-reviewed-run --label local-dev-inspection --command 'node scripts/local-dev.js report --input evals/real-inspection.json --out \"$OUT\"' --trap-command 'node scripts/local-dev.js report --input evals/invalid-inspection.json'",
+      "rationale": "Malformed data rendered as verified local state \u2014 pinned against The same captured inspection with missing required evidence."
+    }
+  ]
+}

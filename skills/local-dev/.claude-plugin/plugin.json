@@ -1,0 +1,10 @@
+{
+  "name": "local-dev",
+  "version": "0.1.0",
+  "description": "Develop a feature locally from a reviewed plan through tests, commits, and a draft pull request.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/local-dev",
+  "license": "MIT"
+}
