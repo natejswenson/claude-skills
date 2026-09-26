@@ -53,6 +53,9 @@ applications were not performed. No live dependency install, home change, releas
 or settings application occurred. `.github/repo-settings.sh` only declares the
 new check; it has not been run, so the new required check is not activated.
 
-Network action-ref verification and remote base freshness are checked only in the
-final delivery phase. Remote CI is not awaited or represented as passing. The PR
-will remain draft for review and a separate authorized merge decision.
+Final delivery checks: refreshed origin/main remains `24a6ded`, so no base
+integration was needed. ghfactory resolved all 5 workflow references, reported
+all pins current, and passed actionlint/zizmor. The first sandboxed ref lookup
+could not reach GitHub; the authorized network retry passed. Remote CI is not
+awaited or represented as passing. The PR remains draft for review and a separate
+authorized merge decision.
