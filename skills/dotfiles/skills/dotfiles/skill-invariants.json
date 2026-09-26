@@ -1,0 +1,80 @@
+{
+  "comment": "What must not silently disappear from dotfiles. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Change only selected managed configuration; preserve unrelated files, local overrides, credentials and application state.",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Inspection answers detectable facts; ask only for missing intent or conflict decisions."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Discover and validate package layout and link state",
+        "command": "node scripts/dotfiles.js inspect"
+      },
+      {
+        "step": "Verify selected installed links",
+        "command": "node scripts/dotfiles.js verify"
+      },
+      {
+        "step": "Render an offline inspection",
+        "command": "node scripts/dotfiles.js report"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Choose configuration edits, package boundaries and local overrides",
+        "why": "The user's intent and portability requirements determine what belongs in a shared repository."
+      },
+      {
+        "step": "Review installer behavior and resolve conflicts",
+        "why": "Existing repository code and live application state require contextual review before an authorized change."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-link-inspection",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/inputs/inspection.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/inspection.json",
+        "evals/baseline/inspection.md",
+        "evals/trap.mjs"
+      ],
+      "update_command": "node evals/replay.mjs /tmp/dotfiles-reviewed-run && node \"$SKILLFACTORY_DIR/scripts/skillfactory.js\" freeze --repo \"$SKILLS_REPO\" --skill dotfiles --from /tmp/dotfiles-reviewed-run --command 'node evals/replay.mjs \"$OUT\"' --trap-command 'node evals/trap.mjs'",
+      "rationale": "Missing files, classification regressions, incorrect state totals and report rendering drift; assert a nonzero file floor. \u2014 pinned against A real read-only inspection of the reference dotfiles checkout and its live target; publish only reviewed normalized package/path/state metadata, reconstruct its topology in temporary directories and rerun inspect, verify and report. Never publish file bodies or personal paths."
+    },
+    {
+      "id": "invalid-inspection",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/inputs/inspection.json",
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/inspection.json",
+        "evals/baseline/inspection.md",
+        "evals/trap.mjs"
+      ],
+      "update_command": "node evals/replay.mjs /tmp/dotfiles-reviewed-run && node \"$SKILLFACTORY_DIR/scripts/skillfactory.js\" freeze --repo \"$SKILLS_REPO\" --skill dotfiles --from /tmp/dotfiles-reviewed-run --command 'node evals/replay.mjs \"$OUT\"' --trap-command 'node evals/trap.mjs'",
+      "rationale": "The classifier accepting unsafe filesystem input or report accepting corrupt snapshot data. \u2014 pinned against A deliberately unsafe package manifest and a saved inspection with inconsistent counts or an unsafe relative path."
+    }
+  ]
+}

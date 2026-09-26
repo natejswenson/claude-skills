@@ -1,0 +1,93 @@
+{
+  "name": "dotfiles",
+  "sources": [
+    "skills/dotfiles/skills/dotfiles/SKILL.md",
+    "skills/dotfiles/skills/dotfiles/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 21
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 14
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 11
+      }
+    },
+    {
+      "id": "house-cf7d2098",
+      "tag": "house",
+      "text": "Branch from `main` and open a PR into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 9
+      }
+    },
+    {
+      "id": "house-ecd88e99",
+      "tag": "house",
+      "text": "Delete merged feature branches locally and remotely.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "inv-594a0c05",
+      "tag": "inv",
+      "text": "Never claim a result you did not observe",
+      "severity": "high",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing.",
+      "source": {
+        "file": "skills/dotfiles/skills/dotfiles/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-5c0af53f",
+      "tag": "inv",
+      "text": "Change only selected managed configuration; preserve unrelated files, local overrides, credentials and application state.",
+      "severity": "high",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps.",
+      "source": {
+        "file": "skills/dotfiles/skills/dotfiles/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "inv-8a9e39e7",
+      "tag": "inv",
+      "text": "never ask about anything in it",
+      "severity": "high",
+      "rationale": "Inspection answers detectable facts; ask only for missing intent or conflict decisions.",
+      "source": {
+        "file": "skills/dotfiles/skills/dotfiles/skill-invariants.json",
+        "line": 1
+      }
+    }
+  ]
+}
