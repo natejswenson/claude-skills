@@ -1,0 +1,33 @@
+{
+  "name": "dotfiles",
+  "summary": "Maintain a package-based dotfiles checkout and verify its home-directory links.",
+  "description": "Manage a shared, package-based dotfiles workflow for Claude Code and Codex. Use for \"manage my dotfiles\", \"add this config to my dotfiles\", \"check my dotfile links\", \"set up my dotfiles\", or \"remove this dotfiles package\". Inspect a packages.json allowlist, edit package sources, preview selected links and verify results while preserving local overrides, credentials and unrelated application state.",
+  "oneRule": "Change only selected managed configuration; preserve unrelated files, local overrides, credentials and application state.",
+  "stack": "node",
+  "npmPublish": false,
+  "commands": [
+    {"name": "inspect", "does": "Read a selected checkout and explicit target, validate package paths and classify individual managed links without reading configuration contents or running repository code."},
+    {"name": "verify", "does": "Require every selected managed file to have the correct link, returning nonzero for missing links, conflicts or unsafe layout."},
+    {"name": "report", "does": "Validate and render a saved inspection as a compact offline Markdown table."}
+  ],
+  "split": {
+    "deterministic": [
+      {"step": "Discover and validate package layout and link state", "command": "node scripts/dotfiles.js inspect"},
+      {"step": "Verify selected installed links", "command": "node scripts/dotfiles.js verify"},
+      {"step": "Render an offline inspection", "command": "node scripts/dotfiles.js report"}
+    ],
+    "nondeterministic": [
+      {"step": "Choose configuration edits, package boundaries and local overrides", "why": "The user's intent and portability requirements determine what belongs in a shared repository."},
+      {"step": "Review installer behavior and resolve conflicts", "why": "Existing repository code and live application state require contextual review before an authorized change."}
+    ]
+  },
+  "references": [
+    {"file": "layout.md", "is": "Portable packages.json layout, explicit checkout and target resolution, shared versus machine-owned configuration."},
+    {"file": "maintenance.md", "is": "Edit, add-package, setup, preview, link, unlink and conflict recovery procedures with focused checks."},
+    {"file": "baseline.md", "is": "Real-run provenance, privacy-preserving normalization and offline baseline refresh."}
+  ],
+  "evalPlan": [
+    {"id": "real-link-inspection", "kind": "golden", "pinnedAgainst": "A real read-only inspection of the reference dotfiles checkout and its live target; publish only reviewed normalized package/path/state metadata, reconstruct its topology in temporary directories and rerun inspect, verify and report. Never publish file bodies or personal paths.", "catches": "Missing files, classification regressions, incorrect state totals and report rendering drift; assert a nonzero file floor."},
+    {"id": "invalid-inspection", "kind": "trap", "pinnedAgainst": "A deliberately unsafe package manifest and a saved inspection with inconsistent counts or an unsafe relative path.", "catches": "The classifier accepting unsafe filesystem input or report accepting corrupt snapshot data."}
+  ]
+}

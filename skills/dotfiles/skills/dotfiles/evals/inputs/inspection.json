@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    "claude",
+    "codex",
+    "gh",
+    "git",
+    "oh-my-zsh",
+    "vscode",
+    "zsh"
+  ],
+  "files": [
+    {
+      "package": "claude",
+      "path": ".claude/commands/feature.md",
+      "state": "linked"
+    },
+    {
+      "package": "claude",
+      "path": ".claude/commands/spec.md",
+      "state": "linked"
+    },
+    {
+      "package": "claude",
+      "path": ".claude/settings.json",
+      "state": "linked"
+    },
+    {
+      "package": "codex",
+      "path": ".agents/skills/dotfiles-feature/SKILL.md",
+      "state": "linked"
+    },
+    {
+      "package": "codex",
+      "path": ".agents/skills/dotfiles-spec/SKILL.md",
+      "state": "linked"
+    },
+    {
+      "package": "codex",
+      "path": ".codex/dotfiles.config.toml",
+      "state": "linked"
+    },
+    {
+      "package": "gh",
+      "path": ".config/gh/config.yml",
+      "state": "linked"
+    },
+    {
+      "package": "git",
+      "path": ".config/git/ignore",
+      "state": "linked"
+    },
+    {
+      "package": "git",
+      "path": ".gitconfig",
+      "state": "linked"
+    },
+    {
+      "package": "oh-my-zsh",
+      "path": ".oh-my-zsh/custom/aliases.zsh",
+      "state": "linked"
+    },
+    {
+      "package": "oh-my-zsh",
+      "path": ".oh-my-zsh/custom/functions.zsh",
+      "state": "linked"
+    },
+    {
+      "package": "vscode",
+      "path": "Library/Application Support/Code/User/settings.json",
+      "state": "linked"
+    },
+    {
+      "package": "zsh",
+      "path": ".zprofile",
+      "state": "linked"
+    },
+    {
+      "package": "zsh",
+      "path": ".zshrc",
+      "state": "linked"
+    }
+  ],
+  "excluded": [],
+  "policyFiles": [],
+  "counts": {
+    "linked": 14,
+    "missing": 0,
+    "conflict": 0,
+    "wrong-link": 0,
+    "broken-link": 0,
+    "parent-symlink": 0,
+    "parent-file": 0
+  },
+  "linkPolicy": "review-required"
+}

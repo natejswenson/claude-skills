@@ -40,6 +40,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`bible-study`](skills/bible-study) | ![bible-study](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=bible-study-v*&label=&sort=semver&color=blue) | `/bible-study` | Node | Turn a Bible verse or chapter into a researched, one-page Bible study for a group. |
 | [`traefik`](skills/traefik) | ![traefik](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=traefik-v*&label=&sort=semver&color=blue) | `/traefik` | Node | Operate a local Traefik stack from either Codex or Claude through its external tk CLI. |
 | [`local-dev`](skills/local-dev) | ![local-dev](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=local-dev-v*&label=&sort=semver&color=blue) | `/local-dev` | Node | Develop a feature locally from a reviewed plan through tests, commits, and a draft pull request. |
+| [`dotfiles`](skills/dotfiles) | ![dotfiles](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=dotfiles-v*&label=&sort=semver&color=blue) | `/dotfiles` | Node | Maintain a package-based dotfiles checkout and verify its home-directory links. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -97,6 +98,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install bible-study@claude-skills
 /plugin install traefik@claude-skills
 /plugin install local-dev@claude-skills
+/plugin install dotfiles@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -140,6 +142,7 @@ ln -sfn "$PWD/skills/issuecreator/skills/issuecreator" ~/.claude/skills/issuecre
 ln -sfn "$PWD/skills/bible-study/skills/bible-study" ~/.claude/skills/bible-study
 ln -sfn "$PWD/skills/traefik/skills/traefik" ~/.claude/skills/traefik
 ln -sfn "$PWD/skills/local-dev/skills/local-dev" ~/.claude/skills/local-dev
+ln -sfn "$PWD/skills/dotfiles/skills/dotfiles" ~/.claude/skills/dotfiles
 ```
 </details>
 

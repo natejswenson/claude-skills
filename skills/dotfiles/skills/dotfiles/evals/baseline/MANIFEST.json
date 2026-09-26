@@ -1,0 +1,17 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node evals/replay.mjs \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "inspection.json",
+      "bytes": 1875,
+      "sha256": "c87e276df7dc8dd5fc62d5e7c4abebb1f3754402e103a5708f468e6ca2cd923c"
+    },
+    {
+      "path": "inspection.md",
+      "bytes": 872,
+      "sha256": "d2f4776b1c95da5fbcb6468d36fb788f78c1a0b344be8120ab74400b88e5b0af"
+    }
+  ]
+}
