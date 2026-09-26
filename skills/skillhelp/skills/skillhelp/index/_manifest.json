@@ -84,7 +84,7 @@
       "name": "dotfiles",
       "version": "0.1.0",
       "stack": "node",
-      "cardHash": "0a3f5bc887f57aa1",
+      "cardHash": "be441f5125c1eaf8",
       "facts": 34,
       "sections": {
         "setup": 5,

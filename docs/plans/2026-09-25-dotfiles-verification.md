@@ -59,3 +59,32 @@ all pins current, and passed actionlint/zizmor. The first sandboxed ref lookup
 could not reach GitHub; the authorized network retry passed. Remote CI is not
 awaited or represented as passing. The PR remains draft for review and a separate
 authorized merge decision.
+
+## PR #426 review and CI repair — 2026-09-25
+
+The first GitHub run passed dotfiles CI but found three repository integration
+omissions. All three were reproduced locally before correction:
+
+- `ci / eval`: dotfiles was absent from the frozen contract corpus. Generated only
+  the new dotfiles contract from its committed skill/invariants and house rules;
+  retained the other historical contracts and report baseline unchanged.
+- `ci / skillhelp`: the help card preceded the final invariant wording edits.
+  Regenerated the index from the final source; only the dotfiles card/hash changed.
+- `tools / test`: `release.components` and repo-settings contexts included
+  dotfiles, but Shipflow's `requiredChecks` did not. Added the matching declaration.
+  This does not apply live repository settings or alter the generated auto-merge
+  workflow.
+
+Reviewed the skill's source/target bounds, read-only CLI behavior, protected-file
+handling, baseline provenance, instructions and dual-host integration. No further
+blocking findings were identified in that review. Existing tests were kept intact.
+
+Post-fix local evidence: eval 88/88, skillhelp 18/18, GitHub-flow tools regression
+10/10, tools pytest 140/140; compatibility, baseline declarations and diff whitespace
+checks pass. The tools dependencies were installed from their existing lockfile
+with lifecycle scripts disabled; pytest ran in an isolated temporary environment.
+The original local check list omitted eval/tools and ran skillhelp before the
+last invariant edits; these exact omissions caused the CI failures.
+
+The user requested checking the updated remote results; the repair remains on
+PR #426's existing draft branch, with no merge, release or settings application.

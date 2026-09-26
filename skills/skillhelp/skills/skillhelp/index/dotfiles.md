@@ -52,6 +52,6 @@
 
 ## Troubleshooting
 
-- Change only selected managed configuration; preserve unrelat — The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extr… `skills/dotfiles/skills/dotfiles/skill-invariants.json:9`
+- Change only selected managed configuration; preserve unrelated files, local overrides, credentials and application state. — The one rule. It is the reason this skill exists rather than a prompt; lose… `skills/dotfiles/skills/dotfiles/skill-invariants.json:9`
 - Never claim a result you did not observe — Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing. `skills/dotfiles/skills/dotfiles/skill-invariants.json:14`
-- never ask about anything in it — Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like… `skills/dotfiles/skills/dotfiles/skill-invariants.json:19`
+- never ask about anything in it — Inspection answers detectable facts; ask only for missing intent or conflict decisions. `skills/dotfiles/skills/dotfiles/skill-invariants.json:19`
