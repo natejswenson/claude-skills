@@ -224,6 +224,7 @@ below its own floor.
 
 | Skill | Baseline pinned against | Catches |
 |---|---|---|
+| brand-images | two actual editorial mountain image generations, explicit simplification feedback and offline replay of their briefs and verified image receipts | silent preference drift, losing feedback revisions, binding an image to the wrong style revision; PNGs are frozen evidence, never regenerated in CI |
 | dotfiles | a real read-only inspection of seven packages and fourteen links, replayed as temporary filesystem topology | link classification/report drift, lost package coverage and traversal acceptance; separate real-Stow lifecycle checks preserve unrelated files |
 | bible-study | a real John 3 study from the shared Bible API and four Christian publishers, reviewed HTML re-rendered offline, and real API responses replayed without network | missing sections or citations, absent dating uncertainty, publisher drift, mismatched Scripture/quotes, API errors or verse gaps, and renderer drift; PDF export separately checked for one-page geometry and readability |
 | ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
@@ -333,7 +334,7 @@ Declared required contexts: `ci / devlog`, `ci / resume`, `ci / ghostwriter`,
 `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`, `ci / city-report`,
 `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
 `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`,
-`ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`, `ci / bible-study`, `ci / traefik`, `ci / local-dev`, `ci / dotfiles`.
+`ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`, `ci / bible-study`, `ci / traefik`, `ci / local-dev`, `ci / dotfiles`, `ci / brand-images`.
 
 `.github/repo-settings.sh` applies repository settings and main protection, then verifies
 the response against its declared policy. Run it only as part of an authorized settings

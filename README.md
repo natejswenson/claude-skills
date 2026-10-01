@@ -41,6 +41,7 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 | [`traefik`](skills/traefik) | ![traefik](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=traefik-v*&label=&sort=semver&color=blue) | `/traefik` | Node | Operate a local Traefik stack from either Codex or Claude through its external tk CLI. |
 | [`local-dev`](skills/local-dev) | ![local-dev](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=local-dev-v*&label=&sort=semver&color=blue) | `/local-dev` | Node | Develop a feature locally from a reviewed plan through tests, commits, and a draft pull request. |
 | [`dotfiles`](skills/dotfiles) | ![dotfiles](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=dotfiles-v*&label=&sort=semver&color=blue) | `/dotfiles` | Node | Maintain a package-based dotfiles checkout and verify its home-directory links. |
+| [`brand-images`](skills/brand-images) | ![brand-images](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=brand-images-v*&label=&sort=semver&color=blue) | `/brand-images` | Node | Generate images in a user’s consistent brand style and refine that style through explicit feedback. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -99,6 +100,7 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install traefik@claude-skills
 /plugin install local-dev@claude-skills
 /plugin install dotfiles@claude-skills
+/plugin install brand-images@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -143,6 +145,7 @@ ln -sfn "$PWD/skills/bible-study/skills/bible-study" ~/.claude/skills/bible-stud
 ln -sfn "$PWD/skills/traefik/skills/traefik" ~/.claude/skills/traefik
 ln -sfn "$PWD/skills/local-dev/skills/local-dev" ~/.claude/skills/local-dev
 ln -sfn "$PWD/skills/dotfiles/skills/dotfiles" ~/.claude/skills/dotfiles
+ln -sfn "$PWD/skills/brand-images/skills/brand-images" ~/.claude/skills/brand-images
 ```
 </details>
 
