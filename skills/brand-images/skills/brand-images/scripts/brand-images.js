@@ -241,8 +241,9 @@ export function execute(command, args = {}) {
         const event = args.event ?? `feedback-${randomUUID()}`;
         if (!ID.test(event)) fail('invalid --event slug');
         const patchData = args.patch ? readJSON(args.patch) : null;
+        const approvalReview = args.review ? review(readJSON(args.review)) : null;
         const requestHash = digest(json({ run: run.id, scope, text: args.text, source: args.source,
-          patch: patchData, expect: args.expect === undefined ? null : Number(args.expect),
+          patch: patchData, review: approvalReview, expect: args.expect === undefined ? null : Number(args.expect),
           confirm: args.confirm === true, rebrand: args.rebrand === true,
           approveStyle: args.approveStyle === true, approveImage: args.approveImage === true }));
         const prior = state.feedback.find(f => f.id === event);
@@ -253,7 +254,7 @@ export function execute(command, args = {}) {
         const feedback = { id: event, requestHash, run: run.id, scope, text: text(args.text, '--text'), source: source(args) };
         if (scope === 'durable') {
           const src = confirmed(args); expect(args, state);
-          if (args.patch && (args.approveStyle || args.approveImage)) fail('use a separate feedback event for a patch and approval');
+          if (approvalReview && !args.approveStyle && !args.approveImage) fail('approval review requires style or reference approval');
           if (!args.patch && !args.approveStyle && !args.approveImage) fail('durable feedback needs --patch, --approve-style or --approve-image');
           const rev = structuredClone(current(state));
           if (args.patch) {
@@ -261,7 +262,7 @@ export function execute(command, args = {}) {
             keys(patch, ['anchors', 'preferences'], 'patch');
             if (!Object.keys(patch).length) fail('empty patch');
             if (patch.anchors) {
-              if (args.rebrand !== true) fail('anchor changes need explicit --rebrand');
+              if (args.rebrand !== true && !(rev.status === 'draft' && (args.approveStyle || args.approveImage))) fail('anchor changes need explicit --rebrand');
               keys(patch.anchors, ANCHORS, 'anchor patch');
               rev.style.anchors = { ...rev.style.anchors, ...patch.anchors };
             }
@@ -271,7 +272,10 @@ export function execute(command, args = {}) {
           if (args.approveStyle || args.approveImage) {
             if (run.status === 'rejected') fail('rejected image cannot approve style');
             if (run.revision !== state.current) fail('cannot approve style from an outdated run');
-            if (!run.review.inspected || Object.values(run.review.checks).some(x => x !== 'pass')) fail('style approval requires all visual checks to pass');
+            if (args.patch && !approvalReview) fail('patch plus approval requires a fresh --review against the accepted style');
+            const checked = approvalReview ?? run.review;
+            if (!checked.inspected || Object.values(checked.checks).some(x => x !== 'pass')) fail('style approval requires all visual checks to pass');
+            feedback.review = checked;
             rev.status = 'approved';
           }
           if (args.approveImage) {
@@ -282,7 +286,7 @@ export function execute(command, args = {}) {
           output = revision(state, { status: rev.status, style: rev.style, references: rev.references }, src);
           feedback.revision = output.revision;
         } else {
-          if (args.patch || args.approveStyle || args.approveImage || args.rebrand) fail('only confirmed durable feedback may change style');
+          if (args.patch || args.approveStyle || args.approveImage || args.rebrand || args.review) fail('only confirmed durable feedback may change style');
           if (scope === 'approval' || scope === 'rejection') {
             confirmed(args); transition(run, scope === 'approval' ? 'approved' : 'rejected');
           }
@@ -327,7 +331,7 @@ const HELP = `brand-images — consistent image generation with explicit feedbac
   run --run ID --status generated --image FILE --backend NAME --review review.json
   run --run ID --status failed --reason TEXT
   feedback --run ID --scope image|candidate|durable|approval|rejection --text TEXT --source TEXT [--event ID]
-    durable: --expect REV --confirm [--patch patch.json [--rebrand] | --approve-style | --approve-image]
+    durable: --expect REV --confirm [--patch patch.json [--rebrand]] [--approve-style | --approve-image] [--review review.json]
     approval/rejection: --confirm
   history | validate
   rollback --revision REV --expect CURRENT --confirm --source TEXT

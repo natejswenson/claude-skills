@@ -9,4 +9,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Versioned private visual profiles, approved reference images, deterministic briefs and verified image receipts shared by Claude Code and Codex.
+- Explicit scoped feedback, idempotent event retries, draft-baseline acceptance, rebrand protection and revision rollback.
+- Offline two-sided baseline frozen from actual image generation and simplification feedback.
 - First release. Generate images in a user’s consistent brand style and refine that style through explicit feedback.

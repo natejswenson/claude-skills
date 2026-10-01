@@ -171,3 +171,21 @@ test('CLI resolves bundled files outside the plugin cwd', t => {
   const result = spawnSync(process.execPath, [join(HERE, '../brand-images.js'), '--version'], { cwd: s.dir, encoding: 'utf8' });
   assert.equal(result.status, 0); assert.equal(result.stdout.trim(), '0.1.0');
 });
+
+test('an explicitly selected onboarding baseline can finalize draft attributes with a fresh review', t => {
+  const s = setup(t); s.generated();
+  const patch = s.file('accepted-style.json', { anchors: { signature: 'Moderate engraved detail with flat layers' } });
+  assert.throws(() => s.feedback({ patch, approveImage: true }), /fresh --review/);
+  const result = s.feedback({ patch, approveImage: true, review: s.review });
+  assert.equal(result.status, 'approved'); assert.equal(result.references.length, 1);
+  assert.equal(result.style.anchors.signature, 'Moderate engraved detail with flat layers');
+  assert.equal(s.run('history').revisions[0].status, 'draft');
+  assert.equal(s.run('history').feedback[0].review.inspected, true);
+});
+test('selecting a reference does not silently rebrand approved anchors', t => {
+  const s = setup(t); s.generated(); s.feedback({ patch: undefined, approveImage: true });
+  s.run('brief', { run: 'latest', from: s.file('later-request.json', { subject: 'A MacBook' }) });
+  s.run('run', { run: 'latest', status: 'generated', image: s.image, backend: 'test', review: s.review });
+  const patch = s.file('new-anchors.json', { anchors: { medium: 'Photograph' } });
+  assert.throws(() => s.feedback({ run: 'latest', event: 'change', expect: 2, patch, approveImage: true, review: s.review }), /rebrand/);
+});

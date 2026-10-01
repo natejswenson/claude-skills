@@ -21,7 +21,7 @@ Durable patches are narrow JSON merge updates, not arbitrary state edits:
 {"preferences":{"texture":"Rougher paper grain with uneven ink coverage"}}
 ```
 
-Only medium/palette/signature in `anchors` and lighting/texture/composition/typography/avoid in `preferences` are allowed. Arrays replace the entire prior array; preserve prior avoid-list entries unless the user removed them. Changes to anchors require explicit rebrand intent and `--rebrand`. Normal preference refinements do not. Unknown fields, missing confirmation, missing source, stale revision and unsupported state transitions fail without replacing state.
+Only medium/palette/signature in `anchors` and lighting/texture/composition/typography/avoid in `preferences` are allowed. Arrays replace the entire prior array; preserve prior avoid-list entries unless the user removed them. Changes to approved anchors require explicit rebrand intent and `--rebrand`. An explicit selection of an onboarding image as the baseline may finalize draft anchors with `--patch --approve-image --review <fresh-review.json>`: review against the accepted attributes, keep the original run review, and save the new comparison in the feedback event. Patch plus approval requires a fresh review with all checks passing. Normal preference refinements do not. Unknown fields, missing confirmation, missing source, stale revision and unsupported state transitions fail without replacing state.
 
 When feedback contradicts an existing preference, current explicit durable intent wins. Patch that attribute, record its source and keep the earlier revision. Ambiguous contradictions become candidates. If the user says "keep the style but add a red bicycle", keep the bicycle in the request, never in the palette or signature.
 
