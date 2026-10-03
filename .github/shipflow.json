@@ -6,6 +6,7 @@
   "requiredChecks": [
     "ci / appletv",
     "ci / bible-study",
+    "ci / brand-images",
     "ci / brandreport",
     "ci / city-report",
     "ci / devlog",
