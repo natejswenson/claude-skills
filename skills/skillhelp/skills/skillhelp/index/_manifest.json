@@ -33,6 +33,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "brand-images",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "61eed4cb22958b6d",
+      "facts": 50,
+      "sections": {
+        "setup": 8,
+        "usage": 12,
+        "commands": 11,
+        "architecture": 8,
+        "troubleshooting": 11
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "brandreport",
       "version": "0.2.0",
       "stack": "node",

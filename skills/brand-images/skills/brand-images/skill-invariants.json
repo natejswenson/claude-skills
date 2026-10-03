@@ -1,0 +1,98 @@
+{
+  "comment": "What must not silently disappear from brand-images. `prose` names guardrails no code enforces; `split` declares which half of the skill is deterministic; `baseline` names the offline, $0 checks pinned against a real run.",
+  "skillfactory": {
+    "version": "0.1.0"
+  },
+  "prose": [
+    {
+      "id": "the-one-rule",
+      "pattern": "Every generation uses the selected versioned brand profile; ",
+      "rationale": "The one rule. It is the reason this skill exists rather than a prompt; lose the line and the skill becomes a generic assistant with extra steps."
+    },
+    {
+      "id": "never-claim-an-unobserved-result",
+      "pattern": "Never claim a result you did not observe",
+      "rationale": "Honesty about what was verified is the whole house contract. A skill that reports success it did not witness is worse than one that reports nothing."
+    },
+    {
+      "id": "detection-is-the-question-budget",
+      "pattern": "never ask about anything in it",
+      "rationale": "Two questions maximum is only achievable because detection already answered the rest. Asking about a detectable signal is the UX failure that makes a skill feel like a form."
+    },
+    {
+      "id": "no-silent-learning",
+      "pattern": "Silence creates no approval and no style update",
+      "rationale": "No autonomous mutation of brand from lack of feedback."
+    },
+    {
+      "id": "honest-capability",
+      "pattern": "Never invent a tool",
+      "rationale": "Claude and Codex need real image capabilities, not assumed APIs."
+    },
+    {
+      "id": "not-weight-training",
+      "pattern": "not model training",
+      "rationale": "Saved preferences cannot be described as retraining."
+    }
+  ],
+  "split": {
+    "deterministic": [
+      {
+        "step": "Isolate and validate saved profiles and revisions",
+        "command": "node scripts/brand-images.js profile"
+      },
+      {
+        "step": "Compile repeatable briefs with approved references",
+        "command": "node scripts/brand-images.js brief"
+      },
+      {
+        "step": "Persist explicitly scoped feedback and audit changes",
+        "command": "node scripts/brand-images.js feedback"
+      },
+      {
+        "step": "Check run receipts and revision consistency",
+        "command": "node scripts/brand-images.js validate"
+      }
+    ],
+    "nondeterministic": [
+      {
+        "step": "Discover a distinctive visual style from user instructions and references",
+        "why": "Visual preferences and reference interpretation require judgment; proposed attributes remain unconfirmed until the user accepts them."
+      },
+      {
+        "step": "Generate and visually review the actual image",
+        "why": "Use an available image generation tool, then inspect palette, medium, lighting, texture, composition and avoid-list against the selected profile. Report drift honestly and use bounded retries."
+      },
+      {
+        "step": "Interpret feedback as specific proposed profile edits",
+        "why": "Distinguish image content from recurring style and ambiguous preferences; ask only when durable intent is unclear."
+      }
+    ]
+  },
+  "_baseline_comment": "Pinned against a real run of this skill, never a synthetic fixture. Offline and $0 by construction: no network, no model, so CI cannot spend and cannot flake.",
+  "baseline": [
+    {
+      "id": "real-brand-image-run",
+      "kind": "golden",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/MANIFEST.json",
+        "evals/baseline/summary.json",
+        "evals/demo-input/mountain-first.png",
+        "evals/demo-input/mountain-simplified.png"
+      ],
+      "update_command": "node ../../../../skills/skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill brand-images --from <verified-real-projections> --command 'node scripts/replay.mjs --out \"$OUT\"' --trap-command 'node scripts/replay.mjs --trap'",
+      "rationale": "Pins brief compilation, explicit composition feedback and artifact receipts from the actual two-image mountain run; pixels are frozen evidence, not a CI regeneration."
+    },
+    {
+      "id": "brand-drift-traps",
+      "kind": "trap",
+      "test": "scripts/tests/baseline.test.mjs",
+      "fixtures": [
+        "evals/baseline/MANIFEST.json"
+      ],
+      "update_command": "node ../../../../skills/skillfactory/skills/skillfactory/scripts/skillfactory.js freeze --repo ../../../.. --skill brand-images --from <verified-real-projections> --command 'node scripts/replay.mjs --out \"$OUT\"' --trap-command 'node scripts/replay.mjs --trap'",
+      "rationale": "Replay corrupts the second run’s profile hash and must fail specifically at revision validation; unit tests additionally cover missing references, cross-profile feedback and unconfirmed edits."
+    }
+  ]
+}

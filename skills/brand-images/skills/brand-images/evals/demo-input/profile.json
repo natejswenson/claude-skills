@@ -1,0 +1,17 @@
+{
+  "style": {
+    "anchors": {
+      "medium": "Editorial illustration with hand-inked contours and flat printmaking shapes on warm paper",
+      "palette": ["warm ivory paper", "charcoal ink", "muted slate", "restrained burnt-orange accent"],
+      "signature": "Distinctive layered silhouettes, irregular human ink edges, one small accent area and generous breathing room"
+    },
+    "preferences": {
+      "lighting": "Quiet diffuse daylight conveyed through flat tonal layers",
+      "texture": "Visible paper grain and light imperfect ink coverage; no glossy gradients",
+      "composition": "Strong asymmetrical focal point with open paper space and a simple readable silhouette",
+      "typography": "No lettering, captions or logos unless explicitly requested",
+      "avoid": ["photorealism", "glossy 3D", "neon colors", "decorative borders", "dense detail"]
+    }
+  },
+  "references": []
+}

@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "currentRevision": 2,
+  "revisions": [
+    {
+      "revision": 1,
+      "status": "draft"
+    },
+    {
+      "revision": 2,
+      "status": "draft"
+    }
+  ],
+  "runs": [
+    {
+      "id": "mountain-first",
+      "revision": 1,
+      "status": "generated",
+      "artifact": {
+        "path": "assets/5650c4766644cb5f3fd0b9aa9e2db9d59bc44f962635f6b61ea9365de86ab6e5.png",
+        "sha256": "5650c4766644cb5f3fd0b9aa9e2db9d59bc44f962635f6b61ea9365de86ab6e5",
+        "bytes": 3212278
+      },
+      "review": {
+        "inspected": true,
+        "checks": {
+          "medium": "pass",
+          "palette": "pass",
+          "signature": "drift",
+          "lighting": "pass",
+          "texture": "pass",
+          "composition": "pass",
+          "typography": "pass",
+          "avoid": "drift",
+          "subject": "pass"
+        },
+        "notes": "Warm paper, charcoal and slate printed layers, tiny burnt-orange sun and winding river are visible. Dense tree and cliff detail exceeds the simple silhouette and avoid-dense-detail direction. Profile stays draft."
+      },
+      "backend": "codex-built-in-imagegen"
+    },
+    {
+      "id": "mountain-simplified",
+      "revision": 2,
+      "status": "generated",
+      "artifact": {
+        "path": "assets/43c1f1a136d11fe6da94921a821e29c9f0e7338c596f24182cb7b08f8fe8ef30.png",
+        "sha256": "43c1f1a136d11fe6da94921a821e29c9f0e7338c596f24182cb7b08f8fe8ef30",
+        "bytes": 2903584
+      },
+      "review": {
+        "inspected": true,
+        "checks": {
+          "medium": "pass",
+          "palette": "pass",
+          "signature": "drift",
+          "lighting": "pass",
+          "texture": "pass",
+          "composition": "pass",
+          "typography": "pass",
+          "avoid": "drift",
+          "subject": "pass"
+        },
+        "notes": "Compared to the first image, cliff and tree groups have slightly broader shapes and fewer fine marks. Mountain arrangement, river course, small orange sun and printed paper treatment are retained. Overall fine detail still exceeds the original simple-silhouette draft anchor, so the brand is not approved."
+      },
+      "backend": "codex-built-in-imagegen"
+    }
+  ],
+  "feedback": [
+    {
+      "run": "mountain-first",
+      "scope": "durable",
+      "revision": 2,
+      "patch": {
+        "preferences": {
+          "composition": "Strong asymmetrical focal point with open paper space and readable silhouettes; slightly simplify small tree and cliff details while preserving the overall landscape structure"
+        }
+      }
+    }
+  ]
+}
