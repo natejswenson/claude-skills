@@ -138,8 +138,8 @@ function cmdScaffold(args) {
       [
         [`press emit --repo . --init --target ${spec.name}-readme`, 'emit artifact brand regions; load terminal/UI rules from PRESS at runtime'],
         ['node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs', "refresh press's golden set when artifact targets change"],
-        [`ghfactory header .github/workflows/${spec.name}.yml`, 'stamp the masthead from press'],
-        [`ghfactory verify .github/workflows/${spec.name}.yml`, 'refs real, lint-clean, before anyone reads it'],
+        [house.ciConfig ? 'node tools/skills-ci.mjs validate' : `ghfactory header .github/workflows/${spec.name}.yml`, house.ciConfig ? 'validate shared matrix and registry coverage' : 'stamp the masthead from press'],
+        [house.ciConfig ? 'ghfactory verify .github/workflows/ci.yml .github/workflows/release-dispatch.yml' : `ghfactory verify .github/workflows/${spec.name}.yml`, 'refs real, lint-clean, before anyone reads it'],
         ['run .github/repo-settings.sh (admin)', 'editing the contexts array applies NOTHING on its own'],
       ],
     ),

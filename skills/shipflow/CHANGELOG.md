@@ -2,6 +2,12 @@
 
 All notable changes to `@natjswenson/shipflow` are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Support optional componentLayout.workflowInputs for shared release entrypoints. Dispatch passes separately quoted raw fields and routing participates in the reviewed status hash; legacy per-component dispatch remains supported.
+
 ## 0.7.0 (2026-09-17)
 
 ### Added

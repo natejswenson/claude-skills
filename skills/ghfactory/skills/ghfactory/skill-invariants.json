@@ -125,9 +125,9 @@
       "kind": "corpus",
       "test": "tests/baseline.test.mjs",
       "corpus_glob": "../../../../.github/workflows/*.yml",
-      "min_corpus": 12,
+      "min_corpus": 9,
       "update_command": "node bin/ghfactory.js detect --repo ../../../..",
-      "rationale": "collectUses is the front door of rung 0. If it silently matched nothing, every downstream check would report 'all clean' having verified zero actions \u2014 the exact way a gate turns decorative. The floor asserts it finds real references across this repo's own workflows, so a parser regression goes red instead of quiet."
+      "rationale": "collectUses is the front door of rung 0. If it silently matched nothing, every downstream check would report 'all clean' having verified zero actions \u2014 the exact way a gate turns decorative. The floor asserts it finds real references across this repo's own workflows, so a parser regression goes red instead of quiet. Config-driven consolidation retains nine workflow files; the test also requires the shared CI/release entrypoints and specialized gate workflows while retaining the independent floor of twenty parsed action references."
     }
   ]
 }

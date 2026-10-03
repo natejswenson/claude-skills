@@ -7,7 +7,7 @@ not there, in a way that looks exactly like being there.
 | # | Registry | Missing means | Applied by |
 |---|---|---|---|
 | 1 | `.claude-plugin/marketplace.json` | nobody can install it; `lint_marketplace.py` fails the PR | `scaffold` |
-| 2 | `.github/workflows/<name>.yml` | no `ci / <name>` check exists at all | `scaffold` |
+| 2 | `.github/skills-config.yml` entry + shared CI/release, or legacy `.github/workflows/<name>.yml` | no `ci / <name>` check exists at all | `scaffold` |
 | 3 | `.github/repo-settings.sh` `contexts` | CI runs, reports green, and gates nothing on `main` | `scaffold` **+ an admin run** |
 | 4 | press `targets.json` | `press check` cannot see the skill; brand drift is invisible | `scaffold`, then `press emit --init`, then the golden refresh |
 | 5 | root `README.md` — table, install block, symlink block | the skill is undiscoverable to a reader | `scaffold` |
@@ -26,16 +26,17 @@ the repo — the file says the right thing and GitHub does not.
 **Editing `.github/repo-settings.sh` applies nothing.** An admin has to run it.
 Say so, out loud, every time.
 
-Audit for it:
+Validate the source registries, then compare the live contexts against
+`.github/shipflow.json.requiredChecks`:
 
 ```bash
-req=$(gh api repos/<owner>/<repo>/branches/main/protection \
-  --jq '.required_status_checks.contexts[]' | sed 's|ci / ||')
-for s in $(ls .github/workflows/*.yml | sed 's|.*/||;s|\.yml||' \
-  | grep -v '^_\|automerge\|tools\|marketplace\|propagate'); do
-  echo "$req" | grep -qx "$s" || echo "NOT REQUIRED: ci / $s"
-done
+node tools/skills-ci.mjs validate
+gh api repos/<owner>/<repo>/branches/main/protection \
+  --jq '.required_status_checks.contexts'
 ```
+
+Local config validation does not establish that settings have been applied.
+For legacy repositories, compare caller job names against the same live contexts.
 
 ## Registry 4 has a second half
 
@@ -116,3 +117,18 @@ feature-stack bases. Push CI and the dispatch guard use configured main too.
 The historical default dev/main golden remains unchanged; it records an older
 run whose comments predate dispatch-only releases, while its release guard is
 still dispatch-only. No historical fixture is evidence of live branch policy.
+
+## Config-enabled repositories
+
+When `.github/skills-config.yml` exists, skillfactory parses and validates its
+strict JSON syntax (a YAML 1.2 subset), transactionally adds a new skill entry,
+and creates no per-skill workflow. A malformed/unreadable registry is an error,
+never permission to fall back to legacy scaffolding. The bundled parser requires
+no repository `tools/` import or runtime YAML package. `verify` requires the
+entry, shared job-name template, and shared release routing. Existing repos
+without the config keep their original caller generation and frozen baselines.
+
+The shared PR matrix retains all skills and names each job `ci / <skill>`;
+unchanged entries skip heavy commands. Release calls force selected-skill tests
+before the main-only dispatch job. Common lint is automatic; entry commands
+retain their own directories and fail on the first error.

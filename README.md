@@ -162,7 +162,7 @@ protection and verifies its writes. Every skill check reports on main and featur
 
 A merge or push publishes nothing. `/release <skill>` (Claude) or `$release <skill>` (Codex)
 prepares that skill's version and changelog in a main-based PR, then explicitly dispatches
-its workflow after merge and verifies the remote namespaced tag. Versions remain independent.
+the shared release workflow with its selected skill input after merge and verifies the remote namespaced tag. Versions remain independent.
 
 The [cutover runbook](docs/github-flow-cutover.md) records the audited retirement of the old
 integration branch, remaining live steps, and recovery commands. Draft PRs do not apply
@@ -178,7 +178,7 @@ live settings or retire branches.
 | `skills/<name>/` | Plugin root — one self-contained skill, history preserved via git subtree |
 | `skills/<name>/.claude-plugin/plugin.json` | Per-skill plugin manifest (name/version/description) |
 | `skills/<name>/skills/<name>/SKILL.md` | The actual skill, nested one level deeper — Claude Code's plugin auto-discovery only scans `skills/<subdir>/SKILL.md` |
-| `.github/workflows/` | Reusable release workflow, one CI caller per skill (path-filtered), and the shipflow-rendered auto-merge workflow |
+| `.github/workflows/` | Config-driven matrix CI, shared explicit release dispatch, specialized checks, and shipflow-rendered auto-merge |
 | `.github/repo-settings.sh` | Repo + branch-protection config, as code |
 | `.github/shipflow.json` | shipflow's GitHub-flow policy and manual per-skill releases |
 
