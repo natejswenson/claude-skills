@@ -54,7 +54,10 @@
       "paths": [
         "skills/{name}"
       ],
-      "workflowFile": "{name}.yml"
+      "workflowFile": "release-dispatch.yml",
+      "workflowInputs": {
+        "skill": "{name}"
+      }
     },
     "components": [
       "appletv",

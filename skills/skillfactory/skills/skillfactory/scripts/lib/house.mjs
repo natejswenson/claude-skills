@@ -9,6 +9,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { readCiConfig } from './ci-config.mjs';
 
 /** Parse ONLY a SKILL.md frontmatter block — never the body. Mirrors tools/score_skill.py. */
 export function frontmatter(text) {
@@ -87,6 +88,9 @@ export function readHouse(repo) {
     marketplaceSources: Object.fromEntries((marketplace?.plugins ?? []).map((p) => [p.name, p.source])),
     contexts,
     workflows,
+    ciConfig: readCiConfig(repo),
+    ciWorkflow: readText(join(workflowsDir, 'ci.yml')),
+    releaseWorkflow: readText(join(workflowsDir, 'release-dispatch.yml')),
     pressTargets: targetsFile?.targets ?? [],
     hasPress: Boolean(targetsFile),
   };
