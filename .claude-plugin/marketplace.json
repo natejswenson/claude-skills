@@ -104,6 +104,10 @@
     {
       "name": "dotfiles",
       "source": "./skills/dotfiles"
+    },
+    {
+      "name": "brand-images",
+      "source": "./skills/brand-images"
     }
   ]
 }

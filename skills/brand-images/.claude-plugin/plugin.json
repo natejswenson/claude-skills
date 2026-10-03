@@ -1,0 +1,10 @@
+{
+  "name": "brand-images",
+  "version": "0.1.0",
+  "description": "Generate images in a user’s consistent brand style and refine that style through explicit feedback.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/brand-images",
+  "license": "MIT"
+}
