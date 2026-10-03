@@ -42,19 +42,20 @@ test('every skill reports stable checks on main and stacks; only main dispatch r
   assert.deepEqual([...policy.requiredChecks].sort(), expected);
   const contexts = JSON.parse(read('.github/repo-settings.sh').match(/"contexts":\s*(\[[^\]]*\])/)[1]);
   assert.deepEqual(contexts.sort(), expected);
-  for (const name of policy.release.components) {
-    const w = workflow(name);
-    assert.deepEqual(w.on.pull_request.branches, ['main', 'feature/**'], name);
-    assert.equal(w.on.pull_request.paths, undefined, name);
-    assert.equal(w.on.pull_request['paths-ignore'], undefined, name);
-    assert.equal(w.jobs.ci.name, `ci / ${name}`);
-    assert.equal(w.jobs.release.needs, 'ci');
-    assert.equal(w.jobs.release.uses, './.github/workflows/_release.yml');
-    for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
-      for (const ref of ['refs/heads/main', 'refs/heads/dev', 'refs/heads/feature/demo']) {
-        assert.equal(releaseAllowed(w.jobs.release.if, event, ref),
-          event === 'workflow_dispatch' && ref === 'refs/heads/main', `${name} ${event} ${ref}`);
-      }
+  const config = JSON.parse(read('.github/skills-config.yml'));
+  assert.deepEqual(Object.keys(config.skills).sort(), [...policy.release.components].sort());
+  const w = workflow('ci'), r = workflow('release-dispatch');
+  assert.deepEqual(w.on.pull_request.branches, ['main', 'feature/**']);
+  assert.equal(w.on.pull_request.paths, undefined);
+  assert.equal(w.on.pull_request['paths-ignore'], undefined);
+  assert.equal(w.jobs.ci.name, 'ci / ${{ matrix.skill }}');
+  assert.deepEqual(r.jobs.release.needs, ['select', 'verify']);
+  assert.equal(r.jobs.release.uses, './.github/workflows/_release.yml');
+  assert.deepEqual(Object.keys(r.on), ['workflow_dispatch']);
+  for (const event of ['push', 'pull_request', 'workflow_dispatch']) {
+    for (const ref of ['refs/heads/main', 'refs/heads/dev', 'refs/heads/feature/demo']) {
+      assert.equal(releaseAllowed(r.jobs.release.if, event, ref),
+        event === 'workflow_dispatch' && ref === 'refs/heads/main', `${event} ${ref}`);
     }
   }
   assert.equal(workflow('security').on.pull_request, null, 'security retains every PR base');
@@ -70,7 +71,7 @@ test('tools CI executes this regression with declared runtimes on policy and sta
     }
   }
   const steps = w.jobs.test.steps;
-  assert.ok(steps.some(s => s.run === 'node --test tools/tests/github-flow-cutover.test.mjs' && !s.if));
+  assert.ok(steps.some(s => s.run === 'node --test tools/tests/*.test.mjs' && !s.if));
   assert.ok(steps.some(s => s.run === 'python -m pytest tools/tests -q'));
   assert.ok(steps.some(s => s.uses?.startsWith('actions/setup-node@') && s.with['node-version'] === '22'));
   assert.ok(steps.some(s => s.uses?.startsWith('actions/setup-python@') && s.with['python-version'] === '3.12'));

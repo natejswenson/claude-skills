@@ -88,6 +88,22 @@ else {save({error:'unexpected gh',a});process.exit(1);}
 }
 const cutOptions = { ownerRepo: 'fixture/repo', version: '0.2.0', skipHashCheck: true, waitSeconds: 0, pollSeconds: 1 };
 
+for (const legacy of [false, true]) test(`shared workflow dispatch routes the selected skill (${legacy ? 'legacy promotion' : 'main-only'})`, t => {
+  const f=fixture(t,{legacy});
+  f.config.release.componentLayout.workflowInputs={skill:'{name}'};
+  const p=prepare(f.repo,f.config,'alpha','0.2.0','- Requested notes.'); assert.equal(p.ok,true,p.error);
+  const state=fakeGh(t,f);
+  const r=cut(f.repo,f.config,'alpha',cutOptions);assert.equal(r.done,true,JSON.stringify(r));
+  const calls=state().calls.filter(a=>a[0]==='workflow');assert.equal(calls.length,1);
+  assert.deepEqual(calls[0].slice(-2),['--raw-field','skill=alpha']);
+});
+test('release workflow routing changes invalidate the reviewed status hash', t => {
+  const f=fixture(t);const before=readStatus(f.repo,f.config,'alpha').statusHash;
+  const changed=structuredClone(f.config);changed.release.componentLayout.workflowInputs={skill:'{name}'};
+  const after=readStatus(f.repo,changed,'alpha').statusHash;assert.notEqual(before,after);
+  const r=cut(f.repo,changed,'alpha',{...cutOptions,skipHashCheck:false,expectStatusHash:before});assert.equal(r.ok,false);assert.match(r.error,/toctou/);
+});
+
 test('GitHub flow status needs no dev and inventories pending components without labels', (t) => {
   const f = fixture(t); const s = readStatus(f.repo, f.config, 'alpha');
   assert.deepEqual(s.blockers, [], 'a main-only origin must be releasable without dev');

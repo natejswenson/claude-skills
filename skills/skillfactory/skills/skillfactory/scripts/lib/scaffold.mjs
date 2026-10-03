@@ -16,6 +16,7 @@
  */
 import { join } from 'node:path';
 import * as T from './templates.mjs';
+import { CONFIG_PATH, ciEntry, validateConfig } from './ci-config.mjs';
 
 const file = (path, content) => ({ path, content });
 
@@ -52,6 +53,18 @@ const edit = (path, find, replace, why) => ({ path, find, replace, why });
 export function planEdits(spec, house) {
   const n = spec.name;
   const edits = [];
+
+  if (house.ciConfig) edits.push({
+    path: CONFIG_PATH,
+    json: data => {
+      validateConfig(data);
+      if (Object.hasOwn(data.skills, n)) throw new Error(`CI config already contains ${n}`);
+      data.skills[n] = ciEntry(spec);
+      data.skills = Object.fromEntries(Object.entries(data.skills).sort(([a], [b]) => a.localeCompare(b)));
+      return validateConfig(data);
+    },
+    why: 'register the new skill in the shared matrix and selected-skill release workflow',
+  });
 
   // 1. The marketplace manifest — structured, because it is pure JSON.
   edits.push({
@@ -161,7 +174,7 @@ export function planEdits(spec, house) {
 
 export function planScaffold(spec, house, { today, pins }) {
   return {
-    files: [...planFiles(spec, today, house.marketplaceName), file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins, house.branchPolicy))],
+    files: [...planFiles(spec, today, house.marketplaceName), ...(house.ciConfig ? [] : [file(join('.github', 'workflows', `${spec.name}.yml`), T.caller(spec, pins, house.branchPolicy))])],
     edits: planEdits(spec, house),
   };
 }

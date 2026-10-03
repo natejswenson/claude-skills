@@ -194,13 +194,17 @@ test('corpus: no release job can be triggered by a push — dispatch is the only
   // release job at all, and a looser filter reported it as unguarded. An audit
   // that flags a file which can never release anything is the "cries wolf"
   // failure this repo already fixed once, in CLAUDE.md's required-check audit.
+  const ciConfig = JSON.parse(readFileSync(join(REPO_ROOT, '.github/skills-config.yml'), 'utf8'));
+  assert.deepEqual(Object.keys(ciConfig.skills).sort(), [...declared].sort(), 'shared release config must cover every component');
+  assert.equal(config.release.componentLayout.workflowFile, 'release-dispatch.yml');
+  assert.deepEqual(config.release.componentLayout.workflowInputs, {skill: '{name}'});
   const dir = join(REPO_ROOT, '.github', 'workflows');
   const callers = readdirSync(dir).filter(
     (f) => f.endsWith('.yml') && /^\s*uses:\s*\.\/\.github\/workflows\/_release\.yml\s*$/m.test(readFileSync(join(dir, f), 'utf8'))
   );
   assert.ok(
-    callers.length >= MIN_COMPONENTS,
-    `only ${callers.length} caller workflow(s) found, floor is ${MIN_COMPONENTS} — the resolver matched nothing and would report every caller safe`
+    callers.length === 1 && callers[0] === 'release-dispatch.yml',
+    `only ${callers.length} caller workflow(s) found, expected the single shared release entrypoint`
   );
   for (const file of callers) {
     const yaml = readFileSync(join(dir, file), 'utf8');
