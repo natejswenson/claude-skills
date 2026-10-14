@@ -7,7 +7,7 @@
  * depend on a model behaving well lives here — which threads a rule takes,
  * whether a thread was authorised, and what was actually moved.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync, renameSync, openSync, closeSync, fsyncSync, unlinkSync, linkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync, renameSync, openSync, closeSync, fsyncSync, unlinkSync, linkSync, statSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -19,6 +19,8 @@ import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, appl
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { resolveCategory } from './lib/category.mjs';
+import { normalizeContext, validateContext } from './lib/context.mjs';
+import { validatePreferences, triagePlan, validateSemanticPlan, correctionCandidate, reviewGroups } from './lib/preferences.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(readFileSync(join(HERE, '..', 'package.json'), 'utf8')).version;
@@ -98,7 +100,123 @@ const writeJson = (p, v, { allowRepo = false, atomic = false, exclusive = false 
 };
 
 const defaultRules = () => join(STATE_DIR, 'rules.json');
+const defaultPreferences = () => join(STATE_DIR, 'preferences.json');
 const trim = (s, n) => (String(s ?? '').length > n ? String(s).slice(0, n - 1) + '…' : String(s ?? ''));
+
+// Preferences are explicit authorization; classifications are evidence, not permission.
+async function cmdPreferences(args) {
+  const file = resolve(args.file ?? defaultPreferences());
+  if (args.save) {
+    if (args.approve !== true) throw new Error('preferences: saving requires --approve after the user accepts the proposed settings');
+    const candidate = readJson(args.save, 'preferences --save');
+    validatePreferences(candidate);
+    const doc = { ...candidate, approvedAt: new Date().toISOString() };
+    validatePreferences(doc);
+    // Reuse the repository-data refusal before making even a backup.
+    const out = writeJson(file + '.' + randomUUID() + '.candidate', doc, { ...args, exclusive: true });
+    try {
+      if (existsSync(file)) {
+        validatePreferences(readJson(file, 'current preferences'));
+        writeJson(file + '.' + randomUUID() + '.bak', readJson(file, 'current preferences'), { ...args, exclusive: true });
+      }
+      writeJson(file, doc, { ...args, atomic: true });
+    } finally { unlinkSync(out); }
+    console.log(`Saved approved preferences: ${doc.policies.length} policies; mode=${doc.mode}.`);
+    console.log('Next: fetch a sample, normalize context, classify messages, then triage.');
+    return;
+  }
+  if (args.approve) throw new Error('preferences: --approve requires --save <candidate.json>');
+  if (!existsSync(file)) return console.log('No approved preferences yet. Next: propose a short setup using your sample and existing labels.');
+  const doc = validatePreferences(readJson(file, 'preferences'));
+  console.log(`${doc.approvedAt ? 'Approved' : 'Unapproved'} preferences; mode=${doc.mode}; policies=${doc.policies.length}.`);
+  console.log(table(['Policy', 'Purpose', 'Folder', 'Routine mail leaves inbox', 'Sender scope'], doc.policies.map(p => [p.id, p.purpose, p.label, p.archive ? 'yes' : 'no', p.fromAddress ?? 'any'])));
+}
+
+async function cmdContext(args) {
+  if (!args.out || !['thread', 'search'].includes(args.source)) throw new Error('context: require --raw <verbatim.json> --source thread|search --out <context.json>');
+  const raw = readJson(args.raw ?? '', 'context --raw');
+  // Re-normalizing an unchanged file is not a new observation. Artifact time
+  // checks age/reuse; the host must still obtain a genuine new Gmail response.
+  const fetchedAt = new Date(statSync(resolve(args.raw)).mtimeMs).toISOString();
+  const doc = normalizeContext(raw, { source: args.source, fetchedAt });
+  validateContext(doc);
+  console.error(`wrote ${writeJson(args.out, doc, args)}`);
+  console.log(`Context: ${doc.threads.length} threads; ${doc.threads.filter(t => t.complete).length} complete. Incomplete conversations support preview and review only.`);
+}
+
+function triageInputs(args) {
+  const ruleFile = args.rules ?? defaultRules();
+  return {
+    threads: readJson(args.threads ?? '', 'triage --threads'),
+    labels: readJson(args.labels ?? '', 'triage --labels'),
+    rules: args.rules || existsSync(ruleFile) ? readJson(ruleFile, 'triage --rules') : { version: 1, rules: [] },
+    preferences: readJson(args.preferences ?? defaultPreferences(), 'triage --preferences'),
+    context: readJson(args.context ?? '', 'triage --context'),
+    decisions: readJson(args.decisions ?? '', 'triage --decisions'),
+    ...(args.approvals ? { approvals: readJson(args.approvals, 'triage --approvals') } : {}),
+  };
+}
+
+function printReview(p) {
+  console.log(`Planned: ${p.taken.filter(t => t.action === 'label').length} to file; ${p.taken.filter(t => t.archive).length} to archive; ${p.taken.filter(t => t.action === 'trash').length} to trash. Nothing has moved.`);
+  const groups = reviewGroups(p);
+  if (groups.length) console.log(table(['Review reason', 'Purpose', 'Policy', 'Threads'], groups.map(g => [g.reason, g.purpose ?? '—', g.policyId ?? '—', g.count])));
+  else console.log('No preference decisions need review in this sample.');
+  console.log('Inspect plan JSON for exact thread IDs and actions. After execution, digest reports confirmed results and undo.');
+}
+
+async function cmdTriage(args) {
+  const p = triagePlan(triageInputs(args));
+  printReview(p);
+  if (args.out) console.error(`wrote ${writeJson(args.out, p, args)}`);
+}
+
+async function cmdReview(args) {
+  const p = readJson(args.plan ?? '', 'review --plan');
+  if (!p.semantic) throw new Error('review: use a preference triage plan');
+  if (args.approveTrash) {
+    if (!args.out || args.approveTrash === true) throw new Error('review: name explicit thread IDs with --approve-trash id[,id] and --out <approvals.json>');
+    const context = validateContext(readJson(args.context ?? '', 'review --context'));
+    const ids = [...new Set(String(args.approveTrash).split(',').map(s => s.trim()).filter(Boolean))];
+    if (!ids.length || ids.length > 50) throw new Error('review: approve between 1 and 50 explicit thread IDs');
+    const approvals = ids.map(threadId => {
+      const t = context.threads.find(t => t.id === threadId);
+      if (!t?.complete || !p.review.some(r => r.threadId === threadId)) throw new Error('review: trash approval requires a complete current conversation named in review');
+      return { threadId, contextHash: t.hash, action: 'trash' };
+    });
+    console.error(`wrote ${writeJson(args.out, { version: 1, approvals }, args)}`);
+    console.log(`Explicit trash approval recorded for ${approvals.length} threads. Re-run triage with --approvals; safety checks still apply.`);
+    return;
+  }
+  printReview(p);
+}
+
+async function cmdCorrect(args) {
+  if (!args.out || !['true', 'false'].includes(args.archive)) throw new Error('correct: require an exact --from-address, --purpose, --label, --archive true|false, --id, --note and --out');
+  const policy = correctionCandidate({ id: args.id, fromAddress: args.fromAddress, purpose: args.purpose, label: args.label, archive: args.archive === 'true', note: args.note });
+  const doc = { version: 1, mode: 'auto-file', approvedAt: null, policies: [policy] };
+  validatePreferences(doc);
+  console.error(`wrote ${writeJson(args.out, doc, args)}`);
+  console.log('Narrow correction proposed; no active preference changed. Add it before broader policies in your complete candidate settings, then approve preferences --save.');
+}
+
+async function cmdDigest(args) {
+  const path = resolve(args.receipt ?? '');
+  const r = readJson(path, 'digest --receipt');
+  if (!checkReceipt(r)) return console.log('Legacy receipt: execution evidence unavailable.');
+  const confirmed = r.operations.filter(o => o.status === 'confirmed');
+  const n = (action, label) => new Set(confirmed.filter(o => o.action === action && (label === undefined || o.label === label)).map(o => o.threadId)).size;
+  const userAdds = r.operations.filter(o => o.action === 'add' && !SYSTEM_LABELS.includes(String(o.label).toUpperCase()) && !String(o.label).startsWith('CATEGORY_'));
+  const filed = new Set(userAdds.map(o => o.threadId).filter(id => userAdds.filter(o => o.threadId === id).every(o => o.status === 'confirmed'))).size;
+  console.log(`Confirmed: ${filed} filed, ${n('remove', 'INBOX')} archived, ${n('trash')} trashed threads (${confirmed.length} confirmed operations).`);
+  console.log(`Unresolved: ${r.operations.filter(o => o.status === 'pending').length} pending, ${r.operations.filter(o => o.status === 'failed').length} failed, ${r.operations.filter(o => o.status === 'unknown').length} unknown operations.`);
+  if (args.plan) {
+    const groups = reviewGroups(readJson(args.plan, 'digest --plan'));
+    if (groups.length) console.log(table(['Review reason', 'Purpose', 'Threads'], groups.map(g => [g.reason, g.purpose ?? '—', g.count])));
+  }
+  console.log(`Receipt: ${path}`);
+  console.log(`Undo confirmed effects: undo --receipt "${path}"`);
+}
 
 // ── setup ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +248,15 @@ async function cmdSetup(args) {
     console.log(`\nthe rule file exists but does not validate: ${broken}`);
     console.log('fix it, or move it aside and start again — nothing will run against a rule set that does not load.');
     process.exitCode = 1;
+    return;
+  }
+
+  // A custom rule store belongs to its own setup, rather than the home profile.
+  const preferenceFile = args.preferences ?? (args.file ? join(dirname(file), 'preferences.json') : defaultPreferences());
+  if (existsSync(preferenceFile)) {
+    const prefs = validatePreferences(readJson(preferenceFile, 'setup preferences'));
+    console.log(`\nPreferences: ${prefs.approvedAt ? 'approved' : 'awaiting approval'}; ${prefs.mode}; ${prefs.policies.length} policies. ${rows.length} explicit rules retain priority.`);
+    console.log('Next: fetch a sample and labels, normalize context, classify each message, then triage. Review exceptions; digest confirmed results after execution.');
     return;
   }
 
@@ -913,6 +1040,15 @@ async function cmdRecord(args) {
 
 async function cmdApply(args) {
   const p = readJson(args.plan ?? '', 'apply: --plan <plan.json>');
+  if (!p.semantic && (Object.hasOwn(p, 'review') || Object.hasOwn(p, 'proposed') || p.taken?.some(e => Object.hasOwn(e, 'authority')))) {
+    throw new Error('apply: preference plan is missing its semantic authorization marker; re-plan');
+  }
+  let authorityInputs;
+  if (p.semantic) {
+    if (!args.freshContext) throw new Error('apply: preference plans require --fresh-context from a separate just-refetched conversation read');
+    authorityInputs = triageInputs(args);
+    validateSemanticPlan(p, authorityInputs, { freshContext: readJson(args.freshContext, 'apply --fresh-context') });
+  }
   const wantTrash = args.trash ? readJson(args.trash, 'apply: --trash <ids.json>') : null;
   const wantSort = args.sort ? readJson(args.sort, 'apply: --sort <ids.json>') : null;
 
@@ -926,6 +1062,15 @@ async function cmdApply(args) {
   if (entries.length === 0) throw new Error('apply: this plan authorises nothing — there is nothing to do');
 
   const receipt = buildReceipt(entries, receiptOptions(args));
+  if (authorityInputs) {
+    const ids = new Set(entries.map(e => e.threadId));
+    receipt.authorization = {
+      kind: 'preferences', ...p.semantic,
+      policies: authorityInputs.preferences.policies.filter(policy => entries.some(e => e.ruleId === `preference-${policy.id}`)),
+      decisions: authorityInputs.decisions.decisions.filter(d => ids.has(d.threadId)),
+      approvals: (authorityInputs.approvals?.approvals ?? []).filter(a => ids.has(a.threadId)),
+    };
+  }
 
   // Keyed on the rule id alone: a rule has exactly one action and one
   // destination, so a composite key would buy nothing and would split wrongly
@@ -1191,6 +1336,15 @@ async function cmdIngest(args) {
 const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against rules you wrote.
 
   gmailtriage setup     [--file <rules.json>]
+  gmailtriage preferences [--file <preferences.json>] [--save <candidate.json> --approve]
+  gmailtriage context   --raw <verbatim.json> --source thread|search --out <context.json>
+  gmailtriage triage    --threads <threads.json> --labels <labels.json> --context <context.json>
+                        --decisions <decisions.json> [--preferences <prefs.json>] [--rules <rules.json>]
+                        [--approvals <approvals.json>] [--out <plan.json>]
+  gmailtriage review    --plan <plan.json> [--context <context.json> --approve-trash id[,id] --out <approvals.json>]
+  gmailtriage correct   --id <id> --from-address <address> --purpose <purpose> --label <folder>
+                        --archive true|false --note <reason> --out <candidate.json>
+  gmailtriage digest    --receipt <receipt.json> [--plan <plan.json>]
   gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
                         [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
   gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
@@ -1204,6 +1358,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage plan      --threads <f.json> [--rules <f.json>] [--labels <f.json>] [--scope in:inbox|label:<Folder>] [--preview N] [--out <plan.json>]
   gmailtriage apply     --plan <plan.json> [--trash <ids.json>] [--sort <ids.json>] [--update-threads <threads.json>] [--labels <labels.json>]
                         [--receipt <f.json>] [--at <iso>]
+                        Preference plans also require all triage inputs and --fresh-context <refetched.json>.
   gmailtriage record    --receipt <receipt.json> --outcomes <json> [--begin|--reconcile|--retry]
   gmailtriage record    --receipt <receipt.json> [--status|--recover]
   gmailtriage undo      --receipt <f.json> | --last
@@ -1236,6 +1391,12 @@ async function main() {
   try {
     switch (cmd) {
       case 'setup': return await cmdSetup(args);
+      case 'preferences': return await cmdPreferences(args);
+      case 'context': return await cmdContext(args);
+      case 'triage': return await cmdTriage(args);
+      case 'review': return await cmdReview(args);
+      case 'correct': return await cmdCorrect(args);
+      case 'digest': return await cmdDigest(args);
       case 'ingest': return await cmdIngest(args);
       case 'audit': return await cmdAudit(args);
       case 'merge': return await cmdMerge(args);

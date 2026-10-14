@@ -4,7 +4,9 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, renameSync, mkdirSync, rmdirSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
-const cli = resolve('scripts/gmailtriage.js');
+import { fileURLToPath } from 'node:url';
+const cli = fileURLToPath(new URL('../gmailtriage.js', import.meta.url));
+const skillDir = fileURLToPath(new URL('../../', import.meta.url));
 const read = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const write = (p, data) => writeFileSync(p, JSON.stringify(data));
 function fixture(kind = 'apply') {
@@ -116,7 +118,7 @@ test('receipt commit survives missing snapshot and locked recovery fails closed'
 });
 test('legacy receipts stay explicit and unsupported versions fail', () => {
   const f = fixture();
-  for (const name of ['receipt', 'retro-receipt', 'merge-receipt']) assert.match(f.ok('undo', '--receipt', resolve('evals/baseline', name + '.json')), /legacy: execution evidence unavailable/);
+  for (const name of ['receipt', 'retro-receipt', 'merge-receipt']) assert.match(f.ok('undo', '--receipt', join(skillDir, 'evals/baseline', name + '.json')), /legacy: execution evidence unavailable/);
   const r = f.receipt(); r.version = 999; write(f.path('receipt'), r);
   assert.notEqual(f.run('undo', '--receipt', f.path('receipt')).status, 0);
 });
@@ -164,7 +166,7 @@ test('public ingest duplicates in either order retain category guards through re
   }
 });
 test('both hosts share the begin, record, reconciliation and truthful-count protocol', () => {
-  const skill = readFileSync('SKILL.md', 'utf8'), reference = readFileSync('references/gmail.md', 'utf8');
+  const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8'), reference = readFileSync(join(skillDir, 'references/gmail.md'), 'utf8');
   assert.match(skill, /Claude Code and Codex follow the same outcome protocol/);
   for (const text of [skill, reference]) for (const token of ['--begin', '--reconcile', '--retry', 'confirmed', 'unknown']) assert.ok(text.includes(token));
   assert.match(skill, /authorization alone cannot report success/);

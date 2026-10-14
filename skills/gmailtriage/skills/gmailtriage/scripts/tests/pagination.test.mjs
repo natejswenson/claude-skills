@@ -166,7 +166,9 @@ test('legacy coverage stays unknown and labels-only preserves snapshots and refu
 });
 
 test('shared host instructions require bounded verbatim fetching and final coverage', () => {
-  const doc = readFileSync(join(skill, 'SKILL.md'), 'utf8');
+  const entry = readFileSync(join(skill, 'SKILL.md'), 'utf8');
+  assert.match(entry, /references\/legacy-workflow\.md/);
+  const doc = entry + readFileSync(join(skill, 'references/legacy-workflow.md'), 'utf8');
   for (const pattern of [/Claude and Codex/, /maxPages=1/, /maxThreads=50/, /pageSize=min\(50/, /numbered.*verbatim/i, /before.*create_label/, /--manifest/, /--out-coverage/, /coverage\.json/]) assert.match(doc, pattern);
   const ref = readFileSync(join(skill, 'references/gmail.md'), 'utf8');
   for (const state of ['complete', 'capped', 'interrupted', 'unknown']) assert.ok(ref.includes(state));

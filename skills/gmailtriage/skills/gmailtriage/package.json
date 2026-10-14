@@ -1,7 +1,7 @@
 {
   "name": "@natjswenson/gmailtriage",
   "version": "0.8.1",
-  "description": "Triages a Gmail inbox against rules you wrote — categorising every thread and trashing only what one of your own rules names, never what the model merely thinks is junk.",
+  "description": "Handle routine Gmail under approved preferences, classify message purpose and attention, and review exceptions with exact plans, confirmed receipts and undo.",
   "license": "MIT",
   "author": "Nate Swenson",
   "homepage": "https://github.com/natejswenson/claude-skills",
