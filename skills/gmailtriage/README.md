@@ -6,41 +6,39 @@
 ---
 <!-- <<< press:masthead -->
 
-*Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk.*
+*Handle routine mail under approved preferences, and bring back the exceptions.*
 
-> **A message is trashed only because a rule the user wrote matched it, and never because the model judged it junk — and the same holds for every other move, so a thread is labelled or archived only by a rule too. The model may propose a rule, but it may never act as one: every thread that moved can be named by the rule that moved it.**
+> **Every action has an explicit rule, an approved preference, or named thread approval behind it. Classification supplies evidence; confirmed receipts supply the undo.**
 
 ## Why install this
 
-Two things happen to mail you do not want in your inbox: some of it should go in
-the bin, and most of it should go in a folder. This does both, under rules you
-wrote and can read six months later.
+Approve a short setup based on your mail and the labels you already use. Later
+runs classify each message by purpose and attention, file routine mail under
+those preferences, and bring back uncertain decisions. A retailer's promotion,
+receipt and security notice can receive different treatment.
 
-A first run reads your actual inbox **and the folders you already have**, then
-proposes rules drawn from both — bulk mail worth trashing, and mail worth
-keeping but filing, matched into your own vocabulary rather than a parallel set
-of folders invented beside it. Nothing moves until you accept a rule.
-
-It ships the method as well as the commands: 7 steps the machine decides
-outright, and 4 the model has to judge, with the line between them written down
-in `skill-invariants.json` rather than left to taste.
+Filing is separate from attention. A delivery update can be labelled Shopping
+and stay visible in the inbox. Routine mail leaves the inbox only where you
+accepted that behavior and the conversation evidence supports it. Trash requires
+an explicit rule or approval for named threads. Existing sender rules retain
+priority and their original behavior.
 
 ## What you get
 
-| Path | What it provides |
+| Path | Provides |
 |---|---|
-| `skills/gmailtriage/SKILL.md` | What the agent reads: triggers, the flow, and the one rule. |
-| `skills/gmailtriage/scripts/` | The deterministic half — `setup`, `propose`, `rules`, `labels`, `plan`, `apply`, `undo`. |
-| `skills/gmailtriage/references/rules.md` | The rule format, what each field means, and the checks a rule must survive before it can move anything. |
-| `skills/gmailtriage/references/sorting.md` | What a "folder" actually is in Gmail, how a move is performed and reversed, and why the destination is your word and not the skill's. |
-| `skills/gmailtriage/references/safety.md` | Why nothing here is permanent deletion, what the receipt records, and how an unwanted run is undone. |
-| `skills/gmailtriage/references/gmail.md` | The Gmail tool surface this skill is built on — the query syntax, the page limits, and the operations that do not exist. |
-| `skills/gmailtriage/references/proposing.md` | How a first run turns a real inbox into candidate rules, and the clusters it deliberately never proposes. |
-| `skills/gmailtriage/skill-invariants.json` | The prose guardrails and the baseline eval declaration. |
+| `skills/gmailtriage/SKILL.md` | Short onboarding, approved preferences, grouped review and both host workflows |
+| `skills/gmailtriage/scripts/` | Message evidence validation, exact plans, confirmed receipts, corrections and undo |
+| `skills/gmailtriage/references/preferences.md` | Schemas, examples and conservative host adapter limits |
+| `skills/gmailtriage/references/legacy-workflow.md` | Existing sender rules and folder maintenance |
+| `skills/gmailtriage/skill-invariants.json` | Declared authority boundaries and synthetic evaluation cases |
+
+The CLI validates and records; the native agent interprets mail and operates
+Gmail. No paid classifier, server or background scheduler is installed.
 
 ## Quick start
 
-Claude Code — run in chat:
+Claude Code:
 
 ```text
 /plugin marketplace add natejswenson/claude-skills
@@ -48,77 +46,68 @@ Claude Code — run in chat:
 /gmailtriage
 ```
 
-Codex — run in a terminal from the root of this repository checkout:
+Codex, from this repository checkout:
 
 ```bash
 codex plugin marketplace add "$PWD"
 codex plugin add gmailtriage@claude-skills
 ```
 
-Start a new Codex session, then invoke in chat:
+Start a new Codex session and invoke in chat:
 
 ```text
 $gmailtriage
 ```
 
-```bash
-gmailtriage setup     # where this mailbox stands, and the single next thing to do
-gmailtriage propose   # cluster your real inbox into two tables — bulk mail worth trashing, and mail
-                      # worth filing, each matched against the folders you already have. Moves nothing.
-gmailtriage audit     # is this label system still coherent? folders no rule manages, folders that are
-                      # one folder spelled two ways, and mail no rule claims. Non-zero while any of it
-                      # is outstanding. Run it every time.
-gmailtriage merge     # fold one folder into another, in the only safe order, with a receipt
-gmailtriage subdivide # split a folder that has grown into several things — clusters the mail already
-                      # in it by sender, and says plainly when it is still one thing. Moves nothing.
-gmailtriage rules     # validate and store rules, showing the Gmail query each compiles to, where it
-                      # files to, and whether the thread leaves the inbox
-gmailtriage labels    # reconcile every destination against your real labels; exits non-zero naming
-                      # exactly what must be created, so a run never dies halfway through
-gmailtriage plan      # exactly which threads each rule takes, where each goes, and how many leave
-                      # the inbox. Reads only. `--scope 'label:X'` applies your rules to the mail
-                      # already in a folder, instead of only to what arrives next.
-gmailtriage apply     # authorise planned actions and prepare a pending receipt
-gmailtriage record    # begin attempts, record outcomes, reconcile and recover
-gmailtriage undo      # reverse a whole run — untrash, unlabel, and put back in the inbox
-```
+Say “clean my inbox” or “keep
+these delivery notices visible.” The agent proposes a concrete setup, handles
+routine mail within accepted preferences, and asks about exceptions.
 
-### What a rule looks like
+### Commands
 
-```json
-{ "id": "sort-chase", "action": "label", "label": "Finance/Chase",
-  "match": { "from": "@chase.com" }, "note": "statements — read monthly, not daily" }
-```
+| Command | Purpose |
+|---|---|
+| `setup`, `preferences` | Inspect setup; accept concrete settings with `--save candidate.json --approve` |
+| `context` | Normalize verbatim native message metadata and check completeness |
+| `triage`, `review` | Plan preference actions and group decisions needing review |
+| `correct` | Propose an exact sender-and-purpose correction without activating it |
+| `apply`, `record` | Authorize exact actions and record their actual host outcomes |
+| `digest`, `undo` | Report confirmed effects and reverse them |
+| `ingest`, `propose`, `rules`, `labels`, `plan` | Existing explicit-rule workflow |
+| `audit`, `merge`, `subdivide` | Existing folder maintenance |
 
-Gmail has no folders, so a sort rule does two things: adds the label, and
-removes `INBOX`. `keepInInbox: true` tags in place instead — which is what the
-skill proposes for any sender that also delivers login codes, so you can file
-your receipts and still find the code you are waiting for.
+See [preference schemas and examples](skills/gmailtriage/references/preferences.md)
+and the [explicit-rule workflow](skills/gmailtriage/references/legacy-workflow.md).
 
 ## Triggers
 
-- "clean my inbox"
-- "gmailtriage"
-- "triage my email"
-- "sort my gmail"
-- "file my email into folders"
-- "auto-label my mail"
-- "set up my email rules"
-- "delete my junk mail"
-- "unsubscribe and clean up"
-- "why is my inbox full"
-- Anything the method in `SKILL.md` covers, whether or not it is phrased that way.
+- “clean my inbox” or “triage my email”
+- “sort my gmail” or “file my email into folders”
+- “set up my email preferences” or “set up my email rules”
+- “keep these delivery notices visible”
+- “delete my junk mail” or “unsubscribe and clean up”
+- `/gmailtriage` in Claude Code; `$gmailtriage` in Codex
 
 ## Requirements
 
-- **Claude Code:** Connect Gmail tools for thread search, label listing/creation, label/unlabel, trash and untrash.
-- **Codex:** Connect and authenticate Gmail in Codex with those read and write capabilities; Claude Gmail connections are not imported. The bundled CLI processes saved tool results and never authenticates or accesses Gmail itself.
-- **Receipts:** Apply and merge prepare pending operations. Both hosts record outcomes; only confirmed effects update snapshots or enter new-format undo. Status separates confirmed and incomplete counts.
-- **Personal data:** Both hosts retain rules, backups and receipts in `~/.gmailtriage/`; mailbox snapshots stay in the run scratchpad.
+- Node 18+; no runtime dependencies.
+- **Claude Code:** Connect Gmail capabilities for search, labels, affected conversation reads and the mutations selected by the user.
+- **Codex:** Connect and authenticate Gmail capabilities in Codex; Claude MCP connections are not imported. Discover available read/write capabilities independently.
+- **Personal data:** Both hosts keep rules, preferences, backups and receipts in `~/.gmailtriage/`.
+  Raw mailbox files and normalized snapshots remain in a private scratchpad.
+- Preference mutations require recognized complete conversation evidence.
+  Missing count/truncation information or unsupported thread schemas remain
+  incomplete. Current Codex search adapters support preview and review; this
+  implementation does not claim verified full-thread Codex completeness.
+- Every preference apply requires a newer conversation read and unchanged bound
+  inputs. Gmail reads are not atomic; refresh immediately before dispatch.
 
-See [Codex migration notes](../../docs/codex-migration.md) for host tools and retained data paths.
+`preview` previews preference actions; existing explicit rules retain authority.
+Automatic filing starts only after acceptance of the actual policies. Native-agent
+classification accuracy on real mail is not established by synthetic authorization
+tests. Scheduling is a separate explicitly requested runner setup.
 
-- Node 18+ (the bundled scripts are ESM, no dependencies).
+See [Codex migration notes](../../docs/codex-migration.md) for retained paths.
 
 ## Development
 
@@ -127,15 +116,17 @@ cd skills/gmailtriage/skills/gmailtriage
 npm test
 ```
 
-Node skill. `ci / gmailtriage` runs the same tests plus the house lints on
-every pull request, and `skillfactory verify --skill gmailtriage` reports which rung
-of the ladder it has reached.
+The suite preserves the invented legacy mailbox baseline and adds synthetic
+policy, context and end-to-end receipt cases. Tests verify observable authorization
+behavior, including safe positive actions and unsafe refusals. They do not call
+Gmail or launch paid model jobs. CI also checks skill/plugin metadata and brand
+integrity. `skillfactory verify --skill gmailtriage` checks the declared contract.
 
 ## Changelog
 
-See [`CHANGELOG.md`](CHANGELOG.md). Releases are cut by a version bump, tagged
-`gmailtriage-v<version>`.
+See [CHANGELOG.md](CHANGELOG.md). Releases use independent `gmailtriage-v<version>`
+tags and explicit release dispatch after review.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT; see [LICENSE](LICENSE).

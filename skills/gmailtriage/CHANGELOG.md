@@ -5,6 +5,21 @@ All notable changes to the **gmailtriage** skill are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Approved purpose-based preferences, automatic routine preview and review mode, with explicit rules retaining priority.
+- Message-level purpose and attention decisions bound to normalized context; every preference mutation needs complete, fresh conversation evidence and compatible message label membership.
+- Grouped review, exact thread trash approvals, narrow correction candidates and concise confirmed-result digests.
+- Apply-time revalidation and durable preference attribution in existing pending/confirmed receipts and undo.
+- Synthetic authorization cases for mixed-purpose senders, changed conversations, unknown evidence, preview and corrections. These do not establish real-mail classifier accuracy.
+
+### Changed
+
+- First-use guidance proposes a short setup from existing labels and examples. Explicit sender-rule and folder-maintenance workflows remain available separately.
+- Unsupported or incomplete host thread responses conservatively withhold all semantic mutations; current Codex search metadata supports preview and review.
+
 ## [0.8.1] - 2026-09-14
 
 ### Fixed
