@@ -207,6 +207,14 @@ concurrency, ordered commands/working directories, and release options.
 - Marketplace, tools, security, press propagation and generated auto-merge remain
   separate workflows. Never hand-edit shipflow's generated auto-merge workflow.
 
+Skills Studio is a local web app under `apps/skills-studio`, outside the skill
+registry and release matrix. Its dedicated `skills-studio.yml` runs locked npm
+installation, offline tests, production build, and PRESS checks on Node.js 24.
+It is path-filtered for app and relevant PRESS changes on main pushes and PRs to
+main or feature branches; its check is not added to the required skill contexts.
+Live proof/smoke scripts and subscription authentication remain manual and never
+run in CI.
+
 Run `node tools/skills-ci.mjs validate` after editing configuration. Run a local
 skill's actual CI commands with `SKILL=<name> node tools/skills-ci.mjs run`.
 See [the config guide](docs/skills-ci.md) for schema and migration validation.

@@ -69,7 +69,7 @@ are denied and recorded in Activity rather than silently approved.
 Previews capture new or modified supported files inside the selected workspace
 after each turn, including partial output from interrupted turns. The scan skips
 hidden folders, dependency/build folders, and symlinks; it is bounded to four
-directory levels and roughly 500 candidate files. Individual previews are capped
+directory levels and at most 500 candidate files. Individual previews are capped
 at 10 MiB. Files written outside the workspace are not collected. Copies are
 retained per revision so later runs cannot overwrite a previous preview.
 
@@ -87,6 +87,12 @@ npm test       # offline transport, lifecycle, storage, and security checks
 npm run build  # TypeScript and production build
 ```
 
+The dedicated Skills Studio GitHub Actions workflow runs `npm ci`, offline tests,
+the production build, and PRESS generation/CSS checks on Node.js 24 when app or
+relevant brand files change. It uses no Codex login, credentials, or subscription;
+live proof and smoke scripts remain manual. The app is separate from the per-skill
+CI/release registry and does not add a required skill check.
+
 Live checks consume your Codex subscription and run only when explicitly invoked:
 
 ```sh
@@ -99,6 +105,14 @@ The proof creates its own temporary skill/workspace; smoke creates a `skillhelp`
 conversation and a `studio-proof.md` file in the current workspace. Neither publishes
 anything or uses external connected services. Approval/question bridging is covered
 by deterministic tests; the live proof does not claim those events occurred.
+
+Command approvals show the exact command, folder, and reason. Network requests
+identify the destination and protocol, and file requests display the proposed diff.
+Only offered one-action decisions are available. When Codex offers cancellation
+instead of refusal, the button says **Decline and stop**. Session-wide command approvals and
+persistent policy changes are never offered by this interface. An additional file
+write root is labeled with its session scope when Codex requests one. Command Activity
+includes captured output and exit codes, with nonzero exits identified as failures.
 
 Brand CSS is generated from PRESS. From the repository root:
 

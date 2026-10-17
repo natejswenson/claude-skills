@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RunManager } from '../server/runs.mjs';
@@ -91,4 +91,46 @@ test('unknown run follow-ups cannot lock out future work', async () => {
   const {manager}=await setup();
   await assert.rejects(manager.followUp('unknown',{prompt:'hello'}),/not found/);
   assert.ok(await manager.create({prompt:'valid'}));
+});
+test('approval responses respect the actual server choices without granting persistent permissions', async () => {
+  const {manager,client}=await setup();
+  const run=await manager.create({prompt:'approval test'});
+  client.emit('event',{id:12,method:'item/commandExecution/requestApproval',params:{threadId:run.threadId,availableDecisions:['accept',{acceptWithExecpolicyAmendment:{execpolicy_amendment:['printf']}},'cancel']}});
+  assert.throws(()=>manager.respond(run.id,{requestId:'12',result:{decision:'decline'}}),/decision/);
+  assert.throws(()=>manager.respond(run.id,{requestId:'12',result:{decision:{acceptWithExecpolicyAmendment:{execpolicy_amendment:['printf']}}}}),/decision/);
+  manager.respond(run.id,{requestId:'12',result:{decision:'cancel'}});
+  assert.deepEqual(client.replies.at(-1),{id:12,result:{decision:'cancel'}});
+});
+test('command activity includes actual stdout and exit code, including failed commands', async () => {
+  const {manager,client}=await setup();
+  const run=await manager.create({prompt:'command test'});
+  client.emit('event',{method:'item/completed',params:{threadId:run.threadId,item:{id:'exec1',type:'commandExecution',command:'printf marker',aggregatedOutput:'REAL_MARKER',exitCode:7,status:'completed'}}});
+  const activity=manager.get(run.id).activities[0];
+  assert.match(activity.detail,/REAL_MARKER/);
+  assert.match(activity.detail,/Exit code: 7/);
+  assert.equal(activity.status,'failed');
+});
+test('workspace scans stop at the documented file limit, including a single large directory', async () => {
+  const {manager,root}=await setup();
+  await Promise.all(Array.from({length:510},(_,index)=>writeFile(join(root,'workspace',`${index}.md`),'existing output')));
+  const run=await manager.create({prompt:'scan test'});
+  assert.equal(Object.keys(run.baseline).length,500);
+});
+test('output revisions are immutable and do not capture existing files or symlink escapes', async () => {
+  const {manager,root}=await setup();
+  await writeFile(join(root,'workspace','existing.md'),'not from this run');
+  await writeFile(join(root,'outside.md'),'not part of the workspace');
+  const run=await manager.create({prompt:'artifact test'});
+  await symlink(join(root,'outside.md'),join(root,'workspace','escape.md'));
+  await writeFile(join(root,'workspace','report.md'),'first revision');
+  await manager.collectArtifacts(run.id);
+  const first=manager.get(run.id).artifacts;
+  assert.equal(first.length,1);
+  assert.equal(first[0].name,'report.md');
+  await writeFile(join(root,'workspace','report.md'),'second revision with more detail');
+  await manager.collectArtifacts(run.id);
+  const versions=manager.get(run.id).artifacts;
+  assert.equal(versions.length,2);
+  assert.equal(await readFile(join(root,'artifacts',run.id,versions[0].file),'utf8'),'first revision');
+  assert.equal(await readFile(join(root,'artifacts',run.id,versions[1].file),'utf8'),'second revision with more detail');
 });

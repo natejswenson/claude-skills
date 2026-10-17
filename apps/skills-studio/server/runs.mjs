@@ -19,8 +19,9 @@ async function snapshot(root) {
   const files = {};
   let count = 0;
   async function walk(dir, depth) {
-    if (depth > 4 || count > 500) return;
+    if (depth > 4 || count >= 500) return;
     for (const entry of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      if (count >= 500) return;
       if (entry.name.startsWith('.') || ['node_modules', 'vendor', 'dist'].includes(entry.name)) continue;
       const path = join(dir, entry.name);
       if (entry.isDirectory()) await walk(path, depth + 1);
@@ -50,7 +51,7 @@ export class RunManager extends EventEmitter {
     client.on('disconnect', message => {
       if (this.client !== client) return;
       this.connection = { status: 'disconnected', error: message };
-      for (const run of this.store.list()) if (activeStates.has(run.status)) { run.status = 'interrupted'; run.pending = []; run.error = 'Codex disconnected. Restart Skills Studio to reconnect, then continue this run.'; this.save(run); }
+      for (const run of this.store.list()) if (activeStates.has(run.status)) { run.status = 'interrupted'; run.pending = []; run.error = 'Codex disconnected. Use Refresh connection in Settings, then continue this run.'; this.save(run); }
       this.emit('change');
     });
   }
@@ -150,7 +151,8 @@ export class RunManager extends EventEmitter {
     const pending = run.pending.find(request => request.id === String(requestId));
     if (!pending || !activeStates.has(run.status)) fail('This request is no longer pending.', 409);
     if (pending.method.endsWith('requestApproval')) {
-      if (!['accept', 'decline'].includes(result?.decision) || Object.keys(result).length !== 1) fail('Invalid approval decision.');
+      const allowed = pending.params.availableDecisions || ['accept', 'decline', 'cancel'];
+      if (!['accept', 'decline', 'cancel'].includes(result?.decision) || !allowed.includes(result.decision) || Object.keys(result).length !== 1) fail('Invalid approval decision.');
     } else {
       if (!result?.answers || typeof result.answers !== 'object') fail('An answer is required.');
       for (const question of pending.params.questions || []) {
@@ -190,6 +192,13 @@ export class RunManager extends EventEmitter {
         message.text = item.text || message.text;
       } else if (item && ['commandExecution', 'fileChange', 'mcpToolCall', 'webSearch', 'imageGeneration'].includes(item.type)) {
         const activity = { id: item.id, label: ({ commandExecution: 'Running a command', fileChange: 'Updating files', mcpToolCall: 'Using a connected tool', webSearch: 'Searching the web', imageGeneration: 'Generating an image' })[item.type], detail: item.command || item.query || (item.changes || []).map(c => `${c.path}\n${c.diff || ''}`).join('\n') || item.tool || '', status: item.status || (method === 'item/completed' ? 'completed' : 'working') };
+        if (item.type === 'commandExecution') {
+          if (item.aggregatedOutput) activity.detail += `\n\n${item.aggregatedOutput}`;
+          if (typeof item.exitCode === 'number') {
+            activity.detail += `\n\nExit code: ${item.exitCode}`;
+            if (item.exitCode !== 0) activity.status = 'failed';
+          }
+        }
         const index = run.activities.findIndex(entry => entry.id === item.id);
         if (index < 0) run.activities.push(activity); else run.activities[index] = activity;
       }
