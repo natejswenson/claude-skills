@@ -942,6 +942,42 @@
       }
     },
     {
+      "id": "local-dev-readme",
+      "repo": "claude-skills",
+      "path": "skills/local-dev/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# local-dev$"
+      }
+    },
+    {
+      "id": "dotfiles-readme",
+      "repo": "claude-skills",
+      "path": "skills/dotfiles/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# dotfiles$"
+      }
+    },
+    {
+      "id": "brand-images-readme",
+      "repo": "claude-skills",
+      "path": "skills/brand-images/README.md",
+      "region": "masthead",
+      "syntax": "md",
+      "emitter": "readme-masthead",
+      "params": {},
+      "init": {
+        "insertAfter": "^# brand-images$"
+      }
+    },
+    {
       "id": "skills-studio",
       "repo": "claude-skills",
       "path": "apps/skills-studio/src/tokens.css",

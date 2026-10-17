@@ -1,0 +1,22 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "the-real-run",
+  "command": "node scripts/replay.mjs --out \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "mountain-first-brief.json",
+      "bytes": 1832,
+      "sha256": "263f78e375b0eca00d7e7dd691d868693c2eedc552bbe76348b1eb53ad2ae6e6"
+    },
+    {
+      "path": "mountain-simplified-brief.json",
+      "bytes": 2219,
+      "sha256": "2b39d5445a8f6e1ec4c478868ad3547c8c2e59aa06a0dcd16883aa6f3aeebbfe"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 2581,
+      "sha256": "0b87b66f49b088b3c701771802d838701823c69d2537913c831b89df4e5b83c7"
+    }
+  ]
+}

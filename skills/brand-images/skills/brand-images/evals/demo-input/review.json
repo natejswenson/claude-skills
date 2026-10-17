@@ -1,0 +1,9 @@
+{
+  "inspected": true,
+  "checks": {
+    "medium": "pass", "palette": "pass", "signature": "drift",
+    "lighting": "pass", "texture": "pass", "composition": "pass",
+    "typography": "pass", "avoid": "drift", "subject": "pass"
+  },
+  "notes": "Warm paper, charcoal and slate printed layers, tiny burnt-orange sun and winding river are visible. Dense tree and cliff detail exceeds the simple silhouette and avoid-dense-detail direction. Profile stays draft."
+}

@@ -1,0 +1,1211 @@
+{
+  "sourceCommit": "3f18fc12363a3c6e01bfc4e588cac086b783b6e2",
+  "description": "Settings extracted from the actual pre-consolidation callers; preserve as migration parity evidence, not a generated new baseline.",
+  "skills": {
+    "appletv": {
+      "source": ".github/workflows/appletv.yml",
+      "sha256": "1de1564a98d0cc8674426fe3ade0968d32717561460df588b20676f5a3a13c19",
+      "paths": [
+        "skills/appletv/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/appletv.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/appletv/skills/appletv --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/appletv",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target appletv-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/appletv/skills/appletv"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/appletv/skills/appletv"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/appletv/skills/appletv"
+        }
+      ],
+      "release": {
+        "skill": "appletv"
+      },
+      "propagate": false
+    },
+    "bible-study": {
+      "source": ".github/workflows/bible-study.yml",
+      "sha256": "24b8ae31d91e36cbcd2f86a4cfa9b4bcd47c31f58e1b646d959d3387b4941892",
+      "paths": [
+        "skills/bible-study/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/bible-study.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/bible-study/skills/bible-study --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/bible-study",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target bible-study-readme\nnode skills/press/skills/press/bin/press.js check --repo . --target bible-study-theme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/bible-study/skills/bible-study"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/bible-study/skills/bible-study"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/bible-study/skills/bible-study"
+        }
+      ],
+      "release": {
+        "skill": "bible-study"
+      },
+      "propagate": false
+    },
+    "brand-images": {
+      "source": ".github/workflows/brand-images.yml",
+      "sha256": "8b1e55a6a4aae99833f9c3ce7c33d32362d9d0cb4fb279349328157ba790ef71",
+      "paths": [
+        "skills/brand-images/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/brand-images.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/brand-images/skills/brand-images --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/brand-images",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target brand-images-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/brand-images/skills/brand-images"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/brand-images/skills/brand-images"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/brand-images/skills/brand-images"
+        }
+      ],
+      "release": {
+        "skill": "brand-images"
+      },
+      "propagate": false
+    },
+    "brandreport": {
+      "source": ".github/workflows/brandreport.yml",
+      "sha256": "068e8ca71a74d6b4ca175cd81f79cce95fd7a685e3a1e868b10cffef44709e48",
+      "paths": [
+        "skills/brandreport/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/brandreport.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/brandreport/skills/brandreport --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/brandreport",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target brandreport-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/brandreport/skills/brandreport"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/brandreport/skills/brandreport"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/brandreport/skills/brandreport"
+        }
+      ],
+      "release": {
+        "skill": "brandreport"
+      },
+      "propagate": false
+    },
+    "city-report": {
+      "source": ".github/workflows/city-report.yml",
+      "sha256": "960757aa49ed1b014bc525029f40812ff15d4915f4369410ce9c0a6b5edde4db",
+      "paths": [
+        "skills/city-report/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/city-report.yml"
+      ],
+      "python": "3.12",
+      "node": {},
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/city-report/skills/city-report --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/city-report",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target city-report",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/city-report/skills/city-report"
+        },
+        {
+          "run": "pytest --cov=scripts --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/city-report/skills/city-report"
+        }
+      ],
+      "release": {
+        "skill": "city-report"
+      },
+      "propagate": false
+    },
+    "devlog": {
+      "source": ".github/workflows/devlog.yml",
+      "sha256": "d697e92c453dcd97f452bc784c4d0e0c347bc4f3033e91440124552a3da81db7",
+      "paths": [
+        "skills/devlog/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/devlog.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22",
+        "cache": "npm",
+        "cache-dependency-path": "skills/devlog/skills/devlog/package-lock.json"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/devlog/skills/devlog --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/devlog",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target devlog-palette",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npx playwright install --with-deps chromium",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/devlog/skills/devlog"
+        }
+      ],
+      "release": {
+        "skill": "devlog",
+        "npm-publish": true
+      },
+      "propagate": false
+    },
+    "dotfiles": {
+      "source": ".github/workflows/dotfiles.yml",
+      "sha256": "7575ae99515947673bf285720d41ac880427bcae023fe8b20a5f2f8b902b2d9b",
+      "paths": [
+        "skills/dotfiles/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/dotfiles.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 10,
+      "concurrency": {
+        "group": "${{ github.workflow }}-${{ github.ref }}",
+        "cancel-in-progress": "${{ github.event_name == 'pull_request' }}"
+      },
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/dotfiles/skills/dotfiles --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/dotfiles",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target dotfiles-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm ci --ignore-scripts --no-audit --no-fund --offline",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        },
+        {
+          "run": "npm run audit -- --offline",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        }
+      ],
+      "release": {
+        "skill": "dotfiles"
+      },
+      "propagate": false
+    },
+    "eval": {
+      "source": ".github/workflows/eval.yml",
+      "sha256": "8e25e0b13efc26f4238d089bce762b3e0e1e7845dc999ac4d9593bc995b6e069",
+      "paths": [
+        "skills/eval/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/eval.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/eval/skills/eval --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/eval",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target eval-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/eval/skills/eval"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/eval/skills/eval"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/eval/skills/eval"
+        }
+      ],
+      "release": {
+        "skill": "eval"
+      },
+      "propagate": false
+    },
+    "ghfactory": {
+      "source": ".github/workflows/ghfactory.yml",
+      "sha256": "3812cf2caa5c00e7e75fa82a4514af0b9a834dbfc55bd9bee569bb9f41a1eb5c",
+      "paths": [
+        "skills/ghfactory/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/ghfactory.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/ghfactory/skills/ghfactory --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/ghfactory",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghfactory-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        }
+      ],
+      "release": {
+        "skill": "ghfactory"
+      },
+      "propagate": false
+    },
+    "ghostwriter-x": {
+      "source": ".github/workflows/ghostwriter-x.yml",
+      "sha256": "0d87d09aa68e51b9f21a1ba171ab98c495d175568599cbcc21e6f4f21b46057c",
+      "paths": [
+        "skills/ghostwriter-x/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/ghostwriter-x.yml"
+      ],
+      "python": "3.12",
+      "node": {},
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/ghostwriter-x/skills/ghostwriter-x --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/ghostwriter-x",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-x-card",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        },
+        {
+          "run": "shellcheck scripts/release_radar.sh",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        },
+        {
+          "run": "pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        }
+      ],
+      "release": {
+        "skill": "ghostwriter-x"
+      },
+      "propagate": false
+    },
+    "ghostwriter": {
+      "source": ".github/workflows/ghostwriter.yml",
+      "sha256": "ae02af5beddcf841e6cb4b6b57f0a352405fa75a87899b7ec31744fdfcb5a059",
+      "paths": [
+        "skills/ghostwriter/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/ghostwriter.yml"
+      ],
+      "python": "3.12",
+      "node": {},
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/ghostwriter/skills/ghostwriter --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/ghostwriter",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-card",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        },
+        {
+          "run": "shellcheck scripts/release_radar.sh scripts/install_radar.sh",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        },
+        {
+          "run": "pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        }
+      ],
+      "release": {
+        "skill": "ghostwriter"
+      },
+      "propagate": false
+    },
+    "github-stats": {
+      "source": ".github/workflows/github-stats.yml",
+      "sha256": "acd30c9571f8ecacb4bf3109fbf1e2aebc35096f6bd9e65999a8db620f9fc277",
+      "paths": [
+        "skills/github-stats/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/github-stats.yml"
+      ],
+      "python": "3.12",
+      "node": {},
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/github-stats/skills/github-stats --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/github-stats",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/github-stats/skills/github-stats"
+        },
+        {
+          "run": "shellcheck scripts/gh-stats.sh",
+          "cwd": "skills/github-stats/skills/github-stats"
+        },
+        {
+          "run": "pytest tests/ -v",
+          "cwd": "skills/github-stats/skills/github-stats"
+        }
+      ],
+      "release": {
+        "skill": "github-stats"
+      },
+      "propagate": false
+    },
+    "gmailtriage": {
+      "source": ".github/workflows/gmailtriage.yml",
+      "sha256": "91f2c525b37cec312f65d4e9538814203d64745f34eee392d96b106e837f17da",
+      "paths": [
+        "skills/gmailtriage/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/gmailtriage.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/gmailtriage/skills/gmailtriage --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/gmailtriage",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target gmailtriage-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        }
+      ],
+      "release": {
+        "skill": "gmailtriage"
+      },
+      "propagate": false
+    },
+    "issuecreator": {
+      "source": ".github/workflows/issuecreator.yml",
+      "sha256": "e2fbb8952ca3855e8ca41759df9a621edea74090a7b8a9e8e0684325bb19f875",
+      "paths": [
+        "skills/issuecreator/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/issuecreator.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 10,
+      "concurrency": {
+        "group": "issuecreator-${{ github.ref }}",
+        "cancel-in-progress": false
+      },
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/issuecreator/skills/issuecreator --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/issuecreator",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target issuecreator-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/issuecreator/skills/issuecreator"
+        }
+      ],
+      "release": {
+        "skill": "issuecreator"
+      },
+      "propagate": false
+    },
+    "issueflow": {
+      "source": ".github/workflows/issueflow.yml",
+      "sha256": "0107af2c3500f77ecead995b4f63941d34b35da3954fe5ce137329c6d074b243",
+      "paths": [
+        "skills/issueflow/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/issueflow.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/issueflow/skills/issueflow --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/issueflow",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target issueflow-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/issueflow/skills/issueflow"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/issueflow/skills/issueflow"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/issueflow/skills/issueflow"
+        }
+      ],
+      "release": {
+        "skill": "issueflow"
+      },
+      "propagate": false
+    },
+    "local-dev": {
+      "source": ".github/workflows/local-dev.yml",
+      "sha256": "a77e9fa372f03c912e1ccdef6c53ea8b4bb4419a3f8bccc1a95f87ebd4bbfd0f",
+      "paths": [
+        "skills/local-dev/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/local-dev.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/local-dev/skills/local-dev --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/local-dev",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target local-dev-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/local-dev/skills/local-dev"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/local-dev/skills/local-dev"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/local-dev/skills/local-dev"
+        }
+      ],
+      "release": {
+        "skill": "local-dev"
+      },
+      "propagate": false
+    },
+    "netwatch": {
+      "source": ".github/workflows/netwatch.yml",
+      "sha256": "bd0b05ece80036d31882f35db264d54316d2b836ea43fbe68a491b8348f86370",
+      "paths": [
+        "skills/netwatch/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/netwatch.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/netwatch/skills/netwatch --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/netwatch",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target netwatch-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/netwatch/skills/netwatch"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/netwatch/skills/netwatch"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/netwatch/skills/netwatch"
+        }
+      ],
+      "release": {
+        "skill": "netwatch"
+      },
+      "propagate": false
+    },
+    "pluginsync": {
+      "source": ".github/workflows/pluginsync.yml",
+      "sha256": "2f2ed45c90518764db7da08f993f68c3dabbf83d9154882a4d9d5702afa3b3cc",
+      "paths": [
+        "skills/pluginsync/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/pluginsync.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/pluginsync/skills/pluginsync --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/pluginsync",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target pluginsync-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        }
+      ],
+      "release": {
+        "skill": "pluginsync"
+      },
+      "propagate": false
+    },
+    "press": {
+      "source": ".github/workflows/press.yml",
+      "sha256": "47bbb8767e19ba9a0c2181cd746d957ccacb01a0e9ac62db2f552625f08c1f45",
+      "paths": [
+        "skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/press.yml",
+        "skills/city-report/skills/city-report/scripts/brand.py",
+        "skills/resume/skills/resume/assets/themes/press.css",
+        "skills/ghostwriter/skills/ghostwriter/assets/diagram.css.example",
+        "skills/ghostwriter-x/skills/ghostwriter-x/assets/diagram.css.example",
+        "skills/devlog/skills/devlog/image-style/style-guide.example.md"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/press/skills/press --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/press",
+          "cwd": "."
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/press/skills/press"
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo .",
+          "cwd": "."
+        }
+      ],
+      "release": {
+        "skill": "press",
+        "npm-publish": true
+      },
+      "propagate": true
+    },
+    "release": {
+      "source": ".github/workflows/release.yml",
+      "sha256": "701cb413212b271a228299aa8a78aa5c91eac1202090a9fbf78e4f95e961f9a3",
+      "paths": [
+        "skills/release/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/release.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/release/skills/release --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/release",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target release-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/release/skills/release"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/release/skills/release"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/release/skills/release"
+        }
+      ],
+      "release": {
+        "skill": "release"
+      },
+      "propagate": false
+    },
+    "resume": {
+      "source": ".github/workflows/resume.yml",
+      "sha256": "1df27e6cd60ea7d3079cece6130813826a917c32d9155cab41c4c3f74b1e9e0f",
+      "paths": [
+        "skills/resume/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/resume.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22",
+        "cache": "npm",
+        "cache-dependency-path": "skills/resume/skills/resume/package-lock.json"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/resume/skills/resume --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/resume",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target resume-theme",
+          "cwd": "."
+        },
+        {
+          "run": "npm ci",
+          "cwd": "skills/resume/skills/resume"
+        },
+        {
+          "run": "npx playwright install --with-deps chromium",
+          "cwd": "skills/resume/skills/resume"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/resume/skills/resume"
+        }
+      ],
+      "release": {
+        "skill": "resume"
+      },
+      "propagate": false
+    },
+    "shipflow": {
+      "source": ".github/workflows/shipflow.yml",
+      "sha256": "80f343cb7dd10b14507c9fefa5b2e78950616769d2042120bf07ea054850ae78",
+      "paths": [
+        "skills/shipflow/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/shipflow.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22",
+        "cache": "npm",
+        "cache-dependency-path": "skills/shipflow/skills/shipflow/package-lock.json"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/shipflow/skills/shipflow --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/shipflow",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/shipflow/skills/shipflow"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/shipflow/skills/shipflow"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/shipflow/skills/shipflow"
+        }
+      ],
+      "release": {
+        "skill": "shipflow",
+        "npm-publish": true
+      },
+      "propagate": false
+    },
+    "shipreport": {
+      "source": ".github/workflows/shipreport.yml",
+      "sha256": "46b34e7f936d99a6a0910f479570881e5625294b04f8cf42f1b970fd90132288",
+      "paths": [
+        "skills/shipreport/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/shipreport.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/shipreport/skills/shipreport --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/shipreport",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target shipreport-readme --target shipreport-theme",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js lint skills/shipreport/skills/shipreport/assets/report.css",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/shipreport/skills/shipreport"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/shipreport/skills/shipreport"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/shipreport/skills/shipreport"
+        }
+      ],
+      "release": {
+        "skill": "shipreport"
+      },
+      "propagate": false
+    },
+    "skillfactory": {
+      "source": ".github/workflows/skillfactory.yml",
+      "sha256": "6bfe9bf03740e31800d8a2c55b0c8a02a8d5fc27c008dd034ceedfa5f621b8ea",
+      "paths": [
+        "skills/skillfactory/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/skillfactory.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/skillfactory/skills/skillfactory --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/skillfactory",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target skillfactory-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        }
+      ],
+      "release": {
+        "skill": "skillfactory"
+      },
+      "propagate": false
+    },
+    "skillhelp": {
+      "source": ".github/workflows/skillhelp.yml",
+      "sha256": "55ca06dd9731cf37dfa903357f638422b23b69c303b99cdd59a433f7f969b675",
+      "paths": [
+        "skills/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/skillhelp.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/skillhelp/skills/skillhelp --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/skillhelp",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target skillhelp-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        }
+      ],
+      "release": {
+        "skill": "skillhelp"
+      },
+      "propagate": false
+    },
+    "traefik": {
+      "source": ".github/workflows/traefik.yml",
+      "sha256": "aacc0444b8eb53219097edcbcbfef055c799996ea0e5dd7f55ebaa8bfad3335a",
+      "paths": [
+        "skills/traefik/**",
+        "skills/press/skills/press/**",
+        "tools/score_skill.py",
+        "tools/lint_plugin.py",
+        ".github/workflows/traefik.yml"
+      ],
+      "python": "3.12",
+      "node": {
+        "node-version": "22"
+      },
+      "timeoutMinutes": 360,
+      "concurrency": null,
+      "commands": [
+        {
+          "run": "python tools/score_skill.py skills/traefik/skills/traefik --min 100",
+          "cwd": "."
+        },
+        {
+          "run": "python tools/lint_plugin.py skills/traefik",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target traefik-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/traefik/skills/traefik"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/traefik/skills/traefik"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/traefik/skills/traefik"
+        }
+      ],
+      "release": {
+        "skill": "traefik"
+      },
+      "propagate": false
+    }
+  }
+}

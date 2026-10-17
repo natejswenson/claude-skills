@@ -41,6 +41,9 @@
     "issuecreator-readme",
     "bible-study-readme",
     "bible-study-theme",
-    "traefik-readme"
+    "traefik-readme",
+    "local-dev-readme",
+    "dotfiles-readme",
+    "brand-images-readme"
   ]
 }

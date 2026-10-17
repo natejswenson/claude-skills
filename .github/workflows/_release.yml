@@ -1,10 +1,10 @@
 name: _release
 
-# Reusable, version-driven release for any skill in the monorepo. Called by each
-# per-skill caller's `release` job (which runs only on push to main, after `ci`).
+# Reusable, version-driven release for any skill in the monorepo. Called by
+# release-dispatch.yml after selected-skill CI, only on explicit main dispatch.
 # Resolves the skill's version (package.json if present, else SKILL.md frontmatter),
 # and if `<skill>-v<version>` isn't already tagged, cuts the tag + a GitHub Release
-# with notes from that skill's CHANGELOG. Idempotent: a no-version-bump merge no-ops.
+# with notes from that skill's CHANGELOG. An already tagged version is a no-op.
 on:
   workflow_call:
     inputs:

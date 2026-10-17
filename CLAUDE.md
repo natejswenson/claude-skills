@@ -123,7 +123,7 @@ using dev/main; this repository explicitly selects GitHub flow.
 4. Open the version/changelog PR directly into main. Review it and wait for all required
    checks. The release engine refuses missing/failed required contexts before asking for
    merge, then verifies the intended version and exact notes on freshly fetched main.
-5. Dispatch only the selected skill's workflow on main. The reusable `_release.yml` uses
+5. Dispatch `release-dispatch.yml` on main with the selected `skill` input. The reusable `_release.yml` uses
    that skill's independent version, namespaced tag and changelog. The release engine
    reports success only after reading the tag back from origin. An existing tag is safely
    resumed; it is never replaced to repair release notes. npm-enabled components publish
@@ -135,8 +135,8 @@ using dev/main; this repository explicitly selects GitHub flow.
 Every component must be declared in `release.components`; `ci / release` enforces this
 against the skill directories. No version consolidation or tag renaming is part of GitHub flow.
 
-> **The per-skill `release` job (`needs: ci`) runs on `workflow_dispatch` and nothing else.**
-> A push to `main` runs that skill's `ci` job and cuts nothing. **A dispatch is the only way a
+> **The shared `release` job (`needs: select, verify`) runs on main `workflow_dispatch` and nothing else.**
+> A push to `main` runs configured CI and cuts nothing. **A dispatch is the only way a
 > tag is ever created in this repo**, and `/release` is the thing that dispatches it.
 >
 > **This changed on 2026-08-02, and the history is why the rule is absolute.** The release jobs
@@ -157,7 +157,7 @@ against the skill directories. No version consolidation or tag renaming is part 
 >   `untagged-bump-on-main` indefinitely; that is a normal, safe state.
 > - To repair notes after the fact: `gh release edit <tag> --notes-file <file>`. Re-cutting instead
 >   means deleting a published tag, which is worse.
-> - **Never re-add `push` to a release job's `if:`.** Every caller carries a comment saying so.
+> - **Never re-add `push` to a release job's `if:`.** The shared release entrypoint carries an explicit event guard.
 >   Removing the gate without also removing `release-cut`'s dispatch would double-release; removing
 >   the dispatch without the gate brings back publish-on-merge.
 
@@ -179,16 +179,37 @@ See `AGENTS.md` and `docs/codex-migration.md` for Codex runtime details.
 
 ## CI architecture (how the gate works)
 
-- One reusable **`_release.yml`** (`workflow_call`) + one caller **`<skill>.yml`** per skill +
-  **`tools.yml`** (shared `tools/score_skill.py` scorer) + the shipflow-rendered
-  **`main-automerge.yml`**.
-- Each caller has a **`ci` job** (Tier-1 `tools/score_skill.py` SKILL.md lint + the skill's own
-  Tier-2 tests) and a **`release` job** (`needs: ci`, runs only on explicit `workflow_dispatch` to `main`).
-- **Why every required check reports on every supported PR:** the `pull_request` trigger is **un-filtered**, so
-  every `ci / <skill>` check reports on every PR — running real tests when that skill changed, and
-  short-circuiting to success (via `dorny/paths-filter`) when it didn't. This is what makes the
-  required-check set always satisfiable, so a feature PR into main has a complete required-check set. **Push CI is path-filtered**
-  to relevant skill files; pushes never publish.
+`.github/skills-config.yml` is the per-skill CI/release registry. It uses **strict
+JSON syntax**, a YAML 1.2 subset, so the shared Node runner and installed
+skillfactory can read it without an additional parser dependency. Keep it outside
+`.github/workflows/`. Each entry declares paths, runtimes, npm cache, timeouts,
+concurrency, ordered commands/working directories, and release options.
+
+- `ci.yml` prepares filters and a matrix, then reports `ci / <skill>` directly for
+  every skill on every PR to main or feature branches. Unchanged skills succeed
+  without heavy work; `fail-fast: false` keeps other skill checks running.
+- `tools/skills-ci.mjs` validates exact coverage against skill directories, release
+  components and both required-check registries. Shared config/runner changes run
+  every skill. Skillhelp and press retain their cross-skill filters. A preparation
+  error fails closed: required skill checks cannot report, so fix preparation
+  before merging. Verify the actual check names on the migration PR before merge.
+- Shared Tier-1 SKILL.md lint and plugin lint precede each skill's configured
+  commands. Commands execute in separate bash shells with `-e -o pipefail`, as
+  reviewed repository code; matrix and dispatch values are never shell source.
+- `release-dispatch.yml` accepts one registered `skill` on **workflow_dispatch on
+  main only**. It calls the same `ci.yml` for real selected-skill tests regardless
+  of change detection, then calls `_release.yml`. npm publishing stays opt-in;
+  only a successful press release chains to `press-propagate.yml`.
+- `.github/shipflow.json.release.componentLayout` points to `release-dispatch.yml`
+  with `workflowInputs: {"skill": "{name}"}`. Release tooling passes this selected
+  input and includes workflow routing in the reviewed status hash. Other repos
+  may continue using per-component workflows with no inputs.
+- Marketplace, tools, security, press propagation and generated auto-merge remain
+  separate workflows. Never hand-edit shipflow's generated auto-merge workflow.
+
+Run `node tools/skills-ci.mjs validate` after editing configuration. Run a local
+skill's actual CI commands with `SKILL=<name> node tools/skills-ci.mjs run`.
+See [the config guide](docs/skills-ci.md) for schema and migration validation.
 
 ## Baseline eval sets (the anti-degradation gate)
 
@@ -224,6 +245,8 @@ below its own floor.
 
 | Skill | Baseline pinned against | Catches |
 |---|---|---|
+| brand-images | two actual editorial mountain image generations, explicit simplification feedback and offline replay of their briefs and verified image receipts | silent preference drift, losing feedback revisions, binding an image to the wrong style revision; PNGs are frozen evidence, never regenerated in CI |
+| dotfiles | a real read-only inspection of seven packages and fourteen links, replayed as temporary filesystem topology | link classification/report drift, lost package coverage and traversal acceptance; separate real-Stow lifecycle checks preserve unrelated files |
 | bible-study | a real John 3 study from the shared Bible API and four Christian publishers, reviewed HTML re-rendered offline, and real API responses replayed without network | missing sections or citations, absent dating uncertainty, publisher drift, mismatched Scripture/quotes, API errors or verse gaps, and renderer drift; PDF export separately checked for one-page geometry and readability |
 | ghostwriter / -x | 31 / 6 published, user-approved drafts | voice lint drifting into false positives or missing known AI tells; X 280-weighted-length regressions |
 | shipflow | this repo's own `shipflow.json` → rendered workflow (+ its `renderedTemplateHashes` receipt) | any renderer/config-mapping drift; found a real bug on first run (see below) |
@@ -244,6 +267,7 @@ below its own floor.
 | gmailtriage | deterministic synthetic mail, labels and rules generated without mailbox input; offline command replay and byte comparisons; synthetic retroactive and hygiene cases | unsafe filing, vendor-based folder naming, rule precedence changes, retroactive non-convergence, incorrect audit coverage, unsafe merge ordering, and nonreserved sender examples entering fixtures |
 | skillhelp | a real `build` over a **frozen snapshot** of six real shipped skills — chosen to span python skills, node skills declaring a `split`, the older heading vocabulary six skills still use, and skillhelp itself — re-run and byte-compared card for card; plus a drift trap that must exit non-zero, and the live repo's cards as a corpus with a floor of 12 | an extractor silently dropping a section so a card still looks complete while answering nothing; a fact losing its `file:line`, which makes every answer built on it ungrounded; the drift gate weakening until a stale card answers confidently, **and** the opposite — reddening on edits that change no answer, which is how a gate stops being read; a bonus lifting a fact over the retrieval floor, which made "what is the retry limit in gmailtriage" return five confident irrelevant facts instead of the not-documented block; a secret pasted into a skill's markdown reaching a committed, public index; and a snapshot refresh silently copying zero files so the golden passes over nothing |
 | brandreport | a real blind-discovery run on the maintainer's own name — 8 confirmed artifacts (site, GitHub, npm, LinkedIn, X, the published book and its author page) kept as fetched, every same-name stranger replaced by an invented `.example`-domain stand-in (gmailtriage precedent), with `gate` + `report` re-run over the frozen corpus and the report byte-compared; plus a findings file whose only defects are a dangling citation and an unconfirmed item cited as confirmed, which must fail the gate | the renderer drifting or silently dropping a section while the report still looks complete; provenance ceasing to thread from claim to snapshot; the attribution gate weakening until unverified content is attributed — the one rule ceasing to be code; and a corpus refresh leaking a real same-name person's identity into a public repo, caught structurally (unconfirmed snapshots must live on `.example` domains) without committing a blocklist of real identities |
+| local-dev | a real offline inspection of its development worktree, with only the machine path replaced; the same snapshot with an inconsistent dirty flag; temporary Git repositories and recording GitHub CLI doubles | inspection accidentally accessing the network or changing Git state, lost dirty/rename paths, missing custom input, unsafe issue arguments, and invalid evidence rendered as a valid report; model workflow behavior is separately forward-tested |
 | traefik | a real external `tk capabilities --json` response and the helper compatibility projection, replayed offline; the same response with removal support removed | an older CLI accepted by a newer skill, stack discovery depending on a plugin cache path, or private installation paths leaking into the baseline |
 | netwatch | a real live-connection snapshot from the maintainer's own Mac (`lsof`/`nettop` metadata; retained historical fixture, not evidence that new captures are safe to publish), with a two-entry baseline built by `accept`, `report` re-run over the frozen capture and byte-compared; plus a trap — a `report --verdict dangerous` that must exit non-zero | the parser dropping a connection while the per-process and per-destination rollups still look complete; a flow losing the source line that grounds it; the classifier calling a flow known when no baseline entry covers it; and the one rule ceasing to be code — a `--verdict`/`--severity` flag reaching the report so the model's hunch can be printed as a finding |
 | appletv | a real run against the maintainer's own Apple TV 4K (tvOS 26.6) — the scan, a state read-back, and a four-step send (`turn_off`, `turn_on`, a keypress, an app launch) with every before/after state captured, MACs and identifiers redacted and the app list left out, with `report` re-run over the captures and byte-compared; plus two traps built from those same real captures — the `turn_off` whose read-back is edited to `on`, and the keypress whose recorded verdict is edited to `verified` — both of which `report` must refuse | the one rule ceasing to be code: a send reporting `verified` when the read-back disagrees, or a keypress being rounded up to done; the verifier drifting so a frozen verdict no longer re-derives; the scan or state parser dropping a field while the table still looks complete; a `known-unsupported` field rendering blank; and a refresh leaking the TV's MAC, identifiers or the household's app list into a public repo |
@@ -253,7 +277,7 @@ below its own floor.
 > seventeen skills — a toll booth on every PR in the repo, and a baseline people
 > delete rather than maintain. Pinning the input means the golden moves only when
 > the *extractor* moves. Live coverage is `skillhelp check`'s job, which is why
-> `ci / skillhelp` is the one caller whose paths-filter matches `skills/**`
+> `ci / skillhelp` is the one config entry whose change filter matches `skills/**`
 > rather than its own directory: its cards describe the other skills, so
 > filtering it the usual way would short-circuit the job to green on exactly the
 > PR that made the index stale.
@@ -287,7 +311,7 @@ those values in a **generated region** spliced into an otherwise hand-written fi
   the same orange, and three genuinely-shared token groups declared nowhere at all.
 
 **Two gates, deliberately overlapping.** `ci / press` runs `press check` over every target
-whenever press *or any file it writes into* changes; each consumer's own `ci / <skill>` job
+whenever press *or any file it writes into* changes; each consumer's configured `ci / <skill>` job
 also runs `press check --target <id>` for just its region. The second is what makes drift fail
 in the PR that causes it, instead of whenever someone next happens to touch press.
 
@@ -331,7 +355,7 @@ Declared required contexts: `ci / devlog`, `ci / resume`, `ci / ghostwriter`,
 `ci / ghostwriter-x`, `ci / github-stats`, `ci / shipflow`, `ci / city-report`,
 `ci / press`, `ci / ghfactory`, `ci / skillfactory`, `ci / eval`, `ci / release`,
 `ci / pluginsync`, `ci / issueflow`, `ci / shipreport`, `ci / gmailtriage`,
-`ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`, `ci / bible-study`, `ci / traefik`.
+`ci / skillhelp`, `ci / brandreport`, `ci / netwatch`, `ci / appletv`, `ci / issuecreator`, `ci / bible-study`, `ci / traefik`, `ci / local-dev`, `ci / dotfiles`, `ci / brand-images`.
 
 `.github/repo-settings.sh` applies repository settings and main protection, then verifies
 the response against its declared policy. Run it only as part of an authorized settings
@@ -369,18 +393,18 @@ on a real feature-to-main PR must still be observed. See
 > `press emit --init`: the brand is generated, so the scaffolder registers the
 > target but never writes the region itself.
 
-1. Copy a caller `<skill>.yml`. **Keep the `pull_request` trigger un-filtered** and **keep the `ci`
-   job's `permissions: { contents: read, pull-requests: read }`** — both are load-bearing
-   (`pull-requests: read` lets `dorny/paths-filter` detect changes under the restricted default
-   token; dropping it red-lines the required check on every PR).
-2. Path-filter only the `push` trigger to `skills/<skill>/**` (+ `tools/score_skill.py` +
-   `tools/lint_plugin.py` + the caller).
-3. Set the release call `with: { skill: <skill> }` (+ `version-source` if not auto-detectable).
-4. Ensure the skill has `CHANGELOG.md` and a version (package.json or SKILL.md frontmatter).
-5. **Add `ci / <skill>` to `main`'s required checks** — edit `.github/repo-settings.sh`
-   **and run it**; editing alone applies nothing. Then verify with the drift audit in
-   Repo settings, below. A caller that exists but isn't required is invisible: it goes
-   green on PRs and gates nothing.
+1. Add an entry to `.github/skills-config.yml` (skillfactory does this automatically
+   in this repo). Declare the skill's paths, runtimes, install/test/brand commands,
+   working directories, timeout/concurrency, and release options. Other repos
+   without this registry retain legacy per-skill caller scaffolding.
+2. Keep the shared `ci.yml` PR trigger unfiltered on main and feature branches;
+   keep every skill in the PR matrix and keep `fail-fast: false`.
+3. Keep releases on the shared main-only dispatch entrypoint; npm publish remains
+   an explicit per-skill config opt-in.
+4. Ensure the skill has CHANGELOG.md and a version (package.json or SKILL.md).
+5. Declare `ci / <skill>` in `.github/repo-settings.sh` and shipflow requiredChecks.
+   Applying a new required check is a separate authorized admin step after its
+   first green run. Verify config coverage before delivery.
 6. Add `skills/<skill>/.claude-plugin/plugin.json` with `name` == the directory name (== SKILL.md
    `name:` — never `package.json.name`, see the marketplace design doc's F1 rule) and `version`
    equal to the skill's resolved version.
@@ -392,10 +416,9 @@ on a real feature-to-main PR must still be observed. See
    component and looks complete — and `ci / release`'s corpus baseline fails the PR.
    `skillfactory scaffold` applies this since 0.4.0; before then it did not, which is how
    `issueflow` reached its first PR undeclared.
-8. Add the Tier-1.5 `python tools/lint_plugin.py skills/<skill>` step to the new caller's `ci` job,
-   right after its `score_skill.py` step, gated on the same `steps.changes.outputs.<skill>`
-   condition as every other step. `ci / marketplace` needs no per-skill change — its unconditional
-   lint validates every skill's `plugin.json` and the marketplace membership invariant automatically.
+8. Shared CI automatically runs `score_skill.py` against the nested skill path
+   and `lint_plugin.py` against the plugin root before configured tests. No new
+   workflow file or duplicate lint wiring is needed.
 9. **`SKILL.md` (and everything the skill's own instructions reference — `scripts/`, `tests/`,
    `package.json`, etc.) goes at `skills/<skill>/skills/<skill>/SKILL.md`, one level deeper than
    the plugin root** — Claude Code's plugin auto-discovery only scans `skills/<subdir>/SKILL.md`,

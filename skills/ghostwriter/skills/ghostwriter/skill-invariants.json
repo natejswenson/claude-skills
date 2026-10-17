@@ -160,8 +160,8 @@
   {
    "id": "generated-card-separate-approval",
    "file": "references/codex-images.md",
-   "pattern": "show the actual image[\\s\\S]{0,320}approve card",
-   "rationale": "The LinkedIn payload must never gain an unseen generated card after the user approved only the text."
+   "pattern": "show the actual image[\\s\\S]{0,850}Approve card[\\s\\S]{0,200}does not authorize publication",
+   "rationale": "The reviewed image must be visible for approval; selecting a card settles media but cannot silently publish the final LinkedIn payload."
   },
   {
    "id": "generated-card-supplements-post",
@@ -189,9 +189,9 @@
   },
   {
    "id": "selectable-controls-first",
-   "file": "SKILL.md",
-   "pattern": "consistent idea table[\\s\\S]{0,250}`#`, `Idea`, `Angle / signal`, `Status`[\\s\\S]{0,1800}Claude.s supported selector remains available",
-   "rationale": "Preserve Claude's working native choices and a compact visible fallback. The September 11 Codex test accepted an asynchronous question without a usable selector; Codex Default must show its actual options inline instead."
+   "file": "references/codex-session-ui.md",
+   "pattern": "Use an available native selector for ordinary preferences[\\s\\S]{0,250}current mode, tool purpose, schema and option limit",
+   "rationale": "Use the current Codex capability and tool purpose instead of permanently disabling working selectors after a past host failure. Three native selections were answered in the local-dev development session."
   },
   {
    "id": "architecture-evidence-model",
@@ -276,6 +276,42 @@
    "file": "references/post-review.md",
    "pattern": "Check conditions, thresholds and fallback/error behavior",
    "rationale": "The real forward test exposed a missing minimum-history condition in an otherwise source-backed first-person capability claim."
+  },
+  {
+   "id": "codex-readable-approval-control",
+   "file": "references/codex-session-ui.md",
+   "pattern": "For \\*\\*draft, image and publication approvals\\*\\*[\\s\\S]{0,240}\\*\\*final message\\*\\*[\\s\\S]{0,180}Do not put the artifact in commentary",
+   "rationale": "A selector that collapses the actual draft cannot be a readable approval surface."
+  },
+  {
+   "id": "codex-text-only-single-approval",
+   "file": "references/codex-session-ui.md",
+   "pattern": "already-complete \\*\\*text-only\\*\\* payload[\\s\\S]{0,200}skip the intermediate Approve[\\s\\S]{0,200}final decision",
+   "rationale": "A complete text-only post must not receive two identical approval questions."
+  },
+  {
+   "id": "codex-final-payload-approval",
+   "file": "references/codex-session-ui.md",
+   "pattern": "\\*\\*Publish now\\*\\* applies to the exact currently visible post, media,[\\s\\S]{0,80}alt text or document title",
+   "rationale": "Approval binds the complete final combination, including attachment descriptions."
+  },
+  {
+   "id": "codex-no-publish-after-save-or-stop",
+   "file": "references/codex-session-ui.md",
+   "pattern": "Stop, exit, Save draft[\\s\\S]{0,200}invalidates pending questions[\\s\\S]{0,100}late selector response cannot revive",
+   "rationale": "A late answer cannot restart a cancelled or saved session."
+  },
+  {
+   "id": "codex-carousel-complete-preview",
+   "file": "references/codex-session-ui.md",
+   "pattern": "For a carousel, show every reviewed slide[\\s\\S]{0,120}\\*\\*document title\\*\\*[\\s\\S]{0,150}never approve from the cover alone",
+   "rationale": "The cover does not let a user approve unseen slides or a different document title."
+  },
+  {
+   "id": "codex-draft-only-endpoint",
+   "file": "references/codex-session-ui.md",
+   "pattern": "explicitly draft-only/no-publish request[\\s\\S]{0,180}never a Publish now action",
+   "rationale": "The UI must honor the requested endpoint rather than leading a draft-only user into publishing."
   }
  ],
  "_baseline_comment": "Baseline eval sets: deterministic, offline, $0 checks pinned against artifacts from real local runs. These gate `ci / ghostwriter` alongside the unit tests. Every entry names the test that enforces it so tools/lint_baseline.py can verify the declaration is not aspirational.",

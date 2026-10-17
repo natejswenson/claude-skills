@@ -96,6 +96,18 @@
     {
       "name": "traefik",
       "source": "./skills/traefik"
+    },
+    {
+      "name": "local-dev",
+      "source": "./skills/local-dev"
+    },
+    {
+      "name": "dotfiles",
+      "source": "./skills/dotfiles"
+    },
+    {
+      "name": "brand-images",
+      "source": "./skills/brand-images"
     }
   ]
 }

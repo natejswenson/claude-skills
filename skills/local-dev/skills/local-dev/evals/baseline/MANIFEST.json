@@ -1,0 +1,12 @@
+{
+  "$comment": "Frozen from a REAL run of this skill, not a synthetic fixture. `command` reproduces it: the baseline test re-runs it into a temp directory and byte-compares against these artifacts.",
+  "label": "local-dev-development-inspection-2026-09-23",
+  "command": "node scripts/local-dev.js report --input evals/real-inspection.json --out \"$OUT\"",
+  "artifacts": [
+    {
+      "path": "inspection.md",
+      "bytes": 2747,
+      "sha256": "7f0e2d39f4083e4d514c209efeca828b191ac27636833fa7023df584d5c65e8d"
+    }
+  ]
+}

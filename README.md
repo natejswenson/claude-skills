@@ -43,6 +43,9 @@ conversations, approval prompts, saved runs, and generated-file previews.
 | [`issuecreator`](skills/issuecreator) | ![issuecreator](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=issuecreator-v*&label=&sort=semver&color=blue) | `/issuecreator` | Node | Create actionable GitHub issues that issueflow can take through planning and implementation. |
 | [`bible-study`](skills/bible-study) | ![bible-study](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=bible-study-v*&label=&sort=semver&color=blue) | `/bible-study` | Node | Turn a Bible verse or chapter into a researched, one-page Bible study for a group. |
 | [`traefik`](skills/traefik) | ![traefik](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=traefik-v*&label=&sort=semver&color=blue) | `/traefik` | Node | Operate a local Traefik stack from either Codex or Claude through its external tk CLI. |
+| [`local-dev`](skills/local-dev) | ![local-dev](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=local-dev-v*&label=&sort=semver&color=blue) | `/local-dev` | Node | Develop a feature locally from a reviewed plan through tests, commits, and a draft pull request. |
+| [`dotfiles`](skills/dotfiles) | ![dotfiles](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=dotfiles-v*&label=&sort=semver&color=blue) | `/dotfiles` | Node | Maintain a package-based dotfiles checkout and verify its home-directory links. |
+| [`brand-images`](skills/brand-images) | ![brand-images](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=brand-images-v*&label=&sort=semver&color=blue) | `/brand-images` | Node | Generate images in a user’s consistent brand style and refine that style through explicit feedback. |
 
 Version badges track this repo's namespaced release tags and update automatically — no manual maintenance.
 
@@ -99,6 +102,9 @@ This repo is a self-hosted Claude Code plugin marketplace — add it once, then 
 /plugin install issuecreator@claude-skills
 /plugin install bible-study@claude-skills
 /plugin install traefik@claude-skills
+/plugin install local-dev@claude-skills
+/plugin install dotfiles@claude-skills
+/plugin install brand-images@claude-skills
 ```
 
 Each skill's own `README.md` covers its dependencies and configuration.
@@ -141,6 +147,9 @@ ln -sfn "$PWD/skills/appletv/skills/appletv" ~/.claude/skills/appletv
 ln -sfn "$PWD/skills/issuecreator/skills/issuecreator" ~/.claude/skills/issuecreator
 ln -sfn "$PWD/skills/bible-study/skills/bible-study" ~/.claude/skills/bible-study
 ln -sfn "$PWD/skills/traefik/skills/traefik" ~/.claude/skills/traefik
+ln -sfn "$PWD/skills/local-dev/skills/local-dev" ~/.claude/skills/local-dev
+ln -sfn "$PWD/skills/dotfiles/skills/dotfiles" ~/.claude/skills/dotfiles
+ln -sfn "$PWD/skills/brand-images/skills/brand-images" ~/.claude/skills/brand-images
 ```
 </details>
 
@@ -157,7 +166,7 @@ protection and verifies its writes. Every skill check reports on main and featur
 
 A merge or push publishes nothing. `/release <skill>` (Claude) or `$release <skill>` (Codex)
 prepares that skill's version and changelog in a main-based PR, then explicitly dispatches
-its workflow after merge and verifies the remote namespaced tag. Versions remain independent.
+the shared release workflow with its selected skill input after merge and verifies the remote namespaced tag. Versions remain independent.
 
 The [cutover runbook](docs/github-flow-cutover.md) records the audited retirement of the old
 integration branch, remaining live steps, and recovery commands. Draft PRs do not apply
@@ -173,7 +182,7 @@ live settings or retire branches.
 | `skills/<name>/` | Plugin root — one self-contained skill, history preserved via git subtree |
 | `skills/<name>/.claude-plugin/plugin.json` | Per-skill plugin manifest (name/version/description) |
 | `skills/<name>/skills/<name>/SKILL.md` | The actual skill, nested one level deeper — Claude Code's plugin auto-discovery only scans `skills/<subdir>/SKILL.md` |
-| `.github/workflows/` | Reusable release workflow, one CI caller per skill (path-filtered), and the shipflow-rendered auto-merge workflow |
+| `.github/workflows/` | Config-driven matrix CI, shared explicit release dispatch, specialized checks, and shipflow-rendered auto-merge |
 | `.github/repo-settings.sh` | Repo + branch-protection config, as code |
 | `.github/shipflow.json` | shipflow's GitHub-flow policy and manual per-skill releases |
 

@@ -186,8 +186,11 @@ worse than not wiring it, because the half that landed makes the rest look done.
 ```bash
 press emit --repo <path> --init --target <name>-readme
 node skills/press/skills/press/tests/fixtures/update-pre-migration.mjs
-ghfactory header .github/workflows/<name>.yml
-ghfactory verify .github/workflows/<name>.yml
+# In a config-enabled repo, scaffold appends .github/skills-config.yml instead
+# of creating a caller. Validate the shared registry and workflows:
+node tools/skills-ci.mjs validate
+ghfactory verify .github/workflows/ci.yml .github/workflows/release-dispatch.yml
+# Legacy repos still use ghfactory header/verify .github/workflows/<name>.yml.
 ```
 
 **The golden refresh is not optional.** press pins one golden per target, so two
@@ -195,7 +198,7 @@ new targets mean `ci / press` goes red until its fixture set is regenerated —
 in the PR that added them, which is the point.
 
 The run-presentation contract and the README masthead are **generated regions**;
-the workflow masthead comes from press through ghfactory. **Never hand-write a brand
+new workflow mastheads come from press through ghfactory; config-enabled repos reuse the existing shared workflows. **Never hand-write a brand
 value.** This brand was once eight hand-ported copies across four repos with five
 names for the same orange, and press exists to end that.
 

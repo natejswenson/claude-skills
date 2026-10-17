@@ -46,7 +46,12 @@ test('the frozen fixtures are still real workflows, not empty files', () => {
  */
 test('collectUses finds real action references across this repo, above a floor', () => {
   const files = readdirSync(WORKFLOWS).filter((f) => /\.ya?ml$/.test(f));
-  assert.ok(files.length >= 12, `only ${files.length} workflows — the corpus shrank`);
+  assert.ok(files.length >= 9, `only ${files.length} workflows — the corpus shrank`);
+  // Consolidation reduced caller count, not the verification surface. Keep the
+  // actual shared entrypoints and independent gate workflows in the corpus.
+  for (const file of ['ci.yml', 'release-dispatch.yml', '_release.yml', 'security.yml', 'marketplace.yml', 'tools.yml']) {
+    assert.ok(files.includes(file), `${file}: required workflow disappeared from the live corpus`);
+  }
 
   let total = 0;
   for (const f of files) total += collectUses(readFileSync(join(WORKFLOWS, f), 'utf8')).length;

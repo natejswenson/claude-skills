@@ -94,6 +94,7 @@ export function resolveLayout(config) {
     tagPattern: declared.tagPattern ?? DEFAULT_ROOT_LAYOUT.tagPattern,
     paths: declared.paths ?? DEFAULT_ROOT_LAYOUT.paths,
     workflowFile: declared.workflowFile ?? DEFAULT_ROOT_LAYOUT.workflowFile,
+    workflowInputs: declared.workflowInputs ?? {},
     inferred: false,
   };
 }
@@ -117,6 +118,13 @@ export function resolveComponent(repoPath, config, name) {
   const rel = (p) => expandName(p, name);
   const versionFiles = layout.versionFiles.map(rel);
   const changelog = rel(layout.changelog);
+  const inputs = layout.workflowInputs ?? {};
+  if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) throw new Error('workflowInputs must be an object');
+  const workflowInputs = Object.fromEntries(Object.entries(inputs).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => {
+    if (!/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(key) || typeof value !== 'string' || /[\r\n\0]/.test(value)) throw new Error('invalid workflow input name/value');
+    return [key, rel(value)];
+  }));
+  assertInsideRepo(repoPath, join(repoPath, '.github', 'workflows', rel(layout.workflowFile)), 'release workflow');
   for (const f of [...versionFiles, changelog]) {
     assertInsideRepo(repoPath, join(repoPath, f), `component file "${f}"`);
   }
@@ -129,11 +137,16 @@ export function resolveComponent(repoPath, config, name) {
     tagPattern: rel(layout.tagPattern),
     paths: layout.paths.map(rel),
     workflowFile: rel(layout.workflowFile),
+    ...(Object.keys(workflowInputs).length ? { workflowInputs } : {}),
     inferredLayout: layout.inferred,
   };
 }
 
 export const tagFor = (component, version) => component.tagPattern.replaceAll('{version}', version);
+export function releaseDispatchArgs(component, mainBranch, ownerRepo) {
+  return ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo,
+    ...Object.entries(component.workflowInputs ?? {}).sort(([a], [b]) => a.localeCompare(b)).flatMap(([k, v]) => ['--raw-field', `${k}=${v}`])];
+}
 const tagGlob = (component) => component.tagPattern.replaceAll('{version}', '*');
 
 // ─── semver ──────────────────────────────────────────────────────────────────
@@ -508,6 +521,8 @@ export function readStatus(repoPath, config, name) {
   const statusHash = sha256(
     JSON.stringify({
       component: name,
+      workflowFile: component.workflowFile,
+      workflowInputs: component.workflowInputs ?? {},
       preparedBranches,
       mainSha: revParse(repoPath, mainRef),
       workflowPattern: policy.workflowPattern,
@@ -525,6 +540,7 @@ export function readStatus(repoPath, config, name) {
       versionFiles: component.versionFiles,
       changelog: component.changelog,
       workflowFile: component.workflowFile,
+      ...(component.workflowInputs ? { workflowInputs: component.workflowInputs } : {}),
       paths: component.paths,
       inferredLayout: component.inferredLayout,
     },
@@ -860,7 +876,7 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
     }
     const verified = verifyDispatch(repoPath, component, mainBranch, targetVersion, expectedNotes);
     if (!verified.ok) return verified;
-    const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
+    const d = spawnArgs('gh', releaseDispatchArgs(component, mainBranch, ownerRepo));
     if (d.status !== 0) return { ok: false, error: `workflow dispatch failed: ${d.stderr}` };
     note('dispatch', `dispatched ${component.workflowFile} on ${mainBranch}`);
     const result = waitForTag(repoPath, tag, deadline, pollSeconds, log, ownerRepo, null);
@@ -957,7 +973,7 @@ export function cut(repoPath, config, name, { waitSeconds = 240, expectStatusHas
   if (!(already.ok && already.exists)) {
     const verified = verifyDispatch(repoPath, component, mainBranch, targetVersion, expectedNotes);
     if (!verified.ok) return verified;
-    const d = spawnArgs('gh', ['workflow', 'run', component.workflowFile, '--ref', mainBranch, '--repo', ownerRepo]);
+    const d = spawnArgs('gh', releaseDispatchArgs(component, mainBranch, ownerRepo));
     if (d.status !== 0) {
       return { ok: false, error: `the promotion merged but dispatching ${component.workflowFile} failed: ${d.stderr}. Nothing is tagged; re-run release-cut to retry the dispatch.` };
     }

@@ -6,9 +6,11 @@
   "requiredChecks": [
     "ci / appletv",
     "ci / bible-study",
+    "ci / brand-images",
     "ci / brandreport",
     "ci / city-report",
     "ci / devlog",
+    "ci / dotfiles",
     "ci / eval",
     "ci / ghfactory",
     "ci / ghostwriter",
@@ -17,6 +19,7 @@
     "ci / gmailtriage",
     "ci / issuecreator",
     "ci / issueflow",
+    "ci / local-dev",
     "ci / netwatch",
     "ci / pluginsync",
     "ci / press",
@@ -51,14 +54,19 @@
       "paths": [
         "skills/{name}"
       ],
-      "workflowFile": "{name}.yml"
+      "workflowFile": "release-dispatch.yml",
+      "workflowInputs": {
+        "skill": "{name}"
+      }
     },
     "components": [
       "appletv",
       "bible-study",
+      "brand-images",
       "brandreport",
       "city-report",
       "devlog",
+      "dotfiles",
       "eval",
       "ghfactory",
       "ghostwriter",
@@ -67,6 +75,7 @@
       "gmailtriage",
       "issuecreator",
       "issueflow",
+      "local-dev",
       "netwatch",
       "pluginsync",
       "press",

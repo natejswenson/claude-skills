@@ -4,6 +4,20 @@ All notable changes to the linkedin-ghostwriter skill are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Codex sessions use supported native choices for topics and formats, with
+  self-contained options and a consistent inline fallback. Stable idea IDs,
+  custom topics and more/fewer navigation remain available.
+- Draft, visual and publication views keep the complete current artifact visible.
+  Text approval is distinct from Publish now; complete text-only posts avoid a
+  duplicate approval, and draft-only requests stop at saved artifacts.
+- Final review includes selected media, image alt text or carousel title and every
+  slide. Edits and late replies cannot reuse an older approval. Claude's existing
+  controls and all source, editorial and visual quality gates remain intact.
+
 ## [0.25.0] - 2026-09-20
 
 ### Added

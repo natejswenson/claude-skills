@@ -33,6 +33,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "brand-images",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "61eed4cb22958b6d",
+      "facts": 50,
+      "sections": {
+        "setup": 8,
+        "usage": 12,
+        "commands": 11,
+        "architecture": 8,
+        "troubleshooting": 11
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "brandreport",
       "version": "0.2.0",
       "stack": "node",
@@ -81,6 +97,22 @@
       "secretsRefused": 0
     },
     {
+      "name": "dotfiles",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "be441f5125c1eaf8",
+      "facts": 34,
+      "sections": {
+        "setup": 5,
+        "usage": 12,
+        "commands": 9,
+        "architecture": 5,
+        "troubleshooting": 3
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
       "name": "eval",
       "version": "0.4.0",
       "stack": "node",
@@ -116,7 +148,7 @@
       "name": "ghostwriter",
       "version": "0.25.0",
       "stack": "python",
-      "cardHash": "39edc61a3ff9c952",
+      "cardHash": "7ad27bf16825086c",
       "facts": 59,
       "sections": {
         "setup": 8,
@@ -204,6 +236,22 @@
         "commands": 16,
         "architecture": 16,
         "troubleshooting": 16
+      },
+      "emptySections": [],
+      "secretsRefused": 0
+    },
+    {
+      "name": "local-dev",
+      "version": "0.1.0",
+      "stack": "node",
+      "cardHash": "f587865bf3755b99",
+      "facts": 44,
+      "sections": {
+        "setup": 11,
+        "usage": 12,
+        "commands": 11,
+        "architecture": 5,
+        "troubleshooting": 5
       },
       "emptySections": [],
       "secretsRefused": 0
@@ -324,12 +372,12 @@
       "name": "skillfactory",
       "version": "0.5.0",
       "stack": "node",
-      "cardHash": "1abe32d5ad54f218",
-      "facts": 58,
+      "cardHash": "27893b65a660c536",
+      "facts": 59,
       "sections": {
         "setup": 8,
         "usage": 12,
-        "commands": 12,
+        "commands": 13,
         "architecture": 10,
         "troubleshooting": 16
       },

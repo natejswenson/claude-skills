@@ -1,0 +1,879 @@
+{
+  "schemaVersion": 1,
+  "sharedPaths": [
+    "tools/score_skill.py",
+    "tools/lint_plugin.py",
+    ".github/skills-config.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/release-dispatch.yml",
+    "tools/skills-ci.mjs",
+    "tools/tests/skills-ci.test.mjs",
+    "skills/skillfactory/skills/skillfactory/scripts/lib/ci-config.mjs",
+    ".github/workflows/_release.yml",
+    ".github/shipflow.json",
+    ".github/repo-settings.sh",
+    "tools/tests/fixtures/pre-consolidation-workflows.json"
+  ],
+  "skills": {
+    "appletv": {
+      "paths": [
+        "skills/appletv/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target appletv-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/appletv/skills/appletv"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/appletv/skills/appletv"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/appletv/skills/appletv"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "bible-study": {
+      "paths": [
+        "skills/bible-study/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target bible-study-readme\nnode skills/press/skills/press/bin/press.js check --repo . --target bible-study-theme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/bible-study/skills/bible-study"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/bible-study/skills/bible-study"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/bible-study/skills/bible-study"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "brand-images": {
+      "paths": [
+        "skills/brand-images/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target brand-images-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/brand-images/skills/brand-images"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/brand-images/skills/brand-images"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/brand-images/skills/brand-images"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "brandreport": {
+      "paths": [
+        "skills/brandreport/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target brandreport-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/brandreport/skills/brandreport"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/brandreport/skills/brandreport"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/brandreport/skills/brandreport"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "city-report": {
+      "paths": [
+        "skills/city-report/**"
+      ],
+      "python": "3.12",
+      "node": "",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target city-report",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/city-report/skills/city-report"
+        },
+        {
+          "run": "pytest --cov=scripts --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/city-report/skills/city-report"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "devlog": {
+      "paths": [
+        "skills/devlog/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "skills/devlog/skills/devlog/package-lock.json",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target devlog-palette",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npx playwright install --with-deps chromium",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/devlog/skills/devlog"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/devlog/skills/devlog"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": true,
+        "propagate": false
+      }
+    },
+    "dotfiles": {
+      "paths": [
+        "skills/dotfiles/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 10,
+      "concurrency": "cancel-pr",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target dotfiles-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm ci --ignore-scripts --no-audit --no-fund --offline",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        },
+        {
+          "run": "npm run audit -- --offline",
+          "cwd": "skills/dotfiles/skills/dotfiles"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "eval": {
+      "paths": [
+        "skills/eval/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target eval-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/eval/skills/eval"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/eval/skills/eval"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/eval/skills/eval"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "ghfactory": {
+      "paths": [
+        "skills/ghfactory/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghfactory-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/ghfactory/skills/ghfactory"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "ghostwriter-x": {
+      "paths": [
+        "skills/ghostwriter-x/**"
+      ],
+      "python": "3.12",
+      "node": "",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-x-card",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        },
+        {
+          "run": "shellcheck scripts/release_radar.sh",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        },
+        {
+          "run": "pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/ghostwriter-x/skills/ghostwriter-x"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "ghostwriter": {
+      "paths": [
+        "skills/ghostwriter/**"
+      ],
+      "python": "3.12",
+      "node": "",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target ghostwriter-card",
+          "cwd": "."
+        },
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        },
+        {
+          "run": "shellcheck scripts/release_radar.sh scripts/install_radar.sh",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        },
+        {
+          "run": "pytest --cov=scripts --cov=evals --cov-report=term-missing --cov-fail-under=100",
+          "cwd": "skills/ghostwriter/skills/ghostwriter"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "github-stats": {
+      "paths": [
+        "skills/github-stats/**"
+      ],
+      "python": "3.12",
+      "node": "",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "pip install -r requirements-dev.txt",
+          "cwd": "skills/github-stats/skills/github-stats"
+        },
+        {
+          "run": "shellcheck scripts/gh-stats.sh",
+          "cwd": "skills/github-stats/skills/github-stats"
+        },
+        {
+          "run": "pytest tests/ -v",
+          "cwd": "skills/github-stats/skills/github-stats"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "gmailtriage": {
+      "paths": [
+        "skills/gmailtriage/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target gmailtriage-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/gmailtriage/skills/gmailtriage"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "issuecreator": {
+      "paths": [
+        "skills/issuecreator/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 10,
+      "concurrency": "queue",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target issuecreator-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/issuecreator/skills/issuecreator"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "issueflow": {
+      "paths": [
+        "skills/issueflow/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target issueflow-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/issueflow/skills/issueflow"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/issueflow/skills/issueflow"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/issueflow/skills/issueflow"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "local-dev": {
+      "paths": [
+        "skills/local-dev/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target local-dev-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/local-dev/skills/local-dev"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/local-dev/skills/local-dev"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/local-dev/skills/local-dev"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "netwatch": {
+      "paths": [
+        "skills/netwatch/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target netwatch-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/netwatch/skills/netwatch"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/netwatch/skills/netwatch"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/netwatch/skills/netwatch"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "pluginsync": {
+      "paths": [
+        "skills/pluginsync/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target pluginsync-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/pluginsync/skills/pluginsync"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "press": {
+      "paths": [
+        "skills/press/**",
+        "skills/city-report/skills/city-report/scripts/brand.py",
+        "skills/resume/skills/resume/assets/themes/press.css",
+        "skills/ghostwriter/skills/ghostwriter/assets/diagram.css.example",
+        "skills/ghostwriter-x/skills/ghostwriter-x/assets/diagram.css.example",
+        "skills/devlog/skills/devlog/image-style/style-guide.example.md"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "npm test",
+          "cwd": "skills/press/skills/press"
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo .",
+          "cwd": "."
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": true,
+        "propagate": true
+      }
+    },
+    "release": {
+      "paths": [
+        "skills/release/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target release-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/release/skills/release"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/release/skills/release"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/release/skills/release"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "resume": {
+      "paths": [
+        "skills/resume/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "skills/resume/skills/resume/package-lock.json",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target resume-theme",
+          "cwd": "."
+        },
+        {
+          "run": "npm ci",
+          "cwd": "skills/resume/skills/resume"
+        },
+        {
+          "run": "npx playwright install --with-deps chromium",
+          "cwd": "skills/resume/skills/resume"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/resume/skills/resume"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "shipflow": {
+      "paths": [
+        "skills/shipflow/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "skills/shipflow/skills/shipflow/package-lock.json",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/shipflow/skills/shipflow"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/shipflow/skills/shipflow"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/shipflow/skills/shipflow"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": true,
+        "propagate": false
+      }
+    },
+    "shipreport": {
+      "paths": [
+        "skills/shipreport/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target shipreport-readme --target shipreport-theme",
+          "cwd": "."
+        },
+        {
+          "run": "node skills/press/skills/press/bin/press.js lint skills/shipreport/skills/shipreport/assets/report.css",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/shipreport/skills/shipreport"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/shipreport/skills/shipreport"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/shipreport/skills/shipreport"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "skillfactory": {
+      "paths": [
+        "skills/skillfactory/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target skillfactory-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/skillfactory/skills/skillfactory"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "skillhelp": {
+      "paths": [
+        "skills/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target skillhelp-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/skillhelp/skills/skillhelp"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    },
+    "traefik": {
+      "paths": [
+        "skills/traefik/**",
+        "skills/press/skills/press/**"
+      ],
+      "python": "3.12",
+      "node": "22",
+      "npmCache": "",
+      "timeoutMinutes": 360,
+      "concurrency": "none",
+      "checks": [
+        {
+          "run": "node skills/press/skills/press/bin/press.js check --repo . --target traefik-readme",
+          "cwd": "."
+        },
+        {
+          "run": "npm install --no-fund",
+          "cwd": "skills/traefik/skills/traefik"
+        },
+        {
+          "run": "npm test",
+          "cwd": "skills/traefik/skills/traefik"
+        },
+        {
+          "run": "npm run audit",
+          "cwd": "skills/traefik/skills/traefik"
+        }
+      ],
+      "release": {
+        "versionSource": "auto",
+        "npmPublish": false,
+        "propagate": false
+      }
+    }
+  }
+}

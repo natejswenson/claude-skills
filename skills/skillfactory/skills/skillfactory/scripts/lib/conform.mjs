@@ -144,12 +144,18 @@ export function conform(house, skill) {
   );
 
   const jobName = `ci / ${name}`;
+  const configBacked = Boolean(house.ciConfig?.skills[name])
+    && Boolean(house.ciWorkflow?.includes('name: ci / ${{ matrix.skill }}'))
+    && Boolean(house.ciWorkflow?.includes('node tools/skills-ci.mjs plan'))
+    && Boolean(house.releaseWorkflow?.includes('uses: ./.github/workflows/ci.yml'))
+    && house.branchPolicy?.release?.componentLayout?.workflowFile === 'release-dispatch.yml'
+    && house.branchPolicy?.release?.componentLayout?.workflowInputs?.skill === '{name}';
   out.push(
     check(
       'caller-workflow',
       'house',
-      Boolean(skill.caller) && skill.caller.includes(`name: ${jobName}`),
-      skill.caller ? `.github/workflows/${name}.yml declares "${jobName}"` : `no .github/workflows/${name}.yml`,
+      house.ciConfig ? configBacked : Boolean(skill.caller) && skill.caller.includes(`name: ${jobName}`),
+      house.ciConfig ? `${name} ${configBacked ? 'is registered in shared CI and release dispatch' : 'has incomplete shared CI/release wiring'}` : skill.caller ? `.github/workflows/${name}.yml declares "${jobName}"` : `no .github/workflows/${name}.yml`,
       'the job name IS the required-check context — renaming it silently un-requires the check',
     ),
   );
