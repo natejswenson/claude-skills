@@ -18,7 +18,7 @@ import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, appl
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
-import { prepareLocalRequest, suggestLocal, assertLocalPath } from './lib/local-model.mjs';
+import { prepareLocalRequest, suggestLocal, assertLocalPath, assertLocalOutput } from './lib/local-model.mjs';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -338,21 +338,23 @@ async function cmdSuggestLocal(args) {
     if (typeof args[key] !== 'string') throw new Error(`suggest-local: --${key.replace(/[A-Z]/g,c => '-'+c.toLowerCase())} <path> is required`);
   }
   assertLocalPath(args.scratchDir,{directory:true});
-  if (args.out !== undefined) assertLocalPath(args.out);
   const ruleFile = resolve(args.rules ?? defaultRules());
+  const configFile = resolve(args.config ?? join(STATE_DIR,'local-model.json'));
+  const inputs = [args.threads,args.labels,args.choices,ruleFile,configFile];
+  if (args.out !== undefined) assertLocalOutput(args.out,inputs);
   const ruleDoc = existsSync(ruleFile) ? readJson(ruleFile,'suggest-local rules') : {rules:[]};
   validateRuleSet(ruleDoc);
   const prepared = prepareLocalRequest(readJson(args.threads,'suggest-local threads'),{
     labels:readLabels(args.labels),choices:readJson(args.choices,'suggest-local choices'),
     rules:ruleDoc.rules,minCount:Number(args.minCount ?? 3),
   });
-  const result = await suggestLocal(prepared,readJson(args.config ?? join(STATE_DIR,'local-model.json'),'suggest-local config'),args.scratchDir);
+  const result = await suggestLocal(prepared,readJson(configFile,'suggest-local config'),args.scratchDir);
   console.log(table(['Candidate','Sender','Suggestion','Top score','Margin','Result'],
     result.suggestions.map(s => [s.candidateId,s.from,s.destination ?? '—',s.topScore.toFixed(3),s.margin.toFixed(3),s.reason])));
   console.log(`\n${result.counts.eligible} eligible; ${result.counts.suggested} suggested; ${result.counts.abstained} abstained. Advisory only; scores are uncalibrated heuristics. Review before adding any rule; nothing has moved.`);
   if (args.out) {
-    assertLocalPath(args.out);
-    console.error(`wrote ${writeJson(args.out,result,{allowRepo:false})}`);
+    assertLocalOutput(args.out,inputs);
+    console.error(`wrote ${writeJson(args.out,result,{allowRepo:false,exclusive:true})}`);
   }
 }
 

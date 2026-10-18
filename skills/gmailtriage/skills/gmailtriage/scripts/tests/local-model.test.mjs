@@ -16,7 +16,7 @@ test('existing deterministic destination is excluded', () => {
   assert.equal(prepare(threads(),{labels:[...labels,{name:'Recruiting',id:'l3'}]}).request.items.length,0);
 });
 import { validateLocalResponse, suggestLocal, assertLocalPath, validateLocalConfig } from '../lib/local-model.mjs';
-import { mkdtempSync, writeFileSync, readFileSync, readdirSync, rmSync, mkdirSync, symlinkSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, readdirSync, rmSync, mkdirSync, symlinkSync, linkSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -85,5 +85,38 @@ test('CLI advice, unchanged inputs, no failure output, and preflight refusal of 
     rmSync(join(dir,'observed.json'));mkdirSync(join(dir,'repo'));mkdirSync(join(dir,'repo','.git'));symlinkSync(join(dir,'repo'),join(dir,'alias'));
     for (const extra of [['--scratch-dir',join(dir,'alias'),'--allow-repo'],['--out',join(dir,'alias','bad.json'),'--allow-repo'],['--min-count','0'],['--min-count'],['--out',dir],['--out',join(dir,'config.json','child')]]) {const bad=run(extra);assert.equal(bad.status,1);assert.ok(!existsSync(join(dir,'observed.json')));assert.ok(!existsSync(join(dir,'repo','bad.json')));}
     writeFileSync(config.script,"console.log('PRIVATE invalid')");const failed=join(dir,'failed.json'),bad=run(['--out',failed]);assert.equal(bad.status,1);assert.ok(!existsSync(failed));assert.ok(!bad.stderr.includes('PRIVATE'));assert.throws(()=>assertLocalPath(join(dir,'alias','another.json')),/outside Git/);
+  } finally {rmSync(dir,{recursive:true,force:true});}
+});
+
+test('CLI refuses output aliases of every input and absent default rules before runner launch', () => {
+  const {dir,config}=fixture();
+  try {
+    const cli=resolve('scripts/gmailtriage.js');
+    const docs={threads:threads(),labels,choices,rules:{rules:[]},config};
+    for (const [name,value] of Object.entries(docs)) writeFileSync(join(dir,name+'.json'),JSON.stringify(value));
+    const sources=Object.keys(docs).map(n=>join(dir,n+'.json'));
+    const originals=sources.map(p=>readFileSync(p,'utf8'));
+    symlinkSync(join(dir,'rules.json'),join(dir,'rules-link.json'));
+    linkSync(join(dir,'config.json'),join(dir,'config-hardlink.json'));
+    const args=['--threads',sources[0],'--labels',sources[1],'--choices',sources[2],'--rules',sources[3],'--config',sources[4],'--scratch-dir',dir];
+    for (const out of [...sources,join(dir,'rules-link.json'),join(dir,'config-hardlink.json')]) {
+      const child=spawnSync(process.execPath,[cli,'suggest-local',...args,'--out',out],{encoding:'utf8'});
+      assert.equal(child.status,1,child.stderr);assert.match(child.stderr,/output must (not replace an input|be a new unused path)/);
+      assert.deepEqual(sources.map(p=>readFileSync(p,'utf8')),originals);
+      assert.ok(!existsSync(join(dir,'observed.json')));
+    }
+    const occupied=join(dir,'occupied.json');writeFileSync(occupied,'preserve');
+    const refused=spawnSync(process.execPath,[cli,'suggest-local',...args,'--out',occupied],{encoding:'utf8'});
+    assert.equal(refused.status,1);assert.equal(readFileSync(occupied,'utf8'),'preserve');assert.ok(!existsSync(join(dir,'observed.json')));
+    const home=join(dir,'home'),state=join(home,'.gmailtriage');mkdirSync(state,{recursive:true});
+    const defaultConfig=join(state,'local-model.json');writeFileSync(defaultConfig,JSON.stringify(config));
+    symlinkSync(state,join(dir,'state-alias'));
+    const defaultArgs=['--threads',sources[0],'--labels',sources[1],'--choices',sources[2],'--scratch-dir',dir];
+    for (const out of [join(state,'rules.json'),join(dir,'state-alias','rules.json'),defaultConfig]) {
+      const child=spawnSync(process.execPath,[cli,'suggest-local',...defaultArgs,'--out',out],{encoding:'utf8',env:{...process.env,HOME:home}});
+      assert.equal(child.status,1,child.stderr);assert.match(child.stderr,/output must (not replace an input|be a new unused path)/);
+      assert.ok(!existsSync(join(state,'rules.json')));assert.ok(!existsSync(join(dir,'observed.json')));
+      assert.equal(readFileSync(defaultConfig,'utf8'),JSON.stringify(config));
+    }
   } finally {rmSync(dir,{recursive:true,force:true});}
 });

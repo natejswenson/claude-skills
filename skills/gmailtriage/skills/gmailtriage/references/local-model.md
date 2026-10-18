@@ -59,7 +59,9 @@ node "$SKILL_DIR/scripts/gmailtriage.js" suggest-local \
 Rules default to `~/.gmailtriage/rules.json`; absence means an empty set and
 present rules must validate. `--min-count` defaults to 3 and must be a positive
 integer. The optional output is written only after complete response validation;
-without `--out`, only a human table and counts are printed. Scratch must already
+without `--out`, only a human table and counts are printed. Output must use a
+new unused path on each run; input aliases and existing paths are refused before
+inference, and exclusive creation prevents overwriting a file created mid-run. Scratch must already
 exist. Scratch and output refuse Git paths, including symlink aliases, even
 with `--allow-repo`. Each request uses a unique directory (0700) and request
 file (0600), removed in `finally`; unrelated scratch files are preserved.

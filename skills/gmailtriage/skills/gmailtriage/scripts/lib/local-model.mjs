@@ -1,7 +1,7 @@
 /** Optional local advice. The runner is untrusted; only proposal eligibility and scores cross this boundary. */
 import { execFile } from 'node:child_process';
-import { existsSync, realpathSync, statSync, mkdtempSync, chmodSync, writeFileSync, rmSync, accessSync, constants } from 'node:fs';
-import { resolve, dirname, join, isAbsolute } from 'node:path';
+import { existsSync, lstatSync, realpathSync, statSync, mkdtempSync, chmodSync, writeFileSync, rmSync, accessSync, constants } from 'node:fs';
+import { resolve, dirname, join, isAbsolute, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { propose } from './plan.mjs';
 import { validateRuleSet, SYSTEM_LABELS } from './rules.mjs';
@@ -94,6 +94,26 @@ export function assertLocalPath(path, { directory = false } = {}) {
   if (!directory && !existsSync(absolute) && !statSync(ancestor).isDirectory()) fail('output parent must be a directory');
   accessSync(directory ? absolute : ancestor,constants.W_OK);
   return absolute;
+}
+
+// Resolve existing ancestors as well as absent leaf names (first-run defaults).
+const canonicalPath = path => {
+  const absolute = resolve(path);
+  if (existsSync(absolute)) return realpathSync(absolute);
+  return join(canonicalPath(dirname(absolute)),basename(absolute));
+};
+
+export function assertLocalOutput(output, inputs) {
+  assertLocalPath(output);
+  const canonical = canonicalPath(output);
+  for (const input of inputs) {
+    if (canonical === canonicalPath(input)) {
+      fail('output must not replace an input');
+    }
+  }
+  try { lstatSync(output); }
+  catch (error) { if (error.code === 'ENOENT') return; throw error; }
+  fail('output must be a new unused path');
 }
 
 export async function suggestLocal(prepared, config, scratchDir, { execute = execFile } = {}) {
