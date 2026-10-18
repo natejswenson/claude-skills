@@ -1,0 +1,10 @@
+{
+  "name": "gmailtriage",
+  "version": "0.8.1",
+  "description": "Handle routine Gmail under approved preferences, classify message purpose and attention, and review exceptions with exact plans, confirmed receipts and undo.",
+  "author": {
+    "name": "Nate Swenson"
+  },
+  "homepage": "https://github.com/natejswenson/claude-skills/tree/main/skills/gmailtriage",
+  "license": "MIT"
+}

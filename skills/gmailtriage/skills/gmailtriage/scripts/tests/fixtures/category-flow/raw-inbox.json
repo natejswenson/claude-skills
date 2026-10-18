@@ -1,0 +1,60 @@
+{
+  "threads": [
+    {
+      "id": "promo",
+      "messages": [
+        {
+          "sender": "offers@shop.example",
+          "subject": "Weekly offers",
+          "date": "2026-08-01T00:00:00Z",
+          "labelIds": [
+            "INBOX"
+          ],
+          "snippet": "category-secret-000000"
+        }
+      ]
+    },
+    {
+      "id": "update",
+      "messages": [
+        {
+          "sender": "offers@shop.example",
+          "subject": "Weekly offers",
+          "date": "2026-08-01T00:00:00Z",
+          "labelIds": [
+            "INBOX"
+          ],
+          "snippet": "category-secret-000000"
+        }
+      ]
+    },
+    {
+      "id": "overlap",
+      "messages": [
+        {
+          "sender": "offers@shop.example",
+          "subject": "Weekly offers",
+          "date": "2026-08-01T00:00:00Z",
+          "labelIds": [
+            "INBOX"
+          ],
+          "snippet": "category-secret-000000"
+        }
+      ]
+    },
+    {
+      "id": "missing",
+      "messages": [
+        {
+          "sender": "offers@shop.example",
+          "subject": "Weekly offers",
+          "date": "2026-08-01T00:00:00Z",
+          "labelIds": [
+            "INBOX"
+          ],
+          "snippet": "category-secret-000000"
+        }
+      ]
+    }
+  ]
+}

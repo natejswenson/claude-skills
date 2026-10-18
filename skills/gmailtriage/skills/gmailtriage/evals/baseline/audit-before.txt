@@ -1,0 +1,64 @@
+| Label                  | Threads | Status                 | Filed into by                                          |
+|------------------------|---------|------------------------|--------------------------------------------------------|
+| Recruiting             | 13      | managed                | sort-globex, sort-initech, sort-umbrella, sort-soylent |
+| Recruiting/Globex      | 7       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Initech     | 4       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Umbrella    | 1       | UNMANAGED — holds mail | —                                                      |
+| Recruiting/Soylent     | 1       | UNMANAGED — holds mail | —                                                      |
+| Statements             | 4       | managed                | sort-statements                                        |
+| Medical                | 2       | managed                | sort-medical                                           |
+| Banking                | 2       | managed                | sort-banking                                           |
+| School                 | 2       | managed                | sort-school                                            |
+| Receipts               | 2       | SAME AS Reciepts       | sort-receipts                                          |
+| Reciepts               | 2       | SAME AS Receipts       | —                                                      |
+| Old Demo Event         | 6       | UNMANAGED — holds mail | —                                                      |
+| Security               | 2       | managed                | sort-security                                          |
+| Briefings              | 1       | managed                | sort-briefings                                         |
+| Volunteer Coordination | 5       | managed                | sort-volunteers                                        |
+| Workshop               | 2       | managed                | sort-workshop                                          |
+| Paperwork              | 4       | UNMANAGED — holds mail | —                                                      |
+| Scratch                | 0       | UNMANAGED — and empty  | —                                                      |
+| Reading List           | 0       | UNMANAGED — and empty  | —                                                      |
+
+one folder, spelled two ways. Mail is split across them and nothing in Gmail says so —
+fold them together with `merge --from <wrong> --to <right>`, then delete the empty one.
+
+6 folder(s) hold mail no rule files into. They stay sorted exactly as long as
+you keep sorting them by hand — write a rule, or the next run will not maintain them.
+
+2 folder(s) are empty and unmanaged — folders someone made once and never used.
+Deleting an empty label loses nothing; there is no mail in it to lose.
+
+RULES THAT FILE INTO A FOLDER THAT DOES NOT EXIST
+
+| Rule files into | Named by | Used by     |
+|-----------------|----------|-------------|
+| Travel          | a rule   | sort-travel |
+
+the folder was deleted, or never created. Either re-create it, or — if it was deleted
+on purpose — remove or redirect the rules that file into it (`rules --remove <id>`).
+Which is right is your call: the mail says nothing about why the folder went away.
+
+MAIL NO RULE CLAIMS
+
+| Sender                            | Threads | In inbox | Goes to          | Example subject                          |
+|-----------------------------------|---------|----------|------------------|------------------------------------------|
+| secure@esignature.example         | 4       | no       | — needs a name — | Signing complete: document 1             |
+| invoices@billingplatform.example  | 3       | no       | — needs a name — | Synthetic invoice DEMO-1 from Example S… |
+| grants@demofunding.example        | 2       | no       | — needs a name — | Synthetic demo grant issued              |
+| billing@cloudvendor.example       | 1       | no       | — needs a name — | Synthetic receipt DEMO-RECEIPT-001 from… |
+| me@mailprovider.example           | 1       | yes      | — needs a name — | Evening brief — Friday                   |
+| projects@demofunding.example      | 1       | no       | — needs a name — | Synthetic demo project DEMO-CASE-001     |
+| records@synthetic-records.example | 1       | yes      | — needs a name — | Synthetic records request receipt        |
+| website@modelhub.example          | 1       | no       | — needs a name — | Click this link to confirm your email a… |
+
+folders it could nest under, rather than becoming another top-level one:
+  Recruiting · Statements · Medical · Banking · School · Receipts · Reciepts · Old Demo Event · Security · Briefings · Volunteer Coordination · Workshop · Paperwork · Scratch · Reading List
+
+2 self-sent thread(s) excluded — mail you sent yourself and never filed is your outbox, not unclaimed mail.
+
+| Labels | Managed | Unmanaged | Duplicate spellings | Unclaimed mail | Coverage |
+|--------|---------|-----------|---------------------|----------------|----------|
+| 19     | 10      | 9         | 2                   | 14             | 53%      |
+
+this label system needs attention — see above. Nothing has moved.

@@ -1,0 +1,231 @@
+{
+  "name": "gmailtriage",
+  "sources": [
+    "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+    "skills/gmailtriage/skills/gmailtriage/skill-invariants.json",
+    "CLAUDE.md"
+  ],
+  "clauses": [
+    {
+      "id": "house-35e99409",
+      "tag": "house",
+      "text": "Never PR a feature branch straight into `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 10
+      }
+    },
+    {
+      "id": "house-59ab724c",
+      "tag": "house",
+      "text": "Keep this file current in the same PR.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 32
+      }
+    },
+    {
+      "id": "house-6e18e8e6",
+      "tag": "house",
+      "text": "A merge never cuts a tag. `/release` does.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 17
+      }
+    },
+    {
+      "id": "house-75b5d28b",
+      "tag": "house",
+      "text": "Never push directly to `main`.",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 15
+      }
+    },
+    {
+      "id": "house-9c5a5051",
+      "tag": "house",
+      "text": "Never add `push` back to a release job's `if:`",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 20
+      }
+    },
+    {
+      "id": "house-d8d0747a",
+      "tag": "house",
+      "text": "Always delete a feature branch as soon as it's merged",
+      "severity": "high",
+      "source": {
+        "file": "CLAUDE.md",
+        "line": 27
+      }
+    },
+    {
+      "id": "inv-5935a1ae",
+      "tag": "inv",
+      "text": "the guard is on what the skill suggests",
+      "severity": "high",
+      "rationale": "The withheld list is about what the skill proposes, never about what the user may decide. Losing the distinction turns a helpful default into a tool that argues with its owner.",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/skill-invariants.json",
+        "line": 1
+      }
+    },
+    {
+      "id": "press-13f05150",
+      "tag": "press",
+      "text": "One script call, not a pipeline.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 171
+      }
+    },
+    {
+      "id": "press-2485e417",
+      "tag": "press",
+      "text": "Report in tables, with named columns.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 175
+      }
+    },
+    {
+      "id": "press-6b84d65d",
+      "tag": "press",
+      "text": "Never claim a visual result without the artifact.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 182
+      }
+    },
+    {
+      "id": "press-783a6ddf",
+      "tag": "press",
+      "text": "Never print file contents into the conversation.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 166
+      }
+    },
+    {
+      "id": "press-8f262e00",
+      "tag": "press",
+      "text": "Announce the skill once, at the start",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 190
+      }
+    },
+    {
+      "id": "press-932da062",
+      "tag": "press",
+      "text": "Keep the machinery invisible.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 163
+      }
+    },
+    {
+      "id": "press-c24d0465",
+      "tag": "press",
+      "text": "Show, don't describe.",
+      "severity": "medium",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 180
+      }
+    },
+    {
+      "id": "rule-b1bf3983",
+      "tag": "rule",
+      "text": "A message is trashed only because a rule the user wrote matched it, and never because the model judged it junk — the model may propose a rule, but it may never act as one, so every trashed thread can be named by the rule that took it.",
+      "severity": "critical",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 19
+      }
+    },
+    {
+      "id": "skill-0f5083ee",
+      "tag": "skill",
+      "text": "Never trash a thread the plan did not name.",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 128
+      }
+    },
+    {
+      "id": "skill-222f23c7",
+      "tag": "skill",
+      "text": "Never argue with a withheld sender.",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 71
+      }
+    },
+    {
+      "id": "skill-2673f38e",
+      "tag": "skill",
+      "text": "Never call trash \"deleted\".",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 134
+      }
+    },
+    {
+      "id": "skill-4cdac1ba",
+      "tag": "skill",
+      "text": "Never skip the plan.",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 136
+      }
+    },
+    {
+      "id": "skill-75ce9701",
+      "tag": "skill",
+      "text": "Never propose a rule for a withheld sender.",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 130
+      }
+    },
+    {
+      "id": "skill-9166f695",
+      "tag": "skill",
+      "text": "Never claim a result you did not observe.",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 126
+      }
+    },
+    {
+      "id": "skill-bfb1b27b",
+      "tag": "skill",
+      "text": "Announce at start:",
+      "severity": "high",
+      "source": {
+        "file": "skills/gmailtriage/skills/gmailtriage/SKILL.md",
+        "line": 12
+      }
+    }
+  ]
+}
