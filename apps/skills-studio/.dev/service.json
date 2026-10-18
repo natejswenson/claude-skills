@@ -1,0 +1,42 @@
+{
+  "$schema": "./service.schema.json",
+  "schema_version": 2,
+  "kind": "application",
+  "template": "http-container-v1",
+  "app": "skills-studio",
+  "runtime": {
+    "port": 8080,
+    "run_as_user": 1000,
+    "inputs": [
+      "src",
+      "preview",
+      "preview/server.mjs",
+      "server",
+      "index.html",
+      "tsconfig.json",
+      "vite.config.ts",
+      "package.json",
+      "package-lock.json"
+    ],
+    "dockerfile": ".dev/Dockerfile"
+  },
+  "health": {
+    "path": "/health"
+  },
+  "verification": {
+    "revision_path": "/_revision",
+    "revision_file": "preview/server.mjs"
+  },
+  "interfaces": [
+    "browser"
+  ],
+  "resources": {
+    "requests": {
+      "cpu": "100m",
+      "memory": "128Mi"
+    },
+    "limits": {
+      "memory": "512Mi"
+    }
+  }
+}

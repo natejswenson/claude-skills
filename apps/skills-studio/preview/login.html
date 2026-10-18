@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect · Skills Studio</title>
+<style>
+/* PREVIEW_BRAND_TOKENS */
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--display-stack);min-height:100vh;display:grid;place-items:center}main{width:min(440px,calc(100% - 48px));padding:32px 0;border-top:8px solid var(--ink)}h1{font:900 42px/1 var(--display-stack);letter-spacing:-.04em;margin:18px 0}p{color:var(--dim);font:italic 18px/1.5 var(--serif-stack)}.eyebrow{font:10px/1.5 var(--mono-stack);letter-spacing:.08em;text-transform:uppercase}label{display:block;font-size:13px;margin-top:24px}input{border-radius:0;width:100%;padding:12px;margin-top:8px;border:1px solid var(--dim);background:var(--paper);font:inherit}input:focus{outline:2px solid var(--ink);outline-offset:2px}button{margin-top:16px;padding:12px 20px;background:var(--ink);color:var(--paper);border:0;font:inherit;cursor:pointer;width:100%}button:disabled{opacity:.65;cursor:wait}#login-error{font:13px/1.5 var(--display-stack);font-style:normal}button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}small{display:block;margin-top:20px;color:var(--dim)}
+</style><main><div class="eyebrow">Skills Studio · Local preview</div><h1>Your workspace,<br>connected securely.</h1><p>Enter the access code saved by your local launcher. Codex uses your existing subscription on this Mac.</p><form id="login-form" method="post" action="/_session"><label for="token">Preview access code</label><input id="token" name="token" type="password" autocomplete="off" required spellcheck="false"><button type="submit">Open Skills Studio</button></form><p id="login-error" role="alert" hidden></p><small>Preview runs and files stay separate from your everyday workspace.</small></main>
+<script nonce="PREVIEW_SCRIPT_NONCE">
+const form = document.getElementById('login-form');
+const field = document.getElementById('token');
+const error = document.getElementById('login-error');
+const button = form.querySelector('button');
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = 'Connecting…';
+  error.hidden = true;
+  try {
+    const response = await fetch('/_session', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: field.value.trim() })
+    });
+    if (!response.ok) throw new Error(response.status === 401 ? 'That access code was not accepted. Check your local launcher and try again.' : 'Could not connect to this preview. Please try again.');
+    field.value = '';
+    location.reload();
+  } catch (failure) {
+    error.textContent = failure instanceof TypeError ? 'Could not reach this preview. Check the connection and try again.' : failure.message;
+    error.hidden = false;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Open Skills Studio';
+  }
+});
+</script></html>

@@ -14,6 +14,10 @@ Each skill under `skills/` is versioned, tested, and released **on its own caden
 
 ## Skills
 
+For a local browser interface powered by your Codex subscription, see
+[Skills Studio](apps/skills-studio/README.md). It provides a searchable library,
+conversations, approval prompts, saved runs, and generated-file previews.
+
 | Skill | Version | Invocation | Stack | Description |
 |---|---|---|---|---|
 | [`devlog`](skills/devlog) | ![devlog](https://img.shields.io/github/v/tag/natejswenson/claude-skills?filter=devlog-v*&label=&sort=semver&color=blue) | `/devlog` | Node | Generate a daily dev-log entry from today's git commits and publish it to GitHub. |

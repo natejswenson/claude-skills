@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:tk:service:v2",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "type": "integer"
+    },
+    "kind": {
+      "const": "application"
+    },
+    "app": {
+      "type": "string",
+      "pattern": "[a-z][a-z0-9-]{0,29}"
+    },
+    "template": {
+      "enum": [
+        "http-container-v1",
+        "python-http-v1",
+        "node-http-v1"
+      ]
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "run_as_user": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "dockerfile": {
+          "type": "string"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "port",
+        "run_as_user",
+        "inputs"
+      ],
+      "additionalProperties": false
+    },
+    "health": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "/[A-Za-z0-9_./-]*"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "verification": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "revision_path": {
+              "type": "string",
+              "pattern": "/[A-Za-z0-9_./-]*"
+            },
+            "revision_file": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "revision_path",
+            "revision_file"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "interfaces": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "browser",
+          "http-api"
+        ]
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string",
+              "pattern": "[0-9]+m?"
+            },
+            "memory": {
+              "type": "string",
+              "pattern": "[0-9]+[MG]i"
+            }
+          },
+          "required": [
+            "cpu",
+            "memory"
+          ],
+          "additionalProperties": false
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "memory": {
+              "type": "string",
+              "pattern": "[0-9]+[MG]i"
+            }
+          },
+          "required": [
+            "memory"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "requests",
+        "limits"
+      ],
+      "additionalProperties": false
+    },
+    "$schema": {
+      "const": "./service.schema.json"
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "app",
+    "template",
+    "runtime",
+    "health",
+    "verification",
+    "interfaces",
+    "resources"
+  ],
+  "additionalProperties": false
+}

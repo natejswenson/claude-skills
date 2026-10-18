@@ -1,0 +1,38 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+import { transpileModule, ModuleKind, JsxEmit } from 'typescript';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const scratch = await mkdtemp(join(root, '.skill-brief-test-'));
+after(() => rm(scratch, { recursive: true, force: true }));
+const source = await readFile(new URL('../src/SkillBrief.tsx', import.meta.url), 'utf8');
+const entry = join(scratch, 'SkillBrief.mjs');
+await writeFile(entry, transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, jsx: JsxEmit.ReactJSX } }).outputText);
+const { SkillBrief } = await import(pathToFileURL(entry).href);
+const skill = { name: 'skillhelp', category: 'Build', description: 'Explain <skill> instructions.', example: 'Help me use this skill.', available: true };
+const render = props => renderToStaticMarkup(React.createElement(SkillBrief, { skill, onRemove() {}, onExample() {}, ...props }));
+test('selected skill explains its purpose and presents a deliberate starting point', () => {
+ const html = render();
+ assert.match(html, /Build \/ Selected skill/);
+ assert.match(html, /Explain &lt;skill&gt; instructions/);
+ assert.match(html, /Try a starting point/);
+ assert.match(html, /Help me use this skill/);
+ assert.match(html, /aria-label="Remove selected skill"/);
+ let removed = false, example = false;
+ const element = SkillBrief({skill, onRemove(){removed=true}, onExample(){example=true}});
+ assert.equal(example, false);
+ element.props.children[3].props.onClick();
+ assert.equal(example, true);
+ element.props.children[0].props.children[1].props.onClick();
+ assert.equal(removed, true);
+});
+test('busy and unavailable skills do not invite unusable actions', () => {
+ assert.match(render({busy:true}), /button disabled=""/);
+ const unavailable = render({skill:{...skill,available:false}});
+ assert.match(unavailable, /needs setup before you can start/);
+ assert.doesNotMatch(unavailable, /Try a starting point/);
+});
