@@ -5,7 +5,7 @@
  */
 
 import { resolveCategory, isBulkCategory } from './category.mjs';
-import { resolveSender } from './sender.mjs';
+import { parseSender, resolveSender } from './sender.mjs';
 
 /** Ordinary snapshots; ambiguous evidence adds bounded categoryEvidence and/or senderAmbiguous markers. */
 export const SNAPSHOT_FIELDS = ['id', 'from', 'subject', 'date', 'labelIds', 'category', 'hasUnsubscribe'];
@@ -54,13 +54,51 @@ export function normalizeSearchThreads(raw, what = 'search_threads output') {
 /** The structured content in Codex's raw Gmail tool-result envelope. */
 const codexContent = (raw) => isObj(raw?.structuredContent) ? raw.structuredContent : raw;
 
+/** Read only linked From evidence; never copy metadata payloads into snapshots. */
+export function buildSenderMetadata(manifest, readMetadata) {
+  if (!isObj(manifest) || manifest.schema !== 1
+    || Object.keys(manifest).some(k => !['schema', 'paths'].includes(k))
+    || !Array.isArray(manifest.paths)
+    || manifest.paths.some(p => typeof p !== 'string' || !p.trim())) {
+    throw new Error('ingest: invalid sender metadata manifest');
+  }
+  const byMessage = new Map();
+  for (const path of manifest.paths) {
+    const raw = readMetadata(path), record = codexContent(raw);
+    if (typeof record?.id !== 'string' || !record.id) continue;
+    const headers = record?.payload?.headers;
+    const from = Array.isArray(headers) ? headers.filter(h => typeof h?.name === 'string' && h.name.toLowerCase() === 'from') : [];
+    const value = raw?.isError !== true && from.length === 1 && parseSender(from[0].value) ? from[0].value : null;
+    const entry = { threadId: record.thread_id, from: value };
+    const previous = byMessage.get(record.id);
+    if (previous && (previous.threadId !== entry.threadId || previous.from !== entry.from)) entry.from = null;
+    byMessage.set(record.id, entry);
+  }
+  return byMessage;
+}
+
+function codexSender(email, metadata) {
+  const from = email.from_ ?? email.from ?? null;
+  const original = { from, ...(Object.hasOwn(email, 'senderAmbiguous') ? { senderAmbiguous: true } : {}) };
+  const evidence = metadata?.get(email.id);
+  if (!evidence) return original;
+  const parsed = parseSender(evidence.from), observed = parseSender(from);
+  if (!parsed || evidence.threadId !== email.thread_id
+    || (observed ? observed.address !== parsed.address
+      : typeof from !== 'string' || !/<[^<>]+>$/.test(evidence.from)
+        || evidence.from.replace(/<([^<>]+)>$/, '$1') !== from)) {
+    return { ...original, senderAmbiguous: true };
+  }
+  return { ...original, from: observed ? from : evidence.from };
+}
+
 /**
  * Codex's Gmail plugin exposes `search_emails`, not `search_threads`. Group
  * the verbatim response by thread here, rather than asking the agent to
  * transcribe it. Snapshot construction remains allowlisted, so snippets and
  * every other message-body field stay out of the session files.
  */
-export function normalizeCodexSearchEmails(raw, what = 'Codex Gmail search_emails output') {
+export function normalizeCodexSearchEmails(raw, what = 'Codex Gmail search_emails output', senderMetadata) {
   if (!isObj(raw)) throw new Error(`${what}: expected the raw Codex Gmail response object, written to the file verbatim`);
   const result = codexContent(raw);
   const emails = result.emails ?? [];
@@ -70,13 +108,14 @@ export function normalizeCodexSearchEmails(raw, what = 'Codex Gmail search_email
     if (!isObj(email) || !email.thread_id) throw new Error(`${what}: an email without a thread_id — cannot safely build a thread snapshot`);
     const message = {
       // The Codex connector serializes `from` as `from_`.
-      from: email.from_ ?? email.from ?? null,
+      ...codexSender(email, senderMetadata),
       subject: email.subject ?? null,
       date: email.email_ts ?? null,
       labelIds: Array.isArray(email.labels) ? email.labels : [],
     };
     const current = threads.get(email.thread_id);
     if (!current) { threads.set(email.thread_id, { id: email.thread_id, ...message }); continue; }
+    if (senderMetadata && resolveSender(current, message).ambiguous) current.senderAmbiguous = true;
     current.labelIds = [...new Set([...current.labelIds, ...message.labelIds])];
     // Codex returns newest-first; match the existing first-message policy by
     // retaining the oldest observable message in each thread.
@@ -90,9 +129,9 @@ export function normalizeCodexSearchEmails(raw, what = 'Codex Gmail search_email
 }
 
 /** Select an explicit host shape; never reinterpret an unrelated response. */
-export function normalizeGmailSearch(raw, what = 'Gmail search output') {
+export function normalizeGmailSearch(raw, what = 'Gmail search output', senderMetadata) {
   if (isObj(raw) && Array.isArray(raw.threads)) return normalizeSearchThreads(raw, what);
-  if (isObj(codexContent(raw)) && Array.isArray(codexContent(raw).emails)) return normalizeCodexSearchEmails(raw, what);
+  if (isObj(codexContent(raw)) && Array.isArray(codexContent(raw).emails)) return normalizeCodexSearchEmails(raw, what, senderMetadata);
   return normalizeSearchThreads(raw, what);
 }
 
@@ -129,7 +168,7 @@ export function validateManifest(manifest) {
 }
 
 /** A failed/gapped chain still contributes valid pages, but never proves exhaustion. */
-export function ingestSources(manifest, readPage, legacy = {}) {
+export function ingestSources(manifest, readPage, legacy = {}, senderMetadata) {
   if (manifest) validateManifest(manifest);
   const sources = {}, coverage = { schema: 1, sources: {} };
   for (const name of SOURCE_NAMES) {
@@ -139,7 +178,7 @@ export function ingestSources(manifest, readPage, legacy = {}) {
     sources[name] = [];
     if (!source) {
       if (Object.hasOwn(legacy, name)) {
-        sources[name] = mergeThreadSources(normalizeGmailSearch(legacy[name], name));
+        sources[name] = mergeThreadSources(normalizeGmailSearch(legacy[name], name, senderMetadata));
         Object.assign(c, { pages: 1, uniqueThreads: sources[name].length, reason: 'legacy-chain-unavailable' });
       }
       continue;
@@ -172,7 +211,7 @@ export function ingestSources(manifest, readPage, legacy = {}) {
                 && !(typeof raw.resultCountEstimate === 'string' && /^[0-9]+$/.test(raw.resultCountEstimate)))
               || (Object.hasOwn(raw, 'threads') && !Array.isArray(raw.threads))
               || (Object.hasOwn(raw, 'nextPageToken') && !token(raw.nextPageToken))))) throw new Error('invalid response');
-        threads = normalizeGmailSearch(raw, name);
+        threads = normalizeGmailSearch(raw, name, senderMetadata);
         if (threads.some(t => typeof t.id !== 'string')) throw new Error('invalid thread id');
       } catch { interrupt('unreadable-or-invalid-page'); expected = undefined; continue; }
       sources[name] = mergeThreadSources(sources[name], threads);

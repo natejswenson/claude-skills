@@ -14,10 +14,12 @@ import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
-import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
+import { buildSenderMetadata, ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
+import { prepareLocalRequest, suggestLocal, assertLocalPath, assertLocalOutput } from './lib/local-model.mjs';
+import { captureFeedback, readFeedbackBatch } from './lib/local-feedback.mjs';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -320,6 +322,40 @@ async function cmdPropose(args) {
       unhoused: sortable.filter((s) => s.unhoused),
       withheld,
     }, args)}`);
+  }
+}
+
+function cmdLearnLocal(args) {
+  if (typeof args.input !== 'string' || (args.store !== undefined && typeof args.store !== 'string')) throw new Error('learn-local: --input <review-batch> and optional --store <private-directory> required');
+  if (Object.keys(args).some(k=>!['_','input','store'].includes(k)) || args._.length !== 1) throw new Error('learn-local: unsupported arguments');
+  const result=captureFeedback(readFeedbackBatch(args.input),args.store ?? join(STATE_DIR,'learning','feedback'));
+  console.log(JSON.stringify(result));
+}
+
+// Optional advice never produces rules or authorises mailbox actions.
+async function cmdSuggestLocal(args) {
+  if (args.minCount === true) throw new Error('suggest-local: --min-count requires a positive integer');
+  for (const key of ['threads','labels','choices','scratchDir']) {
+    if (typeof args[key] !== 'string') throw new Error(`suggest-local: --${key.replace(/[A-Z]/g,c => '-'+c.toLowerCase())} <path> is required`);
+  }
+  assertLocalPath(args.scratchDir,{directory:true});
+  const ruleFile = resolve(args.rules ?? defaultRules());
+  const configFile = resolve(args.config ?? join(STATE_DIR,'local-model.json'));
+  const inputs = [args.threads,args.labels,args.choices,ruleFile,configFile];
+  if (args.out !== undefined) assertLocalOutput(args.out,inputs);
+  const ruleDoc = existsSync(ruleFile) ? readJson(ruleFile,'suggest-local rules') : {rules:[]};
+  validateRuleSet(ruleDoc);
+  const prepared = prepareLocalRequest(readJson(args.threads,'suggest-local threads'),{
+    labels:readLabels(args.labels),choices:readJson(args.choices,'suggest-local choices'),
+    rules:ruleDoc.rules,minCount:Number(args.minCount ?? 3),
+  });
+  const result = await suggestLocal(prepared,readJson(configFile,'suggest-local config'),args.scratchDir);
+  console.log(table(['Candidate','Sender','Suggestion','Top score','Margin','Result'],
+    result.suggestions.map(s => [s.candidateId,s.from,s.destination ?? '—',s.topScore.toFixed(3),s.margin.toFixed(3),s.reason])));
+  console.log(`\n${result.counts.eligible} eligible; ${result.counts.suggested} suggested; ${result.counts.abstained} abstained. Advisory only; scores are uncalibrated heuristics. Review before adding any rule; nothing has moved.`);
+  if (args.out) {
+    assertLocalOutput(args.out,inputs);
+    console.error(`wrote ${writeJson(args.out,result,{allowRepo:false,exclusive:true})}`);
   }
 }
 
@@ -1068,7 +1104,7 @@ async function cmdIngest(args) {
   // stale, and re-supplying four thread files to refresh one snapshot is how a
   // "verbatim" raw file ends up hand-edited instead. One re-fetch, one flag.
   if (args.labelsOnly) {
-    if (args.inbox || args.nolabel || args.promos || args.updates || args.manifest || args.outCoverage || args.outThreads) {
+    if (args.inbox || args.nolabel || args.promos || args.updates || args.manifest || args.outCoverage || args.outThreads || args.senderMetadata) {
       throw new Error('ingest --labels-only: refreshes the label snapshot alone — drop the thread-file flags, or drop --labels-only');
     }
     const doc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
@@ -1084,14 +1120,18 @@ async function cmdIngest(args) {
   }
 
   if (args.manifest && SOURCE_NAMES.some(name => args[name])) throw new Error('ingest: --manifest cannot be mixed with thread-file flags');
+  if (args.senderMetadata === true) throw new Error('ingest: --sender-metadata requires a file path');
   if (args.manifest === true || args.outCoverage === true) throw new Error('ingest: --manifest and --out-coverage require a file path');
   if (!args.manifest && (!args.inbox || args.inbox === true)) throw new Error('ingest: --inbox <raw.json> or --manifest <manifest.json> is required');
   const manifest = args.manifest ? readJson(args.manifest, 'ingest: --manifest') : null;
   if (args.manifest) validateManifest(manifest);
   const legacy = {};
   if (!manifest) for (const name of SOURCE_NAMES) if (args[name]) legacy[name] = readJson(args[name], name);
+  const senderMetadata = args.senderMetadata ? buildSenderMetadata(
+    readJson(args.senderMetadata, 'ingest: --sender-metadata'),
+    path => readJson(resolve(dirname(resolve(args.senderMetadata)), path), 'sender metadata')) : undefined;
   const { sources, coverage } = ingestSources(manifest,
-    path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy);
+    path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy, senderMetadata);
   const { inbox, nolabel, promos, updates } = sources;
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
@@ -1171,12 +1211,13 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
 
   gmailtriage setup     [--file <rules.json>]
   gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
-                        [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
-  gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
+                        [--updates <raw.json>] [--sender-metadata <manifest.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
+  gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>] [--sender-metadata <manifest.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]
                         [--show-claimed N] [--show-withheld N] [--out <f.json>]
+  gmailtriage learn-local --input <review-batch.json> [--store <private-directory>]\n  gmailtriage suggest-local --threads <f.json> --labels <f.json> --choices <f.json> --scratch-dir <dir>\n                        [--rules <f.json>] [--config <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
@@ -1219,6 +1260,8 @@ async function main() {
       case 'audit': return await cmdAudit(args);
       case 'merge': return await cmdMerge(args);
       case 'propose': return await cmdPropose(args);
+      case 'learn-local': return cmdLearnLocal(args);
+      case 'suggest-local': return await cmdSuggestLocal(args);
       case 'subdivide': return await cmdSubdivide(args);
       case 'rules': return await cmdRules(args);
       case 'labels': return await cmdLabels(args);

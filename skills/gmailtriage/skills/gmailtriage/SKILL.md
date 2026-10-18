@@ -27,6 +27,18 @@ accepts the plugin's `list_labels` envelope. Do not reshape either response in
 chat or by hand; do not claim metadata-only category fetching is available
 unless the connector actually exposes that view.
 
+If `search_emails` serializes `Name <address>` as `Name address`, keep that
+search result verbatim. Fetch `read_email(format:metadata)` for the observed
+message IDs and save each full result verbatim outside the repository. Pass
+`ingest --sender-metadata <manifest.json>` with exactly
+`{"schema":1,"paths":["raw-metadata.json"]}`; paths resolve relative to that
+manifest. Ingest accepts a single valid From header only when both message and
+thread IDs match and removing its angle brackets exactly reproduces the search
+sender. Valid original senders must agree with metadata; missing, conflicting,
+or malformed evidence remains uncertain. This fallback adds no fetch coverage,
+category evidence, message IDs, or extra headers to snapshots. Never hand-edit
+the search sender or infer a mailbox suffix.
+
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
 
 You are running the **gmailtriage** skill.
@@ -54,6 +66,7 @@ step whose command does not exist fails `skillfactory verify`.
 | report whether the label system is still coherent — which folders no rule manages, which rules file into a folder that no longer exists, which are two spellings of one folder, and which mail no rule claims (self-sent mail excluded and counted) — and exit non-zero if any of it is outstanding | `node scripts/gmailtriage.js audit` |
 | fold one folder into another, applying the target before removing the source, and record it so the fold can be undone | `node scripts/gmailtriage.js merge` |
 | drop every sender an existing rule already claims, then cluster what is left into trash candidates and sort candidates, matching each sort cluster against the labels the mailbox already has | `node scripts/gmailtriage.js propose` |
+| validate optional local request eligibility, private transport and returned scores; derive fixed advisory thresholds | `node scripts/gmailtriage.js suggest-local` |
 | cluster a folder that already has mail in it by sender, match each cluster against the sub-labels that folder already has, and say when it is still one thing | `node scripts/gmailtriage.js subdivide` |
 | validate, store and remove rules, compiling each to a Gmail query, refusing one that is malformed, matches everything, matches nothing, or files into a label Gmail owns, and backing the file up before every write | `node scripts/gmailtriage.js rules` |
 | reconcile every folder the rules file into against the mailbox's real labels, and refuse to pass until each one exists | `node scripts/gmailtriage.js labels` |
@@ -63,6 +76,7 @@ step whose command does not exist fails `skillfactory verify`.
 
 | Model judgment — nothing on disk answers it | Why |
 |---|---|
+| suggest an existing label from local model scores when explicitly requested | the external classifier is fallible; uncalibrated scores and thresholds cannot establish the user’s intent |
 | decide which proposed rules are actually safe to accept, and which cluster is a newsletter the user genuinely reads | a sender sending near-identical bulk messages looks the same whether it is a retailer the user ignores or the school district they need; only the user knows which |
 | **name a folder for a cluster that has no existing home** | a folder name is a decision about how the user already thinks — whether their word is "Shopping" or "Retail", whether the bank goes under "Finance" or its own name — and nothing in the mail says it. A script that guesses files a school district under its mail vendor |
 | **name the organisation behind a sender that hosts mail for many of them** | an applicant tracking system, a signing service and an invoicing platform all send on behalf of whoever bought them, so the address names the vendor and the subject names the organisation. `no-reply@ashbyhq.example` is one employer in one thread and a different one in the next, and only reading the subject says which |
@@ -245,6 +259,21 @@ say why, and let them change it. Never file into a name they have not seen.
 
 **Never argue with a withheld sender.** If the user wants it, they write the
 rule; the guard constrains what the skill proposes, never what they may decide.
+
+### Optional local suggestions — only on request
+
+When the user explicitly requests local mode, follow [local-model.md](references/local-model.md)
+after `propose`. Use per-run descriptions of 2..12 exact existing labels and the
+configured external offline runner. Never invoke it on ordinary runs. Run:
+
+```bash
+node $SKILL_DIR/scripts/gmailtriage.js suggest-local --threads threads.json --labels labels.json --choices choices.json --scratch-dir "$SESSION_DIR" --out "$SESSION_DIR/suggestions.json"
+```
+
+Report the named Candidate/Sender/Suggestion/Top score/Margin/Result columns and
+counts; explain that scores are uncalibrated heuristics. Empty eligibility means
+no runner starts. Advice is not an importable rule set or authorisation: review
+with the user, validate any accepted rules, and continue audit and plan normally.
 
 ### 2b. Subdivide — when a folder has grown into several things
 
@@ -461,6 +490,8 @@ is one label away from where it was. Offer `undo --last`; do not bury it.
 | `gmailtriage setup` | state, rule counts by action, rule file — plus a first-run walkthrough when nothing is configured. The full rule table lives behind `rules`, so a run does not open with an unnecessary full rule table |
 | `gmailtriage ingest` | take the raw output of the four `search_threads` fetches and `list_labels`, written to files verbatim, and produce the thread and label snapshots every other command reads — deduping threads across fetches, unioning label ids, deriving the category and bulk-mail markers, counting self-sent mail, refusing a metadata-only fetch by name, and never writing a snippet to disk. Ends hand-transcribed JSON, which was the slowest and least reliable step of ordinary fetches |
 | `gmailtriage propose` | read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is left — returning two tables, bulk mail worth trashing and mail worth keeping but filing, each matched to an existing folder or flagged as needing a name, plus the senders it excluded and which rule claims each. So a first run starts from the user's own mail and own folders rather than generic defaults, and a later run can never re-propose or contradict a rule they already wrote. Proposes only; writes no rule and moves nothing. |
+| `gmailtriage suggest-local` | opt-in existing-label advice using an external local runner; validates proposal eligibility, private transport and score policy. Requires per-run choices and scratch directory; never changes rules or mail. See [local-model.md](references/local-model.md). |
+| `gmailtriage learn-local` | capture only explicitly confirmed category feedback in private immutable local records; existing labels and predictions are never gold until confirmation. Never trains or changes rules or mail. See [local-model.md](references/local-model.md#explicit-local-learning-feedback). |
 | `gmailtriage audit` | read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holding mail and empty scaffolding), every rule that files into a folder that no longer exists, every pair of labels that are one folder spelled two ways, and every thread no rule claims, each matched to a folder that already exists or flagged as needing a name. Returns a coverage percentage and exits non-zero while anything is outstanding, so a system that is quietly rotting cannot read as clean. Reads only; moves nothing. |
 | `gmailtriage merge` | prepare pending target additions and source removals in the shared receipt lifecycle. Confirm target additions before source removal. Separate folder deletion needs a fresh whole-mailbox empty check and user authorization. |
 | `gmailtriage subdivide` | read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needing a name, and each sender that hosts mail for many organisations flagged as needing a subject matcher too, with its distinct subjects printed. Says plainly when a folder is still one thing and should be left alone. Proposes only; writes no rule and moves nothing. |
@@ -472,6 +503,8 @@ is one label away from where it was. Offer `undo --last`; do not bury it.
 | `gmailtriage undo` | read a receipt from a previous apply — or find the newest one itself with `--last`, since receipts live in `~/.gmailtriage/receipts/` — and reverse only confirmed effects in version-2 receipts (legacy receipts explicitly lack execution evidence): untrash what was trashed, remove the label from what was filed, and put back in the inbox what was archived, returning a table of thread id, what happened to it, and the rule that did it, so a run the user regrets is reversible without hunting through Gmail by hand. |
 
 ## Rules that are not negotiable
+
+- **Never capture learning feedback without explicit confirmation.** Ask for a preferred category or explicitly none of the offered choices, and confirm the others are incorrect. Existing labels and predictions are never gold. Rejection or skipping is not none; `suggest-local` captures nothing. Keep records private and outside Git; `learn-local` never trains, activates a model or changes rules or mail. See [local-model.md](references/local-model.md#explicit-local-learning-feedback).
 
 - **A message is trashed only because a rule the user wrote matched it, and never because the model judged it junk — and the same holds for every other move, so a thread is labelled or archived only by a rule too. The model may propose a rule, but it may never act as one: every thread that moved can be named by the rule that moved it.**
 - **Never claim a result you did not observe.** Say what you verified and what
