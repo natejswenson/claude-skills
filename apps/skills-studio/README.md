@@ -54,7 +54,8 @@ On narrow screens, **Conversation**, **Output**, and **Activity** tabs keep each
 view within reach. New approval requests return you to the conversation and mark
 its tab until answered. **Back to latest** returns to new responses after you
 scroll up. Finished files link directly from the completion summary; Markdown
-previews support tables and read-only task lists.
+previews support tables and read-only task lists. Links to captured files open
+their latest revision in Output; footnote links keep you in the current run.
 
 Each message accepts up to five files, with a 10 MiB limit per file and 20 MiB
 total. Selecting a file keeps it in the browser draft; sending copies it into

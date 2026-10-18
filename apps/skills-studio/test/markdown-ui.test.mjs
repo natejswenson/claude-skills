@@ -28,3 +28,34 @@ test('task lists render as read-only checkboxes and unsafe HTML and links remain
  assert.match(html, /type="checkbox" disabled=""/);
  assert.doesNotMatch(html, /<script>|href="javascript:/);
 });
+
+
+test('known report links open captured output while unrelated links retain normal behavior', () => {
+ const props = {children:'[report](./report%20one.md) and [source](https://example.com)',files:['report one.md'],workspace:'/trusted/work',onOpenFile(){}};
+ const html = renderToStaticMarkup(React.createElement(Markdown,props));
+ assert.match(html, /<button class="inline-file" type="button">report<\/button>/);
+ assert.match(html, /<a href="https:\/\/example.com">source<\/a>/);
+ assert.doesNotMatch(html, /href=".\/report/);
+ const absolute = renderToStaticMarkup(React.createElement(Markdown,{...props,children:'[report](/trusted/work/report%20one.md)'}));
+ assert.match(absolute, /class="inline-file"/);
+ const unknown = renderToStaticMarkup(React.createElement(Markdown,{...props,children:'[unknown](/other/report%20one.md)'}));
+ assert.doesNotMatch(unknown, /class="inline-file"/);
+ let opened;
+ const element = Markdown({...props,onOpenFile:name=>{opened=name}});
+ const anchor = element.props.components.a({href:'./report%20one.md',children:'report'});
+ anchor.props.onClick();
+ assert.equal(opened,'report one.md');
+});
+
+test('footnote attributes survive and in-document anchors scroll without replacing the run route', () => {
+ const html = render('A note[^1].\n\n[^1]: Supporting detail.');
+ assert.match(html, /id="user-content-fnref-1"/);
+ assert.match(html, /data-footnote-ref="true"/);
+ assert.match(html, /href="#user-content-fnref-1"/);
+ let prevented=false, scrolled=false;
+ const element=Markdown({children:'note'});
+ const anchor=element.props.components.a({href:'#user-content-fn-1',children:'1','data-footnote-ref':true});
+ anchor.props.onClick({preventDefault(){prevented=true},currentTarget:{closest(){return {querySelectorAll(){return [{id:'user-content-fn-1',scrollIntoView(){scrolled=true}}]}}}}});
+ assert.equal(prevented,true);
+ assert.equal(scrolled,true);
+});
