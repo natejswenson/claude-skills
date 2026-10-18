@@ -57,6 +57,16 @@ scroll up. Finished files link directly from the completion summary; Markdown
 previews support tables and read-only task lists. Links to captured files open
 their latest revision in Output; footnote links keep you in the current run.
 
+Multi-file runs open a presentable report before supporting data or source files.
+Your selected file stays selected as new outputs arrive; a newer revision of that
+file is selected automatically. JSON is formatted for reading, and text/source
+previews show at most 200,000 characters; downloads retain the complete file.
+PDF output has an explicit download view. A captured image with the same folder
+and filename stem can provide a labeled companion preview for the latest PDF
+revision; older revisions use the download view to avoid showing a newer image.
+While preview copies are being saved, **Preparing outputs** keeps the run locked
+until its final files are available.
+
 Each message accepts up to five files, with a 10 MiB limit per file and 20 MiB
 total. Selecting a file keeps it in the browser draft; sending copies it into
 private local storage and makes it available to Codex through your subscription.

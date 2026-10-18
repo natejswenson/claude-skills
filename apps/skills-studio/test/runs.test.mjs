@@ -176,3 +176,101 @@ test('activity retains its owning turn so a later turn cannot show stale progres
   client.emit('event', {method:'item/completed',params:{threadId:run.threadId,turnId:'turn-1',item:{id:'prior',type:'commandExecution',command:'printf prior',status:'completed'}}});
   assert.equal(manager.get(run.id).activities[0].turnId,'turn-1');
 });
+
+for (const [turnStatus, finalStatus] of [['completed', 'completed'], ['interrupted', 'stopped'], ['failed', 'failed']]) {
+  test(`${finalStatus} turns remain active until their output collection finishes`, async () => {
+    const { manager, client } = await setup();
+    const run = await manager.create({ prompt: 'Collect output' });
+    let resolveCollection;
+    const collection = new Promise(resolve => { resolveCollection = resolve; });
+    manager.collectArtifacts = () => collection;
+    const observed = [];
+    manager.on('change', () => observed.push(manager.get(run.id).status));
+    client.emit('event', { method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: turnStatus, error: turnStatus === 'failed' ? { message: 'Turn failed' } : undefined } } });
+    assert.equal(manager.get(run.id).status, 'collecting_output');
+    assert.throws(() => manager.assertIdle(), { status: 409 });
+    await assert.rejects(manager.followUp(run.id, { prompt: 'Too soon' }), { status: 409 });
+    await assert.rejects(manager.interrupt(run.id), { status: 409 });
+    assert.ok(!observed.includes(finalStatus));
+    resolveCollection();
+    while (manager.finalizing.size) await once(manager, 'change');
+    assert.equal(manager.get(run.id).status, finalStatus);
+    assert.equal(manager.get(run.id).error, turnStatus === 'failed' ? 'Turn failed' : null);
+    assert.doesNotThrow(() => manager.assertIdle());
+  });
+}
+
+test('collection failure preserves intended turn result and unlocks follow-ups', async () => {
+  const { manager, client } = await setup();
+  const run = await manager.create({ prompt: 'Collect output' });
+  manager.collectArtifacts = () => { throw new Error('Preview copy failed'); };
+  assert.doesNotThrow(() => client.emit('event', { method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: 'failed', error: { message: 'Original turn failure' } } } }));
+  while (manager.finalizing.size) await once(manager, 'change');
+  const current = manager.get(run.id);
+  assert.equal(current.status, 'failed');
+  assert.equal(current.error, 'Original turn failure');
+  assert.match(current.activities.at(-1).detail, /Preview copy failed/);
+  assert.equal(current.activities.at(-1).label, 'Preview unavailable');
+  assert.doesNotThrow(() => manager.assertIdle());
+});
+
+test('completion arriving before turn/start returns keeps output collection status', async () => {
+  const { manager, client } = await setup();
+  const originalRequest = client.request.bind(client);
+  let resolveCollection;
+  manager.collectArtifacts = () => new Promise(resolve => { resolveCollection = resolve; });
+  client.request = async (method, params) => {
+    if (method === 'turn/start') client.emit('event', { method: 'turn/completed', params: { threadId: params.threadId, turn: { id: 'turn-early', status: 'completed' } } });
+    return originalRequest(method, params);
+  };
+  const run = await manager.create({ prompt: 'Finish immediately' });
+  assert.equal(run.status, 'collecting_output');
+  assert.equal(run.turnId, 'turn-1');
+  resolveCollection();
+  while (manager.finalizing.size) await once(manager, 'change');
+  assert.equal(manager.get(run.id).status, 'completed');
+});
+
+for (const [turnStatus, finalStatus] of [['interrupted', 'stopped'], ['failed', 'failed']]) {
+  test(`${finalStatus} turns still retain files written before ending`, async () => {
+    const { manager, root } = await setup();
+    const run = await manager.create({ prompt: 'Write partial report' });
+    await writeFile(join(root, 'workspace', 'partial.md'), 'Partial output retained');
+    await manager.onEvent({ method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: turnStatus } } });
+    const finished = manager.get(run.id);
+    assert.equal(finished.status, finalStatus);
+    assert.equal(finished.artifacts.length, 1);
+    assert.equal(await readFile(join(root, 'artifacts', run.id, finished.artifacts[0].file), 'utf8'), 'Partial output retained');
+  });
+}
+
+test('disconnect during output collection stays interrupted when collection settles', async () => {
+  const { manager, client } = await setup();
+  const run = await manager.create({ prompt: 'Collect output' });
+  let resolveCollection;
+  manager.collectArtifacts = () => new Promise(resolve => { resolveCollection = resolve; });
+  const finished = manager.onEvent({ method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: 'completed' } } });
+  await Promise.resolve();
+  client.emit('disconnect', 'Connection lost');
+  assert.equal(manager.get(run.id).status, 'interrupted');
+  resolveCollection();
+  await finished;
+  assert.equal(manager.get(run.id).status, 'interrupted');
+  assert.match(manager.get(run.id).error, /Codex disconnected/);
+  assert.doesNotThrow(() => manager.assertIdle());
+});
+
+test('late resolved requests cannot overwrite output collection and lock the run', async () => {
+  const { manager, client } = await setup();
+  const run = await manager.create({ prompt: 'Collect output' });
+  let resolveCollection;
+  manager.collectArtifacts = () => new Promise(resolve => { resolveCollection = resolve; });
+  const finished = manager.onEvent({ method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: 'completed' } } });
+  await Promise.resolve();
+  client.emit('event', { method: 'serverRequest/resolved', params: { threadId: run.threadId, requestId: 99 } });
+  assert.equal(manager.get(run.id).status, 'collecting_output');
+  resolveCollection();
+  await finished;
+  assert.equal(manager.get(run.id).status, 'completed');
+  assert.doesNotThrow(() => manager.assertIdle());
+});

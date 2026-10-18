@@ -20,6 +20,10 @@ export function RunStatus({ status, activity, outputCount = 0, onViewOutput }: R
             headline: 'Codex is working',
             guidance: activity?.label || 'Follow the conversation or activity as Codex works.',
         },
+        collecting_output: {
+            headline: 'Preparing your outputs',
+            guidance: 'Saving local preview copies. You can continue as soon as they’re ready.',
+        },
         approval_needed: {
             headline: 'Your approval is needed',
             guidance: 'Review the requested action in the conversation before continuing.',

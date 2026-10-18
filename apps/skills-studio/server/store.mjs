@@ -15,7 +15,7 @@ export class Store {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       for (const run of this.list()) {
-        if (!['working', 'approval_needed', 'awaiting_input'].includes(run.status)) continue;
+        if (!['working', 'approval_needed', 'awaiting_input', 'collecting_output'].includes(run.status)) continue;
         this.save({ ...run, status: 'interrupted', pending: [], updatedAt: new Date().toISOString(), error: 'Backend restarted. Continue this run to reconnect to its Codex conversation; any pending approval must be requested again.' });
       }
       this.db.exec('COMMIT');

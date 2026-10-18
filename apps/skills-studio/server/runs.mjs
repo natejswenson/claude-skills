@@ -6,7 +6,7 @@ import { CodexClient, requireSubscription } from './codex.mjs';
 import { resolveArtifact } from './security.mjs';
 import { ATTACHMENT_LIMITS, validateAttachments, saveAttachments } from './attachments.mjs';
 
-const activeStates = new Set(['working', 'approval_needed', 'awaiting_input']);
+const activeStates = new Set(['working', 'approval_needed', 'awaiting_input', 'collecting_output']);
 const policy = { approvalPolicy: 'on-request', approvalsReviewer: 'user', sandbox: 'workspace-write', modelProvider: 'openai' };
 const supported = new Set(['item/commandExecution/requestApproval', 'item/fileChange/requestApproval', 'item/tool/requestUserInput', 'tool/requestUserInput']);
 const previews = new Set(['.html', '.htm', '.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.md', '.txt', '.json', '.csv', '.ts', '.tsx', '.js', '.mjs', '.css', '.py', '.yaml', '.yml']);
@@ -153,7 +153,7 @@ export class RunManager extends EventEmitter {
   }
   async interrupt(id) {
     const run = this.get(id);
-    if (!activeStates.has(run.status) || !run.turnId) fail('This run has no active turn.', 409);
+    if (!activeStates.has(run.status) || run.status === 'collecting_output' || !run.turnId) fail('This run has no active turn.', 409);
     await this.client.request('turn/interrupt', { threadId: run.threadId, turnId: run.turnId });
     return this.get(id);
   }
@@ -217,13 +217,26 @@ export class RunManager extends EventEmitter {
       run.error = params.error?.message || 'Codex encountered an error.';
       if (!params.willRetry) run.status = 'failed';
     } else if (method === 'turn/completed') {
-      run.status = ({ completed: 'completed', interrupted: 'stopped', failed: 'failed' })[params.turn.status] || 'failed';
+      if (this.finalizing.has(run.id)) return;
+      const finalStatus = ({ completed: 'completed', interrupted: 'stopped', failed: 'failed' })[params.turn.status] || 'failed';
+      run.status = 'collecting_output';
       run.pending = [];
-      run.error = params.turn.error?.message || (run.status === 'failed' ? run.error : null);
-      this.save(run);
+      run.error = params.turn.error?.message || (finalStatus === 'failed' ? run.error : null);
       this.finalizing.add(run.id);
-      this.collectArtifacts(run.id).catch(error => { const current = this.get(run.id); current.activities.push({ id: randomUUID(), label: 'Preview unavailable', detail: error.message, status: 'failed' }); this.save(current); }).finally(() => { this.finalizing.delete(run.id); this.emit('change'); });
-      return;
+      this.save(run);
+      // Defer invocation as well as completion: a synchronous collector failure must
+      // not escape the RPC event handler or leave the run permanently locked.
+      return Promise.resolve().then(() => this.collectArtifacts(run.id)).catch(error => {
+        const current = this.get(run.id);
+        current.activities.push({ id: randomUUID(), label: 'Preview unavailable', detail: error.message, status: 'failed' });
+        this.save(current);
+      }).finally(() => {
+        const current = this.get(run.id);
+        // A disconnect during collection has already marked the run interrupted.
+        if (current.status === 'collecting_output') current.status = finalStatus;
+        this.finalizing.delete(run.id);
+        this.save(current);
+      });
     } else return;
     this.save(run);
   }

@@ -91,3 +91,9 @@ test('new turns do not show completed or cancelled work as current progress', ()
  assert.equal(currentActivity([old,fresh,completed], 'current'), fresh);
  assert.doesNotMatch(render({status:'working',activity:currentActivity([old,completed],'current')}), /Old command|Finished command/);
 });
+
+test('file collection is an honest intermediate state without premature completion actions',()=>{
+ const html=render({status:'collecting_output',outputCount:2});
+ assert.match(html,/Preparing your outputs/);assert.match(html,/Saving local preview copies/);
+ assert.doesNotMatch(html,/Ready to review|View output|Run status unavailable/);
+});
