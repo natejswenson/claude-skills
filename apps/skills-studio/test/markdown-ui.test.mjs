@@ -23,10 +23,10 @@ test('generated comparison tables render semantic headings and cells in a scroll
  assert.doesNotMatch(html, /\| Skill/);
 });
 test('task lists render as read-only checkboxes and unsafe HTML and links remain inert', () => {
- const html = render('- [x] Done\n- [ ] Next\n\n<script>alert(1)</script>\n\n[unsafe](javascript:alert)');
+ const html = render('- [x] Done\n- [ ] Next\n\n<script>alert(1)</script>\n\n<SCRIPT>alert(2)</SCRIPT>\n\n[unsafe](javascript:alert)');
  assert.match(html, /type="checkbox" disabled="" checked=""/);
  assert.match(html, /type="checkbox" disabled=""/);
- assert.doesNotMatch(html, /<script>|href="javascript:/);
+ assert.doesNotMatch(html, /<script>|href="javascript:/i);
 });
 
 
