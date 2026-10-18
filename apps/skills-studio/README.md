@@ -44,13 +44,28 @@ supported. The interface and files are local, while Codex inference uses OpenAI.
 - Stop an active turn or continue a completed conversation.
 - Search saved runs; **Run again** prepares a fresh request for you to submit.
 - Review and download captured files, with versioned revisions retained.
+- Attach local files to new requests or follow-ups and retrieve their original
+  copies from the conversation later.
+
+Each message accepts up to five files, with a 10 MiB limit per file and 20 MiB
+total. Selecting a file keeps it in the browser draft; sending copies it into
+private local storage and makes it available to Codex through your subscription.
+Your source file is never changed. The saved copy stays with its message, so
+later files with the same name do not overwrite earlier attachments.
+
+Recognized PNG, JPEG, WebP, and GIF inputs use Codex's native image input. Other
+files are provided as local references for Codex to read with its available tools;
+PDF, Word, and other document parsing depends on those tools. Attachment contents
+are not automatically executed. Downloads use attachment-only responses, including
+HTML and SVG. **Run again** copies the request text and asks you to reattach files;
+it does not silently reuse private files in a new run.
 
 One run executes at a time. Closing or refreshing the browser does not stop it.
 Stopping the backend stops its Codex process; unfinished saved runs are marked
 interrupted on restart. Their old approval IDs are discarded. Send a new follow-up
 to resume the existing Codex conversation; work is never automatically retried.
 
-SQLite history, settings, workspace files, and copied artifacts live in the ignored
+SQLite history, settings, workspace files, inputs, and copied artifacts live in the ignored
 `.studio-data/` directory. Set `STUDIO_DATA_DIR`, `STUDIO_WORKSPACE`, or `PORT` when
 launching to override these defaults. `STUDIO_CODEX_BIN` selects the installed CLI.
 Store local state outside the checkout with `STUDIO_DATA_DIR` for longer-term use.
@@ -86,6 +101,10 @@ npm run dev    # separate terminal: Vite on 5173, proxies /api
 npm test       # offline transport, lifecycle, storage, and security checks
 npm run build  # TypeScript and production build
 ```
+
+Offline tests also exercise attachment storage, limits, native image routing,
+message isolation, and Unicode request decoding. User file contents and live Codex
+calls are never part of CI.
 
 The dedicated Skills Studio GitHub Actions workflow runs `npm ci`, offline tests,
 the production build, and PRESS generation/CSS checks on Node.js 24 when app or

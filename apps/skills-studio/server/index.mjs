@@ -8,6 +8,8 @@ import { Store } from './store.mjs';
 import { readCatalog } from './catalog.mjs';
 import { RunManager } from './runs.mjs';
 import { validateLocalRequest, resolveArtifact } from './security.mjs';
+import { ATTACHMENT_LIMITS } from './attachments.mjs';
+import { readJsonBody } from './http-body.mjs';
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(appRoot, '../..');
@@ -26,11 +28,7 @@ manager.on('change', () => {
 });
 const mime = { '.html': 'text/html', '.htm': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.txt': 'text/plain', '.md': 'text/plain' };
 function json(response, status, value) { response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); response.end(JSON.stringify(value)); }
-async function body(request) {
-  let data = '';
-  for await (const chunk of request) { data += chunk; if (Buffer.byteLength(data) > 100000) throw Object.assign(new Error('Request is too large.'), { status: 413 }); }
-  try { return JSON.parse(data || '{}'); } catch { throw Object.assign(new Error('Invalid JSON request.'), { status: 400 }); }
-}
+const body = readJsonBody;
 const server = createServer(async (request, response) => {
   try {
     validateLocalRequest(request, [`127.0.0.1:${port}`, `localhost:${port}`, 'localhost:5173', '127.0.0.1:5173']);
@@ -53,15 +51,24 @@ const server = createServer(async (request, response) => {
       await writeFile(join(dataDir, 'settings.json'), JSON.stringify(result), { mode: 0o600 });
       return json(response, 200, result);
     }
-    if (request.method === 'POST' && url.pathname === '/api/runs') return json(response, 201, await manager.create(await body(request)));
+    if (request.method === 'POST' && url.pathname === '/api/runs') return json(response, 201, await manager.create(await body(request, { limit: ATTACHMENT_LIMITS.maxRequestBytes })));
     if (parts[0] === 'api' && parts[1] === 'runs' && parts[2]) {
       const run = manager.get(parts[2]);
       if (request.method === 'GET' && parts.length === 3) return json(response, 200, run);
       if (request.method === 'POST' && parts.length === 4) {
-        const input = await body(request);
+        const input = await body(request, parts[3] === 'messages' ? { limit: ATTACHMENT_LIMITS.maxRequestBytes } : undefined);
         if (parts[3] === 'messages') return json(response, 200, await manager.followUp(run.id, input));
         if (parts[3] === 'interrupt') return json(response, 200, await manager.interrupt(run.id));
         if (parts[3] === 'respond') return json(response, 200, manager.respond(run.id, input));
+      }
+      if (request.method === 'GET' && parts[3] === 'attachments' && parts.length === 5) {
+        const attachment = run.messages.flatMap(message => message.attachments || []).find(file => file.id === parts[4]);
+        if (!attachment) return json(response, 404, { error: 'Attachment not found.' });
+        const { path, size } = await resolveArtifact(join(dataDir, 'inputs', run.id), resolve(dataDir, attachment.file));
+        response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+        response.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': size, 'Cache-Control': 'no-store', 'Content-Disposition': `attachment; filename="${attachment.name.replace(/[^a-zA-Z0-9._-]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(attachment.name).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase())}` });
+        createReadStream(path).on('error', () => response.destroy()).pipe(response);
+        return;
       }
       if (request.method === 'GET' && parts[3] === 'artifacts' && parts.length === 5) {
         const artifact = run.artifacts.find(artifact => artifact.id === parts[4]);
