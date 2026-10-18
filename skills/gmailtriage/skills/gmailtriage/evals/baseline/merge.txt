@@ -1,0 +1,13 @@
+| Fold     | Into     | Threads carrying it | Need the target added | Already have it |
+|----------|----------|---------------------|-----------------------|-----------------|
+| Reciepts | Receipts | 2                   | 0                     | 2               |
+
+every thread already carries "Receipts", so nothing needs labelling first.
+
+THEN — not before — remove "Reciepts" from exactly these thread ids:
+thr-1a30cb3f
+thr-1a30ea2e
+
+finally, delete the "Reciepts" label itself. It is empty by then, so nothing is lost with it.
+
+do these in that order. Removing the old label first leaves the mail in neither folder.
