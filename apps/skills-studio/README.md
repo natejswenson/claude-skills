@@ -38,7 +38,9 @@ supported. The interface and files are local, while Codex inference uses OpenAI.
 ## Working in the studio
 
 - Search skills by name or outcome; save favorites in the browser.
-- Select a skill to prefill an example, or enter an open-ended request.
+- Select a skill to see its purpose and an optional example, or enter an
+  open-ended request. Choosing a skill preserves your draft; choosing its example
+  adds it to your existing words.
 - Follow streamed responses, inspect activity, answer questions, and allow or
   decline individual command/file approval requests.
 - Stop an active turn or continue a completed conversation.
@@ -46,6 +48,13 @@ supported. The interface and files are local, while Codex inference uses OpenAI.
 - Review and download captured files, with versioned revisions retained.
 - Attach local files to new requests or follow-ups and retrieve their original
   copies from the conversation later.
+
+Run status shows the latest activity, pending decisions, or a completion summary.
+On narrow screens, **Conversation**, **Output**, and **Activity** tabs keep each
+view within reach. New approval requests return you to the conversation and mark
+its tab until answered. **Back to latest** returns to new responses after you
+scroll up. Finished files link directly from the completion summary; Markdown
+previews support tables and read-only task lists.
 
 Each message accepts up to five files, with a 10 MiB limit per file and 20 MiB
 total. Selecting a file keeps it in the browser draft; sending copies it into

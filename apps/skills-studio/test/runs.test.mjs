@@ -167,3 +167,12 @@ test('invalid or forged attachment paths fail before creating a Codex thread', a
   await assert.rejects(manager.create({prompt:'Read file',attachments:[{name:'notes.txt',path:'/etc/passwd'}]}),/attachment|file|data|base64/i);
   assert.equal(client.calls.filter(call=>call.method==='thread/start').length,0);
 });
+
+test('activity retains its owning turn so a later turn cannot show stale progress', async () => {
+  const { manager, client } = await setup();
+  const run = await manager.create({ prompt: 'hello' });
+  client.emit('event', {method:'item/started',params:{threadId:run.threadId,turnId:'turn-1',item:{id:'prior',type:'commandExecution',command:'printf prior',status:'inProgress'}}});
+  assert.equal(manager.get(run.id).activities[0].turnId,'turn-1');
+  client.emit('event', {method:'item/completed',params:{threadId:run.threadId,turnId:'turn-1',item:{id:'prior',type:'commandExecution',command:'printf prior',status:'completed'}}});
+  assert.equal(manager.get(run.id).activities[0].turnId,'turn-1');
+});

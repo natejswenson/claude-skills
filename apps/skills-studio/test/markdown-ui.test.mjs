@@ -1,0 +1,30 @@
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+import { transpileModule, ModuleKind, JsxEmit } from 'typescript';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const scratch = await mkdtemp(join(root, '.markdown-test-'));
+after(() => rm(scratch, { recursive: true, force: true }));
+const source = await readFile(new URL('../src/Markdown.tsx', import.meta.url), 'utf8');
+const entry = join(scratch, 'Markdown.mjs');
+await writeFile(entry, transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, jsx: JsxEmit.ReactJSX } }).outputText);
+const { Markdown } = await import(pathToFileURL(entry).href);
+const render = text => renderToStaticMarkup(React.createElement(Markdown, {children:text}));
+test('generated comparison tables render semantic headings and cells in a scrollable wrapper', () => {
+ const html = render('| Skill | Purpose |\n| --- | --- |\n| city-report | Research |');
+ assert.match(html, /class="markdown-table"/);
+ assert.match(html, /tabindex="0" role="region" aria-label="Scrollable table"/);
+ assert.match(html, /<th>Skill<\/th>/);
+ assert.match(html, /<td>city-report<\/td>/);
+ assert.doesNotMatch(html, /\| Skill/);
+});
+test('task lists render as read-only checkboxes and unsafe HTML and links remain inert', () => {
+ const html = render('- [x] Done\n- [ ] Next\n\n<script>alert(1)</script>\n\n[unsafe](javascript:alert)');
+ assert.match(html, /type="checkbox" disabled="" checked=""/);
+ assert.match(html, /type="checkbox" disabled=""/);
+ assert.doesNotMatch(html, /<script>|href="javascript:/);
+});

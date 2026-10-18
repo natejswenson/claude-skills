@@ -202,7 +202,7 @@ export class RunManager extends EventEmitter {
         if (!message) { message = { id: item.id, role: 'assistant', text: '' }; run.messages.push(message); }
         message.text = item.text || message.text;
       } else if (item && ['commandExecution', 'fileChange', 'mcpToolCall', 'webSearch', 'imageGeneration'].includes(item.type)) {
-        const activity = { id: item.id, label: ({ commandExecution: 'Running a command', fileChange: 'Updating files', mcpToolCall: 'Using a connected tool', webSearch: 'Searching the web', imageGeneration: 'Generating an image' })[item.type], detail: item.command || item.query || (item.changes || []).map(c => `${c.path}\n${c.diff || ''}`).join('\n') || item.tool || '', status: item.status || (method === 'item/completed' ? 'completed' : 'working') };
+        const activity = { id: item.id, turnId: params.turnId || run.turnId, label: ({ commandExecution: 'Running a command', fileChange: 'Updating files', mcpToolCall: 'Using a connected tool', webSearch: 'Searching the web', imageGeneration: 'Generating an image' })[item.type], detail: item.command || item.query || (item.changes || []).map(c => `${c.path}\n${c.diff || ''}`).join('\n') || item.tool || '', status: item.status || (method === 'item/completed' ? 'completed' : 'working') };
         if (item.type === 'commandExecution') {
           if (item.aggregatedOutput) activity.detail += `\n\n${item.aggregatedOutput}`;
           if (typeof item.exitCode === 'number') {
