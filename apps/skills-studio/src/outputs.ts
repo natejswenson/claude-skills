@@ -1,9 +1,9 @@
-type Output = { id: string; name: string };
+type Output = { id: string; name: string; collectionId?: string };
 
-/** Only use a captured image with the exact same directory and stem as the PDF. */
+/** Preview only a same-directory, same-stem image captured with this PDF revision. */
 export function pdfCompanion(artifacts: readonly Output[], selectedId: string): string | undefined {
     const selected = artifacts.find(file => file.id === selectedId);
-    if (!selected || artifacts.filter(file => file.name === selected.name).at(-1)?.id !== selectedId) return undefined;
+    if (!selected?.collectionId || artifacts.filter(file => file.name === selected.name).at(-1)?.id !== selectedId) return undefined;
     const name = selected.name;
     if (!/\.pdf$/i.test(name)) return undefined;
     const stem = name.slice(0, -4);
@@ -11,7 +11,7 @@ export function pdfCompanion(artifacts: readonly Output[], selectedId: string): 
     for (const format of formats) {
         const matches = artifacts.filter(file => {
             const dot = file.name.lastIndexOf('.');
-            return file.name.slice(0, dot) === stem && file.name.slice(dot + 1).toLowerCase() === format;
+            return file.collectionId === selected.collectionId && file.name.slice(0, dot) === stem && file.name.slice(dot + 1).toLowerCase() === format;
         });
         if (matches.length) return matches.at(-1)?.id;
     }

@@ -12,7 +12,7 @@ const source = await readFile(new URL('../src/outputs.ts', import.meta.url), 'ut
 const entry = join(scratch, 'outputs.mjs');
 await writeFile(entry, transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, target: ScriptTarget.ES2022 } }).outputText);
 const { pickOutput, pdfCompanion } = await import(pathToFileURL(entry).href);
-const artifact = (id, name) => ({ id, name });
+const artifact = (id, name, collectionId) => ({ id, name, ...(collectionId ? { collectionId } : {}) });
 
 test('an empty list has no selection, even with a stale current id', () => {
     assert.equal(pickOutput([]), undefined);
@@ -68,10 +68,25 @@ test('directory extensions and extensionless filenames do not identify a present
 
 
 test('PDF companion uses a same-directory, same-stem image only for the latest PDF revision', () => {
-    const files = [artifact('pdf-v1', 'reports/study.PDF'), artifact('other', 'other/study.png'), artifact('debug', 'reports/debug.png'), artifact('old', 'reports/study.PNG'), artifact('jpeg', 'reports/study.jpg'), artifact('pdf-v2', 'reports/study.PDF'), artifact('new', 'reports/study.PNG')];
+    const files = [artifact('pdf-v1', 'reports/study.PDF', 'batch-1'), artifact('other', 'other/study.png'), artifact('debug', 'reports/debug.png'), artifact('old', 'reports/study.PNG', 'batch-1'), artifact('jpeg', 'reports/study.jpg'), artifact('pdf-v2', 'reports/study.PDF', 'batch-2'), artifact('new', 'reports/study.PNG', 'batch-2')];
     assert.equal(pdfCompanion(files, 'pdf-v2'), 'new');
     assert.equal(pdfCompanion(files, 'pdf-v1'), undefined);
     assert.equal(pdfCompanion(files, 'missing'), undefined);
     assert.equal(pdfCompanion([...files, artifact('html', 'reports/study.html')], 'html'), undefined);
     assert.equal(pdfCompanion([artifact('pdf', 'reports/study.pdf'), artifact('remote', 'https://example.com/study.png')], 'pdf'), undefined);
+});
+
+
+test('a PDF revision cannot reuse an image collected with a previous PDF revision', () => {
+    const files = [artifact('pdf-v1', 'study.pdf', 'first-turn'), artifact('image-v1', 'study.png', 'first-turn'), artifact('pdf-v2', 'study.pdf', 'second-turn')];
+    assert.equal(pdfCompanion(files, 'pdf-v2'), undefined);
+    assert.equal(pdfCompanion([...files, artifact('image-v2', 'study.png', 'second-turn')], 'pdf-v2'), 'image-v2');
+});
+
+test('unknown companion provenance falls back to PDF download rather than a potentially stale image', () => {
+    for (const files of [
+        [artifact('pdf', 'study.pdf'), artifact('image', 'study.png')],
+        [artifact('pdf', 'study.pdf', 'known'), artifact('image', 'study.png')],
+        [artifact('pdf', 'study.pdf'), artifact('image', 'study.png', 'known')],
+    ]) assert.equal(pdfCompanion(files, 'pdf'), undefined);
 });

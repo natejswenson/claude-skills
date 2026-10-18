@@ -44,7 +44,9 @@ supported. The interface and files are local, while Codex inference uses OpenAI.
 - Follow streamed responses, inspect activity, answer questions, and allow or
   decline individual command/file approval requests.
 - Stop an active turn or continue a completed conversation.
-- Search saved runs; **Run again** prepares a fresh request for you to submit.
+- Search saved runs by title, skill, or any conversation text; **Run again**
+  prepares a fresh request for you to submit. Failed run loading offers Retry
+  and Back to runs instead of leaving an opening indicator.
 - Review and download captured files, with versioned revisions retained.
 - Attach local files to new requests or follow-ups and retrieve their original
   copies from the conversation later.
@@ -63,7 +65,9 @@ file is selected automatically. JSON is formatted for reading, and text/source
 previews show at most 200,000 characters; downloads retain the complete file.
 PDF output has an explicit download view. A captured image with the same folder
 and filename stem can provide a labeled companion preview for the latest PDF
-revision; older revisions use the download view to avoid showing a newer image.
+revision when both were captured in the same collection batch. Older revisions,
+untracked legacy files, and PDF-only updates use the download view to avoid
+showing an unrelated image.
 While preview copies are being saved, **Preparing outputs** keeps the run locked
 until its final files are available.
 
@@ -93,7 +97,8 @@ Store local state outside the checkout with `STUDIO_DATA_DIR` for longer-term us
 ## Skill and preview boundaries
 
 The library reads the existing Claude marketplace and shared `SKILL.md` files;
-invocations use Codex’s structured skill input with the exact source path. It does
+invocations use Codex’s structured skill input and an explicit source-path
+instruction so same-named installed copies do not silently replace the selection. It does
 not install plugins or change existing Claude/Codex configuration. A card’s
 “instructions available” label confirms the source file exists. External services,
 MCP servers, browser tools, image tools, hardware, and dependencies still need to

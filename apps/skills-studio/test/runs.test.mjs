@@ -39,14 +39,23 @@ test('requires a subscription before each turn, even after a valid connection', 
 });
 test('selected skills use structured input and explicit execution policy', async () => {
   const { manager, client } = await setup();
-  await manager.create({ prompt: 'hello', skillId: 'proof' });
+  const run = await manager.create({ prompt: 'hello', skillId: 'proof' });
   const start = client.calls.find(c => c.method === 'thread/start').params;
   assert.equal(start.sandbox, 'workspace-write');
   assert.equal(start.approvalPolicy, 'on-request');
   assert.equal(start.approvalsReviewer, 'user');
   const turn = client.calls.find(c => c.method === 'turn/start').params;
-  assert.equal(turn.input[1].type, 'skill');
+  const assertSelectedSource = input => {
+    assert.deepEqual(input[1], { type: 'skill', name: 'proof', path: manager.catalog[0].path });
+    assert.ok(input[0].text.includes(manager.catalog[0].path));
+    assert.match(input[0].text, /resolve bundled resources relative to/i);
+    assert.match(input[0].text, /do not substitute a same-named installed copy/i);
+  };
+  assertSelectedSource(turn.input);
   await assert.rejects(manager.create({ prompt: 'another' }), /active/);
+  await manager.onEvent({ method: 'turn/completed', params: { threadId: run.threadId, turn: { id: run.turnId, status: 'completed' } } });
+  await manager.followUp(run.id, { prompt: 'Continue using the selected source' });
+  assertSelectedSource(client.calls.filter(call => call.method === 'turn/start').at(-1).params.input);
 });
 test('streamed messages, approval decisions and duplicate replies are bound to the run', async () => {
   const { manager, client } = await setup();
@@ -273,4 +282,26 @@ test('late resolved requests cannot overwrite output collection and lock the run
   await finished;
   assert.equal(manager.get(run.id).status, 'completed');
   assert.doesNotThrow(() => manager.assertIdle());
+});
+
+
+test('artifact revisions retain their collection batch when only the PDF changes in a follow-up', async () => {
+  const { manager, root } = await setup();
+  const run = await manager.create({ prompt: 'Generate PDF with an image preview' });
+  await writeFile(join(root, 'workspace', 'study.pdf'), 'PDF version one');
+  await writeFile(join(root, 'workspace', 'study.png'), 'Image version one');
+  await manager.collectArtifacts(run.id);
+  const initial = manager.get(run.id).artifacts;
+  const firstPdf = initial.find(file => file.name === 'study.pdf');
+  const image = initial.find(file => file.name === 'study.png');
+  assert.equal(typeof firstPdf.collectionId, 'string');
+  assert.ok(firstPdf.collectionId.length);
+  assert.equal(firstPdf.collectionId, image.collectionId);
+  await writeFile(join(root, 'workspace', 'study.pdf'), 'PDF version two has changed');
+  await manager.collectArtifacts(run.id);
+  const revised = manager.get(run.id).artifacts;
+  assert.equal(revised.length, 3);
+  const latestPdf = revised.filter(file => file.name === 'study.pdf').at(-1);
+  assert.notEqual(latestPdf.collectionId, firstPdf.collectionId);
+  assert.equal(revised.find(file => file.name === 'study.png').collectionId, image.collectionId);
 });
