@@ -1,6 +1,6 @@
 /** Explicit, private local feedback only. No inference, rules or mailbox access. */
 import { createHash, randomUUID } from 'node:crypto';
-import { lstatSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync, fsyncSync, linkSync, unlinkSync, constants } from 'node:fs';
+import { lstatSync, readdirSync, mkdirSync, openSync, closeSync, readFileSync, writeFileSync, fsyncSync, linkSync, unlinkSync, constants } from 'node:fs';
 import { join } from 'node:path';
 import { assertLocalPath } from './local-model.mjs';
 import { hasProtectedSubject } from './plan.mjs';
@@ -39,6 +39,35 @@ export function readFeedbackBatch(input) {
   catch { fail('invalid review JSON'); }
   finally { closeSync(fd); }
 }
+// Recover only the disposable internal namespace, never arbitrary aliases.
+function recoverFeedbackTemporaries(directory) {
+  const pending=[];
+  for (const name of readdirSync(directory)) {
+    if (!/^\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.tmp$/.test(name)) continue;
+    const path=join(directory,name),stat=lstatSync(path);
+    if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o600 ||
+      (process.getuid && stat.uid !== process.getuid()) || ![1,2].includes(stat.nlink)) fail('suspicious internal temporary record');
+    // A sole link was never committed; even a partial write is disposable.
+    if (stat.nlink === 1) { pending.push(path);continue; }
+    const fd=openSync(path,constants.O_RDONLY | constants.O_NOFOLLOW);
+    let record;
+    try { record=JSON.parse(readFileSync(fd,'utf8')); }
+    catch { fail('invalid internal temporary record'); }
+    finally { closeSync(fd); }
+    record=validateFeedbackBatch({schemaVersion:1,examples:[record]})[0];
+    let event;
+    try { event=lstatSync(join(directory,record.eventId+'.json')); }
+    catch(error) { if(error.code !== 'ENOENT') throw error; }
+    if (!event || !event.isFile() || event.isSymbolicLink() || event.dev !== stat.dev || event.ino !== stat.ino) fail('internal temporary record has unexpected aliases');
+    pending.push(path);
+  }
+  // Verify all recovery candidates before removing any temporary names.
+  for (const path of pending) unlinkSync(path);
+  if (pending.length) {
+    const fd=openSync(directory,'r');try { fsyncSync(fd); } finally { closeSync(fd); }
+  }
+}
+
 export function captureFeedback(batch,store) {
   const records=validateFeedbackBatch(batch),events=new Map();
   for (const record of records) {
@@ -51,6 +80,7 @@ export function captureFeedback(batch,store) {
   const directory=assertLocalPath(store,{directory:exists});
   mkdirSync(directory,{recursive:true,mode:0o700});
   assertPrivateFeedbackPath(directory,{directory:true});
+  recoverFeedbackTemporaries(directory);
   const matches = (path,data) => {
     try { lstatSync(path); } catch(error) { if(error.code === 'ENOENT') return false;throw error; }
     const existing=validateFeedbackBatch({schemaVersion:1,examples:[readFeedbackBatch(path)]})[0];

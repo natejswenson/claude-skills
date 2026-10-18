@@ -138,7 +138,9 @@ paths, symlink files, hardlinked files, non-private existing paths and event
 rewrites are refused; `--allow-repo` is unsupported. A retry of identical event
 data is idempotent. Output contains only `captured` and `existing` counts.
 Validation and event conflict checks precede new writes; an interrupted batch
-can be retried. Retain this private store only as long as wanted and remove
+must be retried before training if interrupted. Retry removes only private owned internal temporary names: uncommitted single-link
+files (including partial writes), or validated aliases of their expected committed
+event. Unexpected aliases refuse recovery and require inspection. Retain this private store only as long as wanted and remove
 unwanted records deliberately outside the capture command. It contains mail
 metadata and must stay outside Git and uploads.
 

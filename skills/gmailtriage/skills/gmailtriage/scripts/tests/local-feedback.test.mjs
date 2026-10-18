@@ -59,3 +59,39 @@ test('CLI requires private external input and emits only counts',t=>{
   chmodSync(input,0o644);assert.notEqual(run().status,0);chmodSync(input,0o600);
   assert.notEqual(run('--allow-repo').status,0);
 });
+
+test('retry recovers complete pre-link and post-link interruption states',t=>{
+  for(const linked of [false,true]) {
+    const dir=fixture(t),store=join(dir,'feedback'),r=record(),temporary=join(store,'.'+randomUUID()+'.tmp'),event=join(store,r.eventId+'.json');
+    mkdirSync(store,{mode:0o700});writeFileSync(temporary,JSON.stringify(r)+'\n',{mode:0o600});
+    if(linked) linkSync(temporary,event);
+    assert.deepEqual(captureFeedback(batch(r),store),linked ? {captured:0,existing:1} : {captured:1,existing:0});
+    assert.deepEqual(readdirSync(store),[r.eventId+'.json']);
+    assert.equal(statSync(event).nlink,1);assert.equal(statSync(event).mode&511,0o600);
+    assert.deepEqual(JSON.parse(readFileSync(event)),r);
+    assert.deepEqual(captureFeedback(batch(r),store),{captured:0,existing:1});
+  }
+});
+test('temporary recovery refuses suspicious files and external aliases',t=>{
+  const cases=['external-link','wrong-event','wrong-inode','extra-link','invalid-linked-json','nonprivate','symlink'];
+  for(const kind of cases) {
+    const dir=fixture(t),store=join(dir,'feedback'),r=record(),temporary=join(store,'.'+randomUUID()+'.tmp'),outside=join(dir,'outside');
+    mkdirSync(store,{mode:0o700});
+    if(kind==='symlink') {writeFileSync(outside,JSON.stringify(r),{mode:0o600});symlinkSync(outside,temporary);}
+    else writeFileSync(temporary,kind==='invalid-linked-json' ? '{' : JSON.stringify(r),{mode:kind==='nonprivate' ? 0o644 : 0o600});
+    if(kind==='invalid-linked-json') linkSync(temporary,join(store,r.eventId+'.json'));
+    if(kind==='external-link') linkSync(temporary,outside);
+    if(kind==='wrong-event') linkSync(temporary,join(store,randomUUID()+'.json'));
+    if(kind==='wrong-inode') {linkSync(temporary,outside);writeFileSync(join(store,r.eventId+'.json'),JSON.stringify(r),{mode:0o600});}
+    if(kind==='extra-link') {linkSync(temporary,join(store,r.eventId+'.json'));linkSync(temporary,outside);}
+    const before=readdirSync(store);assert.throws(()=>captureFeedback(batch(record()),store),kind);assert.deepEqual(readdirSync(store),before);
+  }
+});
+
+test('retry discards a partial uncommitted internal write and preserves other files',t=>{
+  const dir=fixture(t),store=join(dir,'feedback'),r=record();mkdirSync(store,{mode:0o700});
+  writeFileSync(join(store,'.'+randomUUID()+'.tmp'),'{"schemaVersion":',{mode:0o600});
+  const unrelated=join(store,'unrelated.tmp');writeFileSync(unrelated,'keep',{mode:0o600});
+  assert.deepEqual(captureFeedback(batch(r),store),{captured:1,existing:0});
+  assert.deepEqual(readdirSync(store).sort(),[r.eventId+'.json','unrelated.tmp'].sort());assert.equal(readFileSync(unrelated,'utf8'),'keep');
+});
