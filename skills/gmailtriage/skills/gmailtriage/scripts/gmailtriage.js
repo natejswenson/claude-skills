@@ -19,6 +19,7 @@ import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, appl
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
 import { prepareLocalRequest, suggestLocal, assertLocalPath, assertLocalOutput } from './lib/local-model.mjs';
+import { captureFeedback, readFeedbackBatch } from './lib/local-feedback.mjs';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -329,6 +330,13 @@ async function cmdPropose(args) {
       withheld,
     }, args)}`);
   }
+}
+
+function cmdLearnLocal(args) {
+  if (typeof args.input !== 'string' || (args.store !== undefined && typeof args.store !== 'string')) throw new Error('learn-local: --input <review-batch> and optional --store <private-directory> required');
+  if (Object.keys(args).some(k=>!['_','input','store'].includes(k)) || args._.length !== 1) throw new Error('learn-local: unsupported arguments');
+  const result=captureFeedback(readFeedbackBatch(args.input),args.store ?? join(STATE_DIR,'learning','feedback'));
+  console.log(JSON.stringify(result));
 }
 
 // Optional advice never produces rules or authorises mailbox actions.
@@ -1226,7 +1234,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]
                         [--show-claimed N] [--show-withheld N] [--out <f.json>]
-  gmailtriage suggest-local --threads <f.json> --labels <f.json> --choices <f.json> --scratch-dir <dir>\n                        [--rules <f.json>] [--config <f.json>] [--min-count N] [--out <f.json>]
+  gmailtriage learn-local --input <review-batch.json> [--store <private-directory>]\n  gmailtriage suggest-local --threads <f.json> --labels <f.json> --choices <f.json> --scratch-dir <dir>\n                        [--rules <f.json>] [--config <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
@@ -1269,6 +1277,7 @@ async function main() {
       case 'audit': return await cmdAudit(args);
       case 'merge': return await cmdMerge(args);
       case 'propose': return await cmdPropose(args);
+      case 'learn-local': return cmdLearnLocal(args);
       case 'suggest-local': return await cmdSuggestLocal(args);
       case 'subdivide': return await cmdSubdivide(args);
       case 'rules': return await cmdRules(args);

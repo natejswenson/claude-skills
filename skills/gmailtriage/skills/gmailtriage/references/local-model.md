@@ -98,3 +98,63 @@ Scores are uncalibrated heuristics, not probabilities. This output is not an
 importable rule document. Model judgment remains external and fallible. Review
 each destination with the user, then use existing rule validation and planning;
 a suggestion never authorises filing, archiving, trashing or suppressing audit.
+
+
+## Explicit local learning feedback
+
+Ask the user for the preferred category among the offered descriptions, or
+explicitly **none of these**, and confirm that the other offered categories are
+incorrect before capturing. Existing Gmail labels and model predictions are
+never gold until this confirmation. Rejection, skipping, silence and abstention
+are not a none selection. `suggest-local` never captures feedback implicitly.
+
+Prepare the review batch in a private file (0600) outside Git. It has exactly
+`{"schemaVersion":1,"examples":[record,...]}` with 1..200 records. Each record
+has exactly `schemaVersion:1`, a UUID `eventId`, `confirmed:true`, `source`
+(`filed-mail-review` or `triage-review`), `sender`, `subject`, `choices`,
+`selectedChoiceId`, and `sourceId`. Sender must be a canonical lowercase bare
+address, at most 254 characters. Subject is nonempty, at most 160 Unicode
+characters, and must pass the existing protected-subject guard. Bodies,
+snippets and raw Gmail IDs are forbidden. Choices are 2..12 exact objects with
+unique `id` (nonempty, at most 64 characters) and unique `description` (nonempty,
+at most 200 characters). `selectedChoiceId` must be one offered ID or JSON null
+for explicitly none. No extra fields are accepted.
+
+Compute `sourceId` as lowercase SHA256 of UTF8
+`JSON.stringify([sender.toLowerCase(),subject])`: compact JSON, literal Unicode,
+no normalization or truncation. Reuse the same event UUID for retries. The
+external trainer deduplicates this source identity so repeated mail does not
+increase its training weight; conflicting categories or choices are refused.
+
+```bash
+node "$SKILL_DIR/scripts/gmailtriage.js" learn-local \
+  --input "$SESSION_DIR/review-batch.json"
+```
+
+Optional `--store PRIVATE_DIR` defaults to `~/.gmailtriage/learning/feedback`.
+The directory must be private (0700); immutable individual `<eventId>.json`
+files are 0600. Files and directory must be owned by the current user. Git
+paths, symlink files, hardlinked files, non-private existing paths and event
+rewrites are refused; `--allow-repo` is unsupported. A retry of identical event
+data is idempotent. Output contains only `captured` and `existing` counts.
+Validation and event conflict checks precede new writes; an interrupted batch
+can be retried. Retain this private store only as long as wanted and remove
+unwanted records deliberately outside the capture command. It contains mail
+metadata and must stay outside Git and uploads.
+
+Capture changes no rules or Gmail state and runs no training. To train the
+separately installed local alternative with its existing Python environment:
+
+```bash
+/absolute/environment/bin/python /absolute/classifier/train.py \
+  --feedback-dir "$HOME/.gmailtriage/learning/feedback" \
+  --model-dir /absolute/cached-model --out-dir /absolute/private/new-candidate
+```
+
+Training requires at least two selected categories, each represented by at
+least two distinct senders, and a whole-sender holdout. Insufficient evidence
+returns not-ready. Training leaves the base unchanged and creates a separate
+inactive candidate plus a count-only evaluation report. Holdout evidence is
+never used for fitting or tuning. Scores remain uncalibrated and small samples
+do not establish production quality. Inspect the report before any separately
+authorized activation; neither capture nor training activates a candidate.
