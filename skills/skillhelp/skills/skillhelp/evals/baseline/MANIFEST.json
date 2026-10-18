@@ -6,7 +6,7 @@
     {
       "path": "index/_manifest.json",
       "bytes": 2130,
-      "sha256": "d6f41503c9855d50ca1f37afd4b189593cd89a19e0ef6dd6c87757b70c8a310e"
+      "sha256": "9a344352c054508cde4d269b6f9b55cd6d9d90d1334d0fba5de62b2366c4bc83"
     },
     {
       "path": "index/city-report.md",
@@ -20,8 +20,8 @@
     },
     {
       "path": "index/gmailtriage.md",
-      "bytes": 15063,
-      "sha256": "ed7d0da42c9d8a36fd4d0d6d64069fb58ce2ad92481251bdc0d7446878cce05a"
+      "bytes": 15056,
+      "sha256": "c50c7843e6b93ec4b4ddb42a8062ab7a9a3163549f3b07411e66490bd136e6ff"
     },
     {
       "path": "index/press.md",
