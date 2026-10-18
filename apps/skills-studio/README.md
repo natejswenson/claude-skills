@@ -32,8 +32,8 @@ API-billing fallback and no Claude integration in this version. Subscription usa
 limits and any account-level extra-usage settings still apply.
 
 The web server binds only to `127.0.0.1`, validates local Host/Origin headers, and
-does not expose credentials to the browser. Keep it local; remote hosting is not
-supported. The interface and files are local, while Codex inference uses OpenAI.
+does not expose Codex credentials to the browser. Keep it local; public hosting
+is not supported. The authenticated Kubernetes preview below is a separate entrypoint. The interface and files are local, while Codex inference uses OpenAI.
 
 ## Working in the studio
 
@@ -117,6 +117,59 @@ Markdown renders without raw HTML. HTML/SVG previews are sandboxed without scrip
 network access, or same-origin privileges. Self-contained reports work best;
 relative external assets and interactive JavaScript are intentionally unavailable.
 Download outputs to use them in their full native environment.
+
+## Local Kubernetes preview
+
+The checked-in `.dev/service.json` enrolls this app with the existing `tk` local
+Kubernetes platform. It builds a non-root, stateless frontend gateway. Codex runs
+on the Mac through an authenticated reverse WebSocket connection; no Codex login,
+home directory, workspace, or database is copied into an image or mounted in a pod.
+The pod keeps the platform’s existing network isolation.
+
+Requires the configured `tk` platform, Docker, trusted local mkcert CA, and the same
+native Codex ChatGPT sign-in used by the localhost app. From this app directory:
+
+```sh
+tk service check --repo "$PWD" --json
+tk dev enroll --repo "$PWD" --dry-run --json
+tk dev enroll --repo "$PWD" --json
+tk dev ensure --repo "$PWD" --json
+```
+
+Use the returned preview ID. Wait for it to become ready with
+`tk dev wait --preview PREVIEW_ID --timeout 30 --json`, then run:
+
+```sh
+npm run preview:connect -- --preview PREVIEW_ID
+```
+
+The launcher verifies the exact preview/worktree and its HTTPS hostname, derives
+separate bridge and browser credentials inside the pod, and starts its own
+loopback backend on a separate port. It saves a **private browser access file**
+under `.studio-data/kubernetes/PREVIEW_ID/browser-access.json`; enter its `code`
+on the preview sign-in page. The code grants access to this preview’s skills,
+files, and approvals. It is never placed in a URL or printed in terminal output.
+The browser receives a Secure, HttpOnly, SameSite cookie. All API/data routes
+require sign-in; only health and source revision metadata are public.
+
+Preview history and generated files live separately under that preview’s
+`backend/` and `workspace/` directories on the Mac. The normal port 4317 app and
+its workspace stay independent. Preview data survives pod replacement; browser
+sessions do not. Keep the launcher running. Ctrl-C stops only its own backend and
+Codex process and releases its ownership lock. It preserves preview files.
+
+The reverse connection streams responses, SSE activity, uploads, downloads, and
+approval decisions. A disconnect fails pending HTTP requests and reconnects the
+transport; it never automatically replays a model request. Check saved history
+before manually retrying an interrupted action. Restart the launcher after backend
+source changes; a Kubernetes image rebuild updates the gateway, not the already
+running Mac backend.
+
+After changes, run the tests and `tk dev verify --preview PREVIEW_ID --json`.
+Complete the requested real browser check and record its exact generation/source
+receipt with `tk dev record-check`. Readiness alone is not full verification.
+`tk dev stop --preview PREVIEW_ID --json` releases this preview’s slot; it does not
+delete its Mac-side files. Never stop another preview to acquire capacity.
 
 ## Develop and verify
 

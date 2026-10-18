@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "app": "skills-studio",
+  "profile": "stateless-http-v1",
+  "template": "http-container-v1",
+  "port": 8080,
+  "dockerfile": ".dev/Dockerfile",
+  "tiltfile": ".dev/Tiltfile",
+  "manifest": ".dev/workload.json",
+  "inputs": [
+    "src",
+    "preview",
+    "preview/server.mjs",
+    "server",
+    "index.html",
+    "tsconfig.json",
+    "vite.config.ts",
+    "package.json",
+    "package-lock.json",
+    ".dev/service.json"
+  ],
+  "health_path": "/health",
+  "live_update_files": [],
+  "data_lifecycle": "stateless",
+  "interfaces": [
+    "browser"
+  ],
+  "revision_path": "/_revision",
+  "revision_file": "preview/server.mjs"
+}

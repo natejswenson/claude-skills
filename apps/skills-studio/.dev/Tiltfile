@@ -1,0 +1,9 @@
+# Generated; runtime bindings are supplied by tk.
+analytics_settings(False)
+docker_prune_settings(disable=True)
+preview = os.environ['TK_PREVIEW_ID']
+allow_k8s_contexts('tk-' + preview)
+default_registry(os.environ['TK_REGISTRY_HOST'], host_from_cluster=os.environ['TK_REGISTRY_CLUSTER'])
+custom_build(preview, [os.environ['TK_PREVIEW_PYTHON'], os.environ['TK_PREVIEW_ENTRY'], '_build', '--preview', preview], deps=['../src', '../preview', '../preview/server.mjs', '../server', '../index.html', '../tsconfig.json', '../vite.config.ts', '../package.json', '../package-lock.json', '../.dev/service.json', '../.dev/preview.json', '../.dev/workload.json', '../.dev/Tiltfile', '../.dev/Dockerfile'])
+k8s_yaml(local([os.environ['TK_PREVIEW_PYTHON'], os.environ['TK_PREVIEW_ENTRY'], '_render', '--preview', preview], quiet=True))
+k8s_resource('app', links=[link(os.environ['TK_PREVIEW_URL'], 'HTTPS preview')])

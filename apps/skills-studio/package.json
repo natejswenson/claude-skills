@@ -1,6 +1,28 @@
 {
-  "name": "skills-studio", "version": "0.1.0", "private": true, "type": "module",
-  "scripts": {"dev": "vite --host 127.0.0.1", "build": "tsc && vite build", "start": "node server/index.mjs", "test": "node --test test/*.test.mjs", "proof": "node scripts/proof.mjs"},
-  "dependencies": {"react": "^19.0.0", "react-dom": "^19.0.0", "lucide-react": "^0.468.0", "react-markdown": "^10.0.0", "remark-gfm": "^4.0.1"},
-  "devDependencies": {"vite": "^6.0.0", "typescript": "^5.7.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0"}
+  "name": "skills-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "start": "node server/index.mjs",
+    "test": "node --test test/*.test.mjs",
+    "proof": "node scripts/proof.mjs",
+    "preview:connect": "node preview/connect.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.0.0",
+    "remark-gfm": "^4.0.1",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
 }
