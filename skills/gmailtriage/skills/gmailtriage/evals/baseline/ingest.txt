@@ -1,0 +1,10 @@
+| Source           | Threads | New |
+|------------------|---------|-----|
+| in:inbox         | 1       | 1   |
+| has:nouserlabels | 23      | 22  |
+
+| Threads | Promotions | Updates | Bulk | Sent-only | Missing subject/from | Your labels | System labels |
+|---------|------------|---------|------|-----------|----------------------|-------------|---------------|
+| 23      | 10         | 10      | 20   | 2         | 0                    | 20          | 9             |
+
+snippets are never written — the snapshot carries sender, subject, date and labels, nothing else.
