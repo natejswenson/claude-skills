@@ -1,0 +1,1202 @@
+{
+  "scanned": 68,
+  "scope": "in:inbox",
+  "additive": false,
+  "inScope": 68,
+  "excluded": [],
+  "excludedRules": [],
+  "taken": [
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2b5b3c",
+      "from": "recruiter0@globex.example",
+      "subject": "Interview loop with Globex — stage 1",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2b7a2b",
+      "from": "recruiter1@globex.example",
+      "subject": "Interview loop with Globex — stage 2",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2b991a",
+      "from": "recruiter2@globex.example",
+      "subject": "Interview loop with Globex — stage 3",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2bb809",
+      "from": "recruiter3@globex.example",
+      "subject": "Interview loop with Globex — stage 4",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2bd6f8",
+      "from": "recruiter4@globex.example",
+      "subject": "Interview loop with Globex — stage 5",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2bf5e7",
+      "from": "recruiter5@globex.example",
+      "subject": "Interview loop with Globex — stage 6",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-globex",
+      "action": "label",
+      "threadId": "thr-1a2c14d6",
+      "from": "recruiter6@globex.example",
+      "subject": "Interview loop with Globex — stage 7",
+      "label": "Recruiting/Globex",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Globex"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-initech",
+      "action": "label",
+      "threadId": "thr-1a2c33c5",
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2300",
+      "label": "Recruiting/Initech",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-initech",
+      "action": "label",
+      "threadId": "thr-1a2c52b4",
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2301",
+      "label": "Recruiting/Initech",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-initech",
+      "action": "label",
+      "threadId": "thr-1a2c71a3",
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2302",
+      "label": "Recruiting/Initech",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-initech",
+      "action": "label",
+      "threadId": "thr-1a2c9092",
+      "from": "careers@recruiting.initech.example",
+      "subject": "Principal Engineer opening at Initech — req 2303",
+      "label": "Recruiting/Initech",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Initech"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-umbrella",
+      "action": "label",
+      "threadId": "thr-1a2caf81",
+      "from": "no-reply@greenhouse.example",
+      "subject": "Thanks for applying to Umbrella Corp!",
+      "label": "Recruiting/Umbrella",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Umbrella"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Umbrella"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-soylent",
+      "action": "label",
+      "threadId": "thr-1a2cce70",
+      "from": "noreply@candidates.workable.example",
+      "subject": "Thanks for applying to Soylent Industries",
+      "label": "Recruiting/Soylent",
+      "labels": [
+        "Recruiting",
+        "Recruiting/Soylent"
+      ],
+      "adds": [
+        "Recruiting",
+        "Recruiting/Soylent"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-statements",
+      "action": "label",
+      "threadId": "thr-1a2ced5f",
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (1)",
+      "label": "Statements",
+      "labels": [
+        "Statements"
+      ],
+      "adds": [
+        "Statements"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-statements",
+      "action": "label",
+      "threadId": "thr-1a2d0c4e",
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (2)",
+      "label": "Statements",
+      "labels": [
+        "Statements"
+      ],
+      "adds": [
+        "Statements"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-statements",
+      "action": "label",
+      "threadId": "thr-1a2d2b3d",
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (3)",
+      "label": "Statements",
+      "labels": [
+        "Statements"
+      ],
+      "adds": [
+        "Statements"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-statements",
+      "action": "label",
+      "threadId": "thr-1a2d4a2c",
+      "from": "edocuments@statements.northbank.example",
+      "subject": "New statement available (4)",
+      "label": "Statements",
+      "labels": [
+        "Statements"
+      ],
+      "adds": [
+        "Statements"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-medical",
+      "action": "label",
+      "threadId": "thr-1a2d691b",
+      "from": "mychart@valleyhealth.example",
+      "subject": "New message from your clinic",
+      "label": "Medical",
+      "labels": [
+        "Medical"
+      ],
+      "adds": [
+        "Medical"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-medical",
+      "action": "label",
+      "threadId": "thr-1a2d880a",
+      "from": "mychart@valleyhealth.example",
+      "subject": "You have a new statement",
+      "label": "Medical",
+      "labels": [
+        "Medical"
+      ],
+      "adds": [
+        "Medical"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-banking",
+      "action": "label",
+      "threadId": "thr-1a2da6f9",
+      "from": "alerts@notify.southbank.example",
+      "subject": "Insufficient funds notice",
+      "label": "Banking",
+      "labels": [
+        "Banking"
+      ],
+      "adds": [
+        "Banking"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-banking",
+      "action": "label",
+      "threadId": "thr-1a2dc5e8",
+      "from": "alerts@notify.southbank.example",
+      "subject": "Your balance is at or below zero",
+      "label": "Banking",
+      "labels": [
+        "Banking"
+      ],
+      "adds": [
+        "Banking"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-school",
+      "action": "label",
+      "threadId": "thr-1a2de4d7",
+      "from": "centralschools@parentvendor.example",
+      "subject": "Bus registration reminder 1",
+      "label": "School",
+      "labels": [
+        "School"
+      ],
+      "adds": [
+        "School"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-school",
+      "action": "label",
+      "threadId": "thr-1a2e03c6",
+      "from": "centralschools@parentvendor.example",
+      "subject": "Bus registration reminder 2",
+      "label": "School",
+      "labels": [
+        "School"
+      ],
+      "adds": [
+        "School"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-records",
+      "action": "label",
+      "threadId": "thr-1a2e22b5",
+      "from": "records@synthetic-records.example",
+      "subject": "Synthetic records request receipt",
+      "label": "Paperwork",
+      "labels": [
+        "Paperwork"
+      ],
+      "adds": [
+        "Paperwork"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2e41a4",
+      "from": "support@packages.example",
+      "subject": "Package published: build 1",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2e6093",
+      "from": "support@packages.example",
+      "subject": "Package published: build 2",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2e7f82",
+      "from": "support@packages.example",
+      "subject": "Package published: build 3",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2e9e71",
+      "from": "support@packages.example",
+      "subject": "Package published: build 4",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2ebd60",
+      "from": "support@packages.example",
+      "subject": "Package published: build 5",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2edc4f",
+      "from": "support@packages.example",
+      "subject": "Package published: build 6",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2efb3e",
+      "from": "support@packages.example",
+      "subject": "Package published: build 7",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2f1a2d",
+      "from": "support@packages.example",
+      "subject": "Package published: build 8",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-packages",
+      "action": "trash",
+      "threadId": "thr-1a2f391c",
+      "from": "support@packages.example",
+      "subject": "Package published: build 9",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "threadId": "thr-1a2f580b",
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #1",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "threadId": "thr-1a2f76fa",
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #2",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "threadId": "thr-1a2f95e9",
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #3",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-leadgen",
+      "action": "trash",
+      "threadId": "thr-1a2fb4d8",
+      "from": "outreach@leadgen.example",
+      "subject": "Quick question, #4",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "threadId": "thr-1a2fd3c7",
+      "from": "deals@shopfront.example",
+      "subject": "20% off this week only",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "threadId": "thr-1a2ff2b6",
+      "from": "deals@shopfront.example",
+      "subject": "25% off this week only",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-shopfront",
+      "action": "trash",
+      "threadId": "thr-1a3011a5",
+      "from": "deals@shopfront.example",
+      "subject": "30% off this week only",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "threadId": "thr-1a303094",
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 1",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "threadId": "thr-1a304f83",
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 2",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "trash-readinglist",
+      "action": "trash",
+      "threadId": "thr-1a306e72",
+      "from": "news@readinglist.example",
+      "subject": "Your weekly picks, issue 3",
+      "label": null,
+      "labels": [],
+      "adds": [],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "sort-security",
+      "action": "label",
+      "threadId": "thr-1a308d61",
+      "from": "no-reply@accounts.mailprovider.example",
+      "subject": "Security alert: new sign-in",
+      "label": "Security",
+      "labels": [
+        "Security"
+      ],
+      "adds": [
+        "Security"
+      ],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "sort-modelhub",
+      "action": "label",
+      "threadId": "thr-1a30ac50",
+      "from": "website@modelhub.example",
+      "subject": "Click this link to confirm your email address",
+      "label": "Security",
+      "labels": [
+        "Security"
+      ],
+      "adds": [
+        "Security"
+      ],
+      "archive": false,
+      "wouldArchive": false
+    },
+    {
+      "ruleId": "sort-receipts-cloud",
+      "action": "label",
+      "threadId": "thr-1a30cb3f",
+      "from": "billing@cloudvendor.example",
+      "subject": "Synthetic receipt DEMO-RECEIPT-001 from Cloud Vendor",
+      "label": "Receipts/Cloud Vendor",
+      "labels": [
+        "Receipts",
+        "Receipts/Cloud Vendor"
+      ],
+      "adds": [
+        "Receipts",
+        "Receipts/Cloud Vendor"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-receipts-books",
+      "action": "label",
+      "threadId": "thr-1a30ea2e",
+      "from": "donotreply@bookstore.example",
+      "subject": "Thanks, your order is complete",
+      "label": "Receipts/Bookstore",
+      "labels": [
+        "Receipts",
+        "Receipts/Bookstore"
+      ],
+      "adds": [
+        "Receipts",
+        "Receipts/Bookstore"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "action": "label",
+      "threadId": "thr-1a31091d",
+      "from": "coordinator0@volunteers.example",
+      "subject": "Synthetic demo schedule review (1)",
+      "label": "Volunteer Coordination",
+      "labels": [
+        "Volunteer Coordination"
+      ],
+      "adds": [
+        "Volunteer Coordination"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "action": "label",
+      "threadId": "thr-1a31280c",
+      "from": "coordinator1@volunteers.example",
+      "subject": "Synthetic demo schedule review (2)",
+      "label": "Volunteer Coordination",
+      "labels": [
+        "Volunteer Coordination"
+      ],
+      "adds": [
+        "Volunteer Coordination"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "action": "label",
+      "threadId": "thr-1a3146fb",
+      "from": "coordinator0@volunteers.example",
+      "subject": "Synthetic demo schedule review (3)",
+      "label": "Volunteer Coordination",
+      "labels": [
+        "Volunteer Coordination"
+      ],
+      "adds": [
+        "Volunteer Coordination"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "action": "label",
+      "threadId": "thr-1a3165ea",
+      "from": "coordinator1@volunteers.example",
+      "subject": "Synthetic demo schedule review (4)",
+      "label": "Volunteer Coordination",
+      "labels": [
+        "Volunteer Coordination"
+      ],
+      "adds": [
+        "Volunteer Coordination"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "action": "label",
+      "threadId": "thr-1a3184d9",
+      "from": "coordinator0@volunteers.example",
+      "subject": "Synthetic demo schedule review (5)",
+      "label": "Volunteer Coordination",
+      "labels": [
+        "Volunteer Coordination"
+      ],
+      "adds": [
+        "Volunteer Coordination"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-workshop",
+      "action": "label",
+      "threadId": "thr-1a31a3c8",
+      "from": "organizer@workshop.example",
+      "subject": "Synthetic workshop setup",
+      "label": "Workshop",
+      "labels": [
+        "Workshop"
+      ],
+      "adds": [
+        "Workshop"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-workshop",
+      "action": "label",
+      "threadId": "thr-1a31c2b7",
+      "from": "organizer@workshop.example",
+      "subject": "Re: synthetic workshop materials",
+      "label": "Workshop",
+      "labels": [
+        "Workshop"
+      ],
+      "adds": [
+        "Workshop"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-briefings",
+      "action": "label",
+      "threadId": "thr-1a31e1a6",
+      "from": "me@mailprovider.example",
+      "subject": "Morning brief — Wednesday",
+      "label": "Briefings",
+      "labels": [
+        "Briefings"
+      ],
+      "adds": [
+        "Briefings"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-briefings",
+      "action": "label",
+      "threadId": "thr-1a320095",
+      "from": "me@mailprovider.example",
+      "subject": "Evening brief — Friday",
+      "label": "Briefings",
+      "labels": [
+        "Briefings"
+      ],
+      "adds": [
+        "Briefings"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-props",
+      "action": "label",
+      "threadId": "thr-1a321f84",
+      "from": "invoices@billingplatform.example",
+      "subject": "Synthetic invoice DEMO-1 from Example Stage Props",
+      "label": "Demo Project/Props",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-props",
+      "action": "label",
+      "threadId": "thr-1a323e73",
+      "from": "invoices@billingplatform.example",
+      "subject": "Synthetic invoice DEMO-2 from Example Stage Props",
+      "label": "Demo Project/Props",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-props",
+      "action": "label",
+      "threadId": "thr-1a325d62",
+      "from": "invoices@billingplatform.example",
+      "subject": "Synthetic invoice DEMO-3 from Example Stage Props",
+      "label": "Demo Project/Props",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Props"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-grants",
+      "action": "label",
+      "threadId": "thr-1a327c51",
+      "from": "grants@demofunding.example",
+      "subject": "Synthetic demo grant issued",
+      "label": "Demo Project/Grants",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-grants",
+      "action": "label",
+      "threadId": "thr-1a329b40",
+      "from": "grants@demofunding.example",
+      "subject": "Synthetic demo payment confirmation",
+      "label": "Demo Project/Grants",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-demo-project",
+      "action": "label",
+      "threadId": "thr-1a32ba2f",
+      "from": "projects@demofunding.example",
+      "subject": "Synthetic demo project DEMO-CASE-001",
+      "label": "Demo Project/Grants",
+      "labels": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "adds": [
+        "Demo Project",
+        "Demo Project/Grants"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "threadId": "thr-1a32d91e",
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 1",
+      "label": "Paperwork",
+      "labels": [
+        "Paperwork"
+      ],
+      "adds": [
+        "Paperwork"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "threadId": "thr-1a32f80d",
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 2",
+      "label": "Paperwork",
+      "labels": [
+        "Paperwork"
+      ],
+      "adds": [
+        "Paperwork"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "threadId": "thr-1a3316fc",
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 3",
+      "label": "Paperwork",
+      "labels": [
+        "Paperwork"
+      ],
+      "adds": [
+        "Paperwork"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    },
+    {
+      "ruleId": "sort-paperwork",
+      "action": "label",
+      "threadId": "thr-1a3335eb",
+      "from": "secure@esignature.example",
+      "subject": "Signing complete: document 4",
+      "label": "Paperwork",
+      "labels": [
+        "Paperwork"
+      ],
+      "adds": [
+        "Paperwork"
+      ],
+      "archive": true,
+      "wouldArchive": true
+    }
+  ],
+  "spared": [],
+  "overlaps": [],
+  "destinations": [
+    "Recruiting",
+    "Recruiting/Globex",
+    "Recruiting/Initech",
+    "Recruiting/Umbrella",
+    "Recruiting/Soylent",
+    "Statements",
+    "Medical",
+    "Banking",
+    "School",
+    "Paperwork",
+    "Security",
+    "Receipts",
+    "Receipts/Cloud Vendor",
+    "Receipts/Bookstore",
+    "Volunteer Coordination",
+    "Workshop",
+    "Briefings",
+    "Demo Project",
+    "Demo Project/Props",
+    "Demo Project/Grants"
+  ],
+  "queries": [
+    {
+      "ruleId": "trash-packages",
+      "query": "from:support@packages.example category:promotions OR category:updates in:inbox",
+      "action": "trash",
+      "label": null
+    },
+    {
+      "ruleId": "trash-leadgen",
+      "query": "from:@leadgen.example in:inbox",
+      "action": "trash",
+      "label": null
+    },
+    {
+      "ruleId": "trash-shopfront",
+      "query": "from:@shopfront.example category:promotions OR category:updates in:inbox",
+      "action": "trash",
+      "label": null
+    },
+    {
+      "ruleId": "trash-readinglist",
+      "query": "from:@readinglist.example category:promotions OR category:updates in:inbox",
+      "action": "trash",
+      "label": null
+    },
+    {
+      "ruleId": "sort-globex",
+      "query": "from:@globex.example in:inbox -label:Recruiting/Globex",
+      "action": "label",
+      "label": "Recruiting/Globex"
+    },
+    {
+      "ruleId": "sort-initech",
+      "query": "from:careers@recruiting.initech.example in:inbox -label:Recruiting/Initech",
+      "action": "label",
+      "label": "Recruiting/Initech"
+    },
+    {
+      "ruleId": "sort-umbrella",
+      "query": "from:@greenhouse.example subject:Umbrella in:inbox -label:Recruiting/Umbrella",
+      "action": "label",
+      "label": "Recruiting/Umbrella"
+    },
+    {
+      "ruleId": "sort-soylent",
+      "query": "from:@candidates.workable.example subject:Soylent in:inbox -label:Recruiting/Soylent",
+      "action": "label",
+      "label": "Recruiting/Soylent"
+    },
+    {
+      "ruleId": "sort-statements",
+      "query": "from:northbank.example in:inbox -label:Statements",
+      "action": "label",
+      "label": "Statements"
+    },
+    {
+      "ruleId": "sort-medical",
+      "query": "from:@valleyhealth.example in:inbox -label:Medical",
+      "action": "label",
+      "label": "Medical"
+    },
+    {
+      "ruleId": "sort-banking",
+      "query": "from:@notify.southbank.example in:inbox -label:Banking",
+      "action": "label",
+      "label": "Banking"
+    },
+    {
+      "ruleId": "sort-school",
+      "query": "from:centralschools@parentvendor.example in:inbox -label:School",
+      "action": "label",
+      "label": "School"
+    },
+    {
+      "ruleId": "sort-receipts-books",
+      "query": "from:donotreply@bookstore.example in:inbox -label:Receipts/Bookstore",
+      "action": "label",
+      "label": "Receipts/Bookstore"
+    },
+    {
+      "ruleId": "sort-receipts-cloud",
+      "query": "from:billing@cloudvendor.example in:inbox -label:\"Receipts/Cloud Vendor\"",
+      "action": "label",
+      "label": "Receipts/Cloud Vendor"
+    },
+    {
+      "ruleId": "sort-demo-props",
+      "query": "from:@billingplatform.example subject:\"Example Stage Props\" in:inbox -label:\"Demo Project/Props\"",
+      "action": "label",
+      "label": "Demo Project/Props"
+    },
+    {
+      "ruleId": "sort-demo-grants",
+      "query": "from:grants@demofunding.example in:inbox -label:\"Demo Project/Grants\"",
+      "action": "label",
+      "label": "Demo Project/Grants"
+    },
+    {
+      "ruleId": "sort-demo-project",
+      "query": "from:projects@demofunding.example in:inbox -label:\"Demo Project/Grants\"",
+      "action": "label",
+      "label": "Demo Project/Grants"
+    },
+    {
+      "ruleId": "sort-security",
+      "query": "from:no-reply@accounts.mailprovider.example in:inbox -label:Security",
+      "action": "label",
+      "label": "Security"
+    },
+    {
+      "ruleId": "sort-modelhub",
+      "query": "from:@modelhub.example in:inbox -label:Security",
+      "action": "label",
+      "label": "Security"
+    },
+    {
+      "ruleId": "sort-volunteers",
+      "query": "from:@volunteers.example in:inbox -label:\"Volunteer Coordination\"",
+      "action": "label",
+      "label": "Volunteer Coordination"
+    },
+    {
+      "ruleId": "sort-workshop",
+      "query": "from:@workshop.example in:inbox -label:Workshop",
+      "action": "label",
+      "label": "Workshop"
+    },
+    {
+      "ruleId": "sort-paperwork",
+      "query": "from:@esignature.example in:inbox -label:Paperwork",
+      "action": "label",
+      "label": "Paperwork"
+    },
+    {
+      "ruleId": "sort-briefings",
+      "query": "from:me@mailprovider.example subject:brief in:inbox -label:Briefings",
+      "action": "label",
+      "label": "Briefings"
+    },
+    {
+      "ruleId": "sort-records",
+      "query": "from:@synthetic-records.example in:inbox -label:Paperwork",
+      "action": "label",
+      "label": "Paperwork"
+    }
+  ]
+}
