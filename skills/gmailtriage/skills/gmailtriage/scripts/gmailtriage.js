@@ -18,6 +18,7 @@ import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, appl
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
+import { prepareLocalRequest, suggestLocal, assertLocalPath } from './lib/local-model.mjs';
 import { resolveCategory } from './lib/category.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -327,6 +328,31 @@ async function cmdPropose(args) {
       unhoused: sortable.filter((s) => s.unhoused),
       withheld,
     }, args)}`);
+  }
+}
+
+// Optional advice never produces rules or authorises mailbox actions.
+async function cmdSuggestLocal(args) {
+  if (args.minCount === true) throw new Error('suggest-local: --min-count requires a positive integer');
+  for (const key of ['threads','labels','choices','scratchDir']) {
+    if (typeof args[key] !== 'string') throw new Error(`suggest-local: --${key.replace(/[A-Z]/g,c => '-'+c.toLowerCase())} <path> is required`);
+  }
+  assertLocalPath(args.scratchDir,{directory:true});
+  if (args.out !== undefined) assertLocalPath(args.out);
+  const ruleFile = resolve(args.rules ?? defaultRules());
+  const ruleDoc = existsSync(ruleFile) ? readJson(ruleFile,'suggest-local rules') : {rules:[]};
+  validateRuleSet(ruleDoc);
+  const prepared = prepareLocalRequest(readJson(args.threads,'suggest-local threads'),{
+    labels:readLabels(args.labels),choices:readJson(args.choices,'suggest-local choices'),
+    rules:ruleDoc.rules,minCount:Number(args.minCount ?? 3),
+  });
+  const result = await suggestLocal(prepared,readJson(args.config ?? join(STATE_DIR,'local-model.json'),'suggest-local config'),args.scratchDir);
+  console.log(table(['Candidate','Sender','Suggestion','Top score','Margin','Result'],
+    result.suggestions.map(s => [s.candidateId,s.from,s.destination ?? '—',s.topScore.toFixed(3),s.margin.toFixed(3),s.reason])));
+  console.log(`\n${result.counts.eligible} eligible; ${result.counts.suggested} suggested; ${result.counts.abstained} abstained. Advisory only; scores are uncalibrated heuristics. Review before adding any rule; nothing has moved.`);
+  if (args.out) {
+    assertLocalPath(args.out);
+    console.error(`wrote ${writeJson(args.out,result,{allowRepo:false})}`);
   }
 }
 
@@ -1198,6 +1224,7 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]
                         [--show-claimed N] [--show-withheld N] [--out <f.json>]
+  gmailtriage suggest-local --threads <f.json> --labels <f.json> --choices <f.json> --scratch-dir <dir>\n                        [--rules <f.json>] [--config <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage subdivide --threads <f.json> --parent <Label> [--labels <f.json>] [--min-count N] [--out <f.json>]
   gmailtriage rules     [--file <rules.json>] [--add <f.json>] [--remove <id[,id]>] [--scope <query>]
   gmailtriage labels    --labels <f.json> [--rules <f.json>] [--verbose]
@@ -1240,6 +1267,7 @@ async function main() {
       case 'audit': return await cmdAudit(args);
       case 'merge': return await cmdMerge(args);
       case 'propose': return await cmdPropose(args);
+      case 'suggest-local': return await cmdSuggestLocal(args);
       case 'subdivide': return await cmdSubdivide(args);
       case 'rules': return await cmdRules(args);
       case 'labels': return await cmdLabels(args);

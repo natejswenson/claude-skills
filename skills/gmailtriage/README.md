@@ -120,6 +120,19 @@ See [Codex migration notes](../../docs/codex-migration.md) for host tools and re
 
 - Node 18+ (the bundled scripts are ESM, no dependencies).
 
+## Optional local suggestions
+
+On explicit request, `suggest-local` can ask a separately installed offline
+classifier for existing-label advice after `propose`. Configure
+`~/.gmailtriage/local-model.json`, supply per-run descriptions of 2..12 exact
+existing labels and a session scratch directory outside Git. No models or
+Python dependencies ship with the plugin. Ordinary runs stay unchanged.
+
+See [local setup and invocation](skills/gmailtriage/references/local-model.md).
+The adapter validates eligibility, private transport and all returned scores;
+scores are uncalibrated heuristics. Suggestions require review and never change
+rules, authorise mailbox actions or replace audit and plan.
+
 ## Development
 
 ```bash

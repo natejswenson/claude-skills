@@ -120,6 +120,10 @@
       {
         "step": "reverse only confirmed effects in a new receipt; mark legacy execution evidence unavailable",
         "command": "node scripts/gmailtriage.js undo"
+      },
+      {
+        "step": "validate opt-in proposal eligibility, bounded metadata and exact existing-label choices; invoke a private offline local runner with fixed timeout; validate all scores and derive advisory policy without authorising actions",
+        "command": "node scripts/gmailtriage.js suggest-local"
       }
     ],
     "nondeterministic": [
@@ -154,6 +158,10 @@
       {
         "step": "judge when a plan looks wrong and should be questioned rather than applied",
         "why": "a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which"
+      },
+      {
+        "step": "suggest a label using the separately installed local classifier when requested",
+        "why": "uncalibrated external model judgment remains fallible and requires user review; deterministic transport validation does not establish semantic correctness"
       }
     ]
   },
