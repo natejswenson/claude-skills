@@ -30,15 +30,25 @@
 - CLI as defined in spec; defaults rules to ~/.gmailtriage/rules.json and config to ~/.gmailtriage/local-model.json.
 - Produces typed advisory result and table only; optional --out guarded before runner invocation.
 
-- [ ] Step1: Write eligibility tests before implementation and observe failure: claimed sender has no suggestion, any verification/receipt subject excludes whole sender even if sampled subject is ordinary, existing deterministic destination is unchanged. Example `assert.equal(prepare(...claimedInputs).request.items.length,0)` or equivalent. Run `node --test scripts/tests/local-model.test.mjs`, record RED evidence.
-- [ ] Step2: Implement preparation and choice validation using existing propose/resolveSender/rule validators. Test unknown labels and exact classifier bounds. Do not reinterpret eligibility independently or auto-select/truncate a subset.
-- [ ] Step3: Add transport tests using an executable Node test fixture writing valid typed output. Assert received args/offline env, input permissions and own-temp cleanup. Write the async execFile adapter with fixed timeout/buffer and fixed private errors. Test response membership, low/close/tied scores, NaN, surprise actions and inconsistent declared decisions. Recompute decisions from scores.
-- [ ] Step4: Test CLI using spawnSync, temporary snapshots/config/choices/rules, invalid scratch/output before execution, unchanged rule/source bytes, no importable rules and no file on failures. Wire suggest-local to adapter; ensure --min-count positive and current help remains compatible. Use existing table/writeJson conventions without rewriting main CLI.
-- [ ] Step5: Document config shape, choices, invocation from Codex/Claude, privacy and advisory constraints, offline requirements and unchanged workflows. Add explicit optional skill step after propose, never invoke on ordinary runs without user requesting local mode. Update invariant split for deterministic payload/validation/transport (judgment stays external and fallible). Follow PRESS table conventions; leave generated regions untouched.
-- [ ] Step6: Run focused tests, then full `npm test` in skill once, `python3 tools/check_compatibility.py`, brand target check and whitespace check. Self-review and commit task code/docs; leave controller spec/plan already committed. Report RED/GREEN test evidence and limitations in supplied report file.
+- [x] Step1: Write eligibility tests before implementation and observe failure: claimed sender has no suggestion, any verification/receipt subject excludes whole sender even if sampled subject is ordinary, existing deterministic destination is unchanged. Example `assert.equal(prepare(...claimedInputs).request.items.length,0)` or equivalent. Run `node --test scripts/tests/local-model.test.mjs`, record RED evidence.
+- [x] Step2: Implement preparation and choice validation using existing propose/resolveSender/rule validators. Test unknown labels and exact classifier bounds. Do not reinterpret eligibility independently or auto-select/truncate a subset.
+- [x] Step3: Add transport tests using an executable Node test fixture writing valid typed output. Assert received args/offline env, input permissions and own-temp cleanup. Write the async execFile adapter with fixed timeout/buffer and fixed private errors. Test response membership, low/close/tied scores, NaN, surprise actions and inconsistent declared decisions. Recompute decisions from scores.
+- [x] Step4: Test CLI using spawnSync, temporary snapshots/config/choices/rules, invalid scratch/output before execution, unchanged rule/source bytes, no importable rules and no file on failures. Wire suggest-local to adapter; ensure --min-count positive and current help remains compatible. Use existing table/writeJson conventions without rewriting main CLI.
+- [x] Step5: Document config shape, choices, invocation from Codex/Claude, privacy and advisory constraints, offline requirements and unchanged workflows. Add explicit optional skill step after propose, never invoke on ordinary runs without user requesting local mode. Update invariant split for deterministic payload/validation/transport (judgment stays external and fallible). Follow PRESS table conventions; leave generated regions untouched.
+- [x] Step6: Run focused tests, then full `npm test` in skill once, `python3 tools/check_compatibility.py`, brand target check and whitespace check. Self-review and commit task code/docs; leave controller spec/plan already committed. Report RED/GREEN test evidence and limitations in supplied report file.
 
 ## Controller delivery
-- [ ] Fresh task review and fix supported findings; whole-branch final review.
-- [ ] Run required repo CI commands, synthetic real-model smoke, confirm fixed timeout/private files and unchanged source data.
-- [ ] Configure existing local runner, install reviewed plugin through supported CLI under existing gmailtriage identifier and verify installed code/config; no duplicate skill aliases or broad marketplace changes.
-- [ ] Push feature branch, create draft PR with accurate validation; no merge/publish.
+- [x] Fresh task review and fix supported findings; whole-branch final review.
+- [x] Run required repo CI commands, synthetic real-model smoke, confirm fixed timeout/private files and unchanged source data.
+- [x] Configure existing local runner, install reviewed plugin through supported CLI under existing gmailtriage identifier and verify installed code/config; no duplicate skill aliases or broad marketplace changes.
+- [x] Push feature branch, create draft PR with accurate validation; no merge/publish.
+
+## Delivery result
+
+Implemented and independently reviewed.190 Gmail triage tests, compatibility,
+metadata, contract/baseline, brand and index checks passed; the real offline
+classifier worked through both source and installed plugin. Runner config is
+local, existing plugin identity and marketplace registration were preserved.
+Draft PR: https://github.com/natejswenson/claude-skills/pull/431
+No merge, release or real Gmail access occurred. Remote CI status is reported
+in the PR rather than frozen here.
