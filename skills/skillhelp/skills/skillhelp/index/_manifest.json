@@ -196,10 +196,10 @@
       "name": "gmailtriage",
       "version": "0.8.1",
       "stack": "node",
-      "cardHash": "1a966a8aa928cd8e",
-      "facts": 71,
+      "cardHash": "9ff7bc9b584c2165",
+      "facts": 74,
       "sections": {
-        "setup": 7,
+        "setup": 10,
         "usage": 12,
         "commands": 20,
         "architecture": 16,

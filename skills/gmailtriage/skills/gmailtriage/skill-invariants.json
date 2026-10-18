@@ -73,10 +73,19 @@
       "id": "propose-never-contradicts-a-rule-the-user-wrote",
       "pattern": "Never propose a rule for a sender an existing rule already claims",
       "rationale": "Exclude senders already claimed by any existing rule before proposing new rules. Otherwise a sorting rule could conflict with a new trash proposal. Sender-level coverage includes partially claimed clusters."
+    },
+    {
+      "id": "explicit-private-learning-feedback",
+      "pattern": "Never capture learning feedback without explicit confirmation",
+      "rationale": "Existing labels, predictions, skips and abstentions cannot silently become training gold; capture remains private and advisory."
     }
   ],
   "split": {
     "deterministic": [
+      {
+        "step": "capture explicitly confirmed private immutable feedback without training or mail changes",
+        "command": "node scripts/gmailtriage.js learn-local"
+      },
       {
         "step": "report whether this mailbox has any rules yet, and the single next thing to do \u2014 the only command safe to run before anything is configured",
         "command": "node scripts/gmailtriage.js setup"
@@ -120,6 +129,10 @@
       {
         "step": "reverse only confirmed effects in a new receipt; mark legacy execution evidence unavailable",
         "command": "node scripts/gmailtriage.js undo"
+      },
+      {
+        "step": "validate opt-in proposal eligibility, bounded metadata and exact existing-label choices; invoke a private offline local runner with fixed timeout; validate all scores and derive advisory policy without authorising actions",
+        "command": "node scripts/gmailtriage.js suggest-local"
       }
     ],
     "nondeterministic": [
@@ -154,6 +167,10 @@
       {
         "step": "judge when a plan looks wrong and should be questioned rather than applied",
         "why": "a rule that suddenly matches ten times its usual volume is either a sender gone rogue or a rule that drifted, and nothing in the count itself says which"
+      },
+      {
+        "step": "suggest a label using the separately installed local classifier when requested",
+        "why": "uncalibrated external model judgment remains fallible and requires user review; deterministic transport validation does not establish semantic correctness"
       }
     ]
   },

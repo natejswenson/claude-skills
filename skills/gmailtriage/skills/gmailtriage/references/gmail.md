@@ -201,3 +201,17 @@ Use the printed durable receipt path for every command; outcomes may live in the
 session scratchpad. Pass `--labels labels.json` when binding opaque snapshots,
 especially for merge source removal. Recovery replays only into that bound path.
 Status/recovery show incomplete counts and never dispatch uncertain operations.
+
+### Codex sender metadata fallback
+
+Preserve native `search_emails` envelopes verbatim. If its display sender loses
+angle brackets, save verbatim `read_email(format:metadata)` results separately
+and pass `ingest --sender-metadata <manifest.json>`. The manifest is exactly
+`{"schema":1,"paths":["raw-metadata.json"]}`, with paths relative to its directory.
+Only a single parseable From header linked to the search message ID and thread
+ID can establish the exact known serialization (`Name <address>` → `Name address`).
+A valid search mailbox must agree; arbitrary suffixes, malformed headers,
+conflicting metadata, and existing ambiguity markers withhold exact selection.
+Metadata never expands fetch coverage, supplies category evidence, or copies
+snippets, To/CC, bodies, message IDs, or other metadata into snapshots. Keep all
+real raw responses and manifests outside Git.
