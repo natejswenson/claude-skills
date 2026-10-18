@@ -210,7 +210,7 @@ test('login page uses fresh CSP nonces and allows only same-origin fetch connect
   const first = await app.fetch('/');
   const second = await app.fetch('/');
   const nonce = first.body.toString().match(/<script nonce="([^"]+)"/)[1];
-  assert.match(first.headers['content-security-policy'], new RegExp("script-src 'nonce-" + nonce.replace(/[+]/g, '\\+') + "'"));
+  assert.ok(first.headers['content-security-policy'].split(';').map(value => value.trim()).includes(`script-src 'nonce-${nonce}'`));
   assert.match(first.headers['content-security-policy'], /connect-src 'self'/);
   assert.doesNotMatch(first.headers['content-security-policy'], /script-src[^;]*unsafe-inline/);
   assert.notEqual(second.body.toString().match(/<script nonce="([^"]+)"/)[1], nonce);

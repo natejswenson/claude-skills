@@ -48,7 +48,7 @@ test('authenticates the bridge and forwards bodies with only safe headers to the
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     captured = { method: req.method, url: req.url, headers: req.headers, body: Buffer.concat(chunks) };
-    res.writeHead(201, { 'Content-Type': 'application/json', 'Set-Cookie': 'secret=session', 'X-Private-Token': token, Authorization: token });
+    res.writeHead(201, { 'Content-Type': 'application/json', 'Set-Cookie': 'secret=session; Secure; HttpOnly; SameSite=Strict', 'X-Private-Token': token, Authorization: token });
     res.end('{"ok":true}');
   });
   assert.equal(request.headers.host, 'studio-preview.localhost');
