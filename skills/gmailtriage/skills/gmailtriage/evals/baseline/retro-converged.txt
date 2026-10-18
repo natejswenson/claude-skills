@@ -1,0 +1,7 @@
+
+
+| Scope            | Scanned | Would trash | Would file | Would leave the inbox | Kept by a keep rule | Overlaps |
+|------------------|---------|-------------|------------|-----------------------|---------------------|----------|
+| label:Recruiting | 13      | 0           | 0          | 0                     | 0                   | 0        |
+
+nothing has moved — this is what the rules would do.

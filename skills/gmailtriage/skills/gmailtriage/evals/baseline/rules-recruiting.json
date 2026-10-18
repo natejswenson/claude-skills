@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "sort-globex",
+      "action": "label",
+      "label": "Recruiting/Globex",
+      "match": {
+        "from": "@globex.example"
+      },
+      "note": "one employer writing from several people, so the whole domain"
+    },
+    {
+      "id": "sort-initech",
+      "action": "label",
+      "label": "Recruiting/Initech",
+      "match": {
+        "from": "careers@recruiting.initech.example"
+      },
+      "note": "applications and outcomes from one employer"
+    },
+    {
+      "id": "sort-umbrella",
+      "action": "label",
+      "label": "Recruiting/Umbrella",
+      "match": {
+        "from": "@greenhouse.example",
+        "subjectContains": "Umbrella"
+      },
+      "note": "the vendor hosts many employers, so the subject is what names this one"
+    },
+    {
+      "id": "sort-soylent",
+      "action": "label",
+      "label": "Recruiting/Soylent",
+      "match": {
+        "from": "@candidates.workable.example",
+        "subjectContains": "Soylent"
+      },
+      "note": "the vendor hosts many employers, so the subject is what names this one"
+    }
+  ]
+}
