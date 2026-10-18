@@ -14,7 +14,7 @@ import { homedir } from 'node:os';
 
 import { validateRuleSet, validateRule, toGmailQuery, reconcileDestinations, SYSTEM_LABELS, RuleProblem, normaliseLabel, DEFAULT_SCOPE, lintRuleSet } from './lib/rules.mjs';
 import { propose, candidateToRule, candidateToSortRule, subdivide, clusterToSubRule, audit, mergeLabels, mergeReceiptEntries, plan, authorise, buildReceipt, undoPlan, NotAuthorised, isSentOnly } from './lib/plan.mjs';
-import { ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
+import { buildSenderMetadata, ingestSources, validateManifest, SOURCE_NAMES, mergeThreadSources, applyCategories, validateIngest, normalizeLabels } from './lib/ingest.mjs';
 
 import { pendingReceipt, confirmedEntries, checkReceipt, summary, dispatchable, transition, replay, withReceiptLock } from './lib/receipt.mjs';
 import { randomUUID, createHash } from 'node:crypto';
@@ -1125,7 +1125,7 @@ async function cmdIngest(args) {
   // stale, and re-supplying four thread files to refresh one snapshot is how a
   // "verbatim" raw file ends up hand-edited instead. One re-fetch, one flag.
   if (args.labelsOnly) {
-    if (args.inbox || args.nolabel || args.promos || args.updates || args.manifest || args.outCoverage || args.outThreads) {
+    if (args.inbox || args.nolabel || args.promos || args.updates || args.manifest || args.outCoverage || args.outThreads || args.senderMetadata) {
       throw new Error('ingest --labels-only: refreshes the label snapshot alone — drop the thread-file flags, or drop --labels-only');
     }
     const doc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
@@ -1141,14 +1141,18 @@ async function cmdIngest(args) {
   }
 
   if (args.manifest && SOURCE_NAMES.some(name => args[name])) throw new Error('ingest: --manifest cannot be mixed with thread-file flags');
+  if (args.senderMetadata === true) throw new Error('ingest: --sender-metadata requires a file path');
   if (args.manifest === true || args.outCoverage === true) throw new Error('ingest: --manifest and --out-coverage require a file path');
   if (!args.manifest && (!args.inbox || args.inbox === true)) throw new Error('ingest: --inbox <raw.json> or --manifest <manifest.json> is required');
   const manifest = args.manifest ? readJson(args.manifest, 'ingest: --manifest') : null;
   if (args.manifest) validateManifest(manifest);
   const legacy = {};
   if (!manifest) for (const name of SOURCE_NAMES) if (args[name]) legacy[name] = readJson(args[name], name);
+  const senderMetadata = args.senderMetadata ? buildSenderMetadata(
+    readJson(args.senderMetadata, 'ingest: --sender-metadata'),
+    path => readJson(resolve(dirname(resolve(args.senderMetadata)), path), 'sender metadata')) : undefined;
   const { sources, coverage } = ingestSources(manifest,
-    path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy);
+    path => readJson(resolve(dirname(resolve(args.manifest)), path), 'manifest page'), legacy, senderMetadata);
   const { inbox, nolabel, promos, updates } = sources;
   const labelsDoc = normalizeLabels(readJson(args.labels, 'ingest: --labels'));
 
@@ -1228,8 +1232,8 @@ const USAGE = `gmailtriage v${VERSION} — triage and sort a Gmail inbox against
 
   gmailtriage setup     [--file <rules.json>]
   gmailtriage ingest    --inbox <raw.json> --labels <raw.json> [--nolabel <raw.json>] [--promos <raw.json>]
-                        [--updates <raw.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
-  gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
+                        [--updates <raw.json>] [--sender-metadata <manifest.json>] [--out-threads <f.json>] [--out-labels <f.json>] [--force]
+  gmailtriage ingest    --manifest <manifest.json> --labels <raw.json> [--out-coverage <f.json>] [--sender-metadata <manifest.json>]\n                        [--out-threads <f.json>] [--out-labels <f.json>] [--force]\n  gmailtriage ingest    --labels-only --labels <raw.json> [--out-labels <f.json>]   ← after a create_label
   gmailtriage audit     --labels <f.json> [--rules <f.json>] [--threads <f.json>]
   gmailtriage merge     --from <Label> --to <Label> --threads <f.json> [--labels <f.json>] [--receipt <f.json>]
   gmailtriage propose   --threads <f.json> [--labels <f.json>] [--rules <f.json>] [--min-count N]

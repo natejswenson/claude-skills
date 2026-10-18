@@ -37,26 +37,26 @@
 
 ## Commands
 
-- Command — Returns `skills/gmailtriage/skills/gmailtriage/SKILL.md:479`
-- gmailtriage setup — state, rule counts by action, rule file — plus a first-run walkthrough when nothing is configured. The full rule table lives behind rules, so a run does not open with fifty rows n… `skills/gmailtriage/skills/gmailtriage/SKILL.md:481`
-- gmailtriage ingest — take the raw output of the four search_threads fetches and list_labels, written to files verbatim, and produce the thread and label snapshots every other command reads — deduping… `skills/gmailtriage/skills/gmailtriage/SKILL.md:482`
-- gmailtriage propose — read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is… `skills/gmailtriage/skills/gmailtriage/SKILL.md:483`
-- gmailtriage suggest-local — opt-in existing-label advice using an external local runner; validates proposal eligibility, private transport and score policy. Requires per-run choices and scratch direc… `skills/gmailtriage/skills/gmailtriage/SKILL.md:484`
-- gmailtriage learn-local — capture only explicitly confirmed category feedback in private immutable local records; existing labels and predictions are never gold until confirmation. Never trains or ch… `skills/gmailtriage/skills/gmailtriage/SKILL.md:485`
-- gmailtriage audit — read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holdin… `skills/gmailtriage/skills/gmailtriage/SKILL.md:486`
-- gmailtriage merge — prepare pending target additions and source removals in the shared receipt lifecycle. Confirm target additions before source removal. Separate folder deletion needs a fresh whole-… `skills/gmailtriage/skills/gmailtriage/SKILL.md:487`
-- gmailtriage subdivide — read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needin… `skills/gmailtriage/skills/gmailtriage/SKILL.md:488`
-- gmailtriage rules — read, validate, write and remove rules — --add prints only the rules just added with any warning that involves them, --remove <id[,id]> deletes exactly the named rules and refuses… `skills/gmailtriage/skills/gmailtriage/SKILL.md:489`
-- node $SKILL_DIR/scripts/gmailtriage.js setup `skills/gmailtriage/skills/gmailtriage/SKILL.md:83`
-- node $SKILL_DIR/scripts/gmailtriage.js ingest \ `skills/gmailtriage/skills/gmailtriage/SKILL.md:153`
-- node $SKILL_DIR/scripts/gmailtriage.js audit --labels labels.json --threads threads.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:193`
-- node $SKILL_DIR/scripts/gmailtriage.js propose --threads threads.json --labels labels.json --out candidates.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:222`
-- node $SKILL_DIR/scripts/gmailtriage.js suggest-local --threads threads.json --labels labels.json --choices choices.json --scratch-dir "$SESSION_DIR" --out "$SESSION_DIR/suggestions.json" `skills/gmailtriage/skills/gmailtriage/SKILL.md:260`
-- node $SKILL_DIR/scripts/gmailtriage.js subdivide --threads filed.json --labels labels.json --parent "<Folder>" `skills/gmailtriage/skills/gmailtriage/SKILL.md:279`
-- node $SKILL_DIR/scripts/gmailtriage.js rules --add candidates.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:311`
-- node $SKILL_DIR/scripts/gmailtriage.js labels --labels labels.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:334`
-- node $SKILL_DIR/scripts/gmailtriage.js ingest --labels-only --labels raw-labels.json --out-labels labels.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:345`
-- node $SKILL_DIR/scripts/gmailtriage.js plan --threads threads.json --labels labels.json --out plan.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:364`
+- Command — Returns `skills/gmailtriage/skills/gmailtriage/SKILL.md:491`
+- gmailtriage setup — state, rule counts by action, rule file — plus a first-run walkthrough when nothing is configured. The full rule table lives behind rules, so a run does not open with fifty rows n… `skills/gmailtriage/skills/gmailtriage/SKILL.md:493`
+- gmailtriage ingest — take the raw output of the four search_threads fetches and list_labels, written to files verbatim, and produce the thread and label snapshots every other command reads — deduping… `skills/gmailtriage/skills/gmailtriage/SKILL.md:494`
+- gmailtriage propose — read a slice of the user's real inbox, the labels they already have and the rules they have already written, drop every sender an existing rule claims, and cluster only what is… `skills/gmailtriage/skills/gmailtriage/SKILL.md:495`
+- gmailtriage suggest-local — opt-in existing-label advice using an external local runner; validates proposal eligibility, private transport and score policy. Requires per-run choices and scratch direc… `skills/gmailtriage/skills/gmailtriage/SKILL.md:496`
+- gmailtriage learn-local — capture only explicitly confirmed category feedback in private immutable local records; existing labels and predictions are never gold until confirmation. Never trains or ch… `skills/gmailtriage/skills/gmailtriage/SKILL.md:497`
+- gmailtriage audit — read the mailbox's real label list, the rule set and a sample of mail, and report whether the label system is still coherent — every folder no rule manages (split into ones holdin… `skills/gmailtriage/skills/gmailtriage/SKILL.md:498`
+- gmailtriage merge — prepare pending target additions and source removals in the shared receipt lifecycle. Confirm target additions before source removal. Separate folder deletion needs a fresh whole-… `skills/gmailtriage/skills/gmailtriage/SKILL.md:499`
+- gmailtriage subdivide — read the mail already in one folder, cluster it by sender domain, and return the sub-labels that folder wants — each matched to a sub-label it already has or flagged as needin… `skills/gmailtriage/skills/gmailtriage/SKILL.md:500`
+- gmailtriage rules — read, validate, write and remove rules — --add prints only the rules just added with any warning that involves them, --remove <id[,id]> deletes exactly the named rules and refuses… `skills/gmailtriage/skills/gmailtriage/SKILL.md:501`
+- node $SKILL_DIR/scripts/gmailtriage.js setup `skills/gmailtriage/skills/gmailtriage/SKILL.md:95`
+- node $SKILL_DIR/scripts/gmailtriage.js ingest \ `skills/gmailtriage/skills/gmailtriage/SKILL.md:165`
+- node $SKILL_DIR/scripts/gmailtriage.js audit --labels labels.json --threads threads.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:205`
+- node $SKILL_DIR/scripts/gmailtriage.js propose --threads threads.json --labels labels.json --out candidates.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:234`
+- node $SKILL_DIR/scripts/gmailtriage.js suggest-local --threads threads.json --labels labels.json --choices choices.json --scratch-dir "$SESSION_DIR" --out "$SESSION_DIR/suggestions.json" `skills/gmailtriage/skills/gmailtriage/SKILL.md:272`
+- node $SKILL_DIR/scripts/gmailtriage.js subdivide --threads filed.json --labels labels.json --parent "<Folder>" `skills/gmailtriage/skills/gmailtriage/SKILL.md:291`
+- node $SKILL_DIR/scripts/gmailtriage.js rules --add candidates.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:323`
+- node $SKILL_DIR/scripts/gmailtriage.js labels --labels labels.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:346`
+- node $SKILL_DIR/scripts/gmailtriage.js ingest --labels-only --labels raw-labels.json --out-labels labels.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:357`
+- node $SKILL_DIR/scripts/gmailtriage.js plan --threads threads.json --labels labels.json --out plan.json `skills/gmailtriage/skills/gmailtriage/SKILL.md:376`
 
 ## Architecture
 
@@ -94,4 +94,4 @@
 - never transcribe a tool response by hand — Hand-transcribing search_threads output into threads.json was 60-90 seconds per run and the main way a field got dropped or mangled — measured across five r… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:69`
 - Never propose a rule for a sender an existing rule already claims — propose clustered on senders with no knowledge of the rule set, so it re-proposed rules for mail the user had already ruled on. The… `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:74`
 - Never capture learning feedback without explicit confirmation — Existing labels, predictions, skips and abstentions cannot silently become training gold; capture remains private and advisory. `skills/gmailtriage/skills/gmailtriage/skill-invariants.json:79`
-- **Never capture learning feedback without explicit confirmation.** Ask for a preferred category or explicitly none of the offered choices, and confirm the others are incorrect. Existing labels and pr… `skills/gmailtriage/skills/gmailtriage/SKILL.md:498`
+- **Never capture learning feedback without explicit confirmation.** Ask for a preferred category or explicitly none of the offered choices, and confirm the others are incorrect. Existing labels and pr… `skills/gmailtriage/skills/gmailtriage/SKILL.md:510`

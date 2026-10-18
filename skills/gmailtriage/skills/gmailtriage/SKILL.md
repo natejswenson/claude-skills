@@ -27,6 +27,18 @@ accepts the plugin's `list_labels` envelope. Do not reshape either response in
 chat or by hand; do not claim metadata-only category fetching is available
 unless the connector actually exposes that view.
 
+If `search_emails` serializes `Name <address>` as `Name address`, keep that
+search result verbatim. Fetch `read_email(format:metadata)` for the observed
+message IDs and save each full result verbatim outside the repository. Pass
+`ingest --sender-metadata <manifest.json>` with exactly
+`{"schema":1,"paths":["raw-metadata.json"]}`; paths resolve relative to that
+manifest. Ingest accepts a single valid From header only when both message and
+thread IDs match and removing its angle brackets exactly reproduces the search
+sender. Valid original senders must agree with metadata; missing, conflicting,
+or malformed evidence remains uncertain. This fallback adds no fetch coverage,
+category evidence, message IDs, or extra headers to snapshots. Never hand-edit
+the search sender or infer a mailbox suffix.
+
 # /gmailtriage — Sorts and cleans a Gmail inbox against rules you wrote — filing every thread into your own folders and trashing only what one of your own rules names, never what the model merely thinks is junk
 
 You are running the **gmailtriage** skill.
