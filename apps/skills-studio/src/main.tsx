@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Markdown } from './Markdown';
 import { TextOutput, isTextOutput } from './TextOutput';
+import { MarkdownOutput } from './MarkdownOutput';
 import { pickOutput, pdfCompanion } from './outputs';
 import { PdfOutput } from './PdfOutput';
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, Check, ChevronDown, FileText, Folder, History, LayoutGrid, LoaderCircle, Plus, Search, Settings, Square, Star, Terminal, X, Zap } from 'lucide-react';
@@ -205,9 +206,7 @@ function artifactLabel(artifact:{id:string;name:string},artifacts:{id:string;nam
 
 function ArtifactPreview({url,artifact,files,workspace,onOpenFile,imageUrl}:{url:string;imageUrl?:string;artifact:{name:string;type:string};files:string[];workspace:string;onOpenFile:(name:string)=>void}){
  const isMarkdown=/\.md(?:own)?$/i.test(artifact.name)||artifact.type.includes('markdown');
- const [text,setText]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false);
- useEffect(()=>{if(!isMarkdown)return;const abort=new AbortController();setLoading(true);setText('');setError('');fetch(url,{signal:abort.signal}).then(async response=>{if(!response.ok)throw new Error('Could not load this output.');return response.text()}).then(setText).catch(error=>{if(error.name!=='AbortError')setError(error.message)}).finally(()=>{if(!abort.signal.aborted)setLoading(false)});return()=>abort.abort()},[url,isMarkdown]);
- if(isMarkdown)return <div className="artifact-markdown markdown">{loading?<div className="working-label mono"><LoaderCircle size={14} className="spin"/>Opening output…</div>:error?<p role="alert">{error}</p>:<Markdown files={files} workspace={workspace} onOpenFile={onOpenFile}>{text}</Markdown>}</div>;
+ if(isMarkdown)return <MarkdownOutput key={url} url={url} name={artifact.name} files={files} workspace={workspace} onOpenFile={onOpenFile}/>;
  if(/\.pdf$/i.test(artifact.name))return <PdfOutput url={url} name={artifact.name} imageUrl={imageUrl}/>;
  if(isTextOutput(artifact.name))return <TextOutput url={url} name={artifact.name}/>;
  if(/image|png|jpe?g|webp|gif/i.test(artifact.type))return <img className="artifact-image" src={url} alt={artifact.name}/>;
