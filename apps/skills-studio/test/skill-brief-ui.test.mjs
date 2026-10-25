@@ -13,14 +13,14 @@ const source = await readFile(new URL('../src/SkillBrief.tsx', import.meta.url),
 const entry = join(scratch, 'SkillBrief.mjs');
 await writeFile(entry, transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, jsx: JsxEmit.ReactJSX } }).outputText);
 const { SkillBrief } = await import(pathToFileURL(entry).href);
-const skill = { name: 'skillhelp', category: 'Build', description: 'Explain <skill> instructions.', example: 'Help me use this skill.', available: true };
+const skill = { name: 'skillhelp', category: 'Research', description: 'Explain <skill> instructions.', example: 'Explain how to configure and use [skill name].', available: true };
 const render = props => renderToStaticMarkup(React.createElement(SkillBrief, { skill, onRemove() {}, onExample() {}, ...props }));
 test('selected skill explains its purpose and presents a deliberate starting point', () => {
  const html = render();
- assert.match(html, /Build \/ Selected skill/);
+ assert.match(html, /Research \/ Selected skill/);
  assert.match(html, /Explain &lt;skill&gt; instructions/);
  assert.match(html, /Try a starting point/);
- assert.match(html, /Help me use this skill/);
+ assert.match(html, /Explain how to configure and use \[skill name\]/);
  assert.match(html, /aria-label="Remove selected skill"/);
  let removed = false, example = false;
  const element = SkillBrief({skill, onRemove(){removed=true}, onExample(){example=true}});
