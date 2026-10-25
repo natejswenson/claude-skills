@@ -151,7 +151,7 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
         if (error instanceof URIError) return json(response, 400, { error: 'Invalid asset path.' });
         return json(response, 404, { error: 'Asset not found.' });
       }
-      response.writeHead(200, { 'Content-Type': mime[extname(path)] || 'application/octet-stream' });
+      response.writeHead(200, { 'Content-Type': mime[extname(path)] || 'application/octet-stream', 'Content-Security-Policy': "frame-ancestors 'none'" });
       response.end(request.method === 'HEAD' ? undefined : await readFile(path));
     } catch (error) {
       if (!response.headersSent) json(response, error.status || 500, { error: error.status === 413 ? error.message : 'Preview request failed.' });

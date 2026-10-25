@@ -97,6 +97,32 @@ test('public health/revision expose only metadata; browser session requires the 
   assert.equal((await app.fetch('/', { headers: { cookie, origin: 'https://evil.example' } })).status, 403);
 });
 
+test('authenticated application documents prohibit framing by a same-site sibling', async t => {
+  const app = await setup(t);
+  await writeFile(join(app.directory, 'review.html'), '<h1>Review</h1>');
+  const cookie = await app.login();
+  for (const [path, method] of [['/', 'GET'], ['/', 'HEAD'], ['/review.html', 'GET']]) {
+    const result = await app.fetch(path, { method, headers: { cookie, 'sec-fetch-site': 'same-site', 'sec-fetch-dest': 'iframe' } });
+    assert.equal(result.status, 200);
+    assert.match(result.headers['content-security-policy'] || '', /(?:^|;)\s*frame-ancestors 'none'(?:;|$)/);
+    if (method === 'HEAD') assert.equal(result.body.length, 0);
+    else assert.match(result.body.toString(), /<h1>/);
+  }
+});
+
+test('application framing protection preserves the worker artifact sandbox policy', async t => {
+  const app = await setup(t);
+  const cookie = await app.login();
+  const sandbox = "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:";
+  await app.connect((message, ws) => {
+    if (message.type === 'request') respond(ws, message.id, 200, { 'content-type': 'text/html', 'content-security-policy': sandbox }, '<h1>Output</h1>');
+  });
+  const result = await app.fetch('/api/runs/example/artifacts/report', { headers: { cookie } });
+  assert.equal(result.status, 200);
+  assert.equal(result.headers['content-security-policy'], sandbox);
+  assert.equal(result.body.toString(), '<h1>Output</h1>');
+});
+
 test('agent bridge requires a distinct HMAC proof and cannot replace the connected worker', async t => {
   const app = await setup(t);
   assert.equal(await rejectedSocket(app.port, { Authorization: `Bearer ${proof('browser')}` }), 403);
