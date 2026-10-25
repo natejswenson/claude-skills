@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "template": "http-container-v1",
+  "manifest_sha256": "516fecc3b62a7482adae48594d689f037831130dc7b5fa7eee2337a772135ac6",
+  "files": {
+    ".dev/service.schema.json": "bf725289533188f16af1f48ad2ef16e5e19f245d3a06b62d81d0df7afd540faf",
+    ".dev/preview.json": "bc6a6da80cb48ae06c7b36898bd6b11f9e73cc8383ba9badd6a409ea2b70ed87",
+    ".dev/workload.json": "b87e24a9a254dc36064b33219929b5fec472c76b8d0f82069c0e1730f2fa257c",
+    ".dev/Tiltfile": "de547aa94f76b240b5a93246a8f6d34f4b7eb368d05e6fa217c52cfb2f323143",
+    ".dev/Dockerfile.dockerignore": "0abe1205d754fdd226bff9dd4aaef5dc8629ee72b9831bd603f73a2d8994f71d"
+  }
+}
