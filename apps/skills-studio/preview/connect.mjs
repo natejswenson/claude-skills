@@ -114,6 +114,57 @@ async function saveAccess(directory, value) {
   return path;
 }
 
+/** Copy an existing capability without touching the running preview or its owner lock. */
+export async function copyAccess({ previewId, appRoot = appRootDefault, platform = process.platform, uid = process.getuid?.(), log = console.log }, dependencies = {}) {
+  if (!/^p-[a-f0-9]{12}$/.test(previewId || '')) throw new Error('Use --preview with a valid tk preview ID.');
+  if (platform !== 'darwin') throw new Error('Copying preview access is only supported on macOS. No code was printed.');
+  let code;
+  try {
+    let directory = appRoot;
+    for (const part of ['.studio-data', 'kubernetes', previewId]) {
+      directory = join(directory, part);
+      const info = await lstat(directory);
+      if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== uid || (info.mode & 0o077)) throw new Error();
+    }
+    const path = join(directory, 'browser-access.json');
+    const info = await lstat(path);
+    if (!info.isFile() || info.isSymbolicLink()) throw new Error();
+    const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    try {
+      const saved = await handle.stat();
+      if (!saved.isFile() || saved.uid !== uid || (saved.mode & 0o077) || saved.size > 4096 || saved.ino !== info.ino || saved.dev !== info.dev) throw new Error();
+      const access = JSON.parse(await handle.readFile('utf8'));
+      if (access?.url !== `https://skills-studio-${previewId}.dev.internal` || typeof access.code !== 'string' || !/^[a-f0-9]{64}$/.test(access.code)) throw new Error();
+      code = access.code;
+    } finally { await handle.close(); }
+  } catch {
+    throw new Error('Could not read safe saved preview access. Run the launcher for this preview from this app directory, then try again.');
+  }
+  try {
+    await new Promise((done, reject) => {
+      const child = (dependencies.spawn || spawn)('/usr/bin/pbcopy', [], { stdio: ['pipe', 'ignore', 'ignore'] });
+      child.once('error', reject);
+      child.stdin.once('error', reject);
+      child.once('exit', (status, signal) => status === 0 && !signal ? done() : reject(new Error()));
+      child.stdin.end(code);
+    });
+  } catch {
+    throw new Error('Could not copy preview access. Check macOS clipboard access and try again.');
+  }
+  log(`Access code copied. Paste it at https://skills-studio-${previewId}.dev.internal`);
+}
+
+export async function runPreviewCommand(args, options = {}, dependencies = {}) {
+  if (args[0] !== '--preview' || ![2, 3].includes(args.length) || (args.length === 3 && args[2] !== '--copy-access')) {
+    throw new Error('Usage: npm run preview:connect -- --preview p-<12 hex characters> [--copy-access]');
+  }
+  const selected = { ...options, previewId: args[1] };
+  if (args[2] === '--copy-access') return copyAccess(selected, dependencies);
+  const worker = await (dependencies.start || startPreview)(selected, dependencies);
+  const { reason } = await worker.closed;
+  if (reason === 'backend-exit') process.exitCode = 1;
+}
+
 /** The only backend controlled by this supervisor is the child it spawns itself. */
 export async function startPreview({ previewId, appRoot = appRootDefault, env = process.env, readyTimeoutMs = 30000, signal, log = console.log }, dependencies = {}) {
   if (!/^p-[a-f0-9]{12}$/.test(previewId || '')) throw new Error('Use --preview with a valid tk preview ID.');
@@ -238,11 +289,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   process.once('SIGINT', stop);
   process.once('SIGTERM', stop);
   try {
-    const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== '--preview') throw new Error('Usage: node preview/connect.mjs --preview p-<12 hex characters>');
-    const worker = await startPreview({ previewId: args[1], signal: abort.signal, readyTimeoutMs: 60000 });
-    const { reason } = await worker.closed;
-    if (reason === 'backend-exit') process.exitCode = 1;
+    await runPreviewCommand(process.argv.slice(2), { signal: abort.signal, readyTimeoutMs: 60000 });
   } catch (error) {
     if (!abort.signal.aborted) { console.error(error.message); process.exitCode = 1; }
   } finally {

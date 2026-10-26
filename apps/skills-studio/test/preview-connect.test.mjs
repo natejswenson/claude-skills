@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { mkdtemp, mkdir, writeFile, readFile, stat, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, stat, rm, chmod, symlink, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import * as connector from '../preview/connect.mjs';
 import { startPreview, acquireOwnerLock } from '../preview/connect.mjs';
 
 const previewId = 'p-012345abcdef';
@@ -121,4 +122,86 @@ test('owner lock recovers only a demonstrably dead pid and refuses malformed own
   await owner.release();
   await writeFile(join(root, 'owner.lock'), 'not json', { mode: 0o600 });
   await assert.rejects(acquireOwnerLock(root), /owner|lock/i);
+});
+
+
+async function accessFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'studio-access-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const directory = join(root, '.studio-data/kubernetes', previewId);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const path = join(directory, 'browser-access.json');
+  await writeFile(path, JSON.stringify({ url, code: keys.browser }), { mode: 0o600 });
+  const calls = [], logs = [];
+  const spawn = (file, args, options) => {
+    const child = new EventEmitter();
+    child.stdin = new PassThrough();
+    let input = '';
+    child.stdin.on('data', chunk => { input += chunk; });
+    child.stdin.on('finish', () => { calls.push({ file, args, options, input }); child.emit('exit', 0); });
+    return child;
+  };
+  return { root, directory, path, calls, logs, spawn, options: { previewId, appRoot: root, platform: 'darwin', log: value => logs.push(value) } };
+}
+
+test('copy mode sends only the selected saved browser code to pbcopy stdin without starting a worker', async t => {
+  const f = await accessFixture(t);
+  const forbidden = () => { throw new Error('Copy mode must not start anything'); };
+  await connector.runPreviewCommand(['--preview', previewId, '--copy-access'], f.options, {
+    spawn: f.spawn, start: forbidden, command: forbidden, connect: forbidden,
+  });
+  assert.deepEqual(f.calls, [{ file: '/usr/bin/pbcopy', args: [], options: { stdio: ['pipe', 'ignore', 'ignore'] }, input: keys.browser }]);
+  assert.deepEqual(await readdir(f.directory), ['browser-access.json']);
+  assert.deepEqual(f.logs, [`Access code copied. Paste it at ${url}`]);
+  assert.equal(f.logs.join('\n').includes(keys.browser), false);
+});
+
+test('copy mode refuses missing, unsafe or mismatched saved access without repairing permissions or copying', async t => {
+  for (const kind of ['missing', 'malformed', 'wrong-url', 'wrong-code', 'public', 'symlink', 'directory', 'parent-symlink', 'wrong-owner', 'large', 'invalid-id']) {
+    const f = await accessFixture(t);
+    if (kind === 'missing') await rm(f.path);
+    if (kind === 'malformed') await writeFile(f.path, keys.browser);
+    if (kind === 'wrong-url') await writeFile(f.path, JSON.stringify({ url: url + '/', code: keys.browser }));
+    if (kind === 'wrong-code') await writeFile(f.path, JSON.stringify({ url, code: keys.agent + '\n' }));
+    if (kind === 'public') await chmod(f.path, 0o644);
+    if (kind === 'symlink') {
+      const target = join(f.root, 'other-access.json');
+      await writeFile(target, JSON.stringify({ url, code: keys.browser }), { mode: 0o600 });
+      await rm(f.path); await symlink(target, f.path);
+    }
+    if (kind === 'directory') { await rm(f.path); await mkdir(f.path); }
+    if (kind === 'parent-symlink') {
+      await writeFile(join(f.root, 'browser-access.json'), JSON.stringify({ url, code: keys.browser }), { mode: 0o600 });
+      await rm(f.directory, { recursive: true }); await symlink(f.root, f.directory);
+    }
+    if (kind === 'wrong-owner') f.options.uid = process.getuid() + 1;
+    if (kind === 'large') await writeFile(f.path, keys.browser.repeat(100));
+    if (kind === 'invalid-id') f.options.previewId = '../escape';
+    await assert.rejects(connector.copyAccess(f.options, { spawn: f.spawn }), error => {
+      assert.doesNotMatch(error.message, new RegExp(keys.browser));
+      assert.match(error.message, /saved preview access|valid tk preview ID/i);
+      return true;
+    }, kind);
+    assert.equal(f.calls.length, 0, kind);
+    if (kind === 'public') assert.equal((await stat(f.path)).mode & 0o777, 0o644);
+  }
+});
+
+test('unsupported platforms and clipboard failures give fixed errors without a print fallback', async t => {
+  const f = await accessFixture(t);
+  await assert.rejects(connector.copyAccess({ ...f.options, platform: 'linux' }, { spawn: f.spawn }), /only supported on macOS/);
+  assert.equal(f.calls.length, 0);
+  for (const failure of ['error', 'exit', 'stdin']) {
+    await assert.rejects(connector.copyAccess(f.options, { spawn() {
+      const child = new EventEmitter();
+      child.stdin = new PassThrough();
+      child.stdin.resume();
+      setImmediate(() => {
+        if (failure === 'error') child.emit('error', new Error(keys.browser));
+        else if (failure === 'stdin') child.stdin.emit('error', new Error(keys.browser));
+        else child.emit('exit', 1);
+      });
+      return child;
+    } }), { message: 'Could not copy preview access. Check macOS clipboard access and try again.' });
+  }
 });

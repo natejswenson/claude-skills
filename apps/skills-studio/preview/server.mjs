@@ -55,6 +55,9 @@ function readBody(request, limit) {
 export function createPreviewServer({ token, expectedHost, distDir = join(here, '../dist'), revision, requestTimeoutMs = 30000 } = {}) {
   if (typeof token !== 'string' || token.length < 32) throw new Error('PREVIEW_API_TOKEN must contain at least 32 characters.');
   if (typeof expectedHost !== 'string' || !/^[a-zA-Z0-9.-]+(?::\d+)?$/.test(expectedHost)) throw new Error('A valid PREVIEW_HOST is required.');
+  const previewId = expectedHost.match(/^skills-studio-(p-[a-f0-9]{12})\.dev\.internal$/)?.[1] || 'PREVIEW_ID';
+  const launcherCommand = `npm run preview:connect -- --preview ${previewId}`;
+  const disconnectedHelp = `Preview launcher disconnected. In apps/skills-studio on this Mac, run ${launcherCommand}, keep it running, then refresh this page. Check saved history before retrying an interrupted request.`;
   const proof = role => createHmac('sha256', token).update(`skills-studio-${role}`).digest('hex');
   const agentProof = proof('agent');
   const browserProof = proof('browser');
@@ -80,7 +83,7 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
   function failAll() {
     for (const id of [...pending.keys()]) {
       const entry = finish(id);
-      if (!entry.response.headersSent) json(entry.response, 503, { error: 'Preview worker disconnected. Reconnect the host worker.' });
+      if (!entry.response.headersSent) json(entry.response, 503, { error: disconnectedHelp });
       else entry.response.destroy();
     }
   }
@@ -130,18 +133,18 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
         const [html, tokens] = await Promise.all([readFile(join(here, 'login.html'), 'utf8'), readFile(join(here, '../src/tokens.css'), 'utf8')]);
         const nonce = randomBytes(18).toString('base64');
         response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'` });
-        response.end(html.replace('/* PREVIEW_BRAND_TOKENS */', tokens).replace('PREVIEW_SCRIPT_NONCE', nonce));
+        response.end(html.replace('/* PREVIEW_BRAND_TOKENS */', tokens).replace('PREVIEW_SCRIPT_NONCE', nonce).replace('PREVIEW_COPY_COMMAND', `${launcherCommand} --copy-access`).replace('PREVIEW_HTTPS_URL', `https://${expectedHost}`));
         return;
       }
       if (url.pathname === '/api/session') {
         return request.method === 'GET' ? json(response, 200, { signOut: true }) : json(response, 405, { error: 'Method not allowed.' });
       }
       if (url.pathname.startsWith('/api/')) {
-        if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: 'Start the host preview worker to connect Codex.' });
+        if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: disconnectedHelp });
         if (pending.size >= 64) return json(response, 503, { error: 'Preview is busy. Try again shortly.' });
         const data = await readBody(request, BODY_LIMIT);
         if (authenticated(request) !== session) return json(response, 401, { error: 'Preview sign-in required.' });
-        if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: 'Preview worker disconnected.' });
+        if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: disconnectedHelp });
         const id = randomUUID();
         const timer = setTimeout(() => {
           const entry = finish(id);

@@ -146,9 +146,30 @@ npm run preview:connect -- --preview PREVIEW_ID
 The launcher verifies the exact preview/worktree and its HTTPS hostname, derives
 separate bridge and browser credentials inside the pod, and starts its own
 loopback backend on a separate port. It saves a **private browser access file**
-under `.studio-data/kubernetes/PREVIEW_ID/browser-access.json`; enter its `code`
-on the preview sign-in page. The code grants access to this preview’s skills,
-files, and approvals. It is never placed in a URL or printed in terminal output.
+under `.studio-data/kubernetes/PREVIEW_ID/browser-access.json`. Keep that terminal
+running. On macOS, open a **second terminal in this app directory** and run:
+
+```sh
+npm run preview:connect -- --preview PREVIEW_ID --copy-access
+```
+
+Use the same preview ID as the launcher. The command copies the saved access
+code directly to the clipboard; no code appears in terminal output. It does not
+start or reconnect a worker, contact Kubernetes or Codex, or alter the owner lock.
+Check the browser address is exactly
+`https://skills-studio-PREVIEW_ID.dev.internal`, then paste into **Preview access
+code**. The code grants access to this preview’s skills, files, and approvals.
+Treat the clipboard as sensitive and replace its contents after signing in.
+The code is never placed in a URL or printed in terminal output.
+
+Copying fails on unsupported platforms, unavailable macOS clipboard access, or a
+missing, unsafe, or mismatched access file; it never prints a fallback code or
+repairs unsafe permissions. Start the launcher for this preview from this app
+directory and retry. If sign-in rejects the code, copy it again. If it still
+fails, restart the launcher, wait until ready, and copy again. A disconnected
+preview needs the launcher running; restart it and refresh the browser. Check
+saved history before retrying interrupted work.
+
 The browser receives a Secure, HttpOnly, SameSite cookie. All API/data routes
 require sign-in; only health and source revision metadata are public.
 
