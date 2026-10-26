@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { randomUUID, createHash } from 'node:crypto';
-import { readdir, stat, mkdir, copyFile, realpath } from 'node:fs/promises';
+import { readdir, stat, mkdir, copyFile, realpath, lstat, rm } from 'node:fs/promises';
 import { join, relative, extname, isAbsolute, resolve } from 'node:path';
 import { CodexClient, requireSubscription } from './codex.mjs';
 import { resolveArtifact } from './security.mjs';
@@ -43,6 +43,7 @@ export class RunManager extends EventEmitter {
     Object.assign(this, { client, store, repoRoot, dataDir, workspace, catalog });
     this.loaded = new Set();
     this.finalizing = new Set();
+    this.deleting = new Set();
     this.connection = { status: 'connecting' };
     this.bindClient(client);
   }
@@ -87,10 +88,57 @@ export class RunManager extends EventEmitter {
   get(id) { return this.store.get(id) || fail('Run not found.', 404); }
   bootstrap() { const {runs, ...history} = this.store.history(); return { connection: this.connection, account: this.account || null, models: this.models || [], skills: this.catalog.map(({ path, ...skill }) => skill), workspace: this.workspace, runs, history: { ...history, revision: this.historyRevision || 0 }, activeRun: this.store.getActiveSummary(), capabilities: { attachments: true }, attachmentLimits: ATTACHMENT_LIMITS }; }
   assertIdle() { if (this.busy || this.finalizing.size || this.store.hasActive()) fail('A run is already active. Stop it or wait before starting another.', 409); }
+  async delete(id) {
+    if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) fail('Invalid run ID.');
+    const run = this.get(id);
+    if (this.busy || this.finalizing.has(id) || activeStates.has(run.status)) fail('This run is active or Studio is busy. Wait before deleting it.', 409);
+    this.busy = true;
+    this.deleting.add(id);
+    let cleanupStarted = false;
+    try {
+      const root = await realpath(this.dataDir);
+      if ((await lstat(this.dataDir)).isSymbolicLink()) fail('Unsafe Studio data directory symlink.');
+      const paths = ['inputs', 'artifacts'].map(tree => join(root, tree, id));
+      const contains = (parent, child) => { const path = relative(parent, child); return !path || (!path.startsWith('../') && path !== '..' && !isAbsolute(path)); };
+      // Resolve even a missing workspace through its nearest existing parent.
+      const canonical = async path => {
+        try { return await realpath(path); }
+        catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+          const parent = resolve(path, '..');
+          if (parent === path) throw error;
+          return join(await canonical(parent), relative(parent, path));
+        }
+      };
+      const workspaces = await Promise.all([this.workspace, ...this.store.list().map(entry => entry.cwd)].filter(Boolean).map(path => canonical(resolve(path))));
+      // Validate both trees before touching either. rm never follows child symlinks.
+      for (const path of paths) {
+        for (const entry of [resolve(path, '..'), path]) {
+          const info = await lstat(entry).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+          if (info && (info.isSymbolicLink() || !info.isDirectory())) fail('Unsafe Studio copy directory or symlink.');
+          if (info && !contains(root, await realpath(entry))) fail('Unsafe Studio copy path.');
+        }
+        if (workspaces.some(workspace => contains(path, workspace) || contains(workspace, path))) fail('Unsafe copy path overlaps a source workspace.');
+      }
+      cleanupStarted = true;
+      for (const path of paths) await rm(path, { recursive: true, force: true });
+      this.store.delete(id);
+      this.loaded.delete(run.threadId);
+      this.emit('change');
+      return { deleted: id };
+    } catch (error) {
+      if (cleanupStarted) throw Object.assign(new Error(`Run deletion failed. Studio copies may already be partially removed; the run is retained. Retry deletion. ${error.message}`), { status: 500 });
+      throw error;
+    } finally { this.deleting.delete(id); this.busy = false; }
+  }
   async selectWorkspace(path) {
     if (typeof path !== 'string' || !isAbsolute(path)) fail('Choose an absolute workspace folder.');
+    if (this.deleting.size) fail('Wait for run deletion before changing the workspace.', 409);
     const resolved = await realpath(path).catch(() => fail('Workspace folder does not exist.'));
-    if (!(await stat(resolved)).isDirectory()) fail('Workspace must be a folder.');
+    if (this.deleting.size) fail('Wait for run deletion before changing the workspace.', 409);
+    const info = await stat(resolved);
+    if (this.deleting.size) fail('Wait for run deletion before changing the workspace.', 409);
+    if (!info.isDirectory()) fail('Workspace must be a folder.');
     this.workspace = resolved;
     this.emit('change');
     return { workspace: resolved };
@@ -180,6 +228,7 @@ export class RunManager extends EventEmitter {
     const { method, params = {} } = event;
     if (method === 'account/updated') { this.account = params.authMode === 'chatgpt' ? { type: 'chatgpt', planType: params.planType } : null; this.emit('change'); return; }
     const run = method === 'serverRequest/resolved' ? this.store.findByRequest(params.requestId) : this.store.findByThread(params.threadId);
+    if (run && this.deleting.has(run.id)) { if (event.id !== undefined) this.client.reject(event.id); return; }
     if (!run) { if (event.id !== undefined) this.client.reject(event.id); return; }
     if (event.id !== undefined) {
       if (!supported.has(method)) { this.client.reject(event.id); run.activities.push({ id: randomUUID(), label: 'Unsupported tool request', detail: method, status: 'failed' }); this.save(run); return; }

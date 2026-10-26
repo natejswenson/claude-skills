@@ -34,3 +34,5 @@
 @media(max-width:900px){.text-output{padding-inline:0}.preview-note{padding-inline:0}}
 .activity-list .activity-state{margin-left:auto;font-size:8px;color:var(--dim);white-space:nowrap}
 .pdf-output{min-height:0;overflow:auto;flex:1}.pdf-output>.empty-state{padding:55px 25px 20px}.pdf-download{display:flex;justify-content:center;gap:12px;min-height:44px;margin:20px;font-size:12px}
+
+.workspace-actions{display:flex;align-items:center;gap:20px;flex-shrink:0}
