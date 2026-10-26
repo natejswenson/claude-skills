@@ -6,6 +6,7 @@ import { TextOutput, isTextOutput } from './TextOutput';
 import { MarkdownOutput } from './MarkdownOutput';
 import { pickOutput, pdfCompanion } from './outputs';
 import { PdfOutput } from './PdfOutput';
+import { ImageOutput } from './ImageOutput';
 import { ArrowDownToLine, ArrowRight, ArrowUpRight, Check, ChevronDown, FileText, Folder, History, LayoutGrid, LoaderCircle, Plus, Search, Settings, Square, Star, Terminal, X, Zap } from 'lucide-react';
 import { Request } from './Request';
 import { loadSelectedRun, createRefreshQueue, runLabels as labels, formatRunDate as date, type RunSummary } from './history';
@@ -225,7 +226,7 @@ function ArtifactPreview({url,artifact,files,workspace,onOpenFile,imageUrl}:{url
  if(isMarkdown)return <MarkdownOutput key={url} url={url} name={artifact.name} files={files} workspace={workspace} onOpenFile={onOpenFile}/>;
  if(/\.pdf$/i.test(artifact.name))return <PdfOutput url={url} name={artifact.name} imageUrl={imageUrl}/>;
  if(isTextOutput(artifact.name))return <TextOutput url={url} name={artifact.name}/>;
- if(/image|png|jpe?g|webp|gif/i.test(artifact.type))return <img className="artifact-image" src={url} alt={artifact.name}/>;
+ if(/image|png|jpe?g|webp|gif/i.test(artifact.type))return <ImageOutput key={url} url={url} name={artifact.name}/>;
  return <>{/\.html?$/i.test(artifact.name) && <p className="preview-note">Safe preview: scripts and companion assets are disabled. Download to use the full report.</p>}<iframe key={url} className="artifact-frame" src={url} sandbox="" title={artifact.name}/></>;
 }
 
