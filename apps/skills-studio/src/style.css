@@ -36,3 +36,6 @@
 .pdf-output{min-height:0;overflow:auto;flex:1}.pdf-output>.empty-state{padding:55px 25px 20px}.pdf-download{display:flex;justify-content:center;gap:12px;min-height:44px;margin:20px;font-size:12px}
 
 .workspace-actions{display:flex;align-items:center;gap:20px;flex-shrink:0}
+
+.palette-count{margin:0;padding:14px 25px;color:var(--dim);font-size:10px;flex-shrink:0}.palette-results{min-height:0}.palette-empty{padding:16px 0 28px}.palette-empty h2{font-size:22px;margin:0 0 10px}.palette-empty p{color:var(--dim);font-size:14px;line-height:1.5;margin:0 0 14px}.palette-empty button{min-height:44px}.command-palette footer{flex-shrink:0}.palette-results>button{min-height:64px}
+@media(max-width:640px){.palette-count{padding-inline:18px}.palette-results{padding-inline:18px}}
