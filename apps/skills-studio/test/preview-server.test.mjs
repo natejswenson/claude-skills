@@ -11,7 +11,7 @@ import { WebSocket } from 'ws';
 import { createPreviewServer } from '../preview/server.mjs';
 
 const token = 'synthetic-preview-master-secret-32-characters';
-const host = 'studio-preview.dev.internal';
+const host = 'skills-studio-p-012345abcdef.dev.internal';
 const proof = role => createHmac('sha256', token).update(`skills-studio-${role}`).digest('hex');
 
 async function setup(t, config = {}) {
@@ -227,7 +227,7 @@ test('malformed bridge responses fail outstanding browser requests safely', asyn
   await app.connect((_message, ws) => ws.send('{malformed json'));
   const result = await app.fetch('/api/bootstrap', { headers: { cookie } });
   assert.equal(result.status, 503);
-  assert.match(result.body.toString(), /worker disconnected/);
+  assert.match(result.body.toString(), /launcher disconnected/);
 });
 
 
@@ -277,6 +277,8 @@ test('login fetch preserves credentials, prevents double submission, reloads on 
     else {
       assert.equal(error.hidden, false);
       assert.match(error.textContent, /not accepted/);
+      assert.match(error.textContent, /copy.*again/i);
+      assert.match(error.textContent, /restart.*launcher/i);
       assert.doesNotMatch(error.textContent, /synthetic-browser-proof/);
     }
   }
@@ -361,4 +363,21 @@ test('a request awaiting its body cannot be forwarded after its session signs ou
   req.end('}');
   assert.equal(await response, 401);
   assert.equal(forwarded, 0);
+});
+
+
+test('sign-in serves a preview-specific copy command and disconnected API gives launcher recovery', async t => {
+  const app = await setup(t);
+  const page = (await app.fetch('/')).body.toString();
+  assert.match(page, /npm run preview:connect -- --preview p-012345abcdef --copy-access/);
+  assert.match(page, /second terminal/i);
+  assert.match(page, /clipboard/i);
+  assert.match(page, /https:\/\/skills-studio-p-012345abcdef\.dev\.internal/);
+  assert.match(page, /keep.*launcher running/i);
+  const cookie = await app.login();
+  const disconnected = await app.fetch('/api/bootstrap', { headers: { cookie } });
+  assert.equal(disconnected.status, 503);
+  assert.match(JSON.parse(disconnected.body).error, /launcher/i);
+  assert.match(JSON.parse(disconnected.body).error, /npm run preview:connect -- --preview p-012345abcdef/);
+  assert.match(JSON.parse(disconnected.body).error, /refresh/i);
 });
