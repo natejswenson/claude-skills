@@ -16,7 +16,7 @@ async function compile(name) {
     await writeFile(entry, transpileModule(source, { compilerOptions: { module: ModuleKind.ESNext, target: ScriptTarget.ES2022, jsx: JsxEmit.ReactJSX } }).outputText);
     return import(pathToFileURL(entry).href);
 }
-const { matchesRun, loadSelectedRun } = await compile('history.ts');
+const { matchesRun, loadSelectedRun, createRefreshQueue } = await compile('history.ts');
 const { RunLoadState } = await compile('RunLoadState.tsx');
 
 const runs = [
@@ -75,4 +75,42 @@ test('selected-run errors expose Retry and Back to runs rather than an endless o
     const loading = renderToStaticMarkup(React.createElement(RunLoadState, { ...props, error: '' }));
     assert.match(loading, /Opening your run/);
     assert.doesNotMatch(loading, /Retry|role="alert"/);
+});
+
+
+test('slow live refreshes stay single-flight and coalesce notifications without losing the final update', async () => {
+    const first=deferred(), second=deferred();let calls=0,inFlight=0,max=0;
+    const refresh=createRefreshQueue(async()=>{calls++;inFlight++;max=Math.max(max,inFlight);await (calls===1?first.promise:second.promise);inFlight--;});
+    const work=refresh();refresh();refresh();refresh();assert.equal(calls,1);
+    first.resolve();await settle();assert.equal(calls,2);assert.equal(max,1);
+    second.resolve();await work;assert.equal(calls,2);
+});
+test('a failed refresh releases the single-flight queue so retry can succeed', async () => {
+    let calls=0;const refresh=createRefreshQueue(async()=>{if(++calls===1)throw new Error('offline');});
+    await assert.rejects(refresh(),/offline/);await refresh();assert.equal(calls,2);
+});
+
+
+test('paged history exposes older matches without requiring full conversation bodies', async () => {
+    const source=await readFile(new URL('../src/RunHistory.tsx',import.meta.url),'utf8');
+    const entry=join(scratch,'RunHistory.mjs');
+    await writeFile(entry,transpileModule(source.replace("'./history'","'./history.mjs'"),{compilerOptions:{module:ModuleKind.ESNext,target:ScriptTarget.ES2022,jsx:JsxEmit.ReactJSX}}).outputText);
+    const {RunHistoryResults}=await import(pathToFileURL(entry).href);
+    const opened=[],again=[],pages=[];
+    const props={page:{runs:[{id:'old',title:'Old matching run',skillId:'devlog',status:'completed',createdAt:'2026-10-17T00:00:00Z',updatedAt:'2026-10-17T00:00:00Z'}],total:101,nextOffset:100},offset:50,skills:[],onOpen:id=>opened.push(id),onAgain:id=>again.push(id),onPage:offset=>pages.push(offset),busy:false};
+    const html=renderToStaticMarkup(React.createElement(RunHistoryResults,props));
+    assert.match(html,/Old matching run/);assert.match(html,/51/);assert.match(html,/101/);assert.match(html,/Previous/);assert.match(html,/Next/);
+    assert.doesNotMatch(html,/undefined|archived body/);
+    const noNext=renderToStaticMarkup(React.createElement(RunHistoryResults,{...props,page:{...props.page,nextOffset:null}}));
+    assert.match(noNext,/<button[^>]*disabled[^>]*>Next/);
+});
+
+
+test('action refresh waiters resolve after their own batch during an ongoing stream', async () => {
+    const batches=[deferred(),deferred(),deferred()];let calls=0,firstDone=false,secondDone=false;
+    const refresh=createRefreshQueue(()=>batches[calls++].promise);
+    const first=refresh().then(()=>{firstDone=true;});const second=refresh().then(()=>{secondDone=true;});
+    batches[0].resolve();await settle();assert.equal(firstDone,true);assert.equal(secondDone,false);
+    const third=refresh();batches[1].resolve();await settle();assert.equal(secondDone,true);assert.equal(calls,3);
+    batches[2].resolve();await Promise.all([first,second,third]);
 });

@@ -1,10 +1,12 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
 import { mkdtemp, mkdir, writeFile, readFile, symlink, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RunManager } from '../server/runs.mjs';
+import { Store } from '../server/store.mjs';
+const stores = []; after(() => stores.forEach(store => store.close()));
 
 async function setup() {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'studio-test-')));
@@ -24,8 +26,7 @@ async function setup() {
     reply(id, result) { this.replies.push({ id, result }); }
     reject(id) { this.replies.push({ id, rejected: true }); }
   }
-  const records = new Map();
-  const store = { list: () => [...records.values()], get: id => records.get(id), save: run => records.set(run.id, structuredClone(run)) };
+  const store = new Store(':memory:'); stores.push(store);
   const client = new Client();
   const manager = new RunManager({ client, store, repoRoot: root, dataDir: root, workspace: join(root, 'workspace'), catalog: [{ id: 'proof', name: 'Proof', path: join(root, 'SKILL.md'), available: true }] });
   await manager.initialize();
