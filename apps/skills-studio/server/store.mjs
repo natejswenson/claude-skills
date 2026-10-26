@@ -21,6 +21,7 @@ export class Store {
       return Number([run.title || '', run.skillId || '', ...(run.messages || []).map(message => message.text || '')].some(text => text.toLowerCase().includes(query)));
     });
     this.put = this.db.prepare('INSERT INTO runs (id, updatedAt, data) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET updatedAt = excluded.updatedAt, data = excluded.data');
+    this.remove = this.db.prepare('DELETE FROM runs WHERE id = ?');
     this.find = this.db.prepare('SELECT data FROM runs WHERE id = ?');
     this.all = this.db.prepare('SELECT data FROM runs ORDER BY updatedAt DESC, id ASC');
     this.activeSummary = this.db.prepare(`SELECT ${summary} FROM runs WHERE ${active} LIMIT 1`);
@@ -53,5 +54,6 @@ export class Store {
     if (typeof run.id !== 'string' || !run.id || typeof run.updatedAt !== 'string' || !run.updatedAt) throw new TypeError('Runs require an id and updatedAt timestamp.');
     this.put.run(run.id, run.updatedAt, JSON.stringify(run));
   }
+  delete(id) { this.remove.run(id); }
   close() { this.db.close(); }
 }

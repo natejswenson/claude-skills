@@ -1,0 +1,34 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { createServer } from 'node:net';
+import { randomUUID } from 'node:crypto';
+import { mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Store } from '../server/store.mjs';
+
+test('DELETE endpoint removes synthetic run and every old run/attachment/artifact URL returns 404',async t=>{
+ const root=await realpath(await mkdtemp(join(tmpdir(),'studio-delete-http-')));
+ const id=randomUUID(), attachmentId=randomUUID();
+ const store=new Store(join(root,'studio.sqlite'));
+ store.save({id,title:'Synthetic HTTP run',status:'completed',cwd:join(root,'workspace'),messages:[{id:'message',role:'user',text:'synthetic',attachments:[{id:attachmentId,name:'brief.txt',file:`inputs/${id}/brief.txt`}]}],artifacts:[{id:'artifact',name:'report.txt',file:'report.txt'}],pending:[],activities:[],updatedAt:'2026-10-25'});
+ store.close();
+ for(const tree of ['inputs','artifacts']) await mkdir(join(root,tree,id),{recursive:true});
+ await writeFile(join(root,'inputs',id,'brief.txt'),'synthetic input');
+ await writeFile(join(root,'artifacts',id,'report.txt'),'synthetic output');
+ const reservation=createServer(); reservation.listen(0,'127.0.0.1'); await once(reservation,'listening');
+ const port=reservation.address().port; await new Promise(resolve=>reservation.close(resolve));
+ const child=spawn(process.execPath,['server/index.mjs'],{env:{...process.env,PORT:String(port),STUDIO_DATA_DIR:root,STUDIO_CODEX_BIN:'/usr/bin/false'},stdio:['ignore','pipe','pipe']});
+ t.after(async()=>{child.kill('SIGTERM'); if(child.exitCode===null) await once(child,'exit'); await rm(root,{recursive:true,force:true});});
+ let output=''; child.stderr.on('data',chunk=>{output+=chunk});
+ await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error(output||'Server failed to start')),5000); child.stdout.on('data',()=>{clearTimeout(timeout);resolve()});child.once('exit',()=>{clearTimeout(timeout);reject(new Error(output))})});
+ const request=(path,options)=>fetch(`http://127.0.0.1:${port}${path}`,options);
+ const path=`/api/runs/${id}`;
+ assert.equal((await request(path)).status,200);
+ const deleted=await request(path,{method:'DELETE'}); assert.equal(deleted.status,200); assert.deepEqual(await deleted.json(),{deleted:id});
+ for(const suffix of ['',`/attachments/${attachmentId}`,'/artifacts/artifact']) assert.equal((await request(path+suffix)).status,404);
+ assert.equal((await request(path,{method:'DELETE'})).status,404);
+ const bootstrap=await (await request('/api/bootstrap')).json(); assert.deepEqual(bootstrap.runs,[]);
+});
