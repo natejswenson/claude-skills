@@ -31,7 +31,7 @@ export function ImageOutput({ url, name }: { url: string; name: string }) {
     const ready = natural.width > 0 && natural.height > 0 && !failed;
     const scale = zoom ?? fitImage(natural.width, natural.height, available.width, available.height);
     const width = natural.width * scale, height = natural.height * scale;
-    const overflow = ready && (width > available.width || height > available.height);
+    const overflow = ready && (width > available.width + 1 || height > available.height + 1);
 
     useLayoutEffect(() => {
         const element = viewport.current!;

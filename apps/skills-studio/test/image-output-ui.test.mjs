@@ -59,3 +59,9 @@ test('zoom-out keeps the previously visible center even when layout clamps old s
  app.click('Zoom out');
  assert.equal(app.viewport.scrollLeft,987.5); assert.equal(app.viewport.scrollTop,412.5);
 });
+
+test('fit rounding does not suggest panning when the whole image fits', () => {
+ const app=mount(); app.render(); app.resize(569,218); app.load(2400,1600);
+ assert.doesNotMatch(html(app),/Scroll to pan/);
+ app.click('Actual size'); assert.match(html(app),/Scroll to pan/);
+});
