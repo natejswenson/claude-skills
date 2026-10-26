@@ -69,7 +69,7 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
     const session = cookies.find(value => value.startsWith('studio_session='))?.slice('studio_session='.length);
     if (!session || !sessions.has(session)) return false;
     if (sessions.get(session) < Date.now()) { sessions.delete(session); return false; }
-    return true;
+    return session;
   }
   function sendCancel(id) { if (bridge?.readyState === WebSocket.OPEN) bridge.send(JSON.stringify({ type: 'cancel', id })); }
   function finish(id) {
@@ -110,7 +110,22 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
         if (isForm) { response.writeHead(303, { Location: '/' }); response.end(); return; }
         return json(response, 200, { ok: true });
       }
-      if (!authenticated(request)) {
+      const session = authenticated(request);
+      if (url.pathname === '/api/session' && request.method === 'DELETE') {
+        if (session) {
+          sessions.delete(session);
+          for (const [id, entry] of pending) {
+            if (entry.session !== session) continue;
+            finish(id);
+            sendCancel(id);
+            if (!entry.response.headersSent) json(entry.response, 401, { error: 'Preview sign-in required.' });
+            else entry.response.destroy();
+          }
+        }
+        response.setHeader('Set-Cookie', 'studio_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+        return json(response, 200, { ok: true });
+      }
+      if (!session) {
         if (url.pathname.startsWith('/api/') || request.method !== 'GET') return json(response, 401, { error: 'Preview sign-in required.' });
         const [html, tokens] = await Promise.all([readFile(join(here, 'login.html'), 'utf8'), readFile(join(here, '../src/tokens.css'), 'utf8')]);
         const nonce = randomBytes(18).toString('base64');
@@ -118,10 +133,14 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
         response.end(html.replace('/* PREVIEW_BRAND_TOKENS */', tokens).replace('PREVIEW_SCRIPT_NONCE', nonce));
         return;
       }
+      if (url.pathname === '/api/session') {
+        return request.method === 'GET' ? json(response, 200, { signOut: true }) : json(response, 405, { error: 'Method not allowed.' });
+      }
       if (url.pathname.startsWith('/api/')) {
         if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: 'Start the host preview worker to connect Codex.' });
         if (pending.size >= 64) return json(response, 503, { error: 'Preview is busy. Try again shortly.' });
         const data = await readBody(request, BODY_LIMIT);
+        if (authenticated(request) !== session) return json(response, 401, { error: 'Preview sign-in required.' });
         if (!bridge || bridge.readyState !== WebSocket.OPEN) return json(response, 503, { error: 'Preview worker disconnected.' });
         const id = randomUUID();
         const timer = setTimeout(() => {
@@ -130,7 +149,7 @@ export function createPreviewServer({ token, expectedHost, distDir = join(here, 
           sendCancel(id);
           json(response, 504, { error: 'Preview worker response timed out.' });
         }, requestTimeoutMs);
-        pending.set(id, { response, timer });
+        pending.set(id, { response, timer, session });
         response.on('close', () => { if (finish(id)) sendCancel(id); });
         bridge.send(JSON.stringify({ type: 'request', id, method: request.method, path: url.pathname + url.search, headers: headersWithoutSecrets(request.headers), body: data.toString('base64') }));
         return;

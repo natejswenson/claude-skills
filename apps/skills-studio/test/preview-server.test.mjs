@@ -252,7 +252,7 @@ test('login fetch preserves credentials, prevents double submission, reloads on 
     let sent;
     let reloaded = false;
     const button = { disabled: false, textContent: 'Open Skills Studio' };
-    const field = { value: ' synthetic-browser-proof ' };
+    const field = { value: ' synthetic-browser-proof ', focus() { this.focused = true; } };
     const error = { hidden: true, textContent: '' };
     const form = { querySelector: () => button, addEventListener: (_name, listener) => { submit = listener; } };
     runInNewContext(script, {
@@ -260,6 +260,7 @@ test('login fetch preserves credentials, prevents double submission, reloads on 
       location: { reload: () => { reloaded = true; } },
       fetch: (url, options) => { sent = { url, options }; return new Promise(resolve => { resolveFetch = resolve; }); },
     });
+    assert.equal(field.focused, true);
     const pending = submit({ preventDefault() {} });
     assert.equal(button.disabled, true);
     assert.equal(button.textContent, 'Connecting…');
@@ -279,4 +280,85 @@ test('login fetch preserves credentials, prevents double submission, reloads on 
       assert.doesNotMatch(error.textContent, /synthetic-browser-proof/);
     }
   }
+});
+
+
+test('session capability stays at the gateway and sign-out revokes only this browser session', async t => {
+  const app = await setup(t);
+  const cookie = await app.login();
+  const other = await app.login();
+  assert.equal((await app.fetch('/api/session')).status, 401);
+  const capability = await app.fetch('/api/session', { headers: { cookie } });
+  assert.equal(capability.status, 200);
+  assert.deepEqual(JSON.parse(capability.body), { signOut: true });
+  let forwarded = 0;
+  await app.connect((message, ws) => {
+    if (message.type === 'request') { forwarded++; respond(ws, message.id, 200, {}, 'worker alive'); }
+  });
+  for (const headers of [{ cookie, origin: 'https://evil.example' }, { cookie, host: 'evil.example' }, { cookie, 'sec-fetch-site': 'cross-site' }]) {
+    assert.equal((await app.fetch('/api/session', { method: 'DELETE', headers })).status, 403);
+  }
+  assert.equal((await app.fetch('/api/session', { headers: { cookie } })).status, 200);
+  assert.equal((await app.fetch('/api/session', { method: 'POST', headers: { cookie } })).status, 405);
+  for (const headers of [{ cookie }, { cookie }, {}]) {
+    const result = await app.fetch('/api/session', { method: 'DELETE', headers });
+    assert.equal(result.status, 200);
+    assert.deepEqual(JSON.parse(result.body), { ok: true });
+    assert.equal(result.headers['set-cookie'][0], 'studio_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+  }
+  assert.equal(forwarded, 0);
+  assert.equal((await app.fetch('/api/session', { headers: { cookie } })).status, 401);
+  assert.match((await app.fetch('/', { headers: { cookie } })).body.toString(), /Preview access code/);
+  assert.equal((await app.fetch('/api/bootstrap', { headers: { cookie } })).status, 401);
+  assert.equal((await app.fetch('/api/bootstrap', { headers: { cookie: other } })).body.toString(), 'worker alive');
+  assert.equal(forwarded, 1);
+});
+
+test('sign-out cancels only the matching session pending requests and SSE', async t => {
+  const app = await setup(t, { requestTimeoutMs: 1000 });
+  const cookie = await app.login();
+  const other = await app.login();
+  const requests = [];
+  const cancellations = [];
+  let received;
+  const ready = new Promise(resolve => { received = resolve; });
+  const worker = await app.connect((message, ws) => {
+    if (message.type === 'cancel') { cancellations.push(message.id); return; }
+    requests.push(message);
+    if (message.path.endsWith('events')) {
+      ws.send(JSON.stringify({ type: 'headers', id: message.id, status: 200, headers: { 'content-type': 'text/event-stream' } }));
+    }
+    if (requests.length === 3) received();
+  });
+  const pending = app.fetch('/api/bootstrap', { headers: { cookie } });
+  const stream = await app.open('/api/events', { headers: { cookie } }).response;
+  stream.on('error', () => {});
+  const closed = new Promise(resolve => stream.once('close', resolve));
+  const unaffected = app.fetch('/api/other', { headers: { cookie: other } });
+  await ready;
+  assert.equal((await app.fetch('/api/session', { method: 'DELETE', headers: { cookie } })).status, 200);
+  assert.equal((await pending).status, 401);
+  await closed;
+  const remaining = requests.find(message => message.path === '/api/other');
+  respond(worker, remaining.id, 200, {}, 'still signed in');
+  assert.equal((await unaffected).body.toString(), 'still signed in');
+  assert.deepEqual(cancellations.sort(), requests.filter(message => message !== remaining).map(message => message.id).sort());
+  assert.equal(worker.readyState, WebSocket.OPEN);
+});
+
+test('a request awaiting its body cannot be forwarded after its session signs out', async t => {
+  const app = await setup(t, { requestTimeoutMs: 1000 });
+  const cookie = await app.login();
+  let forwarded = 0;
+  await app.connect(message => { if (message.type === 'request') forwarded++; });
+  const req = httpRequest({ host: '127.0.0.1', port: app.port, path: '/api/runs', method: 'POST', headers: { host, cookie, 'content-length': '2' } });
+  const response = once(req, 'response').then(([res]) => { res.resume(); return res.statusCode; });
+  // Seeing data at the real HTTP server establishes that readBody is awaiting completion.
+  const reading = new Promise(resolve => app.server.once('request', request => request.once('data', resolve)));
+  req.write('{');
+  await reading;
+  assert.equal((await app.fetch('/api/session', { method: 'DELETE', headers: { cookie } })).status, 200);
+  req.end('}');
+  assert.equal(await response, 401);
+  assert.equal(forwarded, 0);
 });

@@ -9,6 +9,7 @@ const form = document.getElementById('login-form');
 const field = document.getElementById('token');
 const error = document.getElementById('login-error');
 const button = form.querySelector('button');
+field.focus();
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (button.disabled) return;
