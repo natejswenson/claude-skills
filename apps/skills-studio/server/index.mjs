@@ -51,6 +51,7 @@ const server = createServer(async (request, response) => {
       await writeFile(join(dataDir, 'settings.json'), JSON.stringify(result), { mode: 0o600 });
       return json(response, 200, result);
     }
+    if (request.method === 'GET' && url.pathname === '/api/runs') return json(response, 200, store.history({ query: url.searchParams.get('query') || '', limit: Number(url.searchParams.get('limit') ?? 50), offset: Number(url.searchParams.get('offset') ?? 0) }));
     if (request.method === 'POST' && url.pathname === '/api/runs') return json(response, 201, await manager.create(await body(request, { limit: ATTACHMENT_LIMITS.maxRequestBytes })));
     if (parts[0] === 'api' && parts[1] === 'runs' && parts[2]) {
       const run = manager.get(parts[2]);

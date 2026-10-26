@@ -52,7 +52,7 @@ export class RunManager extends EventEmitter {
     client.on('disconnect', message => {
       if (this.client !== client) return;
       this.connection = { status: 'disconnected', error: message };
-      for (const run of this.store.list()) if (activeStates.has(run.status)) { run.status = 'interrupted'; run.pending = []; run.error = 'Codex disconnected. Use Refresh connection in Settings, then continue this run.'; this.save(run); }
+      for (const run of this.store.activeRuns()) { run.status = 'interrupted'; run.pending = []; run.error = 'Codex disconnected. Use Refresh connection in Settings, then continue this run.'; this.save(run); }
       this.emit('change');
     });
   }
@@ -83,10 +83,10 @@ export class RunManager extends EventEmitter {
     requireSubscription(account);
     this.account = { type: account.type, planType: account.planType };
   }
-  save(run) { run.updatedAt = new Date().toISOString(); this.store.save(run); this.emit('change'); return run; }
+  save(run) { run.updatedAt = new Date().toISOString(); this.store.save(run); this.historyRevision = (this.historyRevision || 0) + 1; this.emit('change'); return run; }
   get(id) { return this.store.get(id) || fail('Run not found.', 404); }
-  bootstrap() { return { connection: this.connection, account: this.account || null, models: this.models || [], skills: this.catalog.map(({ path, ...skill }) => skill), workspace: this.workspace, runs: this.store.list(), capabilities: { attachments: true }, attachmentLimits: ATTACHMENT_LIMITS }; }
-  assertIdle() { if (this.busy || this.finalizing.size || this.store.list().some(run => activeStates.has(run.status))) fail('A run is already active. Stop it or wait before starting another.', 409); }
+  bootstrap() { const {runs, ...history} = this.store.history(); return { connection: this.connection, account: this.account || null, models: this.models || [], skills: this.catalog.map(({ path, ...skill }) => skill), workspace: this.workspace, runs, history: { ...history, revision: this.historyRevision || 0 }, activeRun: this.store.getActiveSummary(), capabilities: { attachments: true }, attachmentLimits: ATTACHMENT_LIMITS }; }
+  assertIdle() { if (this.busy || this.finalizing.size || this.store.hasActive()) fail('A run is already active. Stop it or wait before starting another.', 409); }
   async selectWorkspace(path) {
     if (typeof path !== 'string' || !isAbsolute(path)) fail('Choose an absolute workspace folder.');
     const resolved = await realpath(path).catch(() => fail('Workspace folder does not exist.'));
@@ -179,7 +179,7 @@ export class RunManager extends EventEmitter {
   onEvent(event) {
     const { method, params = {} } = event;
     if (method === 'account/updated') { this.account = params.authMode === 'chatgpt' ? { type: 'chatgpt', planType: params.planType } : null; this.emit('change'); return; }
-    const run = this.store.list().find(run => method === 'serverRequest/resolved' ? run.pending.some(pending => pending.rpcId === params.requestId) : run.threadId === params.threadId);
+    const run = method === 'serverRequest/resolved' ? this.store.findByRequest(params.requestId) : this.store.findByThread(params.threadId);
     if (!run) { if (event.id !== undefined) this.client.reject(event.id); return; }
     if (event.id !== undefined) {
       if (!supported.has(method)) { this.client.reject(event.id); run.activities.push({ id: randomUUID(), label: 'Unsupported tool request', detail: method, status: 'failed' }); this.save(run); return; }
